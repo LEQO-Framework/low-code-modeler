@@ -17,10 +17,7 @@ import {
 import { create } from "zustand";
 import { nodesConfig } from "./site";
 import { v4 as uuid } from "uuid";
-import {
-  Position,
-  useNodesData,
-} from '@xyflow/react';
+import * as consts from "../constants";
 
 export type NodeData = {
   label: string;
@@ -98,6 +95,29 @@ const useStore = create<RFState>((set, get) => ({
     if (node.type === "measurementNode") {
       node.data.indices = "";
       node.data.outputIdentifier = "";
+    }
+
+    if (node.type === "gateNode") {
+      if (node.data.label === "H") {
+        console.log("set Hadanard")
+        node.data.implementation = consts.HadamardImplementation;
+        node.data.implementationType="openqasm2";
+      } else if (node.data.label === "X") {
+        node.data.implementation = consts.PauliXImplementation;
+        node.data.implementationType="openqasm2";
+      } else if (node.data.label === "Y") {
+        node.data.implementation = consts.PauliYImplementation;
+        node.data.implementationType="openqasm2";
+      } else if (node.data.label === "Z") {
+        node.data.implementation = consts.PauliZImplementation;
+        node.data.implementationType="openqasm2";
+      } else if (node.data.label === "Toffoli") {
+        node.data.implementation = consts.ToffoliImplementation;
+        node.data.implementationType="openqasm2";
+      } else if (node.data.label === "CNOT") {
+        node.data.implementation = consts.CnotImplementation;
+        node.data.implementationType="openqasm2";
+      }
     }
 
     if (node.type === "positionNode") {
@@ -253,17 +273,17 @@ const useStore = create<RFState>((set, get) => ({
     console.log(connection)
     const target = get().nodes.find((node) => node.id === connection.target);
     const hasCycle = (node, visited = new Set()) => {
-      if (visited.has(node.id)){ console.log("has");return false;}
+      if (visited.has(node.id)) { console.log("has"); return false; }
 
       visited.add(node.id);
 
       for (const outgoer of getOutgoers(node, get().nodes, get().edges)) {
-        if (outgoer.id === connection.source){console.log("me");return true;}
-        if (hasCycle(outgoer, visited)) {console.log("hasCcycle");return true;}
+        if (outgoer.id === connection.source) { console.log("me"); return true; }
+        if (hasCycle(outgoer, visited)) { console.log("hasCcycle"); return true; }
       }
     };
 
-    if (target.id === connection.source){console.log("source target");return false};
+    if (target.id === connection.source) { console.log("source target"); return false };
     console.log(!hasCycle(target))
     let cycle = !hasCycle(target);
     for (let node of currentNodes) {
@@ -296,7 +316,7 @@ const useStore = create<RFState>((set, get) => ({
       if (node.id === connection.source && connection.sourceHandle.includes("quantumHandle") && connection.targetHandle.includes("quantumHandle")) {
         insertEdge = true;
       }
-      if (node.id === connection.source && connection.sourceHandle.includes("ancillaHandle") && nodeDataTarget.type==="gateNode" && connection.targetHandle.includes("quantumHandle")) {
+      if (node.id === connection.source && connection.sourceHandle.includes("ancillaHandle") && nodeDataTarget.type === "gateNode" && connection.targetHandle.includes("quantumHandle")) {
         insertEdge = true;
       }
 
@@ -550,7 +570,7 @@ const useStore = create<RFState>((set, get) => ({
         if (node.id === nodeId) {
           console.log(node.data["identifier"])
           node.data["identifier"] = sourceIdentifier
-          if(identifier === "parentNode"){
+          if (identifier === "parentNode") {
             console.log("update parentnode")
             node.parentNode = nodeVal
             return {
@@ -558,7 +578,7 @@ const useStore = create<RFState>((set, get) => ({
               data: {
                 ...node.data,
                 [identifier]: nodeVal,
-  
+
               },
             };
           }
@@ -589,7 +609,7 @@ const useStore = create<RFState>((set, get) => ({
 
     console.log("History updated successfully.");
   },
-  updateParent:(nodeId: string, parentId: string, position: any) => {
+  updateParent: (nodeId: string, parentId: string, position: any) => {
     console.log("Updating parent value for:", nodeId);
     console.log("Identifier:", parentId);
 
@@ -601,13 +621,13 @@ const useStore = create<RFState>((set, get) => ({
       console.log(sourceIdentifier);
       console.log("set state")
 
-      
+
 
       // Update the node's own properties
       updatedNodes = updatedNodes.map((node) => {
         if (node.id === nodeId) {
           console.log(node.data["identifier"])
-          
+
           node.parentNode = parentId;
           node.position = position;
           node.extent = "parent"
