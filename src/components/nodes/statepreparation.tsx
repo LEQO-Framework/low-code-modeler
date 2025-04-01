@@ -40,6 +40,7 @@ export const StatePreparationNode = memo((node: Node) => {
 
   const hasTestTargetHandle = edges.some(edge => edge.targetHandle === "ancillaHandleEncodeValue" + node.id);
   console.log(hasTestTargetHandle)
+  console.log(encodingType)
 
   if (hasTestTargetHandle) {
     console.log("An edge exists with targetHandle === 'test'");
@@ -60,19 +61,6 @@ export const StatePreparationNode = memo((node: Node) => {
   };
 
 
-  const addChildNode = (parentId) => {
-    const newNode = {
-      id: Date.now().toString(),
-      type: "custom",
-      position: { x: Math.random() * 100, y: Math.random() * 100 },
-      data: { label: "New Child" },
-      parentNode: parentId,
-      extent: "parent",
-    } as Node;
-
-    setNodes(newNode); // If setNodes only accepts a single node
-
-  };
   const handleStateChange = (e, field) => {
     const value = e.target.value;
 
@@ -161,26 +149,35 @@ export const StatePreparationNode = memo((node: Node) => {
                   <option value="Basis Encoding">Basis Encoding</option>
                   <option value="Custom Encoding">Custom Encoding</option>
                   <option value="Matrix Encoding">Matrix Encoding</option>
+                  <option value="Schmidt Decomposition">Schmidt Decomposition</option>
                 </select>
-                <label style={{ visibility: showingChildren ? "hidden" : "visible" }} className="text-sm text-black">Size:</label>
-                <input
-                  style={{ visibility: showingChildren ? "hidden" : "visible" }}
-                  className="w-full p-1 mt-1 text-sm rounded-full text-center text-black border-2 border-blue-300 rounded"
-                  type="text"
-                  id="size"
-                  value={node.data.size || size}
-                  onChange={(e) => handleYChange(e, "size")}
-                  placeholder="Enter size"
-                />
-                <label className="text-sm text-black">Bound:</label>
-                <input
-                  className="w-full p-1 mt-1 text-sm text-center text-black border-2 border-blue-300 rounded-full"
-                  type="text"
-                  id="bound"
-                  value={node.data.bound || bound}
-                  onChange={(e) => handleStateChange(e, "bound")}
-                  placeholder="Enter bound"
-                />
+                {node.data.encodingType  === "Basis Encoding" && (
+                  <>
+                    <label className="text-sm text-black">Size:</label>
+                    <input
+                      className="w-full p-1 mt-1 text-sm text-center text-black border-2 border-blue-300 rounded-full"
+                      type="text"
+                      id="size"
+                      value={node.data.size || size}
+                      onChange={(e) => handleYChange(e, "size")}
+                      placeholder="Enter size"
+                    />
+                  </>
+                )}
+                {node.data.encodingType !== "Basis Encoding" && node.data.encodingType  !== "Angle Encoding" && (
+                  <>
+                    <label className="text-sm text-black">Bound:</label>
+                    <input
+                      className="w-full p-1 mt-1 text-sm text-center text-black border-2 border-blue-300 rounded-full"
+                      type="text"
+                      id="bound"
+                      value={node.data.bound || bound}
+                      onChange={(e) => handleStateChange(e, "bound")}
+                      placeholder="Enter bound"
+                    />
+                  </>
+                )}
+
               </>
             )}
 
@@ -319,20 +316,6 @@ export const StatePreparationNode = memo((node: Node) => {
             />
           </div>
         </div>
-
-
-        <Button
-          onClick={() => setShowingChildren(!showingChildren)}
-          icon={showingChildren ? "-" : "+"}
-          style={{
-            position: "absolute",
-            bottom: "0px",
-            left: "50%",
-            transform: "translateX(-50%)",
-            border: "1px solid black",
-            borderRadius: 0,
-          }}
-        />
 
       </div>
     </motion.div>

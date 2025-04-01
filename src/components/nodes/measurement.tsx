@@ -131,7 +131,7 @@ export const MeasurementNode = memo((node: Node) => {
             <div
               className="flex items-center space-x-2 relative rounded-full"
               style={{
-                backgroundColor: 'rgba(105, 145, 210, 0.2)',
+                backgroundColor: 'rgba(210, 159, 105, 0.2)',
                 width: '150px',
               }}
             >

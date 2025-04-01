@@ -236,18 +236,7 @@ export const ClassicalOutputOperationNode = memo((node: Node) => {
             </div>
           </div>
         </div>
-        <Button
-          onClick={() => setShowingChildren(!showingChildren)}
-          icon={showingChildren ? "-" : "+"}
-          style={{
-            position: "absolute",
-            bottom: "0px",
-            left: "50%",
-            transform: "translateX(-50%)",
-            border: "1px solid black",
-            borderRadius: 0,
-          }}
-        />
+    
       </div>
     </motion.div>
   );
