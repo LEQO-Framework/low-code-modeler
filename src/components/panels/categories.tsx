@@ -30,7 +30,10 @@ export const categories: { [key: string]: any } = {
       { label: "Measurement", type: "measurementNode", icon: "measurement.png" },
     ]
   },
-  "Circuit Blocks & Routines": {
+  "Circuit Blocks": {
+    "Qubits": [
+      { label: "Qubit", type: "gateNode" }
+    ],
     "Circuit Blocks": [
       { label: "CNOT", type: "gateNode" },
       { label: "Toffoli", type: "gateNode" },
@@ -39,13 +42,6 @@ export const categories: { [key: string]: any } = {
       { label: "Y", type: "gateNode" },
       { label: "Z", type: "gateNode" },
     ],
-    "Circuit Routines": [
-      { label: "Amplitude Amplification", type: "circuitRoutineNode" },
-      { label: "Hadamard Test", type: "circuitRoutineNode" },
-      { label: "QFT", type: "circuitRoutineNode" },
-      { label: "QPE", type: "circuitRoutineNode" },
-      { label: "SWAP Test", type: "circuitRoutineNode" }
-    ]
   },
   "Data Types": {
     "Classical Datatypes": [
