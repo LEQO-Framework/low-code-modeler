@@ -1,0 +1,148 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "name": "My Model",
+    "description": "This is a model that encodes the array [0,pi/4, pi/2] via angle encoding.",
+    "author": "",
+    "id": "flow-1743633019886",
+    "timestamp": "2025-04-02T22:30:19.886Z"
+  },
+  "nodes": [
+    {
+      "id": "newNode0",
+      "type": "statePreparationNode",
+      "position": {
+        "x": 420,
+        "y": 165
+      },
+      "data": {
+        "label": "Encode Value",
+        "inputs": [
+          {
+            "id": "newNode1",
+            "outputIdentifier": "a",
+            "identifiers": [
+              "q972640"
+            ]
+          }
+        ],
+        "implementation": "OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[3];\ncreg c[3];\nry(2 * 0) q[0];\nry(2 * pi / 4) q[1];\nry(2 * pi / 2) q[2];",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q882850"
+        ],
+        "encodingType": "Angle Encoding",
+        "outputIdentifier": "b"
+      },
+      "width": 320,
+      "height": 373,
+      "positionAbsolute": {
+        "x": 420,
+        "y": 165
+      },
+      "dragging": true
+    },
+    {
+      "id": "newNode1",
+      "type": "positionNode",
+      "position": {
+        "x": -180,
+        "y": 285
+      },
+      "data": {
+        "label": "Array",
+        "inputs": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q972640"
+        ],
+        "dataType": "Array",
+        "value": "[0,pi/4, pi/2]",
+        "outputIdentifier": ""
+      },
+      "width": 320,
+      "height": 150,
+      "positionAbsolute": {
+        "x": -180,
+        "y": 285
+      },
+      "dragging": true
+    },
+    {
+      "id": "newNode2",
+      "type": "measurementNode",
+      "position": {
+        "x": 960,
+        "y": 255
+      },
+      "data": {
+        "label": "Measurement",
+        "inputs": [
+          {
+            "id": "newNode0",
+            "identifiers": [
+              "q882850"
+            ],
+            "outputIdentifier": "b"
+          }
+        ],
+        "implementation": "OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[3];\ncreg c[3];\nmeasure q[0] -> c[0];\nmeasure q[1] -> c[1];\nmeasure q[2] -> c[2];",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q249326"
+        ],
+        "indices": "",
+        "outputIdentifier": ""
+      },
+      "width": 320,
+      "height": 290,
+      "positionAbsolute": {
+        "x": 960,
+        "y": 255
+      },
+      "selected": true
+    }
+  ],
+  "edges": [
+    {
+      "source": "newNode1",
+      "sourceHandle": "classicalHandleDataType",
+      "target": "newNode0",
+      "targetHandle": "classicalHandleStatePreparationnewNode0",
+      "type": "classicalEdge",
+      "id": "d11057c3-fe6b-4063-af24-c1a474894cc3",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#F5A843"
+      }
+    },
+    {
+      "source": "newNode0",
+      "sourceHandle": "quantumHandleStatePreparationOutputnewNode0",
+      "target": "newNode2",
+      "targetHandle": "quantumHandleMeasurementnewNode2",
+      "type": "quantumEdge",
+      "id": "167a26cb-7f7b-445d-a1e2-8e2061c99fd5",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD"
+      }
+    }
+  ],
+  "viewport": {
+    "x": 202.5,
+    "y": -28.5,
+    "zoom": 1
+  }
+}

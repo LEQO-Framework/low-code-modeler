@@ -1,0 +1,148 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "name": "My Model",
+    "description": "This is a model that encodes the value 5 via basis encoding.",
+    "author": "",
+    "id": "flow-1743632479629",
+    "timestamp": "2025-04-02T22:21:19.629Z"
+  },
+  "nodes": [
+    {
+      "id": "newNode2",
+      "type": "positionNode",
+      "position": {
+        "x": 420,
+        "y": 270
+      },
+      "data": {
+        "label": "int",
+        "inputs": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q381410"
+        ],
+        "dataType": "int",
+        "value": "5",
+        "outputIdentifier": "a"
+      },
+      "width": 320,
+      "height": 150,
+      "positionAbsolute": {
+        "x": 420,
+        "y": 270
+      },
+      "dragging": true
+    },
+    {
+      "id": "newNode3",
+      "type": "statePreparationNode",
+      "position": {
+        "x": 840,
+        "y": 120
+      },
+      "data": {
+        "label": "Encode Value",
+        "inputs": [
+          {
+            "id": "newNode2",
+            "outputIdentifier": "a",
+            "identifiers": [
+              "q381410"
+            ]
+          }
+        ],
+        "implementation": "OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[3];\nx q[0];\nx q[2];",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q838802"
+        ],
+        "encodingType": "Basis Encoding",
+        "bound": 0,
+        "size": 3,
+        "outputIdentifier": "b"
+      },
+      "width": 320,
+      "height": 373,
+      "positionAbsolute": {
+        "x": 840,
+        "y": 120
+      },
+      "dragging": true
+    },
+    {
+      "id": "newNode4",
+      "type": "measurementNode",
+      "position": {
+        "x": 1350,
+        "y": 225
+      },
+      "data": {
+        "label": "Measurement",
+        "inputs": [
+          {
+            "id": "newNode3",
+            "identifiers": [
+              "q838802"
+            ]
+          }
+        ],
+        "implementation": "OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[3];\ncreg c[3];\nmeasure q[0] -> c[2];\nmeasure q[1] -> c[2];\nmeasure q[2] -> c[2];\n",
+        "implementationType": "openqasm2",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q520528"
+        ],
+        "indices": "",
+        "outputIdentifier": ""
+      },
+      "width": 320,
+      "height": 290,
+      "positionAbsolute": {
+        "x": 1350,
+        "y": 225
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source": "newNode3",
+      "sourceHandle": "quantumHandleStatePreparationOutputnewNode3",
+      "target": "newNode4",
+      "targetHandle": "quantumHandleMeasurementnewNode4",
+      "type": "quantumEdge",
+      "id": "26c39e42-5004-48b8-a13b-191ab25013f4",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD"
+      }
+    },
+    {
+      "source": "newNode2",
+      "sourceHandle": "classicalHandleDataType",
+      "target": "newNode3",
+      "targetHandle": "classicalHandleStatePreparationnewNode3",
+      "type": "classicalEdge",
+      "id": "dc9d33b5-d1ed-43b3-b92e-856b4ceb30a1",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#F5A843"
+      }
+    }
+  ],
+  "viewport": {
+    "x": -707.4634574303743,
+    "y": 57.199017015922294,
+    "zoom": 0.9101622359123108
+  }
+}

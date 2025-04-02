@@ -1,0 +1,148 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "name": "My Model",
+    "description": "This is a model that encodes the value 5 via basis encoding.",
+    "author": "",
+    "id": "flow-1743632139448",
+    "timestamp": "2025-04-02T22:15:39.448Z"
+  },
+  "nodes": [
+    {
+      "id": "newNode3",
+      "type": "statePreparationNode",
+      "position": {
+        "x": 840,
+        "y": 120
+      },
+      "data": {
+        "label": "Encode Value",
+        "inputs": [
+          {
+            "id": "newNode5",
+            "outputIdentifier": "a",
+            "identifiers": [
+              "q734238"
+            ]
+          }
+        ],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q838802"
+        ],
+        "encodingType": "Basis Encoding",
+        "bound": 0,
+        "size": 3,
+        "outputIdentifier": "b"
+      },
+      "width": 320,
+      "height": 373,
+      "positionAbsolute": {
+        "x": 840,
+        "y": 120
+      },
+      "dragging": true
+    },
+    {
+      "id": "newNode4",
+      "type": "measurementNode",
+      "position": {
+        "x": 1350,
+        "y": 225
+      },
+      "data": {
+        "label": "Measurement",
+        "inputs": [
+          {
+            "id": "newNode3",
+            "identifiers": [
+              "q838802"
+            ]
+          }
+        ],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q520528"
+        ],
+        "indices": "",
+        "outputIdentifier": ""
+      },
+      "width": 320,
+      "height": 290,
+      "positionAbsolute": {
+        "x": 1350,
+        "y": 225
+      }
+    },
+    {
+      "id": "newNode5",
+      "type": "positionNode",
+      "position": {
+        "x": 375,
+        "y": 210
+      },
+      "data": {
+        "label": "float",
+        "inputs": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q734238"
+        ],
+        "dataType": "float",
+        "value": "5.5",
+        "outputIdentifier": "a"
+      },
+      "width": 320,
+      "height": 150,
+      "positionAbsolute": {
+        "x": 375,
+        "y": 210
+      },
+      "dragging": true
+    }
+  ],
+  "edges": [
+    {
+      "source": "newNode5",
+      "sourceHandle": "classicalHandleDataType",
+      "target": "newNode3",
+      "targetHandle": "classicalHandleStatePreparationnewNode3",
+      "type": "classicalEdge",
+      "id": "d9334d2c-d7cf-4bf3-9322-dfbd0371abe7",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#F5A843"
+      }
+    },
+    {
+      "source": "newNode3",
+      "sourceHandle": "quantumHandleStatePreparationOutputnewNode3",
+      "target": "newNode4",
+      "targetHandle": "quantumHandleMeasurementnewNode4",
+      "type": "quantumEdge",
+      "id": "26c39e42-5004-48b8-a13b-191ab25013f4",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD"
+      }
+    }
+  ],
+  "viewport": {
+    "x": -473.4634574303743,
+    "y": 92.19901701592227,
+    "zoom": 0.9101622359123108
+  }
+}
