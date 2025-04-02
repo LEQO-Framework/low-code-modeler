@@ -1,0 +1,138 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "name": "My Model",
+    "description": "This is a model that creates the |->.",
+    "author": "",
+    "id": "flow-1743623074418",
+    "timestamp": "2025-04-02T19:44:34.418Z"
+  },
+  "nodes": [
+    {
+      "id": "newNode1",
+      "type": "gateNode",
+      "position": {
+        "x": 45,
+        "y": 300
+      },
+      "data": {
+        "label": "Qubit",
+        "inputs": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q826471"
+        ]
+      },
+      "width": 150,
+      "height": 120,
+      "positionAbsolute": {
+        "x": 45,
+        "y": 300
+      }
+    },
+    {
+      "id": "newNode3",
+      "type": "gateNode",
+      "position": {
+        "x": 285,
+        "y": 300
+      },
+      "data": {
+        "label": "X",
+        "inputs": [
+          {
+            "id": "newNode1",
+            "identifiers": [
+              "q826471"
+            ]
+          }
+        ],
+        "implementation": "OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[1];\nx q[0];",
+        "implementationType": "openqasm2",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q978767"
+        ]
+      },
+      "width": 150,
+      "height": 120,
+      "positionAbsolute": {
+        "x": 285,
+        "y": 300
+      },
+      "dragging": true
+    },
+    {
+      "id": "newNode4",
+      "type": "gateNode",
+      "position": {
+        "x": 510,
+        "y": 300
+      },
+      "data": {
+        "label": "H",
+        "inputs": [
+          {
+            "id": "newNode3",
+            "identifiers": [
+              "q978767"
+            ]
+          }
+        ],
+        "implementation": "OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[1];\nh q[0];",
+        "implementationType": "openqasm2",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q325864"
+        ]
+      },
+      "width": 150,
+      "height": 120,
+      "positionAbsolute": {
+        "x": 510,
+        "y": 300
+      },
+      "dragging": true
+    }
+  ],
+  "edges": [
+    {
+      "source": "newNode3",
+      "sourceHandle": "quantumHandleGateOutput1newNode3",
+      "target": "newNode4",
+      "targetHandle": "quantumHandleGateInput1newNode4",
+      "type": "quantumEdge",
+      "id": "b547558c-acc0-4673-aa81-688377e82c59",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD"
+      }
+    },
+    {
+      "source": "newNode1",
+      "sourceHandle": "quantumHandleGateOutput1newNode1",
+      "target": "newNode3",
+      "targetHandle": "quantumHandleGateInput1newNode3",
+      "type": "quantumEdge",
+      "id": "494d60f6-467f-4551-a128-c0f5aea88ac5",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD"
+      }
+    }
+  ],
+  "viewport": {
+    "x": 5.5,
+    "y": -164,
+    "zoom": 1
+  }
+}

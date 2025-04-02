@@ -1,0 +1,92 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "name": "My Model",
+    "description": "This is a model that applies a Pauli-X.",
+    "author": "",
+    "id": "flow-1743619588588",
+    "timestamp": "2025-04-02T18:46:28.588Z"
+  },
+  "nodes": [
+    {
+      "id": "newNode4",
+      "type": "gateNode",
+      "position": {
+        "x": 135,
+        "y": 360
+      },
+      "data": {
+        "label": "Qubit",
+        "inputs": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q373666"
+        ]
+      },
+      "width": 150,
+      "height": 120,
+      "positionAbsolute": {
+        "x": 135,
+        "y": 360
+      },
+      "dragging": true
+    },
+    {
+      "id": "newNode6",
+      "type": "gateNode",
+      "position": {
+        "x": 420,
+        "y": 360
+      },
+      "data": {
+        "label": "X",
+        "inputs": [
+          {
+            "id": "newNode4",
+            "identifiers": [
+              "q373666"
+            ]
+          }
+        ],
+        "implementation": "OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[1];\nx q[0];",
+        "implementationType": "openqasm2",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q664233"
+        ]
+      },
+      "width": 150,
+      "height": 120,
+      "positionAbsolute": {
+        "x": 420,
+        "y": 360
+      },
+      "dragging": true
+    }
+  ],
+  "edges": [
+    {
+      "source": "newNode4",
+      "sourceHandle": "quantumHandleGateOutput1newNode4",
+      "target": "newNode6",
+      "targetHandle": "quantumHandleGateInput1newNode6",
+      "type": "quantumEdge",
+      "id": "881d3178-c32a-484b-90ba-e8e8fba0aa2e",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD"
+      }
+    }
+  ],
+  "viewport": {
+    "x": -59,
+    "y": -139,
+    "zoom": 1
+  }
+}
