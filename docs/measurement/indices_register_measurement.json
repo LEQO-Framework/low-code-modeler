@@ -2,10 +2,10 @@
   "metadata": {
     "version": "1.0.0",
     "name": "My Model",
-    "description": "This is a model that encodes the value 5.5 via basis encoding.",
+    "description": "This is a model that encodes the value 5.5 via basis encoding and measures only the first three qubits.",
     "author": "",
-    "id": "flow-1743633805144",
-    "timestamp": "2025-04-02T22:43:25.144Z"
+    "id": "flow-1743634013746",
+    "timestamp": "2025-04-02T22:46:53.746Z"
   },
   "nodes": [
     {
@@ -74,9 +74,58 @@
         "y": 300
       },
       "dragging": true
+    },
+    {
+      "id": "newNode2",
+      "type": "measurementNode",
+      "position": {
+        "x": 885,
+        "y": 420
+      },
+      "data": {
+        "label": "Measurement",
+        "inputs": [
+          {
+            "id": "newNode1",
+            "identifiers": [
+              "q773834"
+            ]
+          }
+        ],
+        "implementation": "OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[4];\ncreg c[3];\nmeasure q[0] -> c[0];\nmeasure q[1] -> c[1];\nmeasure q[2] -> c[2];",
+        "implementationType": "openqasm2",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q418592"
+        ],
+        "indices": "0,1,2",
+        "outputIdentifier": ""
+      },
+      "width": 320,
+      "height": 290,
+      "positionAbsolute": {
+        "x": 885,
+        "y": 420
+      },
+      "dragging": true
     }
   ],
   "edges": [
+    {
+      "source": "newNode1",
+      "sourceHandle": "quantumHandleStatePreparationOutputnewNode1",
+      "target": "newNode2",
+      "targetHandle": "quantumHandleMeasurementnewNode2",
+      "type": "quantumEdge",
+      "id": "bdcf49e0-5822-413e-bb07-549adcf0ebe8",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD"
+      }
+    },
     {
       "source": "newNode0",
       "sourceHandle": "classicalHandleDataType",
@@ -93,8 +142,8 @@
     }
   ],
   "viewport": {
-    "x": -158.5,
-    "y": -156,
+    "x": -404.5,
+    "y": -164,
     "zoom": 1
   }
 }
