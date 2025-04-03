@@ -34,8 +34,8 @@ h1 {
   background-color: #ff6347;
   position: relative;
   clip-path: polygon(25% 0%, 75% 0%, 100% 25%, 100% 75%, 75% 100%, 25% 100%, 0% 75%, 0% 25%);
-  left: -75px !important;
-  border: 2px solid blue;
+  left: -120px !important;
+  border: 2px solid grey;
 }
   
 .hexagon-right {
@@ -46,7 +46,10 @@ h1 {
   background-color: #ff6347;
   position: relative;
   clip-path: polygon(25% 0%, 75% 0%, 100% 25%, 100% 75%, 75% 100%, 25% 100%, 0% 75%, 0% 25%);
-  right: -75px !important;
+  right: -120px !important;
+  border: 2px solid grey;
+  outline: 2px solid grey;
+  box-sizing: border-box; 
 }
 
 /* ======== MODAL ========== */
@@ -480,4 +483,64 @@ h1 {
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
+}
+
+.classical-circle-port-hex-in {
+  width: 15px !important;
+  height: 15px !important;
+  border-radius: 50% !important; /* Make it fully circular */
+  background: #898d9c;
+  border: 1px solid #edeff5;
+  cursor: pointer;
+  position: absolute;
+  top: 14px;
+  left: -52px !important;
+}
+
+.circle-port-hex-in {
+  width: 15px !important;
+  height: 15px !important;
+  border-radius: 0 !important; /* Make it fully circular */
+  background: #898d9c;
+  border: 1px solid #edeff5;
+  cursor: pointer;
+  position: absolute;
+  top: 14px;
+  left: -52px !important;
+}
+.classical-circle-port-hex-out {
+  width: 15px !important;
+  height: 15px !important;
+  border-radius: 50% !important; /* Make it fully circular */
+  background: #898d9c;
+  border: 1px solid #edeff5;
+  cursor: pointer;
+  position: absolute;
+  top: 14px;
+  right: -127px !important;
+}
+
+.circle-port-hex-out {
+  width: 15px !important;
+  height: 15px !important;
+  border-radius: 0 !important; /* Make it fully circular */
+  background: #898d9c;
+  border: 1px solid #edeff5;
+  cursor: pointer;
+  position: absolute;
+  top: 14px;
+  right: -127px !important;
+}
+
+.circle-port-gate-in {
+  width: 15px !important;
+  height: 15px !important;
+  border-radius: 0 !important;
+  background: #898d9c;
+  border: 1px solid #edeff5;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+  position: absolute;
+  top: 14px;
+  left: -7px !important;
 }

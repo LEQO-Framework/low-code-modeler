@@ -91,7 +91,12 @@ const useStore = create<RFState>((set, get) => ({
     console.log("Current Edges:", currentEdges);
     console.log("New History Item:", newHistoryItem);
     const uniqueIdentifier = `q${Math.floor(100000 + Math.random() * 900000)}`;
-    node.data.identifier = uniqueIdentifier;
+    node.data.identifiers = [uniqueIdentifier];
+    console.log("IIIIIIIIIIIIIII");
+    console.log(node);
+    const uniqueIdentifier2 = `q${Math.floor(100000 + Math.random() * 900000)}`;
+    const uniqueIdentifier3 = `q${Math.floor(100000 + Math.random() * 900000)}`;
+    //node.data.identifiers = uniqueIdentifier;
     if (node.type === "measurementNode") {
       node.data.indices = "";
       node.data.outputIdentifier = "";
@@ -113,8 +118,11 @@ const useStore = create<RFState>((set, get) => ({
         node.data.implementationType="openqasm2";
       } else if (node.data.label === "Toffoli") {
         node.data.implementation = consts.ToffoliImplementation;
+        node.data.identifiers.push(uniqueIdentifier2);
+        node.data.identifiers.push(uniqueIdentifier3);
         node.data.implementationType="openqasm2";
       } else if (node.data.label === "CNOT") {
+        node.data.identifiers.push(uniqueIdentifier2);
         node.data.implementation = consts.CnotImplementation;
         node.data.implementationType="openqasm2";
       }
@@ -363,18 +371,52 @@ const useStore = create<RFState>((set, get) => ({
           });
         }
 
-        if (nodeDataSource.type === "statePreparationNode") {
+        if (nodeDataTarget.type === "gateNode") {
+          console.log(nodeDataTarget)
+          if(nodeDataTarget.data.label === "CNOT"&& connection.sourceHandle.includes("Output1")){
+            nodeDataTarget.data.inputs.push({
+              id: nodeDataSource.id,
+              identifiers: [nodeDataSource.data.identifiers[0]]
+            });
+          }
+          else if(nodeDataTarget.label === "CNOT"&& connection.sourceHandle.endsWith("Output2")){
+            nodeDataTarget.data.inputs.push({
+              id: nodeDataSource.id,
+              identifiers: [nodeDataSource.data.identifiers[1]]
+            });
+          } else if(nodeDataTarget.data.label === "Toffoli"&& connection.sourceHandle.includes("Output1")){
+            nodeDataTarget.data.inputs.push({
+              id: nodeDataSource.id,
+              identifiers: [nodeDataSource.data.identifiers[0]]
+            });
+          }
+          else if(nodeDataTarget.label === "Toffoli"&& connection.sourceHandle.endsWith("Output2")){
+            nodeDataTarget.data.inputs.push({
+              id: nodeDataSource.id,
+              identifiers: [nodeDataSource.data.identifiers[1]]
+            });
+          }
+          else if(nodeDataTarget.label === "Toffoli"&& connection.sourceHandle.endsWith("Output3")){
+            nodeDataTarget.data.inputs.push({
+              id: nodeDataSource.id,
+              identifiers: [nodeDataSource.data.identifiers[2]]
+            });
+          }else{
           // Push a new entry
+          console.log("push entry")
           nodeDataTarget.data.inputs.push({
             id: nodeDataSource.id,
-
+            identifiers: nodeDataSource.data.identifiers
           });
         }
-        if (nodeDataSource.type === "arithmeticOperatorNode") {
-          // Push a new entry
+          //nodeDataTarget.data.identifier = nodeDataSource.data.identifier
+        }else{
+          console.log("push entry")
           nodeDataTarget.data.inputs.push({
-            id: nodeDataSource.id
+            id: nodeDataSource.id,
+            identifiers: nodeDataSource.data.identifiers
           });
+
         }
 
         // Push a new entry
@@ -474,7 +516,7 @@ const useStore = create<RFState>((set, get) => ({
             const targetNode = { ...updatedNodes[targetNodeIndex] };
             const targetData = { ...targetNode.data };
             const sourceNode = updatedNodes.find((n) => n.id === edge.source);
-            sourceIdentifier = sourceNode?.data?.identifier;
+            sourceIdentifier = sourceNode?.data?.identifiers;
             console.log("sourceIdentifier");
             console.log(sourceIdentifier)
             const sourceOutputIdentifier = sourceNode?.data?.outputIdentifier;
@@ -487,15 +529,15 @@ const useStore = create<RFState>((set, get) => ({
               if (inputIndex !== -1) {
                 if (targetData.inputs[inputIndex].outputIdentifier === sourceOutputIdentifier) {
                   targetData.inputs[inputIndex].outputIdentifier = nodeVal;
-                  targetData.inputs[inputIndex]["identifier"] = sourceIdentifier;
-                  targetData["identifier"] = sourceIdentifier
+                  targetData.inputs[inputIndex]["identifiers"] = sourceIdentifier;
+                  targetData["identifiers"] = sourceIdentifier
                   reuseQubit = true;
                   console.log(targetData["identifier"])
                 } else {
                   targetData.inputs[inputIndex].outputIdentifier = nodeVal;
-                  targetData.inputs[inputIndex]["identifier"] = sourceIdentifier;
-                  targetData["identifier"] = sourceIdentifier
-                  console.log(targetData["identifier"])
+                  targetData.inputs[inputIndex]["identifiers"] = sourceIdentifier;
+                  targetData["identifiers"] = sourceIdentifier
+                  console.log(targetData["identifiers"])
                   if (nodeVal.includes(sourceOutputIdentifier)) {
                     reuseQubit = true;
                   }
@@ -504,10 +546,10 @@ const useStore = create<RFState>((set, get) => ({
                 targetData.inputs.push({
                   id: nodeId,
                   outputIdentifier: nodeVal,
-                  "identifier": sourceIdentifier,
+                  "identifiers": sourceIdentifier,
                 });
-                targetData["identifier"] = sourceIdentifier
-                console.log(targetData["identifier"])
+                targetData["identifiers"] = sourceIdentifier
+                console.log(targetData["identifiers"])
                 if (nodeVal.includes(sourceOutputIdentifier)) {
                   reuseQubit = true;
                 }
@@ -522,7 +564,7 @@ const useStore = create<RFState>((set, get) => ({
             const targetNode = { ...updatedNodes[targetNodeIndex] };
             const targetData = { ...targetNode.data };
             const sourceNode = updatedNodes.find((n) => n.id === edge.source);
-            sourceIdentifier = sourceNode?.data?.identifier;
+            sourceIdentifier = sourceNode?.data?.identifiers;
             console.log("sourceIdentifier");
             console.log(sourceIdentifier)
             const sourceOutputIdentifier = sourceNode?.data?.outputIdentifier;
@@ -535,13 +577,13 @@ const useStore = create<RFState>((set, get) => ({
               if (inputIndex !== -1) {
                 if (targetData.inputs[inputIndex].outputIdentifier === sourceOutputIdentifier) {
                   targetData.inputs[inputIndex].outputIdentifier = nodeVal;
-                  targetData.inputs[inputIndex]["identifier"] = sourceIdentifier;
+                  targetData.inputs[inputIndex]["identifiers"] = sourceIdentifier;
                   targetData["identifier"] = sourceIdentifier
                   reuseQubit = true;
                   console.log(targetData["identifier"])
                 } else {
                   targetData.inputs[inputIndex].outputIdentifier = nodeVal;
-                  targetData.inputs[inputIndex]["identifier"] = sourceIdentifier;
+                  targetData.inputs[inputIndex]["identifiers"] = sourceIdentifier;
                   targetData["identifier"] = sourceIdentifier
                   console.log(targetData["identifier"])
                   if (nodeVal.includes(sourceOutputIdentifier)) {
@@ -552,10 +594,10 @@ const useStore = create<RFState>((set, get) => ({
                 targetData.inputs.push({
                   id: nodeId,
                   outputIdentifier: nodeVal,
-                  "identifier": sourceIdentifier,
+                  "identifiers": sourceIdentifier,
                 });
-                targetData["identifier"] = sourceIdentifier
-                console.log(targetData["identifier"])
+                targetData["identifiers"] = sourceIdentifier
+                console.log(targetData["identifiers"])
                 if (nodeVal.includes(sourceOutputIdentifier)) {
                   reuseQubit = true;
                 }
@@ -568,8 +610,20 @@ const useStore = create<RFState>((set, get) => ({
       // Update the node's own properties
       updatedNodes = updatedNodes.map((node) => {
         if (node.id === nodeId) {
-          console.log(node.data["identifier"])
-          node.data["identifier"] = sourceIdentifier
+          if(identifier === "width"){
+            console.log("updATE WIDTH")
+            
+            node.width = node.width +500;
+            return {
+              ...node,
+              style: {
+                height: node.height,
+                width: 1000,
+              },
+            };
+          }
+          console.log(node.data["identifiers"])
+          //node.data["identifiers"] = sourceIdentifier
           if (identifier === "parentNode") {
             console.log("update parentnode")
             node.parentNode = nodeVal
