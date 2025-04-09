@@ -302,6 +302,7 @@ const useStore = create<RFState>((set, get) => ({
         nodeDataTarget = node;
       }
     }
+    let label;
     let insertEdge = false;
     //handler type and name
     for (let node of currentNodes) {
@@ -327,6 +328,9 @@ const useStore = create<RFState>((set, get) => ({
       if (node.id === connection.source && connection.sourceHandle.includes("ancillaHandle") && nodeDataTarget.type === "gateNode" && connection.targetHandle.includes("quantumHandle")) {
         insertEdge = true;
       }
+      if (node.id === connection.source && nodeDataSource.type === "gateNode" && nodeDataTarget.type === "gateNode") {
+        label ="1";
+      }
 
     }
     // Überprüfung: Existiert bereits eine Edge zur connection.targetHandle?
@@ -345,6 +349,7 @@ const useStore = create<RFState>((set, get) => ({
         height: 20,
         color: color,
       },
+      label: label
     };
 
     console.log("Updating history (onConnect):");
@@ -426,7 +431,7 @@ const useStore = create<RFState>((set, get) => ({
         //});
       }
 
-
+      console.log(edge);
       set({
         nodes: currentNodes,
         edges: [edge, ...currentEdges],
