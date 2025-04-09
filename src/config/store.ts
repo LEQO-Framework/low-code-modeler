@@ -106,25 +106,25 @@ const useStore = create<RFState>((set, get) => ({
       if (node.data.label === "H") {
         console.log("set Hadanard")
         node.data.implementation = consts.HadamardImplementation;
-        node.data.implementationType="openqasm2";
+        node.data.implementationType = "openqasm2";
       } else if (node.data.label === "X") {
         node.data.implementation = consts.PauliXImplementation;
-        node.data.implementationType="openqasm2";
+        node.data.implementationType = "openqasm2";
       } else if (node.data.label === "Y") {
         node.data.implementation = consts.PauliYImplementation;
-        node.data.implementationType="openqasm2";
+        node.data.implementationType = "openqasm2";
       } else if (node.data.label === "Z") {
         node.data.implementation = consts.PauliZImplementation;
-        node.data.implementationType="openqasm2";
+        node.data.implementationType = "openqasm2";
       } else if (node.data.label === "Toffoli") {
         node.data.implementation = consts.ToffoliImplementation;
         node.data.identifiers.push(uniqueIdentifier2);
         node.data.identifiers.push(uniqueIdentifier3);
-        node.data.implementationType="openqasm2";
+        node.data.implementationType = "openqasm2";
       } else if (node.data.label === "CNOT") {
         node.data.identifiers.push(uniqueIdentifier2);
         node.data.implementation = consts.CnotImplementation;
-        node.data.implementationType="openqasm2";
+        node.data.implementationType = "openqasm2";
       }
     }
 
@@ -329,7 +329,25 @@ const useStore = create<RFState>((set, get) => ({
         insertEdge = true;
       }
       if (node.id === connection.source && nodeDataSource.type === "gateNode" && nodeDataTarget.type === "gateNode") {
-        label ="1";
+        label = "1";
+      }
+      if (node.id === connection.source && nodeDataSource.type === "positionNode") {
+        console.log(nodeDataSource)
+        if (nodeDataSource.data.label === "boolean" || nodeDataSource.data.label === "bit") {
+          label = 1;
+        } else if (nodeDataSource.data.label ==="Array") {
+          let value =  nodeDataSource.data.value.split(',').map(item => Number(item.trim()));
+          console.log(value)
+          // the biggest number requires the most bits
+          let maximum = Math.max(...value);
+          console.log(maximum)
+          let bits = Math.ceil(Math.log2(maximum));
+          label = bits;
+        }else {
+          let value = nodeDataSource.data.value;
+          let bits = Math.ceil(Math.log2(value));
+          label = bits;
+        }
       }
 
     }
@@ -378,44 +396,44 @@ const useStore = create<RFState>((set, get) => ({
 
         if (nodeDataTarget.type === "gateNode") {
           console.log(nodeDataTarget)
-          if(nodeDataTarget.data.label === "CNOT"&& connection.sourceHandle.includes("Output1")){
+          if (nodeDataTarget.data.label === "CNOT" && connection.sourceHandle.includes("Output1")) {
             nodeDataTarget.data.inputs.push({
               id: nodeDataSource.id,
               identifiers: [nodeDataSource.data.identifiers[0]]
             });
           }
-          else if(nodeDataTarget.label === "CNOT"&& connection.sourceHandle.endsWith("Output2")){
+          else if (nodeDataTarget.label === "CNOT" && connection.sourceHandle.endsWith("Output2")) {
             nodeDataTarget.data.inputs.push({
               id: nodeDataSource.id,
               identifiers: [nodeDataSource.data.identifiers[1]]
             });
-          } else if(nodeDataTarget.data.label === "Toffoli"&& connection.sourceHandle.includes("Output1")){
+          } else if (nodeDataTarget.data.label === "Toffoli" && connection.sourceHandle.includes("Output1")) {
             nodeDataTarget.data.inputs.push({
               id: nodeDataSource.id,
               identifiers: [nodeDataSource.data.identifiers[0]]
             });
           }
-          else if(nodeDataTarget.label === "Toffoli"&& connection.sourceHandle.endsWith("Output2")){
+          else if (nodeDataTarget.label === "Toffoli" && connection.sourceHandle.endsWith("Output2")) {
             nodeDataTarget.data.inputs.push({
               id: nodeDataSource.id,
               identifiers: [nodeDataSource.data.identifiers[1]]
             });
           }
-          else if(nodeDataTarget.label === "Toffoli"&& connection.sourceHandle.endsWith("Output3")){
+          else if (nodeDataTarget.label === "Toffoli" && connection.sourceHandle.endsWith("Output3")) {
             nodeDataTarget.data.inputs.push({
               id: nodeDataSource.id,
               identifiers: [nodeDataSource.data.identifiers[2]]
             });
-          }else{
-          // Push a new entry
-          console.log("push entry")
-          nodeDataTarget.data.inputs.push({
-            id: nodeDataSource.id,
-            identifiers: nodeDataSource.data.identifiers
-          });
-        }
+          } else {
+            // Push a new entry
+            console.log("push entry")
+            nodeDataTarget.data.inputs.push({
+              id: nodeDataSource.id,
+              identifiers: nodeDataSource.data.identifiers
+            });
+          }
           //nodeDataTarget.data.identifier = nodeDataSource.data.identifier
-        }else{
+        } else {
           console.log("push entry")
           nodeDataTarget.data.inputs.push({
             id: nodeDataSource.id,
@@ -615,10 +633,10 @@ const useStore = create<RFState>((set, get) => ({
       // Update the node's own properties
       updatedNodes = updatedNodes.map((node) => {
         if (node.id === nodeId) {
-          if(identifier === "width"){
+          if (identifier === "width") {
             console.log("updATE WIDTH")
-            
-            node.width = node.width +500;
+
+            node.width = node.width + 500;
             return {
               ...node,
               style: {

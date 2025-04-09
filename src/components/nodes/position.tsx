@@ -137,7 +137,7 @@ export const PositionNode = memo((node: Node) => {
                 <option value="0">0</option>
                 <option value="1">1</option>
               </select>
-            ) : data.dataType === "array" ? (
+            ) : data.dataType === "Array" ? (
               <input
                 ref={xRef}
                 id="x"
