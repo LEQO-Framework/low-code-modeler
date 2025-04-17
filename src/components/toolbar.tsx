@@ -29,7 +29,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
   sendToBackend,
 }) => {
   return (
-    <div className="flex items-center justify-between bg-gray-100 p-4 border-b border-gray-300">
+    <div className="flex items-center justify-between bg-gray-100 p-4 border-b border-gray-300 h-[56px]">
       <div className="space-x-2 flex">
         <Button size="sm" onClick={onLoadJson}>
           <FilePlus className="w-4 h-4 mr-2" /> New Diagram

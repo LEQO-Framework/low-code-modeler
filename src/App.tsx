@@ -11,7 +11,7 @@ import ReactFlow, {
   getNodesBounds
 } from "reactflow";
 import "reactflow/dist/style.css";
-import { Panel, Palette} from "./components";
+import { Panel, Palette } from "./components";
 import Toolbar from "./components/toolbar";
 import { nodesConfig } from "./config/site";
 import useStore from "./config/store";
@@ -22,6 +22,8 @@ import { toSvg } from "html-to-image";
 import { initialDiagram } from "./config/site";
 import Modal from "./Modal";
 import './index.css';
+import { useStoreState } from "react-flow-renderer";
+import { useInternalNode } from "@xyflow/react";
 
 
 const selector = (state: {
@@ -188,7 +190,7 @@ function App() {
 
 
   const onNodeDragStop = useCallback(
-    
+
 
     /**
      * 
@@ -213,7 +215,7 @@ function App() {
       let nodeT = nodes[0];
       nodes.forEach((nd) => {
         // Check if there's a group node in the array of nodes on the screen
-        if (nd.type === "statePreparationNode") {
+        if (nd.type === "controlStructureNode") {
           //safety check to make sure there's a height and width
           console.log(node);
           console.log(nd.id);
@@ -229,15 +231,22 @@ function App() {
             if (!node.parentNode) {
               console.log("update node")
               node.parentNode = nd.id;
+              // node cannot be moved outside parent
               node.extent = "parent";
+              node.expandParent = true;
 
               node.position = {
                 x: node.positionAbsolute.x - nd.position.x,
                 y: node.positionAbsolute.y - nd.position.y,
               };
+
+              updateNodeValue(node.id, "width", "")
               console.log(node);
+              //intersectionNodes[0].width = 1000;
               nodeT = node;
-              updateParent(node.id, nd.id, node.position);
+              //updateParent(node.id, nd.id, node.position);
+
+
               //updateNodeValue(node.id, "position", node.position);
             }
           }
@@ -255,6 +264,7 @@ function App() {
       }));
 
       handleOnDrop(event, reactFlowWrapper, reactFlowInstance, setNodes);
+
     },
     [reactFlowInstance, setNodes],
   );
@@ -408,19 +418,19 @@ function App() {
   const isValidConnection = useCallback(
     (connection) => {
       console.log("isValid")
- 
+
       const target = nodes.find((node) => node.id === connection.target);
       const hasCycle = (node, visited = new Set()) => {
         if (visited.has(node.id)) return false;
- 
+
         visited.add(node.id);
- 
+
         for (const outgoer of getOutgoers(node, nodes, edges)) {
           if (outgoer.id === connection.source) return true;
           if (hasCycle(outgoer, visited)) return true;
         }
       };
- 
+
       if (target.id === connection.source) return false;
       return !hasCycle(target);
     },
@@ -485,7 +495,7 @@ function App() {
     console.log(node.position.x);
     console.log(helperLines)
     console.log(event.clientX)
-    
+
     let verticalLine = null;
     let horizontalLine = null;
 
@@ -496,52 +506,52 @@ function App() {
     const { x, y, zoom } = reactFlowInstance.getViewport();
     console.log(x);
     console.log(y);
-      const snapThreshold = 0; // Adjust threshold for snapping
-      console.log(ref.current?.getBoundingClientRect())
+    const snapThreshold = 0; // Adjust threshold for snapping
+    console.log(ref.current?.getBoundingClientRect())
     const boundingRect = ref.current?.getBoundingClientRect()
     const cneter = reactFlowInstance.screenToFlowPosition({
       x: boundingRect.x + boundingRect.width,
       y: boundingRect.y + boundingRect.height
     })
     console.log(cneter)
-    const screenY = reactFlowInstance.flowToScreenPosition({x:node.position.x, y: node.position.y});
+    const screenY = reactFlowInstance.flowToScreenPosition({ x: node.position.x, y: node.position.y });
     console.log(screenY);
     console.log(reactFlowInstance.getZoom())
 
-      // Find closest nodes for alignment
-      currentNodes.forEach((otherNode) => {
-        if (otherNode.id === node.id) return;
+    // Find closest nodes for alignment
+    currentNodes.forEach((otherNode) => {
+      if (otherNode.id === node.id) return;
 
-        // Check for horizontal alignment
-        if (Math.abs(node.position.y - otherNode.position.y) === snapThreshold) {
-          console.log("horizontalLine")
-          const screen = reactFlowInstance.flowToScreenPosition({x:node.position.x, y: node.position.y});
-          console.log(screen);
-          horizontalLine = screen.y -70;
-        }
-      });
-    
-      // Only update helperLines if there's alignment
-    if (verticalLine !== null ){
+      // Check for horizontal alignment
+      if (Math.abs(node.position.y - otherNode.position.y) === snapThreshold) {
+        console.log("horizontalLine")
+        const screen = reactFlowInstance.flowToScreenPosition({ x: node.position.x, y: node.position.y });
+        console.log(screen);
+        horizontalLine = screen.y - 70;
+      }
+    });
+
+    // Only update helperLines if there's alignment
+    if (verticalLine !== null) {
       setHelperLines({
         x: verticalLine,
         y: null
       });
     }
-    if(horizontalLine !== null) {
-      
+    if (horizontalLine !== null) {
+
       setHelperLines({
         x: null,
         y: horizontalLine
       });
-    } 
-    if(horizontalLine === null && verticalLine === null) {
-      
+    }
+    if (horizontalLine === null && verticalLine === null) {
+
       setHelperLines({
         x: null,
         y: null
       });
-    } 
+    }
     console.log(helperLines)
     console.log(node.position.x)
 
@@ -677,20 +687,20 @@ function App() {
         </div>
       </Modal>
 
-      <main className="flex flex-col lg:flex-row h-screen overflow-hidden">
-        <div className="relative flex h-full border-gray-200 border">
+      <main className="flex flex-col lg:flex-row h-[calc(100vh_-_60px)]  overflow-hidden">
+        <div className="relative flex h-[calc(100vh_-_60px)]  border-gray-200 border">
           <div
             className={`transition-all duration-300 ${isPaletteOpen ? "w-[300px] lg:w-[350px]" : "w-0 overflow-hidden"}`}
           >
             {isPaletteOpen && <Palette />}
           </div>
-      
+
 
         </div>
-    
+
 
         <div
-          className="h-[calc(100vh_-_48px)] flex-grow"
+          className="h-[calc(100vh_-_60px)] flex-grow"
           ref={reactFlowWrapper}
         >
           <ReactFlow
@@ -754,19 +764,18 @@ function App() {
           </ReactFlow>
         </div>
 
-        <div className="relative flex bg-gray-100 h-full border-gray-200 border">
+        <div className="relative flex bg-gray-100 h-[calc(100vh_-_60px)]  border-gray-200 border">
 
           <div
             className={`transition-all duration-300 ${isPanelOpen ? "w-[300px] lg:w-[350px]" : "w-0 overflow-hidden"}`}
           >
 
-         
+
 
             {isPanelOpen && <Panel metadata={metadata} onUpdateMetadata={setMetadata} />}
           </div>
         </div>
 
-   
 
 
       </main>
