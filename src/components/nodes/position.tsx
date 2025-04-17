@@ -118,7 +118,7 @@ export const PositionNode = memo((node: Node) => {
               <select
                 ref={xRef}
                 id="x"
-                className="p-1 text-black opacity-75 text-sm rounded-full w-20 text-center border-2 bg-white border-orange-300"
+                className="input-classical-focus p-1 text-black opacity-75 text-sm rounded-full w-20 text-center border-2 bg-white border-orange-300 focus:border-orange-500"
                 value={node.data.value || x}
                 onChange={handleBooleanChange}
               >
@@ -130,7 +130,7 @@ export const PositionNode = memo((node: Node) => {
               <select
                 ref={xRef}
                 id="x"
-                className="p-1 text-black opacity-75 text-sm rounded-full w-20 text-center border-2 bg-white border-orange-300"
+                className="input-classical-focus p-1 text-black opacity-75 text-sm rounded-full w-20 text-center border-2 bg-white border-orange-300 focus:border-orange-500"
                 value={node.data.value || x}
                 onChange={handleBitChange}
               >
@@ -142,7 +142,11 @@ export const PositionNode = memo((node: Node) => {
                 ref={xRef}
                 id="x"
                 type="text"
-                className={`p-1 text-black opacity-75 text-sm rounded-full w-24 text-center border-2 ${error ? 'bg-red-500 border-red-500' : 'bg-white border-orange-300'}`}
+                className={`input-classical-focus p-1 text-black opacity-75 text-sm rounded-full w-24 text-center border-2 transition-all duration-200 ${
+                  error
+                    ? 'bg-red-500 border-red-500'
+                    : 'bg-white border-orange-300'
+                }`}
                 value={node.data.value || x}
                 placeholder="1,2,3"
                 onChange={handleArrayChange}
@@ -152,7 +156,7 @@ export const PositionNode = memo((node: Node) => {
                 ref={xRef}
                 id="x"
                 type="number"
-                className={`p-1 text-black opacity-75 text-sm rounded-full w-20 text-center border-2 ${error ? 'bg-red-500 border-red-500' : 'bg-white border-orange-300'}`}
+                className={`input-classical-focus p-1 text-black opacity-75 text-sm rounded-full w-20 text-center border-2 ${error ? 'bg-red-500 border-red-500' : 'bg-white border-orange-300'}`}
                 value={node.data.value || x}
                 placeholder="0"
                 step={data.dataType === "int" ? 1 : data.dataType === "float" ? 0.1 : 1}

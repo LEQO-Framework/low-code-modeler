@@ -146,6 +146,12 @@ h1 {
   font-size: 19px !important;
   text-align: left;
 }
+
+.input-classical-focus:focus {
+  border: 2px solid rgb(255, 132, 0);
+  outline: none;
+}
+
 /* ======== Table Layout ======== */
 .config-table {
   width: 100%;
