@@ -93,21 +93,20 @@ export const GateNode = memo((node: Node) => {
             )}
 
 
-<div
-  className={`absolute ${
-    data.label === "Qubit" ? "top-[48%]" : "top-[50%]"
-  } -translate-x-1/2 -translate-y-1/2 text-center font-bold`}
->
-  {data.label === "Qubit" ? (
-    "|0⟩"
-  ) : data.label === "CNOT" ? (
-    <img src="/cnot.png" alt="CNOT gate" className="w-5 h-15" />
-  ) : data.label === "Toffoli" ? (
-    <img src="/toffoli.png" alt="Toffoli gate" className="w-6 h-16" />
-  ) : (
-    data.label
-  )}
-</div>
+            <div
+              className={`absolute ${data.label === "Qubit" ? "top-[48%]" : "top-[50%]"
+                } -translate-x-1/2 -translate-y-1/2 text-center font-bold`}
+            >
+              {data.label === "Qubit" ? (
+                "|0⟩"
+              ) : data.label === "CNOT" ? (
+                <img src="/cnot.png" alt="CNOT gate" className="w-5 h-15" />
+              ) : data.label === "Toffoli" ? (
+                <img src="/toffoli.png" alt="Toffoli gate" className="w-6 h-16" />
+              ) : (
+                data.label
+              )}
+            </div>
 
 
 

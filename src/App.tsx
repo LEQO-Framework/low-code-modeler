@@ -614,27 +614,30 @@ function App() {
           sendToBackend={sendToBackend}
         />
       </div>
-      <Modal open={isLoadJsonModalOpen} onClose={cancelLoadJson}>
+      <Modal title={"New Diagram"} open={isLoadJsonModalOpen} onClose={cancelLoadJson} footer={
+        <div className="flex justify-end space-x-2">
+          <button className="btn btn-primary" onClick={confirmLoadJson}>Yes</button>
+          <button className="btn btn-secondary" onClick={cancelLoadJson}>Cancel</button>
+        </div>
+      }>
         <div>
-          <h2 className="text-lg font-semibold">New Diagram</h2>
           <p>Are you sure you want to create a new model? This will overwrite the current flow.</p>
-          <div className="flex justify-end space-x-2 mt-4">
-            <button className="btn btn-primary" onClick={confirmLoadJson}>Yes</button>
-            <button className="btn btn-secondary" onClick={cancelLoadJson}>Cancel</button>
-
-          </div>
         </div>
       </Modal>
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)}>
+      <Modal title={"Send Request"} open={modalOpen} onClose={() => setModalOpen(false)}>
         <div>
           <h2>Processing</h2>
           {loading ? <p>Loading...</p> : <p>Status: {status?.status || "Unknown"}</p>}
         </div>
       </Modal>
-      <Modal open={isConfigOpen} onClose={() => { setIsConfigOpen(false) }}>
+      <Modal title={"Configuration"} open={isConfigOpen} onClose={() => { setIsConfigOpen(false) }} footer={
+        <div className="flex justify-end space-x-2">
+          <button className="btn btn-primary" onClick={() => { setIsConfigOpen(false) }}>Save</button>
+          <button className="btn btn-secondary" onClick={() => { setIsConfigOpen(false) }}>Cancel</button>
+        </div>
+      }>
         <div>
-          <h2 className="text-lg font-semibold">Config Modal</h2>
-          <h3>NISQ Analyzer</h3>
+          <h3 className="labels">NISQ Analyzer</h3>
           <table className="config-table">
             <tbody>
               <tr>
@@ -651,7 +654,7 @@ function App() {
             </tbody>
           </table>
 
-          <h3>Qunicorn</h3>
+          <h3 className="labels">Qunicorn</h3>
           <table className="config-table">
             <tbody>
               <tr>
@@ -668,7 +671,7 @@ function App() {
             </tbody>
           </table>
 
-          <h3>Low-Code Backend:</h3>
+          <h3 className="labels">Low-Code Backend:</h3>
           <table className="config-table">
             <tbody>
               <tr>
