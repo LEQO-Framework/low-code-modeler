@@ -106,25 +106,34 @@ const useStore = create<RFState>((set, get) => ({
       if (node.data.label === "H") {
         console.log("set Hadanard")
         node.data.implementation = consts.HadamardImplementation;
-        node.data.implementationType = "openqasm2";
+        node.data.implementationType = "openqasm3";
       } else if (node.data.label === "X") {
         node.data.implementation = consts.PauliXImplementation;
-        node.data.implementationType = "openqasm2";
+        node.data.implementationType = "openqasm3";
       } else if (node.data.label === "Y") {
         node.data.implementation = consts.PauliYImplementation;
-        node.data.implementationType = "openqasm2";
+        node.data.implementationType = "openqasm3";
       } else if (node.data.label === "Z") {
         node.data.implementation = consts.PauliZImplementation;
-        node.data.implementationType = "openqasm2";
+        node.data.implementationType = "openqasm3";
       } else if (node.data.label === "Toffoli") {
         node.data.implementation = consts.ToffoliImplementation;
         node.data.identifiers.push(uniqueIdentifier2);
         node.data.identifiers.push(uniqueIdentifier3);
-        node.data.implementationType = "openqasm2";
+        node.data.implementationType = "openqasm3";
       } else if (node.data.label === "CNOT") {
         node.data.identifiers.push(uniqueIdentifier2);
         node.data.implementation = consts.CnotImplementation;
-        node.data.implementationType = "openqasm2";
+        node.data.implementationType = "openqasm3";
+      }else if (node.data.label.includes("RX")) {
+        node.data.implementation = consts.RXImplementation;
+        node.data.implementationType = "openqasm3";
+      }else if (node.data.label.includes("RY")) {
+        node.data.implementation = consts.RYImplementation;
+        node.data.implementationType = "openqasm3";
+      }else if (node.data.label.includes("RZ")) {
+        node.data.implementation = consts.RZImplementation;
+        node.data.implementationType = "openqasm3";
       }
     }
 
