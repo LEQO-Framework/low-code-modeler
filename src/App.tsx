@@ -80,6 +80,11 @@ function App() {
   const [nisqAnalyzerEndpoint, setNisqAnalyzerEndpoint] = useState(import.meta.env.VITE_NISQ_ANALYZER);
   const [qunicornEndpoint, setQunicornEndpoint] = useState(import.meta.env.VITE_QUNICORN);
   const [lowcodeBackendEndpoint, setLowcodeBackendEndpoint] = useState(import.meta.env.VITE_LOW_CODE_BACKEND);
+
+  const [tempNisqAnalyzerEndpoint, setTempNisqAnalyzerEndpoint] = useState(nisqAnalyzerEndpoint);
+  const [tempQunicornEndpoint, setTempQunicornEndpoint] = useState(qunicornEndpoint);
+  const [tempLowcodeBackendEndpoint, setTempLowcodeBackendEndpoint] = useState(lowcodeBackendEndpoint);
+
   const [isLoadJsonModalOpen, setIsLoadJsonModalOpen] = useState(false);
   const [isPaletteOpen, setIsPaletteOpen] = useState(true);
   const [chartData, setChartData] = useState(null);
@@ -103,6 +108,22 @@ function App() {
     setIsLoadJsonModalOpen(false);
     loadFlow(initialDiagram);
   };
+
+  const handleSave = () => {
+    setNisqAnalyzerEndpoint(tempNisqAnalyzerEndpoint);
+    setLowcodeBackendEndpoint(tempLowcodeBackendEndpoint);
+    setQunicornEndpoint(tempQunicornEndpoint);
+    setIsConfigOpen(false);
+
+  };
+
+  const handleCancel = () => {
+    setTempNisqAnalyzerEndpoint(nisqAnalyzerEndpoint);
+    setTempQunicornEndpoint(qunicornEndpoint);
+    setTempLowcodeBackendEndpoint(lowcodeBackendEndpoint);
+    setIsConfigOpen(false);
+  };
+
 
   const cancelLoadJson = () => {
     setIsLoadJsonModalOpen(false);
@@ -772,10 +793,10 @@ function App() {
           {loading ? <p>Loading...</p> : <p>Status: {status?.status || "Unknown"}</p>}
         </div>
       </Modal>
-      <Modal title={"Configuration"} open={isConfigOpen} onClose={() => { setIsConfigOpen(false) }} footer={
+      <Modal title={"Configuration"} open={isConfigOpen} onClose={() => { handleCancel() }} footer={
         <div className="flex justify-end space-x-2">
-          <button className="btn btn-primary" onClick={() => { setIsConfigOpen(false) }}>Save</button>
-          <button className="btn btn-secondary" onClick={() => { setIsConfigOpen(false) }}>Cancel</button>
+          <button className="btn btn-primary" onClick={() => { handleSave() }}>Save</button>
+          <button className="btn btn-secondary" onClick={() => { handleCancel() }}>Cancel</button>
         </div>
       }>
         <div>
@@ -788,8 +809,8 @@ function App() {
                   <input
                     className="qwm-input"
                     type="text"
-                    value={nisqAnalyzerEndpoint}
-                    onChange={(event) => setNisqAnalyzerEndpoint(event.target.value)}
+                    value={tempNisqAnalyzerEndpoint}
+                    onChange={(event) => setTempNisqAnalyzerEndpoint(event.target.value)}
                   />
                 </td>
               </tr>
@@ -805,8 +826,8 @@ function App() {
                   <input
                     className="qwm-input"
                     type="text"
-                    value={qunicornEndpoint}
-                    onChange={(event) => setQunicornEndpoint(event.target.value)}
+                    value={tempQunicornEndpoint}
+                    onChange={(event) => setTempQunicornEndpoint(event.target.value)}
                   />
                 </td>
               </tr>
@@ -822,8 +843,8 @@ function App() {
                   <input
                     className="qwm-input"
                     type="text"
-                    value={lowcodeBackendEndpoint}
-                    onChange={(event) => setLowcodeBackendEndpoint(event.target.value)}
+                    value={tempLowcodeBackendEndpoint}
+                    onChange={(event) => setTempLowcodeBackendEndpoint(event.target.value)}
                   />
                 </td>
               </tr>
