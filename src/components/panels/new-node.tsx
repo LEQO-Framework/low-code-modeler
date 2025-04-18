@@ -33,7 +33,7 @@ export const AddNodePanel = () => {
     : [];
 
   return (
-    <div className="h-screen w-full bg-gray-100 overflow-hidden">
+    <div className="h-[calc(100vh_-_60px)] w-full bg-gray-100 overflow-hidden">
       <aside className="flex flex-col w-full h-full overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
         
         <input
