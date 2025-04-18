@@ -24,7 +24,7 @@ export const GateNode = memo((node: Node) => {
 
   return (
     <div className="grand-parent">
-      <div className="w-[100px] h-[100px] rounded-none bg-white overflow-hidden border border-solid border-gray-700 shadow-md bg-blue-100">
+      <div className="w-[100px] h-[100px] rounded-none overflow-hidden border border-solid border-gray-700 shadow-md bg-blue-100">
         <div className="px-2 py-3 flex justify-center bg-blue-100">
           <div className="flex items-center bg-blue-100">
             {!isTwoQubit && !isThreeQubit && !isQubit && (
