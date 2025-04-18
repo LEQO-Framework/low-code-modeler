@@ -83,6 +83,8 @@ function App() {
   const [isLoadJsonModalOpen, setIsLoadJsonModalOpen] = useState(false);
   const [isPaletteOpen, setIsPaletteOpen] = useState(true);
   const [chartData, setChartData] = useState(null);
+  const [progress, setProgress] = useState(0);
+  const [jobId, setJobId] = useState(null);
 
   const togglePalette = () => {
     setIsPaletteOpen((prev) => !prev);
@@ -151,6 +153,10 @@ function App() {
       setModalStep(modalStep + 1);
     } else {
       setModalStep(0); // or false if you want to hide all modals at the end
+      setChartData(null);
+      setJobId(null);
+      setDeploymentId(null);
+      setProgress(0);
     }
   };
 
@@ -195,6 +201,7 @@ function App() {
   const sendToQunicorn = async () => {
     setModalStep(1);
     setLoading(true);
+    
 
     try {
       let program = {
@@ -250,7 +257,8 @@ function App() {
 
       let data = await response.json();
       console.log(data);
-      handleClose();
+      setJobId(data["self"]);
+      //handleClose();
       //pollStatus(response["Location"]);
     } catch (error) {
       console.error("Error sending data:", error);
@@ -261,46 +269,29 @@ function App() {
   const sendToQunicorn3 = async () => {
     setModalStep(3);
     setLoading(true);
+    setProgress(0);
 
     try {
-      let program = {
-        "name": "JobName",
-        "providerName": "IBM",
-        "deviceName": "aer_simulator",
-        "shots": 1024,
-        "errorMitigation": "none",
-        "cutToWidth": null,
-        "token": "",
-        "type": "RUNNER",
-        "deploymentId": deploymentId
-      }
 
-      let response = await fetch("http://localhost:8080/jobs/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(program),
-      });
-
-      let data = await response.json();
-      console.log(data["self"]);
-
-      let getresponse = await fetch("http://localhost:8080" + data["self"], {
+      let getresponse = await fetch("http://localhost:8080" + jobId, {
         method: "GET",
         headers: { "Content-Type": "application/json" },
 
       });
+      setProgress(5);
 
       let getdata = await getresponse.json();
       console.log(getdata);
-      while (getdata["state"] !== "FINISHED") {
-        let getresponse = await fetch("http://localhost:8080" + data["self"], {
+      while (getdata["state"] !== "FINISHED" && progress < 100) {
+        let getresponse = await fetch("http://localhost:8080" + jobId, {
           method: "GET",
           headers: { "Content-Type": "application/json" },
         });
 
         getdata = await getresponse.json();
-
+        setProgress(progress +20);
       }
+      setProgress(100);
       console.log(getdata.results[1])
       let counts = getdata.results[1].data;
       console.log(counts)
@@ -844,37 +835,54 @@ function App() {
         title={"Qunicorn Deployment (1/2)"}
         open={modalStep === 1}
         onClose={handleClose}
+        footer={
+          <div className="flex justify-end space-x-2">
+            <button className="btn btn-primary" onClick={() => { handleClose() }}>Deploy</button>
+            <button className="btn btn-secondary" onClick={() => { setModalStep(0) }}>Cancel</button>
+          </div>
+        }
       >
         <div>
-          <h2>Processing</h2>
-          {loading ? <p>Loading...</p> : <p>Status: {status?.status || "Unknown"}</p>}
+          In the first step, the QASM of the model is deployed to Qunicorn.
+          Qunicorn serves as a unification layer to allow the unified execution across hetegerogeneous quantum cloud offerings such as IBM and AWS.
         </div>
       </Modal>
 
       <Modal
         title={"Qunicorn Deployment (2/2)"}
         open={modalStep === 2}
-        onClose={sendToQunicorn2}
+        onClose={() => setModalStep(0)}
+        footer={
+          <div className="flex justify-end space-x-2">
+            <button className="btn btn-primary" onClick={() => { sendToQunicorn2(); handleClose(); }}>Create</button>
+            <button className="btn btn-secondary" onClick={() => { setModalStep(0) }}>Cancel</button>
+          </div>
+        }
       >
         <div>
-          <h2>Processing</h2>
-          {loading ? <p>Loading...</p> : <p>Status: {status?.status || "Unknown"}</p>}
+          In the next step, a job is created which can be executed on a quantum device.
         </div>
       </Modal>
 
       <Modal
         title={"Qunicorn Result"}
         open={modalStep === 3}
-        onClose={sendToQunicorn3}
+        onClose={() => setModalStep(0)}
+        footer={
+          <div className="flex justify-end space-x-2">
+            <button className="btn btn-primary" onClick={() => { sendToQunicorn3() }}>Execute</button>
+            <button className="btn btn-secondary" onClick={() => { setModalStep(0) }}>Cancel</button>
+          </div>
+        }
       >
-        <div>
-          <h2>Processing</h2>
-          {loading ? <p>Loading...</p> : <p>Status: {status?.status || "Unknown"}</p>}
 
-          <ResponsiveContainer width="100%" height={300}>
+        <div>
+          The job is executed on the aer_qasm_simulator with 1024 shots.
+          
+          {chartData && progress === 100&& <ResponsiveContainer width="100%" height={300}>
             <BarChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="register" label={{ value: "Register", position: "insideBottom" , offset: 5}} />
+              <XAxis dataKey="register" label={{ value: "Register", position: "insideBottom", offset: 5 }} />
               <YAxis domain={[0, 100]} label={{
                 value: "Probabilities",
                 angle: -90,
@@ -883,7 +891,11 @@ function App() {
               <Tooltip />
               <Bar dataKey="value" fill="#8884d8" />
             </BarChart>
-          </ResponsiveContainer>
+          </ResponsiveContainer>}
+          <div style={{ marginTop: "20px" }}>
+            <progress value={progress} max={100} style={{ width: "100%" }} />
+            <p>{progress}%</p>
+          </div>
         </div>
 
       </Modal>
