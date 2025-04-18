@@ -18,6 +18,7 @@ interface ToolbarProps {
   onOpenConfig: () => void;
   onLoadJson: () => void;
   sendToBackend:()=> void;
+  sendToQunicorn:()=> void;
 }
 
 const Toolbar: React.FC<ToolbarProps> = ({
@@ -27,6 +28,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
   onOpenConfig,
   onLoadJson,
   sendToBackend,
+  sendToQunicorn
 }) => {
   return (
     <div className="flex items-center justify-between bg-gray-100 p-4 border-b border-gray-300 h-[56px]">
@@ -52,7 +54,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
         <Button size="sm" onClick={sendToBackend}>
           <Send className="w-4 h-4 mr-2" /> Send to Backend
         </Button>
-        <Button size="sm" onClick={onSaveAsSVG}>
+        <Button size="sm" onClick={sendToQunicorn}>
           <img src="/qunicorn.jfif" className="w-5 h-5 mr-2" />
           Send to Qunicorn
         </Button>

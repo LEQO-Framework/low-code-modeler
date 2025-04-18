@@ -24,6 +24,16 @@ import Modal from "./Modal";
 import './index.css';
 import { useStoreState } from "react-flow-renderer";
 import { useInternalNode } from "@xyflow/react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  ResponsiveContainer,
+} from "recharts";
+
 
 
 const selector = (state: {
@@ -72,6 +82,7 @@ function App() {
   const [lowcodeBackendEndpoint, setLowcodeBackendEndpoint] = useState(import.meta.env.VITE_LOW_CODE_BACKEND);
   const [isLoadJsonModalOpen, setIsLoadJsonModalOpen] = useState(false);
   const [isPaletteOpen, setIsPaletteOpen] = useState(true);
+  const [chartData, setChartData] = useState(null);
 
   const togglePalette = () => {
     setIsPaletteOpen((prev) => !prev);
@@ -95,6 +106,7 @@ function App() {
     setIsLoadJsonModalOpen(false);
   };
   const [helperLines, setHelperLines] = useState(null);
+  const [deploymentId, setDeploymentId] = useState(null);
 
 
   const {
@@ -130,6 +142,17 @@ function App() {
   const [modalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState(null);
+  const [modalStep, setModalStep] = useState(0);
+  const [loadingQunicorn, setLoadingQunicorn] = useState(true);
+  const [statusQunicorn, setStatusQunicorn] = useState(null);
+
+  const handleClose = () => {
+    if (modalStep < 3) {
+      setModalStep(modalStep + 1);
+    } else {
+      setModalStep(0); // or false if you want to hide all modals at the end
+    }
+  };
 
   const sendToBackend = async () => {
     setModalOpen(true);
@@ -162,6 +185,132 @@ function App() {
           error: "Received invalid response from Low Code Backend.",
         };
       }
+      //pollStatus(response["Location"]);
+    } catch (error) {
+      console.error("Error sending data:", error);
+      setLoading(false);
+    }
+  };
+
+  const sendToQunicorn = async () => {
+    setModalStep(1);
+    setLoading(true);
+
+    try {
+      let program = {
+        "programs": [
+          {
+            "quantumCircuit": "OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[2];\ncreg meas[2];\nh q[0];\ncx q[0],q[1];\nbarrier q[0],q[1];\nmeasure q[0] -> meas[0];\nmeasure q[1] -> meas[1];",
+            "assemblerLanguage": "QASM2",
+            "pythonFilePath": "",
+            "pythonFileMetadata": ""
+          }
+        ],
+        "name": "DeploymentName"
+      };
+
+      let response = await fetch("http://localhost:8080/deployments/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(program),
+      });
+
+      let data = await response.json();
+      console.log(data["id"]);
+      setDeploymentId(data["id"]);
+      //pollStatus(response["Location"]);
+    } catch (error) {
+      console.error("Error sending data:", error);
+      setLoading(false);
+    }
+  };
+
+  const sendToQunicorn2 = async () => {
+    setModalStep(2);
+    setLoading(true);
+
+    try {
+      let program = {
+        "name": "JobName",
+        "providerName": "IBM",
+        "deviceName": "aer_simulator",
+        "shots": 4000,
+        "errorMitigation": "none",
+        "cutToWidth": null,
+        "token": "",
+        "type": "RUNNER",
+        "deploymentId": deploymentId
+      }
+
+      let response = await fetch("http://localhost:8080/jobs/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(program),
+      });
+
+      let data = await response.json();
+      console.log(data);
+      handleClose();
+      //pollStatus(response["Location"]);
+    } catch (error) {
+      console.error("Error sending data:", error);
+      setLoading(false);
+    }
+  };
+
+  const sendToQunicorn3 = async () => {
+    setModalStep(3);
+    setLoading(true);
+
+    try {
+      let program = {
+        "name": "JobName",
+        "providerName": "IBM",
+        "deviceName": "aer_simulator",
+        "shots": 1024,
+        "errorMitigation": "none",
+        "cutToWidth": null,
+        "token": "",
+        "type": "RUNNER",
+        "deploymentId": deploymentId
+      }
+
+      let response = await fetch("http://localhost:8080/jobs/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(program),
+      });
+
+      let data = await response.json();
+      console.log(data["self"]);
+
+      let getresponse = await fetch("http://localhost:8080" + data["self"], {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+
+      });
+
+      let getdata = await getresponse.json();
+      console.log(getdata);
+      while (getdata["state"] !== "FINISHED") {
+        let getresponse = await fetch("http://localhost:8080" + data["self"], {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        });
+
+        getdata = await getresponse.json();
+
+      }
+      console.log(getdata.results[1])
+      let counts = getdata.results[1].data;
+      console.log(counts)
+      const chartData = Object.entries(counts || {}).map(([key, value]) => ({
+        register: key,
+        value: Number(value) * 100,
+      }));
+      setChartData(chartData);
+
+      //handleClose();
       //pollStatus(response["Location"]);
     } catch (error) {
       console.error("Error sending data:", error);
@@ -573,6 +722,7 @@ function App() {
   }, [setMenu, setSelectedNode]);
 
   const handleOpenConfig = () => setIsConfigOpen(true);
+
   const handleCloseConfig = () => setIsConfigOpen(false);
   const handleSaveConfig = (config: {
     patternRepo: string;
@@ -612,6 +762,7 @@ function App() {
           onOpenConfig={handleOpenConfig}
           onLoadJson={handleLoadJson}
           sendToBackend={sendToBackend}
+          sendToQunicorn={sendToQunicorn}
         />
       </div>
       <Modal title={"New Diagram"} open={isLoadJsonModalOpen} onClose={cancelLoadJson} footer={
@@ -688,6 +839,53 @@ function App() {
             </tbody>
           </table>
         </div>
+      </Modal>
+      <Modal
+        title={"Qunicorn Deployment (1/2)"}
+        open={modalStep === 1}
+        onClose={handleClose}
+      >
+        <div>
+          <h2>Processing</h2>
+          {loading ? <p>Loading...</p> : <p>Status: {status?.status || "Unknown"}</p>}
+        </div>
+      </Modal>
+
+      <Modal
+        title={"Qunicorn Deployment (2/2)"}
+        open={modalStep === 2}
+        onClose={sendToQunicorn2}
+      >
+        <div>
+          <h2>Processing</h2>
+          {loading ? <p>Loading...</p> : <p>Status: {status?.status || "Unknown"}</p>}
+        </div>
+      </Modal>
+
+      <Modal
+        title={"Qunicorn Result"}
+        open={modalStep === 3}
+        onClose={sendToQunicorn3}
+      >
+        <div>
+          <h2>Processing</h2>
+          {loading ? <p>Loading...</p> : <p>Status: {status?.status || "Unknown"}</p>}
+
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="register" label={{ value: "Register", position: "insideBottom" , offset: 5}} />
+              <YAxis domain={[0, 100]} label={{
+                value: "Probabilities",
+                angle: -90,
+                offset: 20,
+              }} />
+              <Tooltip />
+              <Bar dataKey="value" fill="#8884d8" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
       </Modal>
 
       <main className="flex flex-col lg:flex-row h-[calc(100vh_-_60px)]  overflow-hidden">
@@ -772,14 +970,9 @@ function App() {
           <div
             className={`transition-all duration-300 ${isPanelOpen ? "w-[300px] lg:w-[350px]" : "w-0 overflow-hidden"}`}
           >
-
-
-
             {isPanelOpen && <Panel metadata={metadata} onUpdateMetadata={setMetadata} />}
           </div>
         </div>
-
-
 
       </main>
     </ReactFlowProvider>

@@ -28,6 +28,7 @@
     "react-flow-renderer": "5.8.0",
     "react-icons": "^5.4.0",
     "reactflow": "^11.7.2",
+    "recharts": "^2.15.3",
     "tailwind-merge": "^1.12.0",
     "tailwindcss-animate": "^1.0.5",
     "uuid": "^11.0.5",
