@@ -8,16 +8,20 @@ const selector = (state: {
   edges: Edge[];
   updateNodeValue: (nodeId: string, field: string, nodeVal: string) => void;
   setSelectedNode: (node: Node | null) => void;
+  setEdges: (edge: Edge) => void;
+  setNewEdges: (newEdges: Edge[]) => void;
 }) => ({
   selectedNode: state.selectedNode,
   edges: state.edges,
   updateNodeValue: state.updateNodeValue,
-  setSelectedNode: state.setSelectedNode
+  setSelectedNode: state.setSelectedNode,
+  setEdges: state.setEdges,
+  setNewEdges: state.setNewEdges
 });
 
 export const AlgorithmNode = memo((node: Node) => {
   const { data } = node;
-  const { edges } = useStore(selector, shallow);
+  const { edges, setEdges, setNewEdges } = useStore(selector, shallow);
 
   const numberInputs = data.numberInputs || 1;
   const numberOutputs = data.numberOutputs || 1;
@@ -61,6 +65,38 @@ export const AlgorithmNode = memo((node: Node) => {
     />
   ));
 
+  // Ensure identifiers exist and match the number of outputs
+  if (!data.identifiers) {
+    data.identifiers = [];
+  }
+
+  // Add missing identifiers
+  while (data.identifiers.length < numberOutputs) {
+    data.identifiers.push("q" + Math.floor(100000 + Math.random() * 900000).toString());
+  }
+
+  // Remove extra identifiers
+  if (data.identifiers.length > numberOutputs) {
+    const removedIdentifiers = data.identifiers.slice(numberOutputs);
+    console.log(removedIdentifiers);
+
+    // Clean up edges with sourceHandles related to removed identifiers
+    const edgesToRemove = edges.filter((edge) =>
+      !removedIdentifiers.some((id, index) =>
+        edge.sourceHandle === `quantumHandleGateOutput${numberOutputs + index + 1}${node.id}`
+      )
+    );
+    console.log("EDGES")
+    console.log(edgesToRemove)
+   
+    if (edgesToRemove.length > 0) {
+      console.log("remove edges")
+      setNewEdges(edgesToRemove);
+    }
+
+    data.identifiers = data.identifiers.slice(0, numberOutputs);
+  }
+
   console.log(nodeHeight)
 
   return (
@@ -72,21 +108,14 @@ export const AlgorithmNode = memo((node: Node) => {
 
         <div className="px-2 py-3 flex justify-center bg-blue-100">
           <div className="flex items-center bg-blue-100">
-
-
             <>
               <div className="flex flex-col items-start text-black text-center overflow-visible">
                 <div className="flex items-center mt-2">
 
                   {inputHandles}
                 </div>
-
-
               </div>
             </>
-
-
-
             <div
               className={`absolute ${data.label === "Qubit" ? "top-[48%]" : "top-[50%]"
                 } -translate-x-1/2 -translate-y-1/2 text-center font-bold`}
@@ -102,7 +131,6 @@ export const AlgorithmNode = memo((node: Node) => {
               )}
             </div>
             {outputHandles}
-
           </div>
         </div>
       </div>

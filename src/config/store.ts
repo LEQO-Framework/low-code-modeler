@@ -40,6 +40,7 @@ type RFState = {
   historyIndex: number;
   setNodes: (node: Node) => void;
   setEdges: (edge: Edge) => void;
+  setNewEdges: (newEdges: Edge[]) => void;
   onNodesChange: OnNodesChange;
   onEdgesChange: OnEdgesChange;
   onConnect: OnConnect;
@@ -192,6 +193,32 @@ const useStore = create<RFState>((set, get) => ({
     set({
       nodes: currentNodes,
       edges: [...currentEdges, edge],
+      history: [
+        ...get().history.slice(0, get().historyIndex + 1),
+        newHistoryItem,
+      ],
+      historyIndex: get().historyIndex + 1,
+    });
+    console.log("History after update:", get().history);
+    console.log("Current historyIndex:", get().historyIndex);
+  },
+
+  setNewEdges: (newEdges: Edge[]) => {
+    const currentNodes = get().nodes;
+    const currentEdges = get().edges;
+    const newHistoryItem: HistoryItem = {
+      nodes: [...currentNodes], // Copy the nodes array to avoid mutation
+      edges: newEdges, // Copy the edges array to avoid mutation
+    };
+
+    console.log("Updating history (setEdges):");
+    console.log("Current Nodes:", currentNodes);
+    console.log("Current Edges:", currentEdges);
+    console.log("New History Item:", newHistoryItem);
+
+    set({
+      nodes: currentNodes,
+      edges: newEdges,
       history: [
         ...get().history.slice(0, get().historyIndex + 1),
         newHistoryItem,
