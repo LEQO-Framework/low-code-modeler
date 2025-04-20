@@ -340,6 +340,9 @@ const useStore = create<RFState>((set, get) => ({
       if (node.id === connection.source && nodeDataSource.type === "gateNode" && nodeDataTarget.type === "gateNode") {
         label = "1";
       }
+      if(nodeDataSource.type==="controlStructureNode"){
+        insertEdge = true;
+      }
       if (node.id === connection.source && nodeDataSource.type === "positionNode") {
         console.log(nodeDataSource)
         if (nodeDataSource.data.label === "boolean" || nodeDataSource.data.label === "bit") {

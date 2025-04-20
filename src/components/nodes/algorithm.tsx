@@ -1,0 +1,102 @@
+import { memo } from "react";
+import { Handle, Position, Node, Edge } from "reactflow";
+import useStore from "@/config/store";
+import { shallow } from "zustand/shallow";
+
+const selector = (state: {
+  selectedNode: Node | null;
+  edges: Edge[];
+  updateNodeValue: (nodeId: string, field: string, nodeVal: string) => void;
+  setSelectedNode: (node: Node | null) => void;
+}) => ({
+  selectedNode: state.selectedNode,
+  edges: state.edges,
+  updateNodeValue: state.updateNodeValue,
+  setSelectedNode: state.setSelectedNode
+});
+
+export const AlgorithmNode = memo((node: Node) => {
+  const { data } = node;
+  const { edges } = useStore(selector, shallow);
+
+  const numberInputs = data.numberInputs || 1;
+  const numberOutputs = data.numberOutputs || 1;
+
+  const handleCount = Math.max(numberInputs, numberOutputs);
+  console.log(handleCount)
+
+  const handleGap = 40;
+  const handleOffset = 15;
+ 
+  const nodeHeight = Math.max(handleOffset * 2 + (handleCount) * handleGap, 100);
+
+  const inputHandles = Array.from({ length: numberInputs }, (_, i) => (
+    <Handle
+      key={`input-${i}`}
+      type="target"
+      id={`quantumHandleGateInput${i + 1}${node.id}`}
+      position={Position.Left}
+      style={{
+        top: `${handleOffset + i * handleGap}px`,
+      }}
+      className="!absolute z-10 circle-port-op !bg-blue-300 !border-black overflow-visible"
+      isValidConnection={() => true}
+    />
+  ));
+
+  const outputHandles = Array.from({ length: numberOutputs }, (_, i) => (
+    <Handle
+      key={`output-${i}`}
+      type="source"
+      id={`quantumHandleGateOutput${i + 1}${node.id}`}
+      position={Position.Right}
+      style={{
+        top: `${handleOffset + i * handleGap}px`,
+      }}
+      className="!absolute z-10 circle-port-out !bg-blue-300 !border-black overflow-visible"
+      isValidConnection={() => true}
+      isConnectable={
+        edges.filter(edge => edge.sourceHandle === `quantumHandleGateOutput${i + 1}${node.id}`).length < 1
+      }
+    />
+  ));
+
+  console.log(nodeHeight)
+
+  return (
+    <div className="grand-parent">
+      <div
+        className="w-[100px] rounded-none overflow-hidden border border-solid border-gray-700 shadow-md bg-blue-100 relative"
+        style={{ height: `${nodeHeight}px` }}
+      >
+        <div className="px-2 py-3 flex justify-center bg-blue-100">
+          <div className="flex items-center bg-blue-100 relative w-full h-full">
+        
+            {inputHandles}
+           
+
+            <div
+              className="absolute left-1/2 -translate-x-1/2 text-center font-bold"
+              style={{
+                top: `${nodeHeight / 2}px`,
+                transform: "translate(-50%, -50%)",
+              }}
+            >
+              {data.label === "Qubit" ? (
+                "|0⟩"
+              ) : data.label === "CNOT" ? (
+                <img src="/cnot.png" alt="CNOT gate" className="w-5 h-15" />
+              ) : data.label === "Toffoli" ? (
+                <img src="/toffoli.png" alt="Toffoli gate" className="w-6 h-16" />
+              ) : (
+                data.label
+              )}
+            </div>
+
+            {outputHandles}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+});
