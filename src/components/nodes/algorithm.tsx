@@ -27,7 +27,7 @@ export const AlgorithmNode = memo((node: Node) => {
 
   const handleGap = 40;
   const handleOffset = 15;
- 
+
   const nodeHeight = Math.max(handleOffset * 2 + (handleCount) * handleGap, 100);
 
   const inputHandles = Array.from({ length: numberInputs }, (_, i) => (
@@ -39,7 +39,7 @@ export const AlgorithmNode = memo((node: Node) => {
       style={{
         top: `${handleOffset + i * handleGap}px`,
       }}
-      className="!absolute z-10 circle-port-op !bg-blue-300 !border-black overflow-visible"
+      className="!z-10 circle-port-op !bg-blue-300 !border-black overflow-visible"
       isValidConnection={() => true}
     />
   ));
@@ -66,21 +66,30 @@ export const AlgorithmNode = memo((node: Node) => {
   return (
     <div className="grand-parent">
       <div
-        className="w-[100px] rounded-none overflow-hidden border border-solid border-gray-700 shadow-md bg-blue-100 relative"
+        className="w-[100px] rounded-none overflow-hidden border border-solid border-gray-700 shadow-md bg-blue-100 "
         style={{ height: `${nodeHeight}px` }}
       >
+
         <div className="px-2 py-3 flex justify-center bg-blue-100">
-          <div className="flex items-center bg-blue-100 relative w-full h-full">
-        
-            {inputHandles}
-           
+          <div className="flex items-center bg-blue-100">
+
+
+            <>
+              <div className="flex flex-col items-start text-black text-center overflow-visible">
+                <div className="flex items-center mt-2">
+
+                  {inputHandles}
+                </div>
+
+
+              </div>
+            </>
+
+
 
             <div
-              className="absolute left-1/2 -translate-x-1/2 text-center font-bold"
-              style={{
-                top: `${nodeHeight / 2}px`,
-                transform: "translate(-50%, -50%)",
-              }}
+              className={`absolute ${data.label === "Qubit" ? "top-[48%]" : "top-[50%]"
+                } -translate-x-1/2 -translate-y-1/2 text-center font-bold`}
             >
               {data.label === "Qubit" ? (
                 "|0⟩"
@@ -92,8 +101,8 @@ export const AlgorithmNode = memo((node: Node) => {
                 data.label
               )}
             </div>
-
             {outputHandles}
+
           </div>
         </div>
       </div>
