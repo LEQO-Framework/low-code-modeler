@@ -50,7 +50,7 @@ export const TextPanel = () => {
       console.log(value);
       if (field === "outputIdentifier" || field === "quantumStateName" || field === "encodingType" || field === "implementationType" || field === "size"
         || field === "operator" || field === "minMaxOperator" || field === "uncomputeImplementationType" || field === "implementation" || field === "fileName" ||
-        field === "uncomputeImplementation") {
+        field === "uncomputeImplementation" || field === "parameter" || field ==="nodeType") {
         selectedNode.data[field] = value;
         updateNodeValue(selectedNode.id, field, value);
       }
@@ -985,6 +985,127 @@ export const TextPanel = () => {
               className="border block w-full border-gray-300 rounded-md sm:text-sm p-2 h-32 overflow-auto"
               placeholder="File content will appear here or enter manually"
             />
+          </div>
+        )}
+
+
+        {selectedNode?.type === "gateNode" && (selectedNode.data.label.includes("RX") || selectedNode.data.label.includes("RY") || selectedNode.data.label.includes("RZ")) && (
+          <div className="p-2 mt-3">
+            <label
+              className="block text-sm font-medium text-start text-gray-700"
+              htmlFor="parameter"
+            >
+              Parameter
+            </label>
+            <div className="mt-1">
+              <input
+                type="text"
+                id="parameter"
+                name="parameter"
+                value={selectedNode.data.parameter || ""
+                }
+                onChange={(e) =>
+                  handleNumberChange("parameter", e.target.value)
+                }
+                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
+                placeholder="Enter parameter"
+              />
+            </div>
+
+          </div>
+        )}
+        {selectedNode?.type === "algorithmNode" && (
+          <div className="p-2 mt-3">
+            <label
+              className="block text-sm font-medium text-start text-gray-700"
+              htmlFor="numberInputs"
+            >
+              Number of Inputs
+            </label>
+            <div className="mt-1">
+              <input
+                type="text"
+                id="numberInputs"
+                name="numberInputs"
+                value={selectedNode.data.numberInputs || ""
+                }
+                onChange={(e) =>
+                  handleNumberChange("numberInputs", e.target.value)
+                }
+                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
+                placeholder="Enter numberInputs"
+              />
+            </div>
+
+            <label
+              className="block text-sm font-medium text-start text-gray-700"
+              htmlFor="numberOutputs"
+            >
+              Number of Outputs
+            </label>
+            <div className="mt-1">
+              <input
+                type="text"
+                id="numberOutputs"
+                name="numberOutputs"
+                value={selectedNode.data.numberOutputs || ""
+                }
+                onChange={(e) =>
+                  handleNumberChange("numberOutputs", e.target.value)
+                }
+                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
+                placeholder="Enter numberOutputs"
+              />
+            </div>
+            <label
+              className="block text-sm font-medium text-start text-gray-700"
+              htmlFor="implementationType"
+            >
+              Implementation Type
+            </label>
+            <div className="mt-1">
+              <input
+                type="text"
+                id="implementationType"
+                name="implementationType"
+                value={selectedNode.data.implementationType || ""
+                }
+                onChange={(e) =>
+                  handleNumberChange("implementationType", e.target.value)
+                }
+                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
+                placeholder="Enter implementation type"
+              />
+            </div>
+            <label
+              className="block text-sm font-medium text-start text-gray-700 mt-2"
+              htmlFor="fileUpload"
+            >
+              Upload Implementation File
+            </label>
+            <div className="mt-1">
+              <input
+                type="file"
+                id="fileUpload"
+                name="fileUpload"
+                onChange={e => handleFileUpload(e, "implementation")}
+                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
+              />
+            </div>
+            <span className="text-sm text-gray-500">{selectedNode.data.fileName}</span>
+
+            <label className="block text-sm font-medium text-start text-gray-700 mt-2">
+              Implementation Content
+            </label>
+            <textarea
+              id="implementationContent"
+              name="implementationContent"
+              value={selectedNode.data.implementation || implementationContent}
+              onChange={(e) => handleNumberChange("implementation", e.target.value)}
+              className="border block w-full border-gray-300 rounded-md sm:text-sm p-2 h-32 overflow-auto"
+              placeholder="File content will appear here or enter manually"
+            />
+
           </div>
         )}
       </aside>
