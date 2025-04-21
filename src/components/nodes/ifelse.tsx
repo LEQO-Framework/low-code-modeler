@@ -29,7 +29,11 @@ export const ControlStructureNode = memo((node: Node) => {
   const updateNodeInternals = useUpdateNodeInternals();
   const [quantumHandles, setQuantumHandles] = useState([0]);
   const [classicalHandles, setClassicalHandles] = useState([0]);
+
+  const [quantumOutputHandles, setQuantumOutputHandles] = useState([0]);
+  const [quantumOutputHandlesElse, setQuantumOutputHandlesElse] = useState([0]);
   const [classicalOutputHandles, setClassicalOutputHandles] = useState([0]);
+  const [classicalOutputHandlesElse, setClassicalOutputHandlesElse] = useState([0]);
 
 
 
@@ -56,7 +60,7 @@ export const ControlStructureNode = memo((node: Node) => {
     const connectedOutputHandles = edges
       .filter(edge => edge.target === node.id && edge.targetHandle?.startsWith(`classicalHandleDynamicOutput${node.id}`))
       .map(edge => edge.targetHandle);
-      console.log(connectedOutputHandles)
+    console.log(connectedOutputHandles)
 
     const expected = classicalOutputHandles.map(index => `classicalHandleDynamicOutput${node.id}-${index}`);
     const lastHandleId = expected[expected.length - 1];
@@ -64,7 +68,42 @@ export const ControlStructureNode = memo((node: Node) => {
     if (connectedOutputHandles.includes(lastHandleId)) {
       setClassicalOutputHandles(prev => [...prev, prev.length]);
     }
+    const connectedOutputHandlesElse = edges
+      .filter(edge => edge.target === node.id && edge.targetHandle?.startsWith(`classicalHandleDynamicOutputElse${node.id}`))
+      .map(edge => edge.targetHandle);
+    console.log(connectedOutputHandlesElse)
+
+    const expectedElse = classicalOutputHandlesElse.map(index => `classicalHandleDynamicOutputElse${node.id}-${index}`);
+    const lastHandleIdElse = expectedElse[expectedElse.length - 1];
+
+    if (connectedOutputHandlesElse.includes(lastHandleIdElse)) {
+      setClassicalOutputHandlesElse(prev => [...prev, prev.length]);
+    }
+
+    const connectedQuantumOutputHandles = edges
+      .filter(edge => edge.target === node.id && edge.targetHandle?.startsWith(`quantumHandleDynamicOutput${node.id}`))
+      .map(edge => edge.targetHandle);
+    console.log(connectedOutputHandles)
+
+    const quantumExpected = quantumOutputHandles.map(index => `quantumHandleDynamicOutput${node.id}-${index}`);
+    const lastQuantumHandleId = quantumExpected[quantumExpected.length - 1];
+
+    if (connectedQuantumOutputHandles.includes(lastQuantumHandleId)) {
+      setQuantumOutputHandles(prev => [...prev, prev.length]);
+    }
+    const connectedOutputHandlesQuantumElse = edges
+      .filter(edge => edge.target === node.id && edge.targetHandle?.startsWith(`quantumHandleDynamicOutputElse${node.id}`))
+      .map(edge => edge.targetHandle);
+    console.log(connectedOutputHandlesQuantumElse)
+
+    const expectedQuantumElse = quantumOutputHandlesElse.map(index => `quantumHandleDynamicOutputElse${node.id}-${index}`);
+    const lastHandleIdQuantumElse = expectedQuantumElse[expectedQuantumElse.length - 1];
+
+    if (connectedOutputHandlesElse.includes(lastHandleIdQuantumElse)) {
+      setClassicalOutputHandlesElse(prev => [...prev, prev.length]);
+    }
   }, [edges, node.id, classicalHandles, quantumHandles, classicalOutputHandles]);
+
   const dynamicHeight = 650 + Math.max(0, quantumHandles.length - 1 + (classicalHandles.length - 1)) * 30;
   const totalHandles = classicalHandles.length + quantumHandles.length;
   const hexagonHeight = Math.max(220, 160 + totalHandles * 30);
@@ -264,19 +303,33 @@ export const ControlStructureNode = memo((node: Node) => {
               );
             })}
 
-            {quantumHandles.map((index, i) => (
-              <Handle
-                key={`quantumOutput-${index}`}
-                type="source"
-                id={`quantumHandleOutputInitialization8${node.id}-${index}`}
-                position={Position.Right}
-                className="z-10 circle-port-out !bg-blue-300 !border-black"
-                style={{ top: `${100 + classicalOutputHandles.length * 30 + i * 30}px`, overflow: "visible", zIndex: 3000, left: "-6px" }}
-                isConnectable={true}
-              />
-            ))}
+            {quantumOutputHandles.map((index, i) => {
+              const handleId = `quantumHandleDynamicOutput${node.id}-${index}`;
+              const isConnected = edges.some(edge => edge.targetHandle === handleId);
+              console.log(isConnected)
 
-{classicalOutputHandles.map((index, i) => {
+              return (
+                <Handle
+                  key={handleId}
+                  type="target"
+                  id={handleId}
+                  position={Position.Left}
+                  className={cn(
+                    "z-10 circle-port-out",
+                    isConnected ? "!bg-blue-300 !border-black" : "!bg-gray-200 !border-dashed !border-gray-500"
+                  )}
+                  style={{
+                    top: `${100 + classicalOutputHandles.length * 30 + i * 30}px`,
+                    overflow: "visible",
+                    zIndex: 3000,
+                    left: "-6px",
+                  }}
+                  isConnectable={true}
+                />
+              );
+            })}
+
+            {classicalOutputHandlesElse.map((index, i) => {
               const handleId = `classicalHandleDynamicOutputElse${node.id}-${index}`;
               const isConnected = edges.some(edge => edge.targetHandle === handleId);
               console.log(isConnected)
@@ -302,40 +355,32 @@ export const ControlStructureNode = memo((node: Node) => {
               );
             })}
 
-            {classicalHandles.map((index, i) => (
-              <Handle
-                key={`side-classical-output-${index}`}
-                type="source"
-                id={`sideClassicalHandleOutput-${node.id}-${index}`}
-                position={Position.Left}
-                className="z-10 classical-circle-port-hex-out !bg-orange-300 !border-black"
-                style={{
-                  top: `calc(70% + ${30 + i * 30}px)`, // Start below the side handle
-                  left: "50%",
-                  transform: "translate(-50%, -50%)",
-                  position: "absolute",
-                  zIndex: 3000,
-                }}
-                isConnectable={true}
-              />
-            ))}
-            {quantumHandles.map((index, i) => (
-              <Handle
-                key={`side-quantum-output-${index}`}
-                type="source"
-                id={`sideQuantumHandleOutput-${node.id}-${index}`}
-                position={Position.Left}
-                className="z-10 circle-port-hex-out !bg-blue-300 !border-black"
-                style={{
-                  top: `calc(70% + ${30 * (classicalHandles.length + 1 + i)}px)`, // offset by classical height
-                  left: "50%",
-                  transform: "translate(-50%, -50%)",
-                  position: "absolute",
-                  zIndex: 3000,
-                }}
-                isConnectable={true}
-              />
-            ))}
+            {quantumOutputHandlesElse.map((index, i) => {
+              const handleId = `quantumHandleDynamicOutputElse${node.id}-${index}`;
+              const isConnected = edges.some(edge => edge.targetHandle === handleId);
+              console.log(isConnected)
+
+              return (
+                <Handle
+                  key={handleId}
+                  type="target"
+                  id={handleId}
+                  position={Position.Left}
+                  className={cn(
+                    "z-10 circle-port-out",
+                    isConnected ? "!bg-blue-300 !border-black" : "!bg-gray-200 !border-dashed !border-gray-500"
+                  )}
+                  style={{
+                    top: `calc(70% + ${30 * (classicalOutputHandlesElse.length + 1 + i)}px)`,
+                    overflow: "visible",
+                    zIndex: 3000,
+                    left: "-6px",
+                  }}
+                  isConnectable={true}
+                />
+              );
+            })}
+
           </div>
 
           {/* Repeat End (right polygon) */}
@@ -358,25 +403,73 @@ export const ControlStructureNode = memo((node: Node) => {
               </div>
 
               {/* Handles on right polygon */}
-              <div style={{ position: "absolute", right: "0px", overflow: "visible" }}>
-                <Handle
-                  type="target"
-                  id="classicalHandleOutputInitialization"
-                  position={Position.Right}
-                  className="absolute z-10 classical-circle-port-hex-out !bg-orange-300 !border-black"
-                  style={{ top: "40px", overflow: "visible" }}
-                  isConnectable={edges.filter((edge) => edge.target === node.id).length < 2}
-                />
-                <Handle
-                  type="target"
-                  id="quantumHandleOutputInitialization"
-                  position={Position.Right}
-                  className="z-10 circle-port-hex-out !bg-blue-300 !border-black"
-                  style={{ top: "70px", overflow: "visible" }}
-                  isConnectable={edges.filter((edge) => edge.target === node.id).length < 2}
-                />
-              </div>
+              {classicalOutputHandles.map((index, i) => {
+                const handleId = `classicalHandleDynamicOutput${node.id}-${index}`;
+                const isConnected = edges.some(edge => edge.targetHandle === handleId);
 
+                return isConnected ? (
+                  <Handle
+                    key={handleId}
+                    type="source"
+                    id={`classicalHandleOutputFinal-${index}`}
+                    position={Position.Right}
+                    className="absolute z-10 classical-circle-port-hex-out !bg-orange-300 !border-black"
+                    style={{ top: `${i * 30}px`, overflow: "visible" }}
+                    isConnectable={true}
+                  />
+                ) : null;
+              })}
+
+              {classicalOutputHandlesElse.map((index, i) => {
+                const handleId = `classicalHandleDynamicOutputElse${node.id}-${index}`;
+                const isConnected = edges.some(edge => edge.targetHandle === handleId);
+
+                return isConnected ? (
+                  <Handle
+                    key={handleId}
+                    type="source"
+                    id={`classicalHandleOutputElseFinal-${index}`}
+                    position={Position.Right}
+                    className="absolute z-10 classical-circle-port-hex-out !bg-orange-300 !border-black"
+                    style={{ top: `${100 + i * 30}px`, overflow: "visible" }}
+                    isConnectable={true}
+                  />
+                ) : null;
+              })}
+
+              {quantumOutputHandles.map((index, i) => {
+                const handleId = `quantumHandleDynamicOutput${node.id}-${index}`;
+                const isConnected = edges.some(edge => edge.targetHandle === handleId);
+
+                return isConnected ? (
+                  <Handle
+                    key={handleId}
+                    type="source"
+                    id={`quantumHandleOutputFinal-${index}`}
+                    position={Position.Right}
+                    className="absolute z-10 circle-port-hex-out !bg-blue-300 !border-black"
+                    style={{ top: `${160 + i * 30}px`, overflow: "visible" }}
+                    isConnectable={true}
+                  />
+                ) : null;
+              })}
+
+              {quantumOutputHandlesElse.map((index, i) => {
+                const handleId = `quantumHandleDynamicOutputElse${node.id}-${index}`;
+                const isConnected = edges.some(edge => edge.targetHandle === handleId);
+
+                return isConnected ? (
+                  <Handle
+                    key={handleId}
+                    type="source"
+                    id={`quantumHandleOutputElseFinal-${index}`}
+                    position={Position.Right}
+                    className="absolute z-10 circle-port-hex-out !bg-blue-300 !border-black"
+                    style={{ top: `${220 + i * 30}px`, overflow: "visible" }}
+                    isConnectable={true}
+                  />
+                ) : null;
+              })}
 
             </div>
           </div>
