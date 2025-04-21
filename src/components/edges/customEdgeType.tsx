@@ -33,7 +33,7 @@ console.log(sourcePosition)
           }}
           className="edge-label-renderer__custom-edge nodrag nopan"
         >
-          {label} {label === "1" ? "Qubit" : "Qubits"}
+          
         </div>
       </EdgeLabelRenderer>
       <BaseEdge

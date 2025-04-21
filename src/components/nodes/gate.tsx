@@ -38,6 +38,15 @@ export const GateNode = memo((node: Node) => {
           )}
         </div>
 
+        {!isQubit && !isTwoQubit && !isThreeQubit &&(
+          <Handle
+          type="target"
+          id={`quantumHandleGateInput1${node.id}`}
+          position={Position.Left}
+          className="!absolute !top-[50%] !left--4 z-10 circle-port-op !bg-blue-300 !border-black"
+          isValidConnection={() => true}
+        />
+        )}
 
         {isTwoQubit && (
           <>

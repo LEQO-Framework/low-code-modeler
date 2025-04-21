@@ -54,7 +54,7 @@ export const MeasurementNode = memo((node: Node) => {
 
   const handleYChange = (e, field) => {
     const value = e.target.value;
-    if(field === "indices"){
+    if (field === "indices") {
       setIndices(value);
       node.data[field] = value;
       updateNodeValue(node.id, field, value);
@@ -90,36 +90,36 @@ export const MeasurementNode = memo((node: Node) => {
         <div className="px-2 py-3 flex justify-center">
           <div className="flex items-center mb-2">
             <label htmlFor="x" className="text-black text-sm mr-2">Indices</label>
-              <input
-                ref={xRef}
-                id="x"
-                type="text"
-                className={`p-1 text-black opacity-75 text-sm rounded-full w-24 text-center border-2 ${error ? 'bg-red-500 border-red-500' : 'bg-white border-blue-300'}`}
-                value={node.data.indices || indices}
-                placeholder="1,2,3"
-                onChange={e=>handleYChange(e, "indices")}
-              />
-            </div>
+            <input
+              ref={xRef}
+              id="x"
+              type="text"
+              className={`p-1 text-black opacity-75 text-sm rounded-full w-24 text-center border-2 ${error ? 'bg-red-500 border-red-500' : 'bg-white border-blue-300'}`}
+              value={node.data.indices || indices}
+              placeholder="1,2,3"
+              onChange={e => handleYChange(e, "indices")}
+            />
+          </div>
 
-            </div>
+        </div>
         <div className="custom-node-port-in mb-3 mt-2">
-       
-        <div className="relative flex flex-col items-start text-black text-center overflow-visible">
-          <div style={{ padding: "4px" }}>
 
-            <div className="flex items-center space-x-2 mt-2" style={{ backgroundColor: "rgba(105, 145, 210, 0.2)"}}>
-              <Handle
-                type="target"
-                id={`quantumHandleMeasurement${node.id}`}
-                position={Position.Left}
-                className="z-10 circle-port-op !bg-blue-300 !border-black"
-                style={{ top: "20px" }} 
-                isValidConnection={(connection) => true}
-              />
-              <span className="text-black text-sm" >{node.data.inputs[0]?.outputIdentifier || "value(s)"}</span>
+          <div className="relative flex flex-col items-start text-black text-center overflow-visible">
+            <div style={{ padding: "4px" }}>
+
+              <div className="flex items-center space-x-2 mt-2" style={{ backgroundColor: "rgba(105, 145, 210, 0.2)" }}>
+                <Handle
+                  type="target"
+                  id={`quantumHandleMeasurement${node.id}`}
+                  position={Position.Left}
+                  className="z-10 circle-port-op !bg-blue-300 !border-black"
+                  style={{ top: "20px" }}
+                  isValidConnection={(connection) => true}
+                />
+                <span className="text-black text-sm" >{node.data.inputs[0]?.outputIdentifier || "value(s)"}</span>
+              </div>
             </div>
-            </div>
-            </div>
+          </div>
           <button onClick={addVariable} className="add-variable-button mt-2 w-full bg-gray-300 py-1 rounded text-sm text-black">
             + Add More Variables
           </button>
@@ -142,14 +142,27 @@ export const MeasurementNode = memo((node: Node) => {
                 className={`p-1 text-sm text-black opacity-75 w-10 text-center rounded-full border ${yError ? 'bg-red-500 border-red-500' : 'bg-white border-orange-300'}`}
                 value={node.data.outputIdentifier || y}
                 placeholder="a"
-                onChange={e =>handleYChange(e, "outputIdentifier")}
+                onChange={e => handleYChange(e, "outputIdentifier")}
               />
-              <Handle
-                type="target"
-                id={`classicalHandle${node.id}`}
-                position={Position.Right}
-                className="z-10 classical-circle-port-out !bg-gray-300 !border-2 !border-dashed !border-black"
-              />
+              {(() => {
+                const handleId = `classicalHandle${node.id}`;
+                const isConnected = edges.some(edge => edge.sourceHandle === handleId);
+
+                return (
+                  <Handle
+                    type="source"
+                    id={handleId}
+                    position={Position.Right}
+                    className={cn(
+                      "z-10 classical-circle-port-out",
+                      isConnected ? "!bg-orange-300 !border-black" : "!bg-gray-200 !border-dashed !border-gray-500"
+                    )}
+           
+                    isConnectable={true}
+                  />
+                  )
+              })()}
+
             </div>
           </div>
         </div>

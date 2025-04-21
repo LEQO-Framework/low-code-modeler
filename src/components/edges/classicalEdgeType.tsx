@@ -31,7 +31,7 @@ export default function ClassicalEdge({
           }}
           className="edge-label-renderer__custom-edge nodrag nopan"
         >
-          {label} {label === 1 ? "Bit" : "Bits"}
+          
         </div>
       </EdgeLabelRenderer>
       <BaseEdge

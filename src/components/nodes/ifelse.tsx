@@ -99,14 +99,14 @@ export const ControlStructureNode = memo((node: Node) => {
     const expectedQuantumElse = quantumOutputHandlesElse.map(index => `quantumHandleDynamicOutputElse${node.id}-${index}`);
     const lastHandleIdQuantumElse = expectedQuantumElse[expectedQuantumElse.length - 1];
 
-    if (connectedOutputHandlesElse.includes(lastHandleIdQuantumElse)) {
-      setClassicalOutputHandlesElse(prev => [...prev, prev.length]);
+    if (connectedOutputHandlesQuantumElse.includes(lastHandleIdQuantumElse)) {
+      setQuantumOutputHandlesElse(prev => [...prev, prev.length]);
     }
-  }, [edges, node.id, classicalHandles, quantumHandles, classicalOutputHandles]);
+  }, [edges, node.id, classicalHandles, quantumHandles, classicalOutputHandles, quantumOutputHandles, quantumOutputHandlesElse, classicalOutputHandlesElse]);
 
-  const dynamicHeight = 650 + Math.max(0, quantumHandles.length - 1 + (classicalHandles.length - 1)) * 30;
-  const totalHandles = classicalHandles.length + quantumHandles.length;
-  const hexagonHeight = Math.max(220, 160 + totalHandles * 30);
+  const dynamicHeight = 900 + Math.max(0, quantumHandles.length - 1 + (classicalHandles.length - 1)) * 30;
+  const totalHandles = classicalHandles.length + quantumHandles.length + classicalOutputHandles.length + classicalOutputHandlesElse.length + quantumOutputHandles.length+ quantumOutputHandlesElse.length;
+  const hexagonHeight = Math.max(250, 280 + totalHandles * 30);
   const hexagonTopOffset = -(hexagonHeight / 2) + 20;
 
 
@@ -174,7 +174,7 @@ export const ControlStructureNode = memo((node: Node) => {
                 key={`side-classical-${index}`}
                 type="source"
                 id={`sideClassicalHandle-${node.id}-${index}`}
-                position={Position.Left}
+                position={Position.Right}
                 className="z-10 classical-circle-port-hex-out !bg-orange-300 !border-black"
                 style={{
                   top: `calc(70% + ${30 + i * 30}px)`, // Start below the side handle
@@ -191,7 +191,7 @@ export const ControlStructureNode = memo((node: Node) => {
                 key={`side-quantum-${index}`}
                 type="source"
                 id={`sideQuantumHandle-${node.id}-${index}`}
-                position={Position.Left}
+                position={Position.Right}
                 className="z-10 circle-port-hex-out !bg-blue-300 !border-black"
                 style={{
                   top: `calc(70% + ${30 * (classicalHandles.length + 1 + i)}px)`, // offset by classical height

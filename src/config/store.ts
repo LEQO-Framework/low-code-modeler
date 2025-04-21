@@ -343,7 +343,7 @@ const useStore = create<RFState>((set, get) => ({
     //handler type and name
     for (let node of currentNodes) {
 
-      if (node.id === connection.source && node.type !== "positionNode") {
+      if (node.id === connection.source && (node.type !== "positionNode" && node.type !== "measurementNode")) {
         type = "quantumEdge";
         color = "#93C5FD"
       }
@@ -353,6 +353,9 @@ const useStore = create<RFState>((set, get) => ({
       }
 
       if (node.id === connection.source && node.type === "positionNode" && connection.targetHandle.includes("classicalHandle")) {
+        insertEdge = true;
+      }
+      if (node.id === connection.source && node.type === "measurementNode" && (nodeDataTarget.type === "ifelseNode" || nodeDataTarget.type ==="controlStructureNode")) {
         insertEdge = true;
       }
       if (node.id === connection.source && node.type === "ancillaNode" && connection.targetHandle.includes("ancillaHandle")) {
@@ -365,7 +368,7 @@ const useStore = create<RFState>((set, get) => ({
         insertEdge = true;
       }
       if (node.id === connection.source && nodeDataSource.type === "gateNode" && nodeDataTarget.type === "gateNode") {
-        label = "1";
+        //label = "1";
       }
       if(nodeDataSource.type==="controlStructureNode"){
         insertEdge = true;
@@ -373,7 +376,7 @@ const useStore = create<RFState>((set, get) => ({
       if (node.id === connection.source && nodeDataSource.type === "positionNode") {
         console.log(nodeDataSource)
         if (nodeDataSource.data.label === "boolean" || nodeDataSource.data.label === "bit") {
-          label = 1;
+         // label = 1;
         } else if (nodeDataSource.data.label ==="Array") {
           let value =  nodeDataSource.data.value.split(',').map(item => Number(item.trim()));
           console.log(value)
@@ -381,11 +384,11 @@ const useStore = create<RFState>((set, get) => ({
           let maximum = Math.max(...value);
           console.log(maximum)
           let bits = Math.ceil(Math.log2(maximum));
-          label = bits;
+          //label = bits;
         }else {
           let value = nodeDataSource.data.value;
           let bits = Math.ceil(Math.log2(value));
-          label = bits;
+          //label = bits;
         }
       }
 
@@ -395,6 +398,8 @@ const useStore = create<RFState>((set, get) => ({
       edge.targetHandle === connection.targetHandle
     );
     console.log(connection)
+    console.log(insertEdge);
+    console.log(!edgeExists)
 
     const edge = {
       ...connection,
@@ -406,7 +411,7 @@ const useStore = create<RFState>((set, get) => ({
         height: 20,
         color: color,
       },
-      label: label
+      //label: label
     };
 
     console.log("Updating history (onConnect):");
