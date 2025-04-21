@@ -29,6 +29,8 @@ export const ControlStructureNode = memo((node: Node) => {
   const updateNodeInternals = useUpdateNodeInternals();
   const [quantumHandles, setQuantumHandles] = useState([0]);
   const [classicalHandles, setClassicalHandles] = useState([0]);
+  const [classicalOutputHandles, setClassicalOutputHandles] = useState([0]);
+
 
 
   useEffect(() => {
@@ -51,8 +53,22 @@ export const ControlStructureNode = memo((node: Node) => {
     if (connectedClassicalHandles.includes(lastClassicalHandle)) {
       setClassicalHandles(prev => [...prev, prev.length]);
     }
-  }, [edges, node.id, classicalHandles, quantumHandles]);
-  const dynamicHeight = 500 + Math.max(0, quantumHandles.length - 1) * 30;
+    const connectedOutputHandles = edges
+      .filter(edge => edge.target === node.id && edge.targetHandle?.startsWith(`classicalHandleDynamicOutput${node.id}`))
+      .map(edge => edge.targetHandle);
+      console.log(connectedOutputHandles)
+
+    const expected = classicalOutputHandles.map(index => `classicalHandleDynamicOutput${node.id}-${index}`);
+    const lastHandleId = expected[expected.length - 1];
+
+    if (connectedOutputHandles.includes(lastHandleId)) {
+      setClassicalOutputHandles(prev => [...prev, prev.length]);
+    }
+  }, [edges, node.id, classicalHandles, quantumHandles, classicalOutputHandles]);
+  const dynamicHeight = 650 + Math.max(0, quantumHandles.length - 1 + (classicalHandles.length - 1)) * 30;
+  const totalHandles = classicalHandles.length + quantumHandles.length;
+  const hexagonHeight = Math.max(220, 160 + totalHandles * 30);
+  const hexagonTopOffset = -(hexagonHeight / 2) + 20;
 
 
   return (
@@ -61,49 +77,6 @@ export const ControlStructureNode = memo((node: Node) => {
       style={{ overflow: "visible", minWidth: "1100px", height: `${dynamicHeight}px`, position: "relative" }}
 
     >
-
-
-      <div
-        className="absolute"
-        style={{
-          top: "0",
-          bottom: "0",
-          right: "150px",
-          width: "2px",
-          backgroundColor: "#000",
-          zIndex: 9,
-        }}
-      >
-        <Handle
-          type="target"
-          id={`sideLine2Handle-${node.id}`}
-          position={Position.Left}
-          style={{
-            position: "absolute",
-            top: "20%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            backgroundColor: "#00f",
-            border: "2px solid black",
-          }}
-          isConnectable={true}
-        />
-        <Handle
-          type="target"
-          id={`sideLine2Handle-${node.id}`}
-          position={Position.Left}
-          style={{
-            position: "absolute",
-            top: "70%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            backgroundColor: "#00f",
-            border: "2px solid black",
-          }}
-          isConnectable={true}
-        />
-      </div>
-
       <div
         className="absolute z-20 text-black text-center font-bold bg-purple-300 py-1 rounded"
         style={{
@@ -134,57 +107,63 @@ export const ControlStructureNode = memo((node: Node) => {
               zIndex: 9,
             }}
           >
-            {quantumHandles.map((index, i) => (
-              <Handle
-                key={`quantum-${index}`}
-                type="source"
-                id={`quantumHandleInputInitialization8${node.id}-${index}`}
-                position={Position.Left}
-                className="z-10 circle-port-out !bg-blue-300 !border-black"
-                style={{ top: `${100 + i * 30}px`, overflow: "visible", zIndex: 3000, left: "50%" }}
-                isConnectable={true}
-              />
-            ))}
             {classicalHandles.map((index, i) => (
               <Handle
                 key={`classical-${index}`}
                 type="source"
                 id={`classicalHandleInputInitialization8${node.id}-${index}`}
-                position={Position.Left}
-                className="z-10 circle-port-out !bg-orange-300 !border-black"
-                style={{ top: `${100 + i * 30}px`, overflow: "visible", zIndex: 3000, left: "50%" }}
+                position={Position.Right}
+                className="z-10 classical-circle-port-out !bg-orange-300 !border-black"
+                style={{ top: `${100 + i * 30}px`, overflow: "visible", zIndex: 3000, left: "-6px" }}
                 isConnectable={true}
               />
             ))}
-            <Handle
-              type="source"
-              id={`sideLineHandle-${node.id}`}
-              position={Position.Left}
-              className="z-10 circle-port-out !bg-blue-300 !border-black"
-              style={{
-                position: "absolute",
-                top: "20%",
-                left: "50%",
-                transform: "translate(-50%, -50%)",
-                backgroundColor: "#00f",
-                border: "2px solid black",
-              }}
-              isConnectable={true}
-            />
-            <Handle
-              type="source"
-              id={`sideLineHandle-${node.id}`}
-              position={Position.Left}
-              style={{
-                position: "absolute",
-                top: "70%",
-                left: "50%",
-                transform: "translate(-50%, -50%)",
-                backgroundColor: "#00f",
-                border: "2px solid black",
-              }}
-              isConnectable={true}
-            />
+            {quantumHandles.map((index, i) => (
+              <Handle
+                key={`quantum-${index}`}
+                type="source"
+                id={`quantumHandleInputInitialization8${node.id}-${index}`}
+                position={Position.Right}
+                className="z-10 circle-port-out !bg-blue-300 !border-black"
+                style={{ top: `${100 + classicalHandles.length * 30 + i * 30}px`, overflow: "visible", zIndex: 3000, left: "-6px" }}
+                isConnectable={true}
+              />
+            ))}
+
+            {classicalHandles.map((index, i) => (
+              <Handle
+                key={`side-classical-${index}`}
+                type="source"
+                id={`sideClassicalHandle-${node.id}-${index}`}
+                position={Position.Left}
+                className="z-10 classical-circle-port-hex-out !bg-orange-300 !border-black"
+                style={{
+                  top: `calc(70% + ${30 + i * 30}px)`, // Start below the side handle
+                  left: "50%",
+                  transform: "translate(-50%, -50%)",
+                  position: "absolute",
+                  zIndex: 3000,
+                }}
+                isConnectable={true}
+              />
+            ))}
+            {quantumHandles.map((index, i) => (
+              <Handle
+                key={`side-quantum-${index}`}
+                type="source"
+                id={`sideQuantumHandle-${node.id}-${index}`}
+                position={Position.Left}
+                className="z-10 circle-port-hex-out !bg-blue-300 !border-black"
+                style={{
+                  top: `calc(70% + ${30 * (classicalHandles.length + 1 + i)}px)`, // offset by classical height
+                  left: "50%",
+                  transform: "translate(-50%, -50%)",
+                  position: "absolute",
+                  zIndex: 3000,
+                }}
+                isConnectable={true}
+              />
+            ))}
           </div>
 
           {/* Repeat Start (left polygon) */}
@@ -196,9 +175,9 @@ export const ControlStructureNode = memo((node: Node) => {
                   position: "absolute",
                   left: "-50px",
                   width: "250px",
-                  height: "200px",
+                  height: `${hexagonHeight}px`,
                   backgroundColor: "white",
-                  top: "-70px",
+                  top: `${hexagonTopOffset}px`,
                   clipPath: "polygon(10% 0%, 90% 0%, 100% 10%, 100% 90%, 90% 100%, 10% 100%, 0% 90%, 0% 10%)",
                 }}
               >
@@ -227,7 +206,7 @@ export const ControlStructureNode = memo((node: Node) => {
                     id={`classicalHandleInputInitialization${node.id}-${index}`}
                     position={Position.Left}
                     className="z-10 classical-circle-port-hex-in !bg-orange-300 !border-black"
-                    style={{ top: `${70 + i * 30}px`, overflow: "visible", zIndex: 3000, }}
+                    style={{ top: `${hexagonTopOffset + 70 + i * 30}px`, overflow: "visible", zIndex: 3000, }}
                     isConnectable={true}
                   />
                 ))}
@@ -238,34 +217,125 @@ export const ControlStructureNode = memo((node: Node) => {
                     id={`quantumHandleInputInitialization${node.id}-${index}`}
                     position={Position.Left}
                     className="z-10 circle-port-hex-in !bg-blue-300 !border-black"
-                    style={{ top: `${100 + i * 30}px`, overflow: "visible" }}
+                    style={{ top: `${hexagonTopOffset + 100 + classicalHandles.length * 30 + i * 30}px`, overflow: "visible" }}
                     isConnectable={true}
                   />
                 ))}
 
               </div>
 
-              {/* Right side of Repeat Start */}
-              <div style={{ position: "absolute", left: "174px", overflow: "visible" }}>
-                <Handle
-                  type="source"
-                  id="classicalHandleInitialization"
-                  position={Position.Right}
-                  className="absolute z-10 classical-circle-port-hex-in !bg-orange-300 !border-black"
-                  style={{ top: "40px", overflow: "visible" }}
-                  isConnectable={edges.filter((edge) => edge.target === node.id).length < 2}
-                />
-                <Handle
-                  type="source"
-                  id="quantumHandleInitialization"
-                  position={Position.Right}
-                  className="z-10 circle-port-hex-in !bg-blue-300 !border-black"
-                  style={{ top: "70px", overflow: "visible" }}
-                  isConnectable={edges.filter((edge) => edge.target === node.id).length < 2}
-                />
 
-              </div>
             </div>
+          </div>
+          <div
+            className="absolute"
+            style={{
+              top: "0",
+              bottom: "0",
+              right: "150px",
+              width: "2px",
+              backgroundColor: "#000",
+              zIndex: 9,
+            }}
+          >
+            {classicalOutputHandles.map((index, i) => {
+              const handleId = `classicalHandleDynamicOutput${node.id}-${index}`;
+              const isConnected = edges.some(edge => edge.targetHandle === handleId);
+              console.log(isConnected)
+
+              return (
+                <Handle
+                  key={handleId}
+                  type="target"
+                  id={handleId}
+                  position={Position.Left}
+                  className={cn(
+                    "z-10 classical-circle-port-out",
+                    isConnected ? "!bg-orange-300 !border-black" : "!bg-gray-200 !border-dashed !border-gray-500"
+                  )}
+                  style={{
+                    top: `${100 + i * 30}px`,
+                    overflow: "visible",
+                    zIndex: 3000,
+                    left: "-6px",
+                  }}
+                  isConnectable={true}
+                />
+              );
+            })}
+
+            {quantumHandles.map((index, i) => (
+              <Handle
+                key={`quantumOutput-${index}`}
+                type="source"
+                id={`quantumHandleOutputInitialization8${node.id}-${index}`}
+                position={Position.Right}
+                className="z-10 circle-port-out !bg-blue-300 !border-black"
+                style={{ top: `${100 + classicalOutputHandles.length * 30 + i * 30}px`, overflow: "visible", zIndex: 3000, left: "-6px" }}
+                isConnectable={true}
+              />
+            ))}
+
+{classicalOutputHandles.map((index, i) => {
+              const handleId = `classicalHandleDynamicOutputElse${node.id}-${index}`;
+              const isConnected = edges.some(edge => edge.targetHandle === handleId);
+              console.log(isConnected)
+
+              return (
+                <Handle
+                  key={handleId}
+                  type="target"
+                  id={handleId}
+                  position={Position.Left}
+                  className={cn(
+                    "z-10 classical-circle-port-out",
+                    isConnected ? "!bg-orange-300 !border-black" : "!bg-gray-200 !border-dashed !border-gray-500"
+                  )}
+                  style={{
+                    top: `calc(70% + ${30 + i * 30}px)`,
+                    overflow: "visible",
+                    zIndex: 3000,
+                    left: "-6px",
+                  }}
+                  isConnectable={true}
+                />
+              );
+            })}
+
+            {classicalHandles.map((index, i) => (
+              <Handle
+                key={`side-classical-output-${index}`}
+                type="source"
+                id={`sideClassicalHandleOutput-${node.id}-${index}`}
+                position={Position.Left}
+                className="z-10 classical-circle-port-hex-out !bg-orange-300 !border-black"
+                style={{
+                  top: `calc(70% + ${30 + i * 30}px)`, // Start below the side handle
+                  left: "50%",
+                  transform: "translate(-50%, -50%)",
+                  position: "absolute",
+                  zIndex: 3000,
+                }}
+                isConnectable={true}
+              />
+            ))}
+            {quantumHandles.map((index, i) => (
+              <Handle
+                key={`side-quantum-output-${index}`}
+                type="source"
+                id={`sideQuantumHandleOutput-${node.id}-${index}`}
+                position={Position.Left}
+                className="z-10 circle-port-hex-out !bg-blue-300 !border-black"
+                style={{
+                  top: `calc(70% + ${30 * (classicalHandles.length + 1 + i)}px)`, // offset by classical height
+                  left: "50%",
+                  transform: "translate(-50%, -50%)",
+                  position: "absolute",
+                  zIndex: 3000,
+                }}
+                isConnectable={true}
+              />
+            ))}
           </div>
 
           {/* Repeat End (right polygon) */}
@@ -276,9 +346,9 @@ export const ControlStructureNode = memo((node: Node) => {
                 style={{
                   position: "absolute",
                   width: "250px",
-                  height: "200px",
+                  height: `${hexagonHeight}px`,
                   backgroundColor: "white",
-                  top: "-70px",
+                  top: `${hexagonTopOffset}px`,
                   clipPath: "polygon(10% 0%, 90% 0%, 100% 10%, 100% 90%, 90% 100%, 10% 100%, 0% 90%, 0% 10%)",
                 }}
               >
@@ -307,25 +377,7 @@ export const ControlStructureNode = memo((node: Node) => {
                 />
               </div>
 
-              {/* Optional second right port */}
-              <div style={{ position: "absolute", right: "249px", overflow: "visible" }}>
-                <Handle
-                  type="target"
-                  id="classicalHandleOutputInitialization"
-                  position={Position.Right}
-                  className="absolute z-10 classical-circle-port-hex-out !bg-orange-300 !border-black"
-                  style={{ top: "40px", overflow: "visible" }}
-                  isConnectable={edges.filter((edge) => edge.target === node.id).length < 2}
-                />
-                <Handle
-                  type="target"
-                  id="quantumHandleOutputInitialization"
-                  position={Position.Right}
-                  className="z-10 circle-port-hex-out !bg-blue-300 !border-black"
-                  style={{ top: "70px", overflow: "visible" }}
-                  isConnectable={edges.filter((edge) => edge.target === node.id).length < 2}
-                />
-              </div>
+
             </div>
           </div>
         </div>
