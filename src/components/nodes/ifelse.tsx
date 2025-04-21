@@ -27,53 +27,41 @@ export const ControlStructureNode = memo((node: Node) => {
   const [showingChildren, setShowingChildren] = useState(false);
   const { setNodes, updateNodeValue, setSelectedNode, edges } = useStore(selector, shallow);
   const updateNodeInternals = useUpdateNodeInternals();
+  const [quantumHandles, setQuantumHandles] = useState([0]);
+  const [classicalHandles, setClassicalHandles] = useState([0]);
+
+
+  useEffect(() => {
+    const connectedQuantumHandles = edges
+      .filter(edge => edge.target === node.id && edge.targetHandle?.startsWith(`quantumHandleInputInitialization${node.id}`))
+      .map(edge => edge.targetHandle);
+    const connectedClassicalHandles = edges
+      .filter(edge => edge.target === node.id && edge.targetHandle?.startsWith(`classicalHandleInputInitialization${node.id}`))
+      .map(edge => edge.targetHandle);
+
+    const expectedHandles = quantumHandles.map(index => `quantumHandleInputInitialization${node.id}-${index}`);
+
+    const expectedClassicalHandles = classicalHandles.map(index => `classicalHandleInputInitialization${node.id}-${index}`);
+    const lastHandle = expectedHandles[expectedHandles.length - 1];
+    const lastClassicalHandle = expectedClassicalHandles[expectedClassicalHandles.length - 1];
+
+    if (connectedQuantumHandles.includes(lastHandle)) {
+      setQuantumHandles(prev => [...prev, prev.length]);
+    }
+    if (connectedClassicalHandles.includes(lastClassicalHandle)) {
+      setClassicalHandles(prev => [...prev, prev.length]);
+    }
+  }, [edges, node.id, classicalHandles, quantumHandles]);
+  const dynamicHeight = 500 + Math.max(0, quantumHandles.length - 1) * 30;
+
 
   return (
     <div
       className="grand-parent overflow-visible"
-      style={{ overflow: "visible", minWidth: "1100px", height: "500px", position: "relative" }}
+      style={{ overflow: "visible", minWidth: "1100px", height: `${dynamicHeight}px`, position: "relative" }}
 
     >
-      <div
-        className="absolute"
-        style={{
-          top: "0",
-          bottom: "0",
-          left: "150px",
-          width: "2px",
-          backgroundColor: "#000",
-          zIndex: 9,
-        }}
-      >
-        <Handle
-          type="target"
-          id={`sideLineHandle-${node.id}`}
-          position={Position.Left}
-          style={{
-            position: "absolute",
-            top: "20%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            backgroundColor: "#00f",
-            border: "2px solid black",
-          }}
-          isConnectable={true}
-        />
-         <Handle
-          type="target"
-          id={`sideLineHandle-${node.id}`}
-          position={Position.Left}
-          style={{
-            position: "absolute",
-            top: "70%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            backgroundColor: "#00f",
-            border: "2px solid black",
-          }}
-          isConnectable={true}
-        />
-      </div>
+
 
       <div
         className="absolute"
@@ -115,7 +103,7 @@ export const ControlStructureNode = memo((node: Node) => {
           isConnectable={true}
         />
       </div>
-      
+
       <div
         className="absolute z-20 text-black text-center font-bold bg-purple-300 py-1 rounded"
         style={{
@@ -134,6 +122,69 @@ export const ControlStructureNode = memo((node: Node) => {
         <div className="rounded-md border border-solid border-gray-700 shadow-md w-full h-full flex flex-col items-center relative z-10 overflow-visible">
           <div className="w-full bg-purple-300 text-black text-center font-semibold py-1">
             <span className="text-sm">Then</span>
+          </div>
+          <div
+            className="absolute"
+            style={{
+              top: "0",
+              bottom: "0",
+              left: "200px",
+              width: "2px",
+              backgroundColor: "#000",
+              zIndex: 9,
+            }}
+          >
+            {quantumHandles.map((index, i) => (
+              <Handle
+                key={`quantum-${index}`}
+                type="source"
+                id={`quantumHandleInputInitialization8${node.id}-${index}`}
+                position={Position.Left}
+                className="z-10 circle-port-out !bg-blue-300 !border-black"
+                style={{ top: `${100 + i * 30}px`, overflow: "visible", zIndex: 3000, left: "50%" }}
+                isConnectable={true}
+              />
+            ))}
+            {classicalHandles.map((index, i) => (
+              <Handle
+                key={`classical-${index}`}
+                type="source"
+                id={`classicalHandleInputInitialization8${node.id}-${index}`}
+                position={Position.Left}
+                className="z-10 circle-port-out !bg-orange-300 !border-black"
+                style={{ top: `${100 + i * 30}px`, overflow: "visible", zIndex: 3000, left: "50%" }}
+                isConnectable={true}
+              />
+            ))}
+            <Handle
+              type="source"
+              id={`sideLineHandle-${node.id}`}
+              position={Position.Left}
+              className="z-10 circle-port-out !bg-blue-300 !border-black"
+              style={{
+                position: "absolute",
+                top: "20%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+                backgroundColor: "#00f",
+                border: "2px solid black",
+              }}
+              isConnectable={true}
+            />
+            <Handle
+              type="source"
+              id={`sideLineHandle-${node.id}`}
+              position={Position.Left}
+              style={{
+                position: "absolute",
+                top: "70%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+                backgroundColor: "#00f",
+                border: "2px solid black",
+              }}
+              isConnectable={true}
+            />
           </div>
 
           {/* Repeat Start (left polygon) */}
@@ -168,22 +219,30 @@ export const ControlStructureNode = memo((node: Node) => {
 
               {/* Left handles */}
               <div style={{ position: "absolute", left: "-75px", overflow: "visible" }}>
-                <Handle
-                  type="target"
-                  id={`classicalHandleInputInitialization${node.id}`}
-                  position={Position.Left}
-                  className="absolute z-10 classical-circle-port-hex-in !bg-orange-300 !border-black"
-                  style={{ top: "40px", overflow: "visible" }}
-                  isConnectable={edges.filter((edge) => edge.target === node.id).length < 2}
-                />
-                <Handle
-                  type="target"
-                  id={`quantumHandleInputInitialization${node.id}`}
-                  position={Position.Left}
-                  className="z-10 circle-port-hex-in !bg-blue-300 !border-black"
-                  style={{ top: "70px", overflow: "visible" }}
-                  isConnectable={edges.filter((edge) => edge.target === node.id).length < 2}
-                />
+
+                {classicalHandles.map((index, i) => (
+                  <Handle
+                    key={`classical-${index}`}
+                    type="target"
+                    id={`classicalHandleInputInitialization${node.id}-${index}`}
+                    position={Position.Left}
+                    className="z-10 classical-circle-port-hex-in !bg-orange-300 !border-black"
+                    style={{ top: `${70 + i * 30}px`, overflow: "visible", zIndex: 3000, }}
+                    isConnectable={true}
+                  />
+                ))}
+                {quantumHandles.map((index, i) => (
+                  <Handle
+                    key={`quantum-${index}`}
+                    type="target"
+                    id={`quantumHandleInputInitialization${node.id}-${index}`}
+                    position={Position.Left}
+                    className="z-10 circle-port-hex-in !bg-blue-300 !border-black"
+                    style={{ top: `${100 + i * 30}px`, overflow: "visible" }}
+                    isConnectable={true}
+                  />
+                ))}
+
               </div>
 
               {/* Right side of Repeat Start */}
@@ -194,7 +253,7 @@ export const ControlStructureNode = memo((node: Node) => {
                   position={Position.Right}
                   className="absolute z-10 classical-circle-port-hex-in !bg-orange-300 !border-black"
                   style={{ top: "40px", overflow: "visible" }}
-                  isConnectable={true}
+                  isConnectable={edges.filter((edge) => edge.target === node.id).length < 2}
                 />
                 <Handle
                   type="source"
@@ -204,6 +263,7 @@ export const ControlStructureNode = memo((node: Node) => {
                   style={{ top: "70px", overflow: "visible" }}
                   isConnectable={edges.filter((edge) => edge.target === node.id).length < 2}
                 />
+
               </div>
             </div>
           </div>
