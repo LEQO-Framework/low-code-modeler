@@ -116,7 +116,7 @@ export const MeasurementNode = memo((node: Node) => {
                   style={{ top: "20px" }}
                   isValidConnection={(connection) => true}
                 />
-                <span className="text-black text-sm" >{node.data.inputs[0]?.outputIdentifier || "value(s)"}</span>
+                <span className="text-black text-sm" >{node.data.inputs[0]?.outputIdentifier || "Register"}</span>
               </div>
             </div>
           </div>

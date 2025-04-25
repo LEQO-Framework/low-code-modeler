@@ -355,7 +355,7 @@ const useStore = create<RFState>((set, get) => ({
       if (node.id === connection.source && node.type === "positionNode" && connection.targetHandle.includes("classicalHandle")) {
         insertEdge = true;
       }
-      if (node.id === connection.source && node.type === "measurementNode" && (nodeDataTarget.type === "ifelseNode" || nodeDataTarget.type ==="controlStructureNode")) {
+      if (node.id === connection.source && node.type === "measurementNode" && (nodeDataTarget.type === "ifElseNode" || nodeDataTarget.type ==="controlStructureNode")) {
         insertEdge = true;
       }
       if (node.id === connection.source && node.type === "ancillaNode" && connection.targetHandle.includes("ancillaHandle")) {

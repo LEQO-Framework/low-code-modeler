@@ -23,7 +23,7 @@ const selector = (state: {
   setSelectedNode: state.setSelectedNode,
 });
 
-export const ControlStructureNode = memo((node: Node) => {
+export const IfElseNode = memo((node: Node) => {
   const [showingChildren, setShowingChildren] = useState(false);
   const { setNodes, updateNodeValue, setSelectedNode, edges } = useStore(selector, shallow);
   const updateNodeInternals = useUpdateNodeInternals();
@@ -105,7 +105,7 @@ export const ControlStructureNode = memo((node: Node) => {
   }, [edges, node.id, classicalHandles, quantumHandles, classicalOutputHandles, quantumOutputHandles, quantumOutputHandlesElse, classicalOutputHandlesElse]);
 
   const dynamicHeight = 900 + Math.max(0, quantumHandles.length - 1 + (classicalHandles.length - 1)) * 30;
-  const totalHandles = classicalHandles.length + quantumHandles.length + classicalOutputHandles.length + classicalOutputHandlesElse.length + quantumOutputHandles.length+ quantumOutputHandlesElse.length;
+  const totalHandles = Math.max(classicalHandles.length + quantumHandles.length, classicalOutputHandles.length + classicalOutputHandlesElse.length + quantumOutputHandles.length + quantumOutputHandlesElse.length);
   const hexagonHeight = Math.max(250, 280 + totalHandles * 30);
   const hexagonTopOffset = -(hexagonHeight / 2) + 20;
 
@@ -146,28 +146,57 @@ export const ControlStructureNode = memo((node: Node) => {
               zIndex: 9,
             }}
           >
-            {classicalHandles.map((index, i) => (
-              <Handle
-                key={`classical-${index}`}
-                type="source"
-                id={`classicalHandleInputInitialization8${node.id}-${index}`}
-                position={Position.Right}
-                className="z-10 classical-circle-port-out !bg-orange-300 !border-black"
-                style={{ top: `${100 + i * 30}px`, overflow: "visible", zIndex: 3000, left: "-6px" }}
-                isConnectable={true}
-              />
-            ))}
-            {quantumHandles.map((index, i) => (
-              <Handle
-                key={`quantum-${index}`}
-                type="source"
-                id={`quantumHandleInputInitialization8${node.id}-${index}`}
-                position={Position.Right}
-                className="z-10 circle-port-out !bg-blue-300 !border-black"
-                style={{ top: `${100 + classicalHandles.length * 30 + i * 30}px`, overflow: "visible", zIndex: 3000, left: "-6px" }}
-                isConnectable={true}
-              />
-            ))}
+           
+            {classicalHandles.map((index, i) => {
+              const handleId = `classicalHandleInputInitialization${node.id}-${index}`;
+              const isConnected = edges.some(edge => edge.targetHandle === handleId);
+
+              return (
+                <Handle
+                  key={`classical-${index}`}
+                  type="source"
+                  id={handleId} // check if this makes problem
+                  position={Position.Right}
+                  className={cn(
+                    "z-10 classical-circle-port-out",
+                    isConnected ? "!bg-orange-300 !border-black" : "!bg-orange-300 !border-black"
+                  )}
+                  style={{
+                    top: `${100 + i * 30}px`,
+                    overflow: "visible",
+                    zIndex: 3000,
+                    left: "-6px"
+                  }}
+                  isConnectable={true}
+                />
+              );
+            })}
+           
+            {quantumHandles.map((index, i) => {
+              const handleId = `quantumHandleInputInitialization${node.id}-${index}`;
+              const isConnected = edges.some(edge => edge.targetHandle === handleId);
+
+              return (
+                <Handle
+                  key={`quantum-${index}`}
+                  type="source"
+                  id={handleId} // check if this makes problem
+                  position={Position.Right}
+                  className={cn(
+                    "z-10 circle-port-out",
+                    isConnected ? "!bg-blue-300 !border-black" : "!bg-gray-200 !border-dashed !border-gray-500"
+                  )}
+                  style={{
+                    top: `${100 + classicalHandles.length * 30 + i * 30}px`,
+                    overflow: "visible",
+                    zIndex: 3000,
+                    left: "-6px"
+                  }}
+                  isConnectable={true}
+                />
+              );
+            })}
+
 
             {classicalHandles.map((index, i) => (
               <Handle
@@ -186,23 +215,32 @@ export const ControlStructureNode = memo((node: Node) => {
                 isConnectable={true}
               />
             ))}
-            {quantumHandles.map((index, i) => (
-              <Handle
-                key={`side-quantum-${index}`}
-                type="source"
-                id={`sideQuantumHandle-${node.id}-${index}`}
-                position={Position.Right}
-                className="z-10 circle-port-hex-out !bg-blue-300 !border-black"
-                style={{
-                  top: `calc(70% + ${30 * (classicalHandles.length + 1 + i)}px)`, // offset by classical height
-                  left: "50%",
-                  transform: "translate(-50%, -50%)",
-                  position: "absolute",
-                  zIndex: 3000,
-                }}
-                isConnectable={true}
-              />
-            ))}
+            {quantumHandles.map((index, i) => {
+              const handleId = `quantumHandleInputInitialization${node.id}-${index}`;
+              const isConnected = edges.some(edge => edge.targetHandle === handleId);
+
+              return (
+                <Handle
+                  key={`side-quantum-${index}`}
+                  type="source"
+                  id={`quantumHandlesite-${node.id}-${index}`}
+                  position={Position.Right}
+                  className={cn(
+                    "z-10 circle-port-out",
+                    isConnected ? "!bg-blue-300 !border-black" : "!bg-gray-200 !border-dashed !border-gray-500"
+                  )}
+                  style={{
+                    top: `calc(70% + ${30 * (classicalHandles.length + 1 + i)}px)`,
+                    left: "50%",
+                    transform: "translate(-50%, -50%)",
+                    position: "absolute",
+                    zIndex: 3000,
+                  }}
+                  isConnectable={true}
+                />
+              );
+            })}
+
           </div>
 
           {/* Repeat Start (left polygon) */}
@@ -238,6 +276,30 @@ export const ControlStructureNode = memo((node: Node) => {
               {/* Left handles */}
               <div style={{ position: "absolute", left: "-75px", overflow: "visible" }}>
 
+              {classicalHandles.map((index, i) => {
+              const handleId = `classicalHandleInputInitialization${node.id}-${index}`;
+              const isConnected = edges.some(edge => edge.targetHandle === handleId);
+
+              return (
+                <Handle
+                  key={`classical-${index}`}
+                  type="source"
+                  id={handleId} // check if this makes problem
+                  position={Position.Right}
+                  className={cn(
+                    "z-10 classical-circle-port-hex-in",
+                    isConnected ? "!bg-orange-300 !border-black" : "!bg-gray-200 !border-dashed !border-gray-500"
+                  )}
+                  style={{
+                    top: `${hexagonTopOffset + 70 + i * 30}px`,
+                    overflow: "visible",
+                    zIndex: 3000,
+                    left: "-6px"
+                  }}
+                  isConnectable={true}
+                />
+              );
+            })}
                 {classicalHandles.map((index, i) => (
                   <Handle
                     key={`classical-${index}`}
@@ -249,17 +311,32 @@ export const ControlStructureNode = memo((node: Node) => {
                     isConnectable={true}
                   />
                 ))}
-                {quantumHandles.map((index, i) => (
-                  <Handle
-                    key={`quantum-${index}`}
-                    type="target"
-                    id={`quantumHandleInputInitialization${node.id}-${index}`}
-                    position={Position.Left}
-                    className="z-10 circle-port-hex-in !bg-blue-300 !border-black"
-                    style={{ top: `${hexagonTopOffset + 100 + classicalHandles.length * 30 + i * 30}px`, overflow: "visible" }}
-                    isConnectable={true}
-                  />
-                ))}
+
+
+                {quantumHandles.map((index, i) => {
+                  const handleId = `quantumHandleInputInitialization${node.id}-${index}`;
+                  const isConnected = edges.some(edge => edge.targetHandle === handleId);
+
+                  return (
+                    <Handle
+                      key={`quantum-${index}`}
+                      type="target"
+                      id={handleId}
+                      position={Position.Left}
+                      className={cn(
+                        "z-10 circle-port-hex-in",
+                        isConnected ? "!bg-blue-300 !border-black" : "!bg-gray-200 !border-dashed !border-gray-500"
+                      )}
+
+                      style={{
+                        top: `${hexagonTopOffset + 100 + classicalHandles.length * 30 + i * 30}px`,
+                        overflow: "visible",
+                      }}
+                      isConnectable={true}
+                    />
+                  );
+                })}
+
 
               </div>
 

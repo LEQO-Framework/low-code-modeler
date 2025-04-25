@@ -81,10 +81,10 @@ export const categories: { [key: string]: any } = {
   },
   "Custom Operators": {
     "Custom Quantum Operator": [
-      { label: "Custom Quantum Operator", type: "algorithmNode", icon: "add.png" }
+      { label: "Custom Quantum Operator", type: "algorithmNode"}
     ],
     "Custom Classical Operator": [
-      { label: "Custom Classical Operator", type: "arithmeticOperatorNode", icon: "add.png" }
+      { label: "Custom Classical Operator", type: "algorithmNode" }
     ],
   }
 
