@@ -376,7 +376,7 @@ function App() {
       let nodeT = nodes[0];
       nodes.forEach((nd) => {
         // Check if there's a group node in the array of nodes on the screen
-        if (nd.type === "controlStructureNode") {
+        if (nd.type === "controlStructureNode" || nd.type === "ifElseNode") {
           //safety check to make sure there's a height and width
           console.log(node);
           console.log(nd.id);

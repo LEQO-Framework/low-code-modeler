@@ -1,5 +1,5 @@
-import { memo, useState, useRef } from "react";
-import { Handle, Position, Node, useUpdateNodeInternals, Edge } from "reactflow";
+import { memo } from "react";
+import { Handle, Position, Node, Edge } from "reactflow";
 import useStore from "@/config/store";
 import { shallow } from "zustand/shallow";
 
@@ -101,11 +101,7 @@ export const GateNode = memo((node: Node) => {
             position={Position.Right}
             className="!absolute !top-[50%] !right--15 z-10 circle-port-out !bg-blue-300 !border-black"
             isValidConnection={() => true}
-            isConnectable={
-              edges.filter(
-                (edge) => edge.sourceHandle === "quantumHandleStatePreparationOutput" + node.id
-              ).length < 1
-            }
+            isConnectable={edges.filter(edge => edge.sourceHandle === "quantumHandleGateOutput1" + node.id).length < 1}
           />
         )}
 
@@ -117,11 +113,7 @@ export const GateNode = memo((node: Node) => {
               position={Position.Right}
               className="!absolute !top-[25%] !right--15 z-10 circle-port-out !bg-blue-300 !border-black"
               isValidConnection={() => true}
-              isConnectable={
-                edges.filter(
-                  (edge) => edge.sourceHandle === "quantumHandleStatePreparationOutput" + node.id
-                ).length < 1
-              }
+              isConnectable={edges.filter(edge => edge.sourceHandle === "quantumHandleGateOutput1" + node.id).length < 1}
             />
             <Handle
               type="source"
@@ -129,11 +121,7 @@ export const GateNode = memo((node: Node) => {
               position={Position.Right}
               className="!absolute !top-[75%] !right--15 z-10 circle-port-out !bg-blue-300 !border-black"
               isValidConnection={() => true}
-              isConnectable={
-                edges.filter(
-                  (edge) => edge.sourceHandle === "quantumHandleStatePreparationOutput" + node.id
-                ).length < 1
-              }
+              isConnectable={edges.filter(edge => edge.sourceHandle === "quantumHandleGateOutput2" + node.id).length < 1}
             />
           </>
         )}
@@ -146,11 +134,7 @@ export const GateNode = memo((node: Node) => {
               position={Position.Right}
               className="!absolute !top-[25%] !right--15 z-10 circle-port-out !bg-blue-300 !border-black"
               isValidConnection={() => true}
-              isConnectable={
-                edges.filter(
-                  (edge) => edge.sourceHandle === "quantumHandleStatePreparationOutput" + node.id
-                ).length < 1
-              }
+              isConnectable={edges.filter(edge => edge.sourceHandle === "quantumHandleGateOutput1" + node.id).length < 1}
             />
             <Handle
               type="source"
@@ -158,11 +142,7 @@ export const GateNode = memo((node: Node) => {
               position={Position.Right}
               className="!absolute !top-[50%] !right--15 z-10 circle-port-out !bg-blue-300 !border-black"
               isValidConnection={() => true}
-              isConnectable={
-                edges.filter(
-                  (edge) => edge.sourceHandle === "quantumHandleStatePreparationOutput" + node.id
-                ).length < 1
-              }
+              isConnectable={edges.filter(edge => edge.sourceHandle === "quantumHandleGateOutput2" + node.id).length < 1}
             />
             <Handle
               type="source"
@@ -170,11 +150,7 @@ export const GateNode = memo((node: Node) => {
               position={Position.Right}
               className="!absolute !top-[75%] !right--15 z-10 circle-port-out !bg-blue-300 !border-black"
               isValidConnection={() => true}
-              isConnectable={
-                edges.filter(
-                  (edge) => edge.sourceHandle === "quantumHandleStatePreparationOutput" + node.id
-                ).length < 1
-              }
+              isConnectable={edges.filter(edge => edge.sourceHandle === "quantumHandleGateOutput3" + node.id).length < 1}
             />
           </>
         )}

@@ -5,7 +5,7 @@ import { TextNode, DataTypeNode, PositionNode } from "@/components/nodes";
 import { AlgorithmNode } from "@/components/nodes/algorithm";
 import { AncillaNode } from "@/components/nodes/ancilla";
 import { ClassicalOutputOperationNode } from "@/components/nodes/classicalOutputOperation";
-import { ControlStructureNode } from "@/components/nodes/controlstructure";
+import {  IfElseNode } from "@/components/nodes/ifelse";
 import { DynamicNode } from "@/components/nodes/dynamically";
 import { GateNode } from "@/components/nodes/gate";
 import { MeasurementNode } from "@/components/nodes/measurement";
@@ -13,6 +13,7 @@ import { OperationNode } from "@/components/nodes/operation";
 import { StatePreparationNode } from "@/components/nodes/statepreparation";
 import { UncomputeNode } from "@/components/nodes/uncompute";
 import { Edge } from "reactflow";
+import { ControlStructureNode } from "@/components/nodes/controlstructure";
 
 export const nodesConfig = {
   initialNodes: [ ] as unknown as Node[],
@@ -31,6 +32,7 @@ export const nodesConfig = {
     classicalOutputOperationNode: ClassicalOutputOperationNode,
     gateNode: GateNode,
     controlStructureNode: ControlStructureNode,
+    ifElseNode: IfElseNode,
     algorithmNode : AlgorithmNode
   } as any,
   edgesTypes: {
