@@ -1,3 +1,5 @@
+import { icons } from "antd/es/image/PreviewGroup";
+
 export type NodeType =
   | "operationNode1"
   | "operationNode2"
@@ -34,18 +36,18 @@ export const categories: { [key: string]: any } = {
   },
   "Circuit Blocks": {
     "Qubits": [
-      { label: "Qubit", type: "gateNode" }
+      { label: "Qubit", type: "gateNode", icon: "qubit.png" }
     ],
     "Circuit Blocks": [
-      { label: "CNOT", type: "gateNode" },
-      { label: "Toffoli", type: "gateNode" },
-      { label: "H", type: "gateNode" },
-      { label: "RX(θ)", type: "gateNode" },
-      { label: "RY(θ)", type: "gateNode" },
-      { label: "RZ(θ)", type: "gateNode" },
-      { label: "X", type: "gateNode" },
-      { label: "Y", type: "gateNode" },
-      { label: "Z", type: "gateNode" },
+      { label: "CNOT", type: "gateNode", icon: "cnotgate.png" },
+      { label: "Toffoli", type: "gateNode", icon: "toffoligate.png" },
+      { label: "H", type: "gateNode", icon: "hadamard.png" },
+      { label: "RX(θ)", type: "gateNode", icon: "rx.png"},
+      { label: "RY(θ)", type: "gateNode", icon: "ry.png" },
+      { label: "RZ(θ)", type: "gateNode", icon: "rz.png" },
+      { label: "X", type: "gateNode", icon: "pauliX.png" },
+      { label: "Y", type: "gateNode", icon: "pauliY.png" },
+      { label: "Z", type: "gateNode", icon: "pauliZ.png"},
     ],
   },
   "Data Types": {
