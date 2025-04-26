@@ -222,7 +222,7 @@ function App() {
   const sendToQunicorn = async () => {
     setModalStep(1);
     setLoading(true);
-    
+
 
     try {
       let program = {
@@ -310,7 +310,7 @@ function App() {
         });
 
         getdata = await getresponse.json();
-        setProgress(progress +20);
+        setProgress(progress + 20);
       }
       setProgress(100);
       console.log(getdata.results[1])
@@ -401,14 +401,52 @@ function App() {
                 y: node.positionAbsolute.y - nd.position.y,
               };
 
-              updateNodeValue(node.id, "width", "")
+              // Get the main node
+              const mainNode = document.querySelector<HTMLDivElement>(
+                'div.react-flow__node-controlStructureNode'
+              );
+
+              if (mainNode) {
+                // Get the first child div (grand-parent where you set width)
+                const firstChild = mainNode.querySelector<HTMLDivElement>(
+                  'div.grand-parent'
+                );
+
+                console.log('Main node:', mainNode);
+                console.log('First child (grand-parent):', firstChild);
+                if (firstChild) {
+                  console.log()
+
+
+                  // Get the current minWidth from computed styles
+                  const currentMinWidth = window.getComputedStyle(firstChild).minWidth;
+
+                  // Parse it into a number
+                  const currentMinWidthValue = parseFloat(currentMinWidth);
+
+                  // Add 100 to it
+                  const newMinWidth = currentMinWidthValue + 100;
+
+                  // Set it back with "px"
+                  firstChild.style.minWidth = `${newMinWidth}px`;
+
+                  console.log(`Updated minWidth to ${newMinWidth}px`);
+
+
+                }
+              } else {
+                console.error('Main node not found');
+              }
+
+
+              //nd.style.width = 10;
               console.log(node);
               //intersectionNodes[0].width = 1000;
               nodeT = node;
-              //updateParent(node.id, nd.id, node.position);
+              updateParent(node.id, nd.id, node.position);
 
 
-              //updateNodeValue(node.id, "position", node.position);
+              updateNodeValue(node.id, "position", node.position);
             }
           }
         }
@@ -576,6 +614,7 @@ function App() {
     [setMenu, setSelectedNode],
   );
 
+  /**
   const isValidConnection = useCallback(
     (connection) => {
       console.log("isValid")
@@ -597,6 +636,7 @@ function App() {
     },
     [],
   );
+   */
   const [isModalOpen, setIsModalOpen] = useState(true);
 
   //const handleLoadJson = () => {
@@ -899,8 +939,8 @@ function App() {
 
         <div>
           The job is executed on the aer_qasm_simulator with 1024 shots.
-          
-          {chartData && progress === 100&& <ResponsiveContainer width="100%" height={300}>
+
+          {chartData && progress === 100 && <ResponsiveContainer width="100%" height={300}>
             <BarChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="register" label={{ value: "Register", position: "insideBottom", offset: 5 }} />
@@ -951,7 +991,7 @@ function App() {
             onPaneClick={onPaneClick}
             onDragOver={onDragOver}
             onNodeDrag={onNodeDrag}
-            isValidConnection={isValidConnection}
+            //isValidConnection={isValidConnection}
             onNodeDragStop={onNodeDragStop}
             onDrop={onDrop}
             fitView
