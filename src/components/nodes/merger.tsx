@@ -37,7 +37,7 @@ export const MergerNode = memo((node: Node) => {
   const inputHandles = Array.from({ length: numberInputs }, (_, i) => (
     <Handle
       key={`input-${i}`}
-      type="target"
+      type="source"
       id={`quantumHandleGateInput${i + 1}${node.id}`}
       position={Position.Left}
       style={{
@@ -51,9 +51,9 @@ export const MergerNode = memo((node: Node) => {
   const outputHandles = Array.from({ length: numberOutputs }, (_, i) => (
     <Handle
       key={`output-${i}`}
-      type="source"
+      type="target"
       id={`quantumHandleGateOutput${i + 1}${node.id}`}
-      position={Position.Right}
+      position={Position.Left}
       style={{
         top: `${handleOffset + i * handleGap}px`,
       }}
@@ -88,7 +88,7 @@ export const MergerNode = memo((node: Node) => {
     );
     console.log("EDGES")
     console.log(edgesToRemove)
-   
+
     if (edgesToRemove.length > 0) {
       console.log("remove edges")
       setNewEdges(edgesToRemove);
@@ -102,16 +102,15 @@ export const MergerNode = memo((node: Node) => {
   return (
     <div className="grand-parent">
       <div
-        className="w-[100px] rounded-none overflow-hidden border border-solid border-gray-700 shadow-md bg-blue-100 "
+        className="w-[100px] rounded-none overflow-hidden border border-solid border-gray-700 shadow-md"
         style={{ height: `${nodeHeight}px` }}
       >
 
-        <div className="px-2 py-3 flex justify-center bg-blue-100">
-          <div className="flex items-center bg-blue-100">
+        <div className="px-2 py-3 flex justify-center">
+          <div className="flex items-center">
             <>
               <div className="flex flex-col items-start text-black text-center overflow-visible">
                 <div className="flex items-center mt-2">
-
                   {inputHandles}
                 </div>
               </div>
@@ -130,7 +129,9 @@ export const MergerNode = memo((node: Node) => {
                 data.label
               )}
             </div>
-            {outputHandles}
+            <div className="absolute right-0 top-0 bottom-0 flex flex-col justify-center">
+              {outputHandles}
+            </div>
           </div>
         </div>
       </div>

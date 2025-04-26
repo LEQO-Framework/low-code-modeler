@@ -51,7 +51,7 @@ export const SplitterNode = memo((node: Node) => {
   const outputHandles = Array.from({ length: numberOutputs }, (_, i) => (
     <Handle
       key={`output-${i}`}
-      type="source"
+      type="target"
       id={`quantumHandleGateOutput${i + 1}${node.id}`}
       position={Position.Left}
       style={{
@@ -59,7 +59,7 @@ export const SplitterNode = memo((node: Node) => {
       }}
       className="!absolute z-10 circle-port-out !bg-blue-300 !border-black overflow-visible"
       isValidConnection={() => true}
-    
+
     />
   ));
 
@@ -86,7 +86,7 @@ export const SplitterNode = memo((node: Node) => {
     );
     console.log("EDGES")
     console.log(edgesToRemove)
-   
+
     if (edgesToRemove.length > 0) {
       console.log("remove edges")
       setNewEdges(edgesToRemove);
@@ -109,11 +109,11 @@ export const SplitterNode = memo((node: Node) => {
             <>
               <div className="flex flex-col items-start text-black text-center overflow-visible">
                 <div className="flex items-center mt-2">
-
                   {inputHandles}
                 </div>
               </div>
             </>
+            
             <div
               className={`absolute ${data.label === "Qubit" ? "top-[48%]" : "top-[50%]"
                 } -translate-x-1/2 -translate-y-1/2 text-center font-bold`}
@@ -128,10 +128,10 @@ export const SplitterNode = memo((node: Node) => {
                 data.label
               )}
             </div>
-         
+
             <div className="absolute right-0 top-0 bottom-0 flex flex-col justify-center">
-      {outputHandles}
-    </div>
+              {outputHandles}
+            </div>
           </div>
         </div>
       </div>

@@ -37,7 +37,7 @@ export const nodesConfig = {
     ifElseNode: IfElseNode,
     algorithmNode : AlgorithmNode,
     splitterNode: SplitterNode,
-    mergeNode: MergerNode
+    mergerNode: MergerNode
   } as any,
   edgesTypes: {
     quantumEdge: QuantumEdge,

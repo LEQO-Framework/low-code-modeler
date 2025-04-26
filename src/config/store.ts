@@ -327,7 +327,7 @@ const useStore = create<RFState>((set, get) => ({
       }
     };
 
-    if (target.id === connection.source && target.type !== "splitterNode") { console.log("source target"); return false };
+    if (target.id === connection.source && target.type !== "splitterNode" && target.type !== "mergerNode") { console.log("source target"); return false };
     console.log(!hasCycle(target))
     let cycle = !hasCycle(target);
     for (let node of currentNodes) {
@@ -374,6 +374,15 @@ const useStore = create<RFState>((set, get) => ({
       if(nodeDataSource.type==="controlStructureNode"){
         insertEdge = true;
       }
+      if (nodeDataSource.type === "splitterNode" || nodeDataSource.type === "mergerNode") {
+        // only allow source connections that are inside the node
+        if (connection.sourceHandle && connection.sourceHandle.startsWith("quantumHandleGateInput") && connection.sourceHandle.endsWith(nodeDataSource.id) && connection.targetHandle.endsWith(nodeDataSource.id)) {
+          insertEdge = true;
+        } else {
+          insertEdge = false;
+        }
+      }
+      
       if (node.id === connection.source && nodeDataSource.type === "positionNode") {
         console.log(nodeDataSource)
         if (nodeDataSource.data.label === "boolean" || nodeDataSource.data.label === "bit") {
@@ -396,7 +405,7 @@ const useStore = create<RFState>((set, get) => ({
     }
     // Überprüfung: Existiert bereits eine Edge zur connection.targetHandle?
     const edgeExists = currentEdges.some(edge =>
-      edge.targetHandle === connection.targetHandle
+      edge.targetHandle === connection.targetHandle && nodeDataTarget.type !== "mergerNode"
     );
     console.log(connection)
     console.log(insertEdge);
