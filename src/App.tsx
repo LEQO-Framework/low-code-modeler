@@ -8,7 +8,8 @@ import ReactFlow, {
   ReactFlowProvider,
   MiniMap,
   getOutgoers,
-  getNodesBounds
+  getNodesBounds,
+  ConnectionMode
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { Panel, Palette } from "./components";
@@ -999,6 +1000,7 @@ function App() {
             onInit={setReactFlowInstance}
             snapToGrid={true}
             nodeTypes={nodesConfig.nodeTypes}
+            connectionMode={ConnectionMode.Loose} // to allow splitter node
             edgeTypes={nodesConfig.edgesTypes}
           >{helperLines && (
             <>

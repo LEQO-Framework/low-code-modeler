@@ -25,6 +25,8 @@ export const categories: { [key: string]: any } = {
     "Classical To Quantum": [
       { label: "Encode Value", type: "statePreparationNode", inputs: [], icon: "encodeValue.png" },
       { label: "Prepare State", type: "statePreparationNode", icon: "prepareState.png" },
+      { label: "Splitter", type: "splitterNode" },
+      { label: "Merge", type: "mergerNode" },
     ],
     "Quantum To Classical": [
       { label: "Measurement", type: "measurementNode", icon: "measurement.png" },

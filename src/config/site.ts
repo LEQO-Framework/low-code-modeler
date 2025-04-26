@@ -14,6 +14,8 @@ import { StatePreparationNode } from "@/components/nodes/statepreparation";
 import { UncomputeNode } from "@/components/nodes/uncompute";
 import { Edge } from "reactflow";
 import { ControlStructureNode } from "@/components/nodes/controlstructure";
+import { SplitterNode } from "@/components/nodes/splitter";
+import { MergerNode } from "@/components/nodes/merger";
 
 export const nodesConfig = {
   initialNodes: [ ] as unknown as Node[],
@@ -33,7 +35,9 @@ export const nodesConfig = {
     gateNode: GateNode,
     controlStructureNode: ControlStructureNode,
     ifElseNode: IfElseNode,
-    algorithmNode : AlgorithmNode
+    algorithmNode : AlgorithmNode,
+    splitterNode: SplitterNode,
+    mergeNode: MergerNode
   } as any,
   edgesTypes: {
     quantumEdge: QuantumEdge,

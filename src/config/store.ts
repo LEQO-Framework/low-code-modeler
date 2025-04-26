@@ -327,7 +327,7 @@ const useStore = create<RFState>((set, get) => ({
       }
     };
 
-    if (target.id === connection.source) { console.log("source target"); return false };
+    if (target.id === connection.source && target.type !== "splitterNode") { console.log("source target"); return false };
     console.log(!hasCycle(target))
     let cycle = !hasCycle(target);
     for (let node of currentNodes) {
@@ -345,7 +345,8 @@ const useStore = create<RFState>((set, get) => ({
 
       if (node.id === connection.source && (node.type !== "positionNode" && node.type !== "measurementNode")) {
         type = "quantumEdge";
-        color = "#93C5FD"
+        color = "#93C5FD";
+    
       }
       if (node.id === connection.source && node.type === "ancillaNode") {
         type = "ancillaEdge";
@@ -410,7 +411,7 @@ const useStore = create<RFState>((set, get) => ({
         width: 20,
         height: 20,
         color: color,
-      },
+      }
       //label: label
     };
 
