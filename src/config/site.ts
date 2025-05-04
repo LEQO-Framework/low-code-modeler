@@ -1,7 +1,7 @@
 import AncillaEdge from "@/components/edges/ancillaEdgeType";
 import ClassicalEdge from "@/components/edges/classicalEdgeType";
 import QuantumEdge from "@/components/edges/customEdgeType";
-import { TextNode, DataTypeNode, PositionNode } from "@/components/nodes";
+import { TextNode, DataTypeNode } from "@/components/nodes";
 import { AlgorithmNode } from "@/components/nodes/algorithm";
 import { AncillaNode } from "@/components/nodes/ancilla";
 import { ClassicalOutputOperationNode } from "@/components/nodes/classicalOutputOperation";
@@ -23,7 +23,6 @@ export const nodesConfig = {
   nodeTypes: {
     textNode: TextNode,
     dataTypeNode: DataTypeNode,
-    positionNode: PositionNode,
     dynamicNode: DynamicNode,
     measurementNode: MeasurementNode,
     statePreparationNode: StatePreparationNode,

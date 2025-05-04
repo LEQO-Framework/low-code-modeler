@@ -12,6 +12,19 @@ export enum HistoryAction {
   MoveNode = "moveNode",
 }
 
+export const DataTypeNode : string = "dataTypeNode";
+export const GateNode : string = "gateNode";
+export const AlgorithmNode: string = "algorithmNode";
+export const StatePreparationNode : string = "statePreparationNode";
+export const MeasurementNode: string = "measurementNode";
+export const AncillaNode: string = "ancillaNode";
+export const ControlStructureNode: string = "controlStructureNode";
+export const IfElseNode: string = "ifElseNode";
+export const ClassicalOutputOperationNode = "classicalOutputOperationNode";
+export const SplitterNode : string = "SplitterNode";
+export const MergerNode: string = "MergerNode";
+export const ArithmeticOperatorNode = "arithmeticOperatorNode";
+
 export const HadamardImplementation: string = "OPENQASM 3.0;\ninclude \"stdgates.inc\";\n@leqo.input 0\nqubit[1] q;\nh q[0];\n@leqo.output 0\nlet output = q;";
 export const PauliXImplementation: string = "OPENQASM 3.0;\ninclude \"stdgates.inc\";\n@leqo.input 0\nqubit[1] q;\nx q[0];\n@leqo.output 0\nlet output = q;";
 export const PauliYImplementation: string = "OPENQASM 3.0;\ninclude \"stdgates.inc\";\n@leqo.input 0\nqubit[1] q;\ny q[0];\n@leqo.output 0\nlet output = q;";

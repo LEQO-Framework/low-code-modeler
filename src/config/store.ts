@@ -138,7 +138,7 @@ const useStore = create<RFState>((set, get) => ({
       }
     }
 
-    if (node.type === "positionNode") {
+    if (node.type === consts.DataTypeNode) {
       node.data.dataType = node.data.label;
       node.data.value = "";
       node.data.outputIdentifier = "";
@@ -343,7 +343,7 @@ const useStore = create<RFState>((set, get) => ({
     //handler type and name
     for (let node of currentNodes) {
 
-      if (node.id === connection.source && (node.type !== "positionNode" && node.type !== "measurementNode")) {
+      if (node.id === connection.source && (node.type !== consts.DataTypeNode && node.type !== "measurementNode")) {
         type = "quantumEdge";
         color = "#93C5FD";
     
@@ -353,7 +353,7 @@ const useStore = create<RFState>((set, get) => ({
         color = "#86EFAC";
       }
 
-      if (node.id === connection.source && node.type === "positionNode" && connection.targetHandle.includes("classicalHandle")) {
+      if (node.id === connection.source && node.type === consts.DataTypeNode && connection.targetHandle.includes("classicalHandle")) {
         insertEdge = true;
       }
       if (node.id === connection.source && node.type === "measurementNode" && (nodeDataTarget.type === "ifElseNode" || nodeDataTarget.type ==="controlStructureNode")) {
@@ -383,7 +383,7 @@ const useStore = create<RFState>((set, get) => ({
         }
       }
       
-      if (node.id === connection.source && nodeDataSource.type === "positionNode") {
+      if (node.id === connection.source && nodeDataSource.type === consts.DataTypeNode) {
         console.log(nodeDataSource)
         if (nodeDataSource.data.label === "boolean" || nodeDataSource.data.label === "bit") {
          // label = 1;
