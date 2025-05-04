@@ -28,15 +28,6 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: any, e
     });
 
     function mapNode(node: Node): BackendNode {
-        if (node.data.implementation) {
-            return {
-                id: node.id,
-                type: "implementation",
-                implementation: node.data.implementation,
-                operation: node.data.operation
-            }
-        }
-
         switch (node.type) {
             case consts.DataTypeNode:
                 switch (node.data.dataType) {
@@ -44,6 +35,7 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: any, e
                         return {
                             id: node.id,
                             type: "int",
+                            parentNode: node.parentNode,
                             value: parseInt(node.data.value)
                         } satisfies IntLiteralNode
 
@@ -51,6 +43,7 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: any, e
                         return {
                             id: node.id,
                             type: "float",
+                            parentNode: node.parentNode,
                             value: parseFloat(node.data.value)
                         } satisfies FloatLiteralNode
 
@@ -58,6 +51,7 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: any, e
                         return {
                             id: node.id,
                             type: "bool",
+                            parentNode: node.parentNode,
                             value: !!node.data.value
                         } satisfies BoolLiteralNode
 
@@ -65,12 +59,20 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: any, e
                         return {
                             id: node.id,
                             type: "bit",
+                            parentNode: node.parentNode,
                             value: node.data.value === "1"
                         } satisfies BitLiteralNode
+                    case "array":
+                            return {
+                                id: node.id,
+                                type: "array",
+                                value: node.data.value
+                            } satisfies ArrayLiteralNode
                 }
             case consts.ArithmeticOperatorNode:
                 return {
                     id: node.id,
+                    parentNode: node.parentNode,
                     type: "implementation",
                     implementation: node.data.implementation,
                     operation: node.data.operator
@@ -79,6 +81,7 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: any, e
                 return {
                     id: node.id,
                     type: "implementation",
+                    parentNode: node.parentNode,
                     implementation: node.data.implementation,
                     operation: node.data.label
                 }
@@ -86,6 +89,7 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: any, e
                     return {
                         id: node.id,
                         type: "implementation",
+                        parentNode: node.parentNode,
                         implementation: node.data.implementation,
                         operation: node.data.label,
                         encoding: node.data.encoding
@@ -93,6 +97,7 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: any, e
             case consts.MeasurementNode:
                 return {
                     id: node.id,
+                    parentNode: node.parentNode,
                     type: "measure",
                     indices: node.data.indices?.split(",").map(x => parseInt(x)) ?? []
                 } satisfies MeasurementNode
@@ -100,10 +105,28 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: any, e
             case consts.AncillaNode:
                 return {
                     id: node.id,
+                    parentNode: node.parentNode,
                     type: "ancilla",
                     size: parseInt(node.data.size)
                 }
-
+            case consts.ControlStructureNode:
+                return {
+                    id: node.id,
+                    type: "implementation",
+                    parentNode: node.parentNode,
+                    implementation: node.data.implementation,
+                    operation: node.data.label,
+                    number: node.data.number
+                }
+            case consts.IfElseNode:
+                    return {
+                        id: node.id,
+                        type: "implementation",
+                        parentNode: node.parentNode,
+                        implementation: node.data.implementation,
+                        operation: node.data.label,
+                        condition: node.data.condition
+                    }
             default:
                 throw new Error(`Unsupported node ${node.type}`)
         }
@@ -213,8 +236,15 @@ interface StatePreparationNode extends ImplementationNode {
     encoding: number
 }
 
-type LiteralNode = IntLiteralNode | FloatLiteralNode | BitLiteralNode | BoolLiteralNode
-type BackendNode = ImplementationNode | LiteralNode | MeasurementNode | AncillaNode | GateNode | StatePreparationNode
+interface ControlStructureNode extends ImplementationNode {
+    number: number
+}
+
+interface IfElseNode extends ImplementationNode {
+    condition: number
+}
+type LiteralNode = IntLiteralNode | FloatLiteralNode | BitLiteralNode | BoolLiteralNode |ArrayLiteralNode
+type BackendNode = ImplementationNode | LiteralNode | MeasurementNode | AncillaNode | GateNode | StatePreparationNode | IfElseNode | ControlStructureNode
 
 interface BackendEdge {
     type: "qubit" | "classical" | "ancilla"
