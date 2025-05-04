@@ -183,16 +183,7 @@ export const StatePreparationNode = memo((node: Node) => {
 
             {node.data.label === "Prepare State" && (
               <>
-                <label className="text-sm text-black">Size:</label>
-                <input
-                  className="w-full p-1 mt-1 text-sm text-center text-black border-2 border-blue-300 rounded-full"
-                  type="text"
-                  id="size"
-                  value={node.data.size || size}
-                  onChange={(e) => handleYChange(e, "size")}
-                  placeholder="Enter size"
-                />
-
+                
                 <label className="text-sm text-black" style={{ visibility: showingChildren ? "hidden" : "visible" }}>Quantum State Name:</label>
                 <select
                   style={{ visibility: showingChildren ? "hidden" : "visible" }}
@@ -219,7 +210,7 @@ export const StatePreparationNode = memo((node: Node) => {
             <div className="flex items-center space-x-2 mt-2" style={{ backgroundColor: 'rgba(255, 165, 0, 0.2)' }}>
               <Handle
                 type="target"
-                id={`classicalHandleStatePreparation${node.id}`}
+                id={`classicalHandleStatePreparation0${node.id}`}
                 position={Position.Left}
                 className="z-10 classical-circle-port-in !bg-orange-300 !border-black"
                 style={{ top: "20px" }}
@@ -233,7 +224,7 @@ export const StatePreparationNode = memo((node: Node) => {
             <div className="flex items-center space-x-2 mt-2" style={{ backgroundColor: 'rgba(137, 218, 131, 0.2)' }}>
               <Handle
                 type="target"
-                id={`ancillaHandleEncodeValue${node.id}`}
+                id={`ancillaHandleEncodeValue0${node.id}`}
                 position={Position.Left}
                 className={cn(
                   "z-10 !border-black w-4 transform rotate-45",
@@ -255,7 +246,7 @@ export const StatePreparationNode = memo((node: Node) => {
             <div className="flex items-center space-x-2 mt-2" style={{ backgroundColor: 'rgba(137, 218, 131, 0.2)' }}>
               <Handle
                 type="source"
-                id={`ancillaHandlePrepareState${node.id}`}
+                id={`ancillaHandlePrepareState0${node.id}`}
                 position={Position.Left}
                 className={cn(
                   "z-10 !border-black w-4 transform rotate-45",
@@ -293,7 +284,7 @@ export const StatePreparationNode = memo((node: Node) => {
 
               <Handle
                 type="source"
-                id={`quantumHandleStatePreparationOutput${node.id}`}
+                id={`quantumHandleStatePreparationOutput0${node.id}`}
                 position={Position.Right}
                 className="z-10 circle-port-out !bg-blue-300 !border-black"
                 isValidConnection={(connection) => true}
@@ -308,7 +299,7 @@ export const StatePreparationNode = memo((node: Node) => {
 
             <Handle
               type="source"
-              id={`quantumHandleUncomputeStatePreparation${node.id}`}
+              id={`quantumHandleUncomputeStatePreparation1${node.id}`}
               position={Position.Right}
               className="z-10 circle-port-out !bg-blue-300 !border-black"
               isValidConnection={() => true}

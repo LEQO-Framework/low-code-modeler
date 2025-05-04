@@ -110,7 +110,7 @@ export const MeasurementNode = memo((node: Node) => {
               <div className="flex items-center space-x-2 mt-2" style={{ backgroundColor: "rgba(105, 145, 210, 0.2)" }}>
                 <Handle
                   type="target"
-                  id={`quantumHandleMeasurement${node.id}`}
+                  id={`quantumHandleMeasurement0${node.id}`}
                   position={Position.Left}
                   className="z-10 circle-port-op !bg-blue-300 !border-black"
                   style={{ top: "20px" }}

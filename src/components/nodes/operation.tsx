@@ -68,7 +68,7 @@ export const OperationNode = memo((node: Node) => {
 
     node.data[field] = value;
     updateNodeValue(node.id, field, value);
-    setSelectedNode(node);
+    //setSelectedNode(node);
   };
 
   const baseHeight = 360;
@@ -113,7 +113,7 @@ export const OperationNode = memo((node: Node) => {
             <div className="relative flex items-center" style={{ backgroundColor: 'rgba(105, 145, 210, 0.2)', width: '60px' }}>
               <Handle
                 type="target"
-                id="quantumHandleOperation1"
+                id={`quantumHandleOperationInput0${node.id}`}
                 position={Position.Left}
                 className="z-10 circle-port-op !bg-blue-300 !border-black"
               />
@@ -122,7 +122,7 @@ export const OperationNode = memo((node: Node) => {
             <div className="relative flex items-center" style={{ backgroundColor: 'rgba(105, 145, 210, 0.2)', width: '60px' }}>
               <Handle
                 type="target"
-                id="quantumHandleOperation2"
+                id={`quantumHandleOperationInput1${node.id}`}
                 position={Position.Left}
                 className="z-10 circle-port-op !bg-blue-300 !border-black"
               />
@@ -131,7 +131,7 @@ export const OperationNode = memo((node: Node) => {
             <div className="relative flex items-center" style={{ backgroundColor: 'rgba(137, 218, 131, 0.2)', width: '60px' }}>
               <Handle
                 type="target"
-                id="ancillaHandle"
+                id={`ancillaHandleOperationInput0${node.id}`}
                 position={Position.Left}
                 className="z-10 classical-circle-port-op !bg-gray-500 !border-black w-4 transform rotate-45"
               />
@@ -165,7 +165,7 @@ export const OperationNode = memo((node: Node) => {
 
               <Handle
                 type="source"
-                id="quantumHandleStatePreparationOutput"
+                id={`quantumHandleOperationOutput0${node.id}`}
                 position={Position.Right}
                 className="z-10 circle-port-out !bg-blue-300 !border-black"
                 isValidConnection={(connection) => true}
@@ -179,7 +179,7 @@ export const OperationNode = memo((node: Node) => {
 
             <Handle
               type="source"
-              id="quantumHandleUncomputeStatePreparation"
+              id={`quantumHandleOperationUncomputeOutput1${node.id}`}
               position={Position.Right}
               className="z-10 circle-port-out !bg-blue-300 !border-black"
               isValidConnection={() => true}
@@ -187,18 +187,6 @@ export const OperationNode = memo((node: Node) => {
           </div>
         </div>
       </div>
-      <Button
-          onClick={() => setShowingChildren(!showingChildren)}
-          icon={showingChildren ? "-" : "+"}
-          style={{
-            position: "absolute",
-            bottom: "0px",
-            left: "50%",
-            transform: "translateX(-50%)",
-            border: "1px solid black",
-            borderRadius: 0,
-          }}
-        />
     </div>
     </motion.div>
   );

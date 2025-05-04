@@ -21,8 +21,8 @@ export const AncillaNode: string = "ancillaNode";
 export const ControlStructureNode: string = "controlStructureNode";
 export const IfElseNode: string = "ifElseNode";
 export const ClassicalOutputOperationNode = "classicalOutputOperationNode";
-export const SplitterNode : string = "SplitterNode";
-export const MergerNode: string = "MergerNode";
+export const SplitterNode : string = "splitterNode";
+export const MergerNode: string = "mergerNode";
 export const ArithmeticOperatorNode = "arithmeticOperatorNode";
 
 export const HadamardImplementation: string = "OPENQASM 3.0;\ninclude \"stdgates.inc\";\n@leqo.input 0\nqubit[1] q;\nh q[0];\n@leqo.output 0\nlet output = q;";

@@ -187,7 +187,7 @@ export const DataTypeNode = memo((node: Node) => {
               
               <Handle
                 type="source"
-                id={`classicalHandleDataType${node.id}`}
+                id={`classicalHandleDataTypeOutput0${node.id}`}
                 position={Position.Right}
                 className="!absolute !top-[73%] z-10 classical-circle-port-round-out !bg-orange-300 !border-black overflow-visible"
                 isValidConnection={(connection) => true}

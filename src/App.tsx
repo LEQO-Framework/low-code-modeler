@@ -34,6 +34,7 @@ import {
   CartesianGrid,
   ResponsiveContainer,
 } from "recharts";
+import { startCompile } from "./backend";
 
 
 
@@ -199,12 +200,13 @@ function App() {
       const flow = reactFlowInstance.toObject();
 
       const flowWithMetadata = { metadata: validMetadata, ...flow };
+      let response = await startCompile(lowcodeBackendEndpoint, metadata, reactFlowInstance.getNodes(), reactFlowInstance.getEdges() );
       // must return the location where to poll
-      let response = await fetch(lowcodeBackendEndpoint + "/compile", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(flowWithMetadata),
-      });
+      //let response = await fetch(lowcodeBackendEndpoint + "/compile", {
+       // method: "POST",
+        //headers: { "Content-Type": "application/json" },
+        //body: JSON.stringify(flowWithMetadata),
+      //});
 
       console.log(await response.text());
 
