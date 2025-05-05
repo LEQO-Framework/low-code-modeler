@@ -70,19 +70,29 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: any, e
                             } satisfies ArrayLiteralNode
                 }
             case consts.ArithmeticOperatorNode:
+            case consts.ClassicalOutputOperationNode:
                 return {
                     id: node.id,
                     parentNode: node.parentNode,
                     type: "implementation",
                     implementation: node.data.implementation,
-                    operation: node.data.operator
+                    uncomputeImplementation: node.data.uncomputeImplementation,
+                    operation: node.data.operation
                 }
+            case consts.SplitterNode:
+            case consts.MergerNode:
+                    return {
+                        id: node.id,
+                        parentNode: node.parentNode,
+                        type: "implementation",
+                    }
             case consts.GateNode:
                 return {
                     id: node.id,
                     type: "implementation",
                     parentNode: node.parentNode,
                     implementation: node.data.implementation,
+                    uncomputeImplementation: node.data.uncomputeImplementation,
                     operation: node.data.label
                 }
             case consts.StatePreparationNode:
@@ -91,7 +101,7 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: any, e
                         type: "implementation",
                         parentNode: node.parentNode,
                         implementation: node.data.implementation,
-                        operation: node.data.label,
+                        uncomputeImplementation: node.data.uncomputeImplementation,
                         encoding: node.data.encoding
                     }
             case consts.MeasurementNode:
@@ -112,19 +122,15 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: any, e
             case consts.ControlStructureNode:
                 return {
                     id: node.id,
-                    type: "implementation",
+                    type: "repeat",
                     parentNode: node.parentNode,
-                    implementation: node.data.implementation,
-                    operation: node.data.label,
                     number: node.data.number
                 }
             case consts.IfElseNode:
                     return {
                         id: node.id,
-                        type: "implementation",
+                        type: "ifelse",
                         parentNode: node.parentNode,
-                        implementation: node.data.implementation,
-                        operation: node.data.label,
                         condition: node.data.condition
                     }
             default:
@@ -186,8 +192,12 @@ interface NodeBase {
 }
 
 interface ImplementationNode extends NodeBase {
-    implementation: string
+    implementation?: string | null
+    uncomputeImplementation?: string | null
     type: "implementation"
+}
+
+interface OperationNode extends ImplementationNode {
     operation: string
 }
 
@@ -228,7 +238,7 @@ interface AncillaNode extends NodeBase {
     size: number
 }
 
-interface GateNode extends ImplementationNode {
+interface GateNode extends OperationNode {
     operator: number
 }
 
@@ -236,13 +246,16 @@ interface StatePreparationNode extends ImplementationNode {
     encoding: number
 }
 
-interface ControlStructureNode extends ImplementationNode {
+interface ControlStructureNode extends NodeBase {
+    type: "repeat"
     number: number
 }
 
-interface IfElseNode extends ImplementationNode {
+interface IfElseNode extends NodeBase {
+    type: "ifelse"
     condition: number
 }
+
 type LiteralNode = IntLiteralNode | FloatLiteralNode | BitLiteralNode | BoolLiteralNode |ArrayLiteralNode
 type BackendNode = ImplementationNode | LiteralNode | MeasurementNode | AncillaNode | GateNode | StatePreparationNode | IfElseNode | ControlStructureNode
 

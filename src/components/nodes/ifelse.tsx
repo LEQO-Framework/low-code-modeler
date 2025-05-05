@@ -155,7 +155,7 @@ export const IfElseNode = memo((node: Node) => {
                 <Handle
                   key={`classical-${index}`}
                   type="source"
-                  id={handleId} // check if this makes problem
+                  id={`sideClassicalHandleThen-${node.id}-${index}`}
                   position={Position.Right}
                   className={cn(
                     "z-10 classical-circle-port-out",
@@ -180,7 +180,7 @@ export const IfElseNode = memo((node: Node) => {
                 <Handle
                   key={`quantum-${index}`}
                   type="source"
-                  id={handleId} // check if this makes problem
+                  id={`sideQuantumHandleThen-${node.id}-${index}`} // check if this makes problem
                   position={Position.Right}
                   className={cn(
                     "z-10 circle-port-out",
@@ -202,7 +202,7 @@ export const IfElseNode = memo((node: Node) => {
               <Handle
                 key={`side-classical-${index}`}
                 type="source"
-                id={`sideClassicalHandle-${node.id}-${index}`}
+                id={`sideClassicalHandleElse-${node.id}-${index}`}
                 position={Position.Right}
                 className="z-10 classical-circle-port-hex-out !bg-orange-300 !border-black"
                 style={{
@@ -223,7 +223,7 @@ export const IfElseNode = memo((node: Node) => {
                 <Handle
                   key={`side-quantum-${index}`}
                   type="source"
-                  id={`quantumHandlesite-${node.id}-${index}`}
+                  id={`sideQuantumHandleElse-${node.id}-${index}`}
                   position={Position.Right}
                   className={cn(
                     "z-10 circle-port-out",
