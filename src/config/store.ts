@@ -126,13 +126,13 @@ const useStore = create<RFState>((set, get) => ({
         node.data.identifiers.push(uniqueIdentifier2);
         node.data.implementation = consts.CnotImplementation;
         node.data.implementationType = "openqasm3";
-      }else if (node.data.label.includes("RX")) {
+      } else if (node.data.label.includes("RX")) {
         node.data.implementation = consts.RXImplementation;
         node.data.implementationType = "openqasm3";
-      }else if (node.data.label.includes("RY")) {
+      } else if (node.data.label.includes("RY")) {
         node.data.implementation = consts.RYImplementation;
         node.data.implementationType = "openqasm3";
-      }else if (node.data.label.includes("RZ")) {
+      } else if (node.data.label.includes("RZ")) {
         node.data.implementation = consts.RZImplementation;
         node.data.implementationType = "openqasm3";
       }
@@ -338,40 +338,41 @@ const useStore = create<RFState>((set, get) => ({
         nodeDataTarget = node;
       }
     }
-    let label;
     let insertEdge = false;
-    //handler type and name
     for (let node of currentNodes) {
 
       if (node.id === connection.source && (node.type !== consts.DataTypeNode && node.type !== "measurementNode")) {
         type = "quantumEdge";
         color = "#93C5FD";
-    
+
       }
       if (node.id === connection.source && node.type === "ancillaNode") {
         type = "ancillaEdge";
         color = "#86EFAC";
       }
 
-      if (node.id === connection.source && node.type === consts.DataTypeNode && connection.targetHandle.includes("classicalHandle")) {
+      // allow only classical flow between classical handles 
+      if (node.id === connection.source && connection.sourceHandle.includes(consts.classicalHandle) && connection.targetHandle.includes(consts.classicalHandle)) {
         insertEdge = true;
       }
-      if (node.id === connection.source && connection.sourceHandle.includes("classicalHandle") 
-        && !(connection.targetHandle.includes("sideClassicalHandle"))) {
+
+      // allow only ancilla flow between ancilla handles 
+      if (node.id === connection.source && connection.sourceHandle.includes(consts.ancillaHandle)
+        && connection.targetHandle.includes(consts.ancillaHandle)) {
         insertEdge = true;
       }
-     
-      if (node.id === connection.source && node.type === "ancillaNode" && connection.targetHandle.includes("ancillaHandle")) {
+
+      if (node.id === connection.source && nodeDataSource.type === consts.AncillaNode && connection.targetHandle.includes("ancillaHandle")) {
         insertEdge = true;
       }
-      
+
       if (node.id === connection.source && connection.sourceHandle.includes("ancillaHandle") && nodeDataTarget.type === "gateNode" && connection.targetHandle.includes("quantumHandle")) {
         insertEdge = true;
       }
       if (node.id === connection.source && nodeDataSource.type === "gateNode" && nodeDataTarget.type === "gateNode") {
         //label = "1";
       }
-      
+
       if (nodeDataSource.type === "splitterNode" || nodeDataSource.type === "mergerNode") {
         // only allow source connections that are inside the node
         if (connection.sourceHandle && connection.sourceHandle.startsWith("quantumHandleGateInitialization") && connection.sourceHandle.endsWith(nodeDataSource.id) && connection.targetHandle.endsWith(nodeDataSource.id)) {
@@ -386,41 +387,41 @@ const useStore = create<RFState>((set, get) => ({
       console.log(nodeDataTarget)
 
       // only allow connections from inside quantum handles 
-      if(nodeDataSource.type === "ifElseNode" && connection.sourceHandle.includes("sideQuantumHandle") && connection.targetHandle.includes("quantumHandle") && nodeDataTarget.parentNode === nodeDataSource.id){
+      if (nodeDataSource.type === "ifElseNode" && connection.sourceHandle.includes("sideQuantumHandle") && connection.targetHandle.includes("quantumHandle") && nodeDataTarget.parentNode === nodeDataSource.id) {
         insertEdge = true;
       }
 
       // only allow connections to inside quantum handles 
-      if(nodeDataTarget.type === "ifElseNode" && connection.targetHandle.includes("quantumHandleDynamic") && connection.targetHandle.includes("quantumHandle") && nodeDataSource.parentNode === nodeDataTarget.id){
+      if (nodeDataTarget.type === "ifElseNode" && connection.targetHandle.includes("quantumHandleDynamic") && connection.targetHandle.includes("quantumHandle") && nodeDataSource.parentNode === nodeDataTarget.id) {
         insertEdge = true;
       }
 
       // only allow connections from inside classical handles 
-      if(nodeDataSource.type === "ifElseNode" && connection.sourceHandle.includes("sideClassicalHandle") && connection.targetHandle.includes("classicalHandle") && nodeDataTarget.parentNode === nodeDataSource.id){
+      if (nodeDataSource.type === "ifElseNode" && connection.sourceHandle.includes("sideClassicalHandle") && connection.targetHandle.includes("classicalHandle") && nodeDataTarget.parentNode === nodeDataSource.id) {
         insertEdge = true;
       }
 
       // only allow connections from inside classical handles 
-      if(nodeDataSource.type === "ifElseNode" && connection.sourceHandle.includes("sideClassicalHandle") && connection.targetHandle.includes("classicalHandle") && nodeDataTarget.parentNode === nodeDataSource.id){
+      if (nodeDataSource.type === "ifElseNode" && connection.sourceHandle.includes("sideClassicalHandle") && connection.targetHandle.includes("classicalHandle") && nodeDataTarget.parentNode === nodeDataSource.id) {
         insertEdge = true;
       }
-      if (node.id === connection.source && connection.sourceHandle.startsWith("quantumHandle") && !(nodeDataTarget.type ==="controlstructureNode" || nodeDataTarget.type === "ifElseNode")&& connection.targetHandle.includes("quantumHandle")) {
+      if (node.id === connection.source && connection.sourceHandle.startsWith("quantumHandle") && !(nodeDataTarget.type === "controlstructureNode" || nodeDataTarget.type === "ifElseNode") && connection.targetHandle.includes("quantumHandle")) {
         insertEdge = true;
       }
-      
+
       if (node.id === connection.source && nodeDataSource.type === consts.DataTypeNode) {
         console.log(nodeDataSource)
         if (nodeDataSource.data.label === "boolean" || nodeDataSource.data.label === "bit") {
-         // label = 1;
-        } else if (nodeDataSource.data.label ==="Array") {
-          let value =  nodeDataSource.data.value.split(',').map(item => Number(item.trim()));
+          // label = 1;
+        } else if (nodeDataSource.data.label === "Array") {
+          let value = nodeDataSource.data.value.split(',').map(item => Number(item.trim()));
           console.log(value)
           // the biggest number requires the most bits
           let maximum = Math.max(...value);
           console.log(maximum)
           let bits = Math.ceil(Math.log2(maximum));
           //label = bits;
-        }else {
+        } else {
           let value = nodeDataSource.data.value;
           let bits = Math.ceil(Math.log2(value));
           //label = bits;
