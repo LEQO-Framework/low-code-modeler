@@ -29,7 +29,6 @@ export const MeasurementNode = memo((node: Node) => {
 
   const [inputs, setInputs] = useState(data.inputs || []);
   const [outputs, setOutputs] = useState(data.outputs || []);
-  const [encodingType, setEncodingType] = useState("Basis Encoding");
   const [error, setError] = useState(false);
   const [yError, setYError] = useState(false);
   const [indices, setIndices] = useState("");
@@ -37,17 +36,8 @@ export const MeasurementNode = memo((node: Node) => {
   const xRef = useRef(null);
   const yRef = useRef(null);
 
-  const addVariable = () => {
-    const newInputId = `input-${inputs.length + 1}`;
-    const newOutputId = `output-${outputs.length + 1}`;
-    node.data.test = "a";
 
-    setInputs([...inputs, { id: newInputId, label: `Variable ${inputs.length + 1}` }]);
-    setOutputs([...outputs, { id: newOutputId, label: `Output ${outputs.length + 1}`, value: "" }]);
-  };
-
-
-  const baseHeight = 250;
+  const baseHeight = 380;
   const extraHeightPerVariable = 40;
   const dynamicHeight = baseHeight + (inputs.length) * extraHeightPerVariable;
   console.log(dynamicHeight)
@@ -105,9 +95,9 @@ export const MeasurementNode = memo((node: Node) => {
         <div className="custom-node-port-in mb-3 mt-2">
 
           <div className="relative flex flex-col items-start text-black text-center overflow-visible">
-            <div style={{ padding: "4px" }}>
+            <div style={{ padding: "4px", backgroundColor: "rgba(105, 145, 210, 0.2)", width: "45%" }}>
 
-              <div className="flex items-center space-x-2 mt-2" style={{ backgroundColor: "rgba(105, 145, 210, 0.2)" }}>
+              <div className="flex items-center space-x-2 mt-2">
                 <Handle
                   type="target"
                   id={`quantumHandleMeasurement0${node.id}`}
@@ -120,52 +110,106 @@ export const MeasurementNode = memo((node: Node) => {
               </div>
             </div>
           </div>
-          <button onClick={addVariable} className="add-variable-button mt-2 w-full bg-gray-300 py-1 rounded text-sm text-black">
-            + Add More Variables
-          </button>
         </div>
 
 
         <div className="custom-node-port-out">
-          <div className="relative flex items-center justify-end space-x-0 overflow-visible">
-            <div
-              className="flex items-center space-x-2 relative rounded-full"
-              style={{
-                backgroundColor: 'rgba(210, 159, 105, 0.2)',
-                width: '150px',
-              }}
-            >
-              <label htmlFor="y" className="text-sm text-black mr-2">Output</label>
-              <input
-                ref={yRef}
-                id="y"
-                className={`p-1 text-sm text-black opacity-75 w-10 text-center rounded-full border ${yError ? 'bg-red-500 border-red-500' : 'bg-white border-orange-300'}`}
-                value={node.data.outputIdentifier || y}
-                placeholder="a"
-                onChange={e => handleYChange(e, "outputIdentifier")}
-              />
-              {(() => {
-                const handleId = `classicalHandle${node.id}`;
-                const isConnected = edges.some(edge => edge.sourceHandle === handleId);
+          {[0, 1].map((index) => {
+            const isClassical = index === 0;
+            const handleId = isClassical
+              ? `classicalHandle${node.id}`
+              : `quantumHandleMeasurementOut${node.id}`;
 
-                return (
+            const handleClass = isClassical
+              ? "classical-circle-port-out"
+              : "circle-port-out";  // Different class for quantum handle
+
+            const outputIdentifier = outputs[index]?.identifier || "";
+            const outputSize = outputs[index]?.size || "";
+            const isConnected = edges.some(edge => edge.sourceHandle === handleId);
+
+            return (
+              <div key={index} className="relative flex items-center justify-end space-x-0 overflow-visible mt-1">
+                <div
+                  className="flex flex-col items-end space-y-1 relative p-2"
+                  style={{
+                    backgroundColor: isClassical
+                      ? 'rgba(210, 159, 105, 0.2)'
+                      : 'rgba(105, 145, 210, 0.2)',
+                    width: '180px',
+                    borderRadius: isClassical ? '16px' : '0px',
+                  }}
+                >
+                  <div className="w-full text-left text-sm text-black font-semibold">Output:</div>
+
+                  <div className="flex items-center justify-between w-full space-x-2">
+                    <label className="text-sm text-black">Identifier</label>
+                    <input
+                      type="text"
+                      className={`p-1 text-sm text-black opacity-75 w-20 text-center rounded-full border ${yError ? 'bg-red-500 border-red-500' : 'bg-white border-orange-300'}`}
+                      value={outputIdentifier}
+                      onChange={(e) => {
+                        const updatedOutputs = [...outputs];
+                        updatedOutputs[index] = {
+                          ...updatedOutputs[index],
+                          identifier: e.target.value,
+                        };
+                        setOutputs(updatedOutputs);
+                        node.data.outputs = updatedOutputs;
+                        updateNodeValue(node.id, "outputs", updatedOutputs);
+                        setSelectedNode(node);
+                      }}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between w-full space-x-2">
+                    <label className="text-sm text-black">Size</label>
+                    <input
+                      type="text"
+                      className="p-1 text-sm text-black opacity-75 w-20 text-center rounded-full border border-orange-300"
+                      value={outputSize}
+                      onChange={(e) => {
+                        const updatedOutputs = [...outputs];
+                        updatedOutputs[index] = {
+                          ...updatedOutputs[index],
+                          size: e.target.value,
+                        };
+                        setOutputs(updatedOutputs);
+                        node.data.outputs = updatedOutputs;
+                        updateNodeValue(node.id, "outputs", updatedOutputs);
+                        setSelectedNode(node);
+                      }}
+                    />
+                  </div>
+
                   <Handle
                     type="source"
                     id={handleId}
                     position={Position.Right}
                     className={cn(
-                      "z-10 classical-circle-port-out",
-                      isConnected ? "!bg-orange-300 !border-black" : "!bg-gray-200 !border-dashed !border-gray-500"
+                      "z-10",
+                      handleClass,
+                      isClassical
+                        ? "!bg-orange-300 !border-black"
+                        : "!bg-blue-300 !border-black",
+                      isConnected
+                        ? "border-solid"
+                        : "!bg-gray-200 !border-dashed !border-gray-500"
                     )}
-           
+                    style={{
+                      top: '50%',
+                      transform: 'translateY(-50%)'
+                    }}
                     isConnectable={true}
                   />
-                  )
-              })()}
-
-            </div>
-          </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
+
+
+
       </div>
     </div>
   );

@@ -341,7 +341,7 @@ const useStore = create<RFState>((set, get) => ({
     let insertEdge = false;
     for (let node of currentNodes) {
 
-      if (node.id === connection.source && (node.type !== consts.DataTypeNode && node.type !== "measurementNode")) {
+      if (node.id === connection.source && connection.sourceHandle.includes(consts.quantumHandle) && connection.targetHandle.includes(consts.quantumHandle)) {
         type = "quantumEdge";
         color = "#93C5FD";
 
