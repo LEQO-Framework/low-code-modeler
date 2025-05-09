@@ -3,6 +3,7 @@ import { Handle, Position, Node } from "reactflow";
 import useStore from "@/config/store";
 import { shallow } from "zustand/shallow";
 import { isUniqueIdentifier } from "../utils/utils";
+import { AlertCircle } from "lucide-react";
 
 const selector = (state: {
   selectedNode: Node | null;
@@ -97,10 +98,19 @@ export const DataTypeNode = memo((node: Node) => {
     <div className="grand-parent">
       <div className="w-[400px] h-[200px] rounded-full bg-white overflow-hidden border border-solid border-gray-700 shadow-md">
         <div className="w-full bg-orange-300 text-black text-center font-semibold py-1 truncate">
+        {outputIdentifierError && (
+    <div className="absolute top-2 right-2 group">
+      <AlertCircle className="text-red-600 w-5 h-5" />
+      <div className="absolute top-6 right-0 z-10 bg-white text-xs text-red-600 border border-red-400 px-2 py-1 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        Identifier not unique
+      </div>
+    </div>
+  )}
           {data.dataType}
         </div>
         <div className="px-4 py-3 flex flex-col items-center space-y-3">
           <div className="flex flex-col items-center">
+
             <label htmlFor="value" className="text-black text-sm mr-2">Value</label>
 
             {data.dataType === "boolean" ? (

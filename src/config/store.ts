@@ -369,9 +369,6 @@ const useStore = create<RFState>((set, get) => ({
       if (node.id === connection.source && connection.sourceHandle.includes("ancillaHandle") && nodeDataTarget.type === "gateNode" && connection.targetHandle.includes("quantumHandle")) {
         insertEdge = true;
       }
-      if (node.id === connection.source && nodeDataSource.type === "gateNode" && nodeDataTarget.type === "gateNode") {
-        //label = "1";
-      }
 
       if (nodeDataSource.type === "splitterNode" || nodeDataSource.type === "mergerNode") {
         // only allow source connections that are inside the node
@@ -405,7 +402,7 @@ const useStore = create<RFState>((set, get) => ({
       if (nodeDataSource.type === "ifElseNode" && connection.sourceHandle.includes("sideClassicalHandle") && connection.targetHandle.includes("classicalHandle") && nodeDataTarget.parentNode === nodeDataSource.id) {
         insertEdge = true;
       }
-      if (node.id === connection.source && connection.sourceHandle.startsWith("quantumHandle") && !(nodeDataTarget.type === "controlstructureNode" || nodeDataTarget.type === "ifElseNode") && connection.targetHandle.includes("quantumHandle")) {
+      if (node.id === connection.source && connection.sourceHandle.startsWith("quantumHandle") && !(nodeDataTarget.type === "controlstructureNode") && connection.targetHandle.includes("quantumHandle")) {
         insertEdge = true;
       }
 

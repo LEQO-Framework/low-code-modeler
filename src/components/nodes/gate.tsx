@@ -56,6 +56,7 @@ export const GateNode = memo((node: Node) => {
               position={Position.Left}
               className="!absolute !top-[25%] !left--4 z-10 circle-port-op !bg-blue-300 !border-black"
               isValidConnection={() => true}
+              
             />
             <Handle
               type="target"
@@ -93,7 +94,6 @@ export const GateNode = memo((node: Node) => {
           </>
         )}
 
-        {/* OUTPUT HANDLES */}
         {!isTwoQubit && !isThreeQubit && (
           <Handle
             type="source"
@@ -102,6 +102,7 @@ export const GateNode = memo((node: Node) => {
             className="!absolute !top-[50%] !right--15 z-10 circle-port-out !bg-blue-300 !border-black"
             isValidConnection={() => true}
             isConnectable={edges.filter(edge => edge.sourceHandle === "quantumHandleGateOutput1" + node.id).length < 1}
+            isConnectableEnd={false}
           />
         )}
 
