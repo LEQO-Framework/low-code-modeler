@@ -6,6 +6,7 @@ import { shallow } from "zustand/shallow";
 import { Button } from "antd";
 import { useHandleConnections } from "@xyflow/react";
 import { cn } from "@/lib/utils";
+import { isUniqueIdentifier } from "../utils/utils";
 
 const selector = (state: {
   selectedNode: Node | null;
@@ -49,16 +50,6 @@ export const StatePreparationNode = memo((node: Node) => {
   }
 
 
-  const handleConnect = (connection, type) => {
-    console.log("handleConnect")
-    if (connection && connection.source) {
-      if (type === "value") {
-        setValueLabel(`Connected: ${connection.source}`);
-      } else if (type === "ancilla") {
-        setAncillaLabel(`Connected: ${connection.source}`);
-      }
-    }
-  };
 
 
   const handleStateChange = (e, field) => {
@@ -100,16 +91,16 @@ export const StatePreparationNode = memo((node: Node) => {
 
   const handleOutputIdentifierChange = (e, field) => {
     const value = e.target.value;
+    node.data[field] = value;
+    updateNodeValue(node.id, field, value);
 
-    // Check if the first character is a number
-    if (/^\d/.test(value)) {
+    // Check if the first character is a number and the identifier is not already used
+    if (/^\d/.test(value) || !isUniqueIdentifier(nodes, value, node.id)) {
       setOutputIdentifierError(true);
     } else {
       setOutputIdentifierError(false);
     }
 
-    node.data[field] = value;
-    updateNodeValue(node.id, field, value);
     setSelectedNode(node);
   };
 
@@ -151,7 +142,7 @@ export const StatePreparationNode = memo((node: Node) => {
                   <option value="Matrix Encoding">Matrix Encoding</option>
                   <option value="Schmidt Decomposition">Schmidt Decomposition</option>
                 </select>
-                {node.data.encodingType  === "Basis Encoding" && (
+                {node.data.encodingType === "Basis Encoding" && (
                   <>
                     <label className="text-sm text-black">Size:</label>
                     <input
@@ -164,7 +155,7 @@ export const StatePreparationNode = memo((node: Node) => {
                     />
                   </>
                 )}
-                {node.data.encodingType !== "Basis Encoding" && node.data.encodingType  !== "Angle Encoding" && (
+                {node.data.encodingType !== "Basis Encoding" && node.data.encodingType !== "Angle Encoding" && (
                   <>
                     <label className="text-sm text-black">Bound:</label>
                     <input
@@ -183,7 +174,7 @@ export const StatePreparationNode = memo((node: Node) => {
 
             {node.data.label === "Prepare State" && (
               <>
-                
+
                 <label className="text-sm text-black" style={{ visibility: showingChildren ? "hidden" : "visible" }}>Quantum State Name:</label>
                 <select
                   style={{ visibility: showingChildren ? "hidden" : "visible" }}
@@ -215,7 +206,7 @@ export const StatePreparationNode = memo((node: Node) => {
                 className="z-10 classical-circle-port-in !bg-orange-300 !border-black"
                 style={{ top: "20px" }}
                 isConnectable={edges.filter(edge => edge.target === node.id).length < 2}
-                onConnect={(connection) => handleConnect(connection, "value")}
+
               />
               <span className="text-black text-sm" style={{ visibility: showingChildren ? "hidden" : "visible" }}>{node.data.inputs[0]?.outputIdentifier || "value(s)"}</span>
 
