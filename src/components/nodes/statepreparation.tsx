@@ -1,12 +1,12 @@
-import { memo, useState, useRef, useEffect } from "react";
-import { Handle, Position, Node, getConnectedEdges, Edge } from "reactflow";
+import { memo, useState, useEffect } from "react";
+import { Handle, Position, Node, Edge } from "reactflow";
 import { motion } from "framer-motion";
 import useStore from "@/config/store";
 import { shallow } from "zustand/shallow";
-import { Button } from "antd";
-import { useHandleConnections } from "@xyflow/react";
 import { cn } from "@/lib/utils";
 import { isUniqueIdentifier } from "../utils/utils";
+import OutputPort from "../utils/outputPort";
+import UncomputePort from "../utils/uncomputePort";
 
 const selector = (state: {
   selectedNode: Node | null;
@@ -30,15 +30,13 @@ export const StatePreparationNode = memo((node: Node) => {
   const [quantumStateName, setQuantumStateName] = useState("GHZ");
   const [outputIdentifier, setOutputIdentifier] = useState("");
   const [showingChildren, setShowingChildren] = useState(false);
-  const [yError, setYError] = useState(false);
+  const [sizeError, setSizeError] = useState(false);
   const [outputs, setOutputs] = useState(node.data.outputs || []);
   const [outputIdentifierError, setOutputIdentifierError] = useState(false);
   const [encodingType, setEncodingType] = useState("");
   const [mounted, setMounted] = useState(false);
 
   const { updateNodeValue, setSelectedNode, setNodes, edges, nodes } = useStore(selector, shallow);
-  const [valueLabel, setValueLabel] = useState("value(s)");
-  const [ancillaLabel, setAncillaLabel] = useState("ancilla");
 
   const hasTestTargetHandle = edges.some(edge => edge.targetHandle === "ancillaHandleEncodeValue" + node.id);
   console.log(hasTestTargetHandle)
@@ -73,9 +71,9 @@ export const StatePreparationNode = memo((node: Node) => {
     const number = Number(value);
 
     if (!/^[a-zA-Z_]/.test(value) && value !== "") {
-      setYError(true);
+      setSizeError(true);
     } else {
-      setYError(false);
+      setSizeError(false);
     }
     if (field === "size") {
       setSize(value);
@@ -90,26 +88,18 @@ export const StatePreparationNode = memo((node: Node) => {
     setMounted(true);
   }, []);
 
-  const handleOutputIdentifierChange = (e, field) => {
-    const value = e.target.value;
-    node.data[field] = value;
-    updateNodeValue(node.id, field, value);
-
-    // Check if the first character is a number and the identifier is not already used
-    if (/^\d/.test(value) || !isUniqueIdentifier(nodes, value, node.id)) {
-      setOutputIdentifierError(true);
-    } else {
-      setOutputIdentifierError(false);
-    }
-
-    setSelectedNode(node);
-  };
-
   return (
     <motion.div
       className="grand-parent"
       initial={false}
-      animate={{ width: showingChildren ? 360 : 320, height: showingChildren ? 400 : 373 }}
+      animate={{
+        width: showingChildren ? 360 : 320, height:
+          showingChildren
+            ? 400
+            : node.data.label === "Prepare State"
+              ? 310
+              : 400
+      }}
       transition={{ duration: 0.3, ease: "easeInOut" }}
     >
       <div className="rounded-none bg-white border border-solid border-gray-700 shadow-md relative w-full h-full">
@@ -209,7 +199,7 @@ export const StatePreparationNode = memo((node: Node) => {
                 isConnectable={edges.filter(edge => edge.target === node.id).length < 2}
 
               />
-              <span className="text-black text-sm" style={{ visibility: showingChildren ? "hidden" : "visible" }}>{node.data.inputs[0]?.outputIdentifier || "value(s)"}</span>
+              <span className="text-black text-sm" style={{ visibility: showingChildren ? "hidden" : "visible" }}>{node.data.inputs[0]?.outputIdentifier || "Value"}</span>
 
             </div>
 
@@ -229,7 +219,7 @@ export const StatePreparationNode = memo((node: Node) => {
               //isConnectable={nodes.filter(node=> edges.filter(edge=> {console.log(edge); return edge.target === node.id && edge.targetHandle === "ancilla"}).length < 1) }
 
               />
-              <span className="ml-2 text-black text-sm" style={{ visibility: showingChildren ? "hidden" : "visible" }} >{node.data.inputs[1]?.outputIdentifier || "ancilla"}</span>
+              <span className="ml-2 text-black text-sm" style={{ visibility: showingChildren ? "hidden" : "visible" }} >{node.data.inputs[1]?.outputIdentifier || "Ancilla"}</span>
             </div>
           </div>
         </div>)}
@@ -248,135 +238,33 @@ export const StatePreparationNode = memo((node: Node) => {
                 isValidConnection={() => true}
               />
 
-              <span className="ml-2 text-black text-sm" style={{ visibility: showingChildren ? "hidden" : "visible" }}>ancilla</span>
+              <span className="ml-2 text-black text-sm" style={{ visibility: showingChildren ? "hidden" : "visible" }}>Ancilla</span>
             </div>
           </div>
         </div>)}
 
 
         <div className="custom-node-port-out">
-          {[1].map((index) => {
-            const isClassical = index === 0;
-            const handleId = isClassical
-              ? `classicalHandle${node.id}`
-              : `quantumHandleMeasurementOut${node.id}`;
-
-            const handleClass = isClassical
-              ? "classical-circle-port-out"
-              : "circle-port-out";  // Different class for quantum handle
-
-            const outputIdentifier = outputs[index]?.identifier || "";
-            const outputSize = outputs[index]?.size || "";
-            const isConnected = edges.some(edge => edge.sourceHandle === handleId);
-
-            return (
-              <div key={index} className="relative flex items-center justify-end space-x-0 overflow-visible mt-1">
-                <div
-                  className="flex flex-col items-end space-y-1 relative p-2"
-                  style={{
-                    backgroundColor: isClassical
-                      ? 'rgba(210, 159, 105, 0.2)'
-                      : 'rgba(105, 145, 210, 0.2)',
-                    width: '180px',
-                    borderRadius: isClassical ? '16px' : '0px',
-                  }}
-                >
-                  <div className="w-full text-left text-sm text-black font-semibold">Output:</div>
-
-                  <div className="flex items-center justify-between w-full space-x-2">
-                    <label className="text-sm text-black">Identifier</label>
-                    <input
-                      type="text"
-                      className={`p-1 text-sm text-black opacity-75 w-20 text-center rounded-full border ${yError ? 'bg-red-500 border-red-500' : 'bg-white border-blue-300'}`}
-                      value={outputIdentifier}
-                      onChange={(e) => {
-                        const updatedOutputs = [...outputs];
-                        updatedOutputs[index] = {
-                          ...updatedOutputs[index],
-                          identifier: e.target.value,
-                        };
-                        setOutputs(updatedOutputs);
-                        node.data.outputs = updatedOutputs;
-                        updateNodeValue(node.id, "outputs", updatedOutputs);
-                        setSelectedNode(node);
-                      }}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between w-full space-x-2">
-                    <label className="text-sm text-black">Size</label>
-                    <input
-                      type="text"
-                      className="p-1 text-sm text-black opacity-75 w-20 text-center rounded-full border border-blue-300"
-                      value={outputSize}
-                      onChange={(e) => {
-                        const updatedOutputs = [...outputs];
-                        updatedOutputs[index] = {
-                          ...updatedOutputs[index],
-                          size: e.target.value,
-                        };
-                        setOutputs(updatedOutputs);
-                        node.data.outputs = updatedOutputs;
-                        updateNodeValue(node.id, "outputs", updatedOutputs);
-                        setSelectedNode(node);
-                      }}
-                    />
-                  </div>
-
-                  <Handle
-                    type="source"
-                    id={handleId}
-                    position={Position.Right}
-                    className={cn(
-                      "z-10",
-                      handleClass,
-                      isClassical
-                        ? "!bg-orange-300 !border-black"
-                        : "!bg-blue-300 !border-black",
-                      isConnected
-                        ? "border-solid"
-                        : "!bg-gray-200 !border-dashed !border-gray-500"
-                    )}
-                    style={{
-                      top: '50%',
-                      transform: 'translateY(-50%)'
-                    }}
-                    isConnectable={true}
-                  />
-                </div>
-              </div>
-            );
-          })}
+          <OutputPort
+            node={node}
+            index={1}
+            nodes={nodes}
+            outputs={outputs}
+            setOutputs={setOutputs}
+            edges={edges}
+            sizeError={sizeError}
+            outputIdentifierError={outputIdentifierError}
+            updateNodeValue={updateNodeValue}
+            setOutputIdentifierError={setOutputIdentifierError}
+            setSizeError={setSizeError}
+            setSelectedNode={setSelectedNode}
+            active={true}
+          />
         </div>
-        <div className="relative flex items-center justify-end space-x-0 overflow-visible mt-1">
-          <div
-            className="flex flex-col items-end space-y-1 relative p-2"
-            style={{
-              backgroundColor: 'rgba(105, 145, 210, 0.2)',
-              width: '180px',
-      
-            }}
-          >
-            <div className="w-full text-left text-sm text-black">Uncompute</div>
-
-            <div className="flex items-center justify-between w-full space-x-2">
-              <Handle
-                type="source"
-                id={`quantumHandleUncomputeStatePreparation1${node.id}`}
-                position={Position.Right}
-                className="z-10 circle-port-out !bg-blue-300 !border-black"
-                isValidConnection={() => true}
-                isConnectable={edges.filter(edge => edge.sourceHandle === "quantumHandleUncomputeStatePreparation" + node.id).length < 1}
-                style={{
-                  top: '50%',
-                  transform: 'translateY(-50%)'
-                }}
-              />
-            </div>
-          </div>
-        </div>
-
-
+        <UncomputePort
+          node={node}
+          edges={edges}
+        />
       </div>
     </motion.div>
   );
