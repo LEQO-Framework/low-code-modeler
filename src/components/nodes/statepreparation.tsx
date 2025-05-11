@@ -31,6 +31,7 @@ export const StatePreparationNode = memo((node: Node) => {
   const [outputIdentifier, setOutputIdentifier] = useState("");
   const [showingChildren, setShowingChildren] = useState(false);
   const [yError, setYError] = useState(false);
+  const [outputs, setOutputs] = useState(node.data.outputs || []);
   const [outputIdentifierError, setOutputIdentifierError] = useState(false);
   const [encodingType, setEncodingType] = useState("");
   const [mounted, setMounted] = useState(false);
@@ -254,50 +255,127 @@ export const StatePreparationNode = memo((node: Node) => {
 
 
         <div className="custom-node-port-out">
-          <div className="relative flex items-center justify-end space-x-0 overflow-visible">
-            <div
-              className="flex items-center space-x-2 relative"
-              style={{
-                backgroundColor: 'rgba(105, 145, 210, 0.2)',
-                width: '150px',
-              }}
-            >
-              <label style={{ visibility: showingChildren ? "hidden" : "visible" }} htmlFor="outputIdentifier" className="text-sm text-black mr-2">Output</label>
-              <input
-                id="outputIdentifier"
-                className={`p-1 text-sm text-black opacity-75 w-10 text-center rounded-none border 
-    ${outputIdentifierError ? 'bg-red-500 border-red-500' : 'bg-white border-gray-500'}`}
-                value={node.data.outputIdentifier || outputIdentifier}
-                placeholder="a"
-                style={{ visibility: showingChildren ? "hidden" : "visible" }}
-                onChange={e => handleOutputIdentifierChange(e, "outputIdentifier")}
-              />
+          {[1].map((index) => {
+            const isClassical = index === 0;
+            const handleId = isClassical
+              ? `classicalHandle${node.id}`
+              : `quantumHandleMeasurementOut${node.id}`;
 
+            const handleClass = isClassical
+              ? "classical-circle-port-out"
+              : "circle-port-out";  // Different class for quantum handle
+
+            const outputIdentifier = outputs[index]?.identifier || "";
+            const outputSize = outputs[index]?.size || "";
+            const isConnected = edges.some(edge => edge.sourceHandle === handleId);
+
+            return (
+              <div key={index} className="relative flex items-center justify-end space-x-0 overflow-visible mt-1">
+                <div
+                  className="flex flex-col items-end space-y-1 relative p-2"
+                  style={{
+                    backgroundColor: isClassical
+                      ? 'rgba(210, 159, 105, 0.2)'
+                      : 'rgba(105, 145, 210, 0.2)',
+                    width: '180px',
+                    borderRadius: isClassical ? '16px' : '0px',
+                  }}
+                >
+                  <div className="w-full text-left text-sm text-black font-semibold">Output:</div>
+
+                  <div className="flex items-center justify-between w-full space-x-2">
+                    <label className="text-sm text-black">Identifier</label>
+                    <input
+                      type="text"
+                      className={`p-1 text-sm text-black opacity-75 w-20 text-center rounded-full border ${yError ? 'bg-red-500 border-red-500' : 'bg-white border-blue-300'}`}
+                      value={outputIdentifier}
+                      onChange={(e) => {
+                        const updatedOutputs = [...outputs];
+                        updatedOutputs[index] = {
+                          ...updatedOutputs[index],
+                          identifier: e.target.value,
+                        };
+                        setOutputs(updatedOutputs);
+                        node.data.outputs = updatedOutputs;
+                        updateNodeValue(node.id, "outputs", updatedOutputs);
+                        setSelectedNode(node);
+                      }}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between w-full space-x-2">
+                    <label className="text-sm text-black">Size</label>
+                    <input
+                      type="text"
+                      className="p-1 text-sm text-black opacity-75 w-20 text-center rounded-full border border-blue-300"
+                      value={outputSize}
+                      onChange={(e) => {
+                        const updatedOutputs = [...outputs];
+                        updatedOutputs[index] = {
+                          ...updatedOutputs[index],
+                          size: e.target.value,
+                        };
+                        setOutputs(updatedOutputs);
+                        node.data.outputs = updatedOutputs;
+                        updateNodeValue(node.id, "outputs", updatedOutputs);
+                        setSelectedNode(node);
+                      }}
+                    />
+                  </div>
+
+                  <Handle
+                    type="source"
+                    id={handleId}
+                    position={Position.Right}
+                    className={cn(
+                      "z-10",
+                      handleClass,
+                      isClassical
+                        ? "!bg-orange-300 !border-black"
+                        : "!bg-blue-300 !border-black",
+                      isConnected
+                        ? "border-solid"
+                        : "!bg-gray-200 !border-dashed !border-gray-500"
+                    )}
+                    style={{
+                      top: '50%',
+                      transform: 'translateY(-50%)'
+                    }}
+                    isConnectable={true}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div className="relative flex items-center justify-end space-x-0 overflow-visible mt-1">
+          <div
+            className="flex flex-col items-end space-y-1 relative p-2"
+            style={{
+              backgroundColor: 'rgba(105, 145, 210, 0.2)',
+              width: '180px',
+      
+            }}
+          >
+            <div className="w-full text-left text-sm text-black">Uncompute</div>
+
+            <div className="flex items-center justify-between w-full space-x-2">
               <Handle
                 type="source"
-                id={`quantumHandleStatePreparationOutput0${node.id}`}
+                id={`quantumHandleUncomputeStatePreparation1${node.id}`}
                 position={Position.Right}
                 className="z-10 circle-port-out !bg-blue-300 !border-black"
-                isValidConnection={(connection) => true}
-                isConnectable={edges.filter(edge => edge.sourceHandle === "quantumHandleStatePreparationOutput" + node.id).length < 1}
+                isValidConnection={() => true}
+                isConnectable={edges.filter(edge => edge.sourceHandle === "quantumHandleUncomputeStatePreparation" + node.id).length < 1}
+                style={{
+                  top: '50%',
+                  transform: 'translateY(-50%)'
+                }}
               />
             </div>
           </div>
         </div>
-        <div className="relative flex items-center justify-end space-x-0 overflow-visible mt-2">
-          <div className="flex items-center space-x-2 relative" style={{ backgroundColor: 'rgba(105, 145, 210, 0.2)', width: '150px' }}>
-            <span className="text-sm text-black mr-2">Uncompute</span>
 
-            <Handle
-              type="source"
-              id={`quantumHandleUncomputeStatePreparation1${node.id}`}
-              position={Position.Right}
-              className="z-10 circle-port-out !bg-blue-300 !border-black"
-              isValidConnection={() => true}
-              isConnectable={edges.filter(edge => edge.sourceHandle === "quantumHandleUncomputeStatePreparation" + node.id).length < 1}
-            />
-          </div>
-        </div>
 
       </div>
     </motion.div>

@@ -28,7 +28,7 @@ export const categories: { [key: string]: any } = {
       { label: "Encode Value", type: consts.StatePreparationNode, inputs: [], icon: "encodeValue.png" },
       { label: "Prepare State", type: consts.StatePreparationNode, icon: "prepareState.png" },
       { label: "Splitter", type: consts.SplitterNode },
-      { label: "Merge", type: consts.MergerNode },
+      { label: "Merger", type: consts.MergerNode },
     ],
     "Quantum To Classical": [
       { label: "Measurement", type: consts.MeasurementNode, icon: "measurement.png" },
