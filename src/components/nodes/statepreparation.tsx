@@ -35,21 +35,12 @@ export const StatePreparationNode = memo((node: Node) => {
   const [outputIdentifierError, setOutputIdentifierError] = useState(false);
   const [encodingType, setEncodingType] = useState("");
   const [mounted, setMounted] = useState(false);
-
+ 
+  
   const { updateNodeValue, setSelectedNode, setNodes, edges, nodes } = useStore(selector, shallow);
-
-  const hasTestTargetHandle = edges.some(edge => edge.targetHandle === "ancillaHandleEncodeValue" + node.id);
-  console.log(hasTestTargetHandle)
-  console.log(encodingType)
-
-  if (hasTestTargetHandle) {
-    console.log("An edge exists with targetHandle === 'test'");
-  } else {
-    console.log("No edge with targetHandle === 'test' found");
-  }
-
-
-
+  const isConnected = edges.some(
+    edge => edge.target === node.id && edge.targetHandle === `ancillaHandlePrepareState0${node.id}`
+  );
 
   const handleStateChange = (e, field) => {
     const value = e.target.value;
@@ -210,7 +201,7 @@ export const StatePreparationNode = memo((node: Node) => {
                 position={Position.Left}
                 className={cn(
                   "z-10 !border-black w-4 transform rotate-45",
-                  hasTestTargetHandle ? "classical-circle-port-st !bg-green-300" : "classical-circle-port-st !bg-gray-500"
+                  isConnected ? "classical-circle-port-st !bg-green-300" : "classical-circle-port-st !bg-gray-500"
                 )}
                 style={{ top: "40px" }}
                 onConnect={connection => console.log(connection)}
@@ -223,25 +214,40 @@ export const StatePreparationNode = memo((node: Node) => {
             </div>
           </div>
         </div>)}
-        {node.data.label === "Prepare State" && (<div className="relative flex flex-col items-start text-black text-center overflow-visible">
-          <div style={{ padding: "4px" }}>
-            <div className="flex items-center space-x-2 mt-2" style={{ backgroundColor: 'rgba(137, 218, 131, 0.2)' }}>
+        {node.data.label === "Prepare State" && (<div className="relative flex items-center items-start space-x-0 overflow-visible mt-1">
+          <div
+            className="flex flex-col items-end space-y-1 relative p-2"
+            style={{
+              backgroundColor: 'rgba(137, 218, 131, 0.2)',
+              width: '120px',
+            }}
+          >
+            <div className="w-full text-right text-sm text-black">Ancilla</div>
+
+            <div className="flex items-center justify-between w-full space-x-2">
               <Handle
-                type="source"
+                type="target"
                 id={`ancillaHandlePrepareState0${node.id}`}
                 position={Position.Left}
                 className={cn(
                   "z-10 !border-black w-4 transform rotate-45",
-                  hasTestTargetHandle ? "classical-circle-port-st !bg-green-300" : "classical-circle-port-st !bg-gray-500"
+                  "classical-circle-port-st",
+                  isConnected ? "!bg-green-300" : "!bg-gray-200 border-dashed"
                 )}
-                style={{ backgroundColor: 'rgba(137, 218, 131, 0.2)' }}
                 isValidConnection={() => true}
+                isConnectable={true}
+                style={{
+                  top: '50%',
+                  transform: "rotate(45deg) translateY(-50%)",
+                  backgroundColor: 'rgba(137, 218, 131, 0.2)',
+                  position: "absolute"
+                }}
+                isConnectableEnd={true}
               />
-
-              <span className="ml-2 text-black text-sm" style={{ visibility: showingChildren ? "hidden" : "visible" }}>Ancilla</span>
             </div>
           </div>
-        </div>)}
+        </div>)
+        }
 
 
         <div className="custom-node-port-out">

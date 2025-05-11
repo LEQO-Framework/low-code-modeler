@@ -13,23 +13,23 @@ export enum HistoryAction {
 }
 
 // supported modeling constructs
-export const DataTypeNode : string = "dataTypeNode";
-export const GateNode : string = "gateNode";
+export const DataTypeNode: string = "dataTypeNode";
+export const GateNode: string = "gateNode";
 export const AlgorithmNode: string = "algorithmNode";
-export const StatePreparationNode : string = "statePreparationNode";
+export const StatePreparationNode: string = "statePreparationNode";
 export const MeasurementNode: string = "measurementNode";
 export const AncillaNode: string = "ancillaNode";
 export const ControlStructureNode: string = "controlStructureNode";
 export const IfElseNode: string = "ifElseNode";
 export const ClassicalOutputOperationNode = "classicalOutputOperationNode";
-export const SplitterNode : string = "splitterNode";
+export const SplitterNode: string = "splitterNode";
 export const MergerNode: string = "mergerNode";
 export const ArithmeticOperatorNode: string = "arithmeticOperatorNode";
 
 // handle prefix ensures correctness of edges
 export const classicalHandle: string = "classicalHandle";
-export const quantumHandle:string = "quantumHandle";
-export const ancillaHandle : string= "ancillaHandle";
+export const quantumHandle: string = "quantumHandle";
+export const ancillaHandle: string = "ancillaHandle";
 
 export const HadamardImplementation: string = "OPENQASM 3.0;\ninclude \"stdgates.inc\";\n@leqo.input 0\nqubit[1] q;\nh q[0];\n@leqo.output 0\nlet output = q;";
 export const PauliXImplementation: string = "OPENQASM 3.0;\ninclude \"stdgates.inc\";\n@leqo.input 0\nqubit[1] q;\nx q[0];\n@leqo.output 0\nlet output = q;";
