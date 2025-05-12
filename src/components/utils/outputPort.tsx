@@ -49,14 +49,14 @@ export default function OutputPort({
   };
 
   return (
-    <div className="relative flex items-center justify-end space-x-0 overflow-visible mt-1">
+    <div className="relative flex items-center justify-end space-x-0 mt-1">
       <div
         className="flex flex-col items-end space-y-1 relative p-2"
         style={{
           backgroundColor: isClassical
             ? 'rgba(210, 159, 105, 0.2)'
             : 'rgba(105, 145, 210, 0.2)',
-          width: '180px',
+          width: "180px",
           borderRadius: isClassical ? '16px' : '0px',
         }}
       >
@@ -66,7 +66,13 @@ export default function OutputPort({
           <label className="text-sm text-black">Identifier</label>
           <input
             type="text"
-            className={`p-1 text-sm text-black opacity-75 w-20 text-center rounded-full border ${outputIdentifierError ? 'bg-red-500 border-red-500' : 'bg-white border-blue-300'}`}
+            className={`p-1 text-sm text-black opacity-75 w-20 text-center rounded-full border ${outputIdentifierError
+                ? 'bg-red-500 border-red-500'
+                : isClassical
+                  ? 'bg-white border-orange-300'
+                  : 'bg-white border-blue-300'
+              }`}
+
             value={outputIdentifier}
             onChange={(e) => {
               const updatedOutputs = [...outputs];
@@ -100,7 +106,13 @@ export default function OutputPort({
           <label className="text-sm text-black">Size</label>
           <input
             type="text"
-            className={`p-1 text-sm text-black opacity-75 w-20 text-center rounded-full border ${sizeError ? 'bg-red-500 border-red-500 border-dashed' : 'bg-white border-blue-300 border-dashed'}`}
+            className={`p-1 text-sm text-black opacity-75 w-20 text-center rounded-full border ${sizeError
+                ? 'bg-red-500 border-red-500 border-dashed'
+                : isClassical
+                  ? 'bg-white border-orange-300 border-dashed'
+                  : 'bg-white border-blue-300 border-dashed'
+              }`}
+
             value={node.data.quantumStateName?.includes("Bell State") ? "2" : outputSize}
             readOnly={node.data.quantumStateName?.includes("Bell State")}
             onChange={(e) => {
@@ -125,6 +137,10 @@ export default function OutputPort({
           />
         </div>
 
+
+      </div>
+
+      {node.type !== "dataTypeNode" && (
         <Handle
           type="source"
           id={handleId}
@@ -135,7 +151,7 @@ export default function OutputPort({
             isClassical
               ? "!bg-orange-300 !border-black"
               : "!bg-blue-300 !border-black",
-              (active || isConnected)
+            (active || isConnected)
               ? "border-solid !bg-blue-300 !border-black"
               : "!bg-gray-200 border-dashed !border-gray-500"
           )}
@@ -146,7 +162,7 @@ export default function OutputPort({
           isConnectable={true}
           isConnectableEnd={false}
         />
-      </div>
+      )}
     </div>
   );
 }

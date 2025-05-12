@@ -107,6 +107,7 @@ export const AncillaNode = memo((node: Node) => {
                 className="!absolute !top-[70%] z-10 circle-port-out !bg-green-200 !border-black overflow-visible transform rotate-45"
                 isValidConnection={(connection) => true}
                 isConnectable={edges.filter(edge=> edge.source === node.id).length < 1}
+                isConnectableEnd={false}
               />
             </div>
           </div>
