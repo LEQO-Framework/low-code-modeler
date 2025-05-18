@@ -1,20 +1,18 @@
-import  {
+import {
     Edge,
     Node,
-  } from "reactflow";
+} from "reactflow";
 import * as consts from "./constants";
+import type { components } from "./backend.types";
 
-export const startCompile = async (baseUrl: string, metadata: any, nodes: any, edges:any): Promise<Response> => {
+type CompileRequest = components["schemas"]["CompileRequest"];
+type BackendNode = CompileRequest["nodes"][0];
+type BackendEdge = CompileRequest["edges"][0];
+export type StatusResult = components["schemas"]["StatusBody"];
 
-    console.log( JSON.stringify({
-        metadata: {
-            id: `flow-${Date.now()}`,
-            ...metadata
-        },
-        nodes: [...nodes.map(mapNode)],
-        edges: [...edges.map(mapEdge)]}))
+export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[], edges: Edge[]): Promise<Response> => {
 
-    return await fetch(new URL("/compile", baseUrl), {
+    return await fetch(new URL("/debug/compile", baseUrl), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -22,157 +20,237 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: any, e
                 id: `flow-${Date.now()}`,
                 ...metadata
             },
-            nodes: [...nodes.map(mapNode)],
-            edges: [...edges.map(mapEdge)]
-        }),
+            nodes: [...nodes.filter(x => !x.parentId).map(mapNode)],
+            edges: [...edges.map(mapEdge)] // ToDo: Filter nested edges
+        } satisfies CompileRequest),
     });
 
     function mapNode(node: Node): BackendNode {
+        if (node.data.implementation) {
+            return {
+                id: node.id,
+                type: "implementation",
+                implementation: node.data.implementation
+            }
+        }
+
         switch (node.type) {
+            // Boundary Nodes
+            case consts.StatePreparationNode:
+                switch (node.data.label) {
+                    case "Encode Value":
+                        return {
+                            id: node.id,
+                            type: "encode",
+                            encoding: map({
+                                "Amplitude Encoding": "amplitude",
+                                "Angle Encoding": "angle",
+                                "Basis Encoding": "basis",
+                                "Custom Encoding": "custom",
+                                "Matrix Encoding": "matrix",
+                                "Schmidt Decomposition": "schmidt",
+                            }, node.data.encodingType),
+                            bounds: (node.data.encodingType === "Basis Encoding") ? parseFloat(node.data.size) : parseFloat(node.data.bound)
+                        }
+
+                    case "Prepare State":
+                        return {
+                            id: node.id,
+                            type: "prepare",
+                            quantumState: map({
+                                "Bell State φ+": "ϕ+",
+                                "Bell State φ-": "ϕ-",
+                                "Bell State ψ+": "ψ+",
+                                "Bell State ψ-": "ψ-",
+                                "Custom State": "custom",
+                                "GHZ": "ghz",
+                                "Uniform Superposition": "uniform",
+                                "W-State": "w",
+                            }, node.data.quantumStateName),
+                            size: parseInt(node.data.size, 10)
+                        }
+                }
+                break;
+
+            case consts.SplitterNode:
+                return {
+                    id: node.id,
+                    type: "splitter",
+                    numberOutputs: node.data.numberOutputs
+                }
+            case consts.MergerNode:
+                return {
+                    id: node.id,
+                    type: "merger",
+                    numberInputs: node.data.numberInputs
+                }
+            case consts.MeasurementNode:
+                return {
+                    id: node.id,
+                    type: "measure",
+                    indices: (node.data.indices || null)?.split(",").map(x => parseInt(x, 10)) ?? []
+                }
+
+            // Circuit Blocks
+            case consts.GateNode:
+                if (node.data.label === "Qubit") {
+                    return {
+                        id: node.id,
+                        type: "qubit"
+                    }
+                } else if (["RX(θ)", "RY(θ)", "RZ(θ)"].includes(node.data.label)) {
+                    return {
+                        id: node.id,
+                        type: "gate-with-param",
+                        gate: map({
+                            "RX(θ)": "rx",
+                            "RY(θ)": "ry",
+                            "RZ(θ)": "rz",
+                        }, node.data.label),
+                        parameter: parseFloat(node.data.parameter)
+                    }
+                } else {
+                    return {
+                        id: node.id,
+                        type: "gate",
+                        gate: map({
+                            "CNOT": "cnot",
+                            "Toffoli": "toffoli",
+                            "H": "h",
+                            "X": "x",
+                            "Y": "y",
+                            "Z": "z",
+                        }, node.data.label)
+                    }
+                }
+
+            // Data Types
             case consts.DataTypeNode:
                 switch (node.data.dataType) {
                     case "int":
                         return {
                             id: node.id,
                             type: "int",
-                            parentNode: node.parentNode,
-                            value: parseInt(node.data.value)
-                        } satisfies IntLiteralNode
+                            value: parseInt(node.data.value, 10)
+                        }
 
                     case "float":
                         return {
                             id: node.id,
                             type: "float",
-                            parentNode: node.parentNode,
                             value: parseFloat(node.data.value)
-                        } satisfies FloatLiteralNode
+                        }
 
                     case "boolean":
                         return {
                             id: node.id,
                             type: "bool",
-                            parentNode: node.parentNode,
-                            value: !!node.data.value
-                        } satisfies BoolLiteralNode
+                            value: node.data.value === "true"
+                        }
 
                     case "bit":
                         return {
                             id: node.id,
                             type: "bit",
-                            parentNode: node.parentNode,
-                            value: node.data.value === "1"
-                        } satisfies BitLiteralNode
+                            value: node.data.value === "1" ? 1 : 0
+                        }
+                    // Currently no Backend support
                     case "array":
-                            return {
-                                id: node.id,
-                                type: "array",
-                                value: node.data.value
-                            } satisfies ArrayLiteralNode
+                         return {
+                            id: node.id,
+                            type: "bit",
+                            value: node.data.value
+                        }
                 }
-            case consts.ArithmeticOperatorNode:
-            case consts.ClassicalOutputOperationNode:
-                return {
-                    id: node.id,
-                    parentNode: node.parentNode,
-                    type: "implementation",
-                    implementation: node.data.implementation,
-                    uncomputeImplementation: node.data.uncomputeImplementation,
-                    operation: node.data.operation
-                }
-            case consts.SplitterNode:
-            case consts.MergerNode:
-                    return {
-                        id: node.id,
-                        parentNode: node.parentNode,
-                        type: "implementation",
-                    }
-            case consts.GateNode:
-                return {
-                    id: node.id,
-                    type: "implementation",
-                    parentNode: node.parentNode,
-                    implementation: node.data.implementation,
-                    uncomputeImplementation: node.data.uncomputeImplementation,
-                    operation: node.data.label
-                }
-            case consts.StatePreparationNode:
-                    return {
-                        id: node.id,
-                        type: "implementation",
-                        parentNode: node.parentNode,
-                        implementation: node.data.implementation,
-                        uncomputeImplementation: node.data.uncomputeImplementation,
-                        encoding: node.data.encoding
-                    }
-            case consts.MeasurementNode:
-                return {
-                    id: node.id,
-                    parentNode: node.parentNode,
-                    type: "measure",
-                    indices: node.data.indices?.split(",").map(x => parseInt(x)) ?? []
-                } satisfies MeasurementNode
+                break;
 
             case consts.AncillaNode:
                 return {
                     id: node.id,
-                    parentNode: node.parentNode,
                     type: "ancilla",
                     size: parseInt(node.data.size)
                 }
+
+            // Operators
+            case consts.ArithmeticOperatorNode:
+                return {
+                    id: node.id,
+                    type: "operator",
+                    operator: node.data.operator
+                }
+            case consts.ClassicalOutputOperationNode:
+                return {
+                    id: node.id,
+                    type: "operator",
+                    operator: node.data.operator || node.data.minmax
+                }
+
+            /* Nested nodes
             case consts.ControlStructureNode:
                 return {
                     id: node.id,
                     type: "repeat",
-                    parentNode: node.parentNode,
-                    number: node.data.number
-                }
-            case consts.IfElseNode:
-                    return {
-                        id: node.id,
-                        type: "ifelse",
-                        parentNode: node.parentNode,
-                        condition: node.data.condition
+                    iterations: 42,
+                    block: {
+                        nodes: nodes.filter(x => x.parentId === node.id).map(x => mapNode(x)),
+                        edges: edges.filter(x => isEdgeWithin(x, node.id)).map(x => mapEdge(x))
                     }
-            default:
-                throw new Error(`Unsupported node ${node.type}`)
+                } */
+
+            // ToDo: case consts.IfElseNode
+            case consts.IfElseNode:
+                return {
+                    id: node.id,
+                    type: "if-then-else",
+                    condition: node.data?.condition || "true",
+                    thenBlock: {
+                        nodes: nodes.filter(x => x.parentId === node.id).map(mapNode),
+                        edges: edges.filter(x => isEdgeWithin(x, node.id)).map(mapEdge)
+                    },
+                    elseBlock: {
+                        nodes: nodes.filter(x => x.parentId === node.id).map(mapNode),
+                        edges: edges.filter(x => isEdgeWithin(x, node.id)).map(mapEdge)
+                    },
+                };
+
         }
+        throw new Error(`Unsupported node ${node.type} (${node.data.label})`)
     }
 
- 
+    function isNestedEdge(edge: Edge): boolean {
+        if (!edge.sourceNode || !edge.targetNode)
+            throw new Error("No source or target nodes");
+
+        return !!(edge.sourceNode.parentId || edge.targetNode.parentId);
+    }
+
+    function isEdgeWithin(edge: Edge, parentId: string): boolean {
+        if (!edge.sourceNode || !edge.targetNode)
+            throw new Error("No source or target nodes");
+
+        if (edge.sourceNode.parentId === parentId)
+            return true;
+
+        return edge.targetNode.parentId === parentId;
+    }
+
     function getHandleIndex(nodeId: string, handleType: "source" | "target", handleId?: string): number {
-        if (!handleId) return -1;
-        console.log(handleId)
+        if (!handleId)
+            throw new Error(`No handle id for node ${nodeId}`)
+
         const pattern = new RegExp(`(\\d+)(?=${nodeId}$)`);
         const match = handleId.match(pattern);
-    
+
         if (match) {
             return parseInt(match[1], 10);
         }
-    
-        console.warn(`Could not extract handle index from ${handleType} handleId: ${handleId}`);
-        return -1;
+
+        throw new Error(`Could not extract handle index from ${handleType} handleId: ${handleId}`);
     }
-    
+
 
     function mapEdge(edge: Edge): BackendEdge {
-        let type: "classical" | "qubit" | "ancilla"
-        switch (edge.type) {
-            case "classicalEdge":
-                type = "classical";
-                break;
-
-            case "quantumEdge":
-                type = "qubit";
-                break;
-
-            case "ancillaEdge":
-                type = "ancilla";
-                break;
-            default:
-                throw new Error(`We don't support ${edge.type} edges`)
-        }
         return {
-            type,
             source: [
                 edge.source,
                 getHandleIndex(edge.source, "source", edge.sourceHandle)
@@ -181,86 +259,13 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: any, e
                 edge.target,
                 getHandleIndex(edge.target, "target", edge.targetHandle)
             ],
-        } satisfies BackendEdge
+        }
     }
 }
 
-interface NodeBase {
-    id: string
-    label?: string | null
-    parentNode?: string | null
-}
+function map<const T extends Record<string, any>, K extends keyof T>(map: T, value: K): T[keyof T] {
+    if (Object.hasOwn(map, value))
+        return map[value];
 
-interface ImplementationNode extends NodeBase {
-    implementation?: string | null
-    uncomputeImplementation?: string | null
-    type: "implementation"
-}
-
-interface OperationNode extends ImplementationNode {
-    operation: string
-}
-
-interface IntLiteralNode extends NodeBase {
-    type: "int"
-    bitSize?: number
-    value: number
-}
-
-interface FloatLiteralNode extends NodeBase {
-    type: "float"
-    bitSize?: number
-    value: number
-}
-
-interface BitLiteralNode extends NodeBase {
-    type: "bit"
-    value: boolean
-}
-
-interface BoolLiteralNode extends NodeBase {
-    type: "bool"
-    value: boolean
-}
-
-interface ArrayLiteralNode extends NodeBase {
-    type: "array"
-    value: string
-}
-
-interface MeasurementNode extends NodeBase {
-    type: "measure"
-    indices: number[]
-}
-
-interface AncillaNode extends NodeBase {
-    type: "ancilla"
-    size: number
-}
-
-interface GateNode extends OperationNode {
-    operator: number
-}
-
-interface StatePreparationNode extends ImplementationNode {
-    encoding: number
-}
-
-interface ControlStructureNode extends NodeBase {
-    type: "repeat"
-    number: number
-}
-
-interface IfElseNode extends NodeBase {
-    type: "ifelse"
-    condition: number
-}
-
-type LiteralNode = IntLiteralNode | FloatLiteralNode | BitLiteralNode | BoolLiteralNode |ArrayLiteralNode
-type BackendNode = ImplementationNode | LiteralNode | MeasurementNode | AncillaNode | GateNode | StatePreparationNode | IfElseNode | ControlStructureNode
-
-interface BackendEdge {
-    type: "qubit" | "classical" | "ancilla"
-    source: [string, number]
-    target: [string, number]
+    throw new Error(`Invalid value "${String(value)}"`);
 }

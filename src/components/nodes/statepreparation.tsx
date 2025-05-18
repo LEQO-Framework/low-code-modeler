@@ -253,7 +253,7 @@ export const StatePreparationNode = memo((node: Node) => {
         <div className="custom-node-port-out">
           <OutputPort
             node={node}
-            index={1}
+            index={0}
             type={"quantum"}
             nodes={nodes}
             outputs={outputs}
