@@ -50,7 +50,7 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                                 "Matrix Encoding": "matrix",
                                 "Schmidt Decomposition": "schmidt",
                             }, node.data.encodingType),
-                            bounds: (node.data.encodingType === "Basis Encoding") ? parseFloat(node.data.size) : parseFloat(node.data.bound)
+                            bounds: (node.data.encodingType === "Basis Encoding") ? 0 : parseFloat(node.data.bound)
                         }
 
                     case "Prepare State":
@@ -156,7 +156,7 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                         }
                     // Currently no Backend support
                     case "array":
-                         return {
+                        return {
                             id: node.id,
                             type: "bit",
                             value: node.data.value
@@ -250,6 +250,17 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
 
 
     function mapEdge(edge: Edge): BackendEdge {
+        const sourceNode = nodes.find(n => n.id === edge.source);
+        if (!sourceNode) {
+            throw new Error(`Source node ${edge.source} not found`);
+        }
+        // Extract the output index from the handleId
+        const outputIndex = getHandleIndex(edge.source, "source", edge.sourceHandle);
+
+        const output = sourceNode.data.outputs?.[outputIndex];
+        if (!output) {
+            throw new Error(`Output at index ${outputIndex} not found for node ${edge.source}`);
+        }
         return {
             source: [
                 edge.source,
@@ -259,6 +270,8 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                 edge.target,
                 getHandleIndex(edge.target, "target", edge.targetHandle)
             ],
+            identifier: output.identifier,
+            size: parseInt(output.size, 10)
         }
     }
 }
