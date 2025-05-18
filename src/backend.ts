@@ -20,8 +20,8 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                 id: `flow-${Date.now()}`,
                 ...metadata
             },
-            nodes: [...nodes.filter(x => !x.parentId).map(mapNode)],
-            edges: [...edges.map(mapEdge)] // ToDo: Filter nested edges
+            nodes: [...nodes.filter(x => !x.parentNode).map(mapNode)],
+            edges: edges.filter(e => !isNestedEdge(e)).map(mapEdge)
         } satisfies CompileRequest),
     });
 
@@ -192,25 +192,37 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                     type: "repeat",
                     iterations: 42,
                     block: {
-                        nodes: nodes.filter(x => x.parentId === node.id).map(x => mapNode(x)),
+                        nodes: nodes.filter(x => x.parentNode === node.id).map(x => mapNode(x)),
                         edges: edges.filter(x => isEdgeWithin(x, node.id)).map(x => mapEdge(x))
                     }
                 } */
 
             // ToDo: case consts.IfElseNode
             case consts.IfElseNode:
+                const childNodes = nodes.filter(x => x.parentNode === node.id);
+                const thenNodes = childNodes.filter(n => n.data.scope === "if");
+                const elseNodes = childNodes.filter(n => n.data.scope === "else");
+
+                const thenNodeIds = new Set(thenNodes.map(n => n.id));
+                const elseNodeIds = new Set(elseNodes.map(n => n.id));
                 return {
                     id: node.id,
                     type: "if-then-else",
                     condition: node.data?.condition || "true",
                     thenBlock: {
-                        nodes: nodes.filter(x => x.parentId === node.id).map(mapNode),
-                        edges: edges.filter(x => isEdgeWithin(x, node.id)).map(mapEdge)
+                        nodes: thenNodes.map(mapNode),
+                        edges: edges.filter(e =>
+                            e.source && e.target &&
+                            thenNodeIds.has(e.source) || thenNodeIds.has(e.target)
+                        ).map(mapEdge)
                     },
                     elseBlock: {
-                        nodes: nodes.filter(x => x.parentId === node.id).map(mapNode),
-                        edges: edges.filter(x => isEdgeWithin(x, node.id)).map(mapEdge)
-                    },
+                        nodes: elseNodes.map(mapNode),
+                        edges: edges.filter(e =>
+                            e.source && e.target &&
+                            elseNodeIds.has(e.source) && elseNodeIds.has(e.target)
+                        ).map(mapEdge)
+                    }
                 };
 
         }
@@ -218,20 +230,23 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
     }
 
     function isNestedEdge(edge: Edge): boolean {
-        if (!edge.sourceNode || !edge.targetNode)
-            throw new Error("No source or target nodes");
-
-        return !!(edge.sourceNode.parentId || edge.targetNode.parentId);
+        const sourceNode = nodes.find(n => n.id === edge.source);
+        const targetNode = nodes.find(n => n.id === edge.target);
+        return !!(sourceNode?.parentNode || targetNode?.parentNode);
     }
 
-    function isEdgeWithin(edge: Edge, parentId: string): boolean {
-        if (!edge.sourceNode || !edge.targetNode)
+
+    function isEdgeWithin(edge: Edge, parentNode: string): boolean {
+        if (!edge.source || !edge.target)
             throw new Error("No source or target nodes");
 
-        if (edge.sourceNode.parentId === parentId)
+        const sourceNode = nodes.find(n => n.id === edge.source);
+        const targetNode = nodes.find(n => n.id === edge.target);
+        if (sourceNode.parentNode === parentNode)
             return true;
 
-        return edge.targetNode.parentId === parentId;
+
+        return targetNode.parentNode === parentNode;
     }
 
     function getHandleIndex(nodeId: string, handleType: "source" | "target", handleId?: string): number {
@@ -240,6 +255,9 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
 
         const pattern = new RegExp(`(\\d+)(?=${nodeId}$)`);
         const match = handleId.match(pattern);
+        console.log(nodeId);
+        console.log(handleId);
+        console.log(match)
 
         if (match) {
             return parseInt(match[1], 10);
@@ -256,10 +274,38 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
         }
         // Extract the output index from the handleId
         const outputIndex = getHandleIndex(edge.source, "source", edge.sourceHandle);
+        console.log(outputIndex)
 
-        const output = sourceNode.data.outputs?.[outputIndex];
+        let output = sourceNode.data.outputs?.[outputIndex];
+
+        // If not found, fallback to connected inputs (nested scenario)
         if (!output) {
-            throw new Error(`Output at index ${outputIndex} not found for node ${edge.source}`);
+            console.log(edge)
+            console.log(sourceNode.data.inputs)
+            const inputConnection = sourceNode.data.inputs?.[outputIndex];
+            console.log(inputConnection)
+            if (inputConnection) {
+                const inputNode = nodes.find(n => n.id === inputConnection.id);
+
+                output = {
+                    identifier: inputConnection.outputIdentifier || inputNode?.data.outputIdentifier || null,
+                    size: inputNode?.data.size ? parseInt(inputNode.data.size, 10) : 1
+                };
+            } else {
+                console.log("add edge")
+                return {
+                    source: [
+                        edge.source,
+                        getHandleIndex(edge.source, "source", edge.sourceHandle)
+                    ],
+                    target: [
+                        edge.target,
+                        getHandleIndex(edge.target, "target", edge.targetHandle)
+                    ],
+                    identifier: output?.identifier,
+                    size: output?.size
+                }
+            }
         }
         return {
             source: [

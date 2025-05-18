@@ -44,10 +44,10 @@ export const IfElseNode = memo((node: Node) => {
       .filter(edge => edge.target === node.id && edge.targetHandle?.startsWith(`classicalHandleInputInitialization${node.id}`))
       .map(edge => edge.targetHandle);
 
-    const expectedHandles = quantumHandles.map(index => `quantumHandleInputInitialization${node.id}-${index}`);
+    const expectedHandles = quantumHandles.map(index => `quantumHandleInputInitialization${index}${node.id}`);
     const lastHandle = expectedHandles[expectedHandles.length - 1];
     
-    const expectedClassicalHandles = classicalHandles.map(index => `classicalHandleInputInitialization${node.id}-${index}`);
+    const expectedClassicalHandles = classicalHandles.map(index => `classicalHandleInputInitialization${index}${node.id}`);
     const lastClassicalHandle = expectedClassicalHandles[expectedClassicalHandles.length - 1];
 
     if (connectedQuantumHandles.includes(lastHandle)) {
@@ -108,7 +108,7 @@ export const IfElseNode = memo((node: Node) => {
       .map(edge => edge.targetHandle);
     console.log(connectedOutputHandles)
 
-    const quantumExpected = quantumOutputHandles.map(index => `quantumHandleDynamicOutput${node.id}-${index}`);
+    const quantumExpected = quantumOutputHandles.map(index => `quantumHandleDynamicOutput${index}${node.id}`);
     const lastQuantumHandleId = quantumExpected[quantumExpected.length - 1];
 
     if (connectedQuantumOutputHandles.includes(lastQuantumHandleId)) {
@@ -120,7 +120,7 @@ export const IfElseNode = memo((node: Node) => {
       .map(edge => edge.targetHandle);
     console.log(connectedOutputHandlesQuantumElse)
 
-    const expectedQuantumElse = quantumOutputHandlesElse.map(index => `quantumHandleDynamicOutputElse${node.id}-${index}`);
+    const expectedQuantumElse = quantumOutputHandlesElse.map(index => `quantumHandleDynamicOutputElse${index}${node.id}`);
     const lastHandleIdQuantumElse = expectedQuantumElse[expectedQuantumElse.length - 1];
 
     if (connectedOutputHandlesQuantumElse.includes(lastHandleIdQuantumElse)) {
@@ -175,7 +175,7 @@ export const IfElseNode = memo((node: Node) => {
 
             {classicalHandles.map((index, i) => {
               console.log(classicalHandles)
-              const handleId = `classicalHandleInputInitialization${node.id}-${index}`;
+              const handleId = `classicalHandleInputInitialization${index}${node.id}`;
               const isConnected = edges.some(edge => edge.targetHandle === handleId);
 
               return (
@@ -183,7 +183,7 @@ export const IfElseNode = memo((node: Node) => {
                   <Handle
                     key={`classical-${index}`}
                     type="source"
-                    id={`sideClassicalHandleThen-${node.id}-${index}`}
+                    id={`sideClassicalHandleThen${index}${node.id}`}
                     position={Position.Right}
                     className={cn(
                       "z-10 classical-circle-port-out",
@@ -203,14 +203,14 @@ export const IfElseNode = memo((node: Node) => {
             })}
 
             {quantumHandles.map((index, i) => {
-              const handleId = `quantumHandleInputInitialization${node.id}-${index}`;
+              const handleId = `quantumHandleInputInitialization${index}${node.id}`;
               const isConnected = edges.some(edge => edge.targetHandle === handleId);
 
               return (isConnected &&
                 <Handle
                   key={`quantum-${index}`}
                   type="source"
-                  id={`sideQuantumHandleThen-${node.id}-${index}`} // check if this makes problem
+                  id={`sideQuantumHandleThen${index}${node.id}`} // check if this makes problem
                   position={Position.Right}
                   className={cn(
                     "z-10 circle-port-out",
@@ -228,13 +228,13 @@ export const IfElseNode = memo((node: Node) => {
             })}
 
             {classicalHandles.map((handle, i) => {
-              const handleId = `classicalHandleInputInitialization${node.id}-${handle}`;
+              const handleId = `classicalHandleInputInitialization${handle}${node.id}`;
               const isConnected = edges.some(edge => edge.targetHandle === handleId);
               return (isConnected &&
                 <Handle
                   key={`side-classical-${handle}`}
                   type="source"
-                  id={`sideClassicalHandleElse-${node.id}-${handle}`}
+                  id={`sideClassicalHandleElse${handle}${node.id}`}
                   position={Position.Right}
                   className={cn(
                     "z-10 classical-circle-port-hex-out",
@@ -253,7 +253,7 @@ export const IfElseNode = memo((node: Node) => {
             })}
 
             {quantumHandles.map((index, i) => {
-              const handleId = `quantumHandleInputInitialization${node.id}-${index}`;
+              const handleId = `quantumHandleInputInitialization${index}${node.id}`;
               const isConnected = edges.some(edge => edge.targetHandle === handleId);
               console.log(edges)
 
@@ -261,7 +261,7 @@ export const IfElseNode = memo((node: Node) => {
                 <Handle
                   key={`side-quantum-${index}`}
                   type="source"
-                  id={`sideQuantumHandleElse-${node.id}-${index}`}
+                  id={`sideQuantumHandleElse${index}${node.id}`}
                   position={Position.Right}
                   className={cn(
                     "z-10 circle-port-out",
@@ -315,7 +315,7 @@ export const IfElseNode = memo((node: Node) => {
               <div style={{ position: "absolute", left: "-75px", overflow: "visible" }}>
 
                 {classicalHandles.map((index, i) => {
-                  const handleId = `classicalHandleInputInitialization${node.id}-${index}`;
+                  const handleId = `classicalHandleInputInitialization${index}${node.id}`;
                   const isConnected = edges.some(edge => edge.targetHandle === handleId);
 
                   return (
@@ -340,7 +340,7 @@ export const IfElseNode = memo((node: Node) => {
                 })}
 
                 {quantumHandles.map((index, i) => {
-                  const handleId = `quantumHandleInputInitialization${node.id}-${index}`;
+                  const handleId = `quantumHandleInputInitialization${index}${node.id}`;
                   const isConnected = edges.some(edge => edge.targetHandle === handleId);
 
                   return (
@@ -378,15 +378,15 @@ export const IfElseNode = memo((node: Node) => {
           >
             {classicalHandles.map((index, i) => {
               console.log(classicalHandles)
-              const handleId = `classicalHandleInputInitialization${node.id}-${index}`;
+              const handleId = `classicalHandleInputInitialization${index}${node.id}`;
               const isConnected = edges.some(edge => edge.targetHandle === handleId);
 
               return (
                 isConnected && (
                   <Handle
-                    key={`classicalHandleDynamicOutput${node.id}-${index}`}
+                    key={`classicalHandleDynamicOutput${index}${node.id}`}
                     type="target"
-                    id={`classicalHandleDynamicOutput${node.id}-${index}`}
+                    id={`classicalHandleDynamicOutput${index}${node.id}`}
                     position={Position.Left}
                     className={cn(
                       "z-10 classical-circle-port-out",
@@ -406,9 +406,9 @@ export const IfElseNode = memo((node: Node) => {
             
 
             {quantumHandles.map((index, i) => {
-              let handleId = `quantumHandleInputInitialization${node.id}-${index}`;
+              let handleId = `quantumHandleInputInitialization${index}${node.id}`;
               const isConnected = edges.some(edge => edge.targetHandle === handleId);
-              handleId = `quantumHandleDynamicOutput${node.id}-${index}`;
+              handleId = `quantumHandleDynamicOutput${index}${node.id}`;
 
               console.log(isConnected)
 
@@ -436,9 +436,9 @@ export const IfElseNode = memo((node: Node) => {
           
 
             {classicalHandles.map((index, i) => {
-              let handleId = `classicalHandleInputInitialization${node.id}-${index}`;
+              let handleId = `classicalHandleInputInitialization${index}${node.id}`;
               const isConnected = edges.some(edge => edge.targetHandle === handleId);
-              handleId = `classicalHandleDynamicOutputElse${node.id}-${index}`;
+              handleId = `classicalHandleDynamicOutputElse${index}${node.id}`;
 
 
               return (isConnected &&
@@ -465,9 +465,9 @@ export const IfElseNode = memo((node: Node) => {
 
 
             {quantumHandles.map((index, i) => {
-              let handleId = `quantumHandleInputInitialization${node.id}-${index}`;
+              let handleId = `quantumHandleInputInitialization${index}${node.id}`;
               const isConnected = edges.some(edge => edge.targetHandle === handleId);
-              handleId = `quantumHandleDynamicOutputElse${node.id}-${index}`;
+              handleId = `quantumHandleDynamicOutputElse${index}${node.id}`;
               console.log(isConnected)
               return (isConnected &&
                 <Handle
@@ -517,10 +517,10 @@ export const IfElseNode = memo((node: Node) => {
                 console.log(classicalOutputHandles[i])
                 console.log(index)
 
-                const handleId = `classicalHandleDynamicOutput${node.id}-${index}`;
+                const handleId = `classicalHandleDynamicOutput${index}${node.id}`;
                 const isConnected = edges.some(edge => edge.targetHandle === handleId);
 
-                const elseHandleId = `classicalHandleDynamicOutputElse${node.id}-${index}`;
+                const elseHandleId = `classicalHandleDynamicOutputElse${index}${node.id}`;
                 const isElseConnected = edges.some(edge => edge.targetHandle === elseHandleId);
                 const actualHandleId = isElseConnected ? elseHandleId : handleId;
                 console.log(actualHandleId)
@@ -543,7 +543,7 @@ export const IfElseNode = memo((node: Node) => {
               })}
 
               {quantumOutputHandles.map((index, i) => {
-                const handleId = `quantumHandleDynamicOutput${node.id}-${index}`;
+                const handleId = `quantumHandleDynamicOutput${index}${node.id}`;
                 const isConnected = edges.some(edge => edge.targetHandle === handleId);
 
                 return isConnected ? (
@@ -560,7 +560,7 @@ export const IfElseNode = memo((node: Node) => {
               })}
 
               {quantumOutputHandlesElse.map((index, i) => {
-                const handleId = `quantumHandleDynamicOutputElse${node.id}-${index}`;
+                const handleId = `quantumHandleDynamicOutputElse${index}${node.id}`;
                 const isConnected = edges.some(edge => edge.targetHandle === handleId);
 
                 return isConnected ? (

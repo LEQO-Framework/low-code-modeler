@@ -452,7 +452,7 @@ function App() {
 
 
               updateNodeValue(node.id, "position", node.position);
-              updateNodeValue(node.id, "if", "true");
+              updateNodeValue(node.id, "scope", "if");
             }
           }
         }
@@ -760,7 +760,7 @@ function App() {
         const relativeY = node.positionAbsolute.y - nd.position.y;
         console.warn("Hier drin")
 
-        const isForbidden = node.data?.if === "true" && relativeY > nd.height / 2;
+        const isForbidden = node.data?.scope === "if" && relativeY > nd.height / 2;
 
         if (isForbidden) {
           const maxY = relativeY > nd.height / 2;

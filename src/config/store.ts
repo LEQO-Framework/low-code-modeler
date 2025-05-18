@@ -482,6 +482,7 @@ const useStore = create<RFState>((set, get) => ({
               identifiers: [nodeDataSource.data.identifiers[2]]
             });
           } else {
+            if(!edge.sourceHandle.includes("side") && !edge.targetHandle.includes("side")){
             // Push a new entry
             console.log("push entry")
             nodeDataTarget.data.inputs.push({
@@ -489,13 +490,16 @@ const useStore = create<RFState>((set, get) => ({
               identifiers: nodeDataSource.data.identifiers
             });
           }
+          }
           //nodeDataTarget.data.identifier = nodeDataSource.data.identifier
         } else {
+          if(!edge.sourceHandle.includes("side") && !edge.targetHandle.includes("side") && !edge.sourceHandle.includes("Dynamic") && !edge.targetHandle.includes("Dynamic")){
           console.log("push entry")
           nodeDataTarget.data.inputs.push({
             id: nodeDataSource.id,
             identifiers: nodeDataSource.data.identifiers
           });
+        }
 
         }
 
