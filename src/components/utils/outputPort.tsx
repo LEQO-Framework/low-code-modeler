@@ -6,6 +6,7 @@ import { Node } from "reactflow";
 export default function OutputPort({
   node,
   index = 0,
+  type,
   nodes,
   outputs,
   setOutputs,
@@ -18,10 +19,13 @@ export default function OutputPort({
   setSizeError,
   active
 }) {
-  const isClassical = index === 0;
+  const isClassical = type === "classical";
+  const isAncilla = type === "ancilla";
   const handleId = isClassical
     ? `classicalHandle${node.id}`
-    : `quantumHandle${node.type}Output${index}${node.id}`;
+    : isAncilla
+      ? `ancillaHandle${node.id}`
+      : `quantumHandle${node.type}Output${index}${node.id}`;
 
   const handleClass = isClassical
     ? "classical-circle-port-out"
@@ -55,7 +59,10 @@ export default function OutputPort({
         style={{
           backgroundColor: isClassical
             ? 'rgba(210, 159, 105, 0.2)'
-            : 'rgba(105, 145, 210, 0.2)',
+            : isAncilla
+              ? 'rgba(137, 218, 131, 0.2)'
+              : 'rgba(105, 145, 210, 0.2)',
+
           width: "180px",
           borderRadius: isClassical ? '16px' : '0px',
         }}
@@ -67,12 +74,13 @@ export default function OutputPort({
           <input
             type="text"
             className={`p-1 text-sm text-black opacity-75 w-20 text-center rounded-full border ${outputIdentifierError
-                ? 'bg-red-500 border-red-500'
-                : isClassical
-                  ? 'bg-white border-orange-300'
+              ? 'bg-red-500 border-red-500'
+              : isClassical
+                ? 'bg-white border-orange-300'
+                : isAncilla
+                  ? 'bg-white border-green-300'
                   : 'bg-white border-blue-300'
               }`}
-
             value={outputIdentifier}
             onChange={(e) => {
               const updatedOutputs = [...outputs];
@@ -107,10 +115,10 @@ export default function OutputPort({
           <input
             type="text"
             className={`p-1 text-sm text-black opacity-75 w-20 text-center rounded-full border ${sizeError
-                ? 'bg-red-500 border-red-500 border-dashed'
-                : isClassical
-                  ? 'bg-white border-orange-300 border-dashed'
-                  : 'bg-white border-blue-300 border-dashed'
+              ? 'bg-red-500 border-red-500 border-dashed'
+              : isClassical
+                ? 'bg-white border-orange-300 border-dashed'
+                : 'bg-white border-blue-300 border-dashed'
               }`}
 
             value={node.data.quantumStateName?.includes("Bell State") ? "2" : outputSize}
@@ -148,21 +156,26 @@ export default function OutputPort({
           className={cn(
             "z-10",
             handleClass,
+            "top-1/2 -translate-y-1/2",
             isClassical
               ? "!bg-orange-300 !border-black"
-              : "!bg-blue-300 !border-black",
+              : isAncilla
+                ? "!bg-green-300 !border-black rotate-45"
+                : "!bg-blue-300 !border-black",
             (active || isConnected)
-              ? "border-solid !bg-blue-300 !border-black"
+              ? `border-solid ${isClassical
+                ? "!bg-orange-300 !border-black"
+                : isAncilla
+                  ? "!bg-green-300 !border-black rotate-45"
+                  : "!bg-blue-300 !border-black"
+              }`
               : "!bg-gray-200 border-dashed !border-gray-500"
           )}
-          style={{
-            top: '50%',
-            transform: 'translateY(-50%)'
-          }}
           isConnectable={true}
           isConnectableEnd={false}
         />
       )}
+
     </div>
   );
 }

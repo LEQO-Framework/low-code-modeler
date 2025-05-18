@@ -5,6 +5,8 @@ import { Edge, Handle, Node, Position, getConnectedEdges } from "reactflow";
 import { shallow } from "zustand/shallow";
 import { Button } from "antd";
 import { motion } from "framer-motion";
+import UncomputePort from "../utils/uncomputePort";
+import OutputPort from "../utils/outputPort";
 
 
 const selector = (state: {
@@ -25,7 +27,7 @@ const selector = (state: {
 
 export const ClassicalOutputOperationNode = memo((node: Node) => {
   const { data, selected } = node;
-  const { edges, updateNodeValue, setSelectedNode } = useStore(selector, shallow);
+  const { edges, nodes, updateNodeValue, setSelectedNode } = useStore(selector, shallow);
   const alledges = getConnectedEdges([node], edges);
 
   const [inputs, setInputs] = useState(data.inputs || []);
@@ -37,6 +39,7 @@ export const ClassicalOutputOperationNode = memo((node: Node) => {
   const [outputIdentifier, setOutputIdentifier] = useState("");
   const [operation, setOperation] = useState("");
   const [showingChildren, setShowingChildren] = useState(false);
+  const [sizeError, setSizeError] = useState(false);
 
   const addVariable = () => {
     const newInputId = `input-${inputs.length + 1}`;
@@ -189,54 +192,30 @@ export const ClassicalOutputOperationNode = memo((node: Node) => {
             </div>
           </div>
 
-          <button onClick={addVariable} className="add-variable-button mt-2 w-full bg-gray-300 py-1 rounded text-sm text-black">
-            + Add More Variables
-          </button>
-
           <div className="custom-node-port-out">
-            <div className="relative flex items-center justify-end space-x-0 overflow-visible">
-              <div
-                className="flex items-center space-x-2 relative"
-                style={{
-                  backgroundColor: 'rgba(212, 128, 72, 0.2)',
-                  width: '150px',
-                }}
-              >
-                <label htmlFor="outputIdentifier" className="text-sm text-black mr-2">Output</label>
-                <input
-                  id="outputIdentifier"
-                  className={`p-1 text-sm text-black opacity-75 w-10 text-center rounded-full border 
-    ${outputIdentifierError ? 'bg-red-500 border-red-500' : 'bg-white border-orange-300'}`}
-                  value={node.data.outputIdentifier || outputIdentifier}
-                  placeholder="a"
-                  onChange={e => handleOutputIdentifierChange(e, "outputIdentifier")}
-                />
-
-                <Handle
-                  type="source"
-                  id="classicalHandleStatePreparationOutput"
-                  position={Position.Right}
-                  className="z-10 classical-circle-port-out !bg-orange-300 !border-black"
-                  isValidConnection={(connection) => true}
-                />
-              </div>
-            </div>
+            <OutputPort
+              node={node}
+              index={0}
+              type={"classical"}
+              nodes={nodes}
+              outputs={outputs}
+              setOutputs={setOutputs}
+              edges={edges}
+              sizeError={sizeError}
+              outputIdentifierError={outputIdentifierError}
+              updateNodeValue={updateNodeValue}
+              setOutputIdentifierError={setOutputIdentifierError}
+              setSizeError={setSizeError}
+              setSelectedNode={setSelectedNode}
+              active={true}
+            />
           </div>
-          <div className="relative flex items-center justify-end space-x-0 overflow-visible mt-2">
-            <div className="flex items-center space-x-2 relative" style={{ backgroundColor: 'rgba(105, 145, 210, 0.2)', width: '150px' }}>
-              <span className="text-sm text-black mr-2">Uncompute</span>
-
-              <Handle
-                type="source"
-                id="quantumHandleUncomputeStatePreparation"
-                position={Position.Right}
-                className="z-10 circle-port-out !bg-blue-300 !border-black"
-                isValidConnection={() => true}
-              />
-            </div>
-          </div>
+          <UncomputePort
+            node={node}
+            edges={edges}
+          />
         </div>
-    
+
       </div>
     </motion.div>
   );

@@ -25,7 +25,7 @@ export const GateNode = memo((node: Node) => {
   return (
     <div className="grand-parent overflow-visible">
       <div className="w-[100px] h-[100px] border border-solid border-gray-700 shadow-md bg-blue-100 relative overflow-visible">
-        {/* Label */}
+      
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center font-bold z-0">
           {data.label === "Qubit" ? (
             "|0⟩"
@@ -41,7 +41,7 @@ export const GateNode = memo((node: Node) => {
         {!isQubit && !isTwoQubit && !isThreeQubit &&(
           <Handle
           type="target"
-          id={`quantumHandleGateInput1${node.id}`}
+          id={`quantumHandleGateInput0${node.id}`}
           position={Position.Left}
           className="!absolute !top-[50%] !left--4 z-10 circle-port-op !bg-blue-300 !border-black"
           isValidConnection={() => true}
@@ -52,7 +52,7 @@ export const GateNode = memo((node: Node) => {
           <>
             <Handle
               type="target"
-              id={`quantumHandleGateInput1${node.id}`}
+              id={`quantumHandleGateInput0${node.id}`}
               position={Position.Left}
               className="!absolute !top-[25%] !left--4 z-10 circle-port-op !bg-blue-300 !border-black"
               isValidConnection={() => true}
@@ -60,7 +60,7 @@ export const GateNode = memo((node: Node) => {
             />
             <Handle
               type="target"
-              id={`quantumHandleGateInput2${node.id}`}
+              id={`quantumHandleGateInput1${node.id}`}
               position={Position.Left}
               className="!absolute !top-[75%] !left--4 z-10 circle-port-op !bg-blue-300 !border-black"
               isValidConnection={() => true}
@@ -72,21 +72,21 @@ export const GateNode = memo((node: Node) => {
           <>
             <Handle
               type="target"
-              id={`quantumHandleGateInput1${node.id}`}
+              id={`quantumHandleGateInput0${node.id}`}
               position={Position.Left}
               className="!absolute !top-[25%] !left--4 z-10 circle-port-op !bg-blue-300 !border-black"
               isValidConnection={() => true}
             />
             <Handle
               type="target"
-              id={`quantumHandleGateInput2${node.id}`}
+              id={`quantumHandleGateInput1${node.id}`}
               position={Position.Left}
               className="!absolute !top-[50%] !left--4 z-10 circle-port-op !bg-blue-300 !border-black"
               isValidConnection={() => true}
             />
             <Handle
               type="target"
-              id={`quantumHandleGateInput3${node.id}`}
+              id={`quantumHandleGateInput2${node.id}`}
               position={Position.Left}
               className="!absolute !top-[75%] !left--4 z-10 circle-port-op !bg-blue-300 !border-black"
               isValidConnection={() => true}
@@ -97,11 +97,11 @@ export const GateNode = memo((node: Node) => {
         {!isTwoQubit && !isThreeQubit && (
           <Handle
             type="source"
-            id={`quantumHandleGateOutput1${node.id}`}
+            id={`quantumHandleGateOutput0${node.id}`}
             position={Position.Right}
             className="!absolute !top-[50%] !right--15 z-10 circle-port-out !bg-blue-300 !border-black"
             isValidConnection={() => true}
-            isConnectable={edges.filter(edge => edge.sourceHandle === "quantumHandleGateOutput1" + node.id).length < 1}
+            isConnectable={edges.filter(edge => edge.sourceHandle === "quantumHandleGateOutput0" + node.id).length < 1}
             isConnectableEnd={false}
           />
         )}
@@ -110,19 +110,19 @@ export const GateNode = memo((node: Node) => {
           <>
             <Handle
               type="source"
-              id={`quantumHandleGateOutput1${node.id}`}
+              id={`quantumHandleGateOutput0${node.id}`}
               position={Position.Right}
               className="!absolute !top-[25%] !right--15 z-10 circle-port-out !bg-blue-300 !border-black"
               isValidConnection={() => true}
-              isConnectable={edges.filter(edge => edge.sourceHandle === "quantumHandleGateOutput1" + node.id).length < 1}
+              isConnectable={edges.filter(edge => edge.sourceHandle === "quantumHandleGateOutput2" + node.id).length < 1}
             />
             <Handle
               type="source"
-              id={`quantumHandleGateOutput2${node.id}`}
+              id={`quantumHandleGateOutput1${node.id}`}
               position={Position.Right}
               className="!absolute !top-[75%] !right--15 z-10 circle-port-out !bg-blue-300 !border-black"
               isValidConnection={() => true}
-              isConnectable={edges.filter(edge => edge.sourceHandle === "quantumHandleGateOutput2" + node.id).length < 1}
+              isConnectable={edges.filter(edge => edge.sourceHandle === "quantumHandleGateOutput1" + node.id).length < 1}
             />
           </>
         )}
@@ -131,9 +131,17 @@ export const GateNode = memo((node: Node) => {
           <>
             <Handle
               type="source"
-              id={`quantumHandleGateOutput1${node.id}`}
+              id={`quantumHandleGateOutput0${node.id}`}
               position={Position.Right}
               className="!absolute !top-[25%] !right--15 z-10 circle-port-out !bg-blue-300 !border-black"
+              isValidConnection={() => true}
+              isConnectable={edges.filter(edge => edge.sourceHandle === "quantumHandleGateOutput0" + node.id).length < 1}
+            />
+            <Handle
+              type="source"
+              id={`quantumHandleGateOutput1${node.id}`}
+              position={Position.Right}
+              className="!absolute !top-[50%] !right--15 z-10 circle-port-out !bg-blue-300 !border-black"
               isValidConnection={() => true}
               isConnectable={edges.filter(edge => edge.sourceHandle === "quantumHandleGateOutput1" + node.id).length < 1}
             />
@@ -141,17 +149,9 @@ export const GateNode = memo((node: Node) => {
               type="source"
               id={`quantumHandleGateOutput2${node.id}`}
               position={Position.Right}
-              className="!absolute !top-[50%] !right--15 z-10 circle-port-out !bg-blue-300 !border-black"
-              isValidConnection={() => true}
-              isConnectable={edges.filter(edge => edge.sourceHandle === "quantumHandleGateOutput2" + node.id).length < 1}
-            />
-            <Handle
-              type="source"
-              id={`quantumHandleGateOutput3${node.id}`}
-              position={Position.Right}
               className="!absolute !top-[75%] !right--15 z-10 circle-port-out !bg-blue-300 !border-black"
               isValidConnection={() => true}
-              isConnectable={edges.filter(edge => edge.sourceHandle === "quantumHandleGateOutput3" + node.id).length < 1}
+              isConnectable={edges.filter(edge => edge.sourceHandle === "quantumHandleGateOutput2" + node.id).length < 1}
             />
           </>
         )}

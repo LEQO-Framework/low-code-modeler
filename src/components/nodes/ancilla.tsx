@@ -2,15 +2,18 @@ import { memo, useState, useRef } from "react";
 import { Handle, Position, Node, Edge } from "reactflow";
 import useStore from "@/config/store";
 import { shallow } from "zustand/shallow";
+import OutputPort from "../utils/outputPort";
 
 const selector = (state: {
   selectedNode: Node | null;
   edges: Edge[],
+  nodes: Node[],
   updateNodeValue: (nodeId: string, field: string, nodeVal: string) => void;
-  setSelectedNode: (node: Node | null) => void; 
+  setSelectedNode: (node: Node | null) => void;
 }) => ({
   selectedNode: state.selectedNode,
   edges: state.edges,
+  nodes: state.nodes,
   updateNodeValue: state.updateNodeValue,
   setSelectedNode: state.setSelectedNode
 });
@@ -20,12 +23,18 @@ export const AncillaNode = memo((node: Node) => {
   const [y, setY] = useState("");
   const [error, setError] = useState(false);
   const [yError, setYError] = useState(false);
+  const [outputs, setOutputs] = useState(node.data.outputs || []);
 
   const { data } = node;
   const xRef = useRef(null);
   const yRef = useRef(null);
-  
-  const { selectedNode, updateNodeValue, setSelectedNode, edges } = useStore(selector, shallow);
+
+  const { selectedNode, nodes, updateNodeValue, setSelectedNode, edges } = useStore(selector, shallow);
+  const [outputIdentifierError, setOutputIdentifierError] = useState(false);
+  const [outputIdentifier, setOutputIdentifier] = useState("");
+  const [operation, setOperation] = useState("");
+  const [showingChildren, setShowingChildren] = useState(false);
+  const [sizeError, setSizeError] = useState(false);
 
   const handleXChange = (e) => {
     let value = e.target.value.trim();
@@ -36,7 +45,7 @@ export const AncillaNode = memo((node: Node) => {
         setX(value);
         return;
       }
-    } 
+    }
 
     setError(false);
     setX(value);
@@ -60,57 +69,27 @@ export const AncillaNode = memo((node: Node) => {
 
   return (
     <div className="grand-parent">
-      <div className="w-[320px] h-[150px] rounded-none bg-white overflow-hidden border border-solid border-gray-700 shadow-md">
+      <div className="w-[350px] h-[170px] rounded-none bg-white  border border-solid border-gray-700 shadow-md">
         <div className="w-full bg-green-300 text-black text-center font-semibold py-1 truncate">
           Ancilla
         </div>
-        <div className="px-2 py-3 flex justify-center">
-          <div className="flex items-center mb-2">
-            <label htmlFor="x" className="text-black text-sm mr-2">Size</label>
-              <input
-                ref={xRef}
-                id="x"
-                type="number"
-                className={`p-1 text-black opacity-75 text-sm rounded-full w-20 text-center border-2 ${error ? 'bg-red-500 border-red-500' : 'bg-white border-green-300'}`}
-                value={node.data.size || x}
-                placeholder="0"
-                step={1}
-                onChange={handleXChange}
-              />
-          
-          </div>
-        </div>
-
-        <div className="flex items-center justify-end space-x-0">
-          <div className="flex items-center rounded-md overflow-hidden">
-            <div
-              className="flex items-center rounded-md overflow-hidden"
-              style={{
-                backgroundColor: 'rgba(137, 218, 131, 0.2)',
-                width: '150px',
-              }}
-            >
-              <label htmlFor="y" className="text-black text-sm mr-2">Output</label>
-              <input
-                ref={yRef}
-                id="outputIdentifier"
-                className={`p-1 text-black opacity-75 text-sm w-10 text-center rounded-none border-2 ${yError ? 'bg-red-500 border-red-500' : 'bg-white border-gray-300'}`}
-                value={node.data.outputIdentifier || y}
-                placeholder="a"
-                onChange={handleYChange}
-              />
-              
-              <Handle
-                type="source"
-                id={`ancillaHandleOutput${node.id}`}
-                position={Position.Right}
-                className="!absolute !top-[70%] z-10 circle-port-out !bg-green-200 !border-black overflow-visible transform rotate-45"
-                isValidConnection={(connection) => true}
-                isConnectable={edges.filter(edge=> edge.source === node.id).length < 1}
-                isConnectableEnd={false}
-              />
-            </div>
-          </div>
+        <div className="custom-node-port-out">
+          <OutputPort
+            node={node}
+            index={0}
+            type={"ancilla"}
+            nodes={nodes}
+            outputs={outputs}
+            setOutputs={setOutputs}
+            edges={edges}
+            sizeError={sizeError}
+            outputIdentifierError={outputIdentifierError}
+            updateNodeValue={updateNodeValue}
+            setOutputIdentifierError={setOutputIdentifierError}
+            setSizeError={setSizeError}
+            setSelectedNode={setSelectedNode}
+            active={true}
+          />
         </div>
       </div>
     </div>

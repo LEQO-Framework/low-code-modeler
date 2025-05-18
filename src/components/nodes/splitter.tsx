@@ -37,29 +37,32 @@ export const SplitterNode = memo((node: Node) => {
   const inputHandles = Array.from({ length: numberInputs }, (_, i) => (
     <Handle
       key={`input-${i}`}
-      type="source"
-      id={`quantumHandleGateInput${i + 1}${node.id}`}
+      type="target"
+      id={`quantumHandleSplitterInput${i}${node.id}`}
       position={Position.Left}
       style={{
         top: `${handleOffset + i * handleGap}px`,
       }}
       className="!z-10 circle-port-op !bg-blue-300 !border-black overflow-visible"
       isValidConnection={() => true}
+      isConnectable={true}
+      isConnectableStart={false}
     />
   ));
 
   const outputHandles = Array.from({ length: numberOutputs }, (_, i) => (
     <Handle
       key={`output-${i}`}
-      type="target"
-      id={`quantumHandleGateOutput${i + 1}${node.id}`}
+      type="source"
+      id={`quantumHandleSplitterOutput${i}${node.id}`}
       position={Position.Left}
       style={{
         top: `${handleOffset + i * handleGap}px`,
       }}
       className="!absolute z-10 circle-port-out !bg-blue-300 !border-black overflow-visible"
       isValidConnection={() => true}
-
+      isConnectable={true}
+      isConnectableEnd={false}
     />
   ));
 
@@ -81,7 +84,7 @@ export const SplitterNode = memo((node: Node) => {
     // Clean up edges with sourceHandles related to removed identifiers
     const edgesToRemove = edges.filter((edge) =>
       !removedIdentifiers.some((id, index) =>
-        edge.sourceHandle === `quantumHandleGateOutput${numberOutputs + index + 1}${node.id}`
+        edge.sourceHandle === `quantumHandleSplitterOutput${numberOutputs + index + 1}${node.id}`
       )
     );
     console.log("EDGES")
@@ -100,7 +103,7 @@ export const SplitterNode = memo((node: Node) => {
   return (
     <div className="grand-parent">
       <div
-        className="w-[120px] rounded-none overflow-hidden border border-solid border-gray-700 shadow-md"
+        className="w-[120px] bg-white rounded-none overflow-hidden border border-solid border-gray-700 shadow-md"
         style={{ height: `${nodeHeight}px` }}
       >
 
@@ -113,7 +116,7 @@ export const SplitterNode = memo((node: Node) => {
                 </div>
               </div>
             </>
-            
+
             <div
               className={`absolute ${data.label === "Qubit" ? "top-[48%]" : "top-[50%]"
                 } -translate-x-1/2 -translate-y-1/2 text-center font-bold`}

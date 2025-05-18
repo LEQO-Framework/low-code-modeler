@@ -200,12 +200,12 @@ function App() {
       const flow = reactFlowInstance.toObject();
 
       const flowWithMetadata = { metadata: validMetadata, ...flow };
-      let response = await startCompile(lowcodeBackendEndpoint, metadata, reactFlowInstance.getNodes(), reactFlowInstance.getEdges() );
+      let response = await startCompile(lowcodeBackendEndpoint, metadata, reactFlowInstance.getNodes(), reactFlowInstance.getEdges());
       // must return the location where to poll
       //let response = await fetch(lowcodeBackendEndpoint + "/compile", {
-       // method: "POST",
-        //headers: { "Content-Type": "application/json" },
-        //body: JSON.stringify(flowWithMetadata),
+      // method: "POST",
+      //headers: { "Content-Type": "application/json" },
+      //body: JSON.stringify(flowWithMetadata),
       //});
 
       console.log(await response.text());
@@ -393,11 +393,13 @@ function App() {
 
             //Check if dragged node isn't already a child to the group
             if (!node.parentNode) {
+
               console.log("update node")
               node.parentNode = nd.id;
               // node cannot be moved outside parent
               node.extent = "parent";
               node.expandParent = true;
+
 
               node.position = {
                 x: node.positionAbsolute.x - nd.position.x,
@@ -450,6 +452,7 @@ function App() {
 
 
               updateNodeValue(node.id, "position", node.position);
+              updateNodeValue(node.id, "if", "true");
             }
           }
         }
@@ -616,7 +619,7 @@ function App() {
     },
     [setMenu, setSelectedNode],
   );
-  
+
   const [isModalOpen, setIsModalOpen] = useState(true);
 
   //const handleLoadJson = () => {
@@ -744,8 +747,33 @@ function App() {
     //updateNodeValue(node.id, "parentNode", intersections)
     console.log("trest")
     console.log(intersections)
+    console.log(nodes);
+    let oldPosition = node.position;
+    currentNodes.forEach((nd) => {
+      console.log("check")
+      console.log(nd.id);
+      console.log(node.id);
+      console.log(node.parentNode)
+      if (node.parentNode && nd.id !== node.id) {
+        console.log("parent nicht nzkk")
+        const relativeX = node.positionAbsolute.x - nd.position.x;
+        const relativeY = node.positionAbsolute.y - nd.position.y;
+        console.warn("Hier drin")
+
+        const isForbidden = node.data?.if === "true" && relativeY > nd.height / 2;
+
+        if (isForbidden) {
+          const maxY = relativeY > nd.height / 2;
+          //node.position.y = relativeY ;
+        
+          console.warn("Cannot drop node in the right half due to 'if' constraint.");
+          return;
+          
+        }
+      }
+    })
   }
-    , [reactFlowInstance, helperLines]);
+    , [reactFlowInstance, helperLines, nodes]);
 
   const onPaneClick = useCallback(() => {
     setMenu(null);
@@ -978,7 +1006,6 @@ function App() {
             onInit={setReactFlowInstance}
             snapToGrid={true}
             nodeTypes={nodesConfig.nodeTypes}
-            connectionMode={ConnectionMode.Loose} // to allow splitter node
             edgeTypes={nodesConfig.edgesTypes}
           >{helperLines && (
             <>

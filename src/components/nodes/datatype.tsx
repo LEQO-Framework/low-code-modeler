@@ -157,6 +157,7 @@ export const DataTypeNode = memo((node: Node) => {
             <OutputPort
               node={node}
               index={0}
+              type={"classical"}
               nodes={nodes}
               outputs={outputs}
               setOutputs={setOutputs}

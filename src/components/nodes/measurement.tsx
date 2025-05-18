@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import React, { memo, useState, useRef } from "react";
 import { Edge, Handle, Node, Position, getConnectedEdges } from "reactflow";
 import { shallow } from "zustand/shallow";
+import OutputPort from "../utils/outputPort";
 
 const selector = (state: {
   selectedNode: Node | null;
@@ -22,9 +23,14 @@ const selector = (state: {
 
 export const MeasurementNode = memo((node: Node) => {
   const { data, selected } = node;
-  const { edges, updateNodeValue, setSelectedNode } = useStore(selector, shallow);
+  const { edges, nodes, updateNodeValue, setSelectedNode } = useStore(selector, shallow);
   const alledges = getConnectedEdges([node], edges);
   const [y, setY] = useState("");
+    const [outputIdentifierError, setOutputIdentifierError] = useState(false);
+    const [outputIdentifier, setOutputIdentifier] = useState("");
+    const [operation, setOperation] = useState("");
+    const [showingChildren, setShowingChildren] = useState(false);
+    const [sizeError, setSizeError] = useState(false);
 
 
   const [inputs, setInputs] = useState(data.inputs || []);
@@ -114,98 +120,38 @@ export const MeasurementNode = memo((node: Node) => {
 
 
         <div className="custom-node-port-out">
-          {[0, 1].map((index) => {
-            const isClassical = index === 0;
-            const handleId = isClassical
-              ? `classicalHandle${node.id}`
-              : `quantumHandleMeasurementOut${node.id}`;
-
-            const handleClass = isClassical
-              ? "classical-circle-port-out"
-              : "circle-port-out";  // Different class for quantum handle
-
-            const outputIdentifier = outputs[index]?.identifier || "";
-            const outputSize = outputs[index]?.size || "";
-            const isConnected = edges.some(edge => edge.sourceHandle === handleId);
-
-            return (
-              <div key={index} className="relative flex items-center justify-end space-x-0 overflow-visible mt-1">
-                <div
-                  className="flex flex-col items-end space-y-1 relative p-2"
-                  style={{
-                    backgroundColor: isClassical
-                      ? 'rgba(210, 159, 105, 0.2)'
-                      : 'rgba(105, 145, 210, 0.2)',
-                    width: '180px',
-                    borderRadius: isClassical ? '16px' : '0px',
-                  }}
-                >
-                  <div className="w-full text-left text-sm text-black font-semibold">Output:</div>
-
-                  <div className="flex items-center justify-between w-full space-x-2">
-                    <label className="text-sm text-black">Identifier</label>
-                    <input
-                      type="text"
-                      className={`p-1 text-sm text-black opacity-75 w-20 text-center rounded-full border ${yError ? 'bg-red-500 border-red-500' : 'bg-white border-orange-300'}`}
-                      value={outputIdentifier}
-                      onChange={(e) => {
-                        const updatedOutputs = [...outputs];
-                        updatedOutputs[index] = {
-                          ...updatedOutputs[index],
-                          identifier: e.target.value,
-                        };
-                        setOutputs(updatedOutputs);
-                        node.data.outputs = updatedOutputs;
-                        updateNodeValue(node.id, "outputs", updatedOutputs);
-                        setSelectedNode(node);
-                      }}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between w-full space-x-2">
-                    <label className="text-sm text-black">Size</label>
-                    <input
-                      type="text"
-                      className="p-1 text-sm text-black opacity-75 w-20 text-center rounded-full border border-orange-300"
-                      value={outputSize}
-                      onChange={(e) => {
-                        const updatedOutputs = [...outputs];
-                        updatedOutputs[index] = {
-                          ...updatedOutputs[index],
-                          size: e.target.value,
-                        };
-                        setOutputs(updatedOutputs);
-                        node.data.outputs = updatedOutputs;
-                        updateNodeValue(node.id, "outputs", updatedOutputs);
-                        setSelectedNode(node);
-                      }}
-                    />
-                  </div>
-
-                  <Handle
-                    type="source"
-                    id={handleId}
-                    position={Position.Right}
-                    className={cn(
-                      "z-10",
-                      handleClass,
-                      isClassical
-                        ? "!bg-orange-300 !border-black"
-                        : "!bg-blue-300 !border-black",
-                      isConnected
-                        ? "border-solid"
-                        : "!bg-gray-200 !border-dashed !border-gray-500"
-                    )}
-                    style={{
-                      top: '50%',
-                      transform: 'translateY(-50%)'
-                    }}
-                    isConnectable={true}
-                  />
-                </div>
-              </div>
-            );
-          })}
+          <OutputPort
+            node={node}
+            index={0}
+            type={"classical"}
+            nodes={nodes}
+            outputs={outputs}
+            setOutputs={setOutputs}
+            edges={edges}
+            sizeError={sizeError}
+            outputIdentifierError={outputIdentifierError}
+            updateNodeValue={updateNodeValue}
+            setOutputIdentifierError={setOutputIdentifierError}
+            setSizeError={setSizeError}
+            setSelectedNode={setSelectedNode}
+            active={true}
+          />
+          <OutputPort
+            node={node}
+            index={0}
+            type={"quantum"}
+            nodes={nodes}
+            outputs={outputs}
+            setOutputs={setOutputs}
+            edges={edges}
+            sizeError={sizeError}
+            outputIdentifierError={outputIdentifierError}
+            updateNodeValue={updateNodeValue}
+            setOutputIdentifierError={setOutputIdentifierError}
+            setSizeError={setSizeError}
+            setSelectedNode={setSelectedNode}
+            active={true}
+          />
         </div>
 
 

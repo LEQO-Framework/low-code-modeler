@@ -37,22 +37,24 @@ export const MergerNode = memo((node: Node) => {
   const inputHandles = Array.from({ length: numberInputs }, (_, i) => (
     <Handle
       key={`input-${i}`}
-      type="source"
-      id={`quantumHandleGateInput${i + 1}${node.id}`}
+      type="target"
+      id={`quantumHandleMergerInput${i}${node.id}`}
       position={Position.Left}
       style={{
         top: `${handleOffset + i * handleGap}px`,
       }}
       className="!z-10 circle-port-op !bg-blue-300 !border-black overflow-visible"
       isValidConnection={() => true}
+      isConnectable={true}
+      isConnectableStart={false}
     />
   ));
 
   const outputHandles = Array.from({ length: numberOutputs }, (_, i) => (
     <Handle
       key={`output-${i}`}
-      type="target"
-      id={`quantumHandleGateOutput${i + 1}${node.id}`}
+      type="source"
+      id={`quantumHandleMergerOutput${i}${node.id}`}
       position={Position.Left}
       style={{
         top: `${handleOffset + i * handleGap}px`,
@@ -60,8 +62,9 @@ export const MergerNode = memo((node: Node) => {
       className="!absolute z-10 circle-port-out !bg-blue-300 !border-black overflow-visible"
       isValidConnection={() => true}
       isConnectable={
-        edges.filter(edge => edge.sourceHandle === `quantumHandleGateOutput${i + 1}${node.id}`).length < 1
+        edges.filter(edge => edge.sourceHandle === `quantumHandleMergerOutput${i}${node.id}`).length < 1
       }
+      isConnectableEnd={false}
     />
   ));
 
@@ -102,7 +105,7 @@ export const MergerNode = memo((node: Node) => {
   return (
     <div className="grand-parent">
       <div
-        className="w-[100px] rounded-none overflow-hidden border border-solid border-gray-700 shadow-md"
+        className="w-[100px] bg-white rounded-none overflow-hidden border border-solid border-gray-700 shadow-md"
         style={{ height: `${nodeHeight}px` }}
       >
 

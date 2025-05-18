@@ -80,8 +80,7 @@ export const categories: { [key: string]: any } = {
     "Comparison Operators": [
       { label: "Comparison Operator", type: consts.ClassicalOutputOperationNode, icon: "comparison.png" }
     ],
-    "Min & Max": [{ label: "minMax", type: consts.ClassicalOutputOperationNode, icon: "minMax.png" }],
-    "Search": [{ label: "Search", type: consts.ClassicalOutputOperationNode, icon: "search.png" }],
+    "Min & Max": [{ label: "minMax", type: consts.ClassicalOutputOperationNode, icon: "minMax.png" }]
   },
   "Custom Operators": {
     "Custom Quantum Operator": [

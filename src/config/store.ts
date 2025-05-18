@@ -372,11 +372,11 @@ const useStore = create<RFState>((set, get) => ({
 
       if (nodeDataSource.type === "splitterNode" || nodeDataSource.type === "mergerNode") {
         // only allow source connections that are inside the node
-        if (connection.sourceHandle && connection.sourceHandle.startsWith("quantumHandleGateInitialization") && connection.sourceHandle.endsWith(nodeDataSource.id) && connection.targetHandle.endsWith(nodeDataSource.id)) {
+        //if (connection.sourceHandle && connection.sourceHandle.startsWith("quantumHandle") && connection.sourceHandle.endsWith(nodeDataSource.id) && connection.targetHandle.endsWith(nodeDataSource.id)) {
           insertEdge = true;
-        } else {
-          insertEdge = false;
-        }
+        //} else {
+          //insertEdge = false;
+        //}
       }
 
       console.log(nodeDataSource.type)
@@ -405,26 +405,6 @@ const useStore = create<RFState>((set, get) => ({
       if (node.id === connection.source && connection.sourceHandle.startsWith("quantumHandle") && !(nodeDataTarget.type === "controlstructureNode") && connection.targetHandle.includes("quantumHandle")) {
         insertEdge = true;
       }
-
-      if (node.id === connection.source && nodeDataSource.type === consts.DataTypeNode) {
-        console.log(nodeDataSource)
-        if (nodeDataSource.data.label === "boolean" || nodeDataSource.data.label === "bit") {
-          // label = 1;
-        } else if (nodeDataSource.data.label === "Array") {
-          let value = nodeDataSource.data.value.split(',').map(item => Number(item.trim()));
-          console.log(value)
-          // the biggest number requires the most bits
-          let maximum = Math.max(...value);
-          console.log(maximum)
-          let bits = Math.ceil(Math.log2(maximum));
-          //label = bits;
-        } else {
-          let value = nodeDataSource.data.value;
-          let bits = Math.ceil(Math.log2(value));
-          //label = bits;
-        }
-      }
-
     }
     // Überprüfung: Existiert bereits eine Edge zur connection.targetHandle?
     const edgeExists = currentEdges.some(edge =>

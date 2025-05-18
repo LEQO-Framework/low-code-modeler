@@ -38,7 +38,7 @@ export const AlgorithmNode = memo((node: Node) => {
     <Handle
       key={`input-${i}`}
       type="target"
-      id={`quantumHandleGateInput${i + 1}${node.id}`}
+      id={`quantumHandleGateInput${i}${node.id}`}
       position={Position.Left}
       style={{
         top: `${handleOffset + i * handleGap}px`,
@@ -52,7 +52,7 @@ export const AlgorithmNode = memo((node: Node) => {
     <Handle
       key={`output-${i}`}
       type="source"
-      id={`quantumHandleGateOutput${i + 1}${node.id}`}
+      id={`quantumHandleGateOutput${i}${node.id}`}
       position={Position.Right}
       style={{
         top: `${handleOffset + i * handleGap}px`,
