@@ -138,7 +138,7 @@ export const MeasurementNode = memo((node: Node) => {
           />
           <OutputPort
             node={node}
-            index={0}
+            index={1}
             type={"quantum"}
             nodes={nodes}
             outputs={outputs}
