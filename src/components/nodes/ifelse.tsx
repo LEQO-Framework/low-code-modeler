@@ -321,7 +321,7 @@ export const IfElseNode = memo((node: Node) => {
                   return (
                     <Handle
                       key={`classical-${index}`}
-                      type="source"
+                      type="target"
                       id={handleId} // check if this makes problem
                       position={Position.Left}
                       className={cn(
@@ -335,6 +335,7 @@ export const IfElseNode = memo((node: Node) => {
                         left: "-6px"
                       }}
                       isConnectable={true}
+                      isConnectableStart={false}
                     />
                   );
                 })}
@@ -359,6 +360,7 @@ export const IfElseNode = memo((node: Node) => {
                         overflow: "visible",
                       }}
                       isConnectable={true}
+                      isConnectableStart={false}
                     />
                   );
                 })}
