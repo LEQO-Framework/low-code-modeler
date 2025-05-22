@@ -1,6 +1,6 @@
 import useStore from "@/config/store";
 import { cn } from "@/lib/utils";
-import React, { memo, useState } from "react";
+import React, { memo, useEffect, useState } from "react";
 import { Edge, Handle, Node, Position, getConnectedEdges } from "reactflow";
 import { shallow } from "zustand/shallow";
 import { Button } from "antd";
@@ -32,12 +32,11 @@ export const OperationNode = memo((node: Node) => {
 
   const [inputs, setInputs] = useState(data.inputs || []);
   const [outputs, setOutputs] = useState(data.outputs || []);
-  const [encodingType, setEncodingType] = useState("Basis Encoding");
   const [yError, setYError] = useState(false);
   const [y, setY] = useState("");
   const [outputIdentifierError, setOutputIdentifierError] = useState(false);
   const [outputIdentifier, setOutputIdentifier] = useState("");
-  const [operation, setOperation] = useState("");
+  const [operation, setOperation] = useState("+");
   const [showingChildren, setShowingChildren] = useState(false);
   const [sizeError, setSizeError] = useState(false);
 
@@ -73,6 +72,9 @@ export const OperationNode = memo((node: Node) => {
     updateNodeValue(node.id, field, value);
     //setSelectedNode(node);
   };
+  useEffect(() => {
+    updateNodeValue(node.id, "operator", "+");
+  }, []);
 
   const baseHeight = 440;
   const extraHeightPerVariable = 20;
