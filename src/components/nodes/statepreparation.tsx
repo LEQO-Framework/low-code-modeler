@@ -27,13 +27,13 @@ const selector = (state: {
 export const StatePreparationNode = memo((node: Node) => {
   const [size, setSize] = useState("");
   const [bound, setBound] = useState("");
-  const [quantumStateName, setQuantumStateName] = useState("GHZ");
+  const [quantumStateName, setQuantumStateName] = useState("Bell State ϕ+");
   const [outputIdentifier, setOutputIdentifier] = useState("");
   const [showingChildren, setShowingChildren] = useState(false);
   const [sizeError, setSizeError] = useState(false);
   const [outputs, setOutputs] = useState(node.data.outputs || []);
   const [outputIdentifierError, setOutputIdentifierError] = useState(false);
-  const [encodingType, setEncodingType] = useState("");
+  const [encodingType, setEncodingType] = useState("Amplitude Encoding");
   const [mounted, setMounted] = useState(false);
  
   
@@ -76,6 +76,11 @@ export const StatePreparationNode = memo((node: Node) => {
   };
 
   useEffect(() => {
+    if(node.data.label === "Encode Value"){
+    updateNodeValue(node.id, "encodingType", encodingType);
+    }else{
+     updateNodeValue(node.id, "quantumStateName", quantumStateName);
+    }
     setMounted(true);
   }, []);
 

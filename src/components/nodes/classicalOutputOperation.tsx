@@ -1,6 +1,6 @@
 import useStore from "@/config/store";
 import { cn } from "@/lib/utils";
-import React, { memo, useState } from "react";
+import React, { memo, useEffect, useState } from "react";
 import { Edge, Handle, Node, Position, getConnectedEdges } from "reactflow";
 import { shallow } from "zustand/shallow";
 import { Button } from "antd";
@@ -32,12 +32,16 @@ export const ClassicalOutputOperationNode = memo((node: Node) => {
 
   const [inputs, setInputs] = useState(data.inputs || []);
   const [outputs, setOutputs] = useState(data.outputs || []);
-  const [encodingType, setEncodingType] = useState("Basis Encoding");
   const [yError, setYError] = useState(false);
   const [y, setY] = useState("");
   const [outputIdentifierError, setOutputIdentifierError] = useState(false);
   const [outputIdentifier, setOutputIdentifier] = useState("");
-  const [operation, setOperation] = useState("");
+  const [operation, setOperation] = useState(() => {
+    if (node?.data?.label === "bitwise") return "NOT";
+    if (node?.data?.label === "comparison") return "<";
+    return "min";
+  });
+
   const [showingChildren, setShowingChildren] = useState(false);
   const [sizeError, setSizeError] = useState(false);
 
@@ -74,6 +78,16 @@ export const ClassicalOutputOperationNode = memo((node: Node) => {
     setSelectedNode(node);
   };
 
+  useEffect(() =>{
+
+    if (node?.data?.label === "Bitwise Operator"){
+      updateNodeValue(node.id, "operator", "OR");
+    }else if (node?.data?.label === "Comparison Operator"){
+      updateNodeValue(node.id, "operator", "<");
+    }else{
+    updateNodeValue(node.id, "operator", "min");
+  }
+  }, []);
   const baseHeight = 360;
   const extraHeightPerVariable = 20;
   const dynamicHeight = baseHeight + (inputs.length + outputs.length) * extraHeightPerVariable;
