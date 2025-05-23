@@ -2,6 +2,7 @@ import { Handle, Position } from 'reactflow';
 import { cn } from "@/lib/utils";
 import { isUniqueIdentifier } from "../utils/utils";
 import { Node } from "reactflow";
+import { useEffect, useRef } from 'react';
 
 export default function OutputPort({
   node,
@@ -31,6 +32,7 @@ export default function OutputPort({
     ? "classical-circle-port-out"
     : "circle-port-out";
 
+  const wasBellState = useRef(false);
   const outputIdentifier = outputs[index]?.identifier || "";
   const outputSize = outputs[index]?.size || "";
   const isConnected = edges.some(edge => edge.sourceHandle === handleId);
@@ -51,6 +53,44 @@ export default function OutputPort({
     updateNodeValue(node.id, field, number);
     setSelectedNode(node);
   };
+
+  useEffect(() => {
+    const isNowBellState = node.data.quantumStateName?.includes("Bell State");
+
+    const updatedOutputs = [...outputs];
+    if (!updatedOutputs[index]) {
+      updatedOutputs[index] = { identifier: "", size: "" };
+    }
+
+    if (isNowBellState) {
+      updatedOutputs[index] = {
+        ...updatedOutputs[index],
+        size: "2",
+      };
+
+      setOutputs(updatedOutputs);
+      node.data.outputs = updatedOutputs;
+      updateNodeValue(node.id, "size", "2");
+      updateNodeValue(node.id, "outputs", updatedOutputs);
+      setSelectedNode(node);
+
+      wasBellState.current = true;
+    } else if (wasBellState.current && node.data.label ==="Prepare State") {
+      // Only reset when transitioning from Bell State
+      updatedOutputs[index] = {
+        ...updatedOutputs[index],
+        size: "",
+      };
+
+      setOutputs(updatedOutputs);
+      node.data.outputs = updatedOutputs;
+      updateNodeValue(node.id, "size", "");
+      updateNodeValue(node.id, "outputs", updatedOutputs);
+      setSelectedNode(node);
+
+      wasBellState.current = false;
+    }
+  }, [node.data.quantumStateName]);
 
   return (
     <div className="relative flex items-center justify-end space-x-0 mt-1">
