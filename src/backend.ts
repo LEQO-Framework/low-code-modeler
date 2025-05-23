@@ -117,6 +117,7 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                             "CNOT": "cnot",
                             "Toffoli": "toffoli",
                             "H": "h",
+                            "T": "t",
                             "X": "x",
                             "Y": "y",
                             "Z": "z",

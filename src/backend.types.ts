@@ -242,7 +242,7 @@ export interface components {
              * Gate
              * @enum {string}
              */
-            gate: "cnot" | "toffoli" | "h" | "x" | "y" | "z";
+            gate: "cnot" | "toffoli" | "h" | "t" | "x" | "y" | "z";
         };
         /** HTTPValidationError */
         HTTPValidationError: {
