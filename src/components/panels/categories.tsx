@@ -45,6 +45,7 @@ export const categories: { [key: string]: any } = {
       { label: "RX(θ)", type: consts.GateNode, icon: "rx.png"},
       { label: "RY(θ)", type: consts.GateNode, icon: "ry.png" },
       { label: "RZ(θ)", type: consts.GateNode, icon: "rz.png" },
+      { label: "T", type: consts.GateNode, icon: "t.png" },
       { label: "X", type: consts.GateNode, icon: "pauliX.png" },
       { label: "Y", type: consts.GateNode, icon: "pauliY.png" },
       { label: "Z", type: consts.GateNode, icon: "pauliZ.png"},
