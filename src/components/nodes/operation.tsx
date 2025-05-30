@@ -1,7 +1,7 @@
 import useStore from "@/config/store";
 import { cn } from "@/lib/utils";
 import React, { memo, useEffect, useState } from "react";
-import { Edge, Handle, Node, Position, getConnectedEdges } from "reactflow";
+import { Edge, Handle, Node, Position, getConnectedEdges, useUpdateNodeInternals } from "reactflow";
 import { shallow } from "zustand/shallow";
 import { Button } from "antd";
 import { motion } from "framer-motion";
@@ -10,11 +10,10 @@ import UncomputePort from "../utils/uncomputePort";
 import AncillaPort from "../utils/ancillaPort";
 import { ancillaConstructColor, dirtyConstructColor, quantumConstructColor } from "@/constants";
 
-
 const selector = (state: {
   selectedNode: Node | null;
-  edges: Edge[],
-  nodes: Node[],
+  edges: Edge[];
+  nodes: Node[];
   updateNodeValue: (nodeId: string, field: string, nodeVal: any) => void;
   setNodes: (node: Node) => void;
   setSelectedNode: (node: Node) => void;
@@ -24,7 +23,7 @@ const selector = (state: {
   nodes: state.nodes,
   setNodes: state.setNodes,
   updateNodeValue: state.updateNodeValue,
-  setSelectedNode: state.setSelectedNode
+  setSelectedNode: state.setSelectedNode,
 });
 
 export const OperationNode = memo((node: Node) => {
@@ -41,6 +40,7 @@ export const OperationNode = memo((node: Node) => {
   const [operation, setOperation] = useState("+");
   const [showingChildren, setShowingChildren] = useState(false);
   const [sizeError, setSizeError] = useState(false);
+   const updateNodeInternals = useUpdateNodeInternals();
 
   const addVariable = () => {
     const newInputId = `input-${inputs.length + 1}`;
@@ -51,7 +51,7 @@ export const OperationNode = memo((node: Node) => {
   };
 
   const handleOutputChange = (id, newValue) => {
-    setOutputs(outputs.map(output => output.id === id ? { ...output, value: newValue } : output));
+    setOutputs(outputs.map((output) => (output.id === id ? { ...output, value: newValue } : output)));
   };
   const handleYChange = (e, field) => {
     const value = e.target.value;
@@ -75,6 +75,7 @@ export const OperationNode = memo((node: Node) => {
     //setSelectedNode(node);
   };
   useEffect(() => {
+    updateNodeInternals(node.id); 
     updateNodeValue(node.id, "operator", "+");
   }, []);
 
@@ -97,14 +98,13 @@ export const OperationNode = memo((node: Node) => {
           )}
           style={{ height: `${dynamicHeight}px` }}
         >
-          <div className="w-full flex items-center">
+           <div className="w-full flex items-center">
             <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: '52px' }}>
             <img src="arithmeticIcon.png" alt="icon" className="w-[50px] h-[50px] object-contain flex-shrink-0" />
             <div className="h-full w-[1px] bg-black mx-2" />
             <span className="truncate font-semibold leading-none" style={{ paddingLeft: '25px' }}>{data.label}</span>
             </div>
           </div>
-
 
           <div className="px-3 py-1 mb-1">
             <label className="text-sm text-black">Operator:</label>
@@ -122,41 +122,52 @@ export const OperationNode = memo((node: Node) => {
           </div>
 
           <div className="custom-node-port-in mb-3 mt-2">
-            <div className="relative flex flex-col space-y-4 overflow-visible">
+            <div className="relative flex flex-col overflow-visible">
               <div
-                className="flex flex-col items-begin space-y-1 relative p-2"
+                className="relative p-2 mb-1"
                 style={{
                   backgroundColor: quantumConstructColor,
                   width: '120px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'flex-start',
                 }}
               >
                 <Handle
                   type="target"
                   id={`quantumHandleOperationInput0${node.id}`}
                   position={Position.Left}
-                  className="z-10 circle-port-op !bg-blue-300 !border-black"
+                  className="z-10 circle-port-op !bg-blue-300 !border-black -left-[8px]"
+                  style={{ top: '50%', transform: 'translateY(-50%)' }}
                 />
-                <span className="ml-4 text-black text-sm">{node.data.inputs[0]?.outputIdentifier || "Input 1"}</span>
+                <span className="text-black text-sm text-center w-full">{node.data.inputs[0]?.outputIdentifier || "Input 1"}</span>
               </div>
               <div
-                className="flex flex-col items-begin space-y-1 relative p-2"
+                className="relative p-2 mb-1"
                 style={{
                   backgroundColor: quantumConstructColor,
                   width: '120px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'flex-start',
                 }}
               >
                 <Handle
                   type="target"
                   id={`quantumHandleOperationInput1${node.id}`}
                   position={Position.Left}
-                  className="z-10 circle-port-op !bg-blue-300 !border-black"
+                  className="z-10 circle-port-op !bg-blue-300 !border-black -left-[8px]"
+                  style={{ top: '50%', transform: 'translateY(-50%)' }}
                 />
-                <span className="ml-4 text-black text-sm">{node.data.inputs[1]?.outputIdentifier || "Input 2"}</span>
+                <span className="text-black text-sm text-center w-full">{node.data.inputs[1]?.outputIdentifier || "Input 2"}</span>
               </div>
               <div
-                className="flex flex-col items-begin space-y-1 relative p-2"
+                className="relative p-2 mb-1"
                 style={{
                   width: '120px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'flex-start',
                 }}
               >
                 <div
@@ -169,15 +180,18 @@ export const OperationNode = memo((node: Node) => {
                   type="target"
                   id={`ancillaHandleOperationInput2${node.id}`}
                   position={Position.Left}
-                  className="z-10 classical-circle-port-op !bg-gray-500 !border-black w-4 transform rotate-45"
-                  style={{ zIndex: 1 }}
+                  className="z-10 ancilla-port-in !bg-gray-200 !border-dashed !border-black w-4 transform rotate-45 -left-[8px]"
+                  style={{ zIndex: 1, top: '50% !important', transform: 'translateY(-50%) rotate(45deg)' }}
                 />
-                <span className="ml-4 text-black text-sm" style={{ zIndex: 1 }}>Ancilla</span>
+                <span className="text-black text-sm text-center w-full" style={{ zIndex: 1 }}>Ancilla</span>
               </div>
               <div
-                className="flex flex-col items-begin space-y-1 relative p-2"
+                className="relative p-2"
                 style={{
                   width: '120px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'flex-start',
                 }}
               >
                 <div
@@ -190,10 +204,10 @@ export const OperationNode = memo((node: Node) => {
                   type="target"
                   id={`ancillaHandleOperationInput3${node.id}`}
                   position={Position.Left}
-                  className="z-10 classical-circle-port-op !bg-gray-500 !border-black w-4 transform rotate-45"
-                  style={{ zIndex: 1 }}
+                  className="z-10 ancilla-port-in !bg-gray-200 !border-dashed !border-black w-4 transform rotate-45 -left-[8px]"
+                  style={{ zIndex: 1, top: '50% !important', transform: 'translateY(-50%) rotate(45deg)' }}
                 />
-                <span className="ml-4 text-black text-sm" style={{ zIndex: 1 }}> Dirty Ancilla</span>
+                <span className="text-black text-sm text-center w-full" style={{ zIndex: 1 }}> Dirty Ancilla</span>
               </div>
             </div>
           </div>
@@ -220,7 +234,7 @@ export const OperationNode = memo((node: Node) => {
             node={node}
             edges={edges}
             dirty={false}
-            index={1}         
+            index={1}
           />
           <AncillaPort
             node={node}
@@ -237,5 +251,4 @@ export const OperationNode = memo((node: Node) => {
       </div>
     </motion.div>
   );
-
 });

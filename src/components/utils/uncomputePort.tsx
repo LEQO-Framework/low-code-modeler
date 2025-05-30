@@ -1,8 +1,17 @@
 import { ancillaConstructColor, quantumConstructColor } from '@/constants';
 import { Handle, Position } from 'reactflow';
 import React from 'react';
+import { cn } from '@/lib/utils';
 
 export default function UncomputePort({ node, edges, index }) {
+  const handleId = `quantumHandle${node.type}Uncompute${index}${node.id}`;
+  const isConnected = edges.some(edge => edge.sourceHandle === handleId);
+
+  const handleClassName = cn(
+    `z-20 circle-port-out absolute`,
+    isConnected ? "!bg-green-100 !border-black" : "!bg-gray-200 !border-dashed !border-black"
+  );
+
   return (
     <div className="relative flex items-center justify-end space-x-0 overflow-visible mt-1">
       <div
@@ -21,13 +30,11 @@ export default function UncomputePort({ node, edges, index }) {
 
         <Handle
           type="source"
-          id={`quantumHandle${node.type}Uncompute${index}${node.id}`}
+          id={handleId}
           position={Position.Right}
-          className={`z-20 circle-port-out !bg-green-100 !border-black absolute`}
+          className={handleClassName}
           isValidConnection={() => true}
-          isConnectable={edges.filter(
-            (edge) => edge.sourceHandle === `quantumHandleUncomputeStatePreparation${node.id}`
-          ).length < 1}
+          isConnectable={true}
           style={{
             top: '50%',
             right: '0px',

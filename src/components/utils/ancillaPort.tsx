@@ -1,8 +1,8 @@
 import { ancillaConstructColor, dirtyConstructColor } from '@/constants';
 import { Handle, Position } from 'reactflow';
+import { cn } from '@/lib/utils';
 
 export default function AncillaPort({ node, edges, dirty, index }) {
-
   const displayText = dirty ? 'Dirty Ancilla' : 'Ancilla';
 
   const handleId = dirty
@@ -12,6 +12,12 @@ export default function AncillaPort({ node, edges, dirty, index }) {
   const backgroundColor = dirty
     ? dirtyConstructColor
     : ancillaConstructColor;
+  const isConnected = edges.some(edge => edge.sourceHandle === handleId);
+
+  const handleClassName = cn(
+    "z-10 circle-port-out absolute",
+    isConnected ? "!bg-green-100 !border-black" : "!bg-gray-200 !border-dashed !border-black"
+  );
 
   return (
     <div className="relative flex items-center justify-end overflow-visible mt-1">
@@ -35,7 +41,7 @@ export default function AncillaPort({ node, edges, dirty, index }) {
           type="source"
           id={handleId}
           position={Position.Right}
-          className="z-10 circle-port-out !bg-green-100 !border-black absolute"
+          className={handleClassName}
           isValidConnection={() => true}
           isConnectable={true}
           style={{
