@@ -40,7 +40,7 @@ export const OperationNode = memo((node: Node) => {
   const [operation, setOperation] = useState("+");
   const [showingChildren, setShowingChildren] = useState(false);
   const [sizeError, setSizeError] = useState(false);
-   const updateNodeInternals = useUpdateNodeInternals();
+  const updateNodeInternals = useUpdateNodeInternals();
 
   const addVariable = () => {
     const newInputId = `input-${inputs.length + 1}`;
@@ -75,7 +75,7 @@ export const OperationNode = memo((node: Node) => {
     //setSelectedNode(node);
   };
   useEffect(() => {
-    updateNodeInternals(node.id); 
+    updateNodeInternals(node.id);
     updateNodeValue(node.id, "operator", "+");
   }, []);
 
@@ -98,11 +98,11 @@ export const OperationNode = memo((node: Node) => {
           )}
           style={{ height: `${dynamicHeight}px` }}
         >
-           <div className="w-full flex items-center">
-            <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: '52px' }}>
-            <img src="arithmeticIcon.png" alt="icon" className="w-[50px] h-[50px] object-contain flex-shrink-0" />
-            <div className="h-full w-[1px] bg-black mx-2" />
-            <span className="truncate font-semibold leading-none" style={{ paddingLeft: '25px' }}>{data.label}</span>
+          <div className="w-full flex items-center" style={{ height: '52px' }}>
+            <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
+              <img src="arithmeticIcon.png" alt="icon" className="w-[50px] h-[50px] object-contain flex-shrink-0" />
+              <div className="h-full w-[1px] bg-black mx-2" />
+              <span className="truncate font-semibold leading-none" style={{ paddingLeft: '25px' }}>{data.label}</span>
             </div>
           </div>
 
@@ -113,11 +113,42 @@ export const OperationNode = memo((node: Node) => {
               value={node.data.operator || operation}
               onChange={(e) => handleYChange(e, "operator")}
             >
-              <option value="+">+</option>
-              <option value="-">-</option>
-              <option value="/">/</option>
-              <option value="*">*</option>
-              <option value="**">**</option>
+              {(node.data.label === "Arithmetic Operator") && (
+                <>
+                  <option value="+">+</option>
+                  <option value="-">-</option>
+                  <option value="/">/</option>
+                  <option value="*">*</option>
+                  <option value="**">**</option>
+                </>
+              )}
+
+              {(node.data.label === "Bitwise Operator") && (
+                <>
+                  <option value="|">OR</option>
+                  <option value="&">AND</option>
+                  <option value="~">INVERT</option>
+                  <option value="^">XOR</option>
+                </>
+              )}
+
+              {(node.data.label === "Comparison Operator") && (
+                <>
+                  <option value="<">&lt;</option>
+                  <option value=">">&gt;</option>
+                  <option value="<=">&le;</option>
+                  <option value=">=">&ge;</option>
+                  <option value="==">==</option>
+                  <option value="!=">!=</option>
+                </>
+              )}
+
+              {(node.data.label === "Min & Max Operator") && (
+                <>
+                  <option value="min">Min</option>
+                  <option value="max">Max</option>
+                </>
+              )}
             </select>
           </div>
 
@@ -213,22 +244,47 @@ export const OperationNode = memo((node: Node) => {
           </div>
 
           <div className="custom-node-port-out">
-            <OutputPort
-              node={node}
-              index={0}
-              type={"quantum"}
-              nodes={nodes}
-              outputs={outputs}
-              setOutputs={setOutputs}
-              edges={edges}
-              sizeError={sizeError}
-              outputIdentifierError={outputIdentifierError}
-              updateNodeValue={updateNodeValue}
-              setOutputIdentifierError={setOutputIdentifierError}
-              setSizeError={setSizeError}
-              setSelectedNode={setSelectedNode}
-              active={true}
-            />
+            {(node.data.label === "Arithmetic Operator" || node.data.label === "Bitwise Operator") && (
+              <>
+                <OutputPort
+                  node={node}
+                  index={0}
+                  type={"quantum"}
+                  nodes={nodes}
+                  outputs={outputs}
+                  setOutputs={setOutputs}
+                  edges={edges}
+                  sizeError={sizeError}
+                  outputIdentifierError={outputIdentifierError}
+                  updateNodeValue={updateNodeValue}
+                  setOutputIdentifierError={setOutputIdentifierError}
+                  setSizeError={setSizeError}
+                  setSelectedNode={setSelectedNode}
+                  active={true}
+                />
+              </>
+            )}
+            {(node.data.label === "Comparison Operator" || node.data.label === "Min & Max Operator") && (
+              <>
+                <OutputPort
+                  node={node}
+                  index={0}
+                  type={"classical"}
+                  nodes={nodes}
+                  outputs={outputs}
+                  setOutputs={setOutputs}
+                  edges={edges}
+                  sizeError={sizeError}
+                  outputIdentifierError={outputIdentifierError}
+                  updateNodeValue={updateNodeValue}
+                  setOutputIdentifierError={setOutputIdentifierError}
+                  setSizeError={setSizeError}
+                  setSelectedNode={setSelectedNode}
+                  active={true}
+                />
+              </>
+            )}
+
           </div>
           <AncillaPort
             node={node}

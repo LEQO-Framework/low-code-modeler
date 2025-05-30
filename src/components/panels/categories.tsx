@@ -73,15 +73,15 @@ export const categories: { [key: string]: any } = {
   },
   Operators: {
     "Arithmetic Operators": [
-      { label: "Arithmetic Operator", type: consts.ArithmeticOperatorNode, icon: "add.png" }
+      { label: "Arithmetic Operator", type: consts.OperatorNode, icon: "add.png" }
     ],
     "Bitwise Operators": [
-      { label: "Bitwise Operator", type: consts.ClassicalOutputOperationNode, icon: "bitwise.png" }
+      { label: "Bitwise Operator", type: consts.OperatorNode, icon: "bitwise.png" }
     ],
     "Comparison Operators": [
-      { label: "Comparison Operator", type: consts.ClassicalOutputOperationNode, icon: "comparison.png" }
+      { label: "Comparison Operator", type: consts.OperatorNode, icon: "comparison.png" }
     ],
-    "Min & Max": [{ label: "minMax", type: consts.ClassicalOutputOperationNode, icon: "minMax.png" }]
+    "Min & Max": [{ label: "Min & Max Operator", type: consts.OperatorNode, icon: "minMax.png" }]
   },
   "Custom Operators": {
     "Custom Quantum Operator": [

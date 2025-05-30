@@ -24,7 +24,7 @@ export const IfElseNode: string = "ifElseNode";
 export const ClassicalOutputOperationNode = "classicalOutputOperationNode";
 export const SplitterNode: string = "splitterNode";
 export const MergerNode: string = "mergerNode";
-export const ArithmeticOperatorNode: string = "arithmeticOperatorNode";
+export const OperatorNode: string = "operatorNode";
 
 // handle prefix ensures correctness of edges
 export const classicalHandle: string = "classicalHandle";
