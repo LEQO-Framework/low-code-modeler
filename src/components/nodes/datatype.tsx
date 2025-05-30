@@ -93,7 +93,7 @@ export const DataTypeNode = memo((node: Node) => {
   };
 
   return (
-    <div className="relative w-[450px] h-[250px]  ">
+    <div className="relative w-[450px] h-[270px]  ">
       <div className="w-full h-full rounded-full bg-white overflow-hidden border border-solid border-gray-700 shadow-md">
         <div className="w-full bg-orange-300 text-black text-center font-semibold py-1 truncate relative">
           {outputIdentifierError && (
@@ -104,7 +104,14 @@ export const DataTypeNode = memo((node: Node) => {
               </div>
             </div>
           )}
-          {data.dataType}
+          <div className="w-full flex items-center" style={{ height: '52px', paddingLeft: '70px' }}>
+            <div className="w-full bg-orange-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
+              <img src="arithmeticIcon.png" alt="icon" className="w-[50px] h-[50px] object-contain flex-shrink-0" />
+              <div className="h-full w-[1px] bg-black mx-2" />
+              <span className="truncate font-semibold leading-none" style={{ paddingLeft: '25px' }}>{data.label}</span>
+            </div>
+          </div>
+          
         </div>
 
         <div className="px-4 py-3 flex flex-col items-center space-y-3">
@@ -184,7 +191,6 @@ export const DataTypeNode = memo((node: Node) => {
           isValidConnection={(connection) => true}
           isConnectableEnd={false}
         />
-
       </div>
     </div>
   );
