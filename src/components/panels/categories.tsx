@@ -54,8 +54,11 @@ export const categories: { [key: string]: any } = {
   "Data Types": {
     "Classical Datatypes": [
       { label: "Array", dataType: "Array", type: consts.DataTypeNode, icon: "array.png" },
+      { label: "angle", dataType: "angle", type: consts.DataTypeNode},
       { label: "bit", dataType: "bit", type: consts.DataTypeNode, icon: "bit.png" },
       { label: "boolean", dataType: "boolean", type: consts.DataTypeNode, icon: "boolean.png" },
+      { label: "complex", dataType: "complex", type: consts.DataTypeNode },
+      { label: "duration", dataType: "duration", type: consts.DataTypeNode },
       { label: "int", dataType: "int", type: consts.DataTypeNode, icon: "int.png"  },
       { label: "float", dataType: "float", type: consts.DataTypeNode, icon: "float.png" },
     ],

@@ -30,6 +30,7 @@ export const DataTypeNode = memo((node: Node) => {
   const [sizeError, setSizeError] = useState(false);
 
   const { nodes, edges, updateNodeValue, setSelectedNode } = useStore(selector, shallow);
+  const [durationUnit, setDurationUnit] = useState(node.data.durationUnit || "s");
   const { data } = node;
 
   const changeValue = (e) => {
@@ -38,7 +39,7 @@ export const DataTypeNode = memo((node: Node) => {
     node.data["value"] = value;
     updateNodeValue(node.id, "value", value);
 
-    if (data.dataType === "float" || data.dataType === "int") {
+    if (data.dataType === "float" || data.dataType === "int" || data.label === "duration" || data.label === "complex") {
       value = value.replace(",", ".");
       if (data.dataType === "int") {
         if (!/^-?\d+$/.test(value) && value !== "") {
@@ -47,6 +48,19 @@ export const DataTypeNode = memo((node: Node) => {
         }
       } else if (data.dataType === "float") {
         if (!/^-?\d+(\.\d+)?$/.test(value) && value !== "") {
+          setValueError(true);
+          return;
+        }
+      } else if (data.label === "complex") {
+        let complex = isComplexNumber(value);
+        if (!complex) {
+          setValueError(true);
+          return;
+        }
+      } else {
+        let duration = isPositiveValue(value);
+        updateNodeValue(node.id, "durationUnit", durationUnit);
+        if (!duration) {
           setValueError(true);
           return;
         }
@@ -59,10 +73,33 @@ export const DataTypeNode = memo((node: Node) => {
         setValueError(true);
         return;
       }
+    } else if (data.dataType === "angle") {
+      let angle = parseToNormalizedAngle(value)
+      console.log(angle);
+      console.log(value)
+      if (angle === null && value !== "") {
+        setValueError(true);
+        return;
+      }
     }
-
     setValueError(false);
   };
+
+  function isComplexNumber(value) {
+    const trimmed = value.trim().toLowerCase().replace(/\s+/g, "");
+
+    // Full complex number: real +/- imaginary
+    const fullComplex = /^([+-]?\d+(\.\d+)?)([+-](\d+(\.\d+)?|)i)$/;
+
+    // Imaginary only: i, -i, +i, 2i, -3.5i
+    const imaginaryOnly = /^([+-]?(\d+(\.\d+)?|))i$/;
+
+    // Real only: 1, -3.14
+    const realOnly = /^[+-]?\d+(\.\d+)?$/;
+
+    return fullComplex.test(trimmed) || imaginaryOnly.test(trimmed) || realOnly.test(trimmed);
+  }
+
 
   const changeSize = (e) => {
     let size = e.target.value.trim();
@@ -77,6 +114,31 @@ export const DataTypeNode = memo((node: Node) => {
     setValueError(false);
   };
 
+  function parseToNormalizedAngle(angle) {
+    const trimmed = angle.trim().toLowerCase();
+    const piMatch = /^([0-9]*\.?[0-9]*)\s*\*?\s*pi$/.exec(trimmed);
+
+    if (piMatch) {
+      const multiplier = piMatch[1] === "" ? 1 : parseFloat(piMatch[1]);
+      return (multiplier * Math.PI) % (2 * Math.PI);
+    }
+
+    if (/^[+-]?[0-9]*\.?[0-9]+$/.test(trimmed)) {
+      const num = parseFloat(trimmed);
+      return ((num % (2 * Math.PI)) + (2 * Math.PI)) % (2 * Math.PI);
+    }
+    return null;
+  }
+
+  function isPositiveValue(value) {
+    const trimmed = value.trim().toLowerCase();
+
+    if (/^[+]?[0-9]*\.?[0-9]+$/.test(trimmed)) {
+      const num = parseFloat(trimmed);
+      return true;
+    }
+    return false;
+  }
   const changeOutputIdentifier = (e) => {
     const value = e.target.value;
     node.data["outputIdentifier"] = value;
@@ -108,10 +170,10 @@ export const DataTypeNode = memo((node: Node) => {
             <div className="w-full bg-orange-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
               <img src="arithmeticIcon.png" alt="icon" className="w-[50px] h-[50px] object-contain flex-shrink-0" />
               <div className="h-full w-[1px] bg-black mx-2" />
-              <span className="truncate font-semibold leading-none" style={{ paddingLeft: '25px' }}>{data.label}</span>
+              <span className="font-semibold leading-none" style={{ paddingLeft: '25px' }}>{data.label}</span>
             </div>
           </div>
-          
+
         </div>
 
         <div className="px-4 py-3 flex flex-col items-center space-y-3">
@@ -147,6 +209,41 @@ export const DataTypeNode = memo((node: Node) => {
                 placeholder="1,2,3"
                 onChange={changeValue}
               />
+            ) : data.dataType === "angle" ? (
+              <input
+                id="value"
+                type="text"
+                className={`input-classical-focus p-1 text-black opacity-75 text-sm rounded-full w-24 text-center border-2 transition-all duration-200 ${valueError ? 'bg-red-500 border-red-500' : 'bg-white border-orange-300'}`}
+                value={node.data.value || value}
+                placeholder="2pi"
+                onChange={changeValue}
+              />
+            ) : data.label === "duration" ? (
+              <div className="flex items-center space-x-2">
+                <input
+                  id="value"
+                  type="text"
+                  className={`input-classical-focus p-1 text-black opacity-75 text-sm rounded-full w-20 text-center border-2 ${valueError ? 'bg-red-500 border-red-500' : 'bg-white border-orange-300'}`}
+                  value={node.data.value || value}
+                  placeholder="0"
+                  onChange={changeValue}
+                />
+                <select
+                  className="input-classical-focus p-1 text-black opacity-75 text-sm rounded-full border-2 bg-white border-orange-300 focus:border-orange-500"
+                  value={durationUnit}
+                  onChange={(e) => {
+                    const unit = e.target.value;
+                    setDurationUnit(unit);
+                    node.data["durationUnit"] = unit;
+                    updateNodeValue(node.id, "durationUnit", unit);
+                  }}
+                >
+                  <option value="s">s</option>
+                  <option value="ms">ms</option>
+                  <option value="min">min</option>
+                  <option value="h">h</option>
+                </select>
+              </div>
             ) : (
               <input
                 id="value"
