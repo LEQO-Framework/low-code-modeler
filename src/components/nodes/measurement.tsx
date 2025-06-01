@@ -43,7 +43,7 @@ export const MeasurementNode = memo((node: Node) => {
   const yRef = useRef(null);
 
 
-  const baseHeight = 380;
+  const baseHeight = 400;
   const extraHeightPerVariable = 40;
   const dynamicHeight = baseHeight + (inputs.length) * extraHeightPerVariable;
   console.log(dynamicHeight)
@@ -79,9 +79,13 @@ export const MeasurementNode = memo((node: Node) => {
         )}
         style={{ height: `${dynamicHeight}px` }}
       >
-        <div className="w-full bg-blue-300 text-black text-center font-semibold py-1 truncate">
-          Measurement
-        </div>
+        <div className="w-full flex items-center" style={{ height: '52px' }}>
+            <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
+              <img src="arithmeticIcon.png" alt="icon" className="w-[50px] h-[50px] object-contain flex-shrink-0" />
+              <div className="h-full w-[1px] bg-black mx-2" />
+              <span className="truncate font-semibold leading-none" style={{ paddingLeft: '25px' }}>{data.label}</span>
+            </div>
+          </div>
         <div className="flex justify-center">
           <div className="custom-node-port-in mb-3 mt-2">
             <div className="relative flex flex-col items-start text-black text-center overflow-visible">
