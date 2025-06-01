@@ -329,7 +329,6 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
             ))}
           </div>
 
-
           <AncillaPort node={node} edges={edges} dirty={false} index={numberOutputs} />
           <AncillaPort node={node} edges={edges} dirty={true} index={numberOutputs + 1} />
           <UncomputePort node={node} edges={edges} index={numberOutputs + 2} />

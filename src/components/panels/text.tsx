@@ -1015,7 +1015,7 @@ export const TextPanel = () => {
 
           </div>
         )}
-        {selectedNode?.type === AlgorithmNode || selectedNode?.type === ClassicalAlgorithmNode && (
+        {(selectedNode?.type === AlgorithmNode || selectedNode?.type === ClassicalAlgorithmNode) && (
           <div className="p-2 mt-3">
             <label
               className="block text-sm font-medium text-start text-gray-700"

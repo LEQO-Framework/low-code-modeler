@@ -9,10 +9,11 @@ import ReactFlow, {
   MiniMap,
   getOutgoers,
   getNodesBounds,
-  ConnectionMode
+  ConnectionMode,
+  Panel,
 } from "reactflow";
 import "reactflow/dist/style.css";
-import { Panel, Palette } from "./components";
+import { CustomPanel, Palette } from "./components";
 import Toolbar from "./components/toolbar";
 import { nodesConfig } from "./config/site";
 import useStore from "./config/store";
@@ -35,6 +36,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { startCompile } from "./backend";
+import { Button } from "antd";
 
 
 
@@ -170,6 +172,7 @@ function App() {
   const [modalStep, setModalStep] = useState(0);
   const [loadingQunicorn, setLoadingQunicorn] = useState(true);
   const [statusQunicorn, setStatusQunicorn] = useState(null);
+  const [ancillaModelingOn, setAncillaModelingOn] = useState(true);
 
   const handleClose = () => {
     if (modalStep < 3) {
@@ -1038,6 +1041,17 @@ function App() {
             </>
           )}
             <Controls />
+             <Panel position="top-left" className="p-2">
+      <button
+    onClick={() => setAncillaModelingOn((prev) => !prev)}
+    className={`px-3 py-1 rounded text-white ${
+      ancillaModelingOn ? "bg-blue-600" : "bg-gray-400"
+    }`}
+  >
+    Ancilla Modeling: {ancillaModelingOn ? "On" : "Off"}
+  </button>
+    </Panel>
+
 
             <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
 
@@ -1050,7 +1064,7 @@ function App() {
           <div
             className={`transition-all duration-300 ${isPanelOpen ? "w-[300px] lg:w-[350px]" : "w-0 overflow-hidden"}`}
           >
-            {isPanelOpen && <Panel metadata={metadata} onUpdateMetadata={setMetadata} />}
+            {isPanelOpen && <CustomPanel metadata={metadata} onUpdateMetadata={setMetadata} />}
           </div>
         </div>
 
