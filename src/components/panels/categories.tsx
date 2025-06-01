@@ -64,6 +64,7 @@ export const categories: { [key: string]: any } = {
     ],
     "Quantum Type": [
       { label: "Ancilla", dataType: consts.AncillaNode, type: consts.AncillaNode, icon: "ancilla.png" },
+      { label: "Qubit", dataType: consts.QubitNode, type: consts.QubitNode},
     ]
   },
   "Flow Structures": {

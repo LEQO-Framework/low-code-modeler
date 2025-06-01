@@ -178,9 +178,9 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
               style={{ height: "inherit" }}
             >
               <img
-                src="arithmeticIcon.png"
+                src="classicalAlgorithmIcon.png"
                 alt="icon"
-                className="w-[50px] h-[50px] object-contain flex-shrink-0"
+                className="w-[40px] h-[40px] object-contain flex-shrink-0"
               />
               <div className="h-full w-[1px] bg-black mx-2" />
               {isEditingLabel ? (
@@ -198,7 +198,7 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
                 />
               ) : (
                 <span
-                  className="truncate font-semibold leading-none cursor-pointer"
+                  className="font-semibold leading-none cursor-pointer"
                   style={{ paddingLeft: "25px" }}
                   onClick={() => setIsEditingLabel(true)}
                 >

@@ -81,7 +81,7 @@ export const MeasurementNode = memo((node: Node) => {
       >
         <div className="w-full flex items-center" style={{ height: '52px' }}>
             <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
-              <img src="arithmeticIcon.png" alt="icon" className="w-[50px] h-[50px] object-contain flex-shrink-0" />
+              <img src="measurementIcon2.png" alt="icon" className="w-[40px] h-[40px] object-contain flex-shrink-0" />
               <div className="h-full w-[1px] bg-black mx-2" />
               <span className="truncate font-semibold leading-none" style={{ paddingLeft: '25px' }}>{data.label}</span>
             </div>
@@ -146,7 +146,7 @@ export const MeasurementNode = memo((node: Node) => {
             setOutputIdentifierError={setOutputIdentifierError}
             setSizeError={setSizeError}
             setSelectedNode={setSelectedNode}
-            active={true}
+            active={false}
           />
           <OutputPort
             node={node}
@@ -162,7 +162,7 @@ export const MeasurementNode = memo((node: Node) => {
             setOutputIdentifierError={setOutputIdentifierError}
             setSizeError={setSizeError}
             setSelectedNode={setSelectedNode}
-            active={true}
+            active={false}
           />
         </div>
 

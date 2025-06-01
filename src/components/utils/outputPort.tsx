@@ -110,7 +110,7 @@ export default function OutputPort({
         <div className="w-full text-left text-sm text-black font-semibold">Output:</div>
 
         <div className="flex items-center justify-between w-full space-x-2">
-          <label className="text-sm text-black">Identifier</label>
+          <label className="text-sm text-black" style={{ paddingLeft: '15px' }}>Identifier</label>
           <input
             type="text"
             className={`p-1 text-sm text-black opacity-75 w-20 text-center rounded-full border ${outputIdentifierError
@@ -151,7 +151,7 @@ export default function OutputPort({
         </div>
 
         <div className="flex items-center justify-between w-full space-x-2">
-          <label className="text-sm text-black">Size</label>
+          <label className="text-sm text-black" style={{ paddingLeft: '15px' }}>Size</label>
           <input
             type="text"
             className={`p-1 text-sm text-black opacity-75 w-20 text-center rounded-full border ${sizeError

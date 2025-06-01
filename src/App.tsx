@@ -1053,7 +1053,7 @@ function App() {
     </Panel>
 
 
-            <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
+       
 
             <MiniMap zoomable={true} pannable={true} />
           </ReactFlow>

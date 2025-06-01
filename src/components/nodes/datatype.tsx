@@ -154,23 +154,62 @@ export const DataTypeNode = memo((node: Node) => {
     setSelectedNode(node);
   };
 
+    const iconMap = {
+  "int": 'intIcon.png',
+  "float": 'floatIcon.png',
+  "bit": 'bitIcon.png',
+  "duration": 'durationIcon.png',
+  "boolean": 'booleanIcon.png',
+  "angle": 'angleIcon.png',
+  "complex": 'complexIcon.png',
+  "Array": 'arrayIcon.png',
+};
+const label = data.label;
+const iconSrc = iconMap[label];
+const iconSizeMap = {
+  "int": { width: 40, height: 40 },
+  "float": { width: 40, height: 40 },
+  "bit": { width: 40, height: 40 },
+  "duration": { width: 40, height: 40 },
+  "boolean": { width: 45, height: 40 },
+  "angle": { width: 40, height: 40 },
+  "complex": { width: 40, height: 40 },
+  "Array": { width: 40, height: 40 },
+};
+
   return (
-    <div className="relative w-[450px] h-[270px]  ">
+    <div className="relative w-[450px] h-[270px]">
+      {outputIdentifierError && (
+        <div className="absolute top-2 right-2 group z-20">
+          <AlertCircle className="text-red-600 w-5 h-5" />
+          <div className="absolute top-5 left-[10px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
+            Identifier not unique
+          </div>
+          <div className="absolute top-12 left-[10px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
+            Value is not an integer
+          </div>
+
+        </div>
+      )}
       <div className="w-full h-full rounded-full bg-white overflow-hidden border border-solid border-gray-700 shadow-md">
         <div className="w-full bg-orange-300 text-black text-center font-semibold py-1 truncate relative">
-          {outputIdentifierError && (
-            <div className="absolute top-2 right-2 group">
-              <AlertCircle className="text-red-600 w-5 h-5" />
-              <div className="absolute top-6 right-0 z-10 bg-white text-xs text-red-600 border border-red-400 px-2 py-1 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                Identifier not unique
-              </div>
-            </div>
-          )}
-          <div className="w-full flex items-center" style={{ height: '52px', paddingLeft: '70px' }}>
+
+          <div className="w-full flex items-center" style={{ height: '52px', paddingLeft: '100px' }}>
             <div className="w-full bg-orange-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
-              <img src="arithmeticIcon.png" alt="icon" className="w-[50px] h-[50px] object-contain flex-shrink-0" />
+              {(() => {
+  const { width, height } =  { width: 50, height: 50 };
+  return (
+    <img
+      src={iconSrc}
+      alt="icon"
+      style={{ width: `${width}px`, height: `${height}px` }}
+      className="object-contain flex-shrink-0"
+    />
+  );
+})()}
+
               <div className="h-full w-[1px] bg-black mx-2" />
-              <span className="font-semibold leading-none" style={{ paddingLeft: '25px' }}>{data.label}</span>
+              <span className="font-semibold leading-none" style={{ paddingLeft: '20px' }}>{data.label}</span>
             </div>
           </div>
 

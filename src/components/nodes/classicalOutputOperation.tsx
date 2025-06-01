@@ -7,6 +7,7 @@ import { Button } from "antd";
 import { motion } from "framer-motion";
 import UncomputePort from "../utils/uncomputePort";
 import OutputPort from "../utils/outputPort";
+import AncillaPort from "../utils/ancillaPort";
 
 
 const selector = (state: {
@@ -159,21 +160,6 @@ export const ClassicalOutputOperationNode = memo((node: Node) => {
             </div>
           )}
 
-          {data.label === "search" && (
-            <div className="px-3 py-1 mb-1">
-              <label className="text-sm text-black">Search Index:</label>
-              <input
-                type="text"
-                className="w-full p-1 mt-1 bg-white text-center text-sm text-black border-2 border-blue-300 rounded-full"
-                value={node.data.searchIndex || ""}
-                onChange={(e) => handleYChange(e, "searchIndex")}
-                placeholder="Enter search index"
-              />
-            </div>
-          )}
-
-
-
           <div className="custom-node-port-in mb-3 mt-2">
             <div className="relative flex flex-col space-y-4 overflow-visible">
               <div className="relative flex items-center" style={{ backgroundColor: 'rgba(105, 145, 210, 0.2)', width: '60px' }}>
@@ -224,13 +210,25 @@ export const ClassicalOutputOperationNode = memo((node: Node) => {
               active={true}
             />
           </div>
+          <AncillaPort
+            node={node}
+            edges={edges}
+            dirty={false}
+            index={1}
+          />
+          <AncillaPort
+            node={node}
+            edges={edges}
+            dirty={true}
+            index={2}
+          />
           <UncomputePort
             node={node}
             edges={edges}
+            index={3}
           />
         </div>
-
-      </div>
+     </div>
     </motion.div>
   );
 

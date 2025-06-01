@@ -187,7 +187,7 @@ export const IfElseNode = memo((node: Node) => {
                     position={Position.Right}
                     className={cn(
                       "z-10 classical-circle-port-out",
-                      isConnected ? "!bg-orange-300 !border-black" : "!bg-gray-200 !border-dashed !border-gray-500"
+                      isConnected ? "!bg-orange-300 !border-black" : "!bg-gray-200  !border-black"
                     )}
                     style={{
                       top: `${100 + i * 30}px`,
@@ -214,7 +214,7 @@ export const IfElseNode = memo((node: Node) => {
                   position={Position.Right}
                   className={cn(
                     "z-10 circle-port-out",
-                    isConnected ? "!bg-blue-300 !border-black" : "!bg-gray-200 !border-dashed !border-gray-500"
+                    isConnected ? "!bg-blue-300 !border-black" : "!bg-gray-200 !border-dashed !border-black"
                   )}
                   style={{
                     top: `${100 + classicalHandles.length * 30 + i * 30}px`,
@@ -238,7 +238,7 @@ export const IfElseNode = memo((node: Node) => {
                   position={Position.Right}
                   className={cn(
                     "z-10 classical-circle-port-hex-out",
-                    isConnected ? "!bg-orange-300 !border-black" : "!bg-gray-200 !border-dashed !border-gray-500"
+                    isConnected ? "!bg-orange-300 !border-black" : "!bg-gray-200  !border-black"
                   )}
                   style={{
                     top: `calc(70% + ${30 + i * 30}px)`,
@@ -265,7 +265,7 @@ export const IfElseNode = memo((node: Node) => {
                   position={Position.Right}
                   className={cn(
                     "z-10 circle-port-out",
-                    isConnected ? "!bg-blue-300 !border-black" : "!bg-gray-200 !border-dashed !border-gray-500"
+                    isConnected ? "!bg-blue-300 !border-black" : "!bg-gray-200 !border-dashed !border-black"
                   )}
                   style={{
                     top: `calc(70% + ${30 * (classicalHandles.length + 1 + i)}px)`,
@@ -291,14 +291,31 @@ export const IfElseNode = memo((node: Node) => {
                   left: "-50px",
                   width: "250px",
                   height: `${hexagonHeight}px`,
+                  backgroundColor: "black",
+                  top: `${hexagonTopOffset}px`,
+                  clipPath: "polygon(10% 0%, 90% 0%, 100% 10%, 100% 90%, 90% 100%, 10% 100%, 0% 90%, 0% 10%)",
+                }}
+              ></div>
+              <div
+                className="hexagon-left"
+                style={{
+                  position: "absolute",
+                  left: "-50px",
+                  width: "250px",
+                  height: `${hexagonHeight}px`,
                   backgroundColor: "white",
                   top: `${hexagonTopOffset}px`,
                   clipPath: "polygon(10% 0%, 90% 0%, 100% 10%, 100% 90%, 90% 100%, 10% 100%, 0% 90%, 0% 10%)",
                 }}
               >
-                <div className="w-full bg-purple-300 text-black text-center font-semibold py-1">
-                  <span className="text-sm block font-bold">If</span>
+                <div className="w-full flex items-center" style={{ height: '52px' }}>
+                  <div className="w-full bg-purple-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
+                    <img src="ifelseIcon.png" alt="icon" className="w-[60px] h-[60px] object-contain flex-shrink-0" style={{ paddingLeft: '25px' }} />
+                    <div className="h-full w-[1px] bg-black mx-2" />
+                    <span className=" font-semibold leading-none" style={{ paddingLeft: '25px' }}>If</span>
+                  </div>
                 </div>
+
 
                 <span className="text-sm block mt-3">Condition:</span>
                 <Input
@@ -326,7 +343,7 @@ export const IfElseNode = memo((node: Node) => {
                       position={Position.Left}
                       className={cn(
                         "z-10 classical-circle-port-hex-in",
-                        isConnected ? "!bg-orange-300 !border-black" : "!bg-gray-200 !border-dashed !border-gray-500"
+                        isConnected ? "!bg-orange-300 !border-black" : "!bg-orange-300  !border-black"
                       )}
                       style={{
                         top: `${hexagonTopOffset + 70 + i * 30}px`,
@@ -352,7 +369,7 @@ export const IfElseNode = memo((node: Node) => {
                       position={Position.Left}
                       className={cn(
                         "z-10 circle-port-hex-in",
-                        isConnected ? "!bg-blue-300 !border-black" : "!bg-gray-200 !border-dashed !border-gray-500"
+                        isConnected ? "!bg-blue-300 !border-black" : "!bg-gray-200 !border-dashed !border-black"
                       )}
 
                       style={{
@@ -392,7 +409,7 @@ export const IfElseNode = memo((node: Node) => {
                     position={Position.Left}
                     className={cn(
                       "z-10 classical-circle-port-out",
-                      isConnected ? "!bg-orange-300 !border-black" : "!bg-gray-200 !border-dashed !border-gray-500"
+                      isConnected ? "!bg-orange-300 !border-black" : "!bg-gray-200 !border-black"
                     )}
                     style={{
                       top: `${100 + i * 30}px`,
@@ -422,7 +439,7 @@ export const IfElseNode = memo((node: Node) => {
                   position={Position.Left}
                   className={cn(
                     "z-10 circle-port-out",
-                    isConnected ? "!bg-blue-300 !border-black" : "!bg-gray-200 !border-dashed !border-gray-500"
+                    isConnected ? "!bg-blue-300 !border-black" : "!bg-gray-200 !border-dashed !border-black"
                   )}
                   style={{
                     top: `${100 + classicalHandles.length * 30 + i * 30}px`,
@@ -451,7 +468,7 @@ export const IfElseNode = memo((node: Node) => {
                   position={Position.Left}
                   className={cn(
                     "z-10 classical-circle-port-out",
-                    isConnected ? "!bg-orange-300 !border-black" : "!bg-gray-200 !border-dashed !border-gray-500"
+                    isConnected ? "!bg-orange-300 !border-black" : "!bg-gray-200  !border-black"
                   )}
                   style={{
                     top: `calc(70% + ${30 + i * 30}px)`,
@@ -479,7 +496,7 @@ export const IfElseNode = memo((node: Node) => {
                   position={Position.Left}
                   className={cn(
                     "z-10 circle-port-out",
-                    isConnected ? "!bg-blue-300 !border-black" : "!bg-gray-200 !border-dashed !border-gray-500"
+                    isConnected ? "!bg-blue-300 !border-black" : "!bg-gray-200 !border-dashed !border-black"
                   )}
                   style={{
                     top: `calc(70% + ${30 * (classicalHandles.length + 1 + i)}px)`,
@@ -506,12 +523,26 @@ export const IfElseNode = memo((node: Node) => {
                   backgroundColor: "white",
                   top: `${hexagonTopOffset}px`,
                   clipPath: "polygon(10% 0%, 90% 0%, 100% 10%, 100% 90%, 90% 100%, 10% 100%, 0% 90%, 0% 10%)",
+                  zIndex:1
                 }}
-              >
-                <div className="w-full bg-purple-300 text-black text-center font-semibold py-1">
+              > <div className="w-full bg-purple-300 text-black text-center font-semibold py-1">
                   <span className="text-sm block font-bold">End If</span>
                 </div>
-              </div>
+                </div>
+              <div
+                className="hexagon-right"
+                style={{
+                  position: "absolute",
+                  width: "250px",
+                  height: `${hexagonHeight}px`,
+                  backgroundColor: "black",
+                  top: `${hexagonTopOffset}px`,
+                  clipPath: "polygon(10% 0%, 90% 0%, 100% 10%, 100% 90%, 90% 100%, 10% 100%, 0% 90%, 0% 10%)",
+                  zIndex: 0
+                }}
+              > </div>
+                
+              
 
               {/* Handles on right polygon */}
               {classicalOutputHandles.map(({ index, branch }, i) => {
@@ -536,7 +567,7 @@ export const IfElseNode = memo((node: Node) => {
                     position={Position.Right}
                     className={cn(
                       "absolute z-10 classical-circle-port-hex-out",
-                      isConnected ? "!bg-orange-300 !border-black" : "!bg-gray-200 !border-dashed !border-gray-500"
+                      isConnected ? "!bg-orange-300 !border-black" : "!bg-gray-200 !border-dashed !border-black"
                     )}
                     style={{ top: `${i * 30}px`, overflow: "visible" }}
                     isConnectable={true}

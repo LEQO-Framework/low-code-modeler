@@ -18,7 +18,7 @@ const selector = (state: {
   setSelectedNode: state.setSelectedNode
 });
 
-export const AncillaNode = memo((node: Node) => {
+export const QubitNode = memo((node: Node) => {
   const [x, setX] = useState("");
   const [y, setY] = useState("");
   const [error, setError] = useState(false);
@@ -71,8 +71,8 @@ export const AncillaNode = memo((node: Node) => {
     <div className="grand-parent">
       <div className="w-[350px] h-[170px] rounded-none bg-white  border border-solid border-gray-700 shadow-md">
         <div className="w-full flex items-center" style={{ height: '52px' }}>
-            <div className="w-full bg-green-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
-              <img src="ancillaIcon.png" alt="icon" className="w-[50px] h-[50px] object-contain flex-shrink-0" />
+            <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
+              <img src="qubitIcon.png" alt="icon" className="w-[50px] h-[50px] object-contain flex-shrink-0" />
               <div className="h-full w-[1px] bg-black mx-2" />
               <span className="truncate font-semibold leading-none" style={{ paddingLeft: '25px' }}>{data.label}</span>
             </div>
@@ -81,7 +81,7 @@ export const AncillaNode = memo((node: Node) => {
           <OutputPort
             node={node}
             index={0}
-            type={"ancilla"}
+            type={"quantum"}
             nodes={nodes}
             outputs={outputs}
             setOutputs={setOutputs}
