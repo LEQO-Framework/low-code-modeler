@@ -1,4 +1,5 @@
 import useStore from "@/config/store";
+import { AlgorithmNode, ClassicalAlgorithmNode } from "@/constants";
 import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
 import { Node } from "reactflow";
@@ -1014,7 +1015,7 @@ export const TextPanel = () => {
 
           </div>
         )}
-        {selectedNode?.type === "algorithmNode" && (
+        {selectedNode?.type === AlgorithmNode || selectedNode?.type === ClassicalAlgorithmNode && (
           <div className="p-2 mt-3">
             <label
               className="block text-sm font-medium text-start text-gray-700"

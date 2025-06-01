@@ -16,6 +16,7 @@ import { Edge } from "reactflow";
 import { ControlStructureNode } from "@/components/nodes/controlstructure";
 import { SplitterNode } from "@/components/nodes/splitter";
 import { MergerNode } from "@/components/nodes/merger";
+import { ClassicalAlgorithmNode } from "@/components/nodes/classicalalgorithm";
 
 export const nodesConfig = {
   initialNodes: [ ] as unknown as Node[],
@@ -34,6 +35,7 @@ export const nodesConfig = {
     controlStructureNode: ControlStructureNode,
     ifElseNode: IfElseNode,
     algorithmNode : AlgorithmNode,
+    classicalAlgorithmNode: ClassicalAlgorithmNode,
     splitterNode: SplitterNode,
     mergerNode: MergerNode
   } as any,

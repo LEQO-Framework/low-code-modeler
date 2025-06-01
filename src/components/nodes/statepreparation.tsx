@@ -245,7 +245,7 @@ export const StatePreparationNode = memo((node: Node) => {
 
                   <Handle
                     type="target"
-                    id={`quantumHandleOperationInput0${node.id}`}
+                    id={`classicalHandleStatePreparationInput0${node.id}`}
                     position={Position.Left}
                     className="z-10 circle-port-op !bg-orange-500 !border-black -left-[8px]"
                     style={{ top: '50%', transform: 'translateY(-50%)' }}

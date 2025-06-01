@@ -173,7 +173,7 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                 }
 
             // Operators
-            case consts.ArithmeticOperatorNode:
+            case consts.OperatorNode:
                 return {
                     id: node.id,
                     type: "operator",

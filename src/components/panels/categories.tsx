@@ -91,7 +91,7 @@ export const categories: { [key: string]: any } = {
       { label: "Custom Quantum Operator", type: consts.AlgorithmNode}
     ],
     "Custom Classical Operator": [
-      { label: "Custom Classical Operator", type: consts.AlgorithmNode }
+      { label: "Custom Classical Operator", type: consts.ClassicalAlgorithmNode }
     ],
   }
 

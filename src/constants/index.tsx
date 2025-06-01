@@ -16,6 +16,7 @@ export enum HistoryAction {
 export const DataTypeNode: string = "dataTypeNode";
 export const GateNode: string = "gateNode";
 export const AlgorithmNode: string = "algorithmNode";
+export const ClassicalAlgorithmNode: string = "classicalAlgorithmNode";
 export const StatePreparationNode: string = "statePreparationNode";
 export const MeasurementNode: string = "measurementNode";
 export const AncillaNode: string = "ancillaNode";
