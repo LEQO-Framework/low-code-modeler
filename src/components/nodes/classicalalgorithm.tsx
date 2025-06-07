@@ -167,14 +167,14 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
       <div className="grand-parent">
         <div
           className={cn(
-            "w-[320px] bg-white border border-solid border-gray-700 shadow-md",
+            "w-[320px] bg-white border border-solid border-gray-700 shadow-md rounded-full",
             selected && "border-blue-500"
           )}
           style={{ height: `${dynamicHeight}px` }}
         >
           <div className="w-full flex items-center" style={{ height: "52px" }}>
             <div
-              className="w-full bg-blue-300 py-1 px-2 flex items-center"
+              className="w-full bg-orange-300 py-1 px-2 flex items-center rounded-full"
               style={{ height: "inherit" }}
             >
               <img

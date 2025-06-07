@@ -79,7 +79,9 @@ export const OperationNode = memo((node: Node) => {
     updateNodeValue(node.id, "operator", "+");
   }, []);
 
-  const baseHeight = 600;
+
+  const baseHeight = 440;
+
   const extraHeightPerVariable = 20;
   const dynamicHeight = baseHeight + (inputs.length + outputs.length) * extraHeightPerVariable;
 

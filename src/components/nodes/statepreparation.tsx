@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
 import OutputPort from "../utils/outputPort";
 import UncomputePort from "../utils/uncomputePort";
 import AncillaPort from "../utils/ancillaPort";
-import { ancillaConstructColor, classicalConstructColor, dirtyConstructColor } from "@/constants";
+import { ancillaConstructColor, dirtyConstructColor } from "@/constants";
 
 const selector = (state: {
   selectedNode: Node | null;
@@ -128,13 +128,6 @@ export const StatePreparationNode = memo((node: Node) => {
 
   const extraHeightPerVariable = 20;
   const dynamicHeight = baseHeight + (inputs.length + outputs.length) * extraHeightPerVariable;
-  
-    const iconMap = {
-  "Prepare State": 'prepareStateIcon.png',
-  "Encode Value": 'encodeValueIcon.png',
-};
-const label = data.label;
-const iconSrc = iconMap[label];
 
   return (
     <motion.div
@@ -153,7 +146,7 @@ const iconSrc = iconMap[label];
         >
           <div className="w-full flex items-center" style={{ height: '52px' }}>
             <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
-                <img src={iconSrc} alt="icon" className="w-[50px] h-[50px] object-contain flex-shrink-0" />
+              <img src="arithmeticIcon.png" alt="icon" className="w-[50px] h-[50px] object-contain flex-shrink-0" />
               <div className="h-full w-[1px] bg-black mx-2" />
               <span className="truncate font-semibold leading-none" style={{ paddingLeft: '25px' }}>{data.label}</span>
             </div>
@@ -236,7 +229,7 @@ const iconSrc = iconMap[label];
                 <div
                   className="relative p-2 mb-1"
                   style={{
-                    backgroundColor: classicalConstructColor,
+                    backgroundColor: 'rgba(255, 165, 0, 0.3)',
                     width: '120px',
                     display: 'flex',
                     alignItems: 'center',
@@ -254,7 +247,7 @@ const iconSrc = iconMap[label];
                     type="target"
                     id={`classicalHandleStatePreparationInput0${node.id}`}
                     position={Position.Left}
-                    className="z-10 circle-port-op !bg-orange-300 !border-black -left-[8px]"
+                    className="z-10 circle-port-op !bg-orange-500 !border-black -left-[8px]"
                     style={{ top: '50%', transform: 'translateY(-50%)' }}
                   />
                   <span className="text-black text-sm text-center w-full">{node.data.inputs[0]?.outputIdentifier || "Value"}</span>
