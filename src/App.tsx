@@ -667,8 +667,14 @@ function App() {
     }
 
     if (flow.initialNodes) {
-      reactFlowInstance.setNodes(flow.initialNodes);
-      console.log("Nodes loaded.");
+      reactFlowInstance.setNodes(
+              flow.nodes.map((node: Node) => ({
+                ...node,
+                data: {
+                  ...node.data,
+                },
+              }))
+            );
     }
 
     // Reset the viewport (optional based on your use case)

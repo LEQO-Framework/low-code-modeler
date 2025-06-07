@@ -4,7 +4,6 @@ import QuantumEdge from "@/components/edges/customEdgeType";
 import { TextNode, DataTypeNode } from "@/components/nodes";
 import { AlgorithmNode } from "@/components/nodes/algorithm";
 import { AncillaNode } from "@/components/nodes/ancilla";
-import { ClassicalOutputOperationNode } from "@/components/nodes/classicalOutputOperation";
 import {  IfElseNode } from "@/components/nodes/ifelse";
 import { DynamicNode } from "@/components/nodes/dynamically";
 import { GateNode } from "@/components/nodes/gate";
@@ -31,7 +30,6 @@ export const nodesConfig = {
     uncomputeNode: UncomputeNode,
     operatorNode: OperationNode,
     ancillaNode: AncillaNode,
-    classicalOutputOperationNode: ClassicalOutputOperationNode,
     gateNode: GateNode,
     controlStructureNode: ControlStructureNode,
     ifElseNode: IfElseNode,

@@ -2,16 +2,22 @@ import React, { useState } from "react";
 import { categories, Node } from "./categories";
 import useStore from "@/config/store";
 import { shallow } from "zustand/shallow";
+import * as consts from "../../constants";
+
 const selector = (state: {
-
-
   ancillaMode: boolean;
-
 }) => ({
-
   ancillaMode: state.ancillaMode,
-
 });
+
+const categoryIcons: Record<string, string> = {
+  [consts.boundaryNodes]: "algorithmIcon.png",
+  [consts.circuitLevelNodes]: "algorithmIcon.png",
+  [consts.controlStructureNodes]: "algorithmIcon.png",
+  [consts.customOperators]: "algorithmIcon.png",
+  [consts.operator]: "algorithmIcon.png",
+  [consts.dataTypes]: "algorithmIcon.png"
+};
 
 export const AddNodePanel = () => {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
@@ -88,7 +94,17 @@ export const AddNodePanel = () => {
                   }`}
                 onClick={() => toggleCategory(category)}
               >
-                {category}
+                  <div className="flex items-center gap-2">
+  {categoryIcons[category] && (
+    <img
+      src={categoryIcons[category]}
+      alt={`${category} icon`}
+      className="w-6 h-6"
+    />
+  )}
+  <span>{category}</span>
+</div>
+
               </button>
 
               {activeCategory === category && (

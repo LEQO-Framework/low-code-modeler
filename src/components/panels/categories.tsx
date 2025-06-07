@@ -21,7 +21,7 @@ export interface Categories {
 }
 
 export const categories: { [key: string]: any } = {
-  "Boundary Nodes": {
+  [consts.boundaryNodes]: {
     "Classical To Quantum": [
       { label: "Encode Value", type: consts.StatePreparationNode, inputs: [], icon: "encodeValue.png" },
       { label: "Prepare State", type: consts.StatePreparationNode, icon: "prepareState.png" },
@@ -32,7 +32,7 @@ export const categories: { [key: string]: any } = {
       { label: "Measurement", type: consts.MeasurementNode, icon: "measurement.png" },
     ]
   },
-  "Circuit Blocks": {
+  [consts.circuitLevelNodes]: {
     "Qubits": [
       { label: "Qubit", type: consts.GateNode, icon: "qubit.png" }
     ],
@@ -49,7 +49,7 @@ export const categories: { [key: string]: any } = {
       { label: "Z", type: consts.GateNode, icon: "pauliZ.png"},
     ],
   },
-  "Data Types": {
+  [consts.dataTypes]: {
     "Classical Datatypes": [
       { label: "Array", dataType: "Array", type: consts.DataTypeNode, icon: "array.png" },
       { label: "angle", dataType: "angle", type: consts.DataTypeNode},
@@ -65,7 +65,7 @@ export const categories: { [key: string]: any } = {
       { label: "Qubit", dataType: consts.QubitNode, type: consts.QubitNode},
     ]
   },
-  "Flow Structures": {
+  [consts.controlStructureNodes]: {
     "If-Then-Else": [
       { label: "If-Then-Else", type: consts.IfElseNode },
     ],
@@ -73,19 +73,19 @@ export const categories: { [key: string]: any } = {
       { label: "Repeat", type: consts.ControlStructureNode }
     ],
   },
-  Operators: {
+  [consts.operator]: {
     "Arithmetic Operators": [
-      { label: "Arithmetic Operator", type: consts.OperatorNode, icon: "add.png" }
+      { label: consts.arithmeticOperatorLabel, type: consts.OperatorNode, icon: "add.png" }
     ],
     "Bitwise Operators": [
-      { label: "Bitwise Operator", type: consts.OperatorNode, icon: "bitwise.png" }
+      { label: consts.bitwiseOperatorLabel, type: consts.OperatorNode, icon: "bitwise.png" }
     ],
     "Comparison Operators": [
-      { label: "Comparison Operator", type: consts.OperatorNode, icon: "comparison.png" }
+      { label: consts.comparisonOperatorLabel, type: consts.OperatorNode, icon: "comparison.png" }
     ],
-    "Min & Max": [{ label: "Min & Max Operator", type: consts.OperatorNode, icon: "minMax.png" }]
+    "Min & Max": [{ label: consts.minMaxOperatorLabel, type: consts.OperatorNode, icon: "minMax.png" }]
   },
-  "Custom Operators": {
+  [consts.customOperators]: {
     "Custom Quantum Operator": [
       { label: "Custom Quantum Operator", type: consts.AlgorithmNode}
     ],

@@ -8,7 +8,7 @@ import { motion } from "framer-motion";
 import OutputPort from "../utils/outputPort";
 import UncomputePort from "../utils/uncomputePort";
 import AncillaPort from "../utils/ancillaPort";
-import { ancillaConstructColor, dirtyConstructColor, quantumConstructColor } from "@/constants";
+import * as consts from "@/constants";
 
 const selector = (state: {
   selectedNode: Node | null;
@@ -76,25 +76,37 @@ export const OperationNode = memo((node: Node) => {
     updateNodeValue(node.id, field, value);
     //setSelectedNode(node);
   };
+
   useEffect(() => {
     updateNodeInternals(node.id);
-    updateNodeValue(node.id, "operator", "+");
+    if (node.data.operator === undefined) {
+      if (node.data.label === consts.arithmeticOperatorLabel) {
+        updateNodeValue(node.id, "operator", "+");
+      }
+      else if (node.data.label === consts.bitwiseOperatorLabel) {
+        updateNodeValue(node.id, "operator", "OR");
+      }
+      if (node.data.label === consts.comparisonOperatorLabel) {
+        updateNodeValue(node.id, "operator", "<");
+      }
+      else { updateNodeValue(node.id, "operator", "min"); }
+    } else {
+      updateNodeValue(node.id, "operator", node.data.operator);
+    }
   }, []);
 
-
   const baseHeight = 550;
-
   const extraHeightPerVariable = 20;
   const dynamicHeight = baseHeight + (inputs.length + outputs.length) * extraHeightPerVariable;
 
   const iconMap = {
-  "Arithmetic Operator": 'arithmeticIcon.png',
-  "Bitwise Operator": 'bitwiseIcon.png',
-  "Min & Max Operator": 'minMaxIcon.png',
-  "Comparison Operator": 'comparisonIcon.png',
-};
-const label = data.label;
-const iconSrc = iconMap[label];
+    "Arithmetic Operator": 'arithmeticIcon.png',
+    "Bitwise Operator": 'bitwiseIcon.png',
+    "Min & Max Operator": 'minMaxIcon.png',
+    "Comparison Operator": 'comparisonIcon.png',
+  };
+  const label = data.label;
+  const iconSrc = iconMap[label];
 
   return (
     <motion.div
@@ -170,7 +182,7 @@ const iconSrc = iconMap[label];
               <div
                 className="relative p-2 mb-1"
                 style={{
-                  backgroundColor: quantumConstructColor,
+                  backgroundColor: consts.quantumConstructColor,
                   width: '120px',
                   display: 'flex',
                   alignItems: 'center',
@@ -189,7 +201,7 @@ const iconSrc = iconMap[label];
               <div
                 className="relative p-2 mb-1"
                 style={{
-                  backgroundColor: quantumConstructColor,
+                  backgroundColor: consts.quantumConstructColor,
                   width: '120px',
                   display: 'flex',
                   alignItems: 'center',
@@ -206,54 +218,54 @@ const iconSrc = iconMap[label];
                 <span className="text-black text-sm text-center w-full">{node.data.inputs[1]?.outputIdentifier || "Input 2"}</span>
               </div>
               {ancillaMode && (<div>
-              <div
-                className="relative p-2 mb-1"
-                style={{
-                  width: '120px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'flex-start',
-                }}
-              >
                 <div
-                  className="absolute inset-0 custom-shape-mirrored"
+                  className="relative p-2 mb-1"
                   style={{
-                    backgroundColor: ancillaConstructColor,
+                    width: '120px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'flex-start',
                   }}
-                />
-                <Handle
-                  type="target"
-                  id={`ancillaHandleOperationInput2${node.id}`}
-                  position={Position.Left}
-                  className="z-10 ancilla-port-in !bg-gray-200 !border-dashed !border-black w-4 transform rotate-45 -left-[8px]"
-                  style={{ zIndex: 1, top: '50% !important', transform: 'translateY(-50%) rotate(45deg)' }}
-                />
-                <span className="text-black text-sm text-center w-full" style={{ zIndex: 1 }}>Ancilla</span>
-              </div>
-              <div
-                className="relative p-2"
-                style={{
-                  width: '120px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'flex-start',
-                }}
-              >
+                >
+                  <div
+                    className="absolute inset-0 custom-shape-mirrored"
+                    style={{
+                      backgroundColor: consts.ancillaConstructColor,
+                    }}
+                  />
+                  <Handle
+                    type="target"
+                    id={`ancillaHandleOperationInput2${node.id}`}
+                    position={Position.Left}
+                    className="z-10 ancilla-port-in !bg-gray-200 !border-dashed !border-black w-4 transform rotate-45 -left-[8px]"
+                    style={{ zIndex: 1, top: '50% !important', transform: 'translateY(-50%) rotate(45deg)' }}
+                  />
+                  <span className="text-black text-sm text-center w-full" style={{ zIndex: 1 }}>Ancilla</span>
+                </div>
                 <div
-                  className="absolute inset-0 custom-shape-mirrored"
+                  className="relative p-2"
                   style={{
-                    backgroundColor: dirtyConstructColor,
+                    width: '120px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'flex-start',
                   }}
-                />
-                <Handle
-                  type="target"
-                  id={`ancillaHandleOperationInput3${node.id}`}
-                  position={Position.Left}
-                  className="z-10 ancilla-port-in !bg-gray-200 !border-dashed !border-black w-4 transform rotate-45 -left-[8px]"
-                  style={{ zIndex: 1, top: '50% !important', transform: 'translateY(-50%) rotate(45deg)' }}
-                />
-                <span className="text-black text-sm text-center w-full" style={{ zIndex: 1 }}> Dirty Ancilla</span>
-              </div>
+                >
+                  <div
+                    className="absolute inset-0 custom-shape-mirrored"
+                    style={{
+                      backgroundColor: consts.dirtyConstructColor,
+                    }}
+                  />
+                  <Handle
+                    type="target"
+                    id={`ancillaHandleOperationInput3${node.id}`}
+                    position={Position.Left}
+                    className="z-10 ancilla-port-in !bg-gray-200 !border-dashed !border-black w-4 transform rotate-45 -left-[8px]"
+                    style={{ zIndex: 1, top: '50% !important', transform: 'translateY(-50%) rotate(45deg)' }}
+                  />
+                  <span className="text-black text-sm text-center w-full" style={{ zIndex: 1 }}> Dirty Ancilla</span>
+                </div>
               </div>)}
             </div>
           </div>
@@ -301,24 +313,24 @@ const iconSrc = iconMap[label];
             )}
 
           </div>
-          {ancillaMode &&(<div>
-          <AncillaPort
-            node={node}
-            edges={edges}
-            dirty={false}
-            index={1}
-          />
-          <AncillaPort
-            node={node}
-            edges={edges}
-            dirty={true}
-            index={2}
-          />
-          <UncomputePort
-            node={node}
-            edges={edges}
-            index={3}
-          />
+          {ancillaMode && (<div>
+            <AncillaPort
+              node={node}
+              edges={edges}
+              dirty={false}
+              index={1}
+            />
+            <AncillaPort
+              node={node}
+              edges={edges}
+              dirty={true}
+              index={2}
+            />
+            <UncomputePort
+              node={node}
+              edges={edges}
+              index={3}
+            />
           </div>)}
         </div>
       </div>

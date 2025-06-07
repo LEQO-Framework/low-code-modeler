@@ -45,6 +45,19 @@ export const NodeTypes = [
   OperatorNode
 ]
 
+export const arithmeticOperatorLabel = "Arithmetic Operator";
+export const bitwiseOperatorLabel = "Bitwise Operator";
+export const minMaxOperatorLabel = "Min & Max Operator";
+export const comparisonOperatorLabel = "Comparison Operator";
+
+// categories of modeling constructs
+export const boundaryNodes = "Boundary Nodes";
+export const circuitLevelNodes = "Circuit-level Nodes";
+export const dataTypes = "Data Types";
+export const controlStructureNodes = "Control Structure Nodes";
+export const operator = "Operators";
+export const customOperators = "Custom Operators";
+
 // handle prefix ensures correctness of edges
 export const classicalHandle: string = "classicalHandle";
 export const quantumHandle: string = "quantumHandle";
