@@ -105,9 +105,16 @@ export const MergerNode = memo((node: Node) => {
   return (
     <div className="grand-parent">
       <div
-        className="w-[100px] bg-white rounded-none overflow-hidden border border-solid border-gray-700 shadow-md"
+        className="w-[170px] bg-white rounded-none overflow-hidden border border-solid border-gray-700 shadow-md"
         style={{ height: `${nodeHeight}px` }}
       >
+        <div className="w-full flex items-center" style={{ height: '52px' }}>
+            <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
+              <img src="mergerIcon.png" alt="icon" className="w-[40px] h-[40px] object-contain flex-shrink-0" />
+              <div className="h-full w-[1px] bg-black mx-2" />
+              <span className=" font-semibold leading-none" style={{ paddingLeft: '25px' }}>{data.label}</span>
+            </div>
+          </div>
 
         <div className="px-2 py-3 flex justify-center">
           <div className="flex items-center">
@@ -118,20 +125,7 @@ export const MergerNode = memo((node: Node) => {
                 </div>
               </div>
             </>
-            <div
-              className={`absolute ${data.label === "Qubit" ? "top-[48%]" : "top-[50%]"
-                } -translate-x-1/2 -translate-y-1/2 text-center font-bold`}
-            >
-              {data.label === "Qubit" ? (
-                "|0⟩"
-              ) : data.label === "CNOT" ? (
-                <img src="/cnot.png" alt="CNOT gate" className="w-5 h-15" />
-              ) : data.label === "Toffoli" ? (
-                <img src="/toffoli.png" alt="Toffoli gate" className="w-6 h-16" />
-              ) : (
-                data.label
-              )}
-            </div>
+           
             <div className="absolute right-0 top-0 bottom-0 flex flex-col justify-center">
               {outputHandles}
             </div>

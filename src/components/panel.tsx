@@ -7,7 +7,7 @@ const selector = (state: { selectedNode: Node | null }) => ({
   selectedNode: state.selectedNode,
 });
 
-export const Panel = ({
+export const CustomPanel = ({
   metadata,
   onUpdateMetadata,
 }: {

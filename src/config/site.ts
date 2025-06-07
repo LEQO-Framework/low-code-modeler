@@ -16,6 +16,8 @@ import { Edge } from "reactflow";
 import { ControlStructureNode } from "@/components/nodes/controlstructure";
 import { SplitterNode } from "@/components/nodes/splitter";
 import { MergerNode } from "@/components/nodes/merger";
+import { ClassicalAlgorithmNode } from "@/components/nodes/classicalalgorithm";
+import { QubitNode } from "@/components/nodes/qubit";
 
 export const nodesConfig = {
   initialNodes: [ ] as unknown as Node[],
@@ -26,17 +28,18 @@ export const nodesConfig = {
     dynamicNode: DynamicNode,
     measurementNode: MeasurementNode,
     statePreparationNode: StatePreparationNode,
-    operationNode: OperationNode,
     uncomputeNode: UncomputeNode,
-    arithmeticOperatorNode: OperationNode,
+    operatorNode: OperationNode,
     ancillaNode: AncillaNode,
     classicalOutputOperationNode: ClassicalOutputOperationNode,
     gateNode: GateNode,
     controlStructureNode: ControlStructureNode,
     ifElseNode: IfElseNode,
     algorithmNode : AlgorithmNode,
+    classicalAlgorithmNode: ClassicalAlgorithmNode,
     splitterNode: SplitterNode,
-    mergerNode: MergerNode
+    mergerNode: MergerNode,
+    qubitNode: QubitNode
   } as any,
   edgesTypes: {
     quantumEdge: QuantumEdge,

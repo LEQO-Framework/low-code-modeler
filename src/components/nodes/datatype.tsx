@@ -30,6 +30,7 @@ export const DataTypeNode = memo((node: Node) => {
   const [sizeError, setSizeError] = useState(false);
 
   const { nodes, edges, updateNodeValue, setSelectedNode } = useStore(selector, shallow);
+  const [durationUnit, setDurationUnit] = useState(node.data.durationUnit || "s");
   const { data } = node;
 
   const changeValue = (e) => {
@@ -38,7 +39,7 @@ export const DataTypeNode = memo((node: Node) => {
     node.data["value"] = value;
     updateNodeValue(node.id, "value", value);
 
-    if (data.dataType === "float" || data.dataType === "int") {
+    if (data.dataType === "float" || data.dataType === "int" || data.label === "duration" || data.label === "complex") {
       value = value.replace(",", ".");
       if (data.dataType === "int") {
         if (!/^-?\d+$/.test(value) && value !== "") {
@@ -47,6 +48,19 @@ export const DataTypeNode = memo((node: Node) => {
         }
       } else if (data.dataType === "float") {
         if (!/^-?\d+(\.\d+)?$/.test(value) && value !== "") {
+          setValueError(true);
+          return;
+        }
+      } else if (data.label === "complex") {
+        let complex = isComplexNumber(value);
+        if (!complex) {
+          setValueError(true);
+          return;
+        }
+      } else {
+        let duration = isPositiveValue(value);
+        updateNodeValue(node.id, "durationUnit", durationUnit);
+        if (!duration) {
           setValueError(true);
           return;
         }
@@ -59,10 +73,33 @@ export const DataTypeNode = memo((node: Node) => {
         setValueError(true);
         return;
       }
+    } else if (data.dataType === "angle") {
+      let angle = parseToNormalizedAngle(value)
+      console.log(angle);
+      console.log(value)
+      if (angle === null && value !== "") {
+        setValueError(true);
+        return;
+      }
     }
-
     setValueError(false);
   };
+
+  function isComplexNumber(value) {
+    const trimmed = value.trim().toLowerCase().replace(/\s+/g, "");
+
+    // Full complex number: real +/- imaginary
+    const fullComplex = /^([+-]?\d+(\.\d+)?)([+-](\d+(\.\d+)?|)i)$/;
+
+    // Imaginary only: i, -i, +i, 2i, -3.5i
+    const imaginaryOnly = /^([+-]?(\d+(\.\d+)?|))i$/;
+
+    // Real only: 1, -3.14
+    const realOnly = /^[+-]?\d+(\.\d+)?$/;
+
+    return fullComplex.test(trimmed) || imaginaryOnly.test(trimmed) || realOnly.test(trimmed);
+  }
+
 
   const changeSize = (e) => {
     let size = e.target.value.trim();
@@ -77,6 +114,31 @@ export const DataTypeNode = memo((node: Node) => {
     setValueError(false);
   };
 
+  function parseToNormalizedAngle(angle) {
+    const trimmed = angle.trim().toLowerCase();
+    const piMatch = /^([0-9]*\.?[0-9]*)\s*\*?\s*pi$/.exec(trimmed);
+
+    if (piMatch) {
+      const multiplier = piMatch[1] === "" ? 1 : parseFloat(piMatch[1]);
+      return (multiplier * Math.PI) % (2 * Math.PI);
+    }
+
+    if (/^[+-]?[0-9]*\.?[0-9]+$/.test(trimmed)) {
+      const num = parseFloat(trimmed);
+      return ((num % (2 * Math.PI)) + (2 * Math.PI)) % (2 * Math.PI);
+    }
+    return null;
+  }
+
+  function isPositiveValue(value) {
+    const trimmed = value.trim().toLowerCase();
+
+    if (/^[+]?[0-9]*\.?[0-9]+$/.test(trimmed)) {
+      const num = parseFloat(trimmed);
+      return true;
+    }
+    return false;
+  }
   const changeOutputIdentifier = (e) => {
     const value = e.target.value;
     node.data["outputIdentifier"] = value;
@@ -92,19 +154,65 @@ export const DataTypeNode = memo((node: Node) => {
     setSelectedNode(node);
   };
 
+    const iconMap = {
+  "int": 'intIcon.png',
+  "float": 'floatIcon.png',
+  "bit": 'bitIcon.png',
+  "duration": 'durationIcon.png',
+  "boolean": 'booleanIcon.png',
+  "angle": 'angleIcon.png',
+  "complex": 'complexIcon.png',
+  "Array": 'arrayIcon.png',
+};
+const label = data.label;
+const iconSrc = iconMap[label];
+const iconSizeMap = {
+  "int": { width: 40, height: 40 },
+  "float": { width: 40, height: 40 },
+  "bit": { width: 40, height: 40 },
+  "duration": { width: 40, height: 40 },
+  "boolean": { width: 45, height: 40 },
+  "angle": { width: 40, height: 40 },
+  "complex": { width: 40, height: 40 },
+  "Array": { width: 40, height: 40 },
+};
+
   return (
-    <div className="relative w-[450px] h-[250px]  ">
+    <div className="relative w-[450px] h-[270px]">
+      {outputIdentifierError && (
+        <div className="absolute top-2 right-2 group z-20">
+          <AlertCircle className="text-red-600 w-5 h-5" />
+          <div className="absolute top-5 left-[10px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
+            Identifier not unique
+          </div>
+          <div className="absolute top-12 left-[10px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
+            Value is not an integer
+          </div>
+
+        </div>
+      )}
       <div className="w-full h-full rounded-full bg-white overflow-hidden border border-solid border-gray-700 shadow-md">
         <div className="w-full bg-orange-300 text-black text-center font-semibold py-1 truncate relative">
-          {outputIdentifierError && (
-            <div className="absolute top-2 right-2 group">
-              <AlertCircle className="text-red-600 w-5 h-5" />
-              <div className="absolute top-6 right-0 z-10 bg-white text-xs text-red-600 border border-red-400 px-2 py-1 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                Identifier not unique
-              </div>
+
+          <div className="w-full flex items-center" style={{ height: '52px', paddingLeft: '100px' }}>
+            <div className="w-full bg-orange-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
+              {(() => {
+  const { width, height } =  { width: 50, height: 50 };
+  return (
+    <img
+      src={iconSrc}
+      alt="icon"
+      style={{ width: `${width}px`, height: `${height}px` }}
+      className="object-contain flex-shrink-0"
+    />
+  );
+})()}
+
+              <div className="h-full w-[1px] bg-black mx-2" />
+              <span className="font-semibold leading-none" style={{ paddingLeft: '20px' }}>{data.label}</span>
             </div>
-          )}
-          {data.dataType}
+          </div>
+
         </div>
 
         <div className="px-4 py-3 flex flex-col items-center space-y-3">
@@ -140,6 +248,41 @@ export const DataTypeNode = memo((node: Node) => {
                 placeholder="1,2,3"
                 onChange={changeValue}
               />
+            ) : data.dataType === "angle" ? (
+              <input
+                id="value"
+                type="text"
+                className={`input-classical-focus p-1 text-black opacity-75 text-sm rounded-full w-24 text-center border-2 transition-all duration-200 ${valueError ? 'bg-red-500 border-red-500' : 'bg-white border-orange-300'}`}
+                value={node.data.value || value}
+                placeholder="2pi"
+                onChange={changeValue}
+              />
+            ) : data.label === "duration" ? (
+              <div className="flex items-center space-x-2">
+                <input
+                  id="value"
+                  type="text"
+                  className={`input-classical-focus p-1 text-black opacity-75 text-sm rounded-full w-20 text-center border-2 ${valueError ? 'bg-red-500 border-red-500' : 'bg-white border-orange-300'}`}
+                  value={node.data.value || value}
+                  placeholder="0"
+                  onChange={changeValue}
+                />
+                <select
+                  className="input-classical-focus p-1 text-black opacity-75 text-sm rounded-full border-2 bg-white border-orange-300 focus:border-orange-500"
+                  value={durationUnit}
+                  onChange={(e) => {
+                    const unit = e.target.value;
+                    setDurationUnit(unit);
+                    node.data["durationUnit"] = unit;
+                    updateNodeValue(node.id, "durationUnit", unit);
+                  }}
+                >
+                  <option value="s">s</option>
+                  <option value="ms">ms</option>
+                  <option value="min">min</option>
+                  <option value="h">h</option>
+                </select>
+              </div>
             ) : (
               <input
                 id="value"
@@ -184,7 +327,6 @@ export const DataTypeNode = memo((node: Node) => {
           isValidConnection={(connection) => true}
           isConnectableEnd={false}
         />
-
       </div>
     </div>
   );

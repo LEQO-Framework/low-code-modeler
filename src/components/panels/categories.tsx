@@ -54,13 +54,17 @@ export const categories: { [key: string]: any } = {
   "Data Types": {
     "Classical Datatypes": [
       { label: "Array", dataType: "Array", type: consts.DataTypeNode, icon: "array.png" },
+      { label: "angle", dataType: "angle", type: consts.DataTypeNode},
       { label: "bit", dataType: "bit", type: consts.DataTypeNode, icon: "bit.png" },
       { label: "boolean", dataType: "boolean", type: consts.DataTypeNode, icon: "boolean.png" },
+      { label: "complex", dataType: "complex", type: consts.DataTypeNode },
+      { label: "duration", dataType: "duration", type: consts.DataTypeNode },
       { label: "int", dataType: "int", type: consts.DataTypeNode, icon: "int.png"  },
       { label: "float", dataType: "float", type: consts.DataTypeNode, icon: "float.png" },
     ],
     "Quantum Type": [
       { label: "Ancilla", dataType: consts.AncillaNode, type: consts.AncillaNode, icon: "ancilla.png" },
+      { label: "Qubit", dataType: consts.QubitNode, type: consts.QubitNode},
     ]
   },
   "Flow Structures": {
@@ -73,22 +77,22 @@ export const categories: { [key: string]: any } = {
   },
   Operators: {
     "Arithmetic Operators": [
-      { label: "Arithmetic Operator", type: consts.ArithmeticOperatorNode, icon: "add.png" }
+      { label: "Arithmetic Operator", type: consts.OperatorNode, icon: "add.png" }
     ],
     "Bitwise Operators": [
-      { label: "Bitwise Operator", type: consts.ClassicalOutputOperationNode, icon: "bitwise.png" }
+      { label: "Bitwise Operator", type: consts.OperatorNode, icon: "bitwise.png" }
     ],
     "Comparison Operators": [
-      { label: "Comparison Operator", type: consts.ClassicalOutputOperationNode, icon: "comparison.png" }
+      { label: "Comparison Operator", type: consts.OperatorNode, icon: "comparison.png" }
     ],
-    "Min & Max": [{ label: "minMax", type: consts.ClassicalOutputOperationNode, icon: "minMax.png" }]
+    "Min & Max": [{ label: "Min & Max Operator", type: consts.OperatorNode, icon: "minMax.png" }]
   },
   "Custom Operators": {
     "Custom Quantum Operator": [
       { label: "Custom Quantum Operator", type: consts.AlgorithmNode}
     ],
     "Custom Classical Operator": [
-      { label: "Custom Classical Operator", type: consts.AlgorithmNode }
+      { label: "Custom Classical Operator", type: consts.ClassicalAlgorithmNode }
     ],
   }
 

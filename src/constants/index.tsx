@@ -16,15 +16,17 @@ export enum HistoryAction {
 export const DataTypeNode: string = "dataTypeNode";
 export const GateNode: string = "gateNode";
 export const AlgorithmNode: string = "algorithmNode";
+export const ClassicalAlgorithmNode: string = "classicalAlgorithmNode";
 export const StatePreparationNode: string = "statePreparationNode";
 export const MeasurementNode: string = "measurementNode";
 export const AncillaNode: string = "ancillaNode";
+export const QubitNode: string = "qubitNode";
 export const ControlStructureNode: string = "controlStructureNode";
 export const IfElseNode: string = "ifElseNode";
 export const ClassicalOutputOperationNode = "classicalOutputOperationNode";
 export const SplitterNode: string = "splitterNode";
 export const MergerNode: string = "mergerNode";
-export const ArithmeticOperatorNode: string = "arithmeticOperatorNode";
+export const OperatorNode: string = "operatorNode";
 
 // handle prefix ensures correctness of edges
 export const classicalHandle: string = "classicalHandle";
@@ -32,8 +34,8 @@ export const quantumHandle: string = "quantumHandle";
 export const ancillaHandle: string = "ancillaHandle";
 
 // colors for modeling constructs
-export const quantumConstructColor = "rgba(105, 145, 210, 0.3)";
+export const quantumConstructColor = "rgba(105, 145, 210, 0.2)";
 export const ancillaConstructColor = "rgba(83, 242, 71, 0.2)";
 export const dirtyConstructColor = "rgba(50, 93, 48, 0.24)";
-export const classicalConstructColor = "rgba(255, 166, 0, 0.3)";
+export const classicalConstructColor = "rgba(255, 165, 0, 0.2)";
 export const controlFlowConstructColor = "rgba(183, 0, 255, 0.21)"

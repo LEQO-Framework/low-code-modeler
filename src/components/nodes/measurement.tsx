@@ -26,11 +26,11 @@ export const MeasurementNode = memo((node: Node) => {
   const { edges, nodes, updateNodeValue, setSelectedNode } = useStore(selector, shallow);
   const alledges = getConnectedEdges([node], edges);
   const [y, setY] = useState("");
-    const [outputIdentifierError, setOutputIdentifierError] = useState(false);
-    const [outputIdentifier, setOutputIdentifier] = useState("");
-    const [operation, setOperation] = useState("");
-    const [showingChildren, setShowingChildren] = useState(false);
-    const [sizeError, setSizeError] = useState(false);
+  const [outputIdentifierError, setOutputIdentifierError] = useState(false);
+  const [outputIdentifier, setOutputIdentifier] = useState("");
+  const [operation, setOperation] = useState("");
+  const [showingChildren, setShowingChildren] = useState(false);
+  const [sizeError, setSizeError] = useState(false);
 
 
   const [inputs, setInputs] = useState(data.inputs || []);
@@ -43,7 +43,7 @@ export const MeasurementNode = memo((node: Node) => {
   const yRef = useRef(null);
 
 
-  const baseHeight = 380;
+  const baseHeight = 400;
   const extraHeightPerVariable = 40;
   const dynamicHeight = baseHeight + (inputs.length) * extraHeightPerVariable;
   console.log(dynamicHeight)
@@ -79,23 +79,35 @@ export const MeasurementNode = memo((node: Node) => {
         )}
         style={{ height: `${dynamicHeight}px` }}
       >
-        <div className="w-full bg-blue-300 text-black text-center font-semibold py-1 truncate">
-          Measurement
-        </div>
-
-        <div className="px-2 py-3 flex justify-center">
-          <div className="flex items-center mb-2">
-            <label htmlFor="x" className="text-black text-sm mr-2">Indices</label>
-            <input
-              ref={xRef}
-              id="x"
-              type="text"
-              className={`p-1 text-black opacity-75 text-sm rounded-full w-24 text-center border-2 ${error ? 'bg-red-500 border-red-500' : 'bg-white border-blue-300'}`}
-              value={node.data.indices || indices}
-              placeholder="1,2,3"
-              onChange={e => handleYChange(e, "indices")}
-            />
+        <div className="w-full flex items-center" style={{ height: '52px' }}>
+            <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
+              <img src="measurementIcon2.png" alt="icon" className="w-[40px] h-[40px] object-contain flex-shrink-0" />
+              <div className="h-full w-[1px] bg-black mx-2" />
+              <span className="truncate font-semibold leading-none" style={{ paddingLeft: '25px' }}>{data.label}</span>
+            </div>
           </div>
+        <div className="flex justify-center">
+          <div className="custom-node-port-in mb-3 mt-2">
+            <div className="relative flex flex-col items-start text-black text-center overflow-visible">
+
+              <div className=" ml-6">
+                <label htmlFor="indices" className="text-black text-xs mb-1 block">
+                  Indices
+                </label>
+                <input
+                  ref={xRef}
+                  id="indices"
+                  type="text"
+                  className={`p-1 text-black opacity-75 text-xs rounded-full w-[130px] text-center border-2 ${error ? "bg-red-500 border-red-500" : "bg-white border-blue-300"
+                    }`}
+                  value={node.data.indices || indices}
+                  placeholder="e.g. 1,2,3"
+                  onChange={(e) => handleYChange(e, "indices")}
+                />
+              </div>
+            </div>
+          </div>
+
 
         </div>
         <div className="custom-node-port-in mb-3 mt-2">
@@ -134,7 +146,7 @@ export const MeasurementNode = memo((node: Node) => {
             setOutputIdentifierError={setOutputIdentifierError}
             setSizeError={setSizeError}
             setSelectedNode={setSelectedNode}
-            active={true}
+            active={false}
           />
           <OutputPort
             node={node}
@@ -150,7 +162,7 @@ export const MeasurementNode = memo((node: Node) => {
             setOutputIdentifierError={setOutputIdentifierError}
             setSizeError={setSizeError}
             setSelectedNode={setSelectedNode}
-            active={true}
+            active={false}
           />
         </div>
 

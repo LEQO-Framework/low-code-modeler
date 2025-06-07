@@ -7,7 +7,7 @@ import UncomputePort from "../utils/uncomputePort";
 import OutputPort from "../utils/outputPort";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { ancillaConstructColor, dirtyConstructColor, quantumConstructColor } from "@/constants";
+import { ancillaConstructColor, classicalConstructColor, dirtyConstructColor, quantumConstructColor } from "@/constants";
 
 const selector = (state: {
   selectedNode: Node | null;
@@ -27,7 +27,7 @@ const selector = (state: {
   setNewEdges: state.setNewEdges
 });
 
-export const AlgorithmNode = memo((node: Node) => {
+export const ClassicalAlgorithmNode = memo((node: Node) => {
   const { data, selected } = node;
   console.log(data.numberInputs)
   const numberInputs = data.numberInputs || 0;
@@ -167,20 +167,20 @@ export const AlgorithmNode = memo((node: Node) => {
       <div className="grand-parent">
         <div
           className={cn(
-            "w-[320px] bg-white border border-solid border-gray-700 shadow-md",
+            "w-[320px] bg-white border border-solid border-gray-700 shadow-md rounded-full",
             selected && "border-blue-500"
           )}
           style={{ height: `${dynamicHeight}px` }}
         >
           <div className="w-full flex items-center" style={{ height: "52px" }}>
             <div
-              className="w-full bg-blue-300 py-1 px-2 flex items-center"
+              className="w-full bg-orange-300 py-1 px-2 flex items-center rounded-full"
               style={{ height: "inherit" }}
             >
               <img
-                src="arithmeticIcon.png"
+                src="classicalAlgorithmIcon.png"
                 alt="icon"
-                className="w-[50px] h-[50px] object-contain flex-shrink-0"
+                className="w-[40px] h-[40px] object-contain flex-shrink-0"
               />
               <div className="h-full w-[1px] bg-black mx-2" />
               {isEditingLabel ? (
@@ -198,7 +198,7 @@ export const AlgorithmNode = memo((node: Node) => {
                 />
               ) : (
                 <span
-                  className="truncate font-semibold leading-none cursor-pointer"
+                  className="font-semibold leading-none cursor-pointer"
                   style={{ paddingLeft: "25px" }}
                   onClick={() => setIsEditingLabel(true)}
                 >
@@ -212,23 +212,26 @@ export const AlgorithmNode = memo((node: Node) => {
             <div className="relative flex flex-col overflow-visible">
               <div className="custom-node-port-in">
                 <div className="relative flex flex-col overflow-visible">
+                
                   {Array.from({ length: numberInputs }).map((_, index) => (
                     <div
-                      key={`quantum-input-${index}`}
+                      key={`classical-input-${index}`}
                       className="relative p-2 mb-1"
                       style={{
-                        backgroundColor: quantumConstructColor,
+                        backgroundColor: classicalConstructColor,
                         width: "120px",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "flex-start",
+                        borderTopRightRadius: '20px',
+                        borderBottomRightRadius: '20px',
                       }}
                     >
                       <Handle
                         type="target"
-                        id={`quantumHandleOperationInput${index}${node.id}`}
+                        id={`classicalHandleOperationInput${index}${node.id}`}
                         position={Position.Left}
-                        className="z-10 circle-port-op !bg-blue-300 !border-black -left-[8px]"
+                        className="z-10 circle-port-op !bg-orange-300 !border-black -left-[8px]"
                         style={{ top: "50%", transform: "translateY(-50%)" }}
                       />
                       <span className="text-black text-sm text-center w-full">
@@ -310,7 +313,7 @@ export const AlgorithmNode = memo((node: Node) => {
                 key={`output-port-${index}`}
                 node={node}
                 index={index - 1}
-                type={"quantum"}
+                type={"classical"}
                 nodes={nodes}
                 outputs={outputs}
                 setOutputs={setOutputs}
@@ -325,7 +328,6 @@ export const AlgorithmNode = memo((node: Node) => {
               />
             ))}
           </div>
-
 
           <AncillaPort node={node} edges={edges} dirty={false} index={numberOutputs} />
           <AncillaPort node={node} edges={edges} dirty={true} index={numberOutputs + 1} />

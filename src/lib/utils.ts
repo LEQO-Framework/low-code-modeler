@@ -6,7 +6,7 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 let id = 0;
-const getId = () => `newNode${id++}`;
+const getId = () => crypto.randomUUID();
 
 export function handleDragOver(event: React.DragEvent<HTMLDivElement>) {
   event.preventDefault();

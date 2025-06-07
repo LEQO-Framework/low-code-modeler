@@ -345,7 +345,7 @@ h1 {
 .classical-circle-port-in {
   width: 15px !important;
   height: 15px !important;
-  border-radius: 50% !important; /* Make it fully circular */
+  border-radius: 50% !important;
   background: #898d9c;
   border: 1px solid #edeff5;
   cursor: pointer;
@@ -359,7 +359,7 @@ h1 {
   overflow: visible !important;
   width: 15px !important;
   height: 15px !important;
-  border-radius: 50% !important; /* Make it fully circular */
+  border-radius: 50% !important;
   background: #898d9c;
   border: 1px solid #edeff5;
   cursor: pointer;
@@ -392,7 +392,7 @@ h1 {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
   position: absolute !important;
   top: 14px;
-  right: -10px !important;
+  right: -8px !important;
 }
 
 .classical-circle-port {
@@ -623,3 +623,26 @@ h1 {
 react-flow__node {
   z-index: -1 !important;
   }
+
+.custom-shape {
+  clip-path: polygon(20px 0%, 100% 0%, 100% 100%, 20px 100%, 0% 50%);
+}
+.custom-shape-mirrored {
+  clip-path: polygon(0% 0%, 80% 0%, 100% 50%, 80% 100%, 0% 100%);
+}
+
+.ancilla-output {
+  clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%, 20px 50%);
+}
+
+.ancilla-port-in {
+  width: 15px !important;
+  height: 15px !important;
+  border-radius: 0 !important;
+  background: #898d9c;
+  border: 1px solid #edeff5;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+  position: absolute;
+  left: -7px !important;
+}

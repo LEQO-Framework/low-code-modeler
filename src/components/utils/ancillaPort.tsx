@@ -1,19 +1,26 @@
-import { ancillaConstructColor, quantumConstructColor } from '@/constants';
+import { ancillaConstructColor, dirtyConstructColor } from '@/constants';
 import { Handle, Position } from 'reactflow';
-import React from 'react';
 import { cn } from '@/lib/utils';
 
-export default function UncomputePort({ node, edges, index }) {
-  const handleId = `quantumHandle${node.type}Uncompute${index}${node.id}`;
+export default function AncillaPort({ node, edges, dirty, index }) {
+  const displayText = dirty ? 'Dirty Ancilla' : 'Ancilla';
+
+  const handleId = dirty
+    ? `dirtyAncillaHandle${node.type}Ancilla${index}${node.id}`
+    : `ancillaHandle${node.type}Ancilla${index}${node.id}`;
+
+  const backgroundColor = dirty
+    ? dirtyConstructColor
+    : ancillaConstructColor;
   const isConnected = edges.some(edge => edge.sourceHandle === handleId);
 
   const handleClassName = cn(
-    `z-20 circle-port-out absolute`,
+    "z-10 circle-port-out absolute",
     isConnected ? "!bg-green-100 !border-black" : "!bg-gray-200 !border-dashed !border-black"
   );
 
   return (
-    <div className="relative flex items-center justify-end space-x-0 overflow-visible mt-1">
+    <div className="relative flex items-center justify-end overflow-visible mt-1">
       <div
         className="relative p-2"
         style={{
@@ -21,12 +28,14 @@ export default function UncomputePort({ node, edges, index }) {
         }}
       >
         <div
-          className="absolute inset-0 custom-shape"
+          className="absolute inset-0 ancilla-output"
           style={{
-            backgroundColor: ancillaConstructColor,
+            backgroundColor: backgroundColor,
           }}
         />
-        <div className="w-full text-left text-sm text-black relative z-10" style={{ paddingLeft: '15px' }}>Uncompute</div>
+        <div className="w-full text-left text-sm text-black relative z-10" style={{ paddingLeft: '15px' }}>
+          {displayText}
+        </div>
 
         <Handle
           type="source"
@@ -37,7 +46,6 @@ export default function UncomputePort({ node, edges, index }) {
           isConnectable={true}
           style={{
             top: '50%',
-            right: '0px',
             transform: 'translateY(-50%) rotate(45deg)'
           }}
           isConnectableEnd={false}
