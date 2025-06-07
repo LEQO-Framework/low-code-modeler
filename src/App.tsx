@@ -312,7 +312,7 @@ function App() {
 
       let getdata = await getresponse.json();
       console.log(getdata);
-      // Todo 20 mal mit waiting
+      
       while (getdata["state"] !== "FINISHED" && progress < 100) {
         let getresponse = await fetch("http://localhost:8080" + jobId, {
           method: "GET",
