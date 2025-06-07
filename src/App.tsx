@@ -1045,16 +1045,7 @@ function App() {
             </>
           )}
             <Controls />
-             <CustomPanel position="top-left" className="p-2">
-      <button
-    onClick={() => setAncillaModelingOn((prev) => !prev)}
-    className={`px-3 py-1 rounded text-white ${
-      ancillaModelingOn ? "bg-blue-600" : "bg-gray-400"
-    }`}
-  >
-    Ancilla Modeling: {ancillaModelingOn ? "On" : "Off"}
-  </button>
-    </CustomPanel>
+          
             <Panel position="top-left" className="p-2">
               <button
                 onClick={() => setAncillaModelingOn((prev) => !prev)}
