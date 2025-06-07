@@ -30,3 +30,10 @@ export const ArithmeticOperatorNode: string = "arithmeticOperatorNode";
 export const classicalHandle: string = "classicalHandle";
 export const quantumHandle: string = "quantumHandle";
 export const ancillaHandle: string = "ancillaHandle";
+
+// colors for modeling constructs
+export const quantumConstructColor = "rgba(105, 145, 210, 0.3)";
+export const ancillaConstructColor = "rgba(83, 242, 71, 0.2)";
+export const dirtyConstructColor = "rgba(50, 93, 48, 0.24)";
+export const classicalConstructColor = "rgba(255, 166, 0, 0.3)";
+export const controlFlowConstructColor = "rgba(183, 0, 255, 0.21)"

@@ -9,10 +9,12 @@ import ReactFlow, {
   MiniMap,
   getOutgoers,
   getNodesBounds,
-  ConnectionMode
+  ConnectionMode,
+  Panel,
+  MiniMapNodeProps,
 } from "reactflow";
 import "reactflow/dist/style.css";
-import { Panel, Palette } from "./components";
+import { CustomPanel, Palette } from "./components";
 import Toolbar from "./components/toolbar";
 import { nodesConfig } from "./config/site";
 import useStore from "./config/store";
@@ -35,6 +37,8 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { startCompile } from "./backend";
+import { Button } from "antd";
+import { ancillaConstructColor, classicalConstructColor, controlFlowConstructColor, quantumConstructColor } from "./constants";
 
 
 
@@ -170,6 +174,7 @@ function App() {
   const [modalStep, setModalStep] = useState(0);
   const [loadingQunicorn, setLoadingQunicorn] = useState(true);
   const [statusQunicorn, setStatusQunicorn] = useState(null);
+  const [ancillaModelingOn, setAncillaModelingOn] = useState(true);
 
   const handleClose = () => {
     if (modalStep < 3) {
@@ -256,6 +261,7 @@ function App() {
     }
   };
 
+
   const sendToQunicorn2 = async () => {
     setModalStep(2);
     setLoading(true);
@@ -306,6 +312,7 @@ function App() {
 
       let getdata = await getresponse.json();
       console.log(getdata);
+      // Todo 20 mal mit waiting
       while (getdata["state"] !== "FINISHED" && progress < 100) {
         let getresponse = await fetch("http://localhost:8080" + jobId, {
           method: "GET",
@@ -765,10 +772,10 @@ function App() {
         if (isForbidden) {
           const maxY = relativeY > nd.height / 2;
           //node.position.y = relativeY ;
-        
+
           console.warn("Cannot drop node in the right half due to 'if' constraint.");
           return;
-          
+
         }
       }
     })
@@ -1038,10 +1045,68 @@ function App() {
             </>
           )}
             <Controls />
+            <Panel position="top-left" className="p-2">
+              <button
+                onClick={() => setAncillaModelingOn((prev) => !prev)}
+                className={`px-3 py-1 rounded text-white ${ancillaModelingOn ? "bg-blue-600" : "bg-gray-400"
+                  }`}
+              >
+                Ancilla Modeling: {ancillaModelingOn ? "On" : "Off"}
+              </button>
+            </Panel>
+
 
             <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
 
-            <MiniMap zoomable={true} pannable={true} />
+
+
+            <MiniMap
+              nodeClassName={(node) => {
+                if (node.type === 'dataTypeNode' || node.type === "classicalAlgorithmNode") return 'minimap-node-circle';
+                if (node.type === 'rounded') return 'minimap-node-rounded';
+                return 'minimap-node-default';
+              }}
+              nodeColor={(node) => {
+                switch (node.type) {
+                  case 'dataTypeNode' :
+                  case 'classicalAlgorithmNode':
+                  case 'rounded':
+                    return classicalConstructColor;
+                  case 'ancillaNode':
+                    return ancillaConstructColor;
+                  case 'ifElseNode':
+                  case 'controlStructureNode':
+                    return controlFlowConstructColor;
+                  default:
+                    return quantumConstructColor
+                }
+              }}
+              nodeComponent={({ className, x, y, width, height, color }) => {
+                const borderRadius = className.includes('circle')
+                  ? 100
+                  : className.includes('rounded')
+                    ? 15
+                    : 0;
+
+                return (
+                  <rect
+                    x={x}
+                    y={y}
+                    width={width}
+                    height={height}
+                    rx={borderRadius}
+                    ry={borderRadius}
+                    fill={color}
+                    stroke="#333"
+                  />
+                );
+              }}
+              zoomable={true}
+              pannable={true}
+            />
+
+
+
           </ReactFlow>
         </div>
 
@@ -1050,7 +1115,7 @@ function App() {
           <div
             className={`transition-all duration-300 ${isPanelOpen ? "w-[300px] lg:w-[350px]" : "w-0 overflow-hidden"}`}
           >
-            {isPanelOpen && <Panel metadata={metadata} onUpdateMetadata={setMetadata} />}
+            {isPanelOpen && <CustomPanel metadata={metadata} onUpdateMetadata={setMetadata} />}
           </div>
         </div>
 
