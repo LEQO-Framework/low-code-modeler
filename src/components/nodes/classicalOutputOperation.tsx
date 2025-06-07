@@ -12,23 +12,27 @@ import AncillaPort from "../utils/ancillaPort";
 
 const selector = (state: {
   selectedNode: Node | null;
-  edges: Edge[],
-  nodes: Node[],
-  updateNodeValue: (nodeId: string, field: string, nodeVal: any) => void;
-  setNodes: (node: Node) => void;
-  setSelectedNode: (node: Node) => void;
+  nodes: Node[];
+  edges: Edge[];
+  ancillaMode: boolean;
+  updateNodeValue: (nodeId: string, field: string, nodeVal: string) => void;
+  setSelectedNode: (node: Node | null) => void;
+  setEdges: (edge: Edge) => void;
+  setNewEdges: (newEdges: Edge[]) => void;
 }) => ({
   selectedNode: state.selectedNode,
-  edges: state.edges,
   nodes: state.nodes,
-  setNodes: state.setNodes,
+  edges: state.edges,
+  ancillaMode: state.ancillaMode,
   updateNodeValue: state.updateNodeValue,
-  setSelectedNode: state.setSelectedNode
+  setSelectedNode: state.setSelectedNode,
+  setEdges: state.setEdges,
+  setNewEdges: state.setNewEdges
 });
 
 export const ClassicalOutputOperationNode = memo((node: Node) => {
   const { data, selected } = node;
-  const { edges, nodes, updateNodeValue, setSelectedNode } = useStore(selector, shallow);
+  const { edges, nodes, updateNodeValue, setSelectedNode, ancillaMode } = useStore(selector, shallow);
   const alledges = getConnectedEdges([node], edges);
 
   const [inputs, setInputs] = useState(data.inputs || []);
@@ -89,7 +93,7 @@ export const ClassicalOutputOperationNode = memo((node: Node) => {
     updateNodeValue(node.id, "operator", "min");
   }
   }, []);
-  const baseHeight = 360;
+  const baseHeight = 550;
   const extraHeightPerVariable = 20;
   const dynamicHeight = baseHeight + (inputs.length + outputs.length) * extraHeightPerVariable;
 
@@ -97,7 +101,7 @@ export const ClassicalOutputOperationNode = memo((node: Node) => {
     <motion.div
       className="grand-parent"
       initial={false}
-      animate={{ width: showingChildren ? 360 : 320, height: showingChildren ? 400 : 373 }}
+      animate={{ width: showingChildren ? 360 : 320, height: showingChildren ? 550 : 550 }}
       transition={{ duration: 0.3, ease: "easeInOut" }}
     >
       <div className="grand-parent">
@@ -210,6 +214,7 @@ export const ClassicalOutputOperationNode = memo((node: Node) => {
               active={true}
             />
           </div>
+          {ancillaMode && (<div>
           <AncillaPort
             node={node}
             edges={edges}
@@ -227,6 +232,7 @@ export const ClassicalOutputOperationNode = memo((node: Node) => {
             edges={edges}
             index={3}
           />
+          </div>)}
         </div>
      </div>
     </motion.div>

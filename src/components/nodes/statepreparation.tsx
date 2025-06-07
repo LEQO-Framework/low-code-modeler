@@ -13,6 +13,7 @@ const selector = (state: {
   selectedNode: Node | null;
   edges: Edge[];
   nodes: Node[];
+  ancillaMode: boolean;
   updateNodeValue: (nodeId: string, field: string, nodeVal: any) => void;
   setNodes: (node: Node) => void;
   setSelectedNode: (node: Node) => void;
@@ -20,6 +21,7 @@ const selector = (state: {
   selectedNode: state.selectedNode,
   edges: state.edges,
   nodes: state.nodes,
+  ancillaMode: state.ancillaMode,
   setNodes: state.setNodes,
   updateNodeValue: state.updateNodeValue,
   setSelectedNode: state.setSelectedNode,
@@ -38,7 +40,7 @@ export const StatePreparationNode = memo((node: Node) => {
   const [mounted, setMounted] = useState(false);
 
 
-  const { updateNodeValue, setSelectedNode, setNodes, edges, nodes } = useStore(selector, shallow);
+  const { updateNodeValue, setSelectedNode, setNodes, edges, nodes, ancillaMode } = useStore(selector, shallow);
   const isConnected = edges.some(
     edge => edge.target === node.id && edge.targetHandle === `ancillaHandlePrepareState0${node.id}`
   );
@@ -252,6 +254,8 @@ export const StatePreparationNode = memo((node: Node) => {
                   />
                   <span className="text-black text-sm text-center w-full">{node.data.inputs[0]?.outputIdentifier || "Value"}</span>
                 </div>)}
+
+              {ancillaMode && (<div>
               <div
                 className="relative p-2 mb-1"
                 style={{
@@ -300,6 +304,7 @@ export const StatePreparationNode = memo((node: Node) => {
                 />
                 <span className="text-black text-sm text-center w-full" style={{ zIndex: 1 }}> Dirty Ancilla</span>
               </div>
+              </div>)}
             </div>
           </div>
 
@@ -324,23 +329,28 @@ export const StatePreparationNode = memo((node: Node) => {
               />
             </>
           </div>
-          <AncillaPort
-            node={node}
-            edges={edges}
-            dirty={false}
-            index={1}
-          />
-          <AncillaPort
-            node={node}
-            edges={edges}
-            dirty={true}
-            index={2}
-          />
-          <UncomputePort
-            node={node}
-            edges={edges}
-            index={3}
-          />
+
+          {ancillaMode && (
+            <div>
+              <AncillaPort
+                node={node}
+                edges={edges}
+                dirty={false}
+                index={1}
+              />
+              <AncillaPort
+                node={node}
+                edges={edges}
+                dirty={true}
+                index={2}
+              />
+              <UncomputePort
+                node={node}
+                edges={edges}
+                index={3}
+              />
+            </div>
+          )}
         </div>
       </div>
     </motion.div>

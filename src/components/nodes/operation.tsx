@@ -14,6 +14,7 @@ const selector = (state: {
   selectedNode: Node | null;
   edges: Edge[];
   nodes: Node[];
+  ancillaMode: boolean;
   updateNodeValue: (nodeId: string, field: string, nodeVal: any) => void;
   setNodes: (node: Node) => void;
   setSelectedNode: (node: Node) => void;
@@ -21,6 +22,7 @@ const selector = (state: {
   selectedNode: state.selectedNode,
   edges: state.edges,
   nodes: state.nodes,
+  ancillaMode: state.ancillaMode,
   setNodes: state.setNodes,
   updateNodeValue: state.updateNodeValue,
   setSelectedNode: state.setSelectedNode,
@@ -28,7 +30,7 @@ const selector = (state: {
 
 export const OperationNode = memo((node: Node) => {
   const { data, selected } = node;
-  const { edges, nodes, updateNodeValue, setSelectedNode } = useStore(selector, shallow);
+  const { edges, nodes, updateNodeValue, setSelectedNode, ancillaMode } = useStore(selector, shallow);
   const alledges = getConnectedEdges([node], edges);
 
   const [inputs, setInputs] = useState(data.inputs || []);
@@ -80,7 +82,7 @@ export const OperationNode = memo((node: Node) => {
   }, []);
 
 
-  const baseHeight = 440;
+  const baseHeight = 550;
 
   const extraHeightPerVariable = 20;
   const dynamicHeight = baseHeight + (inputs.length + outputs.length) * extraHeightPerVariable;
@@ -203,6 +205,7 @@ const iconSrc = iconMap[label];
                 />
                 <span className="text-black text-sm text-center w-full">{node.data.inputs[1]?.outputIdentifier || "Input 2"}</span>
               </div>
+              {ancillaMode && (<div>
               <div
                 className="relative p-2 mb-1"
                 style={{
@@ -251,6 +254,7 @@ const iconSrc = iconMap[label];
                 />
                 <span className="text-black text-sm text-center w-full" style={{ zIndex: 1 }}> Dirty Ancilla</span>
               </div>
+              </div>)}
             </div>
           </div>
 
@@ -297,6 +301,7 @@ const iconSrc = iconMap[label];
             )}
 
           </div>
+          {ancillaMode &&(<div>
           <AncillaPort
             node={node}
             edges={edges}
@@ -314,6 +319,7 @@ const iconSrc = iconMap[label];
             edges={edges}
             index={3}
           />
+          </div>)}
         </div>
       </div>
     </motion.div>

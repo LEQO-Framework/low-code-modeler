@@ -1,15 +1,13 @@
 import * as consts from "../../constants";
 
-export type NodeType =
-  | "operationNode1"
-  | "operationNode2"
-  | "stateNode1"
-  | "stateNode2"
-  | "classicalInt"
-  | "classicalFloat"
-  | "classicalBoolean"
-  | "quantumQint"
-  | "quantumQfloat";
+export type NodeType = (typeof consts.NodeTypes)[number];
+
+export interface Node {
+  label: string;
+  type: NodeType;
+  dataType: string;
+  icon: string;
+}
 
 export interface Node {
   label: string;

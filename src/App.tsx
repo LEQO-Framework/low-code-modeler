@@ -45,6 +45,7 @@ import { ancillaConstructColor, classicalConstructColor, controlFlowConstructCol
 const selector = (state: {
   nodes: Node[];
   edges: Edge[];
+  ancillaMode: boolean;
   onNodesChange: any;
   onEdgesChange: any;
   onConnect: any;
@@ -54,6 +55,7 @@ const selector = (state: {
   updateParent: (nodeId: string, parentId: string, position: any) => void;
   setNodes: (node: Node) => void;
   setEdges: (edge: Edge) => void;
+  setAncillaMode: (ancillaMode: boolean) => void;
   undo: () => void;
   redo: () => void;
 }) => ({
@@ -68,6 +70,7 @@ const selector = (state: {
   updateParent: state.updateParent,
   setNodes: state.setNodes,
   setEdges: state.setEdges,
+  setAncillaMode: state.setAncillaMode,
   undo: state.undo,
   redo: state.redo,
 });
@@ -145,6 +148,7 @@ function App() {
     onEdgesChange,
     onConnect,
     onConnectEnd,
+    setAncillaMode,
     setSelectedNode,
     setNodes,
     updateNodeValue,
@@ -981,7 +985,7 @@ function App() {
           <div
             className={`transition-all duration-300 ${isPaletteOpen ? "w-[300px] lg:w-[350px]" : "w-0 overflow-hidden"}`}
           >
-            {isPaletteOpen && <Palette />}
+            {isPaletteOpen && <Palette ancillaMode={ancillaModelingOn} />}
           </div>
 
 
@@ -1048,7 +1052,7 @@ function App() {
           
             <Panel position="top-left" className="p-2">
               <button
-                onClick={() => setAncillaModelingOn((prev) => !prev)}
+                onClick={() => {setAncillaModelingOn((prev) => !prev); setAncillaMode(!ancillaModelingOn)}}
                 className={`px-3 py-1 rounded text-white ${ancillaModelingOn ? "bg-blue-600" : "bg-gray-400"
                   }`}
               >

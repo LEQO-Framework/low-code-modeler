@@ -28,6 +28,23 @@ export const SplitterNode: string = "splitterNode";
 export const MergerNode: string = "mergerNode";
 export const OperatorNode: string = "operatorNode";
 
+export const NodeTypes = [
+  DataTypeNode,
+  GateNode,
+  AlgorithmNode,
+  ClassicalAlgorithmNode,
+  StatePreparationNode,
+  MeasurementNode,
+  AncillaNode,
+  QubitNode,
+  ControlStructureNode,
+  IfElseNode,
+  ClassicalOutputOperationNode,
+  SplitterNode,
+  MergerNode,
+  OperatorNode
+]
+
 // handle prefix ensures correctness of edges
 export const classicalHandle: string = "classicalHandle";
 export const quantumHandle: string = "quantumHandle";

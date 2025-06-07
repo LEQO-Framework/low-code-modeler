@@ -13,6 +13,7 @@ const selector = (state: {
   selectedNode: Node | null;
   nodes: Node[];
   edges: Edge[];
+  ancillaMode: boolean;
   updateNodeValue: (nodeId: string, field: string, nodeVal: string) => void;
   setSelectedNode: (node: Node | null) => void;
   setEdges: (edge: Edge) => void;
@@ -21,6 +22,7 @@ const selector = (state: {
   selectedNode: state.selectedNode,
   nodes: state.nodes,
   edges: state.edges,
+  ancillaMode: state.ancillaMode,
   updateNodeValue: state.updateNodeValue,
   setSelectedNode: state.setSelectedNode,
   setEdges: state.setEdges,
@@ -40,7 +42,7 @@ export const AlgorithmNode = memo((node: Node) => {
   const handleOffset = 15;
 
   const nodeHeight = Math.max(handleOffset * 2 + (handleCount) * handleGap, 100);
-  const { edges, nodes, updateNodeValue, setSelectedNode, setNewEdges, setEdges } = useStore(
+  const { edges, nodes, updateNodeValue, setSelectedNode, setNewEdges, setEdges, ancillaMode } = useStore(
     selector,
     shallow
   );
@@ -238,7 +240,7 @@ export const AlgorithmNode = memo((node: Node) => {
                   ))}
                 </div>
               </div>
-
+              {ancillaMode && (<div>
               <div
                 className="relative p-2 mb-1"
                 style={{
@@ -301,8 +303,10 @@ export const AlgorithmNode = memo((node: Node) => {
                   Dirty Ancilla
                 </span>
               </div>
-            </div>
+            </div>)}
           </div>
+          </div>
+
 
           <div className="custom-node-port-out">
             {Array.from({ length: numberOutputs }).map((_, index) => (
@@ -326,10 +330,13 @@ export const AlgorithmNode = memo((node: Node) => {
             ))}
           </div>
 
-
-          <AncillaPort node={node} edges={edges} dirty={false} index={numberOutputs} />
-          <AncillaPort node={node} edges={edges} dirty={true} index={numberOutputs + 1} />
-          <UncomputePort node={node} edges={edges} index={numberOutputs + 2} />
+          {ancillaMode && (
+            <div>
+              <AncillaPort node={node} edges={edges} dirty={false} index={numberOutputs} />
+              <AncillaPort node={node} edges={edges} dirty={true} index={numberOutputs + 1} />
+              <UncomputePort node={node} edges={edges} index={numberOutputs + 2} />
+            </div>
+          )}
         </div>
       </div>
     </motion.div>

@@ -306,7 +306,7 @@ h1 {
 .classical-circle-port-st {
   width: 15px !important;
   height: 15px !important;
-  border-radius: 0 !important; /* Make it fully circular */
+  border-radius: 50% !important; /* Make it fully circular */
   background: #898d9c;
   border: 1px solid #edeff5;
   cursor: pointer;

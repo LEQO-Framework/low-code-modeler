@@ -13,6 +13,7 @@ const selector = (state: {
   selectedNode: Node | null;
   nodes: Node[];
   edges: Edge[];
+  ancillaMode: boolean;
   updateNodeValue: (nodeId: string, field: string, nodeVal: string) => void;
   setSelectedNode: (node: Node | null) => void;
   setEdges: (edge: Edge) => void;
@@ -21,6 +22,7 @@ const selector = (state: {
   selectedNode: state.selectedNode,
   nodes: state.nodes,
   edges: state.edges,
+  ancillaMode: state.ancillaMode,
   updateNodeValue: state.updateNodeValue,
   setSelectedNode: state.setSelectedNode,
   setEdges: state.setEdges,
@@ -40,7 +42,7 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
   const handleOffset = 15;
 
   const nodeHeight = Math.max(handleOffset * 2 + (handleCount) * handleGap, 100);
-  const { edges, nodes, updateNodeValue, setSelectedNode, setNewEdges, setEdges } = useStore(
+  const { edges, nodes, updateNodeValue, setSelectedNode, setNewEdges, setEdges, ancillaMode } = useStore(
     selector,
     shallow
   );
@@ -167,15 +169,15 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
       <div className="grand-parent">
         <div
           className={cn(
-            "w-[320px] bg-white border border-solid border-gray-700 shadow-md rounded-full",
+            "w-[320px] bg-white border border-solid border-gray-700 shadow-md overflow-hidden",
             selected && "border-blue-500"
           )}
-          style={{ height: `${dynamicHeight}px` }}
+          style={{ height: `${dynamicHeight}px`, borderRadius: "40px" }}
         >
           <div className="w-full flex items-center" style={{ height: "52px" }}>
             <div
-              className="w-full bg-orange-300 py-1 px-2 flex items-center rounded-full"
-              style={{ height: "inherit" }}
+              className="w-full bg-orange-300 py-1 px-2 flex items-center"
+              style={{ height: "inherit", borderTopLeftRadius: "28px", borderTopRightRadius: "28px" }}
             >
               <img
                 src="classicalAlgorithmIcon.png"
@@ -242,8 +244,9 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
                 </div>
               </div>
 
+              {ancillaMode && (<div>
               <div
-                className="relative p-2 mb-1"
+                className="relative p-2 mb-1 overflow-visible"
                 style={{
                   width: "120px",
                   display: "flex",
@@ -252,7 +255,7 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
                 }}
               >
                 <div
-                  className="absolute inset-0 custom-shape-mirrored"
+                  className="absolute inset-0 custom-shape-mirrored overflow-visible"
                   style={{ backgroundColor: ancillaConstructColor }}
                 />
                 <Handle
@@ -304,7 +307,8 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
                   Dirty Ancilla
                 </span>
               </div>
-            </div>
+            </div>)}
+          </div>
           </div>
 
           <div className="custom-node-port-out">
@@ -329,9 +333,12 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
             ))}
           </div>
 
+          {ancillaMode && <div>
           <AncillaPort node={node} edges={edges} dirty={false} index={numberOutputs} />
           <AncillaPort node={node} edges={edges} dirty={true} index={numberOutputs + 1} />
           <UncomputePort node={node} edges={edges} index={numberOutputs + 2} />
+          </div>
+}
         </div>
       </div>
     </motion.div>

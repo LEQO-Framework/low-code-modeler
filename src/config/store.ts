@@ -35,11 +35,13 @@ type HistoryItem = {
 type RFState = {
   nodes: any;
   edges: Edge[];
+  ancillaMode: boolean;
   selectedNode: Node | null;
   history: HistoryItem[];
   historyIndex: number;
   setNodes: (node: Node) => void;
   setEdges: (edge: Edge) => void;
+  setAncillaMode: (ancillaMode: boolean) => void
   setNewEdges: (newEdges: Edge[]) => void;
   onNodesChange: OnNodesChange;
   onEdgesChange: OnEdgesChange;
@@ -56,6 +58,7 @@ type RFState = {
 const useStore = create<RFState>((set, get) => ({
   nodes: nodesConfig.initialNodes,
   edges: nodesConfig.initialEdges,
+  ancillaMode: true,
   selectedNode: null,
   history: [],
   historyIndex: -1,
@@ -178,7 +181,11 @@ const useStore = create<RFState>((set, get) => ({
     console.log("History after update:", get().history);
     console.log("Current historyIndex:", get().historyIndex);
   },
-
+  setAncillaMode: (ancillaMode: boolean) => {
+    set({
+      ancillaMode: ancillaMode
+    })
+  },
   setNewEdges: (newEdges: Edge[]) => {
     const currentNodes = get().nodes;
     const currentEdges = get().edges;
@@ -288,6 +295,7 @@ const useStore = create<RFState>((set, get) => ({
     console.log(currentNodes)
     let type = "classicalEdge";
     let color = "#F5A843";
+  
     let nodeDataSource;
     let nodeDataTarget;
     console.log(connection)
@@ -325,6 +333,7 @@ const useStore = create<RFState>((set, get) => ({
       if (node.id === connection.source && node.type === "ancillaNode") {
         type = "ancillaEdge";
         color = "#86EFAC";
+
       }
 
       // allow only classical flow between classical handles 
@@ -378,7 +387,13 @@ const useStore = create<RFState>((set, get) => ({
       if (nodeDataSource.type === "ifElseNode" && connection.sourceHandle.includes("sideClassicalHandle") && connection.targetHandle.includes("classicalHandle") && nodeDataTarget.parentNode === nodeDataSource.id) {
         insertEdge = true;
       }
-      if (node.id === connection.source && connection.sourceHandle.startsWith("quantumHandle") && !(nodeDataTarget.type === "controlstructureNode") && connection.targetHandle.includes("quantumHandle")) {
+
+      console.log(connection);
+
+      if (node.id === connection.source && connection.sourceHandle.startsWith("quantumHandle") && connection.targetHandle.includes("quantumHandle")) {
+        insertEdge = true;
+      }
+      if (node.id === connection.source && connection.sourceHandle.startsWith("dirtyAncillaHandle") && connection.targetHandle.includes("dirtyAncillaHandle")) {
         insertEdge = true;
       }
     }
@@ -386,6 +401,7 @@ const useStore = create<RFState>((set, get) => ({
     const edgeExists = currentEdges.some(edge =>
       edge.targetHandle === connection.targetHandle && nodeDataTarget.type !== "mergerNode"
     );
+    
     console.log(connection)
     console.log(insertEdge);
     console.log(!edgeExists)
@@ -399,6 +415,7 @@ const useStore = create<RFState>((set, get) => ({
         width: 20,
         height: 20,
         color: color,
+        
       }
       //label: label
     };

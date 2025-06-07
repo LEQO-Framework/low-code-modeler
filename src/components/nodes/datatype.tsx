@@ -154,28 +154,28 @@ export const DataTypeNode = memo((node: Node) => {
     setSelectedNode(node);
   };
 
-    const iconMap = {
-  "int": 'intIcon.png',
-  "float": 'floatIcon.png',
-  "bit": 'bitIcon.png',
-  "duration": 'durationIcon.png',
-  "boolean": 'booleanIcon.png',
-  "angle": 'angleIcon.png',
-  "complex": 'complexIcon.png',
-  "Array": 'arrayIcon.png',
-};
-const label = data.label;
-const iconSrc = iconMap[label];
-const iconSizeMap = {
-  "int": { width: 40, height: 40 },
-  "float": { width: 40, height: 40 },
-  "bit": { width: 40, height: 40 },
-  "duration": { width: 40, height: 40 },
-  "boolean": { width: 45, height: 40 },
-  "angle": { width: 40, height: 40 },
-  "complex": { width: 40, height: 40 },
-  "Array": { width: 40, height: 40 },
-};
+  const iconMap = {
+    "int": 'intIcon.png',
+    "float": 'floatIcon.png',
+    "bit": 'bitIcon.png',
+    "duration": 'durationIcon.png',
+    "boolean": 'booleanIcon.png',
+    "angle": 'angleIcon.png',
+    "complex": 'complexIcon.png',
+    "Array": 'arrayIcon.png',
+  };
+  const label = data.label;
+  const iconSrc = iconMap[label];
+  const iconSizeMap = {
+    "int": { width: 40, height: 40 },
+    "float": { width: 40, height: 40 },
+    "bit": { width: 40, height: 40 },
+    "duration": { width: 40, height: 40 },
+    "boolean": { width: 45, height: 40 },
+    "angle": { width: 40, height: 40 },
+    "complex": { width: 40, height: 40 },
+    "Array": { width: 40, height: 40 },
+  };
 
   return (
     <div className="relative w-[450px] h-[270px]">
@@ -197,16 +197,16 @@ const iconSizeMap = {
           <div className="w-full flex items-center" style={{ height: '52px', paddingLeft: '100px' }}>
             <div className="w-full bg-orange-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
               {(() => {
-  const { width, height } =  { width: 50, height: 50 };
-  return (
-    <img
-      src={iconSrc}
-      alt="icon"
-      style={{ width: `${width}px`, height: `${height}px` }}
-      className="object-contain flex-shrink-0"
-    />
-  );
-})()}
+                const { width, height } = { width: 50, height: 50 };
+                return (
+                  <img
+                    src={iconSrc}
+                    alt="icon"
+                    style={{ width: `${width}px`, height: `${height}px` }}
+                    className="object-contain flex-shrink-0"
+                  />
+                );
+              })()}
 
               <div className="h-full w-[1px] bg-black mx-2" />
               <span className="font-semibold leading-none" style={{ paddingLeft: '20px' }}>{data.label}</span>
