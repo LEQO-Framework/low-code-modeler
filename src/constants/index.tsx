@@ -38,3 +38,4 @@ export const quantumConstructColor = "rgba(105, 145, 210, 0.2)";
 export const ancillaConstructColor = "rgba(83, 242, 71, 0.2)";
 export const dirtyConstructColor = "rgba(50, 93, 48, 0.24)";
 export const classicalConstructColor = "rgba(255, 165, 0, 0.2)";
+export const controlFlowConstructColor = "rgba(183, 0, 255, 0.21)"

@@ -11,6 +11,7 @@ import ReactFlow, {
   getNodesBounds,
   ConnectionMode,
   Panel,
+  MiniMapNodeProps,
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { CustomPanel, Palette } from "./components";
@@ -37,6 +38,7 @@ import {
 } from "recharts";
 import { startCompile } from "./backend";
 import { Button } from "antd";
+import { ancillaConstructColor, classicalConstructColor, controlFlowConstructColor, quantumConstructColor } from "./constants";
 
 
 
@@ -259,6 +261,7 @@ function App() {
     }
   };
 
+
   const sendToQunicorn2 = async () => {
     setModalStep(2);
     setLoading(true);
@@ -309,6 +312,7 @@ function App() {
 
       let getdata = await getresponse.json();
       console.log(getdata);
+      
       while (getdata["state"] !== "FINISHED" && progress < 100) {
         let getresponse = await fetch("http://localhost:8080" + jobId, {
           method: "GET",
@@ -768,10 +772,10 @@ function App() {
         if (isForbidden) {
           const maxY = relativeY > nd.height / 2;
           //node.position.y = relativeY ;
-        
+
           console.warn("Cannot drop node in the right half due to 'if' constraint.");
           return;
-          
+
         }
       }
     })
@@ -1041,7 +1045,7 @@ function App() {
             </>
           )}
             <Controls />
-             <Panel position="top-left" className="p-2">
+             <CustomPanel position="top-left" className="p-2">
       <button
     onClick={() => setAncillaModelingOn((prev) => !prev)}
     className={`px-3 py-1 rounded text-white ${
@@ -1050,12 +1054,69 @@ function App() {
   >
     Ancilla Modeling: {ancillaModelingOn ? "On" : "Off"}
   </button>
-    </Panel>
+    </CustomPanel>
+            <Panel position="top-left" className="p-2">
+              <button
+                onClick={() => setAncillaModelingOn((prev) => !prev)}
+                className={`px-3 py-1 rounded text-white ${ancillaModelingOn ? "bg-blue-600" : "bg-gray-400"
+                  }`}
+              >
+                Ancilla Modeling: {ancillaModelingOn ? "On" : "Off"}
+              </button>
+            </Panel>
 
 
        
 
-            <MiniMap zoomable={true} pannable={true} />
+
+
+            <MiniMap
+              nodeClassName={(node) => {
+                if (node.type === 'dataTypeNode' || node.type === "classicalAlgorithmNode") return 'minimap-node-circle';
+                if (node.type === 'rounded') return 'minimap-node-rounded';
+                return 'minimap-node-default';
+              }}
+              nodeColor={(node) => {
+                switch (node.type) {
+                  case 'dataTypeNode' :
+                  case 'classicalAlgorithmNode':
+                  case 'rounded':
+                    return classicalConstructColor;
+                  case 'ancillaNode':
+                    return ancillaConstructColor;
+                  case 'ifElseNode':
+                  case 'controlStructureNode':
+                    return controlFlowConstructColor;
+                  default:
+                    return quantumConstructColor
+                }
+              }}
+              nodeComponent={({ className, x, y, width, height, color }) => {
+                const borderRadius = className.includes('circle')
+                  ? 100
+                  : className.includes('rounded')
+                    ? 15
+                    : 0;
+
+                return (
+                  <rect
+                    x={x}
+                    y={y}
+                    width={width}
+                    height={height}
+                    rx={borderRadius}
+                    ry={borderRadius}
+                    fill={color}
+                    stroke="#333"
+                  />
+                );
+              }}
+              zoomable={true}
+              pannable={true}
+            />
+
+
+
           </ReactFlow>
         </div>
 
