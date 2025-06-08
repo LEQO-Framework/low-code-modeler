@@ -94,6 +94,15 @@ function App() {
   const [tempQunicornEndpoint, setTempQunicornEndpoint] = useState(qunicornEndpoint);
   const [tempLowcodeBackendEndpoint, setTempLowcodeBackendEndpoint] = useState(lowcodeBackendEndpoint);
 
+  const [selectedDevice, setSelectedDevice] = useState("");
+  const [provider, setProvider] = useState("");
+
+  const [numShots, setNumShots] = useState(1024);
+  const [accessToken, setAccessToken] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [errorJobMessage, setErrorJobMessage] = useState("");
+
+
   const [isLoadJsonModalOpen, setIsLoadJsonModalOpen] = useState(false);
   const [isPaletteOpen, setIsPaletteOpen] = useState(true);
   const [chartData, setChartData] = useState(null);
@@ -184,11 +193,20 @@ function App() {
     if (modalStep < 3) {
       setModalStep(modalStep + 1);
     } else {
-      setModalStep(0); // or false if you want to hide all modals at the end
+
+      // reset all values
+      setModalStep(0);
       setChartData(null);
+      setErrorMessage("");
+      setErrorJobMessage("");
       setJobId(null);
       setDeploymentId(null);
       setProgress(0);
+      setSelectedDevice("");
+      setProvider("");
+      setNumShots(1024);
+      setAccessToken("");
+
     }
   };
 
@@ -273,12 +291,12 @@ function App() {
     try {
       let program = {
         "name": "JobName",
-        "providerName": "IBM",
-        "deviceName": "aer_simulator",
-        "shots": 4000,
+        "providerName": provider,
+        "deviceName": selectedDevice,
+        "shots": numShots,
         "errorMitigation": "none",
         "cutToWidth": null,
-        "token": "",
+        "token": accessToken,
         "type": "RUNNER",
         "deploymentId": deploymentId
       }
@@ -291,7 +309,11 @@ function App() {
 
       let data = await response.json();
       console.log(data);
-      setJobId(data["self"]);
+      if (data["code"] === 500) {
+        setErrorJobMessage(data["message"]);
+      } else {
+        setJobId(data["self"]);
+      }
       //handleClose();
       //pollStatus(response["Location"]);
     } catch (error) {
@@ -304,28 +326,70 @@ function App() {
     setModalStep(3);
     setLoading(true);
     setProgress(0);
+    setErrorMessage(null);
 
     try {
 
-      let getresponse = await fetch("http://localhost:8080" + jobId, {
+      const url = `http://localhost:8080/${jobId.startsWith('/') ? jobId.slice(1) : jobId}`;
+
+      let getdata = null;
+
+      // Initial fetch
+      let getresponse = await fetch(url, {
         method: "GET",
         headers: { "Content-Type": "application/json" },
-
       });
+
+      if (!getresponse.ok) {
+        throw new Error(`Request failed with status ${getresponse.status}`);
+      }
+
+      getdata = await getresponse.json();
       setProgress(5);
 
-      let getdata = await getresponse.json();
-      console.log(getdata);
-      
-      while (getdata["state"] !== "FINISHED" && progress < 100) {
-        let getresponse = await fetch("http://localhost:8080" + jobId, {
+      if (getdata.state === "ERROR") {
+        setErrorMessage("Job encountered an error.");
+        setLoading(false);
+        setProgress(0);
+        return;
+      }
+
+      let tries = 0;
+      const maxTries = 20;
+
+      while (getdata.state !== "FINISHED" && getdata.state !== "ERROR" && tries < maxTries) {
+        tries++;
+
+        await new Promise((r) => setTimeout(r, 10000));
+
+        const response = await fetch(url, {
           method: "GET",
           headers: { "Content-Type": "application/json" },
         });
 
-        getdata = await getresponse.json();
-        setProgress(progress + 20);
+        if (!response.ok) {
+          throw new Error(`Request failed with status ${response.status}`);
+        }
+
+        getdata = await response.json();
+
+        if (getdata.state === "ERROR") {
+          setErrorMessage("Job encountered an error.");
+          setLoading(false);
+          setProgress(0);
+          return;
+        }
+
+        setProgress(Math.min(((tries / maxTries) * 100), 100));
       }
+
+      if (getdata.state !== "FINISHED") {
+        setErrorMessage("Job did not finish in time.");
+        setLoading(false);
+        setProgress(0);
+        return;
+      }
+
       setProgress(100);
       console.log(getdata.results[1])
       let counts = getdata.results[1].data;
@@ -335,8 +399,6 @@ function App() {
         value: Number(value) * 100,
       }));
       setChartData(chartData);
-
-      //handleClose();
       //pollStatus(response["Location"]);
     } catch (error) {
       console.error("Error sending data:", error);
@@ -668,13 +730,13 @@ function App() {
 
     if (flow.initialNodes) {
       reactFlowInstance.setNodes(
-              flow.nodes.map((node: Node) => ({
-                ...node,
-                data: {
-                  ...node.data,
-                },
-              }))
-            );
+        flow.nodes.map((node: Node) => ({
+          ...node,
+          data: {
+            ...node.data,
+          },
+        }))
+      );
     }
 
     // Reset the viewport (optional based on your use case)
@@ -937,43 +999,128 @@ function App() {
       <Modal
         title={"Qunicorn Deployment (2/2)"}
         open={modalStep === 2}
-        onClose={() => setModalStep(0)}
+        onClose={() => { handleClose(); setModalStep(0) }}
         footer={
           <div className="flex justify-end space-x-2">
-            <button className="btn btn-primary" onClick={() => { sendToQunicorn2(); handleClose(); }}>Create</button>
-            <button className="btn btn-secondary" onClick={() => { setModalStep(0) }}>Cancel</button>
+            <button
+              className={`btn ${selectedDevice.trim() && ['IBM', 'AWS', 'RIGETTI', 'QMWARE'].includes(provider)
+                ? 'btn-primary'
+                : 'btn-secondary'
+                }`}
+              onClick={() => {
+                if (
+                  selectedDevice.trim() &&
+                  ['IBM', 'AWS', 'RIGETTI', 'QMWARE'].includes(provider)
+                ) {
+                  sendToQunicorn2();
+                  handleClose();
+                }
+              }}
+            >
+              Create
+            </button>
+            <button
+              className="btn btn-secondary"
+              onClick={() => { handleClose(); setModalStep(0); }}
+            >
+              Cancel
+            </button>
           </div>
         }
       >
-        <div>
-          In the next step, a job is created which can be executed on a quantum device.
+        <div className="space-y-4">
+          <p>
+            In the next step, a job is created which can be executed on a quantum device.
+            Specify here your quantum device, the provider, and the number of shots.
+            Furthermore, add here your access token.
+          </p>
+
+          <div>
+            <label className="block font-medium mb-1">Quantum Device</label>
+            <input
+              type="text"
+              className="w-full border rounded px-3 py-2"
+              value={selectedDevice}
+              onChange={(e) => setSelectedDevice(e.target.value)}
+              placeholder="aer_simulator"
+            />
+          </div>
+
+          <div>
+            <label className="block font-medium mb-1">Provider</label>
+            <select
+              className="w-full border rounded px-3 py-2"
+              value={provider}
+              onChange={(e) => setProvider(e.target.value)}
+            >
+              <option value="">Select a provider</option>
+              <option value="IBM">IBM</option>
+              <option value="AWS">AWS</option>
+              <option value="RIGETTI">RIGETTI</option>
+              <option value="QMWARE">QMWARE</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block font-medium mb-1">Number of Shots</label>
+            <input
+              type="number"
+              className="w-full border rounded px-3 py-2"
+              value={numShots}
+              onChange={(e) => setNumShots(parseInt(e.target.value))}
+              placeholder="1024"
+            />
+          </div>
+
+          <div>
+            <label className="block font-medium mb-1">Access Token</label>
+            <input
+              type="text"
+              className="w-full border rounded px-3 py-2"
+              value={accessToken}
+              onChange={(e) => setAccessToken(e.target.value)}
+              placeholder="Your quantum provider token"
+            />
+          </div>
         </div>
       </Modal>
+
 
       <Modal
         title={"Qunicorn Result"}
         open={modalStep === 3}
-        onClose={() => setModalStep(0)}
+        onClose={() => { handleClose(); setModalStep(0) }}
         footer={
           <div className="flex justify-end space-x-2">
             <button className="btn btn-primary" onClick={() => { sendToQunicorn3() }}>Execute</button>
-            <button className="btn btn-secondary" onClick={() => { setModalStep(0) }}>Cancel</button>
+            <button className="btn btn-secondary" onClick={() => { handleClose(); setModalStep(0); }}>Cancel</button>
           </div>
         }
       >
 
         <div>
-          The job is executed on the aer_qasm_simulator with 1024 shots.
+          {errorMessage || errorJobMessage ? (
+            <p className="text-red-600 font-semibold">{errorMessage || errorJobMessage}</p>
+          ) : (
+            <p>
+              The job is executed on the <strong>{selectedDevice || "unknown device"}</strong> with <strong>{numShots || "N/A"}</strong> shots.
+            </p>
+          )}
 
           {chartData && progress === 100 && <ResponsiveContainer width="100%" height={300}>
             <BarChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="register" label={{ value: "Register", position: "insideBottom", offset: 5 }} />
-              <YAxis domain={[0, 100]} label={{
-                value: "Probabilities",
-                angle: -90,
-                offset: 20,
-              }} />
+              <YAxis
+                domain={[0, 100]}
+                label={{
+                  value: "Probabilities",
+                  angle: -90,
+                  dx: 0,
+                  dy: 30,
+                  position: 'insideLeft'
+                }}
+              />
               <Tooltip />
               <Bar dataKey="value" fill="#8884d8" />
             </BarChart>
@@ -1055,10 +1202,10 @@ function App() {
             </>
           )}
             <Controls />
-          
+
             <Panel position="top-left" className="p-2">
               <button
-                onClick={() => {setAncillaModelingOn((prev) => !prev); setAncillaMode(!ancillaModelingOn)}}
+                onClick={() => { setAncillaModelingOn((prev) => !prev); setAncillaMode(!ancillaModelingOn) }}
                 className={`px-3 py-1 rounded text-white ${ancillaModelingOn ? "bg-blue-600" : "bg-gray-400"
                   }`}
               >
@@ -1067,7 +1214,7 @@ function App() {
             </Panel>
 
 
-       
+
 
 
 
@@ -1079,7 +1226,7 @@ function App() {
               }}
               nodeColor={(node) => {
                 switch (node.type) {
-                  case 'dataTypeNode' :
+                  case 'dataTypeNode':
                   case 'classicalAlgorithmNode':
                   case 'rounded':
                     return classicalConstructColor;
