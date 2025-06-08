@@ -117,10 +117,10 @@ export const AlgorithmNode = memo((node: Node) => {
     updateNodeInternals(node.id);
   }, []);
 
-  const baseHeight = 390;
-  const extraHeightPerVariable = 100;
+  const baseHeight = 200;
+  const extraHeightPerVariable = 130;
   const dynamicHeight =
-    baseHeight + (numberInputs * 20) + numberOutputs * extraHeightPerVariable;
+    baseHeight + 2 * 40 + 3 * 50 + (numberInputs * 50) + numberOutputs * extraHeightPerVariable;
 
   // Ensure identifiers exist and match the number of outputs
   if (!data.identifiers) {
@@ -241,70 +241,70 @@ export const AlgorithmNode = memo((node: Node) => {
                 </div>
               </div>
               {ancillaMode && (<div>
-              <div
-                className="relative p-2 mb-1"
-                style={{
-                  width: "120px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "flex-start",
-                }}
-              >
                 <div
-                  className="absolute inset-0 custom-shape-mirrored"
-                  style={{ backgroundColor: ancillaConstructColor }}
-                />
-                <Handle
-                  type="target"
-                  id={`ancillaHandleOperationInput2${node.id}`}
-                  position={Position.Left}
-                  className="z-10 ancilla-port-in !bg-gray-200 !border-dashed !border-black w-4 transform rotate-45 -left-[8px]"
+                  className="relative p-2 mb-1"
                   style={{
-                    zIndex: 1,
-                    top: "50% !important",
-                    transform: "translateY(-50%) rotate(45deg)",
+                    width: "120px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "flex-start",
                   }}
-                />
-                <span
-                  className="text-black text-sm text-center w-full"
-                  style={{ zIndex: 1 }}
                 >
-                  Ancilla
-                </span>
-              </div>
-              <div
-                className="relative p-2"
-                style={{
-                  width: "120px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "flex-start",
-                }}
-              >
+                  <div
+                    className="absolute inset-0 custom-shape-mirrored"
+                    style={{ backgroundColor: ancillaConstructColor }}
+                  />
+                  <Handle
+                    type="target"
+                    id={`ancillaHandleOperationInput2${node.id}`}
+                    position={Position.Left}
+                    className="z-10 ancilla-port-in !bg-gray-200 !border-dashed !border-black w-4 transform rotate-45 -left-[8px]"
+                    style={{
+                      zIndex: 1,
+                      top: "50% !important",
+                      transform: "translateY(-50%) rotate(45deg)",
+                    }}
+                  />
+                  <span
+                    className="text-black text-sm text-center w-full"
+                    style={{ zIndex: 1 }}
+                  >
+                    Ancilla
+                  </span>
+                </div>
                 <div
-                  className="absolute inset-0 custom-shape-mirrored"
-                  style={{ backgroundColor: dirtyConstructColor }}
-                />
-                <Handle
-                  type="target"
-                  id={`ancillaHandleOperationInput3${node.id}`}
-                  position={Position.Left}
-                  className="z-10 ancilla-port-in !bg-gray-200 !border-dashed !border-black w-4 transform rotate-45 -left-[8px]"
+                  className="relative p-2"
                   style={{
-                    zIndex: 1,
-                    top: "50% !important",
-                    transform: "translateY(-50%) rotate(45deg)",
+                    width: "120px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "flex-start",
                   }}
-                />
-                <span
-                  className="text-black text-sm text-center w-full"
-                  style={{ zIndex: 1 }}
                 >
-                  Dirty Ancilla
-                </span>
-              </div>
-            </div>)}
-          </div>
+                  <div
+                    className="absolute inset-0 custom-shape-mirrored"
+                    style={{ backgroundColor: dirtyConstructColor }}
+                  />
+                  <Handle
+                    type="target"
+                    id={`ancillaHandleOperationInput3${node.id}`}
+                    position={Position.Left}
+                    className="z-10 ancilla-port-in !bg-gray-200 !border-dashed !border-black w-4 transform rotate-45 -left-[8px]"
+                    style={{
+                      zIndex: 1,
+                      top: "50% !important",
+                      transform: "translateY(-50%) rotate(45deg)",
+                    }}
+                  />
+                  <span
+                    className="text-black text-sm text-center w-full"
+                    style={{ zIndex: 1 }}
+                  >
+                    Dirty Ancilla
+                  </span>
+                </div>
+              </div>)}
+            </div>
           </div>
 
 
