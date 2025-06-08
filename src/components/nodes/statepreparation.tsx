@@ -249,7 +249,7 @@ export const StatePreparationNode = memo((node: Node) => {
                     type="target"
                     id={`classicalHandleStatePreparationInput0${node.id}`}
                     position={Position.Left}
-                    className="z-10 circle-port-op !bg-orange-500 !border-black -left-[8px]"
+                    className="z-10 classical-circle-port-operation !bg-orange-300 !border-black -left-[8px]"
                     style={{ top: '50%', transform: 'translateY(-50%)' }}
                   />
                   <span className="text-black text-sm text-center w-full">{node.data.inputs[0]?.outputIdentifier || "Value"}</span>

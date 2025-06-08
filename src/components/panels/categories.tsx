@@ -5,108 +5,110 @@ export type NodeType = (typeof consts.NodeTypes)[number];
 export interface Node {
   label: string;
   type: NodeType;
-  dataType: string;
-  icon: string;
+  dataType?: string;
+  icon?: string;
 }
 
-export interface Node {
-  label: string;
-  type: NodeType;
-  dataType: string;
-  icon: string;
-}
+export type CategoryContent =
+  | Node[]
+  | {
+      [subcategory: string]: Node[] | { [subsubcategory: string]: Node[] };
+    };
 
-export interface Categories {
-  [key: string]: Node[] | { [subcategory: string]: Node[] };
-}
-
-export const categories: { [key: string]: any } = {
+export const categories: Record<string, CategoryContent> = {
   [consts.boundaryNodes]: {
     "Classical To Quantum": [
-      { label: "Encode Value", type: consts.StatePreparationNode, inputs: [], icon: "encodeValue.png" },
+      { label: "Encode Value", type: consts.StatePreparationNode, icon: "encodeValue.png" },
       { label: "Prepare State", type: consts.StatePreparationNode, icon: "prepareState.png" },
-      { label: "Splitter", type: consts.SplitterNode },
-      { label: "Merger", type: consts.MergerNode },
     ],
     "Quantum To Classical": [
       { label: "Measurement", type: consts.MeasurementNode, icon: "measurement.png" },
-    ]
+    ],
   },
+
   [consts.circuitLevelNodes]: {
     "Qubits": [
-      { label: "Qubit", type: consts.GateNode, icon: "qubit.png" }
+      { label: "Qubit", type: consts.GateNode, icon: "qubit.png" },
     ],
     "Circuit Blocks": [
       { label: "H", type: consts.GateNode, icon: "hadamard.png" },
-      { label: "RX(θ)", type: consts.GateNode, icon: "rx.png"},
+      { label: "RX(θ)", type: consts.GateNode, icon: "rx.png" },
       { label: "RY(θ)", type: consts.GateNode, icon: "ry.png" },
       { label: "RZ(θ)", type: consts.GateNode, icon: "rz.png" },
       { label: "T", type: consts.GateNode, icon: "t.png" },
       { label: "X", type: consts.GateNode, icon: "pauliX.png" },
       { label: "Y", type: consts.GateNode, icon: "pauliY.png" },
-      { label: "Z", type: consts.GateNode, icon: "pauliZ.png"},
-      { label: "S", type: consts.GateNode},
-      { label: "SX", type: consts.GateNode},
-      { label: "SDG", type: consts.GateNode},
-      { label: "TDG", type: consts.GateNode},
-      { label: "P(λ)", type: consts.GateNode},
+      { label: "Z", type: consts.GateNode, icon: "pauliZ.png" },
+      { label: "S", type: consts.GateNode },
+      { label: "SX", type: consts.GateNode },
+      { label: "SDG", type: consts.GateNode },
+      { label: "TDG", type: consts.GateNode },
+      { label: "P(λ)", type: consts.GateNode },
       { label: "CNOT", type: consts.GateNode, icon: "cnotgate.png" },
-      { label: "SWAP", type: consts.GateNode},
-      { label: "CY", type: consts.GateNode},
-      { label: "CZ", type: consts.GateNode},
-      { label: "CH", type: consts.GateNode},
-      { label: "CP(λ)", type: consts.GateNode},
-      { label: "CRX(θ)", type: consts.GateNode},
-      { label: "CRY(θ)", type: consts.GateNode},
-      { label: "CRZ(θ)", type: consts.GateNode},
-      { label: "CU(θ,φ,λ,γ)", type: consts.GateNode},
+      { label: "SWAP", type: consts.GateNode },
+      { label: "CY", type: consts.GateNode },
+      { label: "CZ", type: consts.GateNode },
+      { label: "CH", type: consts.GateNode },
+      { label: "CP(λ)", type: consts.GateNode },
+      { label: "CRX(θ)", type: consts.GateNode },
+      { label: "CRY(θ)", type: consts.GateNode },
+      { label: "CRZ(θ)", type: consts.GateNode },
+      { label: "CU(θ,φ,λ,γ)", type: consts.GateNode },
       { label: "Toffoli", type: consts.GateNode, icon: "toffoligate.png" },
-      { label: "CSWAP", type: consts.GateNode},
+      { label: "CSWAP", type: consts.GateNode },
+      { label: "Splitter", type: consts.SplitterNode },
+      { label: "Merger", type: consts.MergerNode },
     ],
   },
+
   [consts.dataTypes]: {
     "Classical Datatypes": [
-      { label: "Array", dataType: "Array", type: consts.DataTypeNode, icon: "array.png" },
-      { label: "angle", dataType: "angle", type: consts.DataTypeNode},
+      { label: "angle", dataType: "angle", type: consts.DataTypeNode },
       { label: "bit", dataType: "bit", type: consts.DataTypeNode, icon: "bit.png" },
       { label: "boolean", dataType: "boolean", type: consts.DataTypeNode, icon: "boolean.png" },
       { label: "complex", dataType: "complex", type: consts.DataTypeNode },
       { label: "duration", dataType: "duration", type: consts.DataTypeNode },
-      { label: "int", dataType: "int", type: consts.DataTypeNode, icon: "int.png"  },
+      { label: "int", dataType: "int", type: consts.DataTypeNode, icon: "int.png" },
       { label: "float", dataType: "float", type: consts.DataTypeNode, icon: "float.png" },
+      { label: "Array", dataType: "Array", type: consts.DataTypeNode, icon: "array.png" },
     ],
-    "Quantum Type": [
-      { label: "Ancilla", dataType: consts.AncillaNode, type: consts.AncillaNode, icon: "ancilla.png" },
-      { label: "Qubit", dataType: consts.QubitNode, type: consts.QubitNode},
-    ]
+    "Quantum Datatypes": [
+        {
+          label: "Ancilla",
+          dataType: consts.AncillaNode,
+          type: consts.AncillaNode,
+          icon: "ancilla.png",
+        },
+        {
+          label: "Qubit",
+          dataType: consts.QubitNode,
+          type: consts.QubitNode,
+        },
+      ],
   },
-  [consts.controlStructureNodes]: {
-    "If-Then-Else": [
-      { label: "If-Then-Else", type: consts.IfElseNode },
-    ],
-    "Loop": [
-      { label: "Repeat", type: consts.ControlStructureNode }
-    ],
-  },
-  [consts.operator]: {
-    "Arithmetic Operators": [
-      { label: consts.arithmeticOperatorLabel, type: consts.OperatorNode, icon: "add.png" }
-    ],
-    "Bitwise Operators": [
-      { label: consts.bitwiseOperatorLabel, type: consts.OperatorNode, icon: "bitwise.png" }
-    ],
-    "Comparison Operators": [
-      { label: consts.comparisonOperatorLabel, type: consts.OperatorNode, icon: "comparison.png" }
-    ],
-    "Min & Max": [{ label: consts.minMaxOperatorLabel, type: consts.OperatorNode, icon: "minMax.png" }]
-  },
-  [consts.customOperators]: {
-    "Custom Quantum Operator": [
-      { label: "Custom Quantum Operator", type: consts.AlgorithmNode}
-    ],
-    "Custom Classical Operator": [
-      { label: "Custom Classical Operator", type: consts.ClassicalAlgorithmNode }
-    ],
-  }
 
+  [consts.operator]: {
+    "Quantum Operators": [
+        { label: consts.arithmeticOperatorLabel, type: consts.OperatorNode, icon: "add.png" },
+        { label: consts.bitwiseOperatorLabel, type: consts.OperatorNode, icon: "bitwise.png" },
+        { label: consts.comparisonOperatorLabel, type: consts.OperatorNode, icon: "comparison.png" },
+        { label: consts.minMaxOperatorLabel, type: consts.OperatorNode, icon: "minMax.png" },
+      ],
+    "Classical Operators": [
+      { label: consts.arithmeticOperatorLabel, type: consts.ClassicalOperatorNode, icon: "add.png" },
+      { label: consts.bitwiseOperatorLabel, type: consts.ClassicalOperatorNode, icon: "bitwise.png" },
+      { label: consts.comparisonOperatorLabel, type: consts.ClassicalOperatorNode, icon: "comparison.png" },
+      { label: consts.minMaxOperatorLabel, type: consts.ClassicalOperatorNode, icon: "minMax.png" },
+    ],
+  },
+
+  [consts.controlStructureNodes]: [
+    { label: "If-Then-Else", type: consts.IfElseNode },
+    { label: "Repeat", type: consts.ControlStructureNode },
+  ],
+
+  [consts.customOperators]: [
+    { label: "Custom Quantum Operator", type: consts.AlgorithmNode },
+    { label: "Custom Classical Operator", type: consts.ClassicalAlgorithmNode },
+  ],
 };

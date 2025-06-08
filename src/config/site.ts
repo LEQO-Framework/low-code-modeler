@@ -17,6 +17,7 @@ import { SplitterNode } from "@/components/nodes/splitter";
 import { MergerNode } from "@/components/nodes/merger";
 import { ClassicalAlgorithmNode } from "@/components/nodes/classicalalgorithm";
 import { QubitNode } from "@/components/nodes/qubit";
+import { ClassicalOperationNode } from "@/components/nodes/classicalOperation";
 
 export const nodesConfig = {
   initialNodes: [ ] as unknown as Node[],
@@ -28,7 +29,7 @@ export const nodesConfig = {
     measurementNode: MeasurementNode,
     statePreparationNode: StatePreparationNode,
     uncomputeNode: UncomputeNode,
-    operatorNode: OperationNode,
+    quantumOperatorNode: OperationNode,
     ancillaNode: AncillaNode,
     gateNode: GateNode,
     controlStructureNode: ControlStructureNode,
@@ -37,7 +38,8 @@ export const nodesConfig = {
     classicalAlgorithmNode: ClassicalAlgorithmNode,
     splitterNode: SplitterNode,
     mergerNode: MergerNode,
-    qubitNode: QubitNode
+    qubitNode: QubitNode,
+    classicalOperatorNode: ClassicalOperationNode
   } as any,
   edgesTypes: {
     quantumEdge: QuantumEdge,
