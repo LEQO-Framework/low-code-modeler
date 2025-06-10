@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useEffect } from "react";
 import { Handle, Position, Node, Edge } from "reactflow";
 import useStore from "@/config/store";
 import { shallow } from "zustand/shallow";
@@ -19,8 +19,32 @@ export const GateNode = memo((node: Node) => {
   const { data } = node;
   const isQubit = data.label === "Qubit";
   const isTwoQubit = data.label === "CNOT"||data.label === "SWAP"||data.label==="CZ"||data.label==="CY"||data.label === "CH"||data.label === "CP(λ)"||data.label==="CRX(θ)"||data.label==="CRY(θ)"||data.label==="CRZ(θ)"||data.label==="CU(θ,φ,λ,γ)";
-  const isThreeQubit = data.label === "Toffoli"||data.label === "CCX"||data.label === "CSWAP";
-  const { edges } = useStore(selector, shallow);
+  const isThreeQubit = data.label === "Toffoli"||data.label === "CSWAP";
+  const { edges, updateNodeValue } = useStore(selector, shallow);
+
+   useEffect(() => {
+    if (node) {
+      // Set default parameterType if not set
+      if (!node.data.parameterType) {
+        updateNodeValue(node.id, "parameterType", "degree");
+      }
+
+      // Initialize multi-parameter gate fields if label is CU(θ,φ,λ,γ)
+      if (data.label === "CU(θ,φ,λ,γ)") {
+        const params = ["theta", "phi", "lambda", "gamma"];
+        params.forEach((param) => {
+          if (node.data[param] === undefined) {
+            updateNodeValue(node.id, param, 0);
+          }
+        });
+      } else {
+        // For single parameter gates, initialize parameter to 0 if not set
+        if (node.data.parameter === undefined) {
+          updateNodeValue(node.id, "parameter", 0);
+        }
+      }
+    }
+  }, [node, data.label, node?.data, updateNodeValue, node?.id]);
 
   return (
     <div className="grand-parent overflow-visible">
