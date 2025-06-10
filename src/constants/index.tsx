@@ -70,4 +70,48 @@ export const quantumConstructColor = "rgba(105, 145, 210, 0.2)";
 export const ancillaConstructColor = "rgba(83, 242, 71, 0.2)";
 export const dirtyConstructColor = "rgba(50, 93, 48, 0.24)";
 export const classicalConstructColor = "rgba(255, 165, 0, 0.2)";
-export const controlFlowConstructColor = "rgba(183, 0, 255, 0.21)"
+export const controlFlowConstructColor = "rgba(183, 0, 255, 0.21)";
+
+export const parameterized_one_qubit = [
+  "RX(θ)",
+  "RY(θ)",
+  "RZ(θ)",
+  "P(λ)",
+];
+
+export const parameterized_two_qubit = [
+  "CP(λ)",
+  "CRX(θ)",
+  "CRY(θ)",
+  "CRZ(θ)",
+];
+
+export const multi_parameterized_two_qubit = [
+  "CU(θ,φ,λ,γ)",
+];
+
+export const non_parameterized_one_qubit = [
+  "H",
+  "T",
+  "X",
+  "Y",
+  "Z",
+  "S",
+  "SX",
+  "SDG",
+  "TDG",
+];
+
+export const non_parameterized_two_qubit = [
+  "CNOT",
+  "SWAP",
+  "CY",
+  "CZ",
+  "CH",
+];
+
+export const multi_qubit_gates = [
+  "Toffoli",
+  "CSWAP",
+];
+
