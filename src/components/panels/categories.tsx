@@ -45,7 +45,7 @@ export const categories: Record<string, CategoryContent> = {
       { label: "TDG", type: consts.GateNode },
       { label: "P(λ)", type: consts.GateNode },
       { label: "CNOT", type: consts.GateNode, icon: "cnotgate.png" },
-      { label: "SWAP", type: consts.GateNode },
+      { label: "SWAP", type: consts.GateNode, icon: "SWAP.png" },
       { label: "CY", type: consts.GateNode },
       { label: "CZ", type: consts.GateNode },
       { label: "CH", type: consts.GateNode },

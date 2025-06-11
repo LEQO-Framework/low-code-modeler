@@ -57,7 +57,9 @@ export const GateNode = memo((node: Node) => {
             <img src="/cnot.png" alt="CNOT gate" className="w-5 h-15" />
           ) : data.label === "Toffoli" ? (
             <img src="/toffoli.png" alt="Toffoli gate" className="w-6 h-16" />
-          ) : (
+          ): data.label === "SWAP" ? (
+            <img src="/swap_gate10.png" alt="SWAP gate" className="w-5 h-15" />
+          )  : (
             data.label
           )}
         </div>
