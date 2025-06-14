@@ -58,7 +58,7 @@ export function handleOnDrop(
       id: getId(),
       type,
       position,
-      data: { label: label, inputs: [], implementation: "", implementationType: "", uncomputeImplementationType: "", uncomputeImplementation: ""}
+      data: { label: label, inputs: [], children: [], implementation: "", implementationType: "", uncomputeImplementationType: "", uncomputeImplementation: ""}
     };
 
     setNodes(newNode);

@@ -295,7 +295,7 @@ const useStore = create<RFState>((set, get) => ({
     console.log(currentNodes)
     let type = "classicalEdge";
     let color = "#F5A843";
-  
+
     let nodeDataSource;
     let nodeDataTarget;
     console.log(connection)
@@ -401,7 +401,7 @@ const useStore = create<RFState>((set, get) => ({
     const edgeExists = currentEdges.some(edge =>
       edge.targetHandle === connection.targetHandle && nodeDataTarget.type !== "mergerNode"
     );
-    
+
     console.log(connection)
     console.log(insertEdge);
     console.log(!edgeExists)
@@ -415,7 +415,7 @@ const useStore = create<RFState>((set, get) => ({
         width: 20,
         height: 20,
         color: color,
-        
+
       }
       //label: label
     };
@@ -699,6 +699,18 @@ const useStore = create<RFState>((set, get) => ({
               },
             };
           }
+          if (identifier === "hidden") {
+            console.log("updATE WIDTH")
+            return {
+              ...node,
+              style: {
+                height: node.height,
+                width: node.width,
+                hidden: true
+              },
+              hidden: true
+            };
+          }
           console.log(node.data["identifiers"])
           //node.data["identifiers"] = sourceIdentifier
           if (identifier === "parentNode") {
@@ -786,6 +798,61 @@ const useStore = create<RFState>((set, get) => ({
     });
 
     console.log("History updated successfully.");
+  },
+  updateChildren: (nodeId, child: any) => {
+    console.log("Updating children value for:", nodeId);
+
+    set((state) => {
+      const { nodes, edges } = state;
+      let updatedNodes = [...nodes];
+
+      // Update the node's own properties
+      for (let i = 0; i < updatedNodes.length; i++) {
+        if (updatedNodes[i].id === nodeId) {
+
+          let parentNode = updatedNodes[i];
+          console.log(parentNode);
+          let children = parentNode.data?.children;
+          console.log(children)
+          console.log(!children)
+          console.log(child)
+          console.log(children.includes(child))
+
+          if (children !== undefined && !children.includes(child)) {
+            children.push(child);
+          }
+          console.log(children)
+          updatedNodes = updatedNodes.map((node) => {
+            // find children and add this to the children attribute
+            if (node.parentNode === nodeId) {
+              console.log("found parent")
+              console.log(node.data["identifier"])
+              return {
+                ...node,
+                data: {
+                  ...node.data,
+                  children: children
+                },
+              };
+            }
+            return node;
+          });
+        }
+      }
+
+      console.log(updatedNodes)
+
+      return {
+        nodes: updatedNodes,
+        edges: edges,
+        history: [
+          ...state.history.slice(0, state.historyIndex + 1),
+          { nodes: [...nodes], edges: [...edges] },
+        ],
+        historyIndex: state.historyIndex + 1,
+      };
+    });
+
   },
   undo: () => {
     const historyIndex = get().historyIndex;

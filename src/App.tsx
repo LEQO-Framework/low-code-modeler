@@ -53,6 +53,7 @@ const selector = (state: {
   setSelectedNode: (node: Node | null) => void;
   updateNodeValue: (nodeId: string, field: string, nodeVal: string) => void;
   updateParent: (nodeId: string, parentId: string, position: any) => void;
+  updateChildren: (nodeId: string, children: any) => void;
   setNodes: (node: Node) => void;
   setEdges: (edge: Edge) => void;
   setAncillaMode: (ancillaMode: boolean) => void;
@@ -68,6 +69,7 @@ const selector = (state: {
   setSelectedNode: state.setSelectedNode,
   updateNodeValue: state.updateNodeValue,
   updateParent: state.updateParent,
+  updateChildren: state.updateChildren,
   setNodes: state.setNodes,
   setEdges: state.setEdges,
   setAncillaMode: state.setAncillaMode,
@@ -162,6 +164,7 @@ function App() {
     setNodes,
     updateNodeValue,
     updateParent,
+    updateChildren,
     setEdges,
   } = useStore(useShallow(selector));
 
@@ -495,22 +498,15 @@ function App() {
                 if (firstChild) {
                   console.log()
 
-
                   // Get the current minWidth from computed styles
                   const currentMinWidth = window.getComputedStyle(firstChild).minWidth;
-
                   // Parse it into a number
                   const currentMinWidthValue = parseFloat(currentMinWidth);
-
                   // Add 100 to it
                   const newMinWidth = currentMinWidthValue + 100;
-
                   // Set it back with "px"
                   firstChild.style.minWidth = `${newMinWidth}px`;
-
                   console.log(`Updated minWidth to ${newMinWidth}px`);
-
-
                 }
               } else {
                 console.error('Main node not found');
@@ -522,8 +518,8 @@ function App() {
               //intersectionNodes[0].width = 1000;
               nodeT = node;
               updateParent(node.id, nd.id, node.position);
-
-
+              updateChildren(node.parentNode, node.id);
+              //updateNodeValue(node.id, "hidden", "true")
               updateNodeValue(node.id, "position", node.position);
               updateNodeValue(node.id, "scope", "if");
             }
