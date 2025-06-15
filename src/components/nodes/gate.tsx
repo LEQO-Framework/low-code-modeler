@@ -50,16 +50,34 @@ export const GateNode = memo((node: Node) => {
     <div className="grand-parent overflow-visible">
       <div className="w-[100px] h-[100px] border border-solid border-gray-700 shadow-md bg-blue-100 relative overflow-visible">
       
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center font-bold z-0">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center font-bold z-0 text-xl">
           {data.label === "Qubit" ? (
             "|0⟩"
           ) : data.label === "CNOT" ? (
-            <img src="/cnot.png" alt="CNOT gate" className="w-5 h-15" />
+            <img src="/CNOT4.png" alt="CNOT gate" className="w-5 h-15" />
           ) : data.label === "Toffoli" ? (
-            <img src="/toffoli.png" alt="Toffoli gate" className="w-6 h-16" />
+            <img src="/Toffoli16.png" alt="Toffoli gate" className="w-5 h-15 object-fit object-center" />
           ): data.label === "SWAP" ? (
             <img src="/swap_gate10.png" alt="SWAP gate" className="w-5 h-15" />
-          )  : (
+          ): data.label === "CSWAP" ? (
+            <img src="/CSWAP5.png" alt="CSWAP gate" className="w-5 h-15 object-fit object-center" />
+          ) : data.label === "CY" ? (
+            <img src="/CY10.png" alt="CY gate" className="w-8 h-18 object-fit object-center translate-y-1" />
+          ): data.label === "CZ" ? (
+            <img src="/CZ6.png" alt="CZ gate" className="w-8 h-18 object-fit object-center translate-y-1" />
+          ): data.label === "CH" ? (
+            <img src="/CH8.png" alt="CH gate" className="w-9 h-19 object-fit object-center translate-y-1" />
+          ): data.label === "CRX(θ)" ? (
+            <img src="/CRX6.png" alt="CRX gate" className="w-12 h-22 object-fit object-center translate-y-1" />
+          ): data.label === "CRY(θ)" ? (
+            <img src="/CRY2.png" alt="CRY gate" className="w-9 h-19 object-fit object-center translate-y-1" />
+          ): data.label === "CRZ(θ)" ? (
+            <img src="/CRZ6.png" alt="CRZ gate" className="w-9 h-19 object-fit object-center translate-y-1" />
+          ): data.label === "CU(θ,φ,λ,γ)" ? (
+            <img src="/CU2.png" alt="CU gate" className="w-8 h-18 object-fit object-center translate-y-1" />
+          ): data.label === "CP(λ)" ? (
+            <img src="/CP.png" alt="CP gate" className="w-8 h-18 object-fit object-center translate-y-1" />
+          )     : (
             data.label
           )}
         </div>
