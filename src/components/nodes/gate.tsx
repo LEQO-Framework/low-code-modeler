@@ -18,11 +18,11 @@ const selector = (state: {
 export const GateNode = memo((node: Node) => {
   const { data } = node;
   const isQubit = data.label === "Qubit";
-  const isTwoQubit = data.label === "CNOT"||data.label === "SWAP"||data.label==="CZ"||data.label==="CY"||data.label === "CH"||data.label === "CP(λ)"||data.label==="CRX(θ)"||data.label==="CRY(θ)"||data.label==="CRZ(θ)"||data.label==="CU(θ,φ,λ,γ)";
-  const isThreeQubit = data.label === "Toffoli"||data.label === "CSWAP";
+  const isTwoQubit = data.label === "CNOT" || data.label === "SWAP" || data.label === "CZ" || data.label === "CY" || data.label === "CH" || data.label === "CP(λ)" || data.label === "CRX(θ)" || data.label === "CRY(θ)" || data.label === "CRZ(θ)" || data.label === "CU(θ,φ,λ,γ)";
+  const isThreeQubit = data.label === "Toffoli" || data.label === "CSWAP";
   const { edges, updateNodeValue } = useStore(selector, shallow);
 
-   useEffect(() => {
+  useEffect(() => {
     if (node) {
       // Set default parameterType if not set
       if (!node.data.parameterType) {
@@ -34,13 +34,13 @@ export const GateNode = memo((node: Node) => {
         const params = ["theta", "phi", "lambda", "gamma"];
         params.forEach((param) => {
           if (node.data[param] === undefined) {
-            updateNodeValue(node.id, param, 0);
+            updateNodeValue(node.id, param, "0");
           }
         });
       } else {
         // For single parameter gates, initialize parameter to 0 if not set
         if (node.data.parameter === undefined) {
-          updateNodeValue(node.id, "parameter", 0);
+          updateNodeValue(node.id, "parameter", "0");
         }
       }
     }
@@ -49,7 +49,7 @@ export const GateNode = memo((node: Node) => {
   return (
     <div className="grand-parent overflow-visible">
       <div className="w-[100px] h-[100px] border border-solid border-gray-700 shadow-md bg-blue-100 relative overflow-visible">
-      
+
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center font-bold z-0 text-xl">
           {data.label === "Qubit" ? (
             "|0⟩"
@@ -57,39 +57,51 @@ export const GateNode = memo((node: Node) => {
             <img src="/CNOT4.png" alt="CNOT gate" className="w-5 h-15" />
           ) : data.label === "Toffoli" ? (
             <img src="/Toffoli16.png" alt="Toffoli gate" className="w-5 h-15 object-fit object-center" />
-          ): data.label === "SWAP" ? (
+          ) : data.label === "SWAP" ? (
             <img src="/swap_gate10.png" alt="SWAP gate" className="w-5 h-15" />
-          ): data.label === "CSWAP" ? (
+          ) : data.label === "CSWAP" ? (
             <img src="/CSWAP5.png" alt="CSWAP gate" className="w-5 h-15 object-fit object-center" />
           ) : data.label === "CY" ? (
             <img src="/CY10.png" alt="CY gate" className="w-8 h-18 object-fit object-center translate-y-1" />
-          ): data.label === "CZ" ? (
+          ) : data.label === "CZ" ? (
             <img src="/CZ6.png" alt="CZ gate" className="w-8 h-18 object-fit object-center translate-y-1" />
-          ): data.label === "CH" ? (
+          ) : data.label === "CH" ? (
             <img src="/CH8.png" alt="CH gate" className="w-9 h-19 object-fit object-center translate-y-1" />
-          ): data.label === "CRX(θ)" ? (
+          ) : data.label === "CRX(θ)" ? (
             <img src="/CRX6.png" alt="CRX gate" className="w-12 h-22 object-fit object-center translate-y-1" />
-          ): data.label === "CRY(θ)" ? (
+          ) : data.label === "CRY(θ)" ? (
             <img src="/CRY3.png" alt="CRY gate" className="w-9 h-19 object-fit object-center translate-y-1" />
-          ): data.label === "CRZ(θ)" ? (
+          ) : data.label === "CRZ(θ)" ? (
             <img src="/CRZ6.png" alt="CRZ gate" className="w-9 h-19 object-fit object-center translate-y-1" />
-          ): data.label === "CU(θ,φ,λ,γ)" ? (
+          ) : data.label === "CU(θ,φ,λ,γ)" ? (
             <img src="/CU4.png" alt="CU gate" className="w-[55px] h-[79px] object-fit object-center translate-y-1" />
-          ): data.label === "CP(λ)" ? (
+          ) : data.label === "CP(λ)" ? (
             <img src="/CP.png" alt="CP gate" className="w-8 h-18 object-fit object-center translate-y-1" />
-          )     : (
+          ) : data.label === "RX(θ)" ? (
+            <span>
+              R<sub>X</sub>(θ)
+            </span>
+          ) : data.label === "RY(θ)" ? (
+            <span>
+              R<sub>Y</sub>(θ)
+            </span>
+          ) : data.label === "RZ(θ)" ? (
+            <span>
+              R<sub>Z</sub>(θ)
+            </span>
+          ) : (
             data.label
           )}
         </div>
 
-        {!isQubit && !isTwoQubit && !isThreeQubit &&(
+        {!isQubit && !isTwoQubit && !isThreeQubit && (
           <Handle
-          type="target"
-          id={`quantumHandleGateInput0${node.id}`}
-          position={Position.Left}
-          className="!absolute !top-[50%] !left--4 z-10 circle-port-op !bg-blue-300 !border-black"
-          isValidConnection={() => true}
-        />
+            type="target"
+            id={`quantumHandleGateInput0${node.id}`}
+            position={Position.Left}
+            className="!absolute !top-[50%] !left--4 z-10 circle-port-op !bg-blue-300 !border-black"
+            isValidConnection={() => true}
+          />
         )}
 
         {isTwoQubit && (
@@ -100,7 +112,7 @@ export const GateNode = memo((node: Node) => {
               position={Position.Left}
               className="!absolute !top-[25%] !left--4 z-10 circle-port-op !bg-blue-300 !border-black"
               isValidConnection={() => true}
-              
+
             />
             <Handle
               type="target"
