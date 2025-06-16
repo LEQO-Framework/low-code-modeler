@@ -89,7 +89,15 @@ export const GateNode = memo((node: Node) => {
             <span>
               R<sub>Z</sub>(θ)
             </span>
-          ) : (
+          ) : data.label === "SDG" ? (
+            <span>
+              S<sup>†</sup>
+            </span>
+          ) : data.label === "TDG" ? (
+            <span>
+              T<sup>†</sup>
+            </span>
+          ): (
             data.label
           )}
         </div>
