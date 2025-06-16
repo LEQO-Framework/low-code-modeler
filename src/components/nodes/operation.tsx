@@ -131,7 +131,7 @@ export const OperationNode = memo((node: Node) => {
         {outputIdentifierError && (
           <div className="absolute top-2 right-[-30px] group z-20">
             <AlertCircle className="text-red-600 w-5 h-5" />
-            <div className="absolute top-5 left-[10px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
+            <div className="absolute top-5 left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
               Identifier not unique
             </div>
           </div>

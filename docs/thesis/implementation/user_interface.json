@@ -26,7 +26,6 @@
         "identifiers": [
           "q439490"
         ],
-        "parameterType": "degree",
         "parameter": "0"
       },
       "width": 100,
@@ -55,7 +54,6 @@
         "identifiers": [
           "q353076"
         ],
-        "parameterType": "degree",
         "parameter": "0"
       },
       "width": 100,
@@ -90,7 +88,6 @@
         "identifiers": [
           "q801028"
         ],
-        "parameterType": "degree",
         "parameter": "0"
       },
       "width": 100,
@@ -132,7 +129,6 @@
           "q297075",
           "q970105"
         ],
-        "parameterType": "degree",
         "parameter": "0"
       },
       "width": 100,
@@ -169,7 +165,6 @@
         "identifiers": [
           "q601523"
         ],
-        "parameterType": "degree",
         "numberInputs": "2"
       },
       "width": 170,
@@ -207,8 +202,7 @@
           "q839945"
         ],
         "indices": "0,1",
-        "outputIdentifier": "",
-        "parameterType": "degree"
+        "outputIdentifier": ""
       },
       "width": 320,
       "height": 440,
