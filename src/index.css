@@ -292,6 +292,19 @@ h1 {
   left: -8px !important;
 }
 
+.circle-port-splitter {
+  width: 15px !important;
+  height: 15px !important;
+  border-radius: 0 !important;
+  background: #898d9c;
+  border: 1px solid #edeff5;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+  position: absolute;
+  top: 44px;
+  left: -6px !important;
+}
+
 .classical-circle-port-operation {
   width: 15px !important;
   height: 15px !important;
@@ -407,6 +420,19 @@ h1 {
   position: absolute !important;
   top: 14px;
   right: -8px !important;
+}
+
+.circle-port-merger {
+  width: 15px !important;
+  height: 15px !important;
+  border-radius: 0 !important;
+  background: #898d9c;
+  border: 1px solid black !important;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+  position: absolute !important;
+  top: 54px;
+  right: -7px !important;
 }
 
 .classical-circle-port {

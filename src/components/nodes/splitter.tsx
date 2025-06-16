@@ -30,7 +30,7 @@ export const SplitterNode = memo((node: Node) => {
   console.log(handleCount)
 
   const handleGap = 40;
-  const handleOffset = 15;
+  const handleOffset = 75;
 
   const nodeHeight = Math.max(handleOffset * 2 + (handleCount) * handleGap, 100);
 
@@ -43,7 +43,7 @@ export const SplitterNode = memo((node: Node) => {
       style={{
         top: `${handleOffset + i * handleGap}px`,
       }}
-      className="!z-10 circle-port-op !bg-blue-300 !border-black overflow-visible"
+      className="!z-10 circle-port-splitter !bg-blue-300 !border-black overflow-visible"
       isValidConnection={() => true}
       isConnectable={true}
       isConnectableStart={false}
@@ -55,11 +55,11 @@ export const SplitterNode = memo((node: Node) => {
       key={`output-${i}`}
       type="source"
       id={`quantumHandleSplitterOutput${i}${node.id}`}
-      position={Position.Left}
+      position={Position.Right}
       style={{
         top: `${handleOffset + i * handleGap}px`,
       }}
-      className="!absolute z-10 circle-port-out !bg-blue-300 !border-black overflow-visible"
+      className="!absolute z-10 circle-port-merger !bg-blue-300 !border-black overflow-visible"
       isValidConnection={() => true}
       isConnectable={true}
       isConnectableEnd={false}
