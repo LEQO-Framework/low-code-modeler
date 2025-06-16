@@ -38,18 +38,27 @@ export const AddNodePanel = () => {
     );
   };
 
-  const allNodes = Object.values(categories).flatMap((subcategories) =>
-    Object.values(subcategories).flatMap((group) =>
-      Array.isArray(group)
-        ? group
-        : Object.values(group).flat()
-    )
-  );
+  const allNodes = Object.values(categories).flatMap((subcategories) => {
+    if (Array.isArray(subcategories)) {
+      // categories like controlStructureNodes and customOperators
+      return subcategories;
+    } else {
+      // categories that are objects containing groups
+      return Object.values(subcategories).flatMap((group) =>
+        Array.isArray(group)
+          ? group
+          : Object.values(group).flat()
+      );
+    }
+  });
+
 
   const filteredNodes = searchQuery
-    ? allNodes.filter((node: Node) =>
-      node.label.toLowerCase().startsWith(searchQuery.toLowerCase()) &&
-      !(!ancillaMode && node.type === "ancillaNode")
+    ? allNodes.filter((node: Node) => {
+      console.log(node);
+      return node.label.toLowerCase().startsWith(searchQuery.toLowerCase()) &&
+        !(!ancillaMode && node.type === "ancillaNode")
+    }
     )
     : [];
 
@@ -90,80 +99,79 @@ export const AddNodePanel = () => {
   };
 
   return (
-  <div className="h-[calc(100vh_-_60px)] w-full bg-gray-100 overflow-hidden">
-    <aside className="flex flex-col w-full h-full overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-      <input
-        type="text"
-        placeholder="Search nodes..."
-        className="mb-4 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-      />
+    <div className="h-[calc(100vh_-_60px)] w-full bg-gray-100 overflow-hidden">
+      <aside className="flex flex-col w-full h-full overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+        <input
+          type="text"
+          placeholder="Search nodes..."
+          className="mb-4 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
 
-      {searchQuery && (
-        <div className="mb-4">
-          {filteredNodes.length > 0 ? (
-            <div className="space-y-2">
-              {filteredNodes.map((node: Node) => (
-                <div
-                  key={node.label}
-                  className="border border-gray-300 bg-gray-50 text-black-700 hover:border-gray-400 hover:bg-gray-100 py-2 px-3 rounded-md cursor-pointer flex flex-col items-center gap-2 transition-colors"
-                  onDragStart={(event) => onDragStart(event, node)}
-                  draggable
-                >
-                  {node.icon ? (
-                    <img src={node.icon} alt={node.label} className="w-70 h-70 object-contain" />
-                  ) : (
-                    <span className="font-semibold">{node.label}</span>
-                  )}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-gray-500">No matching nodes found.</p>
-          )}
-        </div>
-      )}
-
-      <nav className="space-y-4">
-        {Object.entries(categories).map(([category, content]) => (
-          <div key={category}>
-            <button
-              className={`w-full text-left py-2 px-4 font-semibold text-black-700 border-b ${
-                activeCategory === category ? "bg-gray-100 text-primary" : "hover:bg-gray-300"
-              }`}
-              onClick={() => toggleCategory(category)}
-            >
-              <div className="flex items-center gap-2">
-                {categoryIcons[category] && (
-                  <img
-                    src={categoryIcons[category]}
-                    alt={`${category} icon`}
-                    className="w-6 h-6"
-                  />
-                )}
-                <span>{category}</span>
+        {searchQuery && (
+          <div className="mb-4">
+            {filteredNodes.length > 0 ? (
+              <div className="space-y-2">
+                {filteredNodes.map((node: Node) => (
+                  <div
+                    key={node.label}
+                    className="border border-gray-300 bg-gray-50 text-black-700 hover:border-gray-400 hover:bg-gray-100 py-2 px-3 rounded-md cursor-pointer flex flex-col items-center gap-2 transition-colors"
+                    onDragStart={(event) => onDragStart(event, node)}
+                    draggable
+                  >
+                    {node.icon ? (
+                      <img src={node.icon} alt={node.label} className="w-70 h-70 object-contain" />
+                    ) : (
+                      <span className="font-semibold">{node.label}</span>
+                    )}
+                  </div>
+                ))}
               </div>
-            </button>
-
-            {activeCategory === category && (
-              <div className="pl-4 mt-2 space-y-4">
-                {Array.isArray(content) ? (
-                  renderNodes(content)
-                ) : (
-                  Object.entries(content).map(([subcategory, subGroup]) => (
-                    <div key={subcategory}>
-                      <div className="text-md font-bold text-gray-800 mt-2">{subcategory}</div>
-                      {renderNodes(subGroup)}
-                    </div>
-                  ))
-                )}
-              </div>
+            ) : (
+              <p className="text-gray-500">No matching nodes found.</p>
             )}
           </div>
-        ))}
-      </nav>
-    </aside>
-  </div>
-);
+        )}
+
+        <nav className="space-y-4">
+          {Object.entries(categories).map(([category, content]) => (
+            <div key={category}>
+              <button
+                className={`w-full text-left py-2 px-4 font-semibold text-black-700 border-b ${activeCategory === category ? "bg-gray-100 text-primary" : "hover:bg-gray-300"
+                  }`}
+                onClick={() => toggleCategory(category)}
+              >
+                <div className="flex items-center gap-2">
+                  {categoryIcons[category] && (
+                    <img
+                      src={categoryIcons[category]}
+                      alt={`${category} icon`}
+                      className="w-6 h-6"
+                    />
+                  )}
+                  <span>{category}</span>
+                </div>
+              </button>
+
+              {activeCategory === category && (
+                <div className="pl-4 mt-2 space-y-4">
+                  {Array.isArray(content) ? (
+                    renderNodes(content)
+                  ) : (
+                    Object.entries(content).map(([subcategory, subGroup]) => (
+                      <div key={subcategory}>
+                        <div className="text-md font-bold text-gray-800 mt-2">{subcategory}</div>
+                        {renderNodes(subGroup)}
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </nav>
+      </aside>
+    </div>
+  );
 }
