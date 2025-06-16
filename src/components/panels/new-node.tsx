@@ -11,11 +11,11 @@ const selector = (state: {
 });
 
 const categoryIcons: Record<string, string> = {
-  [consts.boundaryNodes]: "algorithmIcon.png",
-  [consts.circuitLevelNodes]: "algorithmIcon.png",
-  [consts.controlStructureNodes]: "algorithmIcon.png",
-  [consts.customOperators]: "algorithmIcon.png",
-  [consts.operator]: "algorithmIcon.png",
+  [consts.boundaryNodes]: "BoundaryNodes.png",
+  [consts.circuitLevelNodes]: "CircuitLevelNodes.png",
+  [consts.controlStructureNodes]: "ControlStructureNodes.png",
+  [consts.customOperators]: "CustomOperators.png",
+  [consts.operator]: "Operators.png",
   [consts.dataTypes]: "algorithmIcon.png",
 };
 
@@ -157,7 +157,7 @@ export const AddNodePanel = () => {
                     <img
                       src={categoryIcons[category]}
                       alt={`${category} icon`}
-                      className="w-6 h-6"
+                      className="w-9 h-9"
                     />
                   )}
                   <span>{category}</span>
