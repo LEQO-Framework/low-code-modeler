@@ -118,11 +118,13 @@ export const MeasurementNode = memo((node: Node) => {
               <div className="flex items-center space-x-2 mt-2">
                 <Handle
                   type="target"
-                  id={`quantumHandleMeasurement0${node.id}`}
+                  id={`quantumHandleMeasurementInput0${node.id}`}
                   position={Position.Left}
                   className="z-10 circle-port-op !bg-blue-300 !border-black"
                   style={{ top: "20px" }}
                   isValidConnection={(connection) => true}
+                  isConnectable={edges.filter(edge => `quantumHandleMeasurementInput0${node.id}`).length < 1}
+                  isConnectableStart={false}
                 />
                 <span className="text-black text-sm" >{node.data.inputs[0]?.outputIdentifier || "Register"}</span>
               </div>

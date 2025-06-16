@@ -212,7 +212,7 @@ export default function OutputPort({
               }`
               : "!bg-gray-200 border-dashed !border-gray-500"
           )}
-          isConnectable={true}
+          isConnectable={edges.filter(edge => edge.sourceHandle === handleId).length < 1}
           isConnectableEnd={false}
         />
       )}
