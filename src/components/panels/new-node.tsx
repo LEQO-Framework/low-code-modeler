@@ -76,7 +76,11 @@ export const AddNodePanel = () => {
                 draggable
               >
                 {node.icon ? (
-                  <img src={node.icon} alt={node.label} className="w-70 h-70 object-contain" />
+                    <img 
+    src={node.icon} 
+    alt={node.label} 
+    className={`${node.type === consts.GateNode ? "w-[120px] h-[140px]" : "w-70 h-70"} object-contain`} 
+  />
                 ) : (
                   <span className="font-semibold">{node.label}</span>
                 )}
