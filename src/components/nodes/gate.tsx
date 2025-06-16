@@ -70,11 +70,11 @@ export const GateNode = memo((node: Node) => {
           ): data.label === "CRX(θ)" ? (
             <img src="/CRX6.png" alt="CRX gate" className="w-12 h-22 object-fit object-center translate-y-1" />
           ): data.label === "CRY(θ)" ? (
-            <img src="/CRY2.png" alt="CRY gate" className="w-9 h-19 object-fit object-center translate-y-1" />
+            <img src="/CRY3.png" alt="CRY gate" className="w-9 h-19 object-fit object-center translate-y-1" />
           ): data.label === "CRZ(θ)" ? (
             <img src="/CRZ6.png" alt="CRZ gate" className="w-9 h-19 object-fit object-center translate-y-1" />
           ): data.label === "CU(θ,φ,λ,γ)" ? (
-            <img src="/CU2.png" alt="CU gate" className="w-8 h-18 object-fit object-center translate-y-1" />
+            <img src="/CU4.png" alt="CU gate" className="w-[55px] h-[79px] object-fit object-center translate-y-1" />
           ): data.label === "CP(λ)" ? (
             <img src="/CP.png" alt="CP gate" className="w-8 h-18 object-fit object-center translate-y-1" />
           )     : (
