@@ -25,7 +25,7 @@ export const GateNode = memo((node: Node) => {
   useEffect(() => {
     if (node) {
       // Set default parameterType if not set
-      if (!node.data.parameterType) {
+      if (!node.data.parameterType && node.data.type === GateNode) {
         updateNodeValue(node.id, "parameterType", "degree");
       }
 
