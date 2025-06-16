@@ -1,5 +1,5 @@
-import { memo } from "react";
-import { Handle, Position, Node, Edge } from "reactflow";
+import { memo, useEffect, useState } from "react";
+import { Handle, Position, Node, Edge, useUpdateNodeInternals } from "reactflow";
 import useStore from "@/config/store";
 import { shallow } from "zustand/shallow";
 
@@ -21,12 +21,13 @@ const selector = (state: {
 
 export const MergerNode = memo((node: Node) => {
   const { data } = node;
-  const { edges, setEdges, setNewEdges } = useStore(selector, shallow);
+  let { edges, setEdges, setNewEdges } = useStore(selector, shallow);
+  const [edgesGraph, setEdgesGraph] = useState(edges);
 
-  const numberInputs = data.numberInputs || 1;
+  const numberInputs = Math.max(data.numberInputs,1);
   const numberOutputs = data.numberOutputs || 1;
 
-  const handleCount = Math.max(numberInputs, numberOutputs);
+  const handleCount = Math.max(numberInputs, numberOutputs, 1);
   console.log(handleCount)
 
   const handleGap = 40;
@@ -45,7 +46,7 @@ export const MergerNode = memo((node: Node) => {
       }}
       className="!z-10 circle-port-splitter !bg-blue-300 !border-black overflow-visible"
       isValidConnection={() => true}
-      isConnectable={true}
+      isConnectable={edges.filter(edge => edge.targetHandle === `quantumHandleMergerInput${i}${node.id}`).length < 1}
       isConnectableStart={false}
     />
   ));
@@ -67,6 +68,43 @@ export const MergerNode = memo((node: Node) => {
       isConnectableEnd={false}
     />
   ));
+  const updateNodeInternals = useUpdateNodeInternals();
+
+  useEffect(() => {
+    updateNodeInternals(node.id);
+
+    const edgesToRemove = edges.filter((edge) => {
+      const match = edge.targetHandle?.match(
+        new RegExp(`quantumHandleMergerInput(\\d+)${node.id}`)
+      );
+
+      if (match === null) {
+        return true;
+      }
+
+      if (match && match[1]) {
+
+        const index = parseInt(match[1], 10);
+        console.log(index)
+        return index <= numberInputs-1;
+      }
+
+      return false;
+    });
+    console.log(edges)
+    console.log(edgesToRemove)
+    console.log(edgesGraph)
+
+    if (edgesToRemove.length > 0) {
+      // Compare old vs new, only update if different to avoid infinite loop
+      if(edgesToRemove.length !== edges.length){
+        setNewEdges(edgesToRemove);
+        setEdgesGraph(edgesToRemove);
+      }
+      
+    }
+  }, [handleCount, numberInputs, node.id, edgesGraph]);
+
 
   // Ensure identifiers exist and match the number of outputs
   if (!data.identifiers) {
@@ -109,12 +147,12 @@ export const MergerNode = memo((node: Node) => {
         style={{ height: `${nodeHeight}px` }}
       >
         <div className="w-full flex items-center" style={{ height: '52px' }}>
-            <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
-              <img src="mergerIcon.png" alt="icon" className="w-[40px] h-[40px] object-contain flex-shrink-0" />
-              <div className="h-full w-[1px] bg-black mx-2" />
-              <span className=" font-semibold leading-none" style={{ paddingLeft: '25px' }}>{data.label}</span>
-            </div>
+          <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
+            <img src="mergerIcon.png" alt="icon" className="w-[40px] h-[40px] object-contain flex-shrink-0" />
+            <div className="h-full w-[1px] bg-black mx-2" />
+            <span className=" font-semibold leading-none" style={{ paddingLeft: '25px' }}>{data.label}</span>
           </div>
+        </div>
 
         <div className="px-2 py-3 flex justify-center">
           <div className="flex items-center">
@@ -125,7 +163,7 @@ export const MergerNode = memo((node: Node) => {
                 </div>
               </div>
             </>
-           
+
             <div className="absolute right-0 top-0 bottom-0 flex flex-col justify-center">
               {outputHandles}
             </div>
