@@ -78,8 +78,14 @@ export const AddNodePanel = () => {
                 {node.icon ? (
                     <img 
     src={node.icon} 
-    alt={node.label} 
-    className={`${node.type === consts.GateNode ? "w-[120px] h-[140px]" : "w-70 h-70"} object-contain`} 
+    alt={typeof node.label === "string" ? node.label : ""}
+    className={`object-contain ${
+      node.type === consts.GateNode 
+        ? "w-[120px] h-[140px]" 
+        : (node.type === consts.SplitterNode || node.type === consts.MergerNode) 
+          ? "w-[190px] h-[190px]" 
+          : "w-70 h-70"
+    }`} 
   />
                 ) : (
                   <span className="font-semibold">{node.label}</span>

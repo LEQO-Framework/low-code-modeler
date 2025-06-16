@@ -56,8 +56,8 @@ export const categories: Record<string, CategoryContent> = {
       { label: "CU(θ,φ,λ,γ)", type: consts.GateNode, icon: "CU_palette.png" },
       { label: "Toffoli", type: consts.GateNode, icon: "Toffoli_palette.png" },
       { label: "CSWAP", type: consts.GateNode, icon: "CSWAP_palette.png" },
-      { label: "Splitter", type: consts.SplitterNode },
-      { label: "Merger", type: consts.MergerNode },
+      { label: "Splitter", type: consts.SplitterNode, icon: "Splitter_palette.png" },
+      { label: "Merger", type: consts.MergerNode, icon: "Merger_palette.png" },
     ],
   },
 
