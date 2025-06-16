@@ -15,3 +15,21 @@ export const isUniqueIdentifier = (
       return node.data.outputIdentifier === identifier}
   );
 };
+
+
+export function findDuplicateOutputIdentifiers(nodes, currentNodeId) {
+  const identifierMap = new Map();
+
+  nodes.forEach((node) => {
+    const id = node.data?.outputIdentifier;
+    if (id && node.id !== currentNodeId) {
+      if (identifierMap.has(id)) {
+        identifierMap.set(id, [...identifierMap.get(id), node.id]);
+      } else {
+        identifierMap.set(id, [node.id]);
+      }
+    }
+  });
+
+  return identifierMap;
+}

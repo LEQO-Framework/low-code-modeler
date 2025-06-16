@@ -9,6 +9,8 @@ import OutputPort from "../utils/outputPort";
 import UncomputePort from "../utils/uncomputePort";
 import AncillaPort from "../utils/ancillaPort";
 import * as consts from "@/constants";
+import { findDuplicateOutputIdentifiers } from "../utils/utils";
+import { AlertCircle } from "lucide-react";
 
 const selector = (state: {
   selectedNode: Node | null;
@@ -77,23 +79,33 @@ export const OperationNode = memo((node: Node) => {
     //setSelectedNode(node);
   };
 
+  // 1. Validate output identifier on change
+  const [operatorInitialized, setOperatorInitialized] = useState(false);
+
+  // Only run operator initialization once
   useEffect(() => {
-    updateNodeInternals(node.id);
-    if (node.data.operator === undefined) {
-      if (node.data.label === consts.arithmeticOperatorLabel) {
-        updateNodeValue(node.id, "operator", "+");
-      }
-      else if (node.data.label === consts.bitwiseOperatorLabel) {
-        updateNodeValue(node.id, "operator", "OR");
-      }
-      if (node.data.label === consts.comparisonOperatorLabel) {
-        updateNodeValue(node.id, "operator", "<");
-      }
-      else { updateNodeValue(node.id, "operator", "min"); }
-    } else {
-      updateNodeValue(node.id, "operator", node.data.operator);
+    if (!operatorInitialized && node.data.operator === undefined) {
+      let defaultOperator = "+";
+      if (node.data.label === consts.bitwiseOperatorLabel) defaultOperator = "OR";
+      else if (node.data.label === consts.comparisonOperatorLabel) defaultOperator = "<";
+      else if (node.data.label !== consts.arithmeticOperatorLabel) defaultOperator = "min";
+
+      updateNodeValue(node.id, "operator", defaultOperator);
+      setOperatorInitialized(true);
     }
-  }, []);
+  }, [node.id, node.data.label, node.data.operator, operatorInitialized]);
+
+  useEffect(() => {
+    const identifier = node.data.outputIdentifier;
+    const duplicates = findDuplicateOutputIdentifiers(nodes, node.id);
+    const isDuplicate = duplicates.has(identifier);
+
+    // Only update state if error state is actually changing
+    if ((isDuplicate && identifier !== "") !== outputIdentifierError) {
+      setOutputIdentifierError(isDuplicate && identifier !== "");
+    }
+
+  }, [nodes, node.data.outputIdentifier, node.id]);
 
   const baseHeight = 550;
   const extraHeightPerVariable = 20;
@@ -116,6 +128,14 @@ export const OperationNode = memo((node: Node) => {
       transition={{ duration: 0.3, ease: "easeInOut" }}
     >
       <div className="grand-parent">
+        {outputIdentifierError && (
+          <div className="absolute top-2 right-[-30px] group z-20">
+            <AlertCircle className="text-red-600 w-5 h-5" />
+            <div className="absolute top-5 left-[10px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
+              Identifier not unique
+            </div>
+          </div>
+        )}
         <div
           className={cn(
             "w-[320px] bg-white border border-solid border-gray-700 shadow-md",

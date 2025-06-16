@@ -1,8 +1,8 @@
-import { memo, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import { Handle, Position, Node, Edge } from "reactflow";
 import useStore from "@/config/store";
 import { shallow } from "zustand/shallow";
-import { isUniqueIdentifier } from "../utils/utils";
+import { findDuplicateOutputIdentifiers, isUniqueIdentifier } from "../utils/utils";
 import { AlertCircle } from "lucide-react";
 import OutputPort from "../utils/outputPort";
 
@@ -153,6 +153,15 @@ export const DataTypeNode = memo((node: Node) => {
     setOutputIdentifier(value);
     setSelectedNode(node);
   };
+  
+  useEffect(() => {
+    const identifier = node.data.outputIdentifier;
+    const duplicates = findDuplicateOutputIdentifiers(nodes, node.id);
+    const isDuplicate = duplicates.has(identifier);
+    setOutputIdentifierError(isDuplicate && identifier !== "");
+  }, [nodes, node.id]);
+
+
 
   const iconMap = {
     "int": 'intIcon.png',
@@ -185,10 +194,14 @@ export const DataTypeNode = memo((node: Node) => {
           <div className="absolute top-5 left-[10px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
             Identifier not unique
           </div>
+        </div>
+      )}
+      {valueError && (
+        <div className="absolute top-2 right-2 group z-20">
+          <AlertCircle className="text-red-600 w-5 h-5" />
           <div className="absolute top-12 left-[10px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
             Value is not an integer
           </div>
-
         </div>
       )}
       <div className="w-full h-full rounded-full bg-white overflow-hidden border border-solid border-gray-700 shadow-md">
@@ -298,6 +311,7 @@ export const DataTypeNode = memo((node: Node) => {
         <div className="relative">
           <div className="absolute top-1/2 right-0 transform -translate-y-1/2 z-10 w-[200px] h-full">
             <OutputPort
+
               node={node}
               index={0}
               type={"classical"}
