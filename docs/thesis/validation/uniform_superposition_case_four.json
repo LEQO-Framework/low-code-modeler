@@ -1,0 +1,107 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "name": "My Model",
+    "description": "This is a model.",
+    "author": "",
+    "id": "flow-1750113530218",
+    "timestamp": "2025-06-16T22:38:50.218Z"
+  },
+  "nodes": [
+    {
+      "id": "57b2d313-a762-42f7-8660-76ae18bf84cf",
+      "type": "statePreparationNode",
+      "position": {
+        "x": 165,
+        "y": 360
+      },
+      "data": {
+        "label": "Prepare State",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q108885"
+        ],
+        "quantumStateName": "Uniform Superposition",
+        "size": 2,
+        "outputIdentifier": "a",
+        "outputs": [
+          {
+            "identifier": "a",
+            "size": "2"
+          }
+        ],
+        "parameterType": "degree"
+      },
+      "width": 320,
+      "height": 373,
+      "positionAbsolute": {
+        "x": 165,
+        "y": 360
+      }
+    },
+    {
+      "id": "551cd8d7-feef-4c31-8aff-86366d1f2280",
+      "type": "measurementNode",
+      "position": {
+        "x": 615,
+        "y": 360
+      },
+      "data": {
+        "label": "Measurement",
+        "inputs": [
+          {
+            "id": "57b2d313-a762-42f7-8660-76ae18bf84cf",
+            "identifiers": [
+              "q108885"
+            ],
+            "outputIdentifier": "a"
+          }
+        ],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q439903"
+        ],
+        "indices": "0,1",
+        "outputIdentifier": "",
+        "parameterType": "degree"
+      },
+      "width": 320,
+      "height": 440,
+      "positionAbsolute": {
+        "x": 615,
+        "y": 360
+      },
+      "dragging": true
+    }
+  ],
+  "edges": [
+    {
+      "source": "57b2d313-a762-42f7-8660-76ae18bf84cf",
+      "sourceHandle": "quantumHandlestatePreparationNodeOutput057b2d313-a762-42f7-8660-76ae18bf84cf",
+      "target": "551cd8d7-feef-4c31-8aff-86366d1f2280",
+      "targetHandle": "quantumHandleMeasurement0551cd8d7-feef-4c31-8aff-86366d1f2280",
+      "type": "quantumEdge",
+      "id": "22dbd76e-7e5e-4c0b-ba23-db7bc91dc3a2",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD"
+      }
+    }
+  ],
+  "viewport": {
+    "x": 105,
+    "y": -7.5,
+    "zoom": 1
+  }
+}
