@@ -1,0 +1,68 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "name": "My Model",
+    "description": "This is a model.",
+    "author": "",
+    "id": "flow-1750112184125",
+    "timestamp": "2025-06-16T22:16:24.125Z"
+  },
+  "nodes": [
+    {
+      "id": "84818199-c184-4054-a3f0-2b6c961095b0",
+      "type": "algorithmNode",
+      "position": {
+        "x": 105,
+        "y": 225
+      },
+      "data": {
+        "label": "Custom Quantum Operator",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": []
+      },
+      "width": 320,
+      "height": 373,
+      "positionAbsolute": {
+        "x": 105,
+        "y": 225
+      },
+      "dragging": true
+    },
+    {
+      "id": "8c2be887-e50f-4821-a579-a2b1505a278a",
+      "type": "classicalAlgorithmNode",
+      "position": {
+        "x": 480,
+        "y": 225
+      },
+      "data": {
+        "label": "Custom Classical Operator",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": []
+      },
+      "width": 320,
+      "height": 373,
+      "positionAbsolute": {
+        "x": 480,
+        "y": 225
+      },
+      "dragging": true
+    }
+  ],
+  "edges": [],
+  "viewport": {
+    "x": 369.5,
+    "y": 72.5,
+    "zoom": 1
+  }
+}

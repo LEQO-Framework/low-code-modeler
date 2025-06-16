@@ -25,7 +25,7 @@ export default function OutputPort({
   const handleId = isClassical
     ? `classicalHandle${node.id}`
     : isAncilla
-      ? `ancillaHandle${node.id}`
+      ? `ancillaHandleOutput${index}${node.id}`
       : `quantumHandle${node.type}Output${index}${node.id}`;
 
   const handleClass = isClassical
@@ -116,10 +116,10 @@ export default function OutputPort({
             className={`p-1 text-sm text-black opacity-75 w-20 text-center rounded-full border ${outputIdentifierError
               ? 'bg-red-500 border-red-500'
               : isClassical
-                ? 'bg-white border-orange-300'
+                ? 'bg-white border-orange-500'
                 : isAncilla
-                  ? 'bg-white border-green-300'
-                  : 'bg-white border-blue-300'
+                  ? 'bg-white border-green-500'
+                  : 'bg-white border-blue-500'
               }`}
             value={outputIdentifier}
             onChange={(e) => {
@@ -157,10 +157,11 @@ export default function OutputPort({
             className={`p-1 text-sm text-black opacity-75 w-20 text-center rounded-full border ${sizeError
               ? 'bg-red-500 border-red-500 border-dashed'
               : isClassical
-                ? 'bg-white border-orange-300 border-dashed'
-                : 'bg-white border-blue-300 border-dashed'
+                ? 'bg-white border-orange-500 border-dashed'
+                : isAncilla
+                ? 'bg-white border-green-500 border-dashed'
+                : 'bg-white border-blue-500 border-dashed'
               }`}
-
             value={node.data.quantumStateName?.includes("Bell State") ? "2" : outputSize}
             readOnly={node.data.quantumStateName?.includes("Bell State")}
             onChange={(e) => {

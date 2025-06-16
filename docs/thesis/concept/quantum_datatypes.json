@@ -1,0 +1,71 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "name": "My Model",
+    "description": "This is a model.",
+    "author": "",
+    "id": "flow-1750112009549",
+    "timestamp": "2025-06-16T22:13:29.549Z"
+  },
+  "nodes": [
+    {
+      "id": "d6975997-f9b6-4d90-8886-c8a7c70d309d",
+      "type": "ancillaNode",
+      "position": {
+        "x": 75,
+        "y": 90
+      },
+      "data": {
+        "label": "Ancilla",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q263674"
+        ]
+      },
+      "width": 350,
+      "height": 170,
+      "positionAbsolute": {
+        "x": 75,
+        "y": 90
+      },
+      "dragging": true
+    },
+    {
+      "id": "e5bdf0ed-fbe6-4bff-adb1-4e071c8dfc13",
+      "type": "qubitNode",
+      "position": {
+        "x": 480,
+        "y": 90
+      },
+      "data": {
+        "label": "Qubit",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q183987"
+        ]
+      },
+      "width": 350,
+      "height": 170,
+      "positionAbsolute": {
+        "x": 480,
+        "y": 90
+      }
+    }
+  ],
+  "edges": [],
+  "viewport": {
+    "x": -0.964481672900888,
+    "y": 181.73352283851034,
+    "zoom": 1.4769538906749669
+  }
+}
