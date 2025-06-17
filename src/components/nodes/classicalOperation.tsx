@@ -98,10 +98,10 @@ export const ClassicalOperationNode = memo((node: Node) => {
   const dynamicHeight = baseHeight + (inputs.length + outputs.length) * extraHeightPerVariable;
 
   const iconMap = {
-    "Arithmetic Operator": 'arithmeticIcon.png',
-    "Bitwise Operator": 'bitwiseIcon.png',
-    "Min & Max Operator": 'minMaxIcon.png',
-    "Comparison Operator": 'comparisonIcon.png',
+    "Arithmetic Operator": 'classicalArithmeticIcon.png',
+    "Bitwise Operator": 'classicalBitwiseIcon.png',
+    "Min & Max Operator": 'classicalMinMaxIcon.png',
+    "Comparison Operator": 'classicalComparisonIcon.png',
   };
   const label = data.label;
   const iconSrc = iconMap[label];
