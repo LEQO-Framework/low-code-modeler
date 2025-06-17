@@ -8,6 +8,8 @@ import OutputPort from "../utils/outputPort";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { ancillaConstructColor, dirtyAncillaHandle, dirtyConstructColor, quantumConstructColor } from "@/constants";
+import { findDuplicateOutputIdentifier, findDuplicateOutputIdentifiers, findDuplicateOutputIdentifiersInsideNode } from "../utils/utils";
+import { AlertCircle } from "lucide-react";
 
 const selector = (state: {
   selectedNode: Node | null;
@@ -54,10 +56,12 @@ export const AlgorithmNode = memo((node: Node) => {
   const [y, setY] = useState("");
   const [outputIdentifierError, setOutputIdentifierError] = useState(false);
   const [showingChildren, setShowingChildren] = useState(false);
-  const [sizeError, setSizeError] = useState(false);
+  const [sizeErrors, setSizeErrors] = useState<{ [key: number]: boolean }>({});
   const [isEditingLabel, setIsEditingLabel] = useState(false);
   const [editableLabel, setEditableLabel] = useState(data.label || "");
   const updateNodeInternals = useUpdateNodeInternals();
+  const [outputIdentifierErrors, setOutputIdentifierErrors] = useState({});
+
 
   const addVariable = () => {
     const newInputId = `input-${inputs.length + 1}`;
@@ -77,35 +81,6 @@ export const AlgorithmNode = memo((node: Node) => {
     ]);
   };
 
-  const handleOutputChange = (id, newValue) => {
-    setOutputs(
-      outputs.map((output) =>
-        output.id === id ? { ...output, value: newValue } : output
-      )
-    );
-  };
-
-  const handleYChange = (e, field) => {
-    const value = e.target.value;
-    node.data[field] = value;
-    updateNodeValue(node.id, field, value);
-    setSelectedNode(node);
-    setY(value);
-  };
-
-  const handleOutputIdentifierChange = (e, field) => {
-    const value = e.target.value;
-
-    if (/^\d/.test(value)) {
-      setOutputIdentifierError(true);
-    } else {
-      setOutputIdentifierError(false);
-    }
-
-    node.data[field] = value;
-    updateNodeValue(node.id, field, value);
-  };
-
   const handleLabelChange = () => {
     setIsEditingLabel(false);
     updateNodeValue(node.id, "label", editableLabel);
@@ -116,6 +91,46 @@ export const AlgorithmNode = memo((node: Node) => {
   useEffect(() => {
     updateNodeInternals(node.id);
   }, []);
+
+
+  const isAncillaConnected = edges.some(
+    edge => edge.target === node.id && edge.targetHandle === `ancillaHandleOperationInput2${node.id}`
+  );
+
+  const isDirtyAncillaConnected = edges.some(
+    edge => edge.target === node.id && edge.targetHandle === `${dirtyAncillaHandle}OperationInput3${node.id}`
+  );
+
+
+  useEffect(() => {
+    const identifier = node.data.outputIdentifier;
+    console.log(nodes)
+    let selectedNode = nodes.find(n => n.id === node.id);
+    const newErrors = {};
+
+    outputs.forEach((output, index) => {
+      const outputIdentifier = output?.identifier?.trim();
+      const size = output?.identifier?.trim();
+      if (!outputIdentifier) return;
+      const duplicates = findDuplicateOutputIdentifier(nodes, selectedNode.id, selectedNode, identifier);
+      let isDuplicate = duplicates.has(identifier);
+      isDuplicate = isDuplicate || findDuplicateOutputIdentifiersInsideNode(nodes, selectedNode, outputIdentifier)
+      const startsWithDigit = /^\d/.test(outputIdentifier);
+      console.log(isDuplicate)
+      console.log(output)
+
+      console.log("set for identifier error");
+      console.log(outputIdentifier)
+      // Flag error if identifier is invalid or duplicated
+      newErrors[index] = startsWithDigit || isDuplicate;
+      if (!size) return;
+      const startsWithDigitSize = /^\d/.test(size);
+      sizeErrors[index] = startsWithDigitSize;
+    })
+
+    setOutputIdentifierErrors(newErrors);
+  }, [nodes, outputs, node.id]);
+
 
   const baseHeight = 200;
   const extraHeightPerVariable = 130;
@@ -174,6 +189,17 @@ export const AlgorithmNode = memo((node: Node) => {
           )}
           style={{ height: `${dynamicHeight}px` }}
         >
+          {(Object.values(outputIdentifierErrors).some(Boolean) ||
+            Object.values(sizeErrors).some(Boolean)) && (
+              <div className="absolute top-2 right-[-40px] group z-20">
+                <AlertCircle className="text-red-600 w-5 h-5" />
+                <div className="absolute top-5 left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
+                  One or more outputs have errors (duplicate ID or size is not a number).
+                </div>
+              </div>
+            )}
+
+
           <div className="w-full flex items-center" style={{ height: "52px" }}>
             <div
               className="w-full bg-blue-300 py-1 px-2 flex items-center"
@@ -258,12 +284,13 @@ export const AlgorithmNode = memo((node: Node) => {
                     type="target"
                     id={`ancillaHandleOperationInput2${node.id}`}
                     position={Position.Left}
-                    className="z-10 ancilla-port-in !bg-gray-200 !border-dashed !border-black w-4 transform rotate-45 -left-[8px]"
-                    style={{
-                      zIndex: 1,
-                      top: "50% !important",
-                      transform: "translateY(-50%) rotate(45deg)",
-                    }}
+                    className={cn(
+                      "z-10 ancilla-port-in w-4 transform rotate-45 -left-[8px]",
+                      isAncillaConnected
+                        ? "!bg-green-100 !border-solid !border-black"
+                        : "!bg-gray-200 !border-dashed !border-black"
+                    )}
+                    style={{ zIndex: 1, top: '50% !important', transform: 'translateY(-50%) rotate(45deg)' }}
                   />
                   <span
                     className="text-black text-sm text-center w-full"
@@ -289,12 +316,13 @@ export const AlgorithmNode = memo((node: Node) => {
                     type="target"
                     id={`${dirtyAncillaHandle}OperationInput3${node.id}`}
                     position={Position.Left}
-                    className="z-10 ancilla-port-in !bg-gray-200 !border-dashed !border-black w-4 transform rotate-45 -left-[8px]"
-                    style={{
-                      zIndex: 1,
-                      top: "50% !important",
-                      transform: "translateY(-50%) rotate(45deg)",
-                    }}
+                    className={cn(
+                      "z-10 ancilla-port-in w-4 transform rotate-45 -left-[8px]",
+                      isDirtyAncillaConnected
+                        ? "!bg-green-100 !border-solid !border-black"
+                        : "!bg-gray-200 !border-dashed !border-black"
+                    )}
+                    style={{ zIndex: 1, top: '50% !important', transform: 'translateY(-50%) rotate(45deg)' }}
                   />
                   <span
                     className="text-black text-sm text-center w-full"
@@ -313,21 +341,26 @@ export const AlgorithmNode = memo((node: Node) => {
               <OutputPort
                 key={`output-port-${index}`}
                 node={node}
-                index={index - 1}
+                index={index}
                 type={"quantum"}
                 nodes={nodes}
                 outputs={outputs}
                 setOutputs={setOutputs}
                 edges={edges}
-                sizeError={sizeError}
-                outputIdentifierError={outputIdentifierError}
+                outputIdentifierError={outputIdentifierErrors[index]}
                 updateNodeValue={updateNodeValue}
-                setOutputIdentifierError={setOutputIdentifierError}
-                setSizeError={setSizeError}
+                setOutputIdentifierError={(error) =>
+                  setOutputIdentifierErrors(prev => ({ ...prev, [index]: error }))
+                }
+                sizeError={sizeErrors[index]}
+                setSizeError={(error) =>
+                  setSizeErrors((prev) => ({ ...prev, [index]: error }))
+                }
                 setSelectedNode={setSelectedNode}
                 active={true}
               />
             ))}
+
           </div>
 
           {ancillaMode && (

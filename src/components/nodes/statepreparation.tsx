@@ -91,6 +91,15 @@ export const StatePreparationNode = memo((node: Node) => {
     setMounted(true);
   }, []);
 
+  const isAncillaConnected = edges.some(
+    edge => edge.target === node.id && edge.targetHandle === `ancillaHandleOperationInput2${node.id}`
+  );
+
+  const isDirtyAncillaConnected = edges.some(
+    edge => edge.target === node.id && edge.targetHandle === `${dirtyAncillaHandle}OperationInput3${node.id}`
+  );
+
+
   useEffect(() => {
     const identifier = node.data.outputIdentifier;
     const duplicates = findDuplicateOutputIdentifiers(nodes, node.id);
@@ -192,31 +201,31 @@ export const StatePreparationNode = memo((node: Node) => {
             </div>
           )}
 
-<div className="w-full flex items-center" style={{ height: '52px' }}>
-  <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
-    {data.label === "Prepare State" || data.label === "Encode Value" ? (
-      <img
-        src={
-          data.label === "Prepare State"
-            ? "prepareStateIcon.png"
-            : "encodeValueIcon.png"
-        }
-        alt="icon"
-        className={
-          data.label === "Prepare State"
-            ? "w-[45px] h-[45px] object-contain flex-shrink-0"
-            : "w-[40px] h-[40px] object-contain flex-shrink-0"
-        }
-      />
-    ) : null}
+          <div className="w-full flex items-center" style={{ height: '52px' }}>
+            <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
+              {data.label === "Prepare State" || data.label === "Encode Value" ? (
+                <img
+                  src={
+                    data.label === "Prepare State"
+                      ? "prepareStateIcon.png"
+                      : "encodeValueIcon.png"
+                  }
+                  alt="icon"
+                  className={
+                    data.label === "Prepare State"
+                      ? "w-[45px] h-[45px] object-contain flex-shrink-0"
+                      : "w-[40px] h-[40px] object-contain flex-shrink-0"
+                  }
+                />
+              ) : null}
 
-    <div className="h-full w-[1px] bg-black mx-2" />
+              <div className="h-full w-[1px] bg-black mx-2" />
 
-    <span className="font-semibold leading-none" style={{ paddingLeft: '25px' }}>
-      {data.label}
-    </span>
-  </div>
-</div>
+              <span className="font-semibold leading-none" style={{ paddingLeft: '25px' }}>
+                {data.label}
+              </span>
+            </div>
+          </div>
 
 
 
@@ -341,9 +350,16 @@ export const StatePreparationNode = memo((node: Node) => {
                     type="target"
                     id={`ancillaHandleOperationInput2${node.id}`}
                     position={Position.Left}
-                    className="z-10 ancilla-port-in !bg-gray-200 !border-dashed !border-black w-4 transform rotate-45 -left-[8px]"
+                    className={cn(
+                      "z-10 ancilla-port-in w-4 transform rotate-45 -left-[8px]",
+                      isAncillaConnected
+                        ? "!bg-green-100 !border-solid !border-black"
+                        : "!bg-gray-200 !border-dashed !border-black"
+                    )}
                     style={{ zIndex: 1, top: '50% !important', transform: 'translateY(-50%) rotate(45deg)' }}
                   />
+
+
                   <span className="text-black text-sm text-center w-full" style={{ zIndex: 1 }}>Ancilla</span>
                 </div>
                 <div
@@ -365,7 +381,12 @@ export const StatePreparationNode = memo((node: Node) => {
                     type="target"
                     id={`${dirtyAncillaHandle}OperationInput3${node.id}`}
                     position={Position.Left}
-                    className="z-10 ancilla-port-in !bg-gray-200 !border-dashed !border-black w-4 transform rotate-45 -left-[8px]"
+                    className={cn(
+                      "z-10 ancilla-port-in w-4 transform rotate-45 -left-[8px]",
+                      isDirtyAncillaConnected
+                        ? "!bg-green-100 !border-solid !border-black"
+                        : "!bg-gray-200 !border-dashed !border-black"
+                    )}
                     style={{ zIndex: 1, top: '50% !important', transform: 'translateY(-50%) rotate(45deg)' }}
                   />
                   <span className="text-black text-sm text-center w-full" style={{ zIndex: 1 }}> Dirty Ancilla</span>
