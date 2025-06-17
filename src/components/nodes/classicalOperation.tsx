@@ -105,6 +105,12 @@ export const ClassicalOperationNode = memo((node: Node) => {
   };
   const label = data.label;
   const iconSrc = iconMap[label];
+    const iconSizeMap = {
+    "Arithmetic Operator": { width: 45, height: 45 },
+    "Bitwise Operator": { width: 45, height: 45 },
+    "Min & Max Operator": { width: 45, height: 45 },
+    "Comparison Operator": { width: 56, height: 56 },
+  };
 
   return (
     <motion.div
@@ -122,11 +128,21 @@ export const ClassicalOperationNode = memo((node: Node) => {
           style={{ height: `${dynamicHeight}px`, borderRadius: "40px" }}
         >
           <div className="w-full flex items-center" style={{ height: '52px' }}>
-            <div className="w-full bg-orange-300 py-1 px-2 flex items-center" style={{ height: "inherit", borderTopLeftRadius: "28px", borderTopRightRadius: "28px", overflow: "hidden", }}
+            <div className="w-full bg-orange-300 py-1 px-2 flex items-center" style={{ height: "inherit", borderTopLeftRadius: "28px", borderTopRightRadius: "28px", overflow: "hidden", paddingLeft: '25px',}}
             >
-              <img src={iconSrc} alt="icon" className="w-[50px] h-[50px] object-contain flex-shrink-0" />
+             {(() => {
+                const { width, height } = iconSizeMap[node.data.label];
+                return (
+                  <img
+                    src={iconSrc}
+                    alt="icon"
+                    style={{ width: `${width}px`, height: `${height}px` }}
+                    className="object-contain flex-shrink-0"
+                  />
+                );
+              })()}
               <div className="h-full w-[1px] bg-black mx-2" />
-              <span className="font-semibold leading-none" style={{ paddingLeft: '25px' }}>{data.label}</span>
+              <span className="font-semibold leading-none" style={{ paddingLeft: '15px' }}>{data.label}</span>
             </div>
           </div>
 

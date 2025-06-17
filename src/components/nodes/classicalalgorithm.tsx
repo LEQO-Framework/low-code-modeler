@@ -236,7 +236,7 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
             )}
             <div
               className="w-full bg-orange-300 py-1 px-2 flex items-center overflow-hidden"
-              style={{ height: "inherit", borderTopLeftRadius: "28px", borderTopRightRadius: "28px", overflow: "hidden", }}
+              style={{ height: "inherit", borderTopLeftRadius: "28px", borderTopRightRadius: "28px", overflow: "hidden",paddingLeft: '25px', }}
             >
               <img
                 src="classicalAlgorithmIcon.png"
@@ -260,7 +260,7 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
               ) : (
                 <span
                   className="font-semibold leading-none cursor-pointer"
-                  style={{ paddingLeft: "25px" }}
+                  style={{ paddingLeft: "15px" }}
                   onClick={() => setIsEditingLabel(true)}
                 >
                   {editableLabel}

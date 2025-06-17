@@ -213,9 +213,9 @@ export const AlgorithmNode = memo((node: Node) => {
               style={{ height: "inherit" }}
             >
               <img
-                src="arithmeticIcon.png"
+                src="algorithmIcon.png"
                 alt="icon"
-                className="w-[50px] h-[50px] object-contain flex-shrink-0"
+                className="w-[42px] h-[42px] object-contain flex-shrink-0"
               />
               <div className="h-full w-[1px] bg-black mx-2" />
               {isEditingLabel ? (
