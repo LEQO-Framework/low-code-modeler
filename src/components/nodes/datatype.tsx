@@ -187,30 +187,47 @@ export const DataTypeNode = memo((node: Node) => {
           </div>
         </div>
       )}
+
       {startsWithDigitError && (
         <div className="absolute top-2 right-2 group z-20">
           <AlertCircle className="text-red-600 w-5 h-5" />
-          <div className="absolute top-5 left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
+          <div
+            className="absolute left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap"
+            style={{ top: outputIdentifierError ? '50px' : '20px' }}
+          >
             Identifier starts with a number.
           </div>
         </div>
       )}
+
       {valueError && (
         <div className="absolute top-2 right-2 group z-20">
           <AlertCircle className="text-red-600 w-5 h-5" />
-          <div className="absolute top-12 left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
+          <div
+            className="absolute left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap"
+            style={{
+              top: outputIdentifierError || startsWithDigitError ? '70px' : '20px',
+            }}
+          >
             Value is not an integer.
           </div>
         </div>
       )}
+
       {sizeError && (
         <div className="absolute top-2 right-2 group z-20">
           <AlertCircle className="text-red-600 w-5 h-5" />
-          <div className="absolute top-12 left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
+          <div
+            className="absolute left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap"
+            style={{
+              top: outputIdentifierError || startsWithDigitError || valueError ? '80px' : '20px',
+            }}
+          >
             Size is not an integer.
           </div>
         </div>
       )}
+
       <div className="w-full h-full rounded-full bg-white overflow-hidden border border-solid border-gray-700 shadow-md">
         <div className="w-full bg-orange-300 text-black text-center font-semibold py-1 truncate relative">
 

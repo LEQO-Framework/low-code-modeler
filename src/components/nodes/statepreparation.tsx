@@ -175,33 +175,50 @@ export const StatePreparationNode = memo((node: Node) => {
           style={{ height: `${dynamicHeight}px` }}
         >
           {outputIdentifierError && (
-            <div className="absolute top-2 right-[-30px] group z-20">
+            <div className="absolute top-2 right-[-40px] group z-20">
               <AlertCircle className="text-red-600 w-5 h-5" />
-              <div className="absolute top-5 left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
+              <div className="absolute top-5 left-[30px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
                 Identifier is not unique.
               </div>
             </div>
           )}
 
           {startsWithDigitError && (
-            <div className="absolute top-2 right-[-30px] group z-20">
+            <div className="absolute top-2 right-[-40px] group z-20">
               <AlertCircle className="text-red-600 w-5 h-5" />
-              <div className="absolute top-[50px] left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
+              <div
+                className="absolute left-[30px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap"
+                style={{
+                  top: !outputIdentifierError ? '35px' : '50px',
+                }}
+              >
                 Identifier starts with a number.
               </div>
             </div>
           )}
 
           {sizeError && (
-            <div className="absolute top-2 right-[-30px] group z-20">
+            <div className="absolute top-2 right-[-40px] group z-20">
               <AlertCircle className="text-red-600 w-5 h-5" />
-              <div className="absolute top-[80px] left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
+              <div
+                className="absolute left-[30px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap"
+                style={{
+                  top: !(outputIdentifierError || startsWithDigitError) ? '35px' : '80px',
+                }}
+              >
                 Size is not an integer.
               </div>
             </div>
           )}
 
           <div className="w-full flex items-center" style={{ height: '52px' }}>
+            {node.data.implementation && (
+              <img
+                src="implementation-icon.png"
+                alt="Custom Icon"
+                className="absolute -top-4 -right-4 w-8 h-8"
+              />
+            )}
             <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
               {data.label === "Prepare State" || data.label === "Encode Value" ? (
                 <img

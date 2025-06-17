@@ -143,29 +143,41 @@ export const OperationNode = memo((node: Node) => {
     >
       <div className="grand-parent">
         {outputIdentifierError && (
-          <div className="absolute top-2 right-[-30px] group z-20">
-            <AlertCircle className="text-red-600 w-5 h-5" />
-            <div className="absolute top-5 left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
-              Identifier is not unique.
+            <div className="absolute top-2 right-[-40px] group z-20">
+              <AlertCircle className="text-red-600 w-5 h-5" />
+              <div className="absolute top-5 left-[25px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
+                Identifier is not unique.
+              </div>
             </div>
-          </div>
-        )}
-        {startsWithDigitError && (
-          <div className="absolute top-2 right-[-30px] group z-20">
-            <AlertCircle className="text-red-600 w-5 h-5" />
-            <div className="absolute top-12 left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
-              Identifier starts with a number.
+          )}
+
+          {startsWithDigitError && (
+            <div className="absolute top-2 right-[-40px] group z-20">
+              <AlertCircle className="text-red-600 w-5 h-5" />
+              <div
+                className="absolute left-[25px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap"
+                style={{
+                  top: !outputIdentifierError ? '35px' : '50px',
+                }}
+              >
+                Identifier starts with a number.
+              </div>
             </div>
-          </div>
-        )}
-        {sizeError && (
-          <div className="absolute top-2 right-2 group z-20">
-            <AlertCircle className="text-red-600 w-5 h-5" />
-            <div className="absolute top-[75px] left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
-              Size is not an integer.
+          )}
+
+          {sizeError && (
+            <div className="absolute top-2 right-[-40px] group z-20">
+              <AlertCircle className="text-red-600 w-5 h-5" />
+              <div
+                className="absolute left-[25px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap"
+                style={{
+                  top: !(outputIdentifierError || startsWithDigitError) ? '35px' : '80px',
+                }}
+              >
+                Size is not an integer.
+              </div>
             </div>
-          </div>
-        )}
+          )}
         <div
           className={cn(
             "w-[320px] bg-white border border-solid border-gray-700 shadow-md",
@@ -174,6 +186,13 @@ export const OperationNode = memo((node: Node) => {
           style={{ height: `${dynamicHeight}px` }}
         >
           <div className="w-full flex items-center" style={{ height: '52px' }}>
+            {node.data.implementation && (
+              <img
+                src="implementation-icon.png"
+                alt="Custom Icon"
+                className="absolute -top-4 -right-4 w-8 h-8"
+              />
+            )}
             <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
               <img src={iconSrc} alt="icon" className="w-[50px] h-[50px] object-contain flex-shrink-0" />
               <div className="h-full w-[1px] bg-black mx-2" />

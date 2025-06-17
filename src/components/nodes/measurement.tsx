@@ -120,6 +120,13 @@ export const MeasurementNode = memo((node: Node) => {
           </div>
         )}
         <div className="w-full flex items-center" style={{ height: '52px' }}>
+           {node.data.implementation && (
+              <img
+                src="implementation-icon.png"
+                alt="Custom Icon"
+                className="absolute -top-4 -right-4 w-8 h-8"
+              />
+            )}
           <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
             <img src="measurementIcon2.png" alt="icon" className="w-[40px] h-[40px] object-contain flex-shrink-0" />
             <div className="h-full w-[1px] bg-black mx-2" />
