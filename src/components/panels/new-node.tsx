@@ -16,7 +16,7 @@ const categoryIcons: Record<string, string> = {
   [consts.controlStructureNodes]: "ControlStructureNodes.png",
   [consts.customOperators]: "CustomOperators.png",
   [consts.operator]: "Operators.png",
-  [consts.dataTypes]: "algorithmIcon.png",
+  [consts.dataTypes]: "DataTypes.png",
 };
 
 export const AddNodePanel = () => {
