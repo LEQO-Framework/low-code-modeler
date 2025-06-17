@@ -32,7 +32,6 @@ export const DataTypeNode = memo((node: Node) => {
   const { nodes, edges, updateNodeValue, setSelectedNode } = useStore(selector, shallow);
   const [durationUnit, setDurationUnit] = useState(node.data.durationUnit || "s");
   const { data } = node;
-  const [startsWithDigitError, setStartsWithDigitError] = useState(false);
 
   const changeValue = (e) => {
     let value = e.target.value.trim();
@@ -146,10 +145,6 @@ export const DataTypeNode = memo((node: Node) => {
     const duplicates = findDuplicateOutputIdentifiers(nodes, node.id);
     const isDuplicate = duplicates.has(identifier);
     setOutputIdentifierError(isDuplicate && identifier !== "");
-    const startsWithDigit = /^\d/.test(identifier);
-    if (startsWithDigit) {
-      setStartsWithDigitError(true);
-    }
   }, [nodes, node.id]);
 
 
@@ -167,14 +162,14 @@ export const DataTypeNode = memo((node: Node) => {
   const label = data.label;
   const iconSrc = iconMap[label];
   const iconSizeMap = {
-    "int": { width: 40, height: 40 },
-    "float": { width: 40, height: 40 },
-    "bit": { width: 40, height: 40 },
-    "duration": { width: 40, height: 40 },
-    "boolean": { width: 45, height: 40 },
-    "angle": { width: 40, height: 40 },
-    "complex": { width: 40, height: 40 },
-    "Array": { width: 40, height: 40 },
+    "int": { width: 60, height: 60 },
+    "float": { width: 55, height: 55 },
+    "bit": { width: 50, height: 50 },
+    "duration": { width: 45, height: 45 },
+    "boolean": { width: 45, height: 45 },
+    "angle": { width: 45, height: 45 },
+    "complex": { width: 55, height: 55 },
+    "Array": { width: 60, height: 60 },
   };
 
   return (
@@ -183,58 +178,33 @@ export const DataTypeNode = memo((node: Node) => {
         <div className="absolute top-2 right-2 group z-20">
           <AlertCircle className="text-red-600 w-5 h-5" />
           <div className="absolute top-5 left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
-            Identifier not unique.
+            Identifier not unique
           </div>
         </div>
       )}
-
-      {startsWithDigitError && (
-        <div className="absolute top-2 right-2 group z-20">
-          <AlertCircle className="text-red-600 w-5 h-5" />
-          <div
-            className="absolute left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap"
-            style={{ top: outputIdentifierError ? '50px' : '20px' }}
-          >
-            Identifier starts with a number.
-          </div>
-        </div>
-      )}
-
       {valueError && (
         <div className="absolute top-2 right-2 group z-20">
           <AlertCircle className="text-red-600 w-5 h-5" />
-          <div
-            className="absolute left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap"
-            style={{
-              top: outputIdentifierError || startsWithDigitError ? '70px' : '20px',
-            }}
-          >
-            Value is not an integer.
+          <div className="absolute top-12 left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
+            Value is not an integer
           </div>
         </div>
       )}
-
       {sizeError && (
         <div className="absolute top-2 right-2 group z-20">
           <AlertCircle className="text-red-600 w-5 h-5" />
-          <div
-            className="absolute left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap"
-            style={{
-              top: outputIdentifierError || startsWithDigitError || valueError ? '80px' : '20px',
-            }}
-          >
-            Size is not an integer.
+          <div className="absolute top-12 left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
+            Size is not an integer
           </div>
         </div>
       )}
-
       <div className="w-full h-full rounded-full bg-white overflow-hidden border border-solid border-gray-700 shadow-md">
         <div className="w-full bg-orange-300 text-black text-center font-semibold py-1 truncate relative">
 
           <div className="w-full flex items-center" style={{ height: '52px', paddingLeft: '100px' }}>
             <div className="w-full bg-orange-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
               {(() => {
-                const { width, height } = { width: 50, height: 50 };
+                const { width, height } = iconSizeMap[node.data.label];
                 return (
                   <img
                     src={iconSrc}
@@ -246,7 +216,26 @@ export const DataTypeNode = memo((node: Node) => {
               })()}
 
               <div className="h-full w-[1px] bg-black mx-2" />
-              <span className="font-semibold leading-none" style={{ paddingLeft: '20px' }}>{data.label}</span>
+             <span
+  className="font-semibold leading-none"
+  style={{
+    paddingLeft:
+      data.label === "bit"
+        ? "32px"
+        : data.label === "int"
+        ? "28px"
+        : data.label === "duration"
+        ? "25px"
+        : data.label === "float"
+        ? "23px"
+        : data.label === "angle"
+        ? "29px"
+        : "10px",
+  }}
+>
+
+  {data.label}
+</span>
             </div>
           </div>
 
