@@ -168,7 +168,7 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
   }, [nodes, outputs, node.id]);
 
 
-  const baseHeight = 200;
+  const baseHeight = !ancillaMode ? 50 : 200;
   const extraHeightPerVariable = 130;
   const dynamicHeight =
     baseHeight + 2 * 40 + 3 * 50 + (numberInputs * 50) + numberOutputs * extraHeightPerVariable;
