@@ -85,7 +85,8 @@ export const ControlStructureNode = memo((node: Node) => {
                 height: `${hexagonHeight}px`,
                 backgroundColor: "white",
                 top: `${hexagonTopOffset}px`,
-                clipPath: "polygon(10% 0%, 90% 0%, 100% 10%, 100% 90%, 90% 100%, 10% 100%, 0% 90%, 0% 10%)"
+                clipPath: "polygon(10% 0%, 90% 0%, 100% 10%, 100% 90%, 90% 100%, 10% 100%, 0% 90%, 0% 10%)",
+                boxShadow: "0 0 0 200px black"
               }}>
                 <div className="w-full flex items-center" style={{ height: '52px' }}>
                   <div className="w-full bg-purple-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
