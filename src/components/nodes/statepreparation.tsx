@@ -192,13 +192,33 @@ export const StatePreparationNode = memo((node: Node) => {
             </div>
           )}
 
-          <div className="w-full flex items-center" style={{ height: '52px' }}>
-            <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
-              <img src="arithmeticIcon.png" alt="icon" className="w-[50px] h-[50px] object-contain flex-shrink-0" />
-              <div className="h-full w-[1px] bg-black mx-2" />
-              <span className="font-semibold leading-none" style={{ paddingLeft: '25px' }}>{data.label}</span>
-            </div>
-          </div>
+<div className="w-full flex items-center" style={{ height: '52px' }}>
+  <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
+    {data.label === "Prepare State" || data.label === "Encode Value" ? (
+      <img
+        src={
+          data.label === "Prepare State"
+            ? "prepareStateIcon.png"
+            : "encodeValueIcon.png"
+        }
+        alt="icon"
+        className={
+          data.label === "Prepare State"
+            ? "w-[45px] h-[45px] object-contain flex-shrink-0"
+            : "w-[40px] h-[40px] object-contain flex-shrink-0"
+        }
+      />
+    ) : null}
+
+    <div className="h-full w-[1px] bg-black mx-2" />
+
+    <span className="font-semibold leading-none" style={{ paddingLeft: '25px' }}>
+      {data.label}
+    </span>
+  </div>
+</div>
+
+
 
           {!showingChildren && (
             <div className="px-3 py-1 mb-1">
