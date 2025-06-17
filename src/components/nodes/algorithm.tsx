@@ -90,7 +90,7 @@ export const AlgorithmNode = memo((node: Node) => {
 
   useEffect(() => {
     updateNodeInternals(node.id);
-  }, []);
+  }, [node]);
 
 
   const isAncillaConnected = edges.some(
@@ -110,11 +110,23 @@ export const AlgorithmNode = memo((node: Node) => {
 
     outputs.forEach((output, index) => {
       const outputIdentifier = output?.identifier?.trim();
-      const size = output?.identifier?.trim();
+      console.log(outputIdentifier)
+      const size = output?.size?.trim();
       if (!outputIdentifier) return;
-      const duplicates = findDuplicateOutputIdentifier(nodes, selectedNode.id, selectedNode, identifier);
-      let isDuplicate = duplicates.has(identifier);
+      const duplicates = findDuplicateOutputIdentifier(nodes, selectedNode.id, selectedNode, outputIdentifier);
+      let isDuplicate = false;
+      for (const [key] of duplicates.entries()) {
+        if (
+          Array.isArray(key) &&
+          key.some((item) => item.identifier === outputIdentifier)
+        ) {
+          isDuplicate = true;
+          break;
+        }
+      }
+      console.log(isDuplicate)
       isDuplicate = isDuplicate || findDuplicateOutputIdentifiersInsideNode(nodes, selectedNode, outputIdentifier)
+      console.log(findDuplicateOutputIdentifiersInsideNode(nodes, selectedNode, outputIdentifier))
       const startsWithDigit = /^\d/.test(outputIdentifier);
       console.log(isDuplicate)
       console.log(output)
@@ -123,12 +135,14 @@ export const AlgorithmNode = memo((node: Node) => {
       console.log(outputIdentifier)
       // Flag error if identifier is invalid or duplicated
       newErrors[index] = startsWithDigit || isDuplicate;
+      console.log(newErrors[index])
       if (!size) return;
-      const startsWithDigitSize = /^\d/.test(size);
+      const startsWithDigitSize = !/^\d/.test(size);
       sizeErrors[index] = startsWithDigitSize;
     })
 
     setOutputIdentifierErrors(newErrors);
+    setSizeErrors(sizeErrors)
   }, [nodes, outputs, node.id]);
 
 

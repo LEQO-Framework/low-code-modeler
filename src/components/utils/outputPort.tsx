@@ -242,7 +242,7 @@ export function handleOutputIdentifierChange({
   updateNodeValue(node.id, "outputIdentifier", value);
   const selectedNode = nodes.find(n => n.id === node.id);
 
-  if (/^\d/.test(value) || (!isUniqueIdentifier(nodes, value, node.id) || findDuplicateOutputIdentifiersInsideNode(nodes, selectedNode))) {
+  if (/^\d/.test(value) || (!isUniqueIdentifier(nodes, value, node.id) || findDuplicateOutputIdentifiersInsideNode(nodes, selectedNode, value))) {
     setOutputIdentifierError(true);
   } else {
     setOutputIdentifierError(false);

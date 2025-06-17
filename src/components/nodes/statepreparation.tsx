@@ -89,7 +89,7 @@ export const StatePreparationNode = memo((node: Node) => {
     }
     updateNodeInternals(node.id);
     setMounted(true);
-  }, []);
+  }, [ancillaMode]);
 
   const isAncillaConnected = edges.some(
     edge => edge.target === node.id && edge.targetHandle === `ancillaHandleOperationInput2${node.id}`
@@ -103,6 +103,7 @@ export const StatePreparationNode = memo((node: Node) => {
   useEffect(() => {
     const identifier = node.data.outputIdentifier;
     const duplicates = findDuplicateOutputIdentifiers(nodes, node.id);
+    console.log(duplicates)
     const isDuplicate = duplicates.has(identifier);
 
     const startsWithDigit = /^\d/.test(identifier);
@@ -172,7 +173,7 @@ export const StatePreparationNode = memo((node: Node) => {
             "w-[320px] bg-white border border-solid border-gray-700 shadow-md",
             selected && "border-blue-500"
           )}
-          style={{ height: `${dynamicHeight}px` }}
+          style={{ height: !ancillaMode ? '370px' : `${dynamicHeight}px` }}
         >
           {outputIdentifierError && (
             <div className="absolute top-2 right-[-40px] group z-20">
@@ -264,19 +265,7 @@ export const StatePreparationNode = memo((node: Node) => {
                     <option value="Matrix Encoding">Matrix Encoding</option>
                     <option value="Schmidt Decomposition">Schmidt Decomposition</option>
                   </select>
-                  {node.data.encodingType === "Basis Encoding" && (
-                    <>
-                      <label className="text-sm text-black">Size:</label>
-                      <input
-                        className="w-full p-1 mt-1 text-sm text-center text-black border-2 border-blue-300 rounded-full"
-                        type="text"
-                        id="size"
-                        value={node.data.size || size}
-                        onChange={(e) => handleYChange(e, "size")}
-                        placeholder="Enter size"
-                      />
-                    </>
-                  )}
+                 
                   {node.data.encodingType !== "Basis Encoding" && node.data.encodingType !== "Angle Encoding" && (
                     <>
                       <label className="text-sm text-black">Bound:</label>
