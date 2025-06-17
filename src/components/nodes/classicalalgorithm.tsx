@@ -7,7 +7,7 @@ import UncomputePort from "../utils/uncomputePort";
 import OutputPort from "../utils/outputPort";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { ancillaConstructColor, classicalConstructColor, dirtyConstructColor, quantumConstructColor } from "@/constants";
+import { ancillaConstructColor, classicalConstructColor, dirtyAncillaHandle, dirtyConstructColor } from "@/constants";
 
 const selector = (state: {
   selectedNode: Node | null;
@@ -115,7 +115,7 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
 
   useEffect(() => {
     updateNodeInternals(node.id);
-  }, []);
+  }, [node]);
 
   const baseHeight = 200;
   const extraHeightPerVariable = 130;
@@ -291,7 +291,7 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
                   />
                   <Handle
                     type="target"
-                    id={`ancillaHandleOperationInput3${node.id}`}
+                    id={`${dirtyAncillaHandle}OperationInput3${node.id}`}
                     position={Position.Left}
                     className="z-10 ancilla-port-in !bg-gray-200 !border-dashed !border-black w-4 transform rotate-45 -left-[8px]"
                     style={{

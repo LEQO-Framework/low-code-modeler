@@ -213,7 +213,7 @@ export const ClassicalOperationNode = memo((node: Node) => {
               >
                 <Handle
                   type="target"
-                  id={`ancilla HandleOperationInput1${node.id}`}
+                  id={`ancillaHandleOperationInput1${node.id}`}
                   position={Position.Left}
                   className="z-10 classical-circle-port-operation !bg-orange-300 !border-black -left-[8px]"
                   style={{ top: '50%', transform: 'translateY(-50%)' }}

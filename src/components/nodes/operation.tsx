@@ -279,7 +279,7 @@ export const OperationNode = memo((node: Node) => {
                   />
                   <Handle
                     type="target"
-                    id={`ancillaHandleOperationInput3${node.id}`}
+                    id={`${consts.dirtyAncillaHandle}OperationInput3${node.id}`}
                     position={Position.Left}
                     className="z-10 ancilla-port-in !bg-gray-200 !border-dashed !border-black w-4 transform rotate-45 -left-[8px]"
                     style={{ zIndex: 1, top: '50% !important', transform: 'translateY(-50%) rotate(45deg)' }}

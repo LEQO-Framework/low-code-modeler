@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
 import OutputPort from "../utils/outputPort";
 import UncomputePort from "../utils/uncomputePort";
 import AncillaPort from "../utils/ancillaPort";
-import { ancillaConstructColor, dirtyConstructColor } from "@/constants";
+import { ancillaConstructColor, dirtyConstructColor, dirtyAncillaHandle } from "@/constants";
 
 const selector = (state: {
   selectedNode: Node | null;
@@ -297,7 +297,7 @@ export const StatePreparationNode = memo((node: Node) => {
                 />
                 <Handle
                   type="target"
-                  id={`ancillaHandleOperationInput3${node.id}`}
+                  id={`${dirtyAncillaHandle}OperationInput3${node.id}`}
                   position={Position.Left}
                   className="z-10 ancilla-port-in !bg-gray-200 !border-dashed !border-black w-4 transform rotate-45 -left-[8px]"
                   style={{ zIndex: 1, top: '50% !important', transform: 'translateY(-50%) rotate(45deg)' }}

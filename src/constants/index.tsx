@@ -64,6 +64,7 @@ export const customOperators = "Custom Operators";
 export const classicalHandle: string = "classicalHandle";
 export const quantumHandle: string = "quantumHandle";
 export const ancillaHandle: string = "ancillaHandle";
+export const dirtyAncillaHandle: string = "dirtyAncillaHandle";
 
 // colors for modeling constructs
 export const quantumConstructColor = "rgba(105, 145, 210, 0.2)";
