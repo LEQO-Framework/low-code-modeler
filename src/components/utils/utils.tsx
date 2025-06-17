@@ -29,7 +29,31 @@ export function findDuplicateOutputIdentifiers(nodes, currentNodeId) {
         identifierMap.set(id, [node.id]);
       }
     }
+    
   });
 
   return identifierMap;
+}
+export function findDuplicateOutputIdentifiersInsideNode(nodes, currentNode) {
+  const node = nodes.find(n => n.id === currentNode.id);
+  console.log(currentNode.data.outputs)
+
+  if (!currentNode || !currentNode.data?.outputs || currentNode.data.outputs.length <= 1) {
+    return false;
+  }
+
+  const seen = new Set();
+
+  for (const output of currentNode.data.outputs) {
+    const id = output?.identifier;
+    console.log(id)
+    if (!id) continue;
+
+    if (seen.has(id)) {
+      return true;
+    }
+    seen.add(id);
+  }
+
+  return false;
 }

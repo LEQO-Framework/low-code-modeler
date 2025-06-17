@@ -1,6 +1,6 @@
 import { Handle, Position } from 'reactflow';
 import { cn } from "@/lib/utils";
-import { isUniqueIdentifier } from "../utils/utils";
+import { findDuplicateOutputIdentifiersInsideNode, isUniqueIdentifier } from "../utils/utils";
 import { Node } from "reactflow";
 import { useEffect, useRef } from 'react';
 
@@ -130,6 +130,7 @@ export default function OutputPort({
               updatedOutputs[index] = {
                 ...updatedOutputs[index],
                 identifier: e.target.value,
+                type: isClassical ? "classical" : "quantum",
               };
 
               handleOutputIdentifierChange({
@@ -239,8 +240,9 @@ export function handleOutputIdentifierChange({
   const value = e.target.value;
   node.data["outputIdentifier"] = value;
   updateNodeValue(node.id, "outputIdentifier", value);
+  const selectedNode = nodes.find(n => n.id === node.id);
 
-  if (/^\d/.test(value) || !isUniqueIdentifier(nodes, value, node.id)) {
+  if (/^\d/.test(value) || (!isUniqueIdentifier(nodes, value, node.id) || findDuplicateOutputIdentifiersInsideNode(nodes, selectedNode))) {
     setOutputIdentifierError(true);
   } else {
     setOutputIdentifierError(false);

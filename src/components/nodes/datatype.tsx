@@ -139,20 +139,6 @@ export const DataTypeNode = memo((node: Node) => {
     }
     return false;
   }
-  const changeOutputIdentifier = (e) => {
-    const value = e.target.value;
-    node.data["outputIdentifier"] = value;
-    updateNodeValue(node.id, "outputIdentifier", value);
-
-    if ((!/^[a-zA-Z_]/.test(value) && value !== "") || !isUniqueIdentifier(nodes, value, node.id)) {
-      setOutputIdentifierError(true);
-    } else {
-      setOutputIdentifierError(false);
-    }
-
-    setOutputIdentifier(value);
-    setSelectedNode(node);
-  };
 
   useEffect(() => {
     const identifier = node.data.outputIdentifier;
@@ -201,6 +187,14 @@ export const DataTypeNode = memo((node: Node) => {
           <AlertCircle className="text-red-600 w-5 h-5" />
           <div className="absolute top-12 left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
             Value is not an integer
+          </div>
+        </div>
+      )}
+      {sizeError && (
+        <div className="absolute top-2 right-2 group z-20">
+          <AlertCircle className="text-red-600 w-5 h-5" />
+          <div className="absolute top-12 left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
+            Size is not an integer
           </div>
         </div>
       )}

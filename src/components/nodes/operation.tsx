@@ -136,6 +136,14 @@ export const OperationNode = memo((node: Node) => {
             </div>
           </div>
         )}
+        {sizeError && (
+        <div className="absolute top-2 right-2 group z-20">
+          <AlertCircle className="text-red-600 w-5 h-5" />
+          <div className="absolute top-12 left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
+            Size is not an integer
+          </div>
+        </div>
+      )}
         <div
           className={cn(
             "w-[320px] bg-white border border-solid border-gray-700 shadow-md",

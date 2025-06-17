@@ -1,9 +1,11 @@
 import useStore from "@/config/store";
 import { cn } from "@/lib/utils";
-import React, { memo, useState, useRef } from "react";
+import React, { memo, useState, useRef, useEffect } from "react";
 import { Edge, Handle, Node, Position, getConnectedEdges } from "reactflow";
 import { shallow } from "zustand/shallow";
 import OutputPort from "../utils/outputPort";
+import { AlertCircle } from "lucide-react";
+import { findDuplicateOutputIdentifiers, findDuplicateOutputIdentifiersInsideNode } from "../utils/utils";
 
 const selector = (state: {
   selectedNode: Node | null;
@@ -26,11 +28,13 @@ export const MeasurementNode = memo((node: Node) => {
   const { edges, nodes, updateNodeValue, setSelectedNode } = useStore(selector, shallow);
   const alledges = getConnectedEdges([node], edges);
   const [y, setY] = useState("");
+  const [classicalOutputIdentifierError, setClassicalOutputIdentifierError] = useState(false);
   const [outputIdentifierError, setOutputIdentifierError] = useState(false);
   const [outputIdentifier, setOutputIdentifier] = useState("");
   const [operation, setOperation] = useState("");
   const [showingChildren, setShowingChildren] = useState(false);
   const [sizeError, setSizeError] = useState(false);
+  const [classicalSizeError, setClassicalSizeError] = useState(false);
 
 
   const [inputs, setInputs] = useState(data.inputs || []);
@@ -47,6 +51,20 @@ export const MeasurementNode = memo((node: Node) => {
   const extraHeightPerVariable = 40;
   const dynamicHeight = baseHeight + (inputs.length) * extraHeightPerVariable;
   console.log(dynamicHeight)
+
+
+  useEffect(() => {
+    const identifier = node.data.outputIdentifier;
+    console.log(nodes)
+    let selectedNode = nodes.find(n => n.id === node.id);
+    const duplicates = findDuplicateOutputIdentifiers(nodes, node.id);
+    let isDuplicate = duplicates.has(identifier);
+ 
+    isDuplicate = isDuplicate || findDuplicateOutputIdentifiersInsideNode(nodes, selectedNode)
+    
+    setOutputIdentifierError(isDuplicate && identifier !== "");
+    setClassicalOutputIdentifierError(isDuplicate && identifier !== "");
+  }, [nodes, node.data]);
 
   const handleYChange = (e, field) => {
     const value = e.target.value;
@@ -79,13 +97,29 @@ export const MeasurementNode = memo((node: Node) => {
         )}
         style={{ height: `${dynamicHeight}px` }}
       >
-        <div className="w-full flex items-center" style={{ height: '52px' }}>
-            <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
-              <img src="measurementIcon2.png" alt="icon" className="w-[40px] h-[40px] object-contain flex-shrink-0" />
-              <div className="h-full w-[1px] bg-black mx-2" />
-              <span className="truncate font-semibold leading-none" style={{ paddingLeft: '25px' }}>{data.label}</span>
+        {(outputIdentifierError || classicalOutputIdentifierError) && (
+          <div className="absolute top-2 right-[-30px] group z-20">
+            <AlertCircle className="text-red-600 w-5 h-5" />
+            <div className="absolute top-5 left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
+              Identifier not unique
             </div>
           </div>
+        )}
+        {(sizeError || classicalSizeError) && (
+          <div className="absolute top-2 right-2 group z-20">
+            <AlertCircle className="text-red-600 w-5 h-5" />
+            <div className="absolute top-12 left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
+              Size is not an integer
+            </div>
+          </div>
+        )}
+        <div className="w-full flex items-center" style={{ height: '52px' }}>
+          <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
+            <img src="measurementIcon2.png" alt="icon" className="w-[40px] h-[40px] object-contain flex-shrink-0" />
+            <div className="h-full w-[1px] bg-black mx-2" />
+            <span className="truncate font-semibold leading-none" style={{ paddingLeft: '25px' }}>{data.label}</span>
+          </div>
+        </div>
         <div className="flex justify-center">
           <div className="custom-node-port-in mb-3 mt-2">
             <div className="relative flex flex-col items-start text-black text-center overflow-visible">
@@ -142,11 +176,11 @@ export const MeasurementNode = memo((node: Node) => {
             outputs={outputs}
             setOutputs={setOutputs}
             edges={edges}
-            sizeError={sizeError}
-            outputIdentifierError={outputIdentifierError}
+            sizeError={classicalSizeError}
+            outputIdentifierError={classicalOutputIdentifierError}
             updateNodeValue={updateNodeValue}
-            setOutputIdentifierError={setOutputIdentifierError}
-            setSizeError={setSizeError}
+            setOutputIdentifierError={setClassicalOutputIdentifierError}
+            setSizeError={setClassicalSizeError}
             setSelectedNode={setSelectedNode}
             active={false}
           />
