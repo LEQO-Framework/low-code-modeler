@@ -120,7 +120,7 @@ export const OperationNode = memo((node: Node) => {
       setStartsWithDigitError(true);
     }
 
-  }, [nodes, node.data.outputIdentifier, node.id]);
+  }, [nodes, node.data.outputIdentifier, node.id, ancillaMode]);
 
   const baseHeight = 550;
   const extraHeightPerVariable = 20;
@@ -191,7 +191,7 @@ export const OperationNode = memo((node: Node) => {
             "w-[320px] bg-white border border-solid border-gray-700 shadow-md",
             selected && "border-blue-500"
           )}
-          style={{ height: `${dynamicHeight}px` }}
+          style={{ height: !ancillaMode ? '355px' : `${dynamicHeight}px` }}
         >
           <div className="w-full flex items-center" style={{ height: '52px' }}>
             {node.data.implementation && (
@@ -285,6 +285,7 @@ export const OperationNode = memo((node: Node) => {
                 />
                 <span className="text-black text-sm text-center w-full">{node.data.inputs[0]?.outputIdentifier || "Input 1"}</span>
               </div>
+              {node.data.label !== consts.minMaxOperatorLabel && (
               <div
                 className="relative p-2 mb-1"
                 style={{
@@ -304,6 +305,7 @@ export const OperationNode = memo((node: Node) => {
                 />
                 <span className="text-black text-sm text-center w-full">{node.data.inputs[1]?.outputIdentifier || "Input 2"}</span>
               </div>
+              )}
               {ancillaMode && (<div>
                 <div
                   className="relative p-2 mb-1"

@@ -140,7 +140,16 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
       const size = output?.identifier?.trim();
       if (!outputIdentifier) return;
       const duplicates = findDuplicateOutputIdentifier(nodes, selectedNode.id, selectedNode, identifier);
-      let isDuplicate = duplicates.has(identifier);
+      let isDuplicate = false;
+      for (const [key] of duplicates.entries()) {
+        if (
+          Array.isArray(key) &&
+          key.some((item) => item.identifier === outputIdentifier)
+        ) {
+          isDuplicate = true;
+          break;
+        }
+      }
       isDuplicate = isDuplicate || findDuplicateOutputIdentifiersInsideNode(nodes, selectedNode, outputIdentifier)
       const startsWithDigit = /^\d/.test(outputIdentifier);
       console.log(isDuplicate)
@@ -159,7 +168,7 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
   }, [nodes, outputs, node.id]);
 
 
-  const baseHeight = 200;
+  const baseHeight = !ancillaMode ? 50 : 200;
   const extraHeightPerVariable = 130;
   const dynamicHeight =
     baseHeight + 2 * 40 + 3 * 50 + (numberInputs * 50) + numberOutputs * extraHeightPerVariable;

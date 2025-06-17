@@ -101,7 +101,7 @@ export const TextPanel = () => {
       console.log(field)
       if (field === "gamma" || field === "lambda"|| field === "theta"|| field === "phi" ||field === "parameterType" || field === "outputIdentifier" || field === "quantumStateName" || field === "encodingType" || field === "implementationType" || field === "size"
         || field === "operator" || field === "minMaxOperator" || field === "uncomputeImplementationType" || field === "implementation" || field === "fileName" ||
-        field === "uncomputeImplementation" || field === "parameter" || field === "nodeType") {
+        field === "uncomputeImplementation" || field === "parameter" || field === "nodeType" || field === "basis") {
         selectedNode.data[field] = value;
         updateNodeValue(selectedNode.id, field, value);
       }
@@ -924,6 +924,21 @@ export const TextPanel = () => {
                 onChange={(e) => handleNumberChange("indices", e.target.value)}
                 className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
                 placeholder="Enter indices"
+              />
+            </div>
+
+            <label className="block text-sm font-medium text-start text-gray-700 mt-2" htmlFor="indices">
+              Basis
+            </label>
+            <div className="mt-1">
+              <input
+                type="text"
+                id="basis"
+                name="basis"
+                value={selectedNode.data.basis || ""}
+                onChange={(e) => handleNumberChange("basis", e.target.value)}
+                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
+                placeholder="Z"
               />
             </div>
 
