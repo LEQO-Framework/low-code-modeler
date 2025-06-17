@@ -227,6 +227,13 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
           )}
 
           <div className="w-full flex items-center" style={{ height: "52px" }}>
+             {node.data.implementation && (
+              <img
+                src="implementation-icon.png"
+                alt="Custom Icon"
+                className="absolute -top-2 -right-4 w-8 h-8"
+              />
+            )}
             <div
               className="w-full bg-orange-300 py-1 px-2 flex items-center overflow-hidden"
               style={{ height: "inherit", borderTopLeftRadius: "28px", borderTopRightRadius: "28px", overflow: "hidden", }}
@@ -406,8 +413,6 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
                     <AncillaPort node={node} edges={edges} dirty={true} index={numberOutputs + 1} />
                     <UncomputePort node={node} edges={edges} index={numberOutputs + 2} />
                   </div>
-
-
                 )}
               </div>
             </div>

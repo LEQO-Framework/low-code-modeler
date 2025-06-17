@@ -201,6 +201,13 @@ export const AlgorithmNode = memo((node: Node) => {
 
 
           <div className="w-full flex items-center" style={{ height: "52px" }}>
+            {node.data.implementation && (
+              <img
+                src="implementation-icon.png"
+                alt="Custom Icon"
+                className="absolute -top-4 -right-4 w-8 h-8"
+              />
+            )}
             <div
               className="w-full bg-blue-300 py-1 px-2 flex items-center"
               style={{ height: "inherit" }}

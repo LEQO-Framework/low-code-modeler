@@ -1,5 +1,5 @@
 import useStore from "@/config/store";
-import { AlgorithmNode, ClassicalAlgorithmNode, parameterized_one_qubit, parameterized_two_qubit, multi_parameterized_two_qubit } from "@/constants";
+import { AlgorithmNode, ClassicalAlgorithmNode, parameterized_one_qubit, parameterized_two_qubit, multi_parameterized_two_qubit, OperatorNode } from "@/constants";
 import { ArrowLeft } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Node } from "reactflow";
@@ -480,7 +480,7 @@ export const TextPanel = () => {
             />
           </div>
         )}
-        {selectedNode?.type === "arithmeticOperatorNode" && (
+        {selectedNode?.type === OperatorNode && (
           <div className="p-2 mt-3">
 
             <label

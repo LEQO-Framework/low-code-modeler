@@ -38,7 +38,7 @@ import {
 } from "recharts";
 import { startCompile } from "./backend";
 import { Button } from "antd";
-import { ancillaConstructColor, classicalConstructColor, controlFlowConstructColor, quantumConstructColor } from "./constants";
+import { ancillaConstructColor, classicalConstructColor, ClassicalOperatorNode, controlFlowConstructColor, quantumConstructColor } from "./constants";
 
 
 
@@ -542,8 +542,6 @@ function App() {
     },
     [reactFlowInstance, setNodes],
   );
-
-
 
   const flowKey = "example-flow";
   function handleSaveClick() {
@@ -1161,6 +1159,7 @@ function App() {
             onNodeDrag={onNodeDrag}
             onNodeDragStop={onNodeDragStop}
             onDrop={onDrop}
+        
             fitView
             fitViewOptions={{ maxZoom: 1 }}
             onInit={setReactFlowInstance}
@@ -1216,7 +1215,7 @@ function App() {
 
             <MiniMap
               nodeClassName={(node) => {
-                if (node.type === 'dataTypeNode' || node.type === "classicalAlgorithmNode") return 'minimap-node-circle';
+                if (node.type === 'dataTypeNode' || node.type === "classicalAlgorithmNode" || node.type === ClassicalOperatorNode) return 'minimap-node-circle';
                 if (node.type === 'rounded') return 'minimap-node-rounded';
                 return 'minimap-node-default';
               }}
@@ -1224,6 +1223,7 @@ function App() {
                 switch (node.type) {
                   case 'dataTypeNode':
                   case 'classicalAlgorithmNode':
+                  case ClassicalOperatorNode:
                   case 'rounded':
                     return classicalConstructColor;
                   case 'ancillaNode':
