@@ -45,7 +45,16 @@ export const OperationNode = memo((node: Node) => {
   const [showingChildren, setShowingChildren] = useState(false);
   const [sizeError, setSizeError] = useState(false);
   const updateNodeInternals = useUpdateNodeInternals();
-    const [startsWithDigitError, setStartsWithDigitError] = useState(false);
+  const [startsWithDigitError, setStartsWithDigitError] = useState(false);
+
+  const isAncillaConnected = edges.some(
+    edge => edge.target === node.id && edge.targetHandle === `ancillaHandleOperationInput2${node.id}`
+  );
+
+  const isDirtyAncillaConnected = edges.some(
+    edge => edge.target === node.id && edge.targetHandle === `${consts.dirtyAncillaHandle}OperationInput3${node.id}`
+  );
+
 
   const addVariable = () => {
     const newInputId = `input-${inputs.length + 1}`;
@@ -150,13 +159,13 @@ export const OperationNode = memo((node: Node) => {
           </div>
         )}
         {sizeError && (
-        <div className="absolute top-2 right-2 group z-20">
-          <AlertCircle className="text-red-600 w-5 h-5" />
-          <div className="absolute top-[75px] left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
-            Size is not an integer.
+          <div className="absolute top-2 right-2 group z-20">
+            <AlertCircle className="text-red-600 w-5 h-5" />
+            <div className="absolute top-[75px] left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
+              Size is not an integer.
+            </div>
           </div>
-        </div>
-      )}
+        )}
         <div
           className={cn(
             "w-[320px] bg-white border border-solid border-gray-700 shadow-md",
@@ -274,11 +283,17 @@ export const OperationNode = memo((node: Node) => {
                       backgroundColor: consts.ancillaConstructColor,
                     }}
                   />
+
                   <Handle
                     type="target"
                     id={`ancillaHandleOperationInput2${node.id}`}
                     position={Position.Left}
-                    className="z-10 ancilla-port-in !bg-gray-200 !border-dashed !border-black w-4 transform rotate-45 -left-[8px]"
+                    className={cn(
+                      "z-10 ancilla-port-in w-4 transform rotate-45 -left-[8px]",
+                      isAncillaConnected
+                        ? "!bg-green-100 !border-solid !border-black"
+                        : "!bg-gray-200 !border-dashed !border-black"
+                    )}
                     style={{ zIndex: 1, top: '50% !important', transform: 'translateY(-50%) rotate(45deg)' }}
                   />
                   <span className="text-black text-sm text-center w-full" style={{ zIndex: 1 }}>Ancilla</span>
@@ -302,9 +317,15 @@ export const OperationNode = memo((node: Node) => {
                     type="target"
                     id={`${consts.dirtyAncillaHandle}OperationInput3${node.id}`}
                     position={Position.Left}
-                    className="z-10 ancilla-port-in !bg-gray-200 !border-dashed !border-black w-4 transform rotate-45 -left-[8px]"
+                    className={cn(
+                      "z-10 ancilla-port-in w-4 transform rotate-45 -left-[8px]",
+                      isDirtyAncillaConnected
+                        ? "!bg-green-100 !border-solid !border-black"
+                        : "!bg-gray-200 !border-dashed !border-black"
+                    )}
                     style={{ zIndex: 1, top: '50% !important', transform: 'translateY(-50%) rotate(45deg)' }}
                   />
+
                   <span className="text-black text-sm text-center w-full" style={{ zIndex: 1 }}> Dirty Ancilla</span>
                 </div>
               </div>)}

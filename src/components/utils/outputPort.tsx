@@ -202,13 +202,13 @@ export default function OutputPort({
             isClassical
               ? "!bg-orange-300 !border-black"
               : isAncilla
-                ? "!bg-green-300 !border-black rotate-45"
+                ? "!bg-green-100 !border-black rotate-45"
                 : "!bg-blue-300 !border-black",
             (active || isConnected)
               ? `border-solid ${isClassical
                 ? "!bg-orange-300 !border-black"
                 : isAncilla
-                  ? "!bg-green-300 !border-black rotate-45"
+                  ? "!bg-green-100 !border-black rotate-45"
                   : "!bg-blue-300 !border-black"
               }`
               : "!bg-gray-200 border-dashed !border-gray-500"

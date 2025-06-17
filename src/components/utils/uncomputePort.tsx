@@ -4,7 +4,7 @@ import React from 'react';
 import { cn } from '@/lib/utils';
 
 export default function UncomputePort({ node, edges, index }) {
-  const handleId = `quantumHandle${node.type}Uncompute${index}${node.id}`;
+  const handleId = `ancillaHandle${node.type}Uncompute${index}${node.id}`;
   const isConnected = edges.some(edge => edge.sourceHandle === handleId);
 
   const handleClassName = cn(
