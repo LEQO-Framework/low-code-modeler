@@ -68,23 +68,18 @@ export const MeasurementNode = memo((node: Node) => {
 
   const handleYChange = (e, field) => {
     const value = e.target.value;
+    if (/^[a-zA-Z_]/.test(value) && value !== "") {
+      setError(true);
+    } else {
+      setError(false)
+    }
     if (field === "indices") {
       setIndices(value);
-      node.data[field] = value;
-      updateNodeValue(node.id, field, value);
-      setSelectedNode(node);
-      return;
     }
-    // Check if the first character is a letter or underscore
-    if (!/^[a-zA-Z_]/.test(value) || value == "") {
-      setYError(true);
-    } else {
-      setYError(false);
-    }
-
-    setY(value);
+    const number = Number(value);
+    
     node.data[field] = value;
-    updateNodeValue(node.id, field, value);
+    updateNodeValue(node.id, field, number);
     setSelectedNode(node);
   };
 
@@ -98,7 +93,7 @@ export const MeasurementNode = memo((node: Node) => {
         style={{ height: `${dynamicHeight}px` }}
       >
         {(outputIdentifierError || classicalOutputIdentifierError) && (
-          <div className="absolute top-2 right-[-30px] group z-20">
+          <div className="absolute top-2 right-[-50px] group z-20">
             <AlertCircle className="text-red-600 w-5 h-5" />
             <div className="absolute top-5 left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
               Identifier not unique
@@ -106,10 +101,18 @@ export const MeasurementNode = memo((node: Node) => {
           </div>
         )}
         {(sizeError || classicalSizeError) && (
-          <div className="absolute top-2 right-2 group z-20">
+          <div className="absolute top-2 right-[-50px] group z-20">
             <AlertCircle className="text-red-600 w-5 h-5" />
             <div className="absolute top-12 left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
               Size is not an integer
+            </div>
+          </div>
+        )}
+        {error && (
+          <div className="absolute top-2 right-[-50px] group z-20">
+            <AlertCircle className="text-red-600 w-5 h-5" />
+            <div className="absolute top-[75px] left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
+              Indices is not an integer
             </div>
           </div>
         )}

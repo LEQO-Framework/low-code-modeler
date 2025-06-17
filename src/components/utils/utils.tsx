@@ -36,7 +36,6 @@ export function findDuplicateOutputIdentifiers(nodes, currentNodeId) {
 }
 export function findDuplicateOutputIdentifiersInsideNode(nodes, currentNode) {
   const node = nodes.find(n => n.id === currentNode.id);
-  console.log(currentNode.data.outputs)
 
   if (!currentNode || !currentNode.data?.outputs || currentNode.data.outputs.length <= 1) {
     return false;
