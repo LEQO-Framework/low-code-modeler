@@ -42,6 +42,7 @@ export const MeasurementNode = memo((node: Node) => {
   const [error, setError] = useState(false);
   const [yError, setYError] = useState(false);
   const [indices, setIndices] = useState("");
+  const [startsWithDigitError, setStartsWithDigitError] = useState(false);
 
   const xRef = useRef(null);
   const yRef = useRef(null);
@@ -59,11 +60,13 @@ export const MeasurementNode = memo((node: Node) => {
     let selectedNode = nodes.find(n => n.id === node.id);
     const duplicates = findDuplicateOutputIdentifiers(nodes, node.id);
     let isDuplicate = duplicates.has(identifier);
+    const startsWithDigit = /^\d/.test(outputIdentifier);
  
-    isDuplicate = isDuplicate || findDuplicateOutputIdentifiersInsideNode(nodes, selectedNode)
+    isDuplicate = isDuplicate || findDuplicateOutputIdentifiersInsideNode(nodes, selectedNode, identifier) ||startsWithDigit;
     
     setOutputIdentifierError(isDuplicate && identifier !== "");
     setClassicalOutputIdentifierError(isDuplicate && identifier !== "");
+
   }, [nodes, node.data]);
 
   const handleYChange = (e, field) => {
@@ -96,7 +99,7 @@ export const MeasurementNode = memo((node: Node) => {
           <div className="absolute top-2 right-[-50px] group z-20">
             <AlertCircle className="text-red-600 w-5 h-5" />
             <div className="absolute top-5 left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
-              Identifier not unique
+              Identifier is not unique or starts with a number
             </div>
           </div>
         )}

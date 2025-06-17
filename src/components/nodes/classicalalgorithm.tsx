@@ -8,6 +8,8 @@ import OutputPort from "../utils/outputPort";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { ancillaConstructColor, classicalConstructColor, dirtyAncillaHandle, dirtyConstructColor } from "@/constants";
+import { findDuplicateOutputIdentifier, findDuplicateOutputIdentifiersInsideNode } from "../utils/utils";
+import { AlertCircle } from "lucide-react";
 
 const selector = (state: {
   selectedNode: Node | null;
@@ -58,6 +60,8 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
   const [isEditingLabel, setIsEditingLabel] = useState(false);
   const [editableLabel, setEditableLabel] = useState(data.label || "");
   const updateNodeInternals = useUpdateNodeInternals();
+  const [outputIdentifierErrors, setOutputIdentifierErrors] = useState({});
+  const [sizeErrors, setSizeErrors] = useState<{ [key: number]: boolean }>({});
 
   const addVariable = () => {
     const newInputId = `input-${inputs.length + 1}`;
@@ -117,6 +121,36 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
     updateNodeInternals(node.id);
   }, [node]);
 
+    useEffect(() => {
+    const identifier = node.data.outputIdentifier;
+    console.log(nodes)
+    let selectedNode = nodes.find(n => n.id === node.id);
+    const newErrors = {};
+
+    outputs.forEach((output, index) => {
+      const outputIdentifier = output?.identifier?.trim();
+      const size = output?.identifier?.trim();
+      if (!outputIdentifier) return;
+      const duplicates = findDuplicateOutputIdentifier(nodes, selectedNode.id, selectedNode, identifier);
+      let isDuplicate = duplicates.has(identifier);
+      isDuplicate = isDuplicate || findDuplicateOutputIdentifiersInsideNode(nodes, selectedNode, outputIdentifier)
+      const startsWithDigit = /^\d/.test(outputIdentifier);
+      console.log(isDuplicate)
+      console.log(output)
+
+      console.log("set for identifier error");
+      console.log(outputIdentifier)
+      // Flag error if identifier is invalid or duplicated
+      newErrors[index] = startsWithDigit || isDuplicate;
+      if (!size) return;
+      const startsWithDigitSize = /^\d/.test(size);
+      sizeErrors[index] = startsWithDigitSize;
+    })
+
+    setOutputIdentifierErrors(newErrors);
+  }, [nodes, outputs, node.id]);
+
+
   const baseHeight = 200;
   const extraHeightPerVariable = 130;
   const dynamicHeight =
@@ -174,6 +208,16 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
           )}
           style={{ height: `${dynamicHeight}px`, borderRadius: "40px" }}
         >
+          {(Object.values(outputIdentifierErrors).some(Boolean) ||
+            Object.values(sizeErrors).some(Boolean)) && (
+              <div className="absolute top-2 right-[-40px] group z-20">
+                <AlertCircle className="text-red-600 w-5 h-5" />
+                <div className="absolute top-5 left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
+                  One or more outputs have errors (duplicate ID or size is not a number).
+                </div>
+              </div>
+          )}
+
           <div className="w-full flex items-center" style={{ height: "52px" }}>
             <div
               className="w-full bg-orange-300 py-1 px-2 flex items-center overflow-hidden"
@@ -328,11 +372,16 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
                       outputs={outputs}
                       setOutputs={setOutputs}
                       edges={edges}
-                      sizeError={sizeError}
-                      outputIdentifierError={outputIdentifierError}
+                      sizeError={sizeErrors[index]}
+                setSizeError={(error) =>
+                  setSizeErrors((prev) => ({ ...prev, [index]: error }))
+                }
+                      outputIdentifierError={outputIdentifierErrors[index]}
                       updateNodeValue={updateNodeValue}
-                      setOutputIdentifierError={setOutputIdentifierError}
-                      setSizeError={setSizeError}
+                      setOutputIdentifierError={(error) =>
+                        setOutputIdentifierErrors(prev => ({ ...prev, [index]: error }))
+                      }
+                 
                       setSelectedNode={setSelectedNode}
                       active={true}
                     />

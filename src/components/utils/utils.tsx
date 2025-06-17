@@ -1,4 +1,4 @@
-import  {
+import {
   Node,
 } from "reactflow";
 
@@ -9,10 +9,12 @@ export const isUniqueIdentifier = (
 ): boolean => {
   console.log("check if outputIdentifier is unique");
 
-  return !nodes.filter((node)=> node.id !== nodeId).some(
-    node =>{console.log(nodeId); console.log(node.data.outputIdentifier);
+  return !nodes.filter((node) => node.id !== nodeId).some(
+    node => {
+      console.log(nodeId); console.log(node.data.outputIdentifier);
       console.log(node.id)
-      return node.data.outputIdentifier === identifier}
+      return node.data.outputIdentifier === identifier
+    }
   );
 };
 
@@ -29,12 +31,32 @@ export function findDuplicateOutputIdentifiers(nodes, currentNodeId) {
         identifierMap.set(id, [node.id]);
       }
     }
-    
+
   });
 
   return identifierMap;
 }
-export function findDuplicateOutputIdentifiersInsideNode(nodes, currentNode) {
+
+export function findDuplicateOutputIdentifier(nodes, currentNodeId, currentNode, identifier) {
+  const identifierMap = new Map();
+
+  nodes.forEach((node) => {
+    const id = node.data?.outputs;
+    for (const output of currentNode.data.outputs) {
+      if (id && node.id !== currentNodeId && output?.identifier === identifier) {
+        if (identifierMap.has(id)) {
+          identifierMap.set(id, [...identifierMap.get(id), node.id]);
+        } else {
+          identifierMap.set(id, [node.id]);
+        }
+      }
+    }
+
+  });
+
+  return identifierMap;
+}
+export function findDuplicateOutputIdentifiersInsideNode(nodes, currentNode, identifier) {
   const node = nodes.find(n => n.id === currentNode.id);
 
   if (!currentNode || !currentNode.data?.outputs || currentNode.data.outputs.length <= 1) {
@@ -48,7 +70,7 @@ export function findDuplicateOutputIdentifiersInsideNode(nodes, currentNode) {
     console.log(id)
     if (!id) continue;
 
-    if (seen.has(id)) {
+    if (seen.has(id) && id === identifier) {
       return true;
     }
     seen.add(id);

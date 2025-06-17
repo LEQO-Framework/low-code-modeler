@@ -45,6 +45,7 @@ export const OperationNode = memo((node: Node) => {
   const [showingChildren, setShowingChildren] = useState(false);
   const [sizeError, setSizeError] = useState(false);
   const updateNodeInternals = useUpdateNodeInternals();
+    const [startsWithDigitError, setStartsWithDigitError] = useState(false);
 
   const addVariable = () => {
     const newInputId = `input-${inputs.length + 1}`;
@@ -104,6 +105,10 @@ export const OperationNode = memo((node: Node) => {
     if ((isDuplicate && identifier !== "") !== outputIdentifierError) {
       setOutputIdentifierError(isDuplicate && identifier !== "");
     }
+    const startsWithDigit = /^\d/.test(identifier);
+    if (startsWithDigit) {
+      setStartsWithDigitError(true);
+    }
 
   }, [nodes, node.data.outputIdentifier, node.id]);
 
@@ -132,15 +137,23 @@ export const OperationNode = memo((node: Node) => {
           <div className="absolute top-2 right-[-30px] group z-20">
             <AlertCircle className="text-red-600 w-5 h-5" />
             <div className="absolute top-5 left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
-              Identifier not unique
+              Identifier is not unique.
+            </div>
+          </div>
+        )}
+        {startsWithDigitError && (
+          <div className="absolute top-2 right-[-30px] group z-20">
+            <AlertCircle className="text-red-600 w-5 h-5" />
+            <div className="absolute top-12 left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
+              Identifier starts with a number.
             </div>
           </div>
         )}
         {sizeError && (
         <div className="absolute top-2 right-2 group z-20">
           <AlertCircle className="text-red-600 w-5 h-5" />
-          <div className="absolute top-12 left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
-            Size is not an integer
+          <div className="absolute top-[75px] left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
+            Size is not an integer.
           </div>
         </div>
       )}

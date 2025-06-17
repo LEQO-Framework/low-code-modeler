@@ -40,6 +40,7 @@ export const StatePreparationNode = memo((node: Node) => {
   const [outputIdentifierError, setOutputIdentifierError] = useState(false);
   const [encodingType, setEncodingType] = useState("Amplitude Encoding");
   const [mounted, setMounted] = useState(false);
+  const [startsWithDigitError, setStartsWithDigitError] = useState(false);
 
 
   const { updateNodeValue, setSelectedNode, setNodes, edges, nodes, ancillaMode } = useStore(selector, shallow);
@@ -90,17 +91,21 @@ export const StatePreparationNode = memo((node: Node) => {
     setMounted(true);
   }, []);
 
-    useEffect(() => {
-      const identifier = node.data.outputIdentifier;
-      const duplicates = findDuplicateOutputIdentifiers(nodes, node.id);
-      const isDuplicate = duplicates.has(identifier);
-  
-      // Only update state if error state is actually changing
-      if ((isDuplicate && identifier !== "") !== outputIdentifierError) {
-        setOutputIdentifierError(isDuplicate && identifier !== "");
-      }
-  
-    }, [nodes, node.data.outputIdentifier, node.id]);
+  useEffect(() => {
+    const identifier = node.data.outputIdentifier;
+    const duplicates = findDuplicateOutputIdentifiers(nodes, node.id);
+    const isDuplicate = duplicates.has(identifier);
+
+    const startsWithDigit = /^\d/.test(identifier);
+    // Only update state if error state is actually changing
+    if (((isDuplicate) && identifier !== "") !== outputIdentifierError) {
+      setOutputIdentifierError((isDuplicate) && identifier !== "");
+    }
+    if (startsWithDigit) {
+      setStartsWithDigitError(true);
+    }
+  }, [nodes, node.data.outputIdentifier, node.id]);
+
   const { data, selected } = node;
 
   const alledges = getConnectedEdges([node], edges);
@@ -164,18 +169,28 @@ export const StatePreparationNode = memo((node: Node) => {
             <div className="absolute top-2 right-[-30px] group z-20">
               <AlertCircle className="text-red-600 w-5 h-5" />
               <div className="absolute top-5 left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
-                Identifier not unique
+                Identifier is not unique.
               </div>
             </div>
           )}
+
+          {startsWithDigitError && (
+            <div className="absolute top-2 right-[-30px] group z-20">
+              <AlertCircle className="text-red-600 w-5 h-5" />
+              <div className="absolute top-[50px] left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
+                Identifier starts with a number.
+              </div>
+            </div>
+          )}
+
           {sizeError && (
-        <div className="absolute top-2 right-2 group z-20">
-          <AlertCircle className="text-red-600 w-5 h-5" />
-          <div className="absolute top-12 left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
-            Size is not an integer
-          </div>
-        </div>
-      )}
+            <div className="absolute top-2 right-[-30px] group z-20">
+              <AlertCircle className="text-red-600 w-5 h-5" />
+              <div className="absolute top-[80px] left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
+                Size is not an integer.
+              </div>
+            </div>
+          )}
 
           <div className="w-full flex items-center" style={{ height: '52px' }}>
             <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
@@ -351,7 +366,7 @@ export const StatePreparationNode = memo((node: Node) => {
                 setOutputs={setOutputs}
                 edges={edges}
                 sizeError={sizeError}
-                outputIdentifierError={outputIdentifierError}
+                outputIdentifierError={(outputIdentifierError || startsWithDigitError)}
                 updateNodeValue={updateNodeValue}
                 setOutputIdentifierError={setOutputIdentifierError}
                 setSizeError={setSizeError}

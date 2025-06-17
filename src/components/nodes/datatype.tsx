@@ -32,6 +32,7 @@ export const DataTypeNode = memo((node: Node) => {
   const { nodes, edges, updateNodeValue, setSelectedNode } = useStore(selector, shallow);
   const [durationUnit, setDurationUnit] = useState(node.data.durationUnit || "s");
   const { data } = node;
+  const [startsWithDigitError, setStartsWithDigitError] = useState(false);
 
   const changeValue = (e) => {
     let value = e.target.value.trim();
@@ -145,6 +146,10 @@ export const DataTypeNode = memo((node: Node) => {
     const duplicates = findDuplicateOutputIdentifiers(nodes, node.id);
     const isDuplicate = duplicates.has(identifier);
     setOutputIdentifierError(isDuplicate && identifier !== "");
+    const startsWithDigit = /^\d/.test(identifier);
+    if (startsWithDigit) {
+      setStartsWithDigitError(true);
+    }
   }, [nodes, node.id]);
 
 
@@ -178,7 +183,15 @@ export const DataTypeNode = memo((node: Node) => {
         <div className="absolute top-2 right-2 group z-20">
           <AlertCircle className="text-red-600 w-5 h-5" />
           <div className="absolute top-5 left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
-            Identifier not unique
+            Identifier not unique.
+          </div>
+        </div>
+      )}
+      {startsWithDigitError && (
+        <div className="absolute top-2 right-2 group z-20">
+          <AlertCircle className="text-red-600 w-5 h-5" />
+          <div className="absolute top-5 left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
+            Identifier starts with a number.
           </div>
         </div>
       )}
@@ -186,7 +199,7 @@ export const DataTypeNode = memo((node: Node) => {
         <div className="absolute top-2 right-2 group z-20">
           <AlertCircle className="text-red-600 w-5 h-5" />
           <div className="absolute top-12 left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
-            Value is not an integer
+            Value is not an integer.
           </div>
         </div>
       )}
@@ -194,7 +207,7 @@ export const DataTypeNode = memo((node: Node) => {
         <div className="absolute top-2 right-2 group z-20">
           <AlertCircle className="text-red-600 w-5 h-5" />
           <div className="absolute top-12 left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
-            Size is not an integer
+            Size is not an integer.
           </div>
         </div>
       )}
