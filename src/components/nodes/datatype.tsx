@@ -216,7 +216,26 @@ export const DataTypeNode = memo((node: Node) => {
               })()}
 
               <div className="h-full w-[1px] bg-black mx-2" />
-              <span className="font-semibold leading-none" style={{ paddingLeft: '20px' }}>{data.label}</span>
+             <span
+  className="font-semibold leading-none"
+  style={{
+    paddingLeft:
+      data.label === "bit"
+        ? "32px"
+        : data.label === "int"
+        ? "28px"
+        : data.label === "duration"
+        ? "25px"
+        : data.label === "float"
+        ? "23px"
+        : data.label === "angle"
+        ? "29px"
+        : "10px",
+  }}
+>
+
+  {data.label}
+</span>
             </div>
           </div>
 
