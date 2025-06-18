@@ -211,7 +211,7 @@ export default function OutputPort({
                   ? "!bg-green-100 !border-black rotate-45"
                   : "!bg-blue-300 !border-black"
               }`
-              : "!bg-gray-200 border-dashed !border-gray-500"
+              : "!bg-gray-200 !border-dashed !border-gray-500"
           )}
           isConnectable={edges.filter(edge => edge.sourceHandle === handleId).length < 1}
           isConnectableEnd={false}
