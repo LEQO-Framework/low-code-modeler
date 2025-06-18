@@ -239,7 +239,7 @@ export const StatePreparationNode = memo((node: Node) => {
 
               <div className="h-full w-[1px] bg-black mx-2" />
 
-              <span className="font-semibold leading-none" style={{ paddingLeft: '25px' }}>
+              <span className="font-semibold leading-none" style={{ paddingLeft: '45px' }}>
                 {data.label}
               </span>
             </div>
