@@ -183,10 +183,21 @@ const useStore = create<RFState>((set, get) => ({
     console.log("Current historyIndex:", get().historyIndex);
   },
   setAncillaMode: (ancillaMode: boolean) => {
+    const currentEdges = get().edges.map(edge => {
+      // If edge.sourceHandle contains "ancillaHandle", hide it when ancillaMode is true
+      if (edge.sourceHandle?.includes("ancillaHandle")) {
+        return { ...edge, hidden: !ancillaMode };
+      }
+      // Otherwise, ensure edge is not hidden
+      return { ...edge, hidden: false };
+    });
+
     set({
-      ancillaMode: ancillaMode
-    })
+      ancillaMode,
+      edges: currentEdges,
+    });
   },
+
   setNewEdges: (newEdges: Edge[]) => {
     const currentNodes = get().nodes;
     const currentEdges = get().edges;
@@ -333,7 +344,7 @@ const useStore = create<RFState>((set, get) => ({
         color = "#93C5FD";
 
       }
-      if (node.id === connection.source && (connection.sourceHandle.includes("ancilla") || connection.sourceHandle.includes("dirtyAncilla")) && (connection.sourceHandle.includes("ancilla") || connection.sourceHandle.includes("dirtyAncilla"))){
+      if (node.id === connection.source && (connection.sourceHandle.includes("ancilla") || connection.sourceHandle.includes("dirtyAncilla")) && (connection.sourceHandle.includes("ancilla") || connection.sourceHandle.includes("dirtyAncilla"))) {
         type = "ancillaEdge";
         color = "#86EFAC";
 
@@ -432,7 +443,7 @@ const useStore = create<RFState>((set, get) => ({
     console.log("Current Nodes:", currentNodes);
     console.log("Current Edges:", get().edges);
     console.log("New History Item:", newHistoryItem);
-    
+
     if (insertEdge && !edgeExists) {
 
       console.log(connection.source);
@@ -511,18 +522,18 @@ const useStore = create<RFState>((set, get) => ({
         //label: nodeDataSource.data.outputIdentifier
         //});
       }
-      
-      set((state) => {
-      const { nodes, edges } = state;
-      let updatedNodes = [...nodes];
-      let reuseQubit = false;
-      let sourceIdentifier = 0;
-      console.log(sourceIdentifier);
-      console.log("set state")
 
-      // Update the target nodes that receive inputs from this node
-     
-    
+      set((state) => {
+        const { nodes, edges } = state;
+        let updatedNodes = [...nodes];
+        let reuseQubit = false;
+        let sourceIdentifier = 0;
+        console.log(sourceIdentifier);
+        console.log("set state")
+
+        // Update the target nodes that receive inputs from this node
+
+
         if (edge.source === connection.source) {
           const targetNodeIndex = updatedNodes.findIndex((n) => n.id === edge.target);
           console.log(targetNodeIndex)
@@ -540,49 +551,49 @@ const useStore = create<RFState>((set, get) => ({
 
             const inputIndex = targetData.inputs.findIndex((input) => input.id === connection.source);
 
-            
-              if (inputIndex !== -1) {
-                if (targetData.inputs[inputIndex].outputIdentifier === sourceOutputIdentifier) {
-                  targetData.inputs[inputIndex].outputIdentifier = sourceNode.data.outputIdentifier;
-                  targetData.inputs[inputIndex]["identifiers"] = sourceIdentifier;
-                  targetData["identifiers"] = sourceIdentifier
-                  reuseQubit = true;
-                  console.log(targetData["identifier"])
-                } else {
-                  targetData.inputs[inputIndex].outputIdentifier = sourceNode.data.outputIdentifier;
-                  targetData.inputs[inputIndex]["identifiers"] = sourceIdentifier;
-                  targetData["identifiers"] = sourceIdentifier
-                  console.log(targetData["identifiers"])
-                  
-                }
+
+            if (inputIndex !== -1) {
+              if (targetData.inputs[inputIndex].outputIdentifier === sourceOutputIdentifier) {
+                targetData.inputs[inputIndex].outputIdentifier = sourceNode.data.outputIdentifier;
+                targetData.inputs[inputIndex]["identifiers"] = sourceIdentifier;
+                targetData["identifiers"] = sourceIdentifier
+                reuseQubit = true;
+                console.log(targetData["identifier"])
               } else {
-                targetData.inputs.push({
-                  id: connection.source,
-                  outputIdentifier: sourceNode.data.outputIdentifier,
-                  "identifiers": sourceIdentifier,
-                });
+                targetData.inputs[inputIndex].outputIdentifier = sourceNode.data.outputIdentifier;
+                targetData.inputs[inputIndex]["identifiers"] = sourceIdentifier;
                 targetData["identifiers"] = sourceIdentifier
                 console.log(targetData["identifiers"])
-              
-              }
-            
-          
-        }
-      }
 
-      
-      console.log(edge);
-      console.log(updatedNodes)
-      
-      return ({
-        nodes: updatedNodes,
-        edges: [edge, ...currentEdges],
-        history: [
-          ...get().history.slice(0, get().historyIndex + 1),
-          newHistoryItem,
-        ],
-        historyIndex: get().historyIndex + 1,
-      });
+              }
+            } else {
+              targetData.inputs.push({
+                id: connection.source,
+                outputIdentifier: sourceNode.data.outputIdentifier,
+                "identifiers": sourceIdentifier,
+              });
+              targetData["identifiers"] = sourceIdentifier
+              console.log(targetData["identifiers"])
+
+            }
+
+
+          }
+        }
+
+
+        console.log(edge);
+        console.log(updatedNodes)
+
+        return ({
+          nodes: updatedNodes,
+          edges: [edge, ...currentEdges],
+          history: [
+            ...get().history.slice(0, get().historyIndex + 1),
+            newHistoryItem,
+          ],
+          historyIndex: get().historyIndex + 1,
+        });
       });
     } else {
 
