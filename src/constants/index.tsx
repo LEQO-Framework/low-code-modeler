@@ -28,6 +28,8 @@ export const SplitterNode: string = "splitterNode";
 export const MergerNode: string = "mergerNode";
 export const OperatorNode: string = "quantumOperatorNode";
 export const ClassicalOperatorNode: string = "classicalOperatorNode";
+export const GroupNode: string = "groupNode";
+
 
 export const NodeTypes = [
   DataTypeNode,
@@ -44,7 +46,8 @@ export const NodeTypes = [
   SplitterNode,
   MergerNode,
   OperatorNode,
-  ClassicalOperatorNode
+  ClassicalOperatorNode,
+  GroupNode
 ]
 
 export const arithmeticOperatorLabel = "Arithmetic Operator";

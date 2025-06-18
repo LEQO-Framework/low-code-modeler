@@ -76,17 +76,20 @@ export const AddNodePanel = () => {
                 draggable
               >
                 {node.icon ? (
-                    <img 
-    src={node.icon} 
-    alt={typeof node.label === "string" ? node.label : ""}
-    className={`object-contain ${
-      node.type === consts.GateNode 
-        ? "w-[120px] h-[140px]" 
-        : (node.type === consts.SplitterNode || node.type === consts.MergerNode) 
-          ? "w-[190px] h-[190px]" 
-          : "w-70 h-70"
-    }`} 
-  />
+                  <img
+                    src={
+                      Array.isArray(node.icon)
+                        ? node.icon[ancillaMode ? 1 : 0]
+                        : node.icon
+                    }
+                    alt={typeof node.label === "string" ? node.label : ""}
+                    className={`object-contain ${node.type === consts.GateNode
+                        ? "w-[120px] h-[140px]"
+                        : node.type === consts.SplitterNode || node.type === consts.MergerNode
+                          ? "w-[190px] h-[190px]"
+                          : "w-70 h-70"
+                      }`}
+                  />
                 ) : (
                   <span className="font-semibold">{node.label}</span>
                 )}

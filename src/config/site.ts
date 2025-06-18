@@ -18,6 +18,7 @@ import { MergerNode } from "@/components/nodes/merger";
 import { ClassicalAlgorithmNode } from "@/components/nodes/classicalalgorithm";
 import { QubitNode } from "@/components/nodes/qubit";
 import { ClassicalOperationNode } from "@/components/nodes/classicalOperation";
+import { GroupNode } from "@/components/nodes/group";
 
 export const nodesConfig = {
   initialNodes: [ ] as unknown as Node[],
@@ -39,7 +40,8 @@ export const nodesConfig = {
     splitterNode: SplitterNode,
     mergerNode: MergerNode,
     qubitNode: QubitNode,
-    classicalOperatorNode: ClassicalOperationNode
+    classicalOperatorNode: ClassicalOperationNode,
+    groupNode: GroupNode
   } as any,
   edgesTypes: {
     quantumEdge: QuantumEdge,
@@ -49,9 +51,7 @@ export const nodesConfig = {
 };
 
 export const initialDiagram = {
-  initialNodes: [
-    
-  ] as Node[],
+  initialNodes: [] as Node[],
   initialEdges: [] as Edge[],
   nodeTypes: {
     node: Node,

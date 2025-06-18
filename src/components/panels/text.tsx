@@ -23,8 +23,9 @@ export const TextPanel = () => {
     selector,
     shallow,
   );
+  
   useEffect(() => {
-  if (selectedNode && !selectedNode.data.parameterType) {
+  if (selectedNode && !selectedNode.data.parameterType && (parameterized_one_qubit.includes(selectedNode.data.label) || parameterized_two_qubit.includes(selectedNode.data.label))) {
     handleNumberChange("parameterType", "degree");
   }
 }, [selectedNode]);
