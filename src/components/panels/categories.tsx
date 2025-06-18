@@ -18,11 +18,11 @@ export type CategoryContent =
 export const categories: Record<string, CategoryContent> = {
   [consts.boundaryNodes]: {
     "Classical To Quantum": [
-      { label: "Encode Value", type: consts.StatePreparationNode, icon: ["encodeValue.png"] },
-      { label: "Prepare State", type: consts.StatePreparationNode, icon: ["prepareState.png"] },
+      { label: "Encode Value", type: consts.StatePreparationNode, icon: ["PaletteIcon_EncodeValue.png", "PaletteIcon_Ancilla_EncodeValue.png"] },
+      { label: "Prepare State", type: consts.StatePreparationNode, icon: ["PaletteIcon_PrepareState.png", "PaletteIcon_Ancilla_PrepareState.png"] },
     ],
     "Quantum To Classical": [
-      { label: "Measurement", type: consts.MeasurementNode, icon: ["measurement.png"] },
+      { label: "Measurement", type: consts.MeasurementNode, icon: "PaletteIcon_Measurement.png" },
     ],
   },
 
