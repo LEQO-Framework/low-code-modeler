@@ -287,6 +287,7 @@ const useStore = create<RFState>((set, get) => ({
 
   onConnect: (connection: Connection) => {
     const currentNodes = get().nodes;
+    const ancillaMode = get().ancillaMode;
     console.log(connection)
     //const currentEdges = addEdge(connection, get().edges);
     const currentEdges = get().edges;
@@ -422,7 +423,7 @@ const useStore = create<RFState>((set, get) => ({
         width: 20,
         height: 20,
         color: color,
-
+        hidden: ancillaMode
       }
       //label: label
     };
