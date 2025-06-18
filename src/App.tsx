@@ -455,7 +455,7 @@ function App() {
       let nodeT = nodes[0];
       nodes.forEach((nd) => {
         // Check if there's a group node in the array of nodes on the screen
-        if (nd.type === "controlStructureNode" || nd.type === "ifElseNode") {
+        if ((nd.type === "controlStructureNode" || nd.type === "ifElseNode") && node.type !== "controlStructureNode" && node.type !== "ifElseNode") {
           //safety check to make sure there's a height and width
           console.log(node);
           console.log(nd.id);
@@ -500,12 +500,24 @@ function App() {
 
                   // Get the current minWidth from computed styles
                   const currentMinWidth = window.getComputedStyle(firstChild).minWidth;
+
+                  // Get the current minWidth from computed styles
+                  const currentHeight = window.getComputedStyle(firstChild).height;
                   // Parse it into a number
                   const currentMinWidthValue = parseFloat(currentMinWidth);
                   // Add 100 to it
                   const newMinWidth = currentMinWidthValue + 100;
+
+                  // Parse it into a number
+                  const currentHeightValue = parseFloat(currentHeight);
+                  console.log(currentHeightValue);
+                  console.log(node.height)
+              
+                  const newHeight= node.height +200 > currentHeightValue ? currentHeightValue + node.height : currentHeightValue;
+
                   // Set it back with "px"
                   firstChild.style.minWidth = `${newMinWidth}px`;
+                  firstChild.style.height = `${newHeight}px`;
                   console.log(`Updated minWidth to ${newMinWidth}px`);
                 }
               } else {
@@ -657,34 +669,8 @@ function App() {
       // Set the selected node
       setSelectedNode(node);
 
-      // Get the bounding rectangle of the ReactFlow pane to position the menu
-      const pane = ref.current?.getBoundingClientRect();
-
-      // Calculate the position of the context menu relative to the node
-      // Here we add an offset (e.g., 10px) to position the menu next to the node.
-      const menuTop = node.position.y + 10; // 10px below the node
-      const menuLeft = node.position.x + 10; // 10px to the right of the node
-
-      // Ensure the menu stays within the visible area of the pane
-      const top =
-        menuTop < (pane?.height || 0) - 200
-          ? menuTop
-          : (pane?.height || 0) - 200;
-      const left =
-        menuLeft < (pane?.width || 0) - 200
-          ? menuLeft
-          : (pane?.width || 0) - 200;
-
-      // Set the position of the context menu
-      setMenu({
-        id: node.id,
-        top,
-        left,
-        right: 0, // Not needed here since we use `left`
-        bottom: 0, // Not needed here since we use `top`
-      });
     },
-    [setMenu, setSelectedNode],
+    [setSelectedNode],
   );
 
   const [isModalOpen, setIsModalOpen] = useState(true);
