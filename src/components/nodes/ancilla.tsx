@@ -8,12 +8,14 @@ const selector = (state: {
   selectedNode: Node | null;
   edges: Edge[],
   nodes: Node[],
+  ancillaMode: boolean,
   updateNodeValue: (nodeId: string, field: string, nodeVal: string) => void;
   setSelectedNode: (node: Node | null) => void;
 }) => ({
   selectedNode: state.selectedNode,
   edges: state.edges,
   nodes: state.nodes,
+  ancillaMode: state.ancillaMode,
   updateNodeValue: state.updateNodeValue,
   setSelectedNode: state.setSelectedNode
 });
@@ -29,7 +31,7 @@ export const AncillaNode = memo((node: Node) => {
   const xRef = useRef(null);
   const yRef = useRef(null);
 
-  const { selectedNode, nodes, updateNodeValue, setSelectedNode, edges } = useStore(selector, shallow);
+  const { ancillaMode, selectedNode, nodes, updateNodeValue, setSelectedNode, edges } = useStore(selector, shallow);
   const [outputIdentifierError, setOutputIdentifierError] = useState(false);
   const [outputIdentifier, setOutputIdentifier] = useState("");
   const [operation, setOperation] = useState("");
@@ -67,7 +69,7 @@ export const AncillaNode = memo((node: Node) => {
     setSelectedNode(node);
   };
 
-  return (
+  return ancillaMode &&(
     <div className="grand-parent">
       <div className="w-[350px] h-[170px] rounded-none bg-white  border border-solid border-gray-700 shadow-md">
         <div className="w-full flex items-center" style={{ height: '52px' }}>
@@ -99,3 +101,4 @@ export const AncillaNode = memo((node: Node) => {
     </div>
   );
 });
+
