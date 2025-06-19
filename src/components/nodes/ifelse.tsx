@@ -212,7 +212,7 @@ export const IfElseNode = memo((node: Node) => {
       style={{ overflow: "visible", minWidth: "1100px", height: `${dynamicHeight}px`, position: "relative" }}
     >
       <div
-        className="absolute z-20 text-black text-center font-bold bg-purple-300 py-1 rounded"
+        className="absolute z-20 text-black text-center font-semibold bg-purple-300 py-1 rounded"
         style={{
           top: "50%",
           left: "0",
@@ -625,10 +625,16 @@ export const IfElseNode = memo((node: Node) => {
       "polygon(10% 0%, 90% 0%, 100% 10%, 100% 90%, 90% 100%, 10% 100%, 0% 90%, 0% 10%)",
     zIndex: 1,
   }}
-><div className="w-full bg-purple-300 text-black text-center font-semibold py-1">
-                  <span className="text-sm block font-bold">End If</span>
+>
+                <div className="w-full flex items-center" style={{ height: '52px' }}>
+                  <div className="w-full bg-purple-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
+                    <img src="ifelseIcon.png" alt="icon" className="w-[65px] h-[65px] object-contain flex-shrink-0" style={{ paddingLeft: '25px' }} />
+                    <div className="h-full w-[1px] bg-black mx-2" />
+                    <span className=" font-semibold leading-none" style={{ paddingLeft: '25px' }}>End If</span>
+                  </div>
                 </div>
               </div>
+              
 
 
               {classicalOutputHandles.map(({ index, branch }, i) => {
@@ -745,7 +751,7 @@ export const IfElseNode = memo((node: Node) => {
         >
           <div className="w-full flex items-center" style={{ height: '52px' }}>
             <div className="w-full bg-purple-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
-              <img src="ifelseIcon.png" alt="icon" className="w-[60px] h-[60px] object-contain flex-shrink-0" style={{ paddingLeft: '25px' }} />
+              <img src="ifelseIcon.png" alt="icon" className="w-[65px] h-[65px] object-contain flex-shrink-0" style={{ paddingLeft: '25px' }} />
               <div className="h-full w-[1px] bg-black mx-2" />
               <span className=" font-semibold leading-none" style={{ paddingLeft: '25px' }}>If</span>
             </div>
