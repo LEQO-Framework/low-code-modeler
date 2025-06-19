@@ -104,8 +104,8 @@ export const categories: Record<string, CategoryContent> = {
   },
 
   [consts.controlStructureNodes]: [
-    { label: "If-Then-Else", type: consts.IfElseNode, icon: "minMax.png"  },
-    { label: "Repeat", type: consts.ControlStructureNode, icon: "minMax.png"  },
+    { label: "If-Then-Else", type: consts.IfElseNode, icon: "PaletteIcon_IfElse.png"  },
+    { label: "Repeat", type: consts.ControlStructureNode, icon: "PaletteIcon_Repeat.png"  },
     { label: "Group", type: consts.GroupNode, icon: "minMax.png"  },
   ],
 
