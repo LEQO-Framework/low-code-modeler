@@ -63,14 +63,14 @@ export const categories: Record<string, CategoryContent> = {
 
   [consts.dataTypes]: {
     "Classical Datatypes": [
-      { label: "angle", dataType: "angle", type: consts.DataTypeNode },
-      { label: "bit", dataType: "bit", type: consts.DataTypeNode, icon: "bit.png" },
-      { label: "boolean", dataType: "boolean", type: consts.DataTypeNode, icon: "boolean.png" },
-      { label: "complex", dataType: "complex", type: consts.DataTypeNode },
-      { label: "duration", dataType: "duration", type: consts.DataTypeNode },
-      { label: "int", dataType: "int", type: consts.DataTypeNode, icon: "int.png" },
-      { label: "float", dataType: "float", type: consts.DataTypeNode, icon: "float.png" },
-      { label: "Array", dataType: "Array", type: consts.DataTypeNode, icon: "array.png" },
+      { label: "angle", dataType: "angle", type: consts.DataTypeNode, icon: "PaletteIcon_Angle.png"},
+      { label: "bit", dataType: "bit", type: consts.DataTypeNode, icon: "PaletteIcon_Bit.png" },
+      { label: "boolean", dataType: "boolean", type: consts.DataTypeNode, icon: "PaletteIcon_Boolean.png" },
+      { label: "complex", dataType: "complex", type: consts.DataTypeNode, icon: "PaletteIcon_Complex.png" },
+      { label: "duration", dataType: "duration", type: consts.DataTypeNode, icon: "PaletteIcon_Duration.png" },
+      { label: "int", dataType: "int", type: consts.DataTypeNode, icon: "PaletteIcon_Int.png" },
+      { label: "float", dataType: "float", type: consts.DataTypeNode, icon: "PaletteIcon_Float.png" },
+      { label: "Array", dataType: "Array", type: consts.DataTypeNode, icon: "PaletteIcon_Array.png" },
     ],
     "Quantum Datatypes": [
         {
