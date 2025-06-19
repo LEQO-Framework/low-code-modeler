@@ -1,0 +1,310 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "name": "My Model",
+    "description": "This is a model.",
+    "author": "",
+    "id": "flow-1750373013841",
+    "timestamp": "2025-06-19T22:43:33.841Z"
+  },
+  "nodes": [
+    {
+      "id": "41fb75ac-a28d-49ba-8b55-2355f8e07dbf",
+      "type": "gateNode",
+      "position": {
+        "x": -180,
+        "y": 270
+      },
+      "data": {
+        "label": "Qubit",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q341955"
+        ],
+        "parameter": "0"
+      },
+      "width": 100,
+      "height": 100,
+      "positionAbsolute": {
+        "x": -180,
+        "y": 270
+      },
+      "dragging": true
+    },
+    {
+      "id": "221d095e-cc00-4272-9a42-4df4b9520ab4",
+      "type": "gateNode",
+      "position": {
+        "x": -30,
+        "y": 270
+      },
+      "data": {
+        "label": "X",
+        "inputs": [
+          {
+            "id": "41fb75ac-a28d-49ba-8b55-2355f8e07dbf",
+            "identifiers": [
+              "q341955"
+            ]
+          }
+        ],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q644091"
+        ],
+        "parameter": "0"
+      },
+      "width": 100,
+      "height": 100,
+      "positionAbsolute": {
+        "x": -30,
+        "y": 270
+      },
+      "dragging": true
+    },
+    {
+      "id": "5d840a65-f2aa-4e63-848c-2beb665ed89f",
+      "type": "measurementNode",
+      "position": {
+        "x": 120,
+        "y": 180
+      },
+      "data": {
+        "label": "Measurement",
+        "inputs": [
+          {
+            "id": "221d095e-cc00-4272-9a42-4df4b9520ab4",
+            "identifiers": [
+              "q644091"
+            ]
+          }
+        ],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q130990"
+        ],
+        "indices": "",
+        "outputIdentifier": "b",
+        "outputs": [
+          {
+            "identifier": "a",
+            "size": "1",
+            "type": "classical"
+          },
+          {
+            "identifier": "b",
+            "size": "1",
+            "type": "quantum"
+          }
+        ],
+        "size": 1
+      },
+      "width": 320,
+      "height": 440,
+      "positionAbsolute": {
+        "x": 120,
+        "y": 180
+      },
+      "dragging": true
+    },
+    {
+      "id": "36f170d4-c0f8-4abf-b48a-aafb20c6387b",
+      "type": "ifElseNode",
+      "position": {
+        "x": 645,
+        "y": 0
+      },
+      "data": {
+        "label": "If-Then-Else",
+        "inputs": [
+          {
+            "id": "5d840a65-f2aa-4e63-848c-2beb665ed89f",
+            "identifiers": [
+              "q130990"
+            ],
+            "outputIdentifier": "b",
+            "label": "b"
+          },
+          {
+            "id": "7c966c66-74f5-4794-8335-491b13e31773",
+            "identifiers": [
+              "q139118"
+            ]
+          }
+        ],
+        "children": [
+          "7c966c66-74f5-4794-8335-491b13e31773"
+        ],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q520677"
+        ],
+        "condition": "a==1"
+      },
+      "width": 1100,
+      "height": 900,
+      "positionAbsolute": {
+        "x": 645,
+        "y": 0
+      },
+      "dragging": true
+    },
+    {
+      "id": "7c966c66-74f5-4794-8335-491b13e31773",
+      "type": "gateNode",
+      "position": {
+        "x": 540,
+        "y": 90
+      },
+      "data": {
+        "label": "X",
+        "inputs": [
+          {
+            "id": "36f170d4-c0f8-4abf-b48a-aafb20c6387b",
+            "identifiers": [
+              "q520677"
+            ]
+          }
+        ],
+        "children": [
+          "7c966c66-74f5-4794-8335-491b13e31773"
+        ],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q139118"
+        ],
+        "parameter": "0",
+        "position": {
+          "x": 375,
+          "y": 120
+        },
+        "scope": "if"
+      },
+      "width": 100,
+      "height": 100,
+      "positionAbsolute": {
+        "x": 1185,
+        "y": 90
+      },
+      "dragging": true,
+      "parentNode": "36f170d4-c0f8-4abf-b48a-aafb20c6387b",
+      "extent": "parent"
+    }
+  ],
+  "edges": [
+    {
+      "source": "7c966c66-74f5-4794-8335-491b13e31773",
+      "sourceHandle": "quantumHandleGateOutput07c966c66-74f5-4794-8335-491b13e31773",
+      "target": "36f170d4-c0f8-4abf-b48a-aafb20c6387b",
+      "targetHandle": "quantumHandleDynamicOutput036f170d4-c0f8-4abf-b48a-aafb20c6387b",
+      "type": "quantumEdge",
+      "id": "b7a6d5bd-b7d4-46c7-9f42-5fb78ce5c4e3",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD",
+        "hidden": true
+      }
+    },
+    {
+      "source": "36f170d4-c0f8-4abf-b48a-aafb20c6387b",
+      "sourceHandle": "sideQuantumHandleThen036f170d4-c0f8-4abf-b48a-aafb20c6387b",
+      "target": "7c966c66-74f5-4794-8335-491b13e31773",
+      "targetHandle": "quantumHandleGateInput07c966c66-74f5-4794-8335-491b13e31773",
+      "type": "quantumEdge",
+      "id": "d70b884f-4e4b-4881-a67c-1f8b8c58cf9f",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD",
+        "hidden": true
+      }
+    },
+    {
+      "source": "5d840a65-f2aa-4e63-848c-2beb665ed89f",
+      "sourceHandle": "quantumHandlemeasurementNodeOutput15d840a65-f2aa-4e63-848c-2beb665ed89f",
+      "target": "36f170d4-c0f8-4abf-b48a-aafb20c6387b",
+      "targetHandle": "quantumHandleInputInitialization036f170d4-c0f8-4abf-b48a-aafb20c6387b",
+      "type": "quantumEdge",
+      "id": "2b5ccfbc-c373-4f13-b3f5-ab94d7a28268",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD",
+        "hidden": true
+      }
+    },
+    {
+      "source": "5d840a65-f2aa-4e63-848c-2beb665ed89f",
+      "sourceHandle": "classicalHandle5d840a65-f2aa-4e63-848c-2beb665ed89f",
+      "target": "36f170d4-c0f8-4abf-b48a-aafb20c6387b",
+      "targetHandle": "classicalHandleInputInitialization036f170d4-c0f8-4abf-b48a-aafb20c6387b",
+      "type": "classicalEdge",
+      "id": "f0161928-9e74-4b38-ad6d-eb00a97576b1",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#F5A843",
+        "hidden": true
+      }
+    },
+    {
+      "source": "221d095e-cc00-4272-9a42-4df4b9520ab4",
+      "sourceHandle": "quantumHandleGateOutput0221d095e-cc00-4272-9a42-4df4b9520ab4",
+      "target": "5d840a65-f2aa-4e63-848c-2beb665ed89f",
+      "targetHandle": "quantumHandleMeasurementInput05d840a65-f2aa-4e63-848c-2beb665ed89f",
+      "type": "quantumEdge",
+      "id": "d18b40fb-3cf3-4fa3-8cc4-53b3b40f20ab",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD",
+        "hidden": true
+      }
+    },
+    {
+      "source": "41fb75ac-a28d-49ba-8b55-2355f8e07dbf",
+      "sourceHandle": "quantumHandleGateOutput041fb75ac-a28d-49ba-8b55-2355f8e07dbf",
+      "target": "221d095e-cc00-4272-9a42-4df4b9520ab4",
+      "targetHandle": "quantumHandleGateInput0221d095e-cc00-4272-9a42-4df4b9520ab4",
+      "type": "quantumEdge",
+      "id": "0bad06ea-50d8-4993-b9db-c19bf254b719",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD",
+        "hidden": true
+      }
+    }
+  ],
+  "viewport": {
+    "x": 120.56684030010035,
+    "y": 109.52534148801674,
+    "zoom": 0.5733012729824069
+  }
+}
