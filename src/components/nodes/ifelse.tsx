@@ -594,33 +594,42 @@ export const IfElseNode = memo((node: Node) => {
           {/* Repeat End (right polygon) */}
           <div className="absolute right-0 top-1/2 transform -translate-y-1/2 overflow-visible text-center" style={{ zIndex: 30 }}>
             <div style={{ position: "relative", width: "225px", overflow: "visible" }}>
-              <div
-                className="hexagon-right"
-                style={{
-                  position: "absolute",
-                  width: "250px",
-                  height: `${hexagonHeight}px`,
-                  backgroundColor: "white",
-                  top: `${hexagonTopOffset}px`,
-                  clipPath: "polygon(10% 0%, 90% 0%, 100% 10%, 100% 90%, 90% 100%, 10% 100%, 0% 90%, 0% 10%)",
-                  zIndex: 1
-                }}
-              > <div className="w-full bg-purple-300 text-black text-center font-semibold py-1">
+         
+<div
+  className="hexagon-right"
+  style={{
+     border: "none",
+    position: "absolute",
+    left: "95px", // etwas weiter nach links, weil es breiter wird
+    top: `${hexagonTopOffset - 2}px`, // leicht höher, damit es mittig bleibt
+    width: "253px", // größer (vorher 252px)
+    height: `${hexagonHeight + 3}px`, // größer (vorher +1)
+    backgroundColor: "black",
+    clipPath:
+      "polygon(10% 0%, 90% 0%, 100% 10%, 100% 90%, 90% 100%, 10% 100%, 0% 90%, 0% 10%)",
+    zIndex: 0,
+    transform: "translateX(-1.5px)", // optional feinjustierung
+  }}
+></div>{/* Weißes Hexagon vorne */}
+<div
+  className="hexagon-right"
+  style={{
+     border: "none",
+    position: "absolute",
+    left: "95px",
+    top: `${hexagonTopOffset}px`,
+    width: "250px",
+    height: `${hexagonHeight}px`,
+    backgroundColor: "white",
+    clipPath:
+      "polygon(10% 0%, 90% 0%, 100% 10%, 100% 90%, 90% 100%, 10% 100%, 0% 90%, 0% 10%)",
+    zIndex: 1,
+  }}
+><div className="w-full bg-purple-300 text-black text-center font-semibold py-1">
                   <span className="text-sm block font-bold">End If</span>
                 </div>
               </div>
-              <div
-                className="hexagon-right"
-                style={{
-                  position: "absolute",
-                  width: "250px",
-                  height: `${hexagonHeight}px`,
-                  backgroundColor: "black",
-                  top: `${hexagonTopOffset}px`,
-                  clipPath: "polygon(10% 0%, 90% 0%, 100% 10%, 100% 90%, 90% 100%, 10% 100%, 0% 90%, 0% 10%)",
-                  zIndex: 0
-                }}
-              > </div>
+
 
               {classicalOutputHandles.map(({ index, branch }, i) => {
                 console.log(classicalOutputHandles)
