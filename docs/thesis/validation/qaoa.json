@@ -4,8 +4,8 @@
     "name": "My Model",
     "description": "This is a model.",
     "author": "",
-    "id": "flow-1750336403316",
-    "timestamp": "2025-06-19T12:33:23.316Z"
+    "id": "flow-1750336661122",
+    "timestamp": "2025-06-19T12:37:41.122Z"
   },
   "nodes": [
     {
@@ -322,9 +322,97 @@
         "y": 765
       },
       "dragging": true
+    },
+    {
+      "id": "a1ce9863-e89a-4f42-b569-989c6b546870",
+      "type": "mergerNode",
+      "position": {
+        "x": 1065,
+        "y": 495
+      },
+      "data": {
+        "label": "Merger",
+        "inputs": [
+          {
+            "id": "fd56a043-0b55-4072-8b50-8ebcce3d34e4",
+            "identifiers": [
+              "q874886",
+              "q341926"
+            ]
+          },
+          {
+            "id": "5eb07602-1aee-4bfd-afae-61b712fe9d3a",
+            "identifiers": [
+              "q517242",
+              "q370097"
+            ]
+          }
+        ],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q439586"
+        ],
+        "numberInputs": "3"
+      },
+      "width": 170,
+      "height": 270,
+      "positionAbsolute": {
+        "x": 1065,
+        "y": 495
+      },
+      "dragging": true
     }
   ],
   "edges": [
+    {
+      "source": "5eb07602-1aee-4bfd-afae-61b712fe9d3a",
+      "sourceHandle": "quantumHandleGateOutput15eb07602-1aee-4bfd-afae-61b712fe9d3a",
+      "target": "a1ce9863-e89a-4f42-b569-989c6b546870",
+      "targetHandle": "quantumHandleMergerInput2a1ce9863-e89a-4f42-b569-989c6b546870",
+      "type": "quantumEdge",
+      "id": "2e8e1a73-e620-4842-8600-e502737cc704",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD",
+        "hidden": true
+      }
+    },
+    {
+      "source": "5eb07602-1aee-4bfd-afae-61b712fe9d3a",
+      "sourceHandle": "quantumHandleGateOutput05eb07602-1aee-4bfd-afae-61b712fe9d3a",
+      "target": "a1ce9863-e89a-4f42-b569-989c6b546870",
+      "targetHandle": "quantumHandleMergerInput1a1ce9863-e89a-4f42-b569-989c6b546870",
+      "type": "quantumEdge",
+      "id": "62fdf214-a3d9-411d-b754-1c628207bd98",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD",
+        "hidden": true
+      }
+    },
+    {
+      "source": "fd56a043-0b55-4072-8b50-8ebcce3d34e4",
+      "sourceHandle": "quantumHandleGateOutput0fd56a043-0b55-4072-8b50-8ebcce3d34e4",
+      "target": "a1ce9863-e89a-4f42-b569-989c6b546870",
+      "targetHandle": "quantumHandleMergerInput0a1ce9863-e89a-4f42-b569-989c6b546870",
+      "type": "quantumEdge",
+      "id": "1499fb0c-1e9d-4d6a-b64b-b090e292ee60",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD",
+        "hidden": true
+      }
+    },
     {
       "source": "a0dbc753-2398-4486-9a59-2cfa67efaace",
       "sourceHandle": "quantumHandleSplitterOutput2a0dbc753-2398-4486-9a59-2cfa67efaace",
@@ -483,8 +571,8 @@
     }
   ],
   "viewport": {
-    "x": 431.04184454446454,
-    "y": 23.488573839991957,
+    "x": 388.04184454446454,
+    "y": -14.511426160008,
     "zoom": 0.646382010706828
   }
 }
