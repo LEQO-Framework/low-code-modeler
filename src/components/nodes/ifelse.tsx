@@ -195,13 +195,7 @@ export const IfElseNode = memo((node: Node) => {
   const totalHandles = Math.max(classicalHandles.length + quantumHandles.length, classicalOutputHandles.length + classicalOutputHandlesElse.length + quantumOutputHandles.length + quantumOutputHandlesElse.length);
   const hexagonHeight = Math.max(250, 280 + totalHandles * 30);
   const hexagonTopOffset = -(hexagonHeight / 2) + 20;
-  const hexagonWidth = collapsed ? 200 : 250;
-  const hexagonHeightCollapsed = collapsed ? 100 : hexagonHeight;
-  const hexagonTopOffsetCollapsed = collapsed ? 10 : hexagonTopOffset;
-  const borderSize = 6;
-  const hexWidth = 250;
-  const hexHeight = hexagonHeight;
-  const hexTop = hexagonTopOffset;
+
 
 
 
@@ -279,7 +273,7 @@ export const IfElseNode = memo((node: Node) => {
                 <Handle
                   key={`quantum-${index}`}
                   type="source"
-                  id={`sideQuantumHandleThen${index}${node.id}`} // check if this makes problem
+                  id={`sideQuantumHandleThen${index}${node.id}`}
                   position={Position.Right}
                   className={cn(
                     "z-10 circle-port-out",
@@ -350,41 +344,40 @@ export const IfElseNode = memo((node: Node) => {
 
           </div>
 
-          {/* Repeat Start (left polygon) */}
           <div className="absolute left-0 top-1/2 transform -translate-y-1/2 overflow-visible text-center" style={{ zIndex: 30 }}>
             <div style={{ position: "relative", overflow: "visible" }}>
-             {/* Feiner schwarzer Rand */}
-<div
-  className="hexagon-left"
-  style={{
-     border: "none",
-    position: "absolute",
-    left: "-52px", // etwas weiter nach links, weil es breiter wird
-    top: `${hexagonTopOffset - 2}px`, // leicht höher, damit es mittig bleibt
-    width: "253px", // größer (vorher 252px)
-    height: `${hexagonHeight + 3}px`, // größer (vorher +1)
-    backgroundColor: "black",
-    clipPath:
-      "polygon(10% 0%, 90% 0%, 100% 10%, 100% 90%, 90% 100%, 10% 100%, 0% 90%, 0% 10%)",
-    zIndex: 0,
-    transform: "translateX(-1.5px)", // optional feinjustierung
-  }}
-></div>{/* Weißes Hexagon vorne */}
-<div
-  className="hexagon-left"
-  style={{
-     border: "none",
-    position: "absolute",
-    left: "-50px",
-    top: `${hexagonTopOffset}px`,
-    width: "250px",
-    height: `${hexagonHeight}px`,
-    backgroundColor: "white",
-    clipPath:
-      "polygon(10% 0%, 90% 0%, 100% 10%, 100% 90%, 90% 100%, 10% 100%, 0% 90%, 0% 10%)",
-    zIndex: 1,
-  }}
->
+              {/* Feiner schwarzer Rand */}
+              <div
+                className="hexagon-left"
+                style={{
+                  border: "none",
+                  position: "absolute",
+                  left: "-52px",
+                  top: `${hexagonTopOffset - 2}px`,
+                  width: "253px",
+                  height: `${hexagonHeight + 3}px`,
+                  backgroundColor: "black",
+                  clipPath:
+                    "polygon(10% 0%, 90% 0%, 100% 10%, 100% 90%, 90% 100%, 10% 100%, 0% 90%, 0% 10%)",
+                  zIndex: 0,
+                  transform: "translateX(-1.5px)",
+                }}
+              ></div>{/* Weißes Hexagon vorne */}
+              <div
+                className="hexagon-left"
+                style={{
+                  border: "none",
+                  position: "absolute",
+                  left: "-50px",
+                  top: `${hexagonTopOffset}px`,
+                  width: "250px",
+                  height: `${hexagonHeight}px`,
+                  backgroundColor: "white",
+                  clipPath:
+                    "polygon(10% 0%, 90% 0%, 100% 10%, 100% 90%, 90% 100%, 10% 100%, 0% 90%, 0% 10%)",
+                  zIndex: 1,
+                }}
+              >
 
                 <div className="w-full flex items-center" style={{ height: '52px' }}>
                   <div className="w-full bg-purple-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
@@ -594,38 +587,38 @@ export const IfElseNode = memo((node: Node) => {
           {/* Repeat End (right polygon) */}
           <div className="absolute right-0 top-1/2 transform -translate-y-1/2 overflow-visible text-center" style={{ zIndex: 30 }}>
             <div style={{ position: "relative", width: "225px", overflow: "visible" }}>
-         
-<div
-  className="hexagon-right"
-  style={{
-     border: "none",
-    position: "absolute",
-    left: "95px", // etwas weiter nach links, weil es breiter wird
-    top: `${hexagonTopOffset - 2}px`, // leicht höher, damit es mittig bleibt
-    width: "253px", // größer (vorher 252px)
-    height: `${hexagonHeight + 3}px`, // größer (vorher +1)
-    backgroundColor: "black",
-    clipPath:
-      "polygon(10% 0%, 90% 0%, 100% 10%, 100% 90%, 90% 100%, 10% 100%, 0% 90%, 0% 10%)",
-    zIndex: 0,
-    transform: "translateX(-1.5px)", // optional feinjustierung
-  }}
-></div>{/* Weißes Hexagon vorne */}
-<div
-  className="hexagon-right"
-  style={{
-     border: "none",
-    position: "absolute",
-    left: "95px",
-    top: `${hexagonTopOffset}px`,
-    width: "250px",
-    height: `${hexagonHeight}px`,
-    backgroundColor: "white",
-    clipPath:
-      "polygon(10% 0%, 90% 0%, 100% 10%, 100% 90%, 90% 100%, 10% 100%, 0% 90%, 0% 10%)",
-    zIndex: 1,
-  }}
->
+
+              <div
+                className="hexagon-right"
+                style={{
+                  border: "none",
+                  position: "absolute",
+                  left: "95px",
+                  top: `${hexagonTopOffset - 2}px`,
+                  width: "253px",
+                  height: `${hexagonHeight + 3}px`,
+                  backgroundColor: "black",
+                  clipPath:
+                    "polygon(10% 0%, 90% 0%, 100% 10%, 100% 90%, 90% 100%, 10% 100%, 0% 90%, 0% 10%)",
+                  zIndex: 0,
+                  transform: "translateX(-1.5px)",
+                }}
+              ></div>{/* Weißes Hexagon vorne */}
+              <div
+                className="hexagon-right"
+                style={{
+                  border: "none",
+                  position: "absolute",
+                  left: "95px",
+                  top: `${hexagonTopOffset}px`,
+                  width: "250px",
+                  height: `${hexagonHeight}px`,
+                  backgroundColor: "white",
+                  clipPath:
+                    "polygon(10% 0%, 90% 0%, 100% 10%, 100% 90%, 90% 100%, 10% 100%, 0% 90%, 0% 10%)",
+                  zIndex: 1,
+                }}
+              >
                 <div className="w-full flex items-center" style={{ height: '52px' }}>
                   <div className="w-full bg-purple-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
                     <img src="ifelseIcon.png" alt="icon" className="w-[65px] h-[65px] object-contain flex-shrink-0" style={{ paddingLeft: '25px' }} />
@@ -634,7 +627,7 @@ export const IfElseNode = memo((node: Node) => {
                   </div>
                 </div>
               </div>
-              
+
 
 
               {classicalOutputHandles.map(({ index, branch }, i) => {
