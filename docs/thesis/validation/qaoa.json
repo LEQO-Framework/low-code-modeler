@@ -4,8 +4,8 @@
     "name": "My Model",
     "description": "This is a model.",
     "author": "",
-    "id": "flow-1750112742537",
-    "timestamp": "2025-06-16T22:25:42.537Z"
+    "id": "flow-1750336403316",
+    "timestamp": "2025-06-19T12:33:23.316Z"
   },
   "nodes": [
     {
@@ -27,12 +27,12 @@
           "q750883"
         ],
         "quantumStateName": "Uniform Superposition",
-        "size": 3,
+        "size": 0,
         "outputIdentifier": "a",
         "outputs": [
           {
             "identifier": "a",
-            "size": "3"
+            "size": ""
           }
         ],
         "parameterType": "degree"
@@ -49,8 +49,8 @@
       "id": "a0dbc753-2398-4486-9a59-2cfa67efaace",
       "type": "splitterNode",
       "position": {
-        "x": -30,
-        "y": 465
+        "x": -180,
+        "y": 495
       },
       "data": {
         "label": "Splitter",
@@ -78,16 +78,17 @@
       "width": 170,
       "height": 270,
       "positionAbsolute": {
-        "x": -30,
-        "y": 465
-      }
+        "x": -180,
+        "y": 495
+      },
+      "dragging": true
     },
     {
       "id": "c7c37d40-eaa2-4c1c-a671-87d39fbac5b2",
       "type": "gateNode",
       "position": {
-        "x": 270,
-        "y": 465
+        "x": 90,
+        "y": 540
       },
       "data": {
         "label": "CNOT",
@@ -115,8 +116,8 @@
       "width": 100,
       "height": 100,
       "positionAbsolute": {
-        "x": 270,
-        "y": 465
+        "x": 90,
+        "y": 540
       },
       "dragging": true
     },
@@ -124,8 +125,8 @@
       "id": "0b64e78b-6d6e-475d-8c90-43fe8847eb08",
       "type": "gateNode",
       "position": {
-        "x": 450,
-        "y": 510
+        "x": 270,
+        "y": 585
       },
       "data": {
         "label": "RZ(θ)",
@@ -151,8 +152,8 @@
       "width": 100,
       "height": 100,
       "positionAbsolute": {
-        "x": 450,
-        "y": 510
+        "x": 270,
+        "y": 585
       },
       "dragging": true
     },
@@ -160,8 +161,8 @@
       "id": "fd56a043-0b55-4072-8b50-8ebcce3d34e4",
       "type": "gateNode",
       "position": {
-        "x": 600,
-        "y": 465
+        "x": 435,
+        "y": 540
       },
       "data": {
         "label": "CNOT",
@@ -194,8 +195,8 @@
       "width": 100,
       "height": 100,
       "positionAbsolute": {
-        "x": 600,
-        "y": 465
+        "x": 435,
+        "y": 540
       },
       "dragging": true
     },
@@ -203,8 +204,8 @@
       "id": "32e17b97-c21a-44f7-a6e6-58ac6ca0b274",
       "type": "gateNode",
       "position": {
-        "x": 870,
-        "y": 540
+        "x": 585,
+        "y": 705
       },
       "data": {
         "label": "CNOT",
@@ -238,8 +239,8 @@
       "width": 100,
       "height": 100,
       "positionAbsolute": {
-        "x": 870,
-        "y": 540
+        "x": 585,
+        "y": 705
       },
       "dragging": true
     },
@@ -247,8 +248,8 @@
       "id": "5eb07602-1aee-4bfd-afae-61b712fe9d3a",
       "type": "gateNode",
       "position": {
-        "x": 1245,
-        "y": 540
+        "x": 915,
+        "y": 705
       },
       "data": {
         "label": "CNOT",
@@ -281,8 +282,8 @@
       "width": 100,
       "height": 100,
       "positionAbsolute": {
-        "x": 1245,
-        "y": 540
+        "x": 915,
+        "y": 705
       },
       "dragging": true
     },
@@ -290,8 +291,8 @@
       "id": "188df1ed-c428-4b70-9bf5-0704eb0d22b9",
       "type": "gateNode",
       "position": {
-        "x": 1065,
-        "y": 585
+        "x": 750,
+        "y": 765
       },
       "data": {
         "label": "RZ(θ)",
@@ -317,8 +318,8 @@
       "width": 100,
       "height": 100,
       "positionAbsolute": {
-        "x": 1065,
-        "y": 585
+        "x": 750,
+        "y": 765
       },
       "dragging": true
     }
@@ -330,12 +331,13 @@
       "target": "32e17b97-c21a-44f7-a6e6-58ac6ca0b274",
       "targetHandle": "quantumHandleGateInput132e17b97-c21a-44f7-a6e6-58ac6ca0b274",
       "type": "quantumEdge",
-      "id": "26c8315f-ffd4-4dad-a90c-ebc09da0c1d3",
+      "id": "d993a66b-878d-4f60-8d95-49ad0bc0c351",
       "markerEnd": {
         "type": "arrowclosed",
         "width": 20,
         "height": 20,
-        "color": "#93C5FD"
+        "color": "#93C5FD",
+        "hidden": true
       }
     },
     {
@@ -344,12 +346,13 @@
       "target": "c7c37d40-eaa2-4c1c-a671-87d39fbac5b2",
       "targetHandle": "quantumHandleGateInput1c7c37d40-eaa2-4c1c-a671-87d39fbac5b2",
       "type": "quantumEdge",
-      "id": "a788c93d-4e07-4973-a979-57c156775942",
+      "id": "81d4b311-a7ca-4fe1-9693-dd2813989ea0",
       "markerEnd": {
         "type": "arrowclosed",
         "width": 20,
         "height": 20,
-        "color": "#93C5FD"
+        "color": "#93C5FD",
+        "hidden": true
       }
     },
     {
@@ -480,8 +483,8 @@
     }
   ],
   "viewport": {
-    "x": 543.2314687156446,
-    "y": 146.51035534798905,
-    "zoom": 0.7045014401384477
+    "x": 431.04184454446454,
+    "y": 23.488573839991957,
+    "zoom": 0.646382010706828
   }
 }
