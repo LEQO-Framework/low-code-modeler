@@ -2,12 +2,10 @@ import { memo, useEffect, useState } from "react";
 import { Handle, Position, Node, Edge, getConnectedEdges, useUpdateNodeInternals } from "reactflow";
 import useStore from "@/config/store";
 import { shallow } from "zustand/shallow";
-import AncillaPort from "../utils/ancillaPort";
-import UncomputePort from "../utils/uncomputePort";
 import OutputPort from "../utils/outputPort";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { ancillaConstructColor, classicalConstructColor, dirtyAncillaHandle, dirtyConstructColor } from "@/constants";
+import { classicalConstructColor, dirtyAncillaHandle, dirtyConstructColor } from "@/constants";
 import { findDuplicateOutputIdentifier, findDuplicateOutputIdentifiersInsideNode } from "../utils/utils";
 import { AlertCircle } from "lucide-react";
 
@@ -15,7 +13,6 @@ const selector = (state: {
   selectedNode: Node | null;
   nodes: Node[];
   edges: Edge[];
-  ancillaMode: boolean;
   updateNodeValue: (nodeId: string, field: string, nodeVal: string) => void;
   setSelectedNode: (node: Node | null) => void;
   setEdges: (edge: Edge) => void;
@@ -24,7 +21,6 @@ const selector = (state: {
   selectedNode: state.selectedNode,
   nodes: state.nodes,
   edges: state.edges,
-  ancillaMode: state.ancillaMode,
   updateNodeValue: state.updateNodeValue,
   setSelectedNode: state.setSelectedNode,
   setEdges: state.setEdges,
@@ -44,7 +40,7 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
   const handleOffset = 15;
 
   const nodeHeight = 60 + Math.max(handleOffset * 2 + (handleCount) * handleGap, 100);
-  const { edges, nodes, updateNodeValue, setSelectedNode, setNewEdges, setEdges, ancillaMode } = useStore(
+  const { edges, nodes, updateNodeValue, setSelectedNode, setNewEdges, setEdges } = useStore(
     selector,
     shallow
   );
@@ -65,58 +61,6 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
    const isAncillaConnected = edges.some(
     edge => edge.target === node.id && edge.targetHandle === `ancillaHandleOperationInput2${node.id}`
   );
-
-  const isDirtyAncillaConnected = edges.some(
-    edge => edge.target === node.id && edge.targetHandle === `${dirtyAncillaHandle}OperationInput3${node.id}`
-  );
-
-
-  const addVariable = () => {
-    const newInputId = `input-${inputs.length + 1}`;
-    const newOutputId = `output-${outputs.length + 1}`;
-
-    setInputs([
-      ...inputs,
-      { id: newInputId, label: `Variable ${inputs.length + 1}` },
-    ]);
-    setOutputs([
-      ...outputs,
-      {
-        id: newOutputId,
-        label: `Output ${outputs.length + 1}`,
-        value: "",
-      },
-    ]);
-  };
-
-  const handleOutputChange = (id, newValue) => {
-    setOutputs(
-      outputs.map((output) =>
-        output.id === id ? { ...output, value: newValue } : output
-      )
-    );
-  };
-
-  const handleYChange = (e, field) => {
-    const value = e.target.value;
-    node.data[field] = value;
-    updateNodeValue(node.id, field, value);
-    setSelectedNode(node);
-    setY(value);
-  };
-
-  const handleOutputIdentifierChange = (e, field) => {
-    const value = e.target.value;
-
-    if (/^\d/.test(value)) {
-      setOutputIdentifierError(true);
-    } else {
-      setOutputIdentifierError(false);
-    }
-
-    node.data[field] = value;
-    updateNodeValue(node.id, field, value);
-  };
 
   const handleLabelChange = () => {
     setIsEditingLabel(false);
@@ -168,7 +112,7 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
   }, [nodes, outputs, node.id]);
 
 
-  const baseHeight = !ancillaMode ? 50 : 200;
+  const baseHeight = 50;
   const extraHeightPerVariable = 130;
   const dynamicHeight =
     baseHeight + 2 * 40 + 3 * 50 + (numberInputs * 50) + numberOutputs * extraHeightPerVariable;
@@ -312,77 +256,11 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
                 </div>
               </div>
 
-              {ancillaMode && (<div>
-                <div
-                  className="relative p-2 mb-1 overflow-visible"
-                  style={{
-                    width: "120px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "flex-start",
-                  }}
-                >
-                  <div
-                    className="absolute inset-0 custom-shape-mirrored overflow-visible"
-                    style={{ backgroundColor: ancillaConstructColor }}
-                  />
-                  <Handle
-                    type="target"
-                    id={`ancillaHandleOperationInput2${node.id}`}
-                    position={Position.Left}
-                    className={cn(
-                      "z-10 ancilla-port-in w-4 transform rotate-45 -left-[8px]",
-                      isAncillaConnected
-                        ? "!bg-green-100 !border-solid !border-black"
-                        : "!bg-gray-200 !border-dashed !border-black"
-                    )}
-                    style={{ zIndex: 1, top: '50% !important', transform: 'translateY(-50%) rotate(45deg)' }}
-                  />
-                  <span
-                    className="text-black text-sm text-center w-full"
-                    style={{ zIndex: 1 }}
-                  >
-                    Ancilla
-                  </span>
-                </div>
-                <div
-                  className="relative p-2"
-                  style={{
-                    width: "120px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "flex-start",
-                  }}
-                >
-                  <div
-                    className="absolute inset-0 custom-shape-mirrored"
-                    style={{ backgroundColor: dirtyConstructColor }}
-                  />
-                   <Handle
-                    type="target"
-                    id={`${dirtyAncillaHandle}OperationInput3${node.id}`}
-                    position={Position.Left}
-                    className={cn(
-                      "z-10 ancilla-port-in w-4 transform rotate-45 -left-[8px]",
-                      isDirtyAncillaConnected
-                        ? "!bg-green-100 !border-solid !border-black"
-                        : "!bg-gray-200 !border-dashed !border-black"
-                    )}
-                    style={{ zIndex: 1, top: '50% !important', transform: 'translateY(-50%) rotate(45deg)' }}
-                  />
-                  <span
-                    className="text-black text-sm text-center w-full"
-                    style={{ zIndex: 1 }}
-                  >
-                    Dirty Ancilla
-                  </span>
-                </div>
-              </div>)}
 
               <div
                 className="absolute flex flex-col"
                 style={{
-                  top: `${numberInputs * 40 + (ancillaMode ? 110 : 0)}px`,
+                  top: `${numberInputs * 40 + 110}px`,
                   right: "-198px",
                   gap: "10px",
                   zIndex: 5,
@@ -413,16 +291,6 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
                     />
                   </div>
                 ))}
-
-
-
-                {ancillaMode && (
-                  <div >
-                    <AncillaPort node={node} edges={edges} dirty={false} index={numberOutputs} />
-                    <AncillaPort node={node} edges={edges} dirty={true} index={numberOutputs + 1} />
-                    <UncomputePort node={node} edges={edges} index={numberOutputs + 2} />
-                  </div>
-                )}
               </div>
             </div>
           </div>
