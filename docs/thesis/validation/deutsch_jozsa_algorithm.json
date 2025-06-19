@@ -1,0 +1,347 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "name": "My Model",
+    "description": "This is a model.",
+    "author": "",
+    "id": "flow-1750333273743",
+    "timestamp": "2025-06-19T11:41:13.743Z"
+  },
+  "nodes": [
+    {
+      "id": "8f06afc8-a45f-4876-b8c6-52d56083110e",
+      "type": "ancillaNode",
+      "position": {
+        "x": -195,
+        "y": 405
+      },
+      "data": {
+        "label": "Ancilla",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q765126"
+        ],
+        "outputIdentifier": "a",
+        "outputs": [
+          {
+            "identifier": "a",
+            "size": "1",
+            "type": "quantum"
+          }
+        ],
+        "size": 1
+      },
+      "width": 350,
+      "height": 170,
+      "positionAbsolute": {
+        "x": -195,
+        "y": 405
+      },
+      "dragging": true
+    },
+    {
+      "id": "455d9c48-3484-4bb9-9aef-3ad3f46594f0",
+      "type": "statePreparationNode",
+      "position": {
+        "x": 225,
+        "y": -75
+      },
+      "data": {
+        "label": "Prepare State",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q525358"
+        ],
+        "quantumStateName": "Uniform Superposition",
+        "size": 6,
+        "outputIdentifier": "b",
+        "outputs": [
+          {
+            "identifier": "b",
+            "size": "6",
+            "type": "quantum"
+          }
+        ]
+      },
+      "width": 320,
+      "height": 373,
+      "positionAbsolute": {
+        "x": 225,
+        "y": -75
+      },
+      "dragging": true
+    },
+    {
+      "id": "6ad99aa7-df77-4aee-a0cc-43fdd6e6d5f6",
+      "type": "algorithmNode",
+      "position": {
+        "x": 225,
+        "y": 405
+      },
+      "data": {
+        "label": "Hadamard",
+        "inputs": [
+          {
+            "id": "8f06afc8-a45f-4876-b8c6-52d56083110e",
+            "identifiers": [
+              "q765126"
+            ],
+            "outputIdentifier": "a"
+          }
+        ],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": []
+      },
+      "width": 320,
+      "height": 373,
+      "positionAbsolute": {
+        "x": 225,
+        "y": 405
+      },
+      "dragging": true
+    },
+    {
+      "id": "9d85c731-f06d-4996-a013-960907187d83",
+      "type": "algorithmNode",
+      "position": {
+        "x": 615,
+        "y": 135
+      },
+      "data": {
+        "label": "Oracle",
+        "inputs": [
+          {
+            "id": "455d9c48-3484-4bb9-9aef-3ad3f46594f0",
+            "identifiers": [
+              "q525358"
+            ],
+            "outputIdentifier": "b"
+          },
+          {
+            "id": "6ad99aa7-df77-4aee-a0cc-43fdd6e6d5f6",
+            "identifiers": []
+          }
+        ],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q828930"
+        ],
+        "numberInputs": "1",
+        "numberOutputs": "1",
+        "outputIdentifier": "c",
+        "outputs": [
+          {
+            "identifier": "c",
+            "size": "",
+            "type": "quantum"
+          }
+        ]
+      },
+      "width": 320,
+      "height": 373,
+      "positionAbsolute": {
+        "x": 615,
+        "y": 135
+      },
+      "dragging": true
+    },
+    {
+      "id": "38128770-0f4e-4c03-b20d-db4887ff0265",
+      "type": "algorithmNode",
+      "position": {
+        "x": 1020,
+        "y": 195
+      },
+      "data": {
+        "label": "Diffusion Operator",
+        "inputs": [
+          {
+            "id": "9d85c731-f06d-4996-a013-960907187d83",
+            "identifiers": [
+              "q828930"
+            ],
+            "outputIdentifier": "c",
+            "label": "c"
+          }
+        ],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q571931"
+        ],
+        "numberInputs": "1",
+        "numberOutputs": "1",
+        "outputIdentifier": "d",
+        "outputs": [
+          {
+            "identifier": "d",
+            "size": "",
+            "type": "quantum"
+          }
+        ]
+      },
+      "width": 320,
+      "height": 373,
+      "positionAbsolute": {
+        "x": 1020,
+        "y": 195
+      },
+      "dragging": true
+    },
+    {
+      "id": "362d3cd7-6fe9-40d3-8fb4-d78928711b85",
+      "type": "measurementNode",
+      "position": {
+        "x": 1380,
+        "y": 225
+      },
+      "data": {
+        "label": "Measurement",
+        "inputs": [
+          {
+            "id": "38128770-0f4e-4c03-b20d-db4887ff0265",
+            "identifiers": [
+              "q571931"
+            ],
+            "outputIdentifier": "d"
+          }
+        ],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q436569"
+        ],
+        "indices": null,
+        "outputIdentifier": ""
+      },
+      "width": 320,
+      "height": 440,
+      "positionAbsolute": {
+        "x": 1380,
+        "y": 225
+      },
+      "dragging": true
+    }
+  ],
+  "edges": [
+    {
+      "source": "38128770-0f4e-4c03-b20d-db4887ff0265",
+      "sourceHandle": "quantumHandlealgorithmNodeOutput038128770-0f4e-4c03-b20d-db4887ff0265",
+      "target": "362d3cd7-6fe9-40d3-8fb4-d78928711b85",
+      "targetHandle": "quantumHandleMeasurementInput0362d3cd7-6fe9-40d3-8fb4-d78928711b85",
+      "type": "quantumEdge",
+      "id": "b8a26135-da09-408c-905e-9a6b2daf8779",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD",
+        "hidden": true
+      }
+    },
+    {
+      "source": "9d85c731-f06d-4996-a013-960907187d83",
+      "sourceHandle": "dirtyAncillaHandlealgorithmNodeAncilla119d85c731-f06d-4996-a013-960907187d83",
+      "target": "38128770-0f4e-4c03-b20d-db4887ff0265",
+      "targetHandle": "dirtyAncillaHandleOperationInput338128770-0f4e-4c03-b20d-db4887ff0265",
+      "type": "ancillaEdge",
+      "id": "193c2819-7b5f-490b-99a9-2baf2c607266",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#86EFAC",
+        "hidden": true
+      }
+    },
+    {
+      "source": "9d85c731-f06d-4996-a013-960907187d83",
+      "sourceHandle": "quantumHandlealgorithmNodeOutput09d85c731-f06d-4996-a013-960907187d83",
+      "target": "38128770-0f4e-4c03-b20d-db4887ff0265",
+      "targetHandle": "quantumHandleOperationInput038128770-0f4e-4c03-b20d-db4887ff0265",
+      "type": "quantumEdge",
+      "id": "5efd0c2b-67e9-4b0f-8cda-1d0087c1e889",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD",
+        "hidden": true
+      }
+    },
+    {
+      "source": "6ad99aa7-df77-4aee-a0cc-43fdd6e6d5f6",
+      "sourceHandle": "dirtyAncillaHandlealgorithmNodeAncilla16ad99aa7-df77-4aee-a0cc-43fdd6e6d5f6",
+      "target": "9d85c731-f06d-4996-a013-960907187d83",
+      "targetHandle": "dirtyAncillaHandleOperationInput39d85c731-f06d-4996-a013-960907187d83",
+      "type": "ancillaEdge",
+      "id": "ecd67869-456b-4879-9954-796264912d21",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#86EFAC",
+        "hidden": true
+      }
+    },
+    {
+      "source": "455d9c48-3484-4bb9-9aef-3ad3f46594f0",
+      "sourceHandle": "quantumHandlestatePreparationNodeOutput0455d9c48-3484-4bb9-9aef-3ad3f46594f0",
+      "target": "9d85c731-f06d-4996-a013-960907187d83",
+      "targetHandle": "quantumHandleOperationInput09d85c731-f06d-4996-a013-960907187d83",
+      "type": "quantumEdge",
+      "id": "8a82dafb-64b1-4b32-9e98-892d18c7e288",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD",
+        "hidden": true
+      }
+    },
+    {
+      "source": "8f06afc8-a45f-4876-b8c6-52d56083110e",
+      "sourceHandle": "ancillaHandleOutput08f06afc8-a45f-4876-b8c6-52d56083110e",
+      "target": "6ad99aa7-df77-4aee-a0cc-43fdd6e6d5f6",
+      "targetHandle": "ancillaHandleOperationInput26ad99aa7-df77-4aee-a0cc-43fdd6e6d5f6",
+      "type": "ancillaEdge",
+      "id": "9992af6f-03f3-4cb5-893b-d71ef7aed3c2",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#86EFAC",
+        "hidden": true
+      }
+    }
+  ],
+  "viewport": {
+    "x": 156.61621484406254,
+    "y": 121.83734142575656,
+    "zoom": 0.5949068829228231
+  }
+}
