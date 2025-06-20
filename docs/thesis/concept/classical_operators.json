@@ -1,0 +1,130 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "name": "My Model",
+    "description": "This is a model.",
+    "author": "",
+    "id": "flow-1750389334253",
+    "timestamp": "2025-06-20T03:15:34.253Z"
+  },
+  "nodes": [
+    {
+      "id": "c65cb999-ee76-44aa-b70e-4a2c76990053",
+      "type": "classicalOperatorNode",
+      "position": {
+        "x": -210,
+        "y": 315
+      },
+      "data": {
+        "label": "Arithmetic Operator",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q523614"
+        ],
+        "operator": "min"
+      },
+      "width": 320,
+      "height": 373,
+      "positionAbsolute": {
+        "x": -210,
+        "y": 315
+      },
+      "dragging": true
+    },
+    {
+      "id": "7b49dd49-f7ba-43b0-bf6a-f7964cb009c8",
+      "type": "classicalOperatorNode",
+      "position": {
+        "x": 135,
+        "y": 315
+      },
+      "data": {
+        "label": "Bitwise Operator",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q609245"
+        ],
+        "operator": "min"
+      },
+      "width": 320,
+      "height": 373,
+      "positionAbsolute": {
+        "x": 135,
+        "y": 315
+      },
+      "dragging": true
+    },
+    {
+      "id": "46e1243e-60d0-45dd-b65c-532962a88a21",
+      "type": "classicalOperatorNode",
+      "position": {
+        "x": 480,
+        "y": 315
+      },
+      "data": {
+        "label": "Comparison Operator",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q645486"
+        ],
+        "operator": "<"
+      },
+      "width": 320,
+      "height": 373,
+      "positionAbsolute": {
+        "x": 480,
+        "y": 315
+      },
+      "dragging": true
+    },
+    {
+      "id": "7a5aed41-7ce0-48f3-9a0d-fe09ccb24721",
+      "type": "classicalOperatorNode",
+      "position": {
+        "x": 825,
+        "y": 315
+      },
+      "data": {
+        "label": "Min & Max Operator",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q200383"
+        ],
+        "operator": "min"
+      },
+      "width": 320,
+      "height": 373,
+      "positionAbsolute": {
+        "x": 825,
+        "y": 315
+      },
+      "dragging": true
+    }
+  ],
+  "edges": [],
+  "viewport": {
+    "x": 372.7777777777777,
+    "y": -39.40277777777783,
+    "zoom": 0.6944444444444445
+  }
+}
