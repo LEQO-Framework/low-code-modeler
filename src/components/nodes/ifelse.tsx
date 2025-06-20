@@ -698,20 +698,8 @@ export const IfElseNode = memo((node: Node) => {
           </div>
         </div>
       </div>
-      <NodeResizer minWidth={700} minHeight={500} />
-      <Button
-        onClick={() => { collapseParent(); }}
-        icon={collapsed ? "-" : "+"}
-        style={{
-          position: "absolute",
-          bottom: "0px",
-          left: "50%",
-          transform: "translateX(-50%)",
-          border: "1px solid black",
-          borderRadius: 0,
-          zIndex: 30,
-        }}
-      />
+     
+      
     </div>
   ) : (
     <div className="absolute left-0 top-1/2 transform -translate-y-1/2 overflow-visible text-center" style={{ zIndex: 30 }}>

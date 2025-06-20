@@ -273,7 +273,7 @@ export const ControlStructureNode = memo((node: Node) => {
 
             </div>
           </div>
-          <NodeResizer minWidth={700} minHeight={500} />
+    
         </div>
       </div>
     </div>

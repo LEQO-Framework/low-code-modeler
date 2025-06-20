@@ -296,6 +296,14 @@ export const OperationNode = memo((node: Node) => {
                   justifyContent: 'flex-start',
                 }}
               >
+                <Handle
+                  type="target"
+                  id={`quantumHandleOperationInput1${node.id}`}
+                  position={Position.Left}
+                  className="z-10 circle-port-op !bg-blue-300 !border-black -left-[8px]"
+                  style={{ top: '50%', transform: 'translateY(-50%)' }}
+                />
+                <span className="text-black text-sm text-center w-full">{node.data.inputs[1]?.outputIdentifier || "Input 2"}</span>
               </div>
               )}
               {ancillaMode && (<div>

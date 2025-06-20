@@ -114,6 +114,7 @@ export const StatePreparationNode = memo((node: Node) => {
     if (startsWithDigit) {
       setStartsWithDigitError(true);
     }
+     updateNodeInternals(node.id);
   }, [nodes, node.data.outputIdentifier, node.id]);
 
   const { data, selected } = node;

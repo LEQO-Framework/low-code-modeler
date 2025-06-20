@@ -105,7 +105,7 @@ export const ClassicalOperationNode = memo((node: Node) => {
   };
   const label = data.label;
   const iconSrc = iconMap[label];
-  const iconSizeMap = {
+    const iconSizeMap = {
     "Arithmetic Operator": { width: 45, height: 45 },
     "Bitwise Operator": { width: 45, height: 45 },
     "Min & Max Operator": { width: 45, height: 45 },
@@ -128,9 +128,9 @@ export const ClassicalOperationNode = memo((node: Node) => {
           style={{ height: `${dynamicHeight}px`, borderRadius: "40px" }}
         >
           <div className="w-full flex items-center" style={{ height: '52px' }}>
-            <div className="w-full bg-orange-300 py-1 px-2 flex items-center" style={{ height: "inherit", borderTopLeftRadius: "28px", borderTopRightRadius: "28px", overflow: "hidden", paddingLeft: '25px', }}
+            <div className="w-full bg-orange-300 py-1 px-2 flex items-center" style={{ height: "inherit", borderTopLeftRadius: "28px", borderTopRightRadius: "28px", overflow: "hidden", paddingLeft: '25px',}}
             >
-              {(() => {
+             {(() => {
                 const { width, height } = iconSizeMap[node.data.label];
                 return (
                   <img
@@ -203,7 +203,7 @@ export const ClassicalOperationNode = memo((node: Node) => {
                   alignItems: 'center',
                   justifyContent: 'flex-start',
                   borderTopRightRadius: '20px',
-                  borderBottomRightRadius: '20px',
+                    borderBottomRightRadius: '20px',
                 }}
               >
                 <Handle
@@ -215,6 +215,28 @@ export const ClassicalOperationNode = memo((node: Node) => {
                 />
                 <span className="text-black text-sm text-center w-full">{node.data.inputs[0]?.outputIdentifier || "Input 1"}</span>
               </div>
+               {node.data.label !== consts.minMaxOperatorLabel && (
+              <div
+                className="relative p-2 mb-1"
+                style={{
+                  backgroundColor: consts.classicalConstructColor,
+                  width: '120px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'flex-start',
+                  borderTopRightRadius: '20px',
+                  borderBottomRightRadius: '20px',
+                }}
+              >
+                <Handle
+                  type="target"
+                  id={`ancillaHandleOperationInput1${node.id}`}
+                  position={Position.Left}
+                  className="z-10 classical-circle-port-operation !bg-orange-300 !border-black -left-[8px]"
+                  style={{ top: '50%', transform: 'translateY(-50%)' }}
+                />
+                <span className="text-black text-sm text-center w-full">{node.data.inputs[1]?.outputIdentifier || "Input 2"}</span>
+              </div>)}
               <div
                 className="relative p-2 mb-1 overflow-visible"
                 style={{
