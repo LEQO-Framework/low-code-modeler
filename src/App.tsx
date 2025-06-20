@@ -512,8 +512,8 @@ function App() {
                   const currentHeightValue = parseFloat(currentHeight);
                   console.log(currentHeightValue);
                   console.log(node.height)
-              
-                  const newHeight= node.height +200 > currentHeightValue ? currentHeightValue + node.height : currentHeightValue;
+
+                  const newHeight = node.height + 200 > currentHeightValue ? currentHeightValue + node.height : currentHeightValue;
 
                   // Set it back with "px"
                   firstChild.style.minWidth = `${newMinWidth}px`;
@@ -1120,10 +1120,20 @@ function App() {
           >
             {isPaletteOpen && <Palette ancillaMode={ancillaModelingOn} />}
           </div>
-
+          <button
+            onClick={togglePalette}
+            className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-700 text-white p-2 rounded-l-lg shadow-md hover:bg-gray-600 z-50 ${isPaletteOpen ? "right-0" : "hidden"}`}
+          >
+            {isPaletteOpen ? "←" : "→"}
+          </button>
 
         </div>
-
+        <button
+          onClick={togglePalette}
+          className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-700 text-white p-2 rounded-l-lg shadow-md hover:bg-gray-600 z-50 ${isPaletteOpen ? "hidden" : "-left-0"}`}
+        >
+          {isPaletteOpen ? "←" : "→"}
+        </button>
 
         <div
           className="h-[calc(100vh_-_60px)] flex-grow"
@@ -1145,7 +1155,7 @@ function App() {
             onNodeDrag={onNodeDrag}
             onNodeDragStop={onNodeDragStop}
             onDrop={onDrop}
-        
+
             fitView
             fitViewOptions={{ maxZoom: 1 }}
             onInit={setReactFlowInstance}
@@ -1250,15 +1260,29 @@ function App() {
           </ReactFlow>
         </div>
 
-        <div className="relative flex bg-gray-100 h-[calc(100vh_-_60px)]  border-gray-200 border">
-
+         <div className="relative flex bg-gray-100 h-[calc(100vh_-_60px)]  border-gray-200 border">
           <div
             className={`transition-all duration-300 ${isPanelOpen ? "w-[300px] lg:w-[350px]" : "w-0 overflow-hidden"}`}
           >
-            {isPanelOpen && <CustomPanel metadata={metadata} onUpdateMetadata={setMetadata} />}
+
+            <button
+              onClick={togglePanel}
+              className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-700 text-white p-2 rounded-l-lg shadow-md hover:bg-gray-600 z-50 ${isPanelOpen ? "left-0" : "hidden"}`}
+            >
+              {isPanelOpen ? "→" : "←"}
+            </button>
+
+
+            {isPanelOpen && <CustomPanel metadata={metadata} onUpdateMetadata={setMetadata}  />}
           </div>
         </div>
 
+        <button
+          onClick={togglePanel}
+          className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-700 text-white p-2 rounded-l-lg shadow-md hover:bg-gray-600 z-50 ${isPanelOpen ? "hidden" : "right-0"}`}
+        >
+          {isPanelOpen ? "→" : "←"}
+        </button>
       </main>
     </ReactFlowProvider>
   );
