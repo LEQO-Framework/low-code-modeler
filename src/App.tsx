@@ -513,7 +513,7 @@ function App() {
                   console.log(currentHeightValue);
                   console.log(node.height)
 
-                  const newHeight = node.height + 200 > currentHeightValue ? currentHeightValue + node.height : currentHeightValue;
+                  const newHeight = node.height + 200 > currentHeightValue ? currentHeightValue + 100: currentHeightValue +100;
 
                   // Set it back with "px"
                   firstChild.style.minWidth = `${newMinWidth}px`;
@@ -1255,7 +1255,7 @@ function App() {
               pannable={true}
             />
 
-
+ <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
 
           </ReactFlow>
         </div>
