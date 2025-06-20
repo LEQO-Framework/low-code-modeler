@@ -103,6 +103,7 @@ export const OperationNode = memo((node: Node) => {
 
       updateNodeValue(node.id, "operator", defaultOperator);
       setOperatorInitialized(true);
+      //updateNodeInternals(node.id);
     }
   }, [node.id, node.data.label, node.data.operator, operatorInitialized]);
 

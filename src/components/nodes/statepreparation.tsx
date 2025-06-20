@@ -87,7 +87,7 @@ export const StatePreparationNode = memo((node: Node) => {
     } else {
       updateNodeValue(node.id, "quantumStateName", quantumStateName);
     }
-    updateNodeInternals(node.id);
+    //updateNodeInternals(node.id);
     setMounted(true);
   }, [ancillaMode]);
 
@@ -114,7 +114,7 @@ export const StatePreparationNode = memo((node: Node) => {
     if (startsWithDigit) {
       setStartsWithDigitError(true);
     }
-     updateNodeInternals(node.id);
+     //updateNodeInternals(node.id);
   }, [nodes, node.data.outputIdentifier, node.id]);
 
   const { data, selected } = node;
