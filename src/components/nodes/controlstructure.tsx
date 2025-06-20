@@ -149,10 +149,12 @@ export const ControlStructureNode = memo((node: Node) => {
               {/* Output Handles - Right side of the left polygon */}
               <div style={{ position: "absolute", right: "215px", overflow: "visible" }}>
                 {quantumHandles.map((index, i) => {
+                  const handleInputId = `quantumHandleInputInitialization${node.id}-${index}`;
+                  const isInputConnected = edges.some(edge => edge.targetHandle === handleInputId);
                   const handleId = `quantumHandleOutputInitialization${node.id}-${index}`;
                   const isConnected = edges.some(edge => edge.sourceHandle === handleId);
                   console.log(isConnected)
-                  return (
+                  return isInputConnected && (
                     <Handle
                       key={handleId}
                       type="source"
@@ -228,9 +230,11 @@ export const ControlStructureNode = memo((node: Node) => {
               {/* Handles - Left side of the right polygon */}
               <div style={{ position: "absolute", left: "140px", overflow: "visible" }}>
                 {quantumHandles.map((index, i) => {
+                  const handleInputId = `quantumHandleInputInitialization${node.id}-${index}`;
+                  const isInputConnected = edges.some(edge => edge.targetHandle === handleInputId);
                   const handleId = `quantumHandleInputDynamic${node.id}-${index}`;
                   const isConnected = edges.some(edge => edge.targetHandle === handleId);
-                  return (
+                  return isInputConnected && (
                     <Handle
                       key={handleId}
                       type="target"
@@ -251,9 +255,11 @@ export const ControlStructureNode = memo((node: Node) => {
               {/* Handles - Right side of the right polygon */}
               <div style={{ position: "absolute", right: "0px", overflow: "visible" }}>
                 {quantumHandles.map((index, i) => {
+                  const handleInputId = `quantumHandleInputInitialization${node.id}-${index}`;
+                  const isInputConnected = edges.some(edge => edge.targetHandle === handleInputId);
                   const handleId = `quantumHandleOutputDynamic${node.id}-${index}`;
                   const isConnected = edges.some(edge => edge.sourceHandle === handleId);
-                  return (
+                  return isInputConnected && (
                     <Handle
                       key={handleId}
                       type="source"
