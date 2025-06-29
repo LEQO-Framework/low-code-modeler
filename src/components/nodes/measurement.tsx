@@ -61,6 +61,7 @@ export const MeasurementNode = memo((node: Node) => {
     const duplicates = findDuplicateOutputIdentifiers(nodes, node.id);
     let isDuplicate = duplicates.has(identifier);
     const startsWithDigit = /^\d/.test(outputIdentifier);
+    setIndices(node.data.indices);
  
     isDuplicate = isDuplicate || findDuplicateOutputIdentifiersInsideNode(nodes, selectedNode, identifier) ||startsWithDigit;
     
