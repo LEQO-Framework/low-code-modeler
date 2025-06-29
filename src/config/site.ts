@@ -51,9 +51,26 @@ export const nodesConfig = {
 };
 
 export const initialDiagram = {
-  initialNodes: [] as Node[],
-  initialEdges: [] as Edge[],
+  nodes: [] as Node[],
+  edges: [] as Edge[],
   nodeTypes: {
-    node: Node,
+    textNode: TextNode,
+    dataTypeNode: DataTypeNode,
+    dynamicNode: DynamicNode,
+    measurementNode: MeasurementNode,
+    statePreparationNode: StatePreparationNode,
+    uncomputeNode: UncomputeNode,
+    quantumOperatorNode: OperationNode,
+    ancillaNode: AncillaNode,
+    gateNode: GateNode,
+    controlStructureNode: ControlStructureNode,
+    ifElseNode: IfElseNode,
+    algorithmNode : AlgorithmNode,
+    classicalAlgorithmNode: ClassicalAlgorithmNode,
+    splitterNode: SplitterNode,
+    mergerNode: MergerNode,
+    qubitNode: QubitNode,
+    classicalOperatorNode: ClassicalOperationNode,
+    groupNode: GroupNode
   } as any,
 };

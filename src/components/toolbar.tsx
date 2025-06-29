@@ -8,14 +8,14 @@ import {
   UploadCloud,
   Settings,
   Send,
-  Server,
 } from "lucide-react";
 
 interface ToolbarProps {
-  onSave: () => void;
+  onSave: (upload) => void;
   onRestore: () => void;
   onSaveAsSVG: () => void;
   onOpenConfig: () => void;
+  uploadDiagram: () => void;
   onLoadJson: () => void;
   sendToBackend:()=> void;
   sendToQunicorn:()=> void;
@@ -25,6 +25,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
   onSave,
   onRestore,
   onSaveAsSVG,
+  uploadDiagram,
   onOpenConfig,
   onLoadJson,
   sendToBackend,
@@ -45,7 +46,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
         <Button size="sm" onClick={onSaveAsSVG}>
           <Download className="w-4 h-4 mr-2" /> Save as
         </Button>
-        <Button size="sm" onClick={onSaveAsSVG}>
+        <Button size="sm" onClick={uploadDiagram}>
           <UploadCloud className="w-4 h-4 mr-2" /> Upload
         </Button>
         <Button size="sm" onClick={onOpenConfig}>

@@ -92,9 +92,14 @@ function App() {
   const [qunicornEndpoint, setQunicornEndpoint] = useState(import.meta.env.VITE_QUNICORN);
   const [lowcodeBackendEndpoint, setLowcodeBackendEndpoint] = useState(import.meta.env.VITE_LOW_CODE_BACKEND);
 
+  const [activeTab, setActiveTab] = useState("endpoints");
   const [tempNisqAnalyzerEndpoint, setTempNisqAnalyzerEndpoint] = useState(nisqAnalyzerEndpoint);
   const [tempQunicornEndpoint, setTempQunicornEndpoint] = useState(qunicornEndpoint);
   const [tempLowcodeBackendEndpoint, setTempLowcodeBackendEndpoint] = useState(lowcodeBackendEndpoint);
+  const [tempGithubRepositoryOwner, setTempGithubRepositoryOwner] = useState("");
+  const [tempGithubRepositoryName, setTempGithubRepositoryName] = useState("");
+  const [tempGithubBranch, setTempGithubBranch] = useState("");
+  const [tempGithubToken, setTempGithubToken] = useState("");
 
   const [selectedDevice, setSelectedDevice] = useState("");
   const [provider, setProvider] = useState("");
@@ -124,7 +129,7 @@ function App() {
     setIsLoadJsonModalOpen(true);
   };
 
-  const confirmLoadJson = () => {
+  const confirmNewDiagram = () => {
     setIsLoadJsonModalOpen(false);
     loadFlow(initialDiagram);
   };
@@ -513,7 +518,7 @@ function App() {
                   console.log(currentHeightValue);
                   console.log(node.height)
 
-                  const newHeight = node.height + 200 > currentHeightValue ? currentHeightValue + 100: currentHeightValue +100;
+                  const newHeight = node.height + 200 > currentHeightValue ? currentHeightValue + 100 : currentHeightValue + 100;
 
                   // Set it back with "px"
                   firstChild.style.minWidth = `${newMinWidth}px`;
@@ -556,7 +561,76 @@ function App() {
   );
 
   const flowKey = "example-flow";
-  function handleSaveClick() {
+
+  async function uploadToGitHub(filename, fileContent) {
+    const repoOwner = tempGithubRepositoryOwner;
+    const repo = tempGithubRepositoryName;
+    const branch = tempGithubBranch;
+    const token = tempGithubToken;
+
+    const apiUrl = `https://api.github.com/repos/${repoOwner}/${repo}/contents/${filename}`;
+
+    let sha = null;
+
+    try {
+      const getResponse = await fetch(`${apiUrl}?ref=${branch}`, {
+        headers: {
+          Authorization: `token ${token}`,
+          Accept: "application/vnd.github.v3+json",
+        },
+      });
+
+      if (getResponse.ok) {
+        const existingFile = await getResponse.json();
+        sha = existingFile.sha;
+        console.log("File exists, will update.");
+      } else if (getResponse.status === 404) {
+        console.log("File does not exist, will create new file.");
+      } else {
+        const errorData = await getResponse.json();
+        console.error("Failed to check file existence:", errorData);
+        return;
+      }
+    } catch (error) {
+      console.error("Error checking file existence:", error);
+      return;
+    }
+
+    const payload: any = {
+      message: `Upload ${filename} from quantum low-code modeler`,
+      content: btoa(fileContent),
+      branch: branch,
+    };
+
+    if (sha) {
+      payload.sha = sha;
+    }
+
+    // Upload the file
+    try {
+      const uploadResponse = await fetch(`${apiUrl}?ref=${branch}`, {
+        method: "PUT",
+        headers: {
+          Authorization: `token ${token}`,
+          Accept: "application/vnd.github.v3+json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (uploadResponse.ok) {
+        console.log(`File ${filename} uploaded to GitHub successfully.`);
+      } else {
+        const errorData = await uploadResponse.json();
+        console.error("GitHub upload failed:", errorData);
+      }
+    } catch (error) {
+      console.error("Error uploading to GitHub:", error);
+    }
+  }
+
+
+  async function handleSaveClick(upload) {
     if (!reactFlowInstance) {
       console.error("React Flow instance is not initialized.");
       return;
@@ -581,6 +655,7 @@ function App() {
     const jsonBlob = new Blob([JSON.stringify(flowWithMetadata, null, 2)], {
       type: "application/json",
     });
+    const jsonString = JSON.stringify(flowWithMetadata, null, 2);
     const downloadUrl = URL.createObjectURL(jsonBlob);
     const link = document.createElement("a");
     link.href = downloadUrl;
@@ -589,7 +664,14 @@ function App() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(downloadUrl);
+    if (upload) {
+      await uploadToGitHub(
+        `${validMetadata.name.replace(/\s+/g, "_")}_${validMetadata.id}.json`,
+        jsonString
+      );
+    }
   }
+
   function handleMetadataUpdate(updatedMetadata: any) {
     setMetadata(updatedMetadata);
   }
@@ -702,15 +784,15 @@ function App() {
       console.error("React Flow instance is not initialized.");
       return;
     }
-
+    console.log(flow.initialEdges)
     if (flow.initialEdges) {
       reactFlowInstance.setEdges(flow.initialEdges);
       console.log("Edges loaded.");
     }
-
-    if (flow.initialNodes) {
+    console.log(flow.nodes)
+    if (flow.nodes) {
       reactFlowInstance.setNodes(
-        flow.nodes.map((node: Node) => ({
+        flow.nodes?.map((node: Node) => ({
           ...node,
           data: {
             ...node.data,
@@ -718,6 +800,7 @@ function App() {
         }))
       );
     }
+    console.log(nodes);
 
     // Reset the viewport (optional based on your use case)
     const { x = 0, y = 0, zoom = 1 } = flow.viewport || {};
@@ -875,90 +958,179 @@ function App() {
     <ReactFlowProvider>
       <div className="toolbar-container">
         <Toolbar
-          onSave={handleSaveClick}
+          onSave={() => handleSaveClick(false)}
           onRestore={handleRestoreClick}
           onSaveAsSVG={handleSaveAsSVG}
           onOpenConfig={handleOpenConfig}
+          uploadDiagram={() => handleSaveClick(true)}
           onLoadJson={handleLoadJson}
           sendToBackend={sendToBackend}
           sendToQunicorn={sendToQunicorn}
         />
       </div>
-      <Modal title={"New Diagram"} open={isLoadJsonModalOpen} onClose={cancelLoadJson} footer={
+      {nodes.length > 0 && <Modal title={"New Diagram"} open={isLoadJsonModalOpen} onClose={cancelLoadJson} footer={
         <div className="flex justify-end space-x-2">
-          <button className="btn btn-primary" onClick={confirmLoadJson}>Yes</button>
+          <button className="btn btn-primary" onClick={confirmNewDiagram}>Yes</button>
           <button className="btn btn-secondary" onClick={cancelLoadJson}>Cancel</button>
         </div>
       }>
         <div>
           <p>Are you sure you want to create a new model? This will overwrite the current flow.</p>
         </div>
-      </Modal>
+      </Modal>}
       <Modal title={"Send Request"} open={modalOpen} onClose={() => setModalOpen(false)}>
         <div>
           <h2>Processing</h2>
           {loading ? <p>Loading...</p> : <p>Status: {status?.status || "Unknown"}</p>}
         </div>
       </Modal>
-      <Modal title={"Configuration"} open={isConfigOpen} onClose={() => { handleCancel() }} footer={
-        <div className="flex justify-end space-x-2">
-          <button className="btn btn-primary" onClick={() => { handleSave() }}>Save</button>
-          <button className="btn btn-secondary" onClick={() => { handleCancel() }}>Cancel</button>
-        </div>
-      }>
+      <Modal
+        title={"Configuration"}
+        open={isConfigOpen}
+        onClose={() => {
+          handleCancel();
+        }}
+        footer={
+          <div className="flex justify-end space-x-2">
+            <button className="btn btn-primary" onClick={() => handleSave()}>
+              Save
+            </button>
+            <button className="btn btn-secondary" onClick={() => handleCancel()}>
+              Cancel
+            </button>
+          </div>
+        }
+      >
         <div>
-          <h3 className="labels">NISQ Analyzer</h3>
-          <table className="config-table">
-            <tbody>
-              <tr>
-                <td align="right">NISQ Analyzer Endpoint:</td>
-                <td align="left">
-                  <input
-                    className="qwm-input"
-                    type="text"
-                    value={tempNisqAnalyzerEndpoint}
-                    onChange={(event) => setTempNisqAnalyzerEndpoint(event.target.value)}
-                  />
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          {/* Subtabs */}
+          <div className="flex border-b mb-4">
+            <button
+              className={`px-4 py-2 ${activeTab === "endpoints" ? "border-b-2 border-blue-500 font-semibold" : "text-gray-600"
+                }`}
+              onClick={() => setActiveTab("endpoints")}
+            >
+              Endpoints
+            </button>
+            <button
+              className={`px-4 py-2 ${activeTab === "github" ? "border-b-2 border-blue-500 font-semibold" : "text-gray-600"
+                }`}
+              onClick={() => setActiveTab("github")}
+            >
+              GitHub
+            </button>
+          </div>
 
-          <h3 className="labels">Qunicorn</h3>
-          <table className="config-table">
-            <tbody>
-              <tr>
-                <td align="right">Qunicorn Endpoint:</td>
-                <td align="left">
-                  <input
-                    className="qwm-input"
-                    type="text"
-                    value={tempQunicornEndpoint}
-                    onChange={(event) => setTempQunicornEndpoint(event.target.value)}
-                  />
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          {/* Endpoints Tab */}
+          {activeTab === "endpoints" && (
+            <div>
+              <h3 className="labels">NISQ Analyzer</h3>
+              <table className="config-table">
+                <tbody>
+                  <tr>
+                    <td align="right">NISQ Analyzer Endpoint:</td>
+                    <td align="left">
+                      <input
+                        className="qwm-input"
+                        type="text"
+                        value={tempNisqAnalyzerEndpoint}
+                        onChange={(event) => setTempNisqAnalyzerEndpoint(event.target.value)}
+                      />
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
 
-          <h3 className="labels">Low-Code Backend:</h3>
-          <table className="config-table">
-            <tbody>
-              <tr>
-                <td align="right">Low-Code Backend Endpoint:</td>
-                <td align="left">
-                  <input
-                    className="qwm-input"
-                    type="text"
-                    value={tempLowcodeBackendEndpoint}
-                    onChange={(event) => setTempLowcodeBackendEndpoint(event.target.value)}
-                  />
-                </td>
-              </tr>
-            </tbody>
-          </table>
+              <h3 className="labels">Qunicorn</h3>
+              <table className="config-table">
+                <tbody>
+                  <tr>
+                    <td align="right">Qunicorn Endpoint:</td>
+                    <td align="left">
+                      <input
+                        className="qwm-input"
+                        type="text"
+                        value={tempQunicornEndpoint}
+                        onChange={(event) => setTempQunicornEndpoint(event.target.value)}
+                      />
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <h3 className="labels">Low-Code Backend:</h3>
+              <table className="config-table">
+                <tbody>
+                  <tr>
+                    <td align="right">Low-Code Backend Endpoint:</td>
+                    <td align="left">
+                      <input
+                        className="qwm-input"
+                        type="text"
+                        value={tempLowcodeBackendEndpoint}
+                        onChange={(event) => setTempLowcodeBackendEndpoint(event.target.value)}
+                      />
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {activeTab === "github" && (
+            <div>
+              <h3 className="labels">GitHub Settings</h3>
+              <table className="config-table">
+                <tbody>
+                  <tr>
+                    <td align="right">GitHub Repository Owner:</td>
+                    <td align="left">
+                      <input
+                        className="qwm-input"
+                        type="text"
+                        value={tempGithubRepositoryOwner}
+                        onChange={(e) => setTempGithubRepositoryOwner(e.target.value)}
+                      />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td align="right">GitHub Repository Name:</td>
+                    <td align="left">
+                      <input
+                        className="qwm-input"
+                        type="text"
+                        value={tempGithubRepositoryName}
+                        onChange={(e) => setTempGithubRepositoryName(e.target.value)}
+                      />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td align="right">GitHub Branch:</td>
+                    <td align="left">
+                      <input
+                        className="qwm-input"
+                        type="text"
+                        value={tempGithubBranch}
+                        onChange={(e) => setTempGithubBranch(e.target.value)}
+                      />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td align="right">GitHub Token:</td>
+                    <td align="left">
+                      <input
+                        className="qwm-input"
+                        type="password"
+                        value={tempGithubToken}
+                        onChange={(e) => setTempGithubToken(e.target.value)}
+                      />
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
-      </Modal>
+      </Modal>;
       <Modal
         title={"Qunicorn Deployment (1/2)"}
         open={modalStep === 1}
@@ -1255,12 +1427,12 @@ function App() {
               pannable={true}
             />
 
- <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
+            <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
 
           </ReactFlow>
         </div>
 
-         <div className="relative flex bg-gray-100 h-[calc(100vh_-_60px)]  border-gray-200 border">
+        <div className="relative flex bg-gray-100 h-[calc(100vh_-_60px)]  border-gray-200 border">
           <div
             className={`transition-all duration-300 ${isPanelOpen ? "w-[300px] lg:w-[350px]" : "w-0 overflow-hidden"}`}
           >
@@ -1273,7 +1445,7 @@ function App() {
             </button>
 
 
-            {isPanelOpen && <CustomPanel metadata={metadata} onUpdateMetadata={setMetadata}  />}
+            {isPanelOpen && <CustomPanel metadata={metadata} onUpdateMetadata={setMetadata} />}
           </div>
         </div>
 
