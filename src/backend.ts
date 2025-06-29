@@ -12,7 +12,7 @@ export type StatusResult = components["schemas"]["StatusBody"];
 
 export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[], edges: Edge[]): Promise<Response> => {
 
-    return await fetch(new URL("/debug/compile", baseUrl), {
+    return await fetch(new URL("/compile", baseUrl), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -186,19 +186,18 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                     operator: node.data.operator || node.data.minmax
                 }
 
-            /* Nested nodes
+
             case consts.ControlStructureNode:
                 return {
                     id: node.id,
                     type: "repeat",
-                    iterations: 42,
+                    iterations: node.data?.condition,
                     block: {
                         nodes: nodes.filter(x => x.parentNode === node.id).map(x => mapNode(x)),
                         edges: edges.filter(x => isEdgeWithin(x, node.id)).map(x => mapEdge(x))
                     }
-                } */
+                }
 
-            // ToDo: case consts.IfElseNode
             case consts.IfElseNode:
                 const childNodes = nodes.filter(x => x.parentNode === node.id);
                 const thenNodes = childNodes.filter(n => n.data.scope === "if");
@@ -253,6 +252,15 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
     function getHandleIndex(nodeId: string, handleType: "source" | "target", handleId?: string): number {
         if (!handleId)
             throw new Error(`No handle id for node ${nodeId}`)
+
+        console.log(handleId)
+        // Generic pattern to check if handleId ends with -<number>
+        const endsWithIndexPattern = /-(\d+)$/;
+        const indexMatch = handleId.match(endsWithIndexPattern);
+
+        if (indexMatch) {
+            return parseInt(indexMatch[1], 10);
+        }
 
         const pattern = new RegExp(`(\\d+)(?=${nodeId}$)`);
         const match = handleId.match(pattern);

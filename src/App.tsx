@@ -100,6 +100,7 @@ function App() {
   const [tempGithubRepositoryName, setTempGithubRepositoryName] = useState("");
   const [tempGithubBranch, setTempGithubBranch] = useState("");
   const [tempGithubToken, setTempGithubToken] = useState("");
+  const [openqasmCode, setOpenQASMCode] = useState("");
 
   const [selectedDevice, setSelectedDevice] = useState("");
   const [provider, setProvider] = useState("");
@@ -191,7 +192,7 @@ function App() {
   );
   const [modalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState(null);
+  const [status, setStatus] = useState("");
   const [modalStep, setModalStep] = useState(0);
   const [loadingQunicorn, setLoadingQunicorn] = useState(true);
   const [statusQunicorn, setStatusQunicorn] = useState(null);
@@ -236,21 +237,73 @@ function App() {
 
       const flowWithMetadata = { metadata: validMetadata, ...flow };
       let response = await startCompile(lowcodeBackendEndpoint, metadata, reactFlowInstance.getNodes(), reactFlowInstance.getEdges());
-      // must return the location where to poll
-      //let response = await fetch(lowcodeBackendEndpoint + "/compile", {
-      // method: "POST",
-      //headers: { "Content-Type": "application/json" },
-      //body: JSON.stringify(flowWithMetadata),
-      //});
 
-      console.log(await response.text());
+      const jsonData = await response.json();
+      let location = jsonData["result"];
+      let uuid = jsonData["uuid"];
+      // Replace with your actual endpoint and token if needed
+      const statusUrl = `${tempLowcodeBackendEndpoint}/status/${uuid}`;
 
-      if (!response["Location"]) {
-        return {
-          error: "Received invalid response from Low Code Backend.",
-        };
+      let attempts = 0;
+      const maxAttempts = 20;
+      const delay = 10000; // 10 seconds
+
+      async function pollStatus() {
+        try {
+          const response = await fetch(statusUrl, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          });
+
+          if (!response.ok) {
+            console.error("Status check failed:", response.status);
+            return;
+          }
+
+          const statusData = await response.json();
+          console.log("Current status:", statusData.status);
+          setStatus(statusData.status);
+          console.log(statusData)
+          location = statusData["result"];
+
+          if (statusData.status === "completed") {
+            console.log("Operation completed successfully.");
+            setLoading(false);
+            return;
+          }
+
+          attempts++;
+
+          if (attempts < maxAttempts) {
+            setTimeout(pollStatus, delay);
+          } else {
+            console.error("Max polling attempts reached. Operation did not complete.");
+          }
+
+        } catch (error) {
+          console.error("Error while polling status:", error);
+        }
       }
-      //pollStatus(response["Location"]);
+
+      await pollStatus();
+
+      console.log(jsonData)
+      console.log(location);
+
+      let result = await fetch(location, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      let openqasmCode = await result.text();
+      setStatus("completed");
+      setLoading(false);
+      setOpenQASMCode(openqasmCode);
+      console.log(openqasmCode)
+
+
     } catch (error) {
       console.error("Error sending data:", error);
       setLoading(false);
@@ -981,7 +1034,7 @@ function App() {
       <Modal title={"Send Request"} open={modalOpen} onClose={() => setModalOpen(false)}>
         <div>
           <h2>Processing</h2>
-          {loading ? <p>Loading...</p> : <p>Status: {status?.status || "Unknown"}</p>}
+          {loading ? <p>Loading...</p> : <p>Status: {status || "Unknown"}</p>}
         </div>
       </Modal>
       <Modal
@@ -1130,7 +1183,7 @@ function App() {
             </div>
           )}
         </div>
-      </Modal>;
+      </Modal>
       <Modal
         title={"Qunicorn Deployment (1/2)"}
         open={modalStep === 1}
@@ -1375,11 +1428,6 @@ function App() {
                 Ancilla Modeling: {ancillaModelingOn ? "On" : "Off"}
               </button>
             </Panel>
-
-
-
-
-
 
             <MiniMap
               nodeClassName={(node) => {

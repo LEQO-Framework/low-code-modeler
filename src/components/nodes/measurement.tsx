@@ -71,21 +71,34 @@ export const MeasurementNode = memo((node: Node) => {
   }, [nodes, node.data]);
 
   const handleYChange = (e, field) => {
-    const value = e.target.value;
-    if (/^[a-zA-Z_]/.test(value) && value !== "") {
-      setError(true);
-    } else {
-      setError(false)
-    }
-    if (field === "indices") {
-      setIndices(value);
-    }
+  const value = e.target.value;
+
+  if (field === "indices") {
+    setIndices(value);
+
+    // Validate: Only allow digits separated by commas
+    const isValid = /^(\d+)(,\d+)*$/.test(value);
+    setError(!isValid);
+
+    node.data[field] = value;
+    updateNodeValue(node.id, field, value);  // Store raw value
+  } else {
+    // Other fields: only allow numeric input
     const number = Number(value);
-    
+
+    // If it's NaN or starts with a letter, set error
+    const startsWithLetter = /^[a-zA-Z_]/.test(value) && value !== "";
+    const invalidNumber = isNaN(number);
+
+    setError(startsWithLetter || invalidNumber);
+
     node.data[field] = value;
     updateNodeValue(node.id, field, number);
-    setSelectedNode(node);
-  };
+  }
+  setSelectedNode(node);
+};
+
+  
 
   return (
     <div className="grand-parent">
