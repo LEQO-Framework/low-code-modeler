@@ -231,7 +231,7 @@ export const TextPanel = () => {
               </select>
             </div>
 
-            {selectedNode.data.encodingType === "Basis Encoding" && (<><label
+            {(<><label
               className="block text-sm font-medium text-start text-gray-700 mt-2"
               htmlFor="size"
             >

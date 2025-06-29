@@ -57,6 +57,7 @@ export const StatePreparationNode = memo((node: Node) => {
 
     if (field === "encodingType") {
       setEncodingType(value);
+      updateNodeInternals(node.id);
     }
 
     node.data[field] = value;
@@ -83,11 +84,18 @@ export const StatePreparationNode = memo((node: Node) => {
 
   useEffect(() => {
     if (node.data.label === "Encode Value") {
-      updateNodeValue(node.id, "encodingType", encodingType);
+      console.log(node.data.encodingType)
+      if(node.data.encodingType !== null && !mounted){
+       // updateNodeValue(node.id, "encodingType", node.data.encodingType);
+      }else{
+        updateNodeValue(node.id, "encodingType", encodingType);
+      }
     } else {
+      
       updateNodeValue(node.id, "quantumStateName", quantumStateName);
     }
-    //updateNodeInternals(node.id);
+   
+    updateNodeInternals(node.id);
     setMounted(true);
   }, [ancillaMode]);
 
@@ -114,7 +122,12 @@ export const StatePreparationNode = memo((node: Node) => {
     if (startsWithDigit) {
       setStartsWithDigitError(true);
     }
-     //updateNodeInternals(node.id);
+    console.log(encodingType)
+    if((node.data.encodingType === "Basis Encoding" || node.data.encodingType === "Angle Encoding") && (encodingType !== "Angle Encoding" && encodingType !== "Basis Encoding")){
+      updateNodeInternals(node.id);
+      setEncodingType(node.data.encodingType)
+    }
+    
   }, [nodes, node.data.outputIdentifier, node.id]);
 
   const { data, selected } = node;
@@ -159,7 +172,7 @@ export const StatePreparationNode = memo((node: Node) => {
   const baseHeight = data.label === "Prepare State" ? 440 : 560;
 
   const extraHeightPerVariable = 20;
-  const dynamicHeight = baseHeight + (inputs.length + outputs.length) * extraHeightPerVariable;
+  const dynamicHeight = baseHeight;
 
   return (
     <motion.div

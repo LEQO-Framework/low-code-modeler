@@ -108,7 +108,8 @@ export const GateNode = memo((node: Node) => {
             id={`quantumHandleGateInput0${node.id}`}
             position={Position.Left}
             className="!absolute !top-[50%] !left--4 z-10 circle-port-op !bg-blue-300 !border-black"
-            isValidConnection={() => true}
+            isConnectableStart={false}
+            isConnectable={edges.filter(edge => edge.sourceHandle === "quantumHandleGateOutput0" + node.id).length < 1}
           />
         )}
 
@@ -120,6 +121,7 @@ export const GateNode = memo((node: Node) => {
               position={Position.Left}
               className="!absolute !top-[25%] !left--4 z-10 circle-port-op !bg-blue-300 !border-black"
               isValidConnection={() => true}
+              isConnectableStart={false}
 
             />
             <Handle
@@ -128,6 +130,7 @@ export const GateNode = memo((node: Node) => {
               position={Position.Left}
               className="!absolute !top-[75%] !left--4 z-10 circle-port-op !bg-blue-300 !border-black"
               isValidConnection={() => true}
+              isConnectableStart={false}
             />
           </>
         )}
@@ -140,6 +143,7 @@ export const GateNode = memo((node: Node) => {
               position={Position.Left}
               className="!absolute !top-[25%] !left--4 z-10 circle-port-op !bg-blue-300 !border-black"
               isValidConnection={() => true}
+              isConnectableStart={false}
             />
             <Handle
               type="target"
@@ -147,6 +151,7 @@ export const GateNode = memo((node: Node) => {
               position={Position.Left}
               className="!absolute !top-[50%] !left--4 z-10 circle-port-op !bg-blue-300 !border-black"
               isValidConnection={() => true}
+              isConnectableStart={false}
             />
             <Handle
               type="target"
@@ -154,6 +159,7 @@ export const GateNode = memo((node: Node) => {
               position={Position.Left}
               className="!absolute !top-[75%] !left--4 z-10 circle-port-op !bg-blue-300 !border-black"
               isValidConnection={() => true}
+              isConnectableStart={false}
             />
           </>
         )}
