@@ -187,7 +187,7 @@ export const MeasurementNode = memo((node: Node) => {
                   isConnectable={edges.filter(edge => edge.targetHandle === `quantumHandleMeasurementInput0${node.id}`).length < 1}
                   isConnectableStart={false}
                 />
-                <span className="text-black text-sm" >{node.data.inputs[0]?.outputIdentifier || "Register"}</span>
+                <span className="text-black text-center text-sm w-full" >{node.data.inputs[0]?.outputIdentifier || "Register"}</span>
               </div>
             </div>
           </div>

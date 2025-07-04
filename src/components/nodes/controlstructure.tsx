@@ -52,7 +52,7 @@ export const ControlStructureNode = memo((node: Node) => {
 
 
 
-  const dynamicHeight = 500 + Math.max(0, quantumHandles.length - 1) * 30;
+  const dynamicHeight = 600 + Math.max(0, quantumHandles.length - 1) * 30;
   const totalHandles = Math.max(quantumHandles.length, 0);
   const hexagonHeight = Math.max(250, 180 + totalHandles * 30);
   const hexagonTopOffset = -(hexagonHeight / 2) + 20;

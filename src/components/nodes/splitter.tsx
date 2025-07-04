@@ -66,42 +66,47 @@ export const SplitterNode = memo((node: Node) => {
       isConnectableEnd={false}
     />
   ));
-    const updateNodeInternals = useUpdateNodeInternals();
+  const updateNodeInternals = useUpdateNodeInternals();
   useEffect(() => {
-      updateNodeInternals(node.id);
-  
-      const edgesToRemove = edges.filter((edge) => {
-        const match = edge.sourceHandle?.match(
-          new RegExp(`quantumHandleSplitterOutput(\\d+)${node.id}`)
-        );
-  
-        if (match === null) {
-          return true;
-        }
-  
-        if (match && match[1]) {
-  
-          const index = parseInt(match[1], 10);
-          console.log(index)
-          return index <= numberInputs-1;
-        }
-  
-        return false;
-      });
-      console.log(edges)
-      console.log(edgesToRemove)
-      console.log(edgesGraph)
-  
-      if (edgesToRemove.length > 0) {
-        // Compare old vs new, only update if different to avoid infinite loop
-        if(edgesToRemove.length !== edges.length){
-          setNewEdges(edgesToRemove);
-          setEdgesGraph(edgesToRemove);
-        }
-        
+    updateNodeInternals(node.id);
+
+    const edgesToRemove = edges.filter((edge) => {
+      const match = edge.sourceHandle?.match(
+        new RegExp(`quantumHandleSplitterOutput(\\d+)${node.id}`)
+      );
+
+      if (match === null) {
+        return true;
       }
-    }, [handleCount, numberInputs, node.id, edgesGraph]);
-  
+
+      if (match && match[1]) {
+
+        const index = parseInt(match[1], 10);
+        if(index >= 1){
+          return false
+        }
+        console.log(index)
+        console.log(numberOutputs)
+        return index > numberOutputs - 1;
+      }
+
+      return false;
+    });
+    console.log(edges)
+    console.log(edgesToRemove)
+    console.log(edgesGraph)
+    console.log(data.identifiers)
+
+    if (edgesToRemove.length > 0 && data.identifiers.length > numberOutputs) {
+      // Compare old vs new, only update if different to avoid infinite loop
+      if (edgesToRemove.length !== edges.length) {
+        setNewEdges(edgesToRemove);
+        setEdgesGraph(edgesToRemove);
+      }
+
+    }
+  }, [handleCount, node.id, edgesGraph]);
+
 
   // Ensure identifiers exist and match the number of outputs
   if (!data.identifiers) {
@@ -114,6 +119,8 @@ export const SplitterNode = memo((node: Node) => {
   }
 
   // Remove extra identifiers
+  console.log(data.identifiers.length);
+  console.log(numberOutputs)
   if (data.identifiers.length > numberOutputs) {
     const removedIdentifiers = data.identifiers.slice(numberOutputs);
     console.log(removedIdentifiers);
@@ -121,7 +128,7 @@ export const SplitterNode = memo((node: Node) => {
     // Clean up edges with sourceHandles related to removed identifiers
     const edgesToRemove = edges.filter((edge) =>
       !removedIdentifiers.some((id, index) =>
-        edge.sourceHandle === `quantumHandleSplitterOutput${numberOutputs + index + 1}${node.id}`
+        edge.sourceHandle === `quantumHandleSplitterOutput${numberOutputs + index}${node.id}`
       )
     );
     console.log("EDGES")
@@ -144,12 +151,12 @@ export const SplitterNode = memo((node: Node) => {
         style={{ height: `${nodeHeight}px` }}
       >
         <div className="w-full flex items-center" style={{ height: '52px' }}>
-            <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
-              <img src="splitterIcon.png" alt="icon" className="w-[40px] h-[40px] object-contain flex-shrink-0" />
-              <div className="h-full w-[1px] bg-black mx-2" />
-              <span className=" font-semibold leading-none" style={{ paddingLeft: '25px' }}>{data.label}</span>
-            </div>
+          <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
+            <img src="splitterIcon.png" alt="icon" className="w-[40px] h-[40px] object-contain flex-shrink-0" />
+            <div className="h-full w-[1px] bg-black mx-2" />
+            <span className=" font-semibold leading-none" style={{ paddingLeft: '25px' }}>{data.label}</span>
           </div>
+        </div>
 
         <div className="px-2 py-3 flex justify-center">
           <div className="flex items-center">

@@ -32,9 +32,9 @@ export const categories: Record<string, CategoryContent> = {
     ],
     "Circuit Blocks": [
       { label: "H", type: consts.GateNode, icon: "hadamard.png" },
-      { label: "RX(θ)", type: consts.GateNode, icon: "rx.png" },
-      { label: "RY(θ)", type: consts.GateNode, icon: "ry.png" },
-      { label: "RZ(θ)", type: consts.GateNode, icon: "rz.png" },
+      { label: "RX(θ)", type: consts.GateNode, icon: "RX_palette.png" },
+      { label: "RY(θ)", type: consts.GateNode, icon: "RY_palette.png" },
+      { label: "RZ(θ)", type: consts.GateNode, icon: "RZ_palette.png" },
       { label: "T", type: consts.GateNode, icon: "t.png" },
       { label: "X", type: consts.GateNode, icon: "pauliX.png" },
       { label: "Y", type: consts.GateNode, icon: "pauliY.png" },

@@ -57,7 +57,7 @@ export function findDuplicateOutputIdentifier(nodes, currentNodeId, currentNode,
   return identifierMap;
 }
 export function findDuplicateOutputIdentifiersInsideNode(nodes, currentNode, identifier) {
-  const node = nodes.find(n => n.id === currentNode.id);
+  const node = nodes.find(n => n.id === currentNode?.id);
 
   if (!currentNode || !currentNode.data?.outputs || currentNode.data.outputs.length <= 1) {
     return false;

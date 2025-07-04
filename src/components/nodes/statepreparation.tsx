@@ -85,16 +85,18 @@ export const StatePreparationNode = memo((node: Node) => {
   useEffect(() => {
     if (node.data.label === "Encode Value") {
       console.log(node.data.encodingType)
-      if(node.data.encodingType !== null && !mounted){
-       // updateNodeValue(node.id, "encodingType", node.data.encodingType);
-      }else{
+      if (node.data.encodingType !== null && !mounted) {
+        // updateNodeValue(node.id, "encodingType", node.data.encodingType);
+      } else {
         updateNodeValue(node.id, "encodingType", encodingType);
       }
     } else {
-      
-      updateNodeValue(node.id, "quantumStateName", quantumStateName);
+      if (node.data.encodingType !== null && !mounted) {
+      } else {
+        updateNodeValue(node.id, "quantumStateName", quantumStateName);
+      }
     }
-   
+
     updateNodeInternals(node.id);
     setMounted(true);
   }, [ancillaMode]);
@@ -123,11 +125,17 @@ export const StatePreparationNode = memo((node: Node) => {
       setStartsWithDigitError(true);
     }
     console.log(encodingType)
-    if((node.data.encodingType === "Basis Encoding" || node.data.encodingType === "Angle Encoding") && (encodingType !== "Angle Encoding" && encodingType !== "Basis Encoding")){
+    if ((node.data.encodingType === "Basis Encoding" || node.data.encodingType === "Angle Encoding") && (encodingType !== "Angle Encoding" && encodingType !== "Basis Encoding")) {
       updateNodeInternals(node.id);
       setEncodingType(node.data.encodingType)
     }
-    
+    console.log(node.data.quantumStateName)
+    if (node.data.quantumStateName !== quantumStateName) {
+      updateNodeInternals(node.id);
+      setQuantumStateName(node.data.quantumStateName)
+    }
+
+
   }, [nodes, node.data.outputIdentifier, node.id]);
 
   const { data, selected } = node;
@@ -279,7 +287,7 @@ export const StatePreparationNode = memo((node: Node) => {
                     <option value="Matrix Encoding">Matrix Encoding</option>
                     <option value="Schmidt Decomposition">Schmidt Decomposition</option>
                   </select>
-                 
+
                   {node.data.encodingType !== "Basis Encoding" && node.data.encodingType !== "Angle Encoding" && (
                     <>
                       <label className="text-sm text-black">Bound:</label>
