@@ -204,7 +204,7 @@ export const MeasurementNode = memo((node: Node) => {
             setOutputs={setOutputs}
             edges={edges}
             sizeError={classicalSizeError}
-            outputIdentifierError={classicalOutputIdentifierError}
+            outputIdentifierError={(outputIdentifierError || startsWithDigitError)}
             updateNodeValue={updateNodeValue}
             setOutputIdentifierError={setClassicalOutputIdentifierError}
             setSizeError={setClassicalSizeError}
@@ -220,7 +220,7 @@ export const MeasurementNode = memo((node: Node) => {
             setOutputs={setOutputs}
             edges={edges}
             sizeError={sizeError}
-            outputIdentifierError={outputIdentifierError}
+            outputIdentifierError={(outputIdentifierError || startsWithDigitError)}
             updateNodeValue={updateNodeValue}
             setOutputIdentifierError={setOutputIdentifierError}
             setSizeError={setSizeError}

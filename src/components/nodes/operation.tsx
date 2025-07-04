@@ -119,13 +119,14 @@ export const OperationNode = memo((node: Node) => {
     const startsWithDigit = /^\d/.test(identifier);
     if (startsWithDigit) {
       setStartsWithDigitError(true);
+    }else{
+      setStartsWithDigitError(false);
     }
 
   }, [nodes, node.data.outputIdentifier, node.id, ancillaMode]);
 
   const baseHeight = 550;
-  const extraHeightPerVariable = 20;
-  const dynamicHeight = baseHeight + (inputs.length + outputs.length) * extraHeightPerVariable;
+  const dynamicHeight = baseHeight ;
 
   const iconMap = {
     "Arithmetic Operator": 'arithmeticIcon.png',
@@ -384,7 +385,7 @@ export const OperationNode = memo((node: Node) => {
                   setOutputs={setOutputs}
                   edges={edges}
                   sizeError={sizeError}
-                  outputIdentifierError={outputIdentifierError}
+                  outputIdentifierError={(outputIdentifierError || startsWithDigitError)}
                   updateNodeValue={updateNodeValue}
                   setOutputIdentifierError={setOutputIdentifierError}
                   setSizeError={setSizeError}
@@ -404,7 +405,7 @@ export const OperationNode = memo((node: Node) => {
                   setOutputs={setOutputs}
                   edges={edges}
                   sizeError={sizeError}
-                  outputIdentifierError={outputIdentifierError}
+                  outputIdentifierError={(outputIdentifierError || startsWithDigitError)}
                   updateNodeValue={updateNodeValue}
                   setOutputIdentifierError={setOutputIdentifierError}
                   setSizeError={setSizeError}

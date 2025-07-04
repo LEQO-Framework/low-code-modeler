@@ -219,8 +219,8 @@ export const IfElseNode = memo((node: Node) => {
         Else
       </div>
 
-      <div className="rounded-none border border-solid border-gray-700 relative w-full h-full relative flex items-center justify-center overflow-visible">
-        <div className="rounded-md border border-solid border-gray-700 w-full h-full flex flex-col items-center relative z-10 overflow-visible">
+      <div className="rounded-none bg-white border border-solid border-gray-700 relative w-full h-full relative flex items-center justify-center overflow-visible">
+        <div className="rounded-none border border-solid border-gray-700 w-full h-full flex flex-col items-center relative z-10 overflow-visible">
           <div className="w-full bg-purple-300 text-black text-center font-semibold py-1">
             <span className="text-sm">Then</span>
           </div>

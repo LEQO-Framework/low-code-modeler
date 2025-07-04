@@ -123,6 +123,8 @@ export const StatePreparationNode = memo((node: Node) => {
     }
     if (startsWithDigit) {
       setStartsWithDigitError(true);
+    } else {
+      setStartsWithDigitError(false);
     }
     console.log(encodingType)
     if ((node.data.encodingType === "Basis Encoding" || node.data.encodingType === "Angle Encoding") && (encodingType !== "Angle Encoding" && encodingType !== "Basis Encoding")) {

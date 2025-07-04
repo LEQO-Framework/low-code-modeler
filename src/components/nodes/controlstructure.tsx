@@ -59,9 +59,9 @@ export const ControlStructureNode = memo((node: Node) => {
 
   return (
     <div className="grand-parent overflow-visible"
-      style={{ minWidth: "1100px", height: `${dynamicHeight}px`, position: "relative", zIndex: -4 }}>
-      <div className="rounded-none border border-solid border-gray-700 shadow-md w-full h-full flex items-center justify-center relative overflow-visible">
-        <div className="rounded-md border border-solid border-gray-700 shadow-md w-full h-full flex flex-col items-center relative z-10 overflow-visible">
+      style={{ minWidth: "1100px", height: `${dynamicHeight}px`, position: "relative", zIndex: -100 }}>
+      <div className="rounded-none bg-white border border-solid border-gray-700 shadow-md w-full h-full flex items-center justify-center relative overflow-visible">
+        <div className="rounded-none border border-solid border-gray-700 shadow-md w-full h-full flex flex-col items-center relative z-10 overflow-visible">
           <div className="w-full bg-purple-300 text-black text-center font-semibold py-1">
             <span className="text-sm">Repeat</span>
           </div>

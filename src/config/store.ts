@@ -415,6 +415,10 @@ const useStore = create<RFState>((set, get) => ({
       if (node.id === connection.source && connection.sourceHandle.startsWith("dirtyAncillaHandle") && connection.targetHandle.includes("dirtyAncillaHandle")) {
         insertEdge = true;
       }
+
+      if (nodeDataSource.parentNode !== nodeDataTarget.parentNode) {
+        insertEdge = false;
+      }
     }
     // Überprüfung: Existiert bereits eine Edge zur connection.targetHandle?
     const edgeExists = currentEdges.some(edge =>
@@ -613,7 +617,7 @@ const useStore = create<RFState>((set, get) => ({
   onConnectEnd: (event: MouseEvent) => {
     const currentNodes = get().nodes;
     console.log(event);
-
+    console.log(event)
 
     console.log("History after update:", get().history);
     console.log("Current historyIndex:", get().historyIndex);
