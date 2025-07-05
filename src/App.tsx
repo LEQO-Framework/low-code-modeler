@@ -219,12 +219,12 @@ function App() {
     }
   };
 
+
   const sendToBackend = async () => {
     setModalOpen(true);
     setLoading(true);
 
     try {
-
       const validMetadata = {
         ...metadata,
         id: `flow-${Date.now()}`,
@@ -233,82 +233,93 @@ function App() {
 
       console.log(validMetadata);
       console.log(metadata);
-      const flow = reactFlowInstance.toObject();
 
+      const flow = reactFlowInstance.toObject();
       const flowWithMetadata = { metadata: validMetadata, ...flow };
-      let response = await startCompile(lowcodeBackendEndpoint, metadata, reactFlowInstance.getNodes(), reactFlowInstance.getEdges());
+
+      const response = await startCompile(
+        lowcodeBackendEndpoint,
+        metadata,
+        reactFlowInstance.getNodes(),
+        reactFlowInstance.getEdges()
+      );
 
       const jsonData = await response.json();
+      const uuid = jsonData["uuid"];
       let location = jsonData["result"];
-      let uuid = jsonData["uuid"];
-      // Replace with your actual endpoint and token if needed
       const statusUrl = `${tempLowcodeBackendEndpoint}/status/${uuid}`;
 
-      let attempts = 0;
-      const maxAttempts = 20;
-      const delay = 10000; // 10 seconds
+      console.log("Initial compile response:", jsonData);
 
-      async function pollStatus() {
-        try {
-          const response = await fetch(statusUrl, {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-            },
-          });
+      // Polling function returns a Promise
+      const pollStatus = () => {
+        return new Promise((resolve, reject) => {
+          let attempts = 0;
+          const maxAttempts = 20;
+          const delay = 10000;
 
-          if (!response.ok) {
-            console.error("Status check failed:", response.status);
-            return;
-          }
+          const check = async () => {
+            try {
+              const statusResponse = await fetch(statusUrl, {
+                method: "GET",
+                headers: { "Content-Type": "application/json" },
+              });
 
-          const statusData = await response.json();
-          console.log("Current status:", statusData.status);
-          setStatus(statusData.status);
-          console.log(statusData)
-          location = statusData["result"];
+              if (!statusResponse.ok) {
+                console.error("Status check failed:", statusResponse.status);
+                return reject("Status check failed");
+              }
 
-          if (statusData.status === "completed") {
-            console.log("Operation completed successfully.");
-            setLoading(false);
-            return;
-          }
+              const statusData = await statusResponse.json();
+              console.log("Current status:", statusData.status);
+              setStatus(statusData.status);
+              location = statusData["result"];
 
-          attempts++;
+              if (statusData.status === "completed") {
+                console.log("Operation completed successfully.");
+                return resolve();
+              }
 
-          if (attempts < maxAttempts) {
-            setTimeout(pollStatus, delay);
-          } else {
-            console.error("Max polling attempts reached. Operation did not complete.");
-          }
+              attempts++;
+              if (attempts < maxAttempts) {
+                setTimeout(check, delay);
+              } else {
+                console.error("Max polling attempts reached. Operation did not complete.");
+                reject("Max polling attempts reached");
+              }
+            } catch (error) {
+              console.error("Error while polling status:", error);
+              reject(error);
+            }
+          };
 
-        } catch (error) {
-          console.error("Error while polling status:", error);
-        }
-      }
+          check();
+        });
+      };
 
+      // Wait for polling to complete
       await pollStatus();
 
-      console.log(jsonData)
-      console.log(location);
+      console.log("Fetching final result from:", location);
 
-      let result = await fetch(location, {
+      const result = await fetch(location, {
         method: "GET",
         headers: { "Content-Type": "application/json" },
       });
 
-      let openqasmCode = await result.text();
+      const openqasmCode = await result.text();
+      console.log("Received OpenQASM code:", openqasmCode);
+
+      setOpenQASMCode(openqasmCode);
       setStatus("completed");
       setLoading(false);
-      setOpenQASMCode(openqasmCode);
-      console.log(openqasmCode)
-
 
     } catch (error) {
       console.error("Error sending data:", error);
       setLoading(false);
     }
   };
+
 
   const sendToQunicorn = async () => {
     setModalStep(1);
@@ -319,7 +330,10 @@ function App() {
       let program = {
         "programs": [
           {
-            "quantumCircuit": "OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[2];\ncreg meas[2];\nh q[0];\ncx q[0],q[1];\nbarrier q[0],q[1];\nmeasure q[0] -> meas[0];\nmeasure q[1] -> meas[1];",
+            //"quantumCircuit": "OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[2];\ncreg meas[2];\nh q[0];\ncx q[0],q[1];\nbarrier q[0],q[1];\nmeasure q[0] -> meas[0];\nmeasure q[1] -> meas[1];",
+             "quantumCircuit": openqasmCode,
+            //"quantumCircuit": "OPENQASM 2.0;include 'qelib1.inc';qreg q[6];creg c[6];gate oracle(q0, q1, q2, q3, q4, q5) {    x q0;    x q1;    x q2;    x q3;    x q4;    x q5;        h q5;    ccx q3, q4, q5;    cx q2, q3;    cx q1, q2;    cx q0, q1;    h q5;    x q0;    x q1;    x q2;    x q3;    x q4;    x q5;}gate diffusion(q0, q1, q2, q3, q4, q5) {    h q0;    h q1;    h q2;    h q3;    h q4;    h q5;        x q0;    x q1;    x q2;    x q3;    x q4;    x q5;        h q5;    ccx q3, q4, q5;    cx q2, q3;    cx q1, q2;    cx q0, q1;    h q5;        x q0;    x q1;    x q2;    x q3;    x q4;    x q5;        h q0;    h q1;    h q2;    h q3;    h q4;    h q5;}h q[0];h q[1];h q[2];h q[3];h q[4];h q[5];oracle(q[0], q[1], q[2], q[3], q[4], q[5]);diffusion(q[0], q[1], q[2], q[3], q[4], q[5]);oracle(q[0], q[1], q[2], q[3], q[4], q[5]);diffusion(q[0], q[1], q[2], q[3], q[4], q[5]);oracle(q[0], q[1], q[2], q[3], q[4], q[5]);diffusion(q[0], q[1], q[2], q[3], q[4], q[5]);oracle(q[0], q[1], q[2], q[3], q[4], q[5]);diffusion(q[0], q[1], q[2], q[3], q[4], q[5]);oracle(q[0], q[1], q[2], q[3], q[4], q[5]);diffusion(q[0], q[1], q[2], q[3], q[4], q[5]);oracle(q[0], q[1], q[2], q[3], q[4], q[5]);diffusion(q[0], q[1], q[2], q[3], q[4], q[5]);measure q[0] -> c[0];measure q[1] -> c[1];measure q[2] -> c[2];measure q[3] -> c[3];measure q[4] -> c[4];measure q[5] -> c[5];",
+
             "assemblerLanguage": "QASM2",
             "pythonFilePath": "",
             "pythonFileMetadata": ""
@@ -752,12 +766,6 @@ function App() {
           const flow = JSON.parse(e.target?.result as string);
 
           console.log("Restoring flow:", flow);
-
-          if (flow.edges) {
-            reactFlowInstance.setEdges(flow.edges || []);
-            console.log("Edges restored.");
-          }
-
           if (flow.nodes) {
             reactFlowInstance.setNodes(
               flow.nodes.map((node: Node) => ({
@@ -769,6 +777,11 @@ function App() {
             );
             console.log("Nodes restored.");
           }
+          if (flow.edges) {
+            reactFlowInstance.setEdges(flow.edges || []);
+            console.log("Edges restored.");
+          }
+
 
           const { x = 0, y = 0, zoom = 1 } = flow.viewport || {};
           reactFlowInstance.setViewport({ x, y, zoom });
@@ -1347,7 +1360,7 @@ function App() {
           </div>
           <button
             onClick={togglePalette}
-            className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-700 text-white p-2 rounded-l-lg shadow-md hover:bg-gray-600 z-50 ${isPaletteOpen ? "right-0" : "hidden"}`}
+            className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white p-2 rounded-l-lg shadow-md hover:bg-gray-600 z-50 ${isPaletteOpen ? "right-0" : "hidden"}`}
           >
             {isPaletteOpen ? "←" : "→"}
           </button>
@@ -1355,7 +1368,7 @@ function App() {
         </div>
         <button
           onClick={togglePalette}
-          className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-700 text-white p-2 rounded-l-lg shadow-md hover:bg-gray-600 z-50 ${isPaletteOpen ? "hidden" : "-left-0"}`}
+          className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white p-2 rounded-l-lg shadow-md hover:bg-gray-600 z-50 ${isPaletteOpen ? "hidden" : "-left-0"}`}
         >
           {isPaletteOpen ? "←" : "→"}
         </button>
@@ -1475,7 +1488,8 @@ function App() {
               pannable={true}
             />
 
-            <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
+      <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
+     
 
           </ReactFlow>
         </div>
@@ -1487,7 +1501,7 @@ function App() {
 
             <button
               onClick={togglePanel}
-              className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-700 text-white p-2 rounded-l-lg shadow-md hover:bg-gray-600 z-50 ${isPanelOpen ? "left-0" : "hidden"}`}
+              className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white p-2 rounded-l-lg shadow-md hover:bg-gray-600 z-50 ${isPanelOpen ? "left-0" : "hidden"}`}
             >
               {isPanelOpen ? "→" : "←"}
             </button>
@@ -1499,7 +1513,7 @@ function App() {
 
         <button
           onClick={togglePanel}
-          className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-700 text-white p-2 rounded-l-lg shadow-md hover:bg-gray-600 z-50 ${isPanelOpen ? "hidden" : "right-0"}`}
+          className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white p-2 rounded-l-lg shadow-md hover:bg-gray-600 z-50 ${isPanelOpen ? "hidden" : "right-0"}`}
         >
           {isPanelOpen ? "→" : "←"}
         </button>
