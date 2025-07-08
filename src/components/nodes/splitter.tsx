@@ -31,9 +31,9 @@ export const SplitterNode = memo((node: Node) => {
   console.log(handleCount)
 
   const handleGap = 40;
-  const handleOffset = 75;
+  const handleOffset = 85;
 
-  const nodeHeight = Math.max(handleOffset * 2 + (handleCount) * handleGap, 100);
+  const nodeHeight = Math.max(handleOffset * 1 + (handleCount) * handleGap, 100);
 
   const inputHandles = Array.from({ length: numberInputs }, (_, i) => (
     <Handle
