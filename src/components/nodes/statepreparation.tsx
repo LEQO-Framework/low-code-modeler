@@ -179,7 +179,7 @@ export const StatePreparationNode = memo((node: Node) => {
     //setSelectedNode(node);
   };
 
-  const baseHeight = data.label === "Prepare State" ? 440 : 560;
+  const baseHeight = data.label === "Prepare State" ? 460 : 560;
 
   const extraHeightPerVariable = 20;
   const dynamicHeight = baseHeight;

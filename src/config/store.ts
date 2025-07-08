@@ -419,7 +419,10 @@ const useStore = create<RFState>((set, get) => ({
       if ((nodeDataSource.parentNode !== nodeDataTarget.parentNode)) {
         insertEdge = false;
       }
-      if(nodeDataSource.id === nodeDataTarget.parentNode){
+      if (nodeDataSource.id === nodeDataTarget.parentNode) {
+        insertEdge = true;
+      }
+      if (nodeDataTarget.id === nodeDataSource.parentNode) {
         insertEdge = true;
       }
     }
