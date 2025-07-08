@@ -416,8 +416,11 @@ const useStore = create<RFState>((set, get) => ({
         insertEdge = true;
       }
 
-      if (nodeDataSource.parentNode !== nodeDataTarget.parentNode) {
+      if ((nodeDataSource.parentNode !== nodeDataTarget.parentNode)) {
         insertEdge = false;
+      }
+      if(nodeDataSource.id === nodeDataTarget.parentNode){
+        insertEdge = true;
       }
     }
     // Überprüfung: Existiert bereits eine Edge zur connection.targetHandle?

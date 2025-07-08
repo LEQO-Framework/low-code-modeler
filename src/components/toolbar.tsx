@@ -44,7 +44,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
           <Save className="w-4 h-4 mr-2" /> Save
         </Button>
         <Button size="sm" onClick={onSaveAsSVG}>
-          <Download className="w-4 h-4 mr-2" /> Save as
+          <Download className="w-4 h-4 mr-2" /> Save as SVG
         </Button>
         <Button size="sm" onClick={uploadDiagram}>
           <UploadCloud className="w-4 h-4 mr-2" /> Upload
