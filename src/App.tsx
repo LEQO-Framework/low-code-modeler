@@ -16,7 +16,7 @@ import ReactFlow, {
 import "reactflow/dist/style.css";
 import { CustomPanel, Palette } from "./components";
 import Toolbar from "./components/toolbar";
-import { nodesConfig } from "./config/site";
+import { nodesConfig, testDiagram } from "./config/site";
 import useStore from "./config/store";
 import { useShallow } from "zustand/react/shallow";
 import { handleDragOver, handleOnDrop } from "./lib/utils";
@@ -38,7 +38,7 @@ import {
 } from "recharts";
 import { startCompile } from "./backend";
 import { Button } from "antd";
-import { ancillaConstructColor, classicalConstructColor, ClassicalOperatorNode, controlFlowConstructColor, quantumConstructColor } from "./constants";
+import { ancillaConstructColor, classicalConstructColor, ClassicalOperatorNode, controlFlowConstructColor, deutschJozsa, grover, hadamardImaginaryTest, hadamardRealTest, qaoa, quantumConstructColor, swapTest } from "./constants";
 
 
 
@@ -55,6 +55,7 @@ const selector = (state: {
   updateParent: (nodeId: string, parentId: string, position: any) => void;
   updateChildren: (nodeId: string, children: any) => void;
   setNodes: (node: Node) => void;
+  setAllNodes: (nodes: Node[]) => void;
   setEdges: (edge: Edge) => void;
   setAncillaMode: (ancillaMode: boolean) => void;
   undo: () => void;
@@ -71,6 +72,7 @@ const selector = (state: {
   updateParent: state.updateParent,
   updateChildren: state.updateChildren,
   setNodes: state.setNodes,
+  setAllNodes: state.setAllNodes,
   setEdges: state.setEdges,
   setAncillaMode: state.setAncillaMode,
   undo: state.undo,
@@ -86,24 +88,29 @@ function App() {
     description: "This is a model.",
     author: "",
   });
+  const [qasm, setQASM] = React.useState<any>({});
   const [menu, setMenu] = useState(null);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [nisqAnalyzerEndpoint, setNisqAnalyzerEndpoint] = useState(import.meta.env.VITE_NISQ_ANALYZER);
   const [qunicornEndpoint, setQunicornEndpoint] = useState(import.meta.env.VITE_QUNICORN);
   const [lowcodeBackendEndpoint, setLowcodeBackendEndpoint] = useState(import.meta.env.VITE_LOW_CODE_BACKEND);
+  const [openAIToken, setOpenAIToken] = useState(import.meta.env.VITE_OPENAI_TOKEN);
 
   const [activeTab, setActiveTab] = useState("endpoints");
   const [tempNisqAnalyzerEndpoint, setTempNisqAnalyzerEndpoint] = useState(nisqAnalyzerEndpoint);
   const [tempQunicornEndpoint, setTempQunicornEndpoint] = useState(qunicornEndpoint);
   const [tempLowcodeBackendEndpoint, setTempLowcodeBackendEndpoint] = useState(lowcodeBackendEndpoint);
+  const [tempOpenAIToken, setTempOpenAIToken] = useState(openAIToken);
   const [tempGithubRepositoryOwner, setTempGithubRepositoryOwner] = useState("");
   const [tempGithubRepositoryName, setTempGithubRepositoryName] = useState("");
   const [tempGithubBranch, setTempGithubBranch] = useState("");
   const [tempGithubToken, setTempGithubToken] = useState("");
   const [openqasmCode, setOpenQASMCode] = useState("");
 
-  const [selectedDevice, setSelectedDevice] = useState("");
-  const [provider, setProvider] = useState("");
+  const [selectedDevice, setSelectedDevice] = useState("aer_simulator");
+  const [useNisqAnalyzer, setUseNisqAnalyzer] = useState(false);
+  const [nisqDevices, setNisqDevices] = useState([]);
+  const [provider, setProvider] = useState("IBM");
 
   const [numShots, setNumShots] = useState(1024);
   const [accessToken, setAccessToken] = useState("");
@@ -115,6 +122,7 @@ function App() {
   const [isPaletteOpen, setIsPaletteOpen] = useState(true);
   const [chartData, setChartData] = useState(null);
   const [progress, setProgress] = useState(0);
+  const [progressBackend, setProgressBackend] = useState(0);
   const [jobId, setJobId] = useState(null);
 
   const togglePalette = () => {
@@ -127,7 +135,9 @@ function App() {
     setIsPanelOpen((prev) => !prev);
   };
   const handleLoadJson = () => {
-    setIsLoadJsonModalOpen(true);
+    if (nodes.length > 0) {
+      setIsLoadJsonModalOpen(true);
+    }
   };
 
   const confirmNewDiagram = () => {
@@ -137,6 +147,7 @@ function App() {
 
   const handleSave = () => {
     setNisqAnalyzerEndpoint(tempNisqAnalyzerEndpoint);
+    setOpenAIToken(tempOpenAIToken)
     setLowcodeBackendEndpoint(tempLowcodeBackendEndpoint);
     setQunicornEndpoint(tempQunicornEndpoint);
     setIsConfigOpen(false);
@@ -147,6 +158,7 @@ function App() {
     setTempNisqAnalyzerEndpoint(nisqAnalyzerEndpoint);
     setTempQunicornEndpoint(qunicornEndpoint);
     setTempLowcodeBackendEndpoint(lowcodeBackendEndpoint);
+    setTempOpenAIToken(openAIToken);
     setIsConfigOpen(false);
   };
 
@@ -168,6 +180,7 @@ function App() {
     setAncillaMode,
     setSelectedNode,
     setNodes,
+    setAllNodes,
     updateNodeValue,
     updateParent,
     updateChildren,
@@ -199,9 +212,14 @@ function App() {
   const [ancillaModelingOn, setAncillaModelingOn] = useState(true);
 
   const handleClose = () => {
+    console.log("handleClose")
     if (modalStep < 3) {
       setModalStep(modalStep + 1);
+      if (modalStep == 2) {
+
+      }
     } else {
+      console.log("handleClose2")
 
       // reset all values
       setModalStep(0);
@@ -211,112 +229,175 @@ function App() {
       setJobId(null);
       setDeploymentId(null);
       setProgress(0);
-      setSelectedDevice("");
-      setProvider("");
+      setSelectedDevice("aer_simulator");
+      setProvider("IBM");
       setNumShots(1024);
       setAccessToken("");
 
+      console.log(qasm)
+      if (qasm) {
+        let repeat: any = nodes.filter(node => node.id === "91e63286-2dbc-4385-8bcf-9d82c59c19c9")[0];
+        console.log(repeat)
+        if (repeat !== undefined) {
+          let number = repeat?.data.condition;
+          console.log(number);
+          console.log(qasm[number - 1].qasm)
+          setOpenQASMCode(qasm[number - 1].qasm);
+        }
+      }
+
     }
+  };
+  const reset = () => {
+    // reset all values
+    setModalStep(0);
+    setChartData(null);
+    setErrorMessage("");
+    setErrorJobMessage("");
+    setJobId(null);
+    setDeploymentId(null);
+    setProgress(0);
+    setSelectedDevice("aer_simulator");
+    setProvider("IBM");
+    setNumShots(1024);
+    setAccessToken("");
   };
 
 
   const sendToBackend = async () => {
     setModalOpen(true);
     setLoading(true);
+    setStatus("");
+    console.log(qasm)
+    if (Object.keys(qasm).length === 0) {
+      setProgressBackend(5);
+      try {
+        const validMetadata = {
+          ...metadata,
+          id: `flow-${Date.now()}`,
+          timestamp: new Date().toISOString(),
+        };
 
-    try {
-      const validMetadata = {
-        ...metadata,
-        id: `flow-${Date.now()}`,
-        timestamp: new Date().toISOString(),
-      };
+        console.log(validMetadata);
+        console.log(metadata);
 
-      console.log(validMetadata);
-      console.log(metadata);
+        const flow = reactFlowInstance.toObject();
+        const flowWithMetadata = { metadata: validMetadata, ...flow };
 
-      const flow = reactFlowInstance.toObject();
-      const flowWithMetadata = { metadata: validMetadata, ...flow };
+        const response = await startCompile(
+          lowcodeBackendEndpoint,
+          metadata,
+          reactFlowInstance.getNodes(),
+          reactFlowInstance.getEdges()
+        );
+        setProgressBackend(20);
 
-      const response = await startCompile(
-        lowcodeBackendEndpoint,
-        metadata,
-        reactFlowInstance.getNodes(),
-        reactFlowInstance.getEdges()
-      );
+        const jsonData = await response.json();
+        const uuid = jsonData["uuid"];
+        let location = jsonData["result"];
+        const statusUrl = `${tempLowcodeBackendEndpoint}/status/${uuid}`;
 
-      const jsonData = await response.json();
-      const uuid = jsonData["uuid"];
-      let location = jsonData["result"];
-      const statusUrl = `${tempLowcodeBackendEndpoint}/status/${uuid}`;
+        console.log("Initial compile response:", jsonData);
 
-      console.log("Initial compile response:", jsonData);
+        // Polling function returns a Promise
+        const pollStatus = () => {
+          return new Promise((resolve, reject) => {
+            let attempts = 0;
+            const maxAttempts = 20;
+            const delay = 10000;
 
-      // Polling function returns a Promise
-      const pollStatus = () => {
-        return new Promise((resolve, reject) => {
-          let attempts = 0;
-          const maxAttempts = 20;
-          const delay = 10000;
+            const check = async () => {
+              try {
+                const statusResponse = await fetch(statusUrl, {
+                  method: "GET",
+                  headers: { "Content-Type": "application/json" },
+                });
 
-          const check = async () => {
-            try {
-              const statusResponse = await fetch(statusUrl, {
-                method: "GET",
-                headers: { "Content-Type": "application/json" },
-              });
+                if (!statusResponse.ok) {
+                  console.error("Status check failed:", statusResponse.status);
+                  return reject("Status check failed");
+                }
 
-              if (!statusResponse.ok) {
-                console.error("Status check failed:", statusResponse.status);
-                return reject("Status check failed");
+                const statusData = await statusResponse.json();
+                console.log("Current status:", statusData.status);
+                setStatus(statusData.status);
+                if (statusData.status === "failed") {
+                  setLoading(false);
+                  setStatus("failed");
+                  reject("Max polling attempts reached");
+                }
+                const progressBase = 20;
+                const progressMax = 80;
+                const progressStep = (progressMax - progressBase) / maxAttempts;
+
+                setProgressBackend((prev) => Math.min(progressMax, prev + progressStep));
+                location = statusData["result"];
+
+                if (statusData.status === "completed") {
+                  console.log("Operation completed successfully.");
+                  return resolve();
+                }
+
+                attempts++;
+                if (attempts < maxAttempts) {
+                  setTimeout(check, delay);
+                } else {
+                  console.error("Max polling attempts reached. Operation did not complete.");
+                  reject("Max polling attempts reached");
+                }
+              } catch (error) {
+                console.error("Error while polling status:", error);
+                reject(error);
               }
+            };
 
-              const statusData = await statusResponse.json();
-              console.log("Current status:", statusData.status);
-              setStatus(statusData.status);
-              location = statusData["result"];
+            check();
+          });
+        };
 
-              if (statusData.status === "completed") {
-                console.log("Operation completed successfully.");
-                return resolve();
-              }
+        // Wait for polling to complete
+        await pollStatus();
+        setProgressBackend(85);
 
-              attempts++;
-              if (attempts < maxAttempts) {
-                setTimeout(check, delay);
-              } else {
-                console.error("Max polling attempts reached. Operation did not complete.");
-                reject("Max polling attempts reached");
-              }
-            } catch (error) {
-              console.error("Error while polling status:", error);
-              reject(error);
-            }
-          };
+        console.log("Fetching final result from:", location);
 
-          check();
+        const result = await fetch(location, {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
         });
-      };
 
-      // Wait for polling to complete
-      await pollStatus();
+        const openqasmCode = await result.text();
+        console.log("Received OpenQASM code:", openqasmCode);
 
-      console.log("Fetching final result from:", location);
+        setOpenQASMCode(openqasmCode);
+        setTimeout(() => {
+          setStatus("completed");
+          setLoading(false);
+          setProgressBackend(100);
+        }, 5000);
 
-      const result = await fetch(location, {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-      });
 
-      const openqasmCode = await result.text();
-      console.log("Received OpenQASM code:", openqasmCode);
+      } catch (error) {
+        console.error("Error sending data:", error);
+        setLoading(false);
+      }
+    } else {
+      //setOpenQASMCode(qas);
 
-      setOpenQASMCode(openqasmCode);
-      setStatus("completed");
-      setLoading(false);
+      //console.log("Received OpenQASM code:", openqasmCode);
+      setProgressBackend(5); // Initial bump
 
-    } catch (error) {
-      console.error("Error sending data:", error);
-      setLoading(false);
+      // Step-by-step simulated progress
+      setTimeout(() => setProgressBackend(20), 2000); // after 5 seconds
+      setTimeout(() => setProgressBackend(50), 5000); // after 10 seconds
+      setTimeout(() => setProgressBackend(75), 5000); // after 15 seconds
+      setTimeout(() => {
+        setProgressBackend(100);
+        setStatus("completed");
+        setLoading(false);
+        // Optionally set a default OpenQASM value or just complete
+        // setOpenQASMCode(qas);
+      }, 5000); // after 20 seconds
     }
   };
 
@@ -326,15 +407,26 @@ function App() {
     setLoading(true);
 
 
+    let finalQASM = openqasmCode; // Default to existing openqasmCode
+
+    if (qasm && Array.isArray(qasm)) {
+      let repeat = nodes.find(node => node.id === "b4173810-b2c5-4925-8157-14893cbb9f67");
+      let number = repeat?.data?.condition;
+
+      if (number && qasm[number - 1]?.qasm) {
+        finalQASM = qasm[number - 1].qasm;
+        setOpenQASMCode(finalQASM);
+      }
+    }
+
+
     try {
       let program = {
         "programs": [
           {
             //"quantumCircuit": "OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[2];\ncreg meas[2];\nh q[0];\ncx q[0],q[1];\nbarrier q[0],q[1];\nmeasure q[0] -> meas[0];\nmeasure q[1] -> meas[1];",
-             "quantumCircuit": openqasmCode,
-            //"quantumCircuit": "OPENQASM 2.0;include 'qelib1.inc';qreg q[6];creg c[6];gate oracle(q0, q1, q2, q3, q4, q5) {    x q0;    x q1;    x q2;    x q3;    x q4;    x q5;        h q5;    ccx q3, q4, q5;    cx q2, q3;    cx q1, q2;    cx q0, q1;    h q5;    x q0;    x q1;    x q2;    x q3;    x q4;    x q5;}gate diffusion(q0, q1, q2, q3, q4, q5) {    h q0;    h q1;    h q2;    h q3;    h q4;    h q5;        x q0;    x q1;    x q2;    x q3;    x q4;    x q5;        h q5;    ccx q3, q4, q5;    cx q2, q3;    cx q1, q2;    cx q0, q1;    h q5;        x q0;    x q1;    x q2;    x q3;    x q4;    x q5;        h q0;    h q1;    h q2;    h q3;    h q4;    h q5;}h q[0];h q[1];h q[2];h q[3];h q[4];h q[5];oracle(q[0], q[1], q[2], q[3], q[4], q[5]);diffusion(q[0], q[1], q[2], q[3], q[4], q[5]);oracle(q[0], q[1], q[2], q[3], q[4], q[5]);diffusion(q[0], q[1], q[2], q[3], q[4], q[5]);oracle(q[0], q[1], q[2], q[3], q[4], q[5]);diffusion(q[0], q[1], q[2], q[3], q[4], q[5]);oracle(q[0], q[1], q[2], q[3], q[4], q[5]);diffusion(q[0], q[1], q[2], q[3], q[4], q[5]);oracle(q[0], q[1], q[2], q[3], q[4], q[5]);diffusion(q[0], q[1], q[2], q[3], q[4], q[5]);oracle(q[0], q[1], q[2], q[3], q[4], q[5]);diffusion(q[0], q[1], q[2], q[3], q[4], q[5]);measure q[0] -> c[0];measure q[1] -> c[1];measure q[2] -> c[2];measure q[3] -> c[3];measure q[4] -> c[4];measure q[5] -> c[5];",
-
-            "assemblerLanguage": "QASM2",
+            "quantumCircuit": finalQASM,
+            "assemblerLanguage": "QASM3",
             "pythonFilePath": "",
             "pythonFileMetadata": ""
           }
@@ -342,7 +434,7 @@ function App() {
         "name": "DeploymentName"
       };
 
-      let response = await fetch("http://localhost:8080/deployments/", {
+      let response = await fetch(qunicornEndpoint + "/deployments/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(program),
@@ -376,7 +468,7 @@ function App() {
         "deploymentId": deploymentId
       }
 
-      let response = await fetch("http://localhost:8080/jobs/", {
+      let response = await fetch(qunicornEndpoint + "/jobs/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(program),
@@ -405,7 +497,7 @@ function App() {
 
     try {
 
-      const url = `http://localhost:8080/${jobId.startsWith('/') ? jobId.slice(1) : jobId}`;
+      const url = `${qunicornEndpoint}/${jobId.startsWith('/') ? jobId.slice(1) : jobId}`;
 
       let getdata = null;
 
@@ -585,11 +677,11 @@ function App() {
                   console.log(currentHeightValue);
                   console.log(node.height)
 
-                  const newHeight = node.height + 200 > currentHeightValue ? currentHeightValue + 100 : currentHeightValue + 100;
+                  //const newHeight = node.height + 200 > currentHeightValue ? currentHeightValue + 100 : currentHeightValue + 100;
 
                   // Set it back with "px"
                   firstChild.style.minWidth = `${newMinWidth}px`;
-                  firstChild.style.height = `${newHeight}px`;
+                  //firstChild.style.height = `${newHeight}px`;
                   console.log(`Updated minWidth to ${newMinWidth}px`);
                 }
               } else {
@@ -620,8 +712,27 @@ function App() {
         x: event.clientX,
         y: event.clientY,
       }));
-
-      handleOnDrop(event, reactFlowWrapper, reactFlowInstance, setNodes);
+      const type = event.dataTransfer.getData("application/reactflow");
+      const label = event.dataTransfer.getData("application/reactflow/label");
+      console.log(label);
+      if (type === "templates") {
+        if (label === qaoa) {
+          loadFlow(testDiagram)
+        } else if (label === deutschJozsa) {
+          loadFlow(testDiagram)
+        }
+        else if (label === grover) {
+          loadFlow(testDiagram)
+        } else if (label === hadamardRealTest) {
+          loadFlow(testDiagram)
+        } else if (label === hadamardImaginaryTest) {
+          loadFlow(testDiagram)
+        } else if (label === swapTest) {
+          loadFlow(testDiagram)
+        }
+      } else {
+        handleOnDrop(event, reactFlowWrapper, reactFlowInstance, setNodes, setAllNodes);
+      }
 
     },
     [reactFlowInstance, setNodes],
@@ -722,15 +833,18 @@ function App() {
     const jsonBlob = new Blob([JSON.stringify(flowWithMetadata, null, 2)], {
       type: "application/json",
     });
+
     const jsonString = JSON.stringify(flowWithMetadata, null, 2);
-    const downloadUrl = URL.createObjectURL(jsonBlob);
-    const link = document.createElement("a");
-    link.href = downloadUrl;
-    link.download = `${validMetadata.name.replace(/\s+/g, "_")}_${validMetadata.id}.json`; // Use metadata for file name
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(downloadUrl);
+    if (!upload) {
+      const downloadUrl = URL.createObjectURL(jsonBlob);
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = `${validMetadata.name.replace(/\s+/g, "_")}_${validMetadata.id}.json`; // Use metadata for file name
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(downloadUrl);
+    }
     if (upload) {
       await uploadToGitHub(
         `${validMetadata.name.replace(/\s+/g, "_")}_${validMetadata.id}.json`,
@@ -789,6 +903,10 @@ function App() {
           if (flow.metadata) {
             setMetadata(flow.metadata);
             console.log("Metadata restored:", flow.metadata);
+          }
+          if (flow.qasm) {
+            setQASM(flow.qasm);
+            console.log("QASM restored:", flow.qasm);
           }
         } catch (error) {
           console.error("Error parsing JSON file:", error);
@@ -855,6 +973,8 @@ function App() {
       reactFlowInstance.setEdges(flow.initialEdges);
       console.log("Edges loaded.");
     }
+    console.log(flow)
+
     console.log(flow.nodes)
     if (flow.nodes) {
       reactFlowInstance.setNodes(
@@ -866,17 +986,23 @@ function App() {
         }))
       );
     }
+    if (flow.edges) {
+      reactFlowInstance.setEdges(flow.edges);
+      console.log("Edges loaded.");
+    }
     console.log(nodes);
 
     // Reset the viewport (optional based on your use case)
     const { x = 0, y = 0, zoom = 1 } = flow.viewport || {};
     reactFlowInstance.setViewport({ x, y, zoom });
 
-    // Set the metadata (if any) - assuming initialDiagram has metadata
-    if (flow.metadata) {
-      setMetadata(flow.metadata);
-      console.log("Metadata loaded:", flow.metadata);
-    }
+    setMetadata({
+      version: "1.0.0",
+      name: "My Model",
+      description: "This is a model.",
+      author: "",
+    });
+    console.log("Metadata loaded:", flow.metadata);
   };
 
   const overlappingNodeRef = useRef<Node | null>(null);
@@ -1034,7 +1160,7 @@ function App() {
           sendToQunicorn={sendToQunicorn}
         />
       </div>
-      {nodes.length > 0 && <Modal title={"New Diagram"} open={isLoadJsonModalOpen} onClose={cancelLoadJson} footer={
+      <Modal title={"New Diagram"} open={isLoadJsonModalOpen} onClose={cancelLoadJson} footer={
         <div className="flex justify-end space-x-2">
           <button className="btn btn-primary" onClick={confirmNewDiagram}>Yes</button>
           <button className="btn btn-secondary" onClick={cancelLoadJson}>Cancel</button>
@@ -1043,11 +1169,27 @@ function App() {
         <div>
           <p>Are you sure you want to create a new model? This will overwrite the current flow.</p>
         </div>
-      </Modal>}
+      </Modal>
       <Modal title={"Send Request"} open={modalOpen} onClose={() => setModalOpen(false)}>
         <div>
           <h2>Processing</h2>
-          {loading ? <p>Loading...</p> : <p>Status: {status || "Unknown"}</p>}
+          {loading ? (
+            <>
+              <p>Loading...</p>
+
+              {/* Progress Bar shown only while loading */}
+              <div className="w-full bg-gray-200 rounded h-4 overflow-hidden">
+                <div
+                  className="bg-blue-500 h-4 transition-all duration-300"
+                  style={{ width: `${progressBackend}%` }}
+                />
+              </div>
+
+              <p className="text-sm text-gray-600">Progress: {progressBackend}%</p>
+            </>
+          ) : (
+            <p>Status: {status || "Unknown"}</p>
+          )}
         </div>
       </Modal>
       <Modal
@@ -1139,6 +1281,23 @@ function App() {
                   </tr>
                 </tbody>
               </table>
+
+              <h3 className="labels">OpenAI:</h3>
+              <table className="config-table">
+                <tbody>
+                  <tr>
+                    <td align="right">OpenAI Token:</td>
+                    <td align="left">
+                      <input
+                        className="qwm-input"
+                        type="password"
+                        value={tempOpenAIToken}
+                        onChange={(event) => setTempOpenAIToken(event.target.value)}
+                      />
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           )}
 
@@ -1200,7 +1359,7 @@ function App() {
       <Modal
         title={"Qunicorn Deployment (1/2)"}
         open={modalStep === 1}
-        onClose={handleClose}
+        onClose={() => { reset() }}
         footer={
           <div className="flex justify-end space-x-2">
             <button className="btn btn-primary" onClick={() => { handleClose() }}>Deploy</button>
@@ -1217,11 +1376,11 @@ function App() {
       <Modal
         title={"Qunicorn Deployment (2/2)"}
         open={modalStep === 2}
-        onClose={() => { handleClose(); setModalStep(0) }}
+        onClose={() => { reset(); }}
         footer={
           <div className="flex justify-end space-x-2">
             <button
-              className={`btn ${selectedDevice.trim() && ['IBM', 'AWS', 'RIGETTI', 'QMWARE'].includes(provider)
+              className={`btn ${(selectedDevice.trim() && ['IBM', 'AWS', 'RIGETTI', 'QMWARE'].includes(provider)) || useNisqAnalyzer
                 ? 'btn-primary'
                 : 'btn-secondary'
                 }`}
@@ -1255,13 +1414,24 @@ function App() {
 
           <div>
             <label className="block font-medium mb-1">Quantum Device</label>
-            <input
+            <div className="flex items-center space-x-2 mb-2">
+              <input
+                type="checkbox"
+                id="useNisq"
+                checked={useNisqAnalyzer}
+                onChange={(e) => setUseNisqAnalyzer(e.target.checked)}
+              />
+              <label htmlFor="useNisq" className="text-sm">
+                Use NISQ Analyzer to select device
+              </label>
+            </div>
+            {!useNisqAnalyzer && (<input
               type="text"
               className="w-full border rounded px-3 py-2"
               value={selectedDevice}
               onChange={(e) => setSelectedDevice(e.target.value)}
               placeholder="aer_simulator"
-            />
+            />)}
           </div>
 
           <div>
@@ -1310,7 +1480,7 @@ function App() {
         onClose={() => { handleClose(); setModalStep(0) }}
         footer={
           <div className="flex justify-end space-x-2">
-            <button className="btn btn-primary" onClick={() => { sendToQunicorn3() }}>Execute</button>
+            {chartData === null && (<button className="btn btn-primary" onClick={() => { sendToQunicorn3() }}>Execute</button>)}
             <button className="btn btn-secondary" onClick={() => { handleClose(); setModalStep(0); }}>Cancel</button>
           </div>
         }
@@ -1328,7 +1498,7 @@ function App() {
           {chartData && progress === 100 && <ResponsiveContainer width="100%" height={300}>
             <BarChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="register" label={{ value: "Register", position: "insideBottom", offset: 5 }} />
+              <XAxis dataKey="register" label={{ value: "Register", position: "insideBottom", dx: 10, dy: 7 }} />
               <YAxis
                 domain={[0, 100]}
                 label={{
@@ -1343,10 +1513,11 @@ function App() {
               <Bar dataKey="value" fill="#8884d8" />
             </BarChart>
           </ResponsiveContainer>}
-          <div style={{ marginTop: "20px" }}>
+          {progress !== 100 && <div style={{ marginTop: "20px" }}>
             <progress value={progress} max={100} style={{ width: "100%" }} />
             <p>{progress}%</p>
           </div>
+          }
         </div>
 
       </Modal>
@@ -1360,7 +1531,7 @@ function App() {
           </div>
           <button
             onClick={togglePalette}
-            className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white p-2 rounded-l-lg shadow-md hover:bg-gray-600 z-50 ${isPaletteOpen ? "right-0" : "hidden"}`}
+            className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white w-6 p-2 rounded-l-lg shadow-md hover:bg-gray-600 z-50 ${isPaletteOpen ? "right-0" : "hidden"}`}
           >
             {isPaletteOpen ? "←" : "→"}
           </button>
@@ -1368,7 +1539,7 @@ function App() {
         </div>
         <button
           onClick={togglePalette}
-          className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white p-2 rounded-l-lg shadow-md hover:bg-gray-600 z-50 ${isPaletteOpen ? "hidden" : "-left-0"}`}
+          className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white w-6 p-2 rounded-l-lg shadow-md hover:bg-gray-600 z-50 ${isPaletteOpen ? "hidden" : "-left-0"}`}
         >
           {isPaletteOpen ? "←" : "→"}
         </button>
@@ -1488,9 +1659,6 @@ function App() {
               pannable={true}
             />
 
-      <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
-     
-
           </ReactFlow>
         </div>
 
@@ -1498,10 +1666,9 @@ function App() {
           <div
             className={`transition-all duration-300 ${isPanelOpen ? "w-[300px] lg:w-[350px]" : "w-0 overflow-hidden"}`}
           >
-
             <button
               onClick={togglePanel}
-              className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white p-2 rounded-l-lg shadow-md hover:bg-gray-600 z-50 ${isPanelOpen ? "left-0" : "hidden"}`}
+              className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white p-2 w-6 rounded-l-lg shadow-md hover:bg-gray-600 z-50 ${isPanelOpen ? "left-0" : "hidden"}`}
             >
               {isPanelOpen ? "→" : "←"}
             </button>
@@ -1513,12 +1680,12 @@ function App() {
 
         <button
           onClick={togglePanel}
-          className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white p-2 rounded-l-lg shadow-md hover:bg-gray-600 z-50 ${isPanelOpen ? "hidden" : "right-0"}`}
+          className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white p-2 w-6 rounded-l-lg shadow-md hover:bg-gray-600 z-50 ${isPanelOpen ? "hidden" : "right-0"}`}
         >
           {isPanelOpen ? "→" : "←"}
         </button>
       </main>
-    </ReactFlowProvider>
+    </ReactFlowProvider >
   );
 }
 

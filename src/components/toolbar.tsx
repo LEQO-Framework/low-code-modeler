@@ -53,6 +53,9 @@ const Toolbar: React.FC<ToolbarProps> = ({
           <Settings className="w-4 h-4 mr-2" /> Configuration
         </Button>
         <Button size="sm" onClick={sendToBackend}>
+          <Send className="w-4 h-4 mr-2" /> Detect Quantum Algorithm
+        </Button>
+        <Button size="sm" onClick={sendToBackend}>
           <Send className="w-4 h-4 mr-2" /> Send to Backend
         </Button>
         <Button size="sm" onClick={sendToQunicorn}>

@@ -62,6 +62,8 @@ export const AddNodePanel = () => {
     )
     : [];
 
+    console.log(filteredNodes)
+
   const renderNodes = (nodeGroup: any): React.ReactNode => {
     if (Array.isArray(nodeGroup)) {
       return (
@@ -134,7 +136,11 @@ export const AddNodePanel = () => {
                     draggable
                   >
                     {node.icon ? (
-                      <img src={node.icon} alt={node.label} className="w-70 h-70 object-contain" />
+                      <img src={
+                      Array.isArray(node.icon)
+                        ? node.icon[ancillaMode ? 1 : 0]
+                        : node.icon
+                    } alt={node.label} className="w-70 h-70 object-contain" />
                     ) : (
                       <span className="font-semibold">{node.label}</span>
                     )}

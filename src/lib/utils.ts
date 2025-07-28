@@ -1,3 +1,4 @@
+import { initialDiagram2 } from "@/config/site";
 import { ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -30,6 +31,7 @@ export function handleOnDrop(
   reactFlowWrapper: any,
   reactFlowInstance: any,
   setNodes: any,
+  setAllNodes: any
 ) {
   event.preventDefault();
   if (reactFlowWrapper) {

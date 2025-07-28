@@ -152,6 +152,21 @@ const useStore = create<RFState>((set, get) => ({
     console.log("History after update:", get().history);
     console.log("Current historyIndex:", get().historyIndex);
   },
+  setAllNodes: (nodes: Node[]) => {
+    const currentEdges = get().edges;
+    const currentNodes = get()
+    set({
+      nodes: nodes,
+      edges: currentEdges,
+      history: [
+        ...get().history.slice(0, get().historyIndex + 1),
+        //newHistoryItem,
+      ],
+      historyIndex: get().historyIndex + 1,
+    });
+    console.log("History after update:", get().history);
+    console.log("Current historyIndex:", get().historyIndex);
+  },
 
   setEdges: (edge: Edge) => {
     const currentNodes = get().nodes;
@@ -424,6 +439,9 @@ const useStore = create<RFState>((set, get) => ({
       }
       if (nodeDataTarget.id === nodeDataSource.parentNode) {
         insertEdge = true;
+      }
+      if(nodeDataTarget.type === "gateNode" && !cycle){
+        insertEdge = false;
       }
     }
     // Überprüfung: Existiert bereits eine Edge zur connection.targetHandle?

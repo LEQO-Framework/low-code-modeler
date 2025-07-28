@@ -100,9 +100,9 @@ export const TextPanel = () => {
       }
       console.log(value);
       console.log(field)
-      if (field === "gamma" || field === "lambda"|| field === "theta"|| field === "phi" ||field === "parameterType" || field === "outputIdentifier" || field === "quantumStateName" || field === "encodingType" || field === "implementationType" || field === "size"
+      if (field === "gamma" || field === "lambda"|| field === "theta"|| field === "phi" ||field === "parameterType" || field === "quantumStateName" || field === "encodingType" || field === "implementationType" || field === "size"
         || field === "operator" || field === "minMaxOperator" || field === "uncomputeImplementationType" || field === "implementation" || field === "fileName" ||
-        field === "uncomputeImplementation" || field === "parameter" || field === "nodeType" || field === "basis") {
+        field === "uncomputeImplementation" || field === "parameter" || field === "nodeType" || field === "basis" || field === "indices") {
         selectedNode.data[field] = value;
         updateNodeValue(selectedNode.id, field, value);
       }
@@ -181,25 +181,7 @@ export const TextPanel = () => {
               />
             </div>
 
-            <label
-              className="block text-sm font-medium text-start text-gray-700 mt-2"
-              htmlFor="outputIdentifier"
-            >
-              Output Identifier
-            </label>
-            <div className="mt-1">
-              <input
-                type="text"
-                id="outputIdentifier"
-                name="outputIdentifier"
-                value={selectedNode.data.outputIdentifier || ""}
-                onChange={(e) =>
-                  handleNumberChange("outputIdentifier", e.target.value)
-                }
-                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                placeholder="Enter output identifier"
-              />
-            </div>
+          
           </div>
         )}
 
@@ -506,23 +488,7 @@ export const TextPanel = () => {
               </select>
             </div>
 
-            <label
-              className="block text-sm font-medium text-start text-gray-700 mt-2"
-              htmlFor="outputIdentifier"
-            >
-              Output Identifier
-            </label>
-            <div className="mt-1">
-              <input
-                type="text"
-                id="outputIdentifier"
-                name="outputIdentifier"
-                value={selectedNode.data.outputIdentifier || ""}
-                onChange={(e) => handleNumberChange("outputIdentifier", e.target.value)}
-                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                placeholder="Enter output identifier"
-              />
-            </div>
+           
             <label
               className="block text-sm font-medium text-start text-gray-700"
               htmlFor="implementationType"
@@ -646,23 +612,7 @@ export const TextPanel = () => {
               </select>
             </div>
 
-            <label
-              className="block text-sm font-medium text-start text-gray-700 mt-2"
-              htmlFor="outputIdentifier"
-            >
-              Output Identifier
-            </label>
-            <div className="mt-1">
-              <input
-                type="text"
-                id="outputIdentifier"
-                name="outputIdentifier"
-                value={selectedNode.data.outputIdentifier || ""}
-                onChange={(e) => handleNumberChange("outputIdentifier", e.target.value)}
-                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                placeholder="Enter output identifier"
-              />
-            </div>
+           
             <label
               className="block text-sm font-medium text-start text-gray-700"
               htmlFor="implementationType"
@@ -779,20 +729,7 @@ export const TextPanel = () => {
               </select>
             </div>
 
-            <label className="block text-sm font-medium text-start text-gray-700 mt-2" htmlFor="outputIdentifier">
-              Output Identifier
-            </label>
-            <div className="mt-1">
-              <input
-                type="text"
-                id="outputIdentifier"
-                name="outputIdentifier"
-                value={selectedNode.data.outputIdentifier || ""}
-                onChange={(e) => handleNumberChange("outputIdentifier", e.target.value)}
-                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                placeholder="Enter output identifier"
-              />
-            </div>
+            
             <label
               className="block text-sm font-medium text-start text-gray-700"
               htmlFor="implementationType"
@@ -943,20 +880,7 @@ export const TextPanel = () => {
               />
             </div>
 
-            <label className="block text-sm font-medium text-start text-gray-700 mt-2" htmlFor="outputIdentifier">
-              Output Identifier
-            </label>
-            <div className="mt-1">
-              <input
-                type="text"
-                id="outputIdentifier"
-                name="outputIdentifier"
-                value={selectedNode.data.outputIdentifier || ""}
-                onChange={(e) => handleNumberChange("outputIdentifier", e.target.value)}
-                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                placeholder="Enter output identifier"
-              />
-            </div>
+           
             <label
               className="block text-sm font-medium text-start text-gray-700"
               htmlFor="implementationType"

@@ -28,6 +28,7 @@ export const SplitterNode: string = "splitterNode";
 export const MergerNode: string = "mergerNode";
 export const OperatorNode: string = "quantumOperatorNode";
 export const ClassicalOperatorNode: string = "classicalOperatorNode";
+export const OptimizerNode: string = "optimizeNode";
 export const GroupNode: string = "groupNode";
 
 
@@ -47,13 +48,23 @@ export const NodeTypes = [
   MergerNode,
   OperatorNode,
   ClassicalOperatorNode,
+  OptimizerNode,
   GroupNode
 ]
+export const quantumLabel = "Quantum ";
 
 export const arithmeticOperatorLabel = "Arithmetic Operator";
 export const bitwiseOperatorLabel = "Bitwise Operator";
 export const minMaxOperatorLabel = "Min & Max Operator";
+export const optimizeLabel = "Optimize";
 export const comparisonOperatorLabel = "Comparison Operator";
+
+export const qaoa = "Quantum Approximate Optimization Algorithm";
+export const deutschJozsa = "Deutsch-Jozsa Algorithm";
+export const swapTest = "SWAP Test";
+export const hadamardRealTest = "Hadamard Test (Real Part)";
+export const hadamardImaginaryTest = "Hadamard Test (Imaginary Part)";
+export const grover = "Grover's Algorithm";
 
 // categories of modeling constructs
 export const boundaryNodes = "Boundary Nodes";
@@ -62,6 +73,7 @@ export const dataTypes = "Data Types";
 export const controlStructureNodes = "Control Structure Nodes";
 export const operator = "Operators";
 export const customOperators = "Custom Operators";
+export const templates = "Templates";
 
 // handle prefix ensures correctness of edges
 export const classicalHandle: string = "classicalHandle";
