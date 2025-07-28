@@ -44,7 +44,7 @@ export function createBPMN(model: Model): string {
     isExecutable: 'true'
   });
 
-   const quantumGroups: Record<string, Node[]> = {};
+  const quantumGroups: Record<string, Node[]> = {};
   const classicalTasks: Node[] = [];
 
   const getParent = (n: Node) => (n as any)?.parent || '__default__';
@@ -99,11 +99,11 @@ export function createBPMN(model: Model): string {
       name: node.data.label
     });
 
-    if(node.type === "optimizerNode"){
+    if (node.type === "optimizerNode") {
       task = process.ele('quantme:parameterOptimizationTask', {
-      id: taskId,
-      name: node.data.label
-    });
+        id: taskId,
+        name: node.data.label
+      });
     }
     const incoming = model.edges.filter(e => e.target === node.id);
     const outgoing = model.edges.filter(e => e.source === node.id);
@@ -147,7 +147,7 @@ function generateScript(model: Model): string {
   let scriptLines: string[] = [
     "import math",
     "import cmath",
-    "", 
+    "",
   ];
 
   for (const node of model.nodes) {
@@ -160,6 +160,10 @@ function generateScript(model: Model): string {
     switch (type) {
       case "int":
         line = `${name} = ${parseInt(value)}`;
+        break;
+
+      case "float":
+        line = `${name} = ${parseFloat(value)}`;
         break;
 
       case "boolean":
@@ -220,8 +224,8 @@ const createAndSendZip = async (model: Model) => {
   try {
     //const scriptSplitterEndpoint = getScriptSplitterEndpoint();
     //const result = await performAjax(
-     // `${scriptSplitterEndpoint}/qc-script-splitter/api/v1.0/split-implementation`,
-     // fd
+    // `${scriptSplitterEndpoint}/qc-script-splitter/api/v1.0/split-implementation`,
+    // fd
     //);
     //console.log("Result:", result);
   } catch (error) {
