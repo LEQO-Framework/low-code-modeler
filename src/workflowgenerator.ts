@@ -1,9 +1,11 @@
 import { create } from 'xmlbuilder2';
+import JSZip from "jszip";
+
 
 interface Node {
   id: string;
   type: string;
-  data: { label: string };
+  data: { label: string, value: any; };
 }
 
 interface Edge {
@@ -141,3 +143,88 @@ export function createBPMN(model: Model): string {
 
   return doc.end({ prettyPrint: true });
 }
+function generateScript(model: Model): string {
+  let scriptLines: string[] = [
+    "import math",
+    "import cmath",
+    "", 
+  ];
+
+  for (const node of model.nodes) {
+    const name = node.data.label || `var_${node.id}`;
+    const value = node.data.value;
+    const type = node.type.toLowerCase();
+
+    let line = "";
+
+    switch (type) {
+      case "int":
+        line = `${name} = ${parseInt(value)}`;
+        break;
+
+      case "boolean":
+        line = `${name} = ${value === true || value === "true"}`;
+        break;
+
+      case "array":
+        line = `${name} = ${JSON.stringify(value)}`;
+        break;
+
+      case "bit":
+        line = `${name} = ${value === "1" || value === 1 ? 1 : 0}`;
+        break;
+
+      case "complex":
+        if (typeof value === "object" && value.real !== undefined && value.imag !== undefined) {
+          line = `${name} = complex(${value.real}, ${value.imag})`;
+        }
+        break;
+
+      case "angle":
+        const radians = (parseFloat(value) * Math.PI) / 180;
+        line = `${name} = ${radians}  # ${value} degrees`;
+        break;
+
+      default:
+        line = `# Unsupported type '${type}' for ${name}`;
+    }
+
+    if (line) scriptLines.push(line);
+  }
+
+  scriptLines.push("\nprint('Variables initialized.')");
+  return scriptLines.join("\n");
+}
+
+
+const generateRequirements = (): string => {
+  return `
+numpy==1.24.0
+`;
+};
+
+const createAndSendZip = async (model: Model) => {
+  const zip = new JSZip();
+
+  const script = generateScript(model); // << use model!
+  const requirements = generateRequirements();
+
+  zip.file("script.py", script);
+  zip.file("requirements.txt", requirements);
+
+  const zipBlob = await zip.generateAsync({ type: "blob" });
+
+  const fd = new FormData();
+  fd.append("script", zipBlob, "required_programs.zip");
+
+  try {
+    //const scriptSplitterEndpoint = getScriptSplitterEndpoint();
+    //const result = await performAjax(
+     // `${scriptSplitterEndpoint}/qc-script-splitter/api/v1.0/split-implementation`,
+     // fd
+    //);
+    //console.log("Result:", result);
+  } catch (error) {
+    console.error("Upload failed:", error);
+  }
+};

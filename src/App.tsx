@@ -208,10 +208,23 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("");
   const [modalStep, setModalStep] = useState(0);
+  const [quantumAlgorithmModalStep, setQuantumAlgorithmModalStep] = useState(0);
   const [loadingQunicorn, setLoadingQunicorn] = useState(true);
   const [statusQunicorn, setStatusQunicorn] = useState(null);
   const [ancillaModelingOn, setAncillaModelingOn] = useState(true);
+  const [quantumAlgorithms, setQuantumAlgorithms] = useState([
+    { name: "QAOA", configCount: 3 },
+    { name: "VQE", configCount: 4 },
+    { name: "Grover's Algorithm", configCount: 2 },
+  ]);
 
+  const handleQuantumAlgorithmModalClose = () =>{
+    if(quantumAlgorithmModalStep <=1){
+      setQuantumAlgorithmModalStep(quantumAlgorithmModalStep+1)
+    }else{
+      setQuantumAlgorithmModalStep(0);
+    }
+  }
   const handleClose = () => {
     console.log("handleClose")
     if (modalStep < 3) {
@@ -262,6 +275,7 @@ function App() {
     setProvider("IBM");
     setNumShots(1024);
     setAccessToken("");
+    setQuantumAlgorithmModalStep(0);
   };
 
 
@@ -402,25 +416,29 @@ function App() {
     }
   };
 
-   const transformToWorkflow = async () => {
-    
+  const startQuantumAlgorithmSelection = () => {
+    setQuantumAlgorithmModalStep(1);
+  }
+
+  const transformToWorkflow = async () => {
+
     try {
       const validMetadata = {
-      ...metadata,
-      id: `flow-${Date.now()}`,
-      timestamp: new Date().toISOString(),
-    };
+        ...metadata,
+        id: `flow-${Date.now()}`,
+        timestamp: new Date().toISOString(),
+      };
 
-    console.log(validMetadata);
-    console.log(metadata);
-const flow = reactFlowInstance.toObject();
-    const flowWithMetadata = { metadata: validMetadata, ...flow };
-      
+      console.log(validMetadata);
+      console.log(metadata);
+      const flow = reactFlowInstance.toObject();
+      const flowWithMetadata = { metadata: validMetadata, ...flow };
+
       let xml = createBPMN(flow);
       console.log(xml);
     } catch (error) {
       console.error("Error sending data:", error);
-    
+
     }
   };
 
@@ -1178,6 +1196,7 @@ const flow = reactFlowInstance.toObject();
           onOpenConfig={handleOpenConfig}
           uploadDiagram={() => handleSaveClick(true)}
           onLoadJson={handleLoadJson}
+          startQuantumAlgorithmSelection={startQuantumAlgorithmSelection}
           transformToWorkflow={transformToWorkflow}
           sendToBackend={sendToBackend}
           sendToQunicorn={sendToQunicorn}
@@ -1543,6 +1562,71 @@ const flow = reactFlowInstance.toObject();
           }
         </div>
 
+      </Modal>
+
+      <Modal
+        title="Determine Quantum Algorithm (1/2)"
+        open={quantumAlgorithmModalStep === 1}
+        onClose={() => { reset(); }}
+        footer={
+          <div className="flex justify-end space-x-2">
+            <button className="btn btn-primary" onClick={() => { handleQuantumAlgorithmModalClose(); }}>Deploy</button>
+            <button className="btn btn-secondary" onClick={() => { setQuantumAlgorithmModalStep(0); }}>Cancel</button>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          <p>
+            In this step, you describe the problem you'd like to solve using a quantum computer.
+          </p>
+          <p>
+            The system uses semantic search powered by OpenAPI to match your problem with relevant quantum algorithms.
+          </p>
+          <p>
+            Detected algorithms are ranked based on semantic relevance and the number of required configuration parameters.
+          </p>
+        </div>
+      </Modal>
+
+      <Modal
+        title="Determine Quantum Algorithm (2/2)"
+        open={quantumAlgorithmModalStep === 2}
+        onClose={() => { reset(); }}
+        footer={
+          <div className="flex justify-end">
+            <button className="btn btn-secondary" onClick={() => { setQuantumAlgorithmModalStep(0); }}>Back</button>
+          </div>
+        }
+      >
+        <div className="overflow-x-auto">
+          <table className="table-auto w-full border border-gray-300 rounded-md">
+            <thead>
+              <tr className="bg-gray-100 text-left">
+                <th className="p-2 border">Rank</th>
+                <th className="p-2 border">Quantum Algorithm</th>
+                <th className="p-2 border">Config Parameters</th>
+                <th className="p-2 border">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {quantumAlgorithms.map((algo, index) => (
+                <tr key={algo.name} className="hover:bg-gray-50">
+                  <td className="p-2 border">{index + 1}</td>
+                  <td className="p-2 border">{algo.name}</td>
+                  <td className="p-2 border">{algo.configCount}</td>
+                  <td className="p-2 border">
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => loadFlow(algo)}
+                    >
+                      Select
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </Modal>
 
       <main className="flex flex-col lg:flex-row h-[calc(100vh_-_60px)]  overflow-hidden">

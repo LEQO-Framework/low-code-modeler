@@ -17,6 +17,7 @@ interface ToolbarProps {
   onOpenConfig: () => void;
   uploadDiagram: () => void;
   onLoadJson: () => void;
+  startQuantumAlgorithmSelection: () => void,
   transformToWorkflow:()=> void;
   sendToBackend:()=> void;
   sendToQunicorn:()=> void;
@@ -29,6 +30,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
   uploadDiagram,
   onOpenConfig,
   onLoadJson,
+  startQuantumAlgorithmSelection,
   transformToWorkflow,
   sendToBackend,
   sendToQunicorn
@@ -54,11 +56,14 @@ const Toolbar: React.FC<ToolbarProps> = ({
         <Button size="sm" onClick={onOpenConfig}>
           <Settings className="w-4 h-4 mr-2" /> Configuration
         </Button>
-        <Button size="sm" onClick={transformToWorkflow}>
+        <Button size="sm" onClick={startQuantumAlgorithmSelection}>
           <Send className="w-4 h-4 mr-2" /> Detect Quantum Algorithm
         </Button>
         <Button size="sm" onClick={sendToBackend}>
           <Send className="w-4 h-4 mr-2" /> Send to Backend
+        </Button>
+        <Button size="sm" onClick={transformToWorkflow}>
+          <Send className="w-4 h-4 mr-2" /> Transform to Workflow
         </Button>
         <Button size="sm" onClick={sendToQunicorn}>
           <img src="/qunicorn.jfif" className="w-5 h-5 mr-2" />
