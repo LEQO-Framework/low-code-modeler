@@ -80,7 +80,7 @@ export const categories: Record<string, CategoryContent> = {
           icon: "PaletteIcon_Ancilla.png",
         },
         {
-          label: "Qubit",
+          label: "Qubit DataType",
           dataType: consts.QubitNode,
           type: consts.QubitNode,
           icon: "PaletteIcon_Qubit.png"
@@ -90,16 +90,17 @@ export const categories: Record<string, CategoryContent> = {
 
   [consts.operator]: {
     "Quantum Operators": [
-        { label: consts.arithmeticOperatorLabel, type: consts.OperatorNode, icon: ["PaletteIcon_ArithmeticOperator.png", "PaletteIcon_Ancilla_ArithmeticOperator.png"] },
-        { label: consts.bitwiseOperatorLabel, type: consts.OperatorNode, icon: ["PaletteIcon_BitwiseOperator.png", "PaletteIcon_Ancilla_BitwiseOperator.png"] },
-        { label: consts.comparisonOperatorLabel, type: consts.OperatorNode, icon: ["PaletteIcon_ComparisonOperator.png", "PaletteIcon_Ancilla_ComparisonOperator.png"] },
-        { label: consts.minMaxOperatorLabel, type: consts.OperatorNode, icon: ["PaletteIcon_MinMaxOperator.png", "PaletteIcon_Ancilla_MinMaxOperator.png"] },
+        { label: consts.quantumLabel + consts.arithmeticOperatorLabel, type: consts.OperatorNode, icon: ["PaletteIcon_ArithmeticOperator.png", "PaletteIcon_Ancilla_ArithmeticOperator.png"] },
+        { label: consts.quantumLabel + consts.bitwiseOperatorLabel, type: consts.OperatorNode, icon: ["PaletteIcon_BitwiseOperator.png", "PaletteIcon_Ancilla_BitwiseOperator.png"] },
+        { label: consts.quantumLabel + consts.comparisonOperatorLabel, type: consts.OperatorNode, icon: ["PaletteIcon_ComparisonOperator.png", "PaletteIcon_Ancilla_ComparisonOperator.png"] },
+        { label: consts.quantumLabel + consts.minMaxOperatorLabel, type: consts.OperatorNode, icon: ["PaletteIcon_MinMaxOperator.png", "PaletteIcon_Ancilla_MinMaxOperator.png"] },
       ],
     "Classical Operators": [
       { label: consts.arithmeticOperatorLabel, type: consts.ClassicalOperatorNode, icon: "PaletteIcon_Classical_ArithmeticOperator.png" },
       { label: consts.bitwiseOperatorLabel, type: consts.ClassicalOperatorNode, icon: "PaletteIcon_Classical_BitwiseOperator.png" },
       { label: consts.comparisonOperatorLabel, type: consts.ClassicalOperatorNode, icon: "PaletteIcon_Classical_ComparisonOperator.png" },
       { label: consts.minMaxOperatorLabel, type: consts.ClassicalOperatorNode, icon: "PaletteIcon_Classical_MinMaxOperator.png" },
+      { label: consts.optimizeLabel, type: consts.OptimizerNode, icon: "PaletteIcon_Classical_MinMaxOperator.png" }
     ],
   },
 
@@ -111,5 +112,14 @@ export const categories: Record<string, CategoryContent> = {
   [consts.customOperators]: [
     { label: "Custom Quantum Operator", type: consts.AlgorithmNode, icon: ["PaletteIcon_CustomQuantumOperator.png", "PaletteIcon_Ancilla_CustomQuantumOperator.png"] },
     { label: "Custom Classical Operator", type: consts.ClassicalAlgorithmNode, icon: "PaletteIcon_CustomClassicalOperator.png" },
+  ],
+
+  [consts.templates]: [
+    { label: consts.qaoa, type: consts.templates, icon: ["PaletteIcon_CustomQuantumOperator.png", "PaletteIcon_Ancilla_CustomQuantumOperator.png"] },
+    { label: consts.deutschJozsa, type: consts.templates, icon: "PaletteIcon_CustomClassicalOperator.png" },
+    { label: consts.grover, type: consts.templates, icon: "PaletteIcon_CustomClassicalOperator.png" },
+    { label: consts.hadamardRealTest, type: consts.templates, icon: "PaletteIcon_CustomClassicalOperator.png" },
+    { label: consts.hadamardImaginaryTest, type: consts.templates, icon: "PaletteIcon_CustomClassicalOperator.png" },
+    { label: consts.swapTest, type: consts.templates, icon: "PaletteIcon_CustomClassicalOperator.png" },
   ],
 };
