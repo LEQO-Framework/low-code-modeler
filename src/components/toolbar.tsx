@@ -17,6 +17,7 @@ interface ToolbarProps {
   onOpenConfig: () => void;
   uploadDiagram: () => void;
   onLoadJson: () => void;
+  transformToWorkflow:()=> void;
   sendToBackend:()=> void;
   sendToQunicorn:()=> void;
 }
@@ -28,6 +29,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
   uploadDiagram,
   onOpenConfig,
   onLoadJson,
+  transformToWorkflow,
   sendToBackend,
   sendToQunicorn
 }) => {
@@ -52,7 +54,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
         <Button size="sm" onClick={onOpenConfig}>
           <Settings className="w-4 h-4 mr-2" /> Configuration
         </Button>
-        <Button size="sm" onClick={sendToBackend}>
+        <Button size="sm" onClick={transformToWorkflow}>
           <Send className="w-4 h-4 mr-2" /> Detect Quantum Algorithm
         </Button>
         <Button size="sm" onClick={sendToBackend}>

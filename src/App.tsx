@@ -39,6 +39,7 @@ import {
 import { startCompile } from "./backend";
 import { Button } from "antd";
 import { ancillaConstructColor, classicalConstructColor, ClassicalOperatorNode, controlFlowConstructColor, deutschJozsa, grover, hadamardImaginaryTest, hadamardRealTest, qaoa, quantumConstructColor, swapTest } from "./constants";
+import { createBPMN } from "./workflowgenerator";
 
 
 
@@ -401,6 +402,27 @@ function App() {
     }
   };
 
+   const transformToWorkflow = async () => {
+    
+    try {
+      const validMetadata = {
+      ...metadata,
+      id: `flow-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+    };
+
+    console.log(validMetadata);
+    console.log(metadata);
+const flow = reactFlowInstance.toObject();
+    const flowWithMetadata = { metadata: validMetadata, ...flow };
+      
+      let xml = createBPMN(flow);
+      console.log(xml);
+    } catch (error) {
+      console.error("Error sending data:", error);
+    
+    }
+  };
 
   const sendToQunicorn = async () => {
     setModalStep(1);
@@ -1156,6 +1178,7 @@ function App() {
           onOpenConfig={handleOpenConfig}
           uploadDiagram={() => handleSaveClick(true)}
           onLoadJson={handleLoadJson}
+          transformToWorkflow={transformToWorkflow}
           sendToBackend={sendToBackend}
           sendToQunicorn={sendToQunicorn}
         />
