@@ -1,6 +1,6 @@
 import { create } from 'xmlbuilder2';
 import JSZip from "jszip";
-
+import $ from "jquery";
 
 interface Node {
   id: string;
@@ -361,7 +361,7 @@ const createAndSendZip = async (model: Model) => {
 
   try {
     //const scriptSplitterEndpoint = getScriptSplitterEndpoint();
-    const result = await performAjax(
+    const result: any = await performAjax(
      `http://localhost:8891/qc-script-splitter/api/v1.0/split-implementation`,
      fd
     );
@@ -669,4 +669,24 @@ export async function extractServiceZips(blob) {
     console.error("Error extracting service ZIPs:", error);
     throw error;
   }
+}
+
+export function performAjax(targetUrl, dataToSend) {
+  return new Promise(function (resolve, reject) {
+    $.ajax({
+      type: "POST",
+      url: targetUrl,
+      data: dataToSend,
+      processData: false,
+      crossDomain: true,
+      contentType: false,
+      beforeSend: function () {},
+      success: function (data) {
+        resolve(data);
+      },
+      error: function (err) {
+        reject(err);
+      },
+    });
+  });
 }
