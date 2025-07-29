@@ -43,14 +43,16 @@ export const MeasurementNode = memo((node: Node) => {
   const [yError, setYError] = useState(false);
   const [indices, setIndices] = useState("");
   const [startsWithDigitError, setStartsWithDigitError] = useState(false);
-
+  const [startsWithClassicalDigitError, setStartsWithClassicalDigitError] = useState(false);
   const xRef = useRef(null);
   const yRef = useRef(null);
 
 
+
+
   const baseHeight = 400;
   const extraHeightPerVariable = 40;
-  const dynamicHeight = baseHeight + (inputs.length) * extraHeightPerVariable;
+  const dynamicHeight = baseHeight + extraHeightPerVariable;
   console.log(dynamicHeight)
 
 
@@ -59,46 +61,60 @@ export const MeasurementNode = memo((node: Node) => {
     console.log(nodes)
     let selectedNode = nodes.find(n => n.id === node.id);
     const duplicates = findDuplicateOutputIdentifiers(nodes, node.id);
+
     let isDuplicate = duplicates.has(identifier);
-    const startsWithDigit = /^\d/.test(outputIdentifier);
+    console.log(outputIdentifier)
+    const startsWithDigit = /^\d/.test(identifier);
     setIndices(node.data.indices);
- 
-    isDuplicate = isDuplicate || findDuplicateOutputIdentifiersInsideNode(nodes, selectedNode, identifier) ||startsWithDigit;
-    
-    setOutputIdentifierError(isDuplicate && identifier !== "");
-    setClassicalOutputIdentifierError(isDuplicate && identifier !== "");
+    if (node.data?.indices != "") {
+      const isValid = /^(\d+)(,\d+)*$/.test(node.data.indices);
+      setError(!isValid);
+    }
+
+    if (startsWithDigit) {
+      setStartsWithDigitError(true);
+    } else {
+      setStartsWithDigitError(false);
+    }
+
+    isDuplicate = isDuplicate || findDuplicateOutputIdentifiersInsideNode(nodes, selectedNode, identifier);
+
+    console.log(isDuplicate)
+
+    setOutputIdentifierError((isDuplicate && identifier !== ""));
+    setClassicalOutputIdentifierError((isDuplicate && identifier !== "") || startsWithDigit);
 
   }, [nodes, node.data]);
 
   const handleYChange = (e, field) => {
-  const value = e.target.value;
+    const value = e.target.value;
 
-  if (field === "indices") {
-    setIndices(value);
+    if (field === "indices") {
+      setIndices(value);
 
-    // Validate: Only allow digits separated by commas
-    const isValid = /^(\d+)(,\d+)*$/.test(value);
-    setError(!isValid);
+      // Validate: Only allow digits separated by commas
+      const isValid = /^(\d+)(,\d+)*$/.test(value);
+      setError(!isValid);
 
-    node.data[field] = value;
-    updateNodeValue(node.id, field, value);  // Store raw value
-  } else {
-    // Other fields: only allow numeric input
-    const number = Number(value);
+      node.data[field] = value;
+      updateNodeValue(node.id, field, value);  // Store raw value
+    } else {
+      // Other fields: only allow numeric input
+      const number = Number(value);
 
-    // If it's NaN or starts with a letter, set error
-    const startsWithLetter = /^[a-zA-Z_]/.test(value) && value !== "";
-    const invalidNumber = isNaN(number);
+      // If it's NaN or starts with a letter, set error
+      const startsWithLetter = /^[a-zA-Z_]/.test(value) && value !== "";
+      const invalidNumber = isNaN(number);
 
-    setError(startsWithLetter || invalidNumber);
+      setError(startsWithLetter || invalidNumber);
 
-    node.data[field] = value;
-    updateNodeValue(node.id, field, number);
-  }
-  setSelectedNode(node);
-};
+      node.data[field] = value;
+      updateNodeValue(node.id, field, number);
+    }
+    setSelectedNode(node);
+  };
 
-  
+
 
   return (
     <div className="grand-parent">
@@ -109,7 +125,7 @@ export const MeasurementNode = memo((node: Node) => {
         )}
         style={{ height: `${dynamicHeight}px` }}
       >
-        {(outputIdentifierError || classicalOutputIdentifierError) && (
+        {(outputIdentifierError || classicalOutputIdentifierError || startsWithDigitError) && (
           <div className="absolute top-2 right-[-50px] group z-20">
             <AlertCircle className="text-red-600 w-5 h-5" />
             <div className="absolute top-5 left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
@@ -134,13 +150,13 @@ export const MeasurementNode = memo((node: Node) => {
           </div>
         )}
         <div className="w-full flex items-center" style={{ height: '52px' }}>
-           {node.data.implementation && (
-              <img
-                src="implementation-icon.png"
-                alt="Custom Icon"
-                className="absolute -top-4 -right-4 w-8 h-8"
-              />
-            )}
+          {node.data.implementation && (
+            <img
+              src="implementation-icon.png"
+              alt="Custom Icon"
+              className="absolute -top-4 -right-4 w-8 h-8"
+            />
+          )}
           <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
             <img src="measurementIcon2.png" alt="icon" className="w-[40px] h-[40px] object-contain flex-shrink-0" />
             <div className="h-full w-[1px] bg-black mx-2" />
@@ -187,7 +203,7 @@ export const MeasurementNode = memo((node: Node) => {
                   isConnectable={edges.filter(edge => edge.targetHandle === `quantumHandleMeasurementInput0${node.id}`).length < 1}
                   isConnectableStart={false}
                 />
-                <span className="text-black text-center text-sm w-full" >{node.data.inputs[0]?.outputIdentifier || "Register"}</span>
+                <span className="relative top-[-3px] text-black text-center text-sm w-full" >{node.data.inputs[0]?.outputIdentifier || "Register"}</span>
               </div>
             </div>
           </div>
@@ -204,7 +220,7 @@ export const MeasurementNode = memo((node: Node) => {
             setOutputs={setOutputs}
             edges={edges}
             sizeError={classicalSizeError}
-            outputIdentifierError={(outputIdentifierError || startsWithDigitError)}
+            outputIdentifierError={(classicalOutputIdentifierError || startsWithDigitError)}
             updateNodeValue={updateNodeValue}
             setOutputIdentifierError={setClassicalOutputIdentifierError}
             setSizeError={setClassicalSizeError}
@@ -220,7 +236,7 @@ export const MeasurementNode = memo((node: Node) => {
             setOutputs={setOutputs}
             edges={edges}
             sizeError={sizeError}
-            outputIdentifierError={(outputIdentifierError || startsWithDigitError)}
+            outputIdentifierError={(outputIdentifierError)}
             updateNodeValue={updateNodeValue}
             setOutputIdentifierError={setOutputIdentifierError}
             setSizeError={setSizeError}

@@ -44,7 +44,7 @@ export const AlgorithmNode = memo((node: Node) => {
   const handleGap = 40;
   const handleOffset = 15;
 
-  const nodeHeight = Math.max(handleOffset * 2 + (handleCount) * handleGap, 100);
+  const nodeHeight = Math.max(handleOffset + (handleCount) * handleGap, 100);
   const { edges, nodes, updateNodeValue, setSelectedNode, setNewEdges, setEdges, ancillaMode } = useStore(
     selector,
     shallow
@@ -96,7 +96,7 @@ export const AlgorithmNode = memo((node: Node) => {
       console.log(outputIdentifier)
       const size = output?.size?.trim();
       if (!outputIdentifier) return;
-      const duplicates = findDuplicateOutputIdentifier(nodes, selectedNode.id, selectedNode, outputIdentifier);
+      const duplicates = findDuplicateOutputIdentifier(nodes, selectedNode?.id, selectedNode, outputIdentifier);
       let isDuplicate = false;
       for (const [key] of duplicates.entries()) {
         if (
@@ -130,7 +130,7 @@ export const AlgorithmNode = memo((node: Node) => {
 
 
   const baseHeight = !ancillaMode ? 50 : 200;
-  const extraHeightPerVariable = 130;
+  const extraHeightPerVariable = 30;
   const dynamicHeight =
     baseHeight + 2 * 40 + 3 * 50 + (numberInputs * 50) + numberOutputs * extraHeightPerVariable;
 
@@ -231,7 +231,7 @@ export const AlgorithmNode = memo((node: Node) => {
                 />
               ) : (
                 <span
-                  className="truncate font-semibold leading-none cursor-pointer"
+                  className="font-semibold leading-none cursor-pointer"
                   style={{ paddingLeft: "25px" }}
                   onClick={() => setIsEditingLabel(true)}
                 >
@@ -241,7 +241,7 @@ export const AlgorithmNode = memo((node: Node) => {
             </div>
           </div>
 
-          <div className="custom-node-port-in mb-3 mt-[5px]">
+          <div className="custom-node-port-in mb-3 mt-[12px]">
             <div className="relative flex flex-col overflow-visible">
               <div className="custom-node-port-in">
                 <div className="relative flex flex-col overflow-visible">

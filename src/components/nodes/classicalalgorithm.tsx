@@ -58,7 +58,7 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
   const updateNodeInternals = useUpdateNodeInternals();
   const [outputIdentifierErrors, setOutputIdentifierErrors] = useState({});
   const [sizeErrors, setSizeErrors] = useState<{ [key: number]: boolean }>({});
-   const isAncillaConnected = edges.some(
+  const isAncillaConnected = edges.some(
     edge => edge.target === node.id && edge.targetHandle === `ancillaHandleOperationInput2${node.id}`
   );
 
@@ -73,7 +73,7 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
     updateNodeInternals(node.id);
   }, [node]);
 
-    useEffect(() => {
+  useEffect(() => {
     const identifier = node.data.outputIdentifier;
     console.log(nodes)
     let selectedNode = nodes.find(n => n.id === node.id);
@@ -112,8 +112,8 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
   }, [nodes, outputs, node.id]);
 
 
-  const baseHeight = 50;
-  const extraHeightPerVariable = 130;
+  const baseHeight = 0;
+  const extraHeightPerVariable = 90;
   const dynamicHeight =
     baseHeight + 2 * 40 + 3 * 50 + (numberInputs * 50) + numberOutputs * extraHeightPerVariable;
 
@@ -177,10 +177,10 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
                   One or more outputs have errors (duplicate ID or size is not a number).
                 </div>
               </div>
-          )}
+            )}
 
           <div className="w-full flex items-center" style={{ height: "52px" }}>
-             {node.data.implementation && (
+            {node.data.implementation && (
               <img
                 src="implementation-icon.png"
                 alt="Custom Icon"
@@ -189,7 +189,7 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
             )}
             <div
               className="w-full bg-orange-300 py-1 px-2 flex items-center overflow-hidden"
-              style={{ height: "inherit", borderTopLeftRadius: "28px", borderTopRightRadius: "28px", overflow: "hidden",paddingLeft: '25px', }}
+              style={{ height: "inherit", borderTopLeftRadius: "28px", borderTopRightRadius: "28px", overflow: "hidden", paddingLeft: '25px', }}
             >
               <img
                 src="classicalAlgorithmIcon.png"
@@ -222,7 +222,7 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
             </div>
           </div>
 
-          <div className="custom-node-port-in mb-3 mt-[5px]">
+          <div className="custom-node-port-in mb-3 mt-[15px]">
             <div className="absolute flex flex-col overflow-visible">
               <div className="custom-node-port-in">
                 <div className="relative flex flex-col overflow-visible">
@@ -260,9 +260,9 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
               <div
                 className="absolute flex flex-col"
                 style={{
-                  top: `${numberInputs * 40 + 110}px`,
+                  top: `${numberInputs * 40 + 20}px`,
                   right: "-198px",
-                  gap: "10px",
+                  gap: "0px",
                   zIndex: 5,
                 }}
               >
@@ -277,15 +277,15 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
                       setOutputs={setOutputs}
                       edges={edges}
                       sizeError={sizeErrors[index]}
-                setSizeError={(error) =>
-                  setSizeErrors((prev) => ({ ...prev, [index]: error }))
-                }
+                      setSizeError={(error) =>
+                        setSizeErrors((prev) => ({ ...prev, [index]: error }))
+                      }
                       outputIdentifierError={outputIdentifierErrors[index]}
                       updateNodeValue={updateNodeValue}
                       setOutputIdentifierError={(error) =>
                         setOutputIdentifierErrors(prev => ({ ...prev, [index]: error }))
                       }
-                 
+
                       setSelectedNode={setSelectedNode}
                       active={true}
                     />

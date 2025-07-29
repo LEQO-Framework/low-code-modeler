@@ -22,33 +22,38 @@ const selector = (state: {
   updateNodeValue: state.updateNodeValue,
   setSelectedNode: state.setSelectedNode,
 });
-// [Imports remain the same]
+
 
 export const ControlStructureNode = memo((node: Node) => {
   const [showingChildren, setShowingChildren] = useState(false);
   const { setNodes, updateNodeValue, setSelectedNode, edges } = useStore(selector, shallow);
   const updateNodeInternals = useUpdateNodeInternals();
 
-  const [quantumHandles, setQuantumHandles] = useState([0]);
+  const [quantumHandles, setQuantumHandles] = useState([0,1]);
   const [quantumOutputHandles, setQuantumOutputHandles] = useState([0]);
 
   useEffect(() => {
+    console.log("useeffect")
     const connectedQuantumInputs = quantumHandles.filter((index) =>
       edges.some((edge) => edge.targetHandle === `quantumHandleInputInitialization${node.id}-${index}`)
     );
 
+    console.log(quantumHandles)
     const lastIndex = quantumHandles[quantumHandles.length - 1];
+    console.log(connectedQuantumInputs)
     const lastHandleId = `quantumHandleInputInitialization${node.id}-${lastIndex}`;
+    console.log(lastHandleId)
     const isLastConnected = edges.some(edge => edge.targetHandle === lastHandleId);
 
     // Add only if not already added
     if (isLastConnected && quantumHandles.length === connectedQuantumInputs.length) {
-      setQuantumHandles((prev) => [...prev, prev.length]);
+      setQuantumHandles((prev) => [...prev, prev[prev.length - 1] + 1]);
+      console.log(quantumHandles)
     }
 
     setQuantumOutputHandles(connectedQuantumInputs);
     updateNodeInternals(node.id);
-  }, [edges, node.id]);
+  }, [node.id]);
 
 
 
@@ -59,7 +64,7 @@ export const ControlStructureNode = memo((node: Node) => {
 
   return (
     <div className="grand-parent overflow-visible"
-      style={{ minWidth: "1100px", height: `${dynamicHeight}px`, position: "relative", zIndex: -100 }}>
+      style={{ minWidth: "1300px", height: `${dynamicHeight}px`, position: "relative", zIndex: -100 }}>
       <div className="rounded-none bg-white border border-solid border-gray-700 shadow-md w-full h-full flex items-center justify-center relative overflow-visible">
         <div className="rounded-none border border-solid border-gray-700 shadow-md w-full h-full flex flex-col items-center relative z-10 overflow-visible">
           <div className="w-full bg-purple-300 text-black text-center font-semibold py-1">
@@ -132,6 +137,7 @@ export const ControlStructureNode = memo((node: Node) => {
                 {quantumHandles.map((index, i) => {
                   const handleId = `quantumHandleInputInitialization${node.id}-${index}`;
                   const isConnected = edges.some(edge => edge.targetHandle === handleId);
+                  console.log(quantumHandles)
                   return (
                     <Handle
                       key={handleId}
@@ -154,6 +160,9 @@ export const ControlStructureNode = memo((node: Node) => {
                   const handleId = `quantumHandleOutputInitialization${node.id}-${index}`;
                   const isConnected = edges.some(edge => edge.sourceHandle === handleId);
                   console.log(isConnected)
+                  console.log(index);
+                  console.log(i)
+                  console.log(quantumHandles)
                   return isInputConnected && (
                     <Handle
                       key={handleId}

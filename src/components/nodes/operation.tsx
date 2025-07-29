@@ -129,19 +129,19 @@ export const OperationNode = memo((node: Node) => {
   const dynamicHeight = baseHeight ;
 
   const iconMap = {
-    "Arithmetic Operator": 'arithmeticIcon.png',
-    "Bitwise Operator": 'bitwiseIcon.png',
-    "Min & Max Operator": 'minMaxIcon.png',
-    "Comparison Operator": 'comparisonIcon.png',
+    "Quantum Arithmetic Operator": 'arithmeticIcon.png',
+    "Quantum Bitwise Operator": 'bitwiseIcon.png',
+    "Quantum Min & Max Operator": 'minMaxIcon.png',
+    "Quantum Comparison Operator": 'comparisonIcon.png',
   };
   
   const label = data.label;
   const iconSrc = iconMap[label];
   const iconSizeMap = {
-    "Arithmetic Operator": { width: 45, height: 45 },
-    "Bitwise Operator": { width: 45, height: 45 },
-    "Min & Max Operator": { width: 45, height: 45 },
-    "Comparison Operator": { width: 56, height: 56 },
+    "Quantum Arithmetic Operator": { width: 45, height: 45 },
+    "Quantum Bitwise Operator": { width: 45, height: 45 },
+    "Quantum Min & Max Operator": { width: 45, height: 45 },
+    "Quantum Comparison Operator": { width: 56, height: 56 },
   };
 
   return (
@@ -227,7 +227,7 @@ export const OperationNode = memo((node: Node) => {
               value={node.data.operator || operation}
               onChange={(e) => handleYChange(e, "operator")}
             >
-              {(node.data.label === "Arithmetic Operator") && (
+              {(node.data.label === "Quantum Arithmetic Operator") && (
                 <>
                   <option value="+">+</option>
                   <option value="-">-</option>
@@ -237,7 +237,7 @@ export const OperationNode = memo((node: Node) => {
                 </>
               )}
 
-              {(node.data.label === "Bitwise Operator") && (
+              {(node.data.label === "Quantum Bitwise Operator") && (
                 <>
                   <option value="|">OR</option>
                   <option value="&">AND</option>
@@ -246,7 +246,7 @@ export const OperationNode = memo((node: Node) => {
                 </>
               )}
 
-              {(node.data.label === "Comparison Operator") && (
+              {(node.data.label === "Quantum Comparison Operator") && (
                 <>
                   <option value="<">&lt;</option>
                   <option value=">">&gt;</option>
@@ -257,7 +257,7 @@ export const OperationNode = memo((node: Node) => {
                 </>
               )}
 
-              {(node.data.label === "Min & Max Operator") && (
+              {(node.data.label === "Quantum Min & Max Operator") && (
                 <>
                   <option value="min">Min</option>
                   <option value="max">Max</option>
