@@ -28,7 +28,7 @@ export const SplitterNode: string = "splitterNode";
 export const MergerNode: string = "mergerNode";
 export const OperatorNode: string = "quantumOperatorNode";
 export const ClassicalOperatorNode: string = "classicalOperatorNode";
-export const OptimizerNode: string = "optimizeNode";
+export const OptimizerNode: string = "optimizerNode";
 export const GroupNode: string = "groupNode";
 
 
@@ -56,7 +56,7 @@ export const quantumLabel = "Quantum ";
 export const arithmeticOperatorLabel = "Arithmetic Operator";
 export const bitwiseOperatorLabel = "Bitwise Operator";
 export const minMaxOperatorLabel = "Min & Max Operator";
-export const optimizeLabel = "Optimize";
+export const optimizeLabel = "Optimizer";
 export const comparisonOperatorLabel = "Comparison Operator";
 
 export const qaoa = "Quantum Approximate Optimization Algorithm";
