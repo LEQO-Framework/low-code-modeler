@@ -95,13 +95,22 @@ function App() {
   const [nisqAnalyzerEndpoint, setNisqAnalyzerEndpoint] = useState(import.meta.env.VITE_NISQ_ANALYZER);
   const [qunicornEndpoint, setQunicornEndpoint] = useState(import.meta.env.VITE_QUNICORN);
   const [lowcodeBackendEndpoint, setLowcodeBackendEndpoint] = useState(import.meta.env.VITE_LOW_CODE_BACKEND);
+  const [opentoscaContainer, setOpentoscaContainerEndpoint] = useState(import.meta.env.VITE_OPENTOSCA_CONTAINER);
+  const [opentoscaWinery, setOpentoscaWineryEndpoint] = useState(import.meta.env.VITE_OPENTOSCA_WINERY);
+  const [scriptSplitter, setScriptSplitterEndpoint] = useState(import.meta.env.VITE_SCRIPT_SPLITTER);
   const [openAIToken, setOpenAIToken] = useState(import.meta.env.VITE_OPENAI_TOKEN);
 
-  const [activeTab, setActiveTab] = useState("endpoints");
+  const [activeTab, setActiveTab] = useState("github");
   const [tempNisqAnalyzerEndpoint, setTempNisqAnalyzerEndpoint] = useState(nisqAnalyzerEndpoint);
   const [tempQunicornEndpoint, setTempQunicornEndpoint] = useState(qunicornEndpoint);
   const [tempLowcodeBackendEndpoint, setTempLowcodeBackendEndpoint] = useState(lowcodeBackendEndpoint);
+  const [tempScriptSplitter, setTempScriptSplitterEndpoint] = useState(scriptSplitter);
   const [tempOpenAIToken, setTempOpenAIToken] = useState(openAIToken);
+
+  const [tempOpentoscaContainer, setTempOpentoscaContainerEndpoint] = useState(opentoscaContainer);
+  const [tempOpentoscaWinery, setTempOpentoscaWineryEndpoint] = useState(opentoscaWinery);
+
+
   const [tempGithubRepositoryOwner, setTempGithubRepositoryOwner] = useState("");
   const [tempGithubRepositoryName, setTempGithubRepositoryName] = useState("");
   const [tempGithubBranch, setTempGithubBranch] = useState("");
@@ -152,6 +161,9 @@ function App() {
     setLowcodeBackendEndpoint(tempLowcodeBackendEndpoint);
     setQunicornEndpoint(tempQunicornEndpoint);
     setIsConfigOpen(false);
+    setScriptSplitterEndpoint(tempScriptSplitter);
+    setOpentoscaWineryEndpoint(tempOpentoscaWinery);
+    setOpentoscaContainerEndpoint(tempOpentoscaContainer);
 
   };
 
@@ -160,6 +172,9 @@ function App() {
     setTempQunicornEndpoint(qunicornEndpoint);
     setTempLowcodeBackendEndpoint(lowcodeBackendEndpoint);
     setTempOpenAIToken(openAIToken);
+    setTempScriptSplitterEndpoint(scriptSplitter);
+    setTempOpentoscaWineryEndpoint(opentoscaWinery);
+    setTempOpentoscaContainerEndpoint(opentoscaContainer);
     setIsConfigOpen(false);
   };
 
@@ -1255,18 +1270,25 @@ function App() {
           {/* Subtabs */}
           <div className="flex border-b mb-4">
             <button
-              className={`px-4 py-2 ${activeTab === "endpoints" ? "border-b-2 border-blue-500 font-semibold" : "text-gray-600"
-                }`}
-              onClick={() => setActiveTab("endpoints")}
-            >
-              Endpoints
-            </button>
-            <button
               className={`px-4 py-2 ${activeTab === "github" ? "border-b-2 border-blue-500 font-semibold" : "text-gray-600"
                 }`}
               onClick={() => setActiveTab("github")}
             >
               GitHub
+            </button>
+            <button
+              className={`px-4 py-2 ${activeTab === "opentosca" ? "border-b-2 border-blue-500 font-semibold" : "text-gray-600"
+                }`}
+              onClick={() => setActiveTab("opentosca")}
+            >
+              OpenTOSCA
+            </button>
+            <button
+              className={`px-4 py-2 ${activeTab === "endpoints" ? "border-b-2 border-blue-500 font-semibold" : "text-gray-600"
+                }`}
+              onClick={() => setActiveTab("endpoints")}
+            >
+              Endpoints
             </button>
           </div>
 
@@ -1324,6 +1346,23 @@ function App() {
                 </tbody>
               </table>
 
+              <h3 className="labels">Script Splitter:</h3>
+              <table className="config-table">
+                <tbody>
+                  <tr>
+                    <td align="right">Script Splitter:</td>
+                    <td align="left">
+                      <input
+                        className="qwm-input"
+                        type="text"
+                        value={tempScriptSplitter}
+                        onChange={(event) => setTempScriptSplitter(event.target.value)}
+                      />
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+
               <h3 className="labels">OpenAI:</h3>
               <table className="config-table">
                 <tbody>
@@ -1340,6 +1379,7 @@ function App() {
                   </tr>
                 </tbody>
               </table>
+
             </div>
           )}
 
@@ -1396,7 +1436,39 @@ function App() {
               </table>
             </div>
           )}
+          {activeTab === "opentosca" && (
+            <div>
+              <h3 className="labels">OpenTOSCA</h3>
+              <table className="config-table">
+                <tbody>
+                  <tr>
+                    <td align="right">OpenTOSCA Container:</td>
+                    <td align="left">
+                      <input
+                        className="qwm-input"
+                        type="text"
+                        value={tempOpentoscaContainer}
+                        onChange={(e) => setTempOpentoscaContainerEndpoint(e.target.value)}
+                      />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td align="right">OpenTOSCA Winery:</td>
+                    <td align="left">
+                      <input
+                        className="qwm-input"
+                        type="text"
+                        value={tempOpentoscaContainer}
+                        onChange={(e) => setTempOpentoscaWineryEndpoint(e.target.value)}
+                      />
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
+        
       </Modal>
       <Modal
         title={"Qunicorn Deployment (1/2)"}
