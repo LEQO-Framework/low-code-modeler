@@ -5,7 +5,7 @@ import JSZip from "jszip";
 interface Node {
   id: string;
   type: string;
-  data: { label: string, value: any; };
+  data: { label: string, value: any; implementation: string; };
 }
 
 interface Edge {
@@ -33,6 +33,7 @@ export function createBPMN(model: Model): string {
       ["xmlns:xsi"]: 'http://www.w3.org/2001/XMLSchema-instance',
       ["xmlns:camunda"]: 'http://camunda.org/schema/1.0/bpmn',
       ["xmlns:opentosca"]: 'https://github.com/UST-QuAntiL/OpenTOSCA',
+      ["xmlns:quantme"]: 'https://github.com/UST-QuAntiL/QuantME-Quantum4BPMN',
       ["id"]: 'Definitions_0wzkc0b',
       ["targetNamespace"]: 'http://bpmn.io/schema/bpmn',
       ["exporter"]: 'QuantME Modeler',
@@ -66,7 +67,7 @@ export function createBPMN(model: Model): string {
     const taskId = `QuantumGroup_${groupId}`;
     nodeToTaskId.set(groupId, taskId);
 
-    const task = process.ele('quantme:circuitExecutionTask', {
+    const task = process.ele('quantme:quantumCircuitExecutionTask', {
       id: taskId,
       name: `Quantum Task ${groupId}`
     });
@@ -100,7 +101,7 @@ export function createBPMN(model: Model): string {
     });
 
     if (node.type === "optimizerNode") {
-      task = process.ele('quantme:parameterOptimizationTask', {
+      task = process.ele('quantme:ParameterOptimizationTask', {
         id: taskId,
         name: node.data.label
       });
@@ -143,75 +144,150 @@ export function createBPMN(model: Model): string {
 
   return doc.end({ prettyPrint: true });
 }
+
 function generateScript(model: Model): string {
-  let scriptLines: string[] = [
-    "import math",
-    "import cmath",
-    "",
-  ];
+  const hasQuantum = model.nodes.some(n => isQuantumNode(n.type));
+  const hasClassical = model.nodes.some(n => !isQuantumNode(n.type));
 
-  for (const node of model.nodes) {
-    const name = node.data.label || `var_${node.id}`;
-    const value = node.data.value;
-    const type = node.type.toLowerCase();
+  const scriptLines: string[] = [];
 
-    let line = "";
-
-    switch (type) {
-      case "int":
-        line = `${name} = ${parseInt(value)}`;
-        break;
-
-      case "float":
-        line = `${name} = ${parseFloat(value)}`;
-        break;
-
-      case "boolean":
-        line = `${name} = ${value === true || value === "true"}`;
-        break;
-
-      case "array":
-        line = `${name} = ${JSON.stringify(value)}`;
-        break;
-
-      case "bit":
-        line = `${name} = ${value === "1" || value === 1 ? 1 : 0}`;
-        break;
-
-      case "complex":
-        if (typeof value === "object" && value.real !== undefined && value.imag !== undefined) {
-          line = `${name} = complex(${value.real}, ${value.imag})`;
-        }
-        break;
-
-      case "angle":
-        const radians = (parseFloat(value) * Math.PI) / 180;
-        line = `${name} = ${radians}  # ${value} degrees`;
-        break;
-
-      default:
-        line = `# Unsupported type '${type}' for ${name}`;
-    }
-
-    if (line) scriptLines.push(line);
+  // Conditional imports
+  if (hasClassical) {
+    scriptLines.push("import math", "import cmath");
+  }
+  if (hasQuantum) {
+    scriptLines.push(
+      "import qiskit",
+      "import qiskit.qasm3",
+      "from qiskit_aer import AerSimulator",
+      "from qiskit import transpile"
+    );
   }
 
-  scriptLines.push("\nprint('Variables initialized.')");
+  scriptLines.push("");
+
+  // Classical initialization
+  if (hasClassical) {
+    for (const node of model.nodes) {
+      if (isQuantumNode(node.type)) continue;
+
+      const name = node.data.label || `var_${node.id}`;
+      const value = node.data.value;
+      const type = node.type.toLowerCase();
+
+      let line = "";
+
+      switch (type) {
+        case "classicalAlgorithmnode":
+          line = node.data.implementation;
+          break;
+        case "int":
+          line = `${name} = ${parseInt(value)}`;
+          break;
+        case "float":
+          line = `${name} = ${parseFloat(value)}`;
+          break;
+        case "boolean":
+          line = `${name} = ${value === true || value === "true"}`;
+          break;
+        case "array":
+          line = `${name} = ${JSON.stringify(value)}`;
+          break;
+        case "bit":
+          line = `${name} = ${value === "1" || value === 1 ? 1 : 0}`;
+          break;
+        case "complex":
+          if (typeof value === "object" && value.real !== undefined && value.imag !== undefined) {
+            line = `${name} = complex(${value.real}, ${value.imag})`;
+          }
+          break;
+        case "angle":
+          const radians = (parseFloat(value) * Math.PI) / 180;
+          line = `${name} = ${radians}  # ${value} degrees`;
+          break;
+        default:
+          line = `# Unsupported type '${type}' for ${name}`;
+      }
+
+      if (line) scriptLines.push(line);
+    }
+
+    scriptLines.push("\nprint('Classical variables initialized.')\n");
+  }
+
+  // Quantum group processing
+  if (hasQuantum) {
+    const getParent = (n: Node) => (n as any)?.parent || '__default__';
+
+    const quantumGroups: Record<string, Node[]> = {};
+    for (const node of model.nodes) {
+      if (!isQuantumNode(node.type)) continue;
+      const parent = getParent(node);
+      if (!quantumGroups[parent]) quantumGroups[parent] = [];
+      quantumGroups[parent].push(node);
+    }
+
+    let groupIndex = 0;
+    for (const [groupId, nodes] of Object.entries(quantumGroups)) {
+      groupIndex++;
+      const circuitVar = `qc${groupIndex}`;
+      scriptLines.push(`# Quantum Group: ${groupId}`);
+      scriptLines.push(`${circuitVar}_program = \"\"\"`);
+
+      for (const node of nodes) {
+        if (node.data.implementation?.trim()) {
+          scriptLines.push(node.data.implementation.trim());
+        }
+      }
+
+      scriptLines.push(`\"\"\"`);
+      scriptLines.push(`${circuitVar} = qiskit.qasm3.loads(${circuitVar}_program)`);
+      scriptLines.push(`backend = AerSimulator()`);
+      scriptLines.push(`bound_circuit = transpile(${circuitVar}, backend)`);
+      scriptLines.push(`result = backend.run(bound_circuit).result()`);
+      scriptLines.push(`counts = result.get_counts()`);
+      scriptLines.push(`print("Results for Quantum Group ${groupId}:", counts)\n`);
+    }
+  }
+
   return scriptLines.join("\n");
 }
 
 
-const generateRequirements = (): string => {
-  return `
-numpy==1.24.0
-`;
+
+const generateRequirements = (model: Model): string => {
+  const hasQuantum = model.nodes.some(n => isQuantumNode(n.type));
+  const hasClassical = model.nodes.some(n => !isQuantumNode(n.type));
+
+  const classicalDeps = [
+    "numpy==1.24.0",
+  ];
+
+  const quantumDeps = [
+    "qiskit==2.1.1",
+    "qiskit-aer==0.17.1",
+    "qiskit-algorithms==0.3.1",
+    "qiskit-qasm3-import==0.6.0",
+  ];
+
+  let requirements: string[] = [];
+
+  if (hasClassical) {
+    requirements = requirements.concat(classicalDeps);
+  }
+  if (hasQuantum) {
+    requirements = requirements.concat(quantumDeps);
+  }
+
+  return requirements.join("\n");
 };
+
 
 const createAndSendZip = async (model: Model) => {
   const zip = new JSZip();
 
-  const script = generateScript(model); // << use model!
-  const requirements = generateRequirements();
+  const script = generateScript(model);
+  const requirements = generateRequirements(model);
 
   zip.file("script.py", script);
   zip.file("requirements.txt", requirements);
