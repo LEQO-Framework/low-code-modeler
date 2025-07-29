@@ -23,6 +23,68 @@ function isQuantumNode(type: string): boolean {
   return ['gateNode', 'statePreparationNode', 'measurementNode', 'ancillaNode'].includes(type);
 }
 
+const OPENTOSCA_NAMESPACE_NODETYPE = "http://opentosca.org/nodetypes";
+const QUANTME_NAMESPACE_PULL = "http://quantil.org/quantme/pull";
+
+const topologyTemplateDefinition = `<Definitions targetNamespace="http://quantil.org/quantme/pull" id="winery-defs-for_pull-NodetypeToReplace" xmlns="http://docs.oasis-open.org/tosca/ns/2011/12" xmlns:yml="http://docs.oasis-open.org/tosca/ns/simple/yaml/1.3" xmlns:selfservice="http://www.eclipse.org/winery/model/selfservice" xmlns:winery="http://www.opentosca.org/winery/extensions/tosca/2013/02/12" xmlns:researchobject="http://www.eclipse.org/winery/model/researchobject" xmlns:testwineryopentoscaorg="http://test.winery.opentosca.org">
+    <ServiceTemplate name="NodetypeToReplace" targetNamespace="http://quantil.org/quantme/pull" id="NodetypeToReplace">
+        <TopologyTemplate>
+            <NodeTemplate name="DockerEngine" minInstances="1" maxInstances="1" type="nodetypes:DockerEngine" id="DockerEngine_0" winery:x="779" winery:y="294" xmlns:nodetypes="http://opentosca.org/nodetypes">
+                <Properties>
+                    <otntyIproperties:DockerEngine_Properties xmlns:otntyIproperties="http://opentosca.org/nodetypes/properties">
+                        <otntyIproperties:DockerEngineURL>tcp://dind:2375</otntyIproperties:DockerEngineURL>
+                        <otntyIproperties:DockerEngineCertificate/>
+                        <otntyIproperties:State>Running</otntyIproperties:State>
+                    </otntyIproperties:DockerEngine_Properties>
+                </Properties>
+            </NodeTemplate>
+            <NodeTemplate name="NodetypeToReplaceContainer" minInstances="1" maxInstances="1" type="nodetypes:NodetypeToReplaceContainer" id="NodetypeToReplaceContainer_0" winery:x="775" winery:y="102" xmlns:nodetypes="http://opentosca.org/nodetypes">
+                <Properties>
+                    <otntypdInodetypes:Properties xmlns:otntypdInodetypes="http://opentosca.org/nodetypes/propertiesdefinition/winery">
+                        <otntypdInodetypes:Port/>
+                        <otntypdInodetypes:ContainerPort>80</otntypdInodetypes:ContainerPort>
+                        <otntypdInodetypes:ContainerID/>
+                        <otntypdInodetypes:ContainerIP/>
+                        <otntypdInodetypes:ENV_CAMUNDA_ENDPOINT>get_input: camundaEndpoint</otntypdInodetypes:ENV_CAMUNDA_ENDPOINT>
+                        <otntypdInodetypes:ENV_CAMUNDA_TOPIC>get_input: camundaTopic</otntypdInodetypes:ENV_CAMUNDA_TOPIC>
+                    </otntypdInodetypes:Properties>
+                </Properties>
+                <DeploymentArtifacts>
+                    <DeploymentArtifact name="NodetypeToReplace_DA" artifactType="artifacttypes:DockerContainerArtifact" artifactRef="artifacttemplates:NodetypeToReplace_DA" xmlns:artifacttemplates="http://opentosca.org/artifacttemplates" xmlns:artifacttypes="http://opentosca.org/artifacttypes"/>
+                </DeploymentArtifacts>
+            </NodeTemplate>
+            <RelationshipTemplate name="HostedOn" type="ToscaBaseTypes:HostedOn" id="con_HostedOn_0" xmlns:ToscaBaseTypes="http://docs.oasis-open.org/tosca/ns/2011/12/ToscaBaseTypes">
+                <SourceElement ref="NodetypeToReplaceContainer_0"/>
+                <TargetElement ref="DockerEngine_0"/>
+            </RelationshipTemplate>
+        </TopologyTemplate>
+    </ServiceTemplate>
+</Definitions>`;
+
+const nodeTypeDefinition = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Definitions targetNamespace="http://opentosca.org/nodetypes" id="winery-defs-for_otntyIgeneral-NodetypeToReplace" xmlns="http://docs.oasis-open.org/tosca/ns/2011/12" xmlns:yml="http://docs.oasis-open.org/tosca/ns/simple/yaml/1.3" xmlns:selfservice="http://www.eclipse.org/winery/model/selfservice" xmlns:winery="http://www.opentosca.org/winery/extensions/tosca/2013/02/12" xmlns:researchobject="http://www.eclipse.org/winery/model/researchobject" xmlns:testwineryopentoscaorg="http://test.winery.opentosca.org">
+    <NodeType name="NodetypeToReplaceContainer" abstract="no" final="no" targetNamespace="http://opentosca.org/nodetypes">
+        <DerivedFrom typeRef="nodetypes:DockerContainer" xmlns:nodetypes="http://opentosca.org/nodetypes"/>
+        <winery:PropertiesDefinition elementname="Properties" namespace="http://opentosca.org/nodetypes/propertiesdefinition/winery">
+            <winery:properties>
+                <winery:key>ContainerPort</winery:key>
+                <winery:type>xsd:string</winery:type>
+            </winery:properties>
+            <winery:properties>
+                <winery:key>Port</winery:key>
+                <winery:type>xsd:string</winery:type>
+            </winery:properties>
+            <winery:properties>
+                <winery:key>ENV_CAMUNDA_ENDPOINT</winery:key>
+                <winery:type>xsd:string</winery:type>
+            </winery:properties>
+            <winery:properties>
+                <winery:key>ENV_CAMUNDA_TOPIC</winery:key>
+            </winery:properties>
+        </winery:PropertiesDefinition>
+    </NodeType>
+</Definitions>`;
+
 export function createBPMN(model: Model): string {
   const doc = create({ version: '1.0', encoding: 'UTF-8' })
     .ele('bpmn:definitions', {
@@ -299,12 +361,312 @@ const createAndSendZip = async (model: Model) => {
 
   try {
     //const scriptSplitterEndpoint = getScriptSplitterEndpoint();
-    //const result = await performAjax(
-    // `${scriptSplitterEndpoint}/qc-script-splitter/api/v1.0/split-implementation`,
-    // fd
-    //);
+    const result = await performAjax(
+     `http://localhost:8891/qc-script-splitter/api/v1.0/split-implementation`,
+     fd
+    );
     //console.log("Result:", result);
+    let programsBlob = result.programsBlob;
+     let deploymentModels = await extractServiceZips(programsBlob);
+    let qrmsActivities = [];
+    for(let j = 0; j < model.nodes.length; j++){
+    for (let i = 0; i < deploymentModels.length; i++) {
+      let idwinery = model.nodes[i].id;
+    let serviceTemplate = await createServiceTemplate(
+        idwinery,
+        QUANTME_NAMESPACE_PULL
+      );
+      console.log(serviceTemplate);
+      const versionUrl =
+        getWineryEndpoint() + "/servicetemplates/" + serviceTemplate;
+
+      // create the deployment model containing the implementation
+      let deploymentModelUrlResult = await createDeploymentModel(
+        deploymentModels[i].serviceZipContent,
+        getWineryEndpoint(),
+        idwinery + "_DA",
+        "http://opentosca.org/artifacttemplates",
+        "{http://opentosca.org/artifacttypes}DockerContainerArtifact",
+        "service",
+        versionUrl
+      );
+      let deploymentModelUrl = deploymentModelUrlResult.deploymentModelUrl;
+
+      // create the nodetype to add it to the created service template
+      await createNodeType(
+        idwinery + "Container",
+        OPENTOSCA_NAMESPACE_NODETYPE
+      );
+      await updateNodeType(
+        idwinery + "Container",
+        OPENTOSCA_NAMESPACE_NODETYPE
+      );
+      serviceTemplate = await updateServiceTemplate(
+        idwinery,
+        QUANTME_NAMESPACE_PULL
+      );
+      console.log(serviceTemplate);
+    }}
   } catch (error) {
     console.error("Upload failed:", error);
   }
 };
+
+function getWineryEndpoint() {
+  return "http://localhost:8093";
+}
+
+export async function createServiceTemplate(name, namespace) {
+  console.log("create service template with name ", name);
+  const serviceTemplate = {
+    localname: name,
+    namespace: namespace,
+  };
+  const response = await fetch(getWineryEndpoint() + "/servicetemplates", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "text/plain",
+    },
+    body: JSON.stringify(serviceTemplate),
+  });
+  return response.text();
+}
+
+
+export async function createDeploymentModel(
+  programBlobs,
+  wineryEndpoint,
+  localNamePrefix,
+  artifactTemplateNamespace,
+  artifactType,
+  fileName,
+  serviceTemplateURL
+) {
+  // create a new ArtifactTemplate and upload the agent file (the agent currently also contains the program and we deploy them together)
+  let artifactName = await createNewArtifactTemplate(
+    wineryEndpoint,
+    localNamePrefix,
+    artifactTemplateNamespace,
+    artifactType,
+    programBlobs,
+    fileName
+  );
+
+  // create new ServiceTemplate for the hybrid program by adding a new version of the predefined template
+  //let serviceTemplateURL = await createNewServiceTemplateVersion(
+  // wineryEndpoint,
+  //serviceTemplateName,
+  //serviceTemplateNamespace
+  //);
+  //if (serviceTemplateURL.error !== undefined) {
+  // return { error: serviceTemplateURL.error };
+  //}
+
+  // update DA reference within the created ServiceTemplate version
+  let getTemplateXmlResult = await fetch(serviceTemplateURL + "xml");
+  let getTemplateXmlResultJson = await getTemplateXmlResult.text();
+  getTemplateXmlResultJson = getTemplateXmlResultJson.replace(
+    ':QiskitRuntimeAgentContainer_DA"',
+    ":" + artifactName + '"'
+  );
+  await fetch(serviceTemplateURL, {
+    method: "PUT",
+    body: getTemplateXmlResultJson,
+    headers: { "Content-Type": "application/xml" },
+  });
+
+  // replace concrete Winery endpoint with abstract placeholder to enable QAA transfer into another environment
+  let deploymentModelUrl = serviceTemplateURL.replace(
+    wineryEndpoint,
+    "{{ wineryEndpoint }}"
+  );
+  deploymentModelUrl += "?csar";
+  return { deploymentModelUrl: deploymentModelUrl };
+}
+
+export async function createNewArtifactTemplate(
+  wineryEndpoint,
+  localNamePrefix,
+  namespace,
+  type,
+  blob,
+  fileName
+) {
+  console.log("Creating new ArtifactTemplate of type: ", type);
+
+  // retrieve the currently available ArtifactTemplates
+  const getArtifactsResult = await fetch(
+    wineryEndpoint + "/artifacttemplates/"
+  );
+  const getArtifactsResultJson = await getArtifactsResult.json();
+
+  console.log(getArtifactsResultJson);
+
+  // get unique name for the ArtifactTemplate
+  let artifactTemplateLocalName = localNamePrefix;
+  if (
+    getArtifactsResultJson.some(
+      (e) => e.id === artifactTemplateLocalName && e.namespace === namespace
+    )
+  ) {
+    let nameOccupied = true;
+    artifactTemplateLocalName += "-" + makeId(1);
+    while (nameOccupied) {
+      if (
+        !getArtifactsResultJson.some(
+          (e) => e.id === artifactTemplateLocalName && e.namespace === namespace
+        )
+      ) {
+        nameOccupied = false;
+      } else {
+        artifactTemplateLocalName += makeId(1);
+      }
+    }
+  }
+  console.log(
+    "Creating ArtifactTemplate with name: ",
+    artifactTemplateLocalName
+  );
+
+  // create ArtifactTemplate
+  const artifactCreationResponse = await fetch(
+    wineryEndpoint + "/artifacttemplates/",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        localname: artifactTemplateLocalName,
+        namespace,
+        type,
+      }),
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+    }
+  );
+  const artifactCreationResponseText = await artifactCreationResponse.text();
+
+  // get URL for the file upload to the ArtifactTemplate
+  const fileUrl =
+    wineryEndpoint +
+    "/artifacttemplates/" +
+    artifactCreationResponseText +
+    "files";
+
+  // upload the blob
+  const fd = new FormData();
+  fd.append("file", blob, fileName);
+  await performAjax(fileUrl, fd);
+
+  return artifactTemplateLocalName;
+}
+
+export function makeId(length) {
+  let result = "";
+  const characters =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  const charactersLength = characters.length;
+  for (let i = 0; i < length; i++) {
+    result += characters.charAt(Math.floor(Math.random() * charactersLength));
+  }
+  return result;
+}
+
+export async function createNodeType(name, namespace) {
+  const nodetype = {
+    localname: name,
+    namespace: namespace,
+  };
+  const response = await fetch(`${getWineryEndpoint()}/nodetypes`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "text/plain",
+    },
+    body: JSON.stringify(nodetype),
+  });
+  return response.text();
+}
+
+export async function updateNodeType(name, namespace) {
+  const nodetype = nodeTypeDefinition.replaceAll("NodetypeToReplace", name);
+  console.log(
+    getWineryEndpoint() +
+      "/nodetypes/" +
+      encodeURIComponent(encodeURIComponent(namespace)) +
+      "/" +
+      name
+  );
+  console.log(nodetype);
+  const response = await fetch(
+    `${getWineryEndpoint()}/nodetypes/${encodeURIComponent(
+      encodeURIComponent(namespace)
+    )}/${name}`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/xml",
+        Accept: "text/plain",
+      },
+      body: nodetype,
+    }
+  );
+  return response.text();
+}
+
+export async function updateServiceTemplate(name, namespace) {
+  const topologyTemplate = topologyTemplateDefinition.replaceAll(
+    "NodetypeToReplace",
+    name
+  );
+  console.log(
+    getWineryEndpoint() +
+      "/servicetemplates/" +
+      encodeURIComponent(encodeURIComponent(namespace)) +
+      "/" +
+      name
+  );
+  console.log(topologyTemplate);
+  const response = await fetch(
+    `${getWineryEndpoint()}/servicetemplates/${encodeURIComponent(
+      encodeURIComponent(namespace)
+    )}/${name}`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/xml",
+        Accept: "text/plain",
+      },
+      body: topologyTemplate,
+    }
+  );
+  return response.text();
+}
+
+export async function extractServiceZips(blob) {
+  try {
+    const jszip = new JSZip();
+    const zip = await jszip.loadAsync(blob);
+    const files = Object.keys(zip.files);
+
+    const serviceZips = [];
+
+    for (let filename of files) {
+      console.log(filename);
+      if (filename.endsWith(".zip")) {
+        const serviceZipContent = await zip.file(filename).async("blob");
+        serviceZips.push({ filename, serviceZipContent });
+      }
+    }
+
+    if (serviceZips.length === 0) {
+      throw new Error("No service.zip files found in the ZIP");
+    }
+
+    return serviceZips;
+  } catch (error) {
+    console.error("Error extracting service ZIPs:", error);
+    throw error;
+  }
+}
