@@ -232,11 +232,17 @@ function App() {
     { name: "VQE", configCount: 4 },
     { name: "Grover's Algorithm", configCount: 2 },
   ]);
+  const [problemDescription, setProblemDescription] = useState("");
 
-  const handleQuantumAlgorithmModalClose = () =>{
-    if(quantumAlgorithmModalStep <=1){
-      setQuantumAlgorithmModalStep(quantumAlgorithmModalStep+1)
-    }else{
+  const handleChange = (e) => {
+    setProblemDescription(e.target.value);
+  };
+
+
+  const handleQuantumAlgorithmModalClose = () => {
+    if (quantumAlgorithmModalStep <= 2) {
+      setQuantumAlgorithmModalStep(quantumAlgorithmModalStep + 1)
+    } else {
       setQuantumAlgorithmModalStep(0);
     }
   }
@@ -291,6 +297,7 @@ function App() {
     setNumShots(1024);
     setAccessToken("");
     setQuantumAlgorithmModalStep(0);
+    setProblemDescription("");
   };
 
 
@@ -1468,7 +1475,7 @@ function App() {
             </div>
           )}
         </div>
-        
+
       </Modal>
       <Modal
         title={"Qunicorn Deployment (1/2)"}
@@ -1637,12 +1644,12 @@ function App() {
       </Modal>
 
       <Modal
-        title="Determine Quantum Algorithm (1/2)"
+        title="Determine Quantum Algorithm (1/3)"
         open={quantumAlgorithmModalStep === 1}
         onClose={() => { reset(); }}
         footer={
           <div className="flex justify-end space-x-2">
-            <button className="btn btn-primary" onClick={() => { handleQuantumAlgorithmModalClose(); }}>Deploy</button>
+            <button className="btn btn-primary" onClick={() => { handleQuantumAlgorithmModalClose(); }}>Describe Problem</button>
             <button className="btn btn-secondary" onClick={() => { setQuantumAlgorithmModalStep(0); }}>Cancel</button>
           </div>
         }
@@ -1661,8 +1668,30 @@ function App() {
       </Modal>
 
       <Modal
-        title="Determine Quantum Algorithm (2/2)"
+        title="Determine Quantum Algorithm (2/3)"
         open={quantumAlgorithmModalStep === 2}
+        onClose={() => { reset(); }}
+        footer={
+          <div className="flex justify-end space-x-2">
+            <button className="btn btn-primary" onClick={() => { handleQuantumAlgorithmModalClose(); }}>Determine Quantum Algorithm</button>
+            <button className="btn btn-secondary" onClick={() => { setQuantumAlgorithmModalStep(0); }}>Cancel</button>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          <textarea
+            placeholder="Describe your problem..."
+            rows={4}
+            value={problemDescription}
+            onChange={handleChange}
+            className="w-full border border-gray-300 rounded px-3 py-2 resize-none"
+          />
+
+        </div>
+      </Modal>
+      <Modal
+        title="Determine Quantum Algorithm (3/3)"
+        open={quantumAlgorithmModalStep === 3}
         onClose={() => { reset(); }}
         footer={
           <div className="flex justify-end">
