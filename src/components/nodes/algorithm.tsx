@@ -7,7 +7,7 @@ import UncomputePort from "../utils/uncomputePort";
 import OutputPort from "../utils/outputPort";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { ancillaConstructColor, dirtyAncillaHandle, dirtyConstructColor, quantumConstructColor } from "@/constants";
+import { ancillaConstructColor, classicalConstructColor, dirtyAncillaHandle, dirtyConstructColor, quantumConstructColor } from "@/constants";
 import { findDuplicateOutputIdentifier, findDuplicateOutputIdentifiers, findDuplicateOutputIdentifiersInsideNode } from "../utils/utils";
 import { AlertCircle } from "lucide-react";
 
@@ -34,11 +34,16 @@ const selector = (state: {
 export const AlgorithmNode = memo((node: Node) => {
   const { data, selected } = node;
   console.log(selected)
-  console.log(data.numberInputs)
-  const numberInputs = data.numberInputs || 0;
-  const numberOutputs = data.numberOutputs || 0;
+  console.log(data.numberQuantumInputs)
+  const numberQuantumInputs = data.numberQuantumInputs || 0;
+  const numberQuantumOutputs = data.numberQuantumOutputs || 0;
 
-  const handleCount = Math.max(numberInputs, numberOutputs);
+  const numberClassicalInputs = data.numberClassicalInputs || 0;
+  const numberClassicalOutputs = data.numberClassicalOutputs || 0;
+
+
+
+  const handleCount = Math.max(numberQuantumInputs, numberQuantumOutputs);
   console.log(handleCount)
 
   const handleGap = 40;
@@ -132,7 +137,7 @@ export const AlgorithmNode = memo((node: Node) => {
   const baseHeight = !ancillaMode ? 50 : 200;
   const extraHeightPerVariable = 30;
   const dynamicHeight =
-    baseHeight + 2 * 40 + 3 * 50 + (numberInputs * 50) + numberOutputs * extraHeightPerVariable;
+    baseHeight + 2 * 40 + 3 * 50 + (numberQuantumInputs * 50) + numberQuantumOutputs * extraHeightPerVariable;
 
   // Ensure identifiers exist and match the number of outputs
   if (!data.identifiers) {
@@ -140,19 +145,19 @@ export const AlgorithmNode = memo((node: Node) => {
   }
 
   // Add missing identifiers
-  while (data.identifiers.length < numberOutputs) {
+  while (data.identifiers.length < numberQuantumOutputs) {
     data.identifiers.push("q" + Math.floor(100000 + Math.random() * 900000).toString());
   }
 
   // Remove extra identifiers
-  if (data.identifiers.length > numberOutputs) {
-    const removedIdentifiers = data.identifiers.slice(numberOutputs);
+  if (data.identifiers.length > numberQuantumOutputs) {
+    const removedIdentifiers = data.identifiers.slice(numberQuantumOutputs);
     console.log(removedIdentifiers);
 
     // Clean up edges with sourceHandles related to removed identifiers
     const edgesToRemove = edges.filter((edge) =>
       !removedIdentifiers.some((id, index) =>
-        edge.sourceHandle === `quantumHandleGateOutput${numberOutputs + index + 1}${node.id}`
+        edge.sourceHandle === `quantumHandleGateOutput${numberQuantumOutputs + index + 1}${node.id}`
       )
     );
     console.log("EDGES")
@@ -163,7 +168,7 @@ export const AlgorithmNode = memo((node: Node) => {
       setNewEdges(edgesToRemove);
     }
 
-    data.identifiers = data.identifiers.slice(0, numberOutputs);
+    data.identifiers = data.identifiers.slice(0, numberQuantumOutputs);
   }
 
   console.log(nodeHeight)
@@ -179,7 +184,7 @@ export const AlgorithmNode = memo((node: Node) => {
       transition={{ duration: 0.3, ease: "easeInOut" }}
     >
       <div className="grand-parent">
-          
+
         <div
           className={cn(
             "w-[320px] bg-white border border-solid border-gray-700 shadow-md",
@@ -207,9 +212,17 @@ export const AlgorithmNode = memo((node: Node) => {
               />
             )}
             <div
-              className="w-full bg-blue-300 py-1 px-2 flex items-center"
+              className={`w-full py-1 px-2 flex items-center ${numberQuantumOutputs.length > 0 && numberClassicalOutputs.length > 0
+                  ? "bg-gradient-to-r from-blue-300 to-orange-300"
+                  : numberQuantumOutputs.length > 0
+                    ? "bg-blue-300"
+                    : numberClassicalOutputs.length > 0
+                      ? "bg-orange-300"
+                      : "bg-blue-300"
+                }`}
               style={{ height: "inherit" }}
             >
+
               <img
                 src="algorithmIcon.png"
                 alt="icon"
@@ -245,9 +258,33 @@ export const AlgorithmNode = memo((node: Node) => {
             <div className="relative flex flex-col overflow-visible">
               <div className="custom-node-port-in">
                 <div className="relative flex flex-col overflow-visible">
-                  {Array.from({ length: numberInputs }).map((_, index) => (
+                  {Array.from({ length: numberClassicalInputs }).map((_, index) => (
                     <div
-                      key={`quantum-input-${index}`}
+                      key={`quantum-input-${index }`}
+                      className="relative p-2 mb-1"
+                      style={{
+                        backgroundColor: classicalConstructColor,
+                        width: "120px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "flex-start",
+                      }}
+                    >
+                      <Handle
+                        type="target"
+                        id={`quantumHandleOperationInput${index}${node.id}`}
+                        position={Position.Left}
+                        className="z-10 classical-circle-port-alg !bg-orange-300 !border-black -left-[8px]"
+                        style={{ top: "50%", transform: "translateY(-50%)" }}
+                      />
+                      <span className="text-black text-sm text-center w-full">
+                        {node.data.inputs?.[index]?.outputIdentifier || `Input ${index + 1}`}
+                      </span>
+                    </div>
+                  ))}
+                  {Array.from({ length: numberQuantumInputs }).map((_, index) => (
+                    <div
+                      key={`quantum-input-${index + numberClassicalInputs}`}
                       className="relative p-2 mb-1"
                       style={{
                         backgroundColor: quantumConstructColor,
@@ -259,13 +296,13 @@ export const AlgorithmNode = memo((node: Node) => {
                     >
                       <Handle
                         type="target"
-                        id={`quantumHandleOperationInput${index}${node.id}`}
+                        id={`quantumHandleOperationInput${index + numberClassicalInputs}${node.id}`}
                         position={Position.Left}
                         className="z-10 circle-port-op !bg-blue-300 !border-black -left-[8px]"
                         style={{ top: "50%", transform: "translateY(-50%)" }}
                       />
                       <span className="text-black text-sm text-center w-full">
-                        {node.data.inputs?.[index]?.outputIdentifier || `Input ${index + 1}`}
+                        {node.data.inputs?.[index + numberClassicalInputs]?.outputIdentifier || `Input ${index + numberClassicalInputs + 1}`}
                       </span>
                     </div>
                   ))}
@@ -342,12 +379,12 @@ export const AlgorithmNode = memo((node: Node) => {
 
 
           <div className="custom-node-port-out">
-            {Array.from({ length: numberOutputs }).map((_, index) => (
+            {Array.from({ length: numberClassicalOutputs }).map((_, index) => (
               <OutputPort
                 key={`output-port-${index}`}
                 node={node}
                 index={index}
-                type={"quantum"}
+                type={"classical"}
                 nodes={nodes}
                 outputs={outputs}
                 setOutputs={setOutputs}
@@ -365,14 +402,37 @@ export const AlgorithmNode = memo((node: Node) => {
                 active={true}
               />
             ))}
+            {Array.from({ length: numberQuantumOutputs }).map((_, index) => (
+              <OutputPort
+                key={`output-port-${index + numberClassicalOutputs}`}
+                node={node}
+                index={index + numberClassicalOutputs}
+                type={"quantum"}
+                nodes={nodes}
+                outputs={outputs}
+                setOutputs={setOutputs}
+                edges={edges}
+                outputIdentifierError={outputIdentifierErrors[index + numberClassicalOutputs]}
+                updateNodeValue={updateNodeValue}
+                setOutputIdentifierError={(error) =>
+                  setOutputIdentifierErrors(prev => ({ ...prev, [index + numberClassicalOutputs]: error }))
+                }
+                sizeError={sizeErrors[index + numberClassicalOutputs]}
+                setSizeError={(error) =>
+                  setSizeErrors((prev) => ({ ...prev, [index + numberClassicalOutputs]: error }))
+                }
+                setSelectedNode={setSelectedNode}
+                active={true}
+              />
+            ))}
 
           </div>
 
           {ancillaMode && (
             <div>
-              <AncillaPort node={node} edges={edges} dirty={false} index={numberOutputs} />
-              <AncillaPort node={node} edges={edges} dirty={true} index={numberOutputs + 1} />
-              <UncomputePort node={node} edges={edges} index={numberOutputs + 2} />
+              <AncillaPort node={node} edges={edges} dirty={false} index={numberQuantumOutputs} />
+              <AncillaPort node={node} edges={edges} dirty={true} index={numberQuantumOutputs + 1} />
+              <UncomputePort node={node} edges={edges} index={numberQuantumOutputs + 2} />
             </div>
           )}
         </div>

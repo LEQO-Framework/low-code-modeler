@@ -102,7 +102,7 @@ export const TextPanel = () => {
       console.log(field)
       if (field === "gamma" || field === "lambda" || field === "theta" || field === "phi" || field === "parameterType" || field === "quantumStateName" || field === "encodingType" || field === "implementationType" || field === "size"
         || field === "operator" || field === "minMaxOperator" || field === "uncomputeImplementationType" || field === "implementation" || field === "fileName" ||
-        field === "uncomputeImplementation" || field === "parameter" || field === "nodeType" || field === "basis" || field === "indices" || field === "optimizer") {
+        field === "uncomputeImplementation" || field === "parameter" || field === "nodeType" || field === "basis" || field === "indices" || field === "optimizer" || field === "numberQuantumInputs") {
         selectedNode.data[field] = value;
         updateNodeValue(selectedNode.id, field, value);
       }
@@ -1080,43 +1080,84 @@ export const TextPanel = () => {
           <div className="p-2 mt-3">
             <label
               className="block text-sm font-medium text-start text-gray-700"
-              htmlFor="numberInputs"
+              htmlFor="numberClassicalInputs"
             >
-              Number of Inputs
+              Number of Classical Inputs
             </label>
             <div className="mt-1">
               <input
                 type="text"
-                id="numberInputs"
-                name="numberInputs"
-                value={selectedNode.data.numberInputs || ""
+                id="numberClassicalInputs"
+                name="numberClassicalInputs"
+                value={selectedNode.data.numberClassicalInputs || ""
                 }
                 onChange={(e) =>
-                  handleNumberChange("numberInputs", e.target.value)
+                  handleNumberChange("numberClassicalInputs", e.target.value)
                 }
                 className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                placeholder="Enter numberInputs"
+                placeholder="Enter number of classical inputs"
               />
             </div>
 
             <label
               className="block text-sm font-medium text-start text-gray-700"
-              htmlFor="numberOutputs"
+              htmlFor="numberQuantumInputs"
             >
-              Number of Outputs
+              Number of Quantum Inputs
             </label>
             <div className="mt-1">
               <input
                 type="text"
-                id="numberOutputs"
-                name="numberOutputs"
-                value={selectedNode.data.numberOutputs || ""
+                id="numberQuantumInputs"
+                name="numberQuantumInputs"
+                value={selectedNode.data.numberQuantumInputs || ""
                 }
                 onChange={(e) =>
-                  handleNumberChange("numberOutputs", e.target.value)
+                  handleNumberChange("numberQuantumInputs", e.target.value)
                 }
                 className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                placeholder="Enter numberOutputs"
+                placeholder="Enter number of classical inputs"
+              />
+            </div>
+
+            <label
+              className="block text-sm font-medium text-start text-gray-700"
+              htmlFor="numberClassicalOutputs"
+            >
+              Number of Classical Outputs
+            </label>
+            <div className="mt-1">
+              <input
+                type="text"
+                id="numberClassicalOutputs"
+                name="numberClassicalOutputs"
+                value={selectedNode.data.numberClassicalOutputs || ""
+                }
+                onChange={(e) =>
+                  handleNumberChange("numberClassicalOutputs", e.target.value)
+                }
+                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
+                placeholder="Enter number of classical outputs"
+              />
+            </div>
+            <label
+              className="block text-sm font-medium text-start text-gray-700"
+              htmlFor="numberQuantumOutputs"
+            >
+              Number of Quantum Outputs
+            </label>
+            <div className="mt-1">
+              <input
+                type="text"
+                id="numberQuantumOutputs"
+                name="numberQuantumOutputs"
+                value={selectedNode.data.numberQuantumOutputs || ""
+                }
+                onChange={(e) =>
+                  handleNumberChange("numberQuantumOutputs", e.target.value)
+                }
+                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
+                placeholder="Enter number of quantum outputs"
               />
             </div>
             <label
