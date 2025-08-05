@@ -675,8 +675,8 @@ h1 {
   overflow-wrap: break-word;
 }
 
-.react-flow__node {
-  z-index: -1 !important;
+.react-flow__node-controlStructureNode {
+  z-index: -100 !important;
 }
 
 .custom-shape {

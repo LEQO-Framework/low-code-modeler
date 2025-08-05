@@ -260,7 +260,7 @@ export const AlgorithmNode = memo((node: Node) => {
                 <div className="relative flex flex-col overflow-visible">
                   {Array.from({ length: numberClassicalInputs }).map((_, index) => (
                     <div
-                      key={`quantum-input-${index }`}
+                      key={`classical-input-${index }`}
                       className="relative p-2 mb-1"
                       style={{
                         backgroundColor: classicalConstructColor,
@@ -272,7 +272,7 @@ export const AlgorithmNode = memo((node: Node) => {
                     >
                       <Handle
                         type="target"
-                        id={`quantumHandleOperationInput${index}${node.id}`}
+                        id={`classicalHandleOperationInput${index}${node.id}`}
                         position={Position.Left}
                         className="z-10 classical-circle-port-alg !bg-orange-300 !border-black -left-[8px]"
                         style={{ top: "50%", transform: "translateY(-50%)" }}
