@@ -73,7 +73,7 @@ export const AlgorithmNode = memo((node: Node) => {
   useEffect(() => {
     updateNodeInternals(node.id);
     setSelectedNode(node);
-  }, [node]);
+  }, [ancillaMode]);
 
 
   const isAncillaConnected = edges.some(
