@@ -16,7 +16,7 @@ import ReactFlow, {
 import "reactflow/dist/style.css";
 import { CustomPanel, Palette } from "./components";
 import Toolbar from "./components/toolbar";
-import { nodesConfig } from "./config/site";
+import { nodesConfig, tutorial } from "./config/site";
 import useStore from "./config/store";
 import { useShallow } from "zustand/react/shallow";
 import { handleDragOver, handleOnDrop } from "./lib/utils";
@@ -27,6 +27,7 @@ import Modal from "./Modal";
 import './index.css';
 import { useStoreState } from "react-flow-renderer";
 import { useInternalNode } from "@xyflow/react";
+import { Placement } from 'react-joyride';
 import {
   BarChart,
   Bar,
@@ -39,6 +40,7 @@ import {
 import { startCompile } from "./backend";
 import { Button } from "antd";
 import { ancillaConstructColor, classicalConstructColor, ClassicalOperatorNode, controlFlowConstructColor, quantumConstructColor } from "./constants";
+import Joyride from 'react-joyride';
 
 
 
@@ -116,6 +118,7 @@ function App() {
   const [chartData, setChartData] = useState(null);
   const [progress, setProgress] = useState(0);
   const [jobId, setJobId] = useState(null);
+
 
   const togglePalette = () => {
     setIsPaletteOpen((prev) => !prev);
@@ -196,7 +199,40 @@ function App() {
   const [modalStep, setModalStep] = useState(0);
   const [loadingQunicorn, setLoadingQunicorn] = useState(true);
   const [statusQunicorn, setStatusQunicorn] = useState(null);
-  const [ancillaModelingOn, setAncillaModelingOn] = useState(true);
+  const [ancillaModelingOn, setAncillaModelingOn] = useState(false);
+
+  const [runTour, setRunTour] = useState(false);
+  const [joyrideStepId, setJoyRideStepId] = useState(0);
+  const joyrideSteps: {
+    target: string;
+    content: string;
+    placement?: Placement;
+  }[] = [
+      {
+        target: '.toolbar-container',
+        content: 'This is the toolbar where you can save, restore, or send your diagrams.',
+      },
+      {
+        target: '.palette-container',
+        content: 'This is the palette, where you can drag and drop blocks. Quantum blocks are depicted in blue and classical blocks are depicted in orange.',
+        placement: "right"
+      },
+      {
+        target: '.react-flow__pane',
+        content: 'This is the main diagram canvas.',
+        placement: "top-start"
+      },
+      {
+        target: '.grand-parent',
+        content: 'This is a state preparation block which requires one classical value and outputs a quantum state.',
+
+      },
+      {
+        target: '.currentPanel-container',
+        content: 'This is the properties panel where you can configure properties of blocks.',
+        placement: "left"
+      }
+    ];
 
   const handleClose = () => {
     if (modalStep < 3) {
@@ -320,7 +356,20 @@ function App() {
     }
   };
 
+  const startTour2 = () => {
+    setRunTour(true);
+    setAncillaMode(false);
+    console.log("load tutorial")
+    loadFlow(tutorial);
+    console.log("load toturial")
+  }
 
+  const startTour = () => {
+    setRunTour(true);
+    setAncillaMode(false);
+    console.log("load tutorial")
+    console.log("load toturial")
+  }
   const sendToQunicorn = async () => {
     setModalStep(1);
     setLoading(true);
@@ -331,7 +380,7 @@ function App() {
         "programs": [
           {
             //"quantumCircuit": "OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[2];\ncreg meas[2];\nh q[0];\ncx q[0],q[1];\nbarrier q[0],q[1];\nmeasure q[0] -> meas[0];\nmeasure q[1] -> meas[1];",
-             "quantumCircuit": openqasmCode,
+            "quantumCircuit": openqasmCode,
             //"quantumCircuit": "OPENQASM 2.0;include 'qelib1.inc';qreg q[6];creg c[6];gate oracle(q0, q1, q2, q3, q4, q5) {    x q0;    x q1;    x q2;    x q3;    x q4;    x q5;        h q5;    ccx q3, q4, q5;    cx q2, q3;    cx q1, q2;    cx q0, q1;    h q5;    x q0;    x q1;    x q2;    x q3;    x q4;    x q5;}gate diffusion(q0, q1, q2, q3, q4, q5) {    h q0;    h q1;    h q2;    h q3;    h q4;    h q5;        x q0;    x q1;    x q2;    x q3;    x q4;    x q5;        h q5;    ccx q3, q4, q5;    cx q2, q3;    cx q1, q2;    cx q0, q1;    h q5;        x q0;    x q1;    x q2;    x q3;    x q4;    x q5;        h q0;    h q1;    h q2;    h q3;    h q4;    h q5;}h q[0];h q[1];h q[2];h q[3];h q[4];h q[5];oracle(q[0], q[1], q[2], q[3], q[4], q[5]);diffusion(q[0], q[1], q[2], q[3], q[4], q[5]);oracle(q[0], q[1], q[2], q[3], q[4], q[5]);diffusion(q[0], q[1], q[2], q[3], q[4], q[5]);oracle(q[0], q[1], q[2], q[3], q[4], q[5]);diffusion(q[0], q[1], q[2], q[3], q[4], q[5]);oracle(q[0], q[1], q[2], q[3], q[4], q[5]);diffusion(q[0], q[1], q[2], q[3], q[4], q[5]);oracle(q[0], q[1], q[2], q[3], q[4], q[5]);diffusion(q[0], q[1], q[2], q[3], q[4], q[5]);oracle(q[0], q[1], q[2], q[3], q[4], q[5]);diffusion(q[0], q[1], q[2], q[3], q[4], q[5]);measure q[0] -> c[0];measure q[1] -> c[1];measure q[2] -> c[2];measure q[3] -> c[3];measure q[4] -> c[4];measure q[5] -> c[5];",
 
             "assemblerLanguage": "QASM2",
@@ -1022,6 +1071,37 @@ function App() {
 
   return (
     <ReactFlowProvider>
+      <Joyride
+        steps={joyrideSteps}
+        run={runTour}
+        continuous
+        showSkipButton
+        showProgress
+        styles={{
+          options: {
+            primaryColor: '#007bff',
+            zIndex: 10000,
+          },
+        }}
+        callback={(data) => {
+          const { status, index, type } = data;
+          console.log(index)
+          if (type === 'step:before' && index === 2) {
+            startTour2();
+
+          }
+          if (type === 'step:after' && index === 4) {
+            loadFlow(initialDiagram);
+          }
+
+
+          if (['finished', 'skipped'].includes(data.status)) {
+            setRunTour(false);
+            //loadFlow(initialDiagram);
+          }
+        }}
+      />
+
       <div className="toolbar-container">
         <Toolbar
           onSave={() => handleSaveClick(false)}
@@ -1032,6 +1112,7 @@ function App() {
           onLoadJson={handleLoadJson}
           sendToBackend={sendToBackend}
           sendToQunicorn={sendToQunicorn}
+          startTour={() => { startTour(); }}
         />
       </div>
       {nodes.length > 0 && <Modal title={"New Diagram"} open={isLoadJsonModalOpen} onClose={cancelLoadJson} footer={
@@ -1351,7 +1432,7 @@ function App() {
 
       </Modal>
 
-      <main className="flex flex-col lg:flex-row h-[calc(100vh_-_60px)]  overflow-hidden">
+      <main className="flex flex-col lg:flex-row h-[calc(100vh_-_60px)]">
         <div className="relative flex h-[calc(100vh_-_60px)]  border-gray-200 border">
           <div
             className={`transition-all duration-300 ${isPaletteOpen ? "w-[300px] lg:w-[350px]" : "w-0 overflow-hidden"}`}
@@ -1488,8 +1569,8 @@ function App() {
               pannable={true}
             />
 
-      <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
-     
+            <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
+
 
           </ReactFlow>
         </div>

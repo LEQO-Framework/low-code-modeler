@@ -34,7 +34,7 @@ export const CustomPanel = ({
   }
 
   return (
-    <div className="bg-gray-100 h-full border-gray-200 border text-black">
+    <div className="currentPanel-container bg-gray-100 h-full border-gray-200 border text-black">
       <CurrentPanel
         metadata={metadata}
         onUpdateMetadata={handleChange}

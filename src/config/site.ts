@@ -74,3 +74,45 @@ export const initialDiagram = {
     groupNode: GroupNode
   } as any,
 };
+
+export const tutorial = {
+  nodes: [
+    {
+      "id": "e2a719bf-516c-4601-84d1-de643b05ea02",
+      "type": "statePreparationNode",
+      "position": {
+        "x": 330,
+        "y": 300
+      },
+      "data": {
+        "label": "Encode Value",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q392328"
+        ],
+        "encodingType": "Amplitude Encoding",
+        "bound": 0,
+        "size": "",
+        "outputIdentifier": ""
+      },
+      "width": 320,
+      "height": 373,
+      "positionAbsolute": {
+        "x": 330,
+        "y": 300
+      }
+    }
+  ],
+  edges: [],
+  viewport: {
+    "x": 176.5,
+    "y": 40,
+    "zoom": 1
+  }
+
+}
