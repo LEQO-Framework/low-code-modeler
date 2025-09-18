@@ -50,6 +50,9 @@ export const NodeTypes = [
   GroupNode
 ]
 
+export const quantumLabel = "Quantum ";
+
+export const classicalLabel = "Classical ";
 export const arithmeticOperatorLabel = "Arithmetic Operator";
 export const bitwiseOperatorLabel = "Bitwise Operator";
 export const minMaxOperatorLabel = "Min & Max Operator";
