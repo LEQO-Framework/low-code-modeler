@@ -129,19 +129,19 @@ export const OperationNode = memo((node: Node) => {
   const dynamicHeight = baseHeight ;
 
   const iconMap = {
-    "Arithmetic Operator": 'arithmeticIcon.png',
-    "Bitwise Operator": 'bitwiseIcon.png',
-    "Min & Max Operator": 'minMaxIcon.png',
-    "Comparison Operator": 'comparisonIcon.png',
+    "Quantum Arithmetic Operator": 'arithmeticIcon.png',
+    "Quantum Bitwise Operator": 'bitwiseIcon.png',
+    "Quantum Min & Max Operator": 'minMaxIcon.png',
+    "Quantum Comparison Operator": 'comparisonIcon.png',
   };
   
   const label = data.label;
   const iconSrc = iconMap[label];
   const iconSizeMap = {
-    "Arithmetic Operator": { width: 45, height: 45 },
-    "Bitwise Operator": { width: 45, height: 45 },
-    "Min & Max Operator": { width: 45, height: 45 },
-    "Comparison Operator": { width: 56, height: 56 },
+    "Quantum Arithmetic Operator": { width: 45, height: 45 },
+    "Quantum Bitwise Operator": { width: 45, height: 45 },
+    "Quantum Min & Max Operator": { width: 45, height: 45 },
+    "Quantum Comparison Operator": { width: 56, height: 56 },
   };
 
   return (

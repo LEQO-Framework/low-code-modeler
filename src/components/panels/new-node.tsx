@@ -38,13 +38,11 @@ export const AddNodePanel = () => {
     );
   };
 
-  const allNodes = Object.values(categories).flatMap((subcategories) => {
-    if (Array.isArray(subcategories)) {
-      // categories like controlStructureNodes and customOperators
-      return subcategories;
+  const allNodes = Object.values(categories).flatMap(({ content }) => {
+    if (Array.isArray(content)) {
+      return content;
     } else {
-      // categories that are objects containing groups
-      return Object.values(subcategories).flatMap((group) =>
+      return Object.values(content).flatMap((group) =>
         Array.isArray(group)
           ? group
           : Object.values(group).flat()
@@ -54,13 +52,12 @@ export const AddNodePanel = () => {
 
 
   const filteredNodes = searchQuery
-    ? allNodes.filter((node: Node) => {
+  ? allNodes.filter((node: Node) => {
       console.log(node);
-      return node.label.toLowerCase().startsWith(searchQuery.toLowerCase()) &&
+      return node.label.toLowerCase().includes(searchQuery.toLowerCase()) &&
         !(!ancillaMode && node.type === "ancillaNode")
-    }
-    )
-    : [];
+    })
+  : [];
 
   const renderNodes = (nodeGroup: any): React.ReactNode => {
     if (Array.isArray(nodeGroup)) {
@@ -84,10 +81,10 @@ export const AddNodePanel = () => {
                     }
                     alt={typeof node.label === "string" ? node.label : ""}
                     className={`object-contain ${node.type === consts.GateNode
-                        ? "w-[120px] h-[140px]"
-                        : node.type === consts.SplitterNode || node.type === consts.MergerNode
-                          ? "w-[190px] h-[190px]"
-                          : "w-70 h-70"
+                      ? "w-[120px] h-[140px]"
+                      : node.type === consts.SplitterNode || node.type === consts.MergerNode
+                        ? "w-[190px] h-[190px]"
+                        : "w-70 h-70"
                       }`}
                   />
                 ) : (
@@ -112,7 +109,7 @@ export const AddNodePanel = () => {
   };
 
   return (
-    <div className="h-[calc(100vh_-_60px)] w-full bg-gray-100 overflow-hidden">
+    <div className="palette-container h-[calc(100vh_-_60px)] w-full bg-gray-100 overflow-hidden">
       <aside className="flex flex-col w-full h-full overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
         <input
           type="text"
@@ -124,31 +121,35 @@ export const AddNodePanel = () => {
 
         {searchQuery && (
           <div className="mb-4">
-            {filteredNodes.length > 0 ? (
-              <div className="space-y-2">
-                {filteredNodes.map((node: Node) => (
-                  <div
-                    key={node.label}
-                    className="border border-gray-300 bg-gray-50 text-black-700 hover:border-gray-400 hover:bg-gray-100 py-2 px-3 rounded-md cursor-pointer flex flex-col items-center gap-2 transition-colors"
-                    onDragStart={(event) => onDragStart(event, node)}
-                    draggable
-                  >
-                    {node.icon ? (
-                      <img src={node.icon} alt={node.label} className="w-70 h-70 object-contain" />
-                    ) : (
-                      <span className="font-semibold">{node.label}</span>
-                    )}
-                  </div>
-                ))}
+            {filteredNodes.map((node: Node) => (
+              <div
+                key={node.label}
+                className="border border-gray-300 bg-gray-50 text-black-700 hover:border-gray-400 hover:bg-gray-100 py-2 px-3 rounded-md cursor-pointer flex flex-col items-center gap-2 transition-colors"
+                onDragStart={(event) => onDragStart(event, node)}
+                draggable
+              >
+                {node.icon ? (
+                  <img
+                    src={
+                      Array.isArray(node.icon)
+                        ? node.icon[ancillaMode ? 1 : 0]
+                        : node.icon
+                    }
+                    alt={node.label}
+                    className="w-70 h-70 object-contain"
+                  />
+                ) : (
+                  <span className="font-semibold">{node.label}</span>
+                )}
               </div>
-            ) : (
-              <p className="text-gray-500">No matching nodes found.</p>
-            )}
+            ))}
+
           </div>
         )}
 
         <nav className="space-y-4">
-          {Object.entries(categories).map(([category, content]) => (
+          {Object.entries(categories).map(([category, { content, description }]) => (
+
             <div key={category}>
               <button
                 className={`w-full text-left py-2 px-4 font-semibold text-black-700 border-b ${activeCategory === category ? "bg-gray-100 text-primary" : "hover:bg-gray-300"
@@ -165,6 +166,9 @@ export const AddNodePanel = () => {
                   )}
                   <span>{category}</span>
                 </div>
+                {description && (
+                  <div className="text-sm text-gray-600 mt-1 ml-11">{description}</div>
+                )}
               </button>
 
               {activeCategory === category && (
