@@ -40,6 +40,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
         className="h-8 w-20"
       />
       <span className="font-semibold text-lg mt-1">Quantum Low-Code Modeler</span>
+      <div className="ml-[15px]">
         <Button size="sm" onClick={onLoadJson} title="Open a new diagram">
           <FilePlus className="w-4 h-4 mr-2" /> New Diagram
         </Button>
@@ -65,6 +66,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
           <img src="/qunicorn.jfif" className="w-5 h-5 mr-2" />
           Send to Qunicorn
         </Button>
+      </div>
       </div>
     </div>
   );
