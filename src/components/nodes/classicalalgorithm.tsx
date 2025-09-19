@@ -71,7 +71,7 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
 
   useEffect(() => {
     updateNodeInternals(node.id);
-  }, [node]);
+  }, [edges]);
 
     useEffect(() => {
     const identifier = node.data.outputIdentifier;

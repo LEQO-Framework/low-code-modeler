@@ -78,13 +78,13 @@ export const ClassicalOperationNode = memo((node: Node) => {
   useEffect(() => {
     updateNodeInternals(node.id);
     if (node.data.operator === undefined) {
-      if (node.data.label === consts.arithmeticOperatorLabel) {
+      if (node.data.label === consts.classicalLabel + consts.arithmeticOperatorLabel) {
         updateNodeValue(node.id, "operator", "+");
       }
-      else if (node.data.label === consts.bitwiseOperatorLabel) {
+      else if (node.data.label === consts.classicalLabel + consts.bitwiseOperatorLabel) {
         updateNodeValue(node.id, "operator", "OR");
       }
-      if (node.data.label === consts.comparisonOperatorLabel) {
+      if (node.data.label === consts.classicalLabel + consts.comparisonOperatorLabel) {
         updateNodeValue(node.id, "operator", "<");
       }
       else { updateNodeValue(node.id, "operator", "min"); }
@@ -98,18 +98,18 @@ export const ClassicalOperationNode = memo((node: Node) => {
   const dynamicHeight = baseHeight + (inputs.length + outputs.length) * extraHeightPerVariable;
 
   const iconMap = {
-    "Arithmetic Operator": 'classicalArithmeticIcon.png',
-    "Bitwise Operator": 'classicalBitwiseIcon.png',
-    "Min & Max Operator": 'classicalMinMaxIcon.png',
-    "Comparison Operator": 'classicalComparisonIcon.png',
+    "Classical Arithmetic Operator": 'classicalArithmeticIcon.png',
+    "Classical Bitwise Operator": 'classicalBitwiseIcon.png',
+    "Classical Min & Max Operator": 'classicalMinMaxIcon.png',
+    "Classical Comparison Operator": 'classicalComparisonIcon.png',
   };
   const label = data.label;
   const iconSrc = iconMap[label];
     const iconSizeMap = {
-    "Arithmetic Operator": { width: 45, height: 45 },
-    "Bitwise Operator": { width: 45, height: 45 },
-    "Min & Max Operator": { width: 45, height: 45 },
-    "Comparison Operator": { width: 56, height: 56 },
+    "Classical Arithmetic Operator": { width: 45, height: 45 },
+    "Classical Bitwise Operator": { width: 45, height: 45 },
+    "Classical Min & Max Operator": { width: 45, height: 45 },
+    "Classical Comparison Operator": { width: 56, height: 56 },
   };
 
   return (
@@ -142,7 +142,7 @@ export const ClassicalOperationNode = memo((node: Node) => {
                 );
               })()}
               <div className="h-full w-[1px] bg-black mx-2" />
-              <span className="font-semibold leading-none" style={{ paddingLeft: '15px' }}>{data.label}</span>
+              <span className="font-semibold leading-none" style={{ paddingLeft: '15px' }}>{data.label.split(consts.classicalLabel)[1]}</span>
             </div>
           </div>
 
@@ -153,7 +153,7 @@ export const ClassicalOperationNode = memo((node: Node) => {
               value={node.data.operator || operation}
               onChange={(e) => handleYChange(e, "operator")}
             >
-              {(node.data.label === "Arithmetic Operator") && (
+              {(node.data.label === "Classical Arithmetic Operator") && (
                 <>
                   <option value="+">+</option>
                   <option value="-">-</option>
@@ -163,7 +163,7 @@ export const ClassicalOperationNode = memo((node: Node) => {
                 </>
               )}
 
-              {(node.data.label === "Bitwise Operator") && (
+              {(node.data.label === "Classical Bitwise Operator") && (
                 <>
                   <option value="|">OR</option>
                   <option value="&">AND</option>
@@ -172,7 +172,7 @@ export const ClassicalOperationNode = memo((node: Node) => {
                 </>
               )}
 
-              {(node.data.label === "Comparison Operator") && (
+              {(node.data.label === "Classical Comparison Operator") && (
                 <>
                   <option value="<">&lt;</option>
                   <option value=">">&gt;</option>
@@ -183,7 +183,7 @@ export const ClassicalOperationNode = memo((node: Node) => {
                 </>
               )}
 
-              {(node.data.label === "Min & Max Operator") && (
+              {(node.data.label === "Classical Min & Max Operator") && (
                 <>
                   <option value="min">Min</option>
                   <option value="max">Max</option>
@@ -215,7 +215,7 @@ export const ClassicalOperationNode = memo((node: Node) => {
                 />
                 <span className="text-black text-sm text-center w-full">{node.data.inputs[0]?.outputIdentifier || "Input 1"}</span>
               </div>
-               {node.data.label !== consts.minMaxOperatorLabel && (
+               {node.data.label !== consts.classicalLabel + consts.minMaxOperatorLabel && (
               <div
                 className="relative p-2 mb-1"
                 style={{
