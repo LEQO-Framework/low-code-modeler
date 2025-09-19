@@ -94,10 +94,20 @@ function App() {
   const [qunicornEndpoint, setQunicornEndpoint] = useState(import.meta.env.VITE_QUNICORN);
   const [lowcodeBackendEndpoint, setLowcodeBackendEndpoint] = useState(import.meta.env.VITE_LOW_CODE_BACKEND);
 
-  const [activeTab, setActiveTab] = useState("endpoints");
+  const [patternAtlasApiEndpoint, setPatternAtlasApiEndpoint] = useState(import.meta.env.VITE_PATTERN_ATLAS_API);
+  const [patternAtlasUiEndpoint, setPatternAtlasUiEndpoint] = useState(import.meta.env.VITE_PATTERN_ATLAS_UI);
+  const [qcAtlasEndpoint, setQcAtlasEndpoint] = useState(import.meta.env.VITE_QC_ATLAS);
+  const [tempPatternAtlasApiEndpoint, setTempPatternAtlasApiEndpoint] = useState(patternAtlasApiEndpoint);
+  const [tempPatternAtlasUiEndpoint, setTempPatternAtlasUiEndpoint] = useState(patternAtlasUiEndpoint);
+  const [tempQcAtlasEndpoint, setTempQcAtlasEndpoint] = useState(qcAtlasEndpoint);
+
+  const [activeTab, setActiveTab] = useState("lowCodeEndpoints");
   const [tempNisqAnalyzerEndpoint, setTempNisqAnalyzerEndpoint] = useState(nisqAnalyzerEndpoint);
   const [tempQunicornEndpoint, setTempQunicornEndpoint] = useState(qunicornEndpoint);
   const [tempLowcodeBackendEndpoint, setTempLowcodeBackendEndpoint] = useState(lowcodeBackendEndpoint);
+
+
+
   const [tempGithubRepositoryOwner, setTempGithubRepositoryOwner] = useState("");
   const [tempGithubRepositoryName, setTempGithubRepositoryName] = useState("");
   const [tempGithubBranch, setTempGithubBranch] = useState("");
@@ -143,7 +153,9 @@ function App() {
     setLowcodeBackendEndpoint(tempLowcodeBackendEndpoint);
     setQunicornEndpoint(tempQunicornEndpoint);
     setIsConfigOpen(false);
-
+    setPatternAtlasApiEndpoint(tempPatternAtlasApiEndpoint);
+    setPatternAtlasUiEndpoint(tempPatternAtlasUiEndpoint);
+    setQcAtlasEndpoint(tempQcAtlasEndpoint);
   };
 
   const handleCancel = () => {
@@ -151,6 +163,9 @@ function App() {
     setTempQunicornEndpoint(qunicornEndpoint);
     setTempLowcodeBackendEndpoint(lowcodeBackendEndpoint);
     setIsConfigOpen(false);
+    setTempPatternAtlasApiEndpoint(patternAtlasApiEndpoint);
+    setTempPatternAtlasUiEndpoint(patternAtlasUiEndpoint);
+    setTempQcAtlasEndpoint(qcAtlasEndpoint);
   };
 
 
@@ -1203,11 +1218,18 @@ function App() {
           {/* Subtabs */}
           <div className="flex border-b mb-4">
             <button
-              className={`px-4 py-2 ${activeTab === "endpoints" ? "border-b-2 border-blue-500 font-semibold" : "text-gray-600"
+              className={`px-4 py-2 ${activeTab === "lowCodeEndpoints" ? "border-b-2 border-blue-500 font-semibold" : "text-gray-600"
                 }`}
-              onClick={() => setActiveTab("endpoints")}
+              onClick={() => setActiveTab("lowCodeEndpoints")}
             >
-              Endpoints
+              Low-Code Endpoints
+            </button>
+            <button
+              className={`px-4 py-2 ${activeTab === "patternEndpoints" ? "border-b-2 border-blue-500 font-semibold" : "text-gray-600"
+                }`}
+              onClick={() => setActiveTab("patternEndpoints")}
+            >
+              Pattern Endpoints
             </button>
             <button
               className={`px-4 py-2 ${activeTab === "github" ? "border-b-2 border-blue-500 font-semibold" : "text-gray-600"
@@ -1219,7 +1241,7 @@ function App() {
           </div>
 
           {/* Endpoints Tab */}
-          {activeTab === "endpoints" && (
+          {activeTab === "lowCodeEndpoints" && (
             <div>
               <h3 className="labels">NISQ Analyzer</h3>
               <table className="config-table">
@@ -1266,6 +1288,61 @@ function App() {
                         type="text"
                         value={tempLowcodeBackendEndpoint}
                         onChange={(event) => setTempLowcodeBackendEndpoint(event.target.value)}
+                      />
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {activeTab === "patternEndpoints" && (
+            <div>
+              <h3 className="labels">Pattern Atlas UI</h3>
+              <table className="config-table">
+                <tbody>
+                  <tr>
+                    <td align="right">Pattern Atlas UI Endpoint:</td>
+                    <td align="left">
+                      <input
+                        className="qwm-input"
+                        type="text"
+                        value={tempPatternAtlasUiEndpoint}
+                        onChange={(event) => setTempPatternAtlasUiEndpoint(event.target.value)}
+                      />
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <h3 className="labels">Pattern Atlas API</h3>
+              <table className="config-table">
+                <tbody>
+                  <tr>
+                    <td align="right">Pattern Atlas API Endpoint:</td>
+                    <td align="left">
+                      <input
+                        className="qwm-input"
+                        type="text"
+                        value={tempPatternAtlasApiEndpoint}
+                        onChange={(event) => setTempPatternAtlasApiEndpoint(event.target.value)}
+                      />
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <h3 className="labels">QC Atlas:</h3>
+              <table className="config-table">
+                <tbody>
+                  <tr>
+                    <td align="right">QC Atlas Endpoint:</td>
+                    <td align="left">
+                      <input
+                        className="qwm-input"
+                        type="text"
+                        value={tempQcAtlasEndpoint}
+                        onChange={(event) => setTempQcAtlasEndpoint(event.target.value)}
                       />
                     </td>
                   </tr>
