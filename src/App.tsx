@@ -239,6 +239,11 @@ function App() {
         placement: "top-start"
       },
       {
+        target: '.ancilla-button',
+        content: 'This button enables or disables ancilla modeling.',
+        placement: "right"
+      },
+      {
         target: '.grand-parent',
         content: 'This is a state preparation block which requires one classical value and outputs a quantum state.',
 
@@ -1112,11 +1117,11 @@ function App() {
         callback={(data) => {
           const { status, index, type } = data;
           console.log(index)
-          if (type === 'step:before' && index === 2) {
+          if (type === 'step:before' && index === 3) {
             startTour2();
 
           }
-          if (type === 'step:after' && index === 4) {
+          if (type === 'step:after' && index === 5) {
             loadFlow(initialDiagram);
           }
 
@@ -1644,7 +1649,7 @@ function App() {
             <Panel position="top-left" className="p-2">
               <button
                 onClick={() => { setAncillaModelingOn((prev) => !prev); setAncillaMode(!ancillaModelingOn) }}
-                className={`px-3 py-1 rounded text-white ${ancillaModelingOn ? "bg-blue-600" : "bg-gray-400"
+                className={`ancilla-button px-3 py-1 rounded text-white ${ancillaModelingOn ? "bg-blue-600" : "bg-gray-400"
                   }`}
               >
                 Ancilla Modeling: {ancillaModelingOn ? "On" : "Off"}
