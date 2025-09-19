@@ -59,7 +59,7 @@ type RFState = {
 const useStore = create<RFState>((set, get) => ({
   nodes: nodesConfig.initialNodes,
   edges: nodesConfig.initialEdges,
-  ancillaMode: true,
+  ancillaMode: false,
   selectedNode: null,
   history: [],
   historyIndex: -1,
