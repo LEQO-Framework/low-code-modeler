@@ -203,6 +203,7 @@ function App() {
 
   const [runTour, setRunTour] = useState(false);
   const [joyrideStepId, setJoyRideStepId] = useState(0);
+
   const joyrideSteps: {
     target: string;
     content: string;
@@ -234,6 +235,9 @@ function App() {
       }
     ];
 
+  const [isProcessingModalOpen, setProcessingModalOpen] = useState(false); 
+  // TODO: Change here to workflow
+  const [compilationTarget, setCompilationTarget] = useState("qasm");
   const handleClose = () => {
     if (modalStep < 3) {
       setModalStep(modalStep + 1);
@@ -256,9 +260,13 @@ function App() {
   };
 
 
-  const sendToBackend = async () => {
+  const prepareBackendRequest =  () => {
     setModalOpen(true);
+  } 
+  const sendToBackend = async () => {
     setLoading(true);
+    setModalOpen(false);
+    setProcessingModalOpen(true);
 
     try {
       const validMetadata = {
@@ -271,13 +279,13 @@ function App() {
       console.log(metadata);
 
       const flow = reactFlowInstance.toObject();
-      const flowWithMetadata = { metadata: validMetadata, ...flow };
 
       const response = await startCompile(
         lowcodeBackendEndpoint,
         metadata,
         reactFlowInstance.getNodes(),
-        reactFlowInstance.getEdges()
+        reactFlowInstance.getEdges(),
+        compilationTarget
       );
 
       const jsonData = await response.json();
@@ -343,6 +351,9 @@ function App() {
         headers: { "Content-Type": "application/json" },
       });
 
+      // TODO: change for workflow
+      // TODO: add modals for service deployment
+      // TODO: add QRMS upload
       const openqasmCode = await result.text();
       console.log("Received OpenQASM code:", openqasmCode);
 
@@ -1110,7 +1121,7 @@ function App() {
           onOpenConfig={handleOpenConfig}
           uploadDiagram={() => handleSaveClick(true)}
           onLoadJson={handleLoadJson}
-          sendToBackend={sendToBackend}
+          sendToBackend={prepareBackendRequest}
           sendToQunicorn={sendToQunicorn}
           startTour={() => { startTour(); }}
         />
@@ -1125,12 +1136,52 @@ function App() {
           <p>Are you sure you want to create a new model? This will overwrite the current flow.</p>
         </div>
       </Modal>}
-      <Modal title={"Send Request"} open={modalOpen} onClose={() => setModalOpen(false)}>
+      <Modal
+        title={"Send Request"}
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        footer={
+          <div className="flex justify-end space-x-2">
+            <button
+              className={`btn ${compilationTarget === "workflow" ? "btn-disabled opacity-50 cursor-not-allowed" : "btn-primary"}`}
+              onClick={sendToBackend}
+              disabled={compilationTarget === "workflow"}
+            >
+              Send
+            </button>
+          </div>
+        }  
+      >
+                <div className="space-y-4">
+          <div>
+            <label className="block mb-1 font-semibold">Compilation Target</label>
+            <select
+              className="select select-bordered w-full"
+              value={compilationTarget}
+              onChange={(e) => setCompilationTarget(e.target.value)}
+            >
+              <option value="qasm">QASM</option>
+              <option value="workflow">Workflow</option>
+            </select>
+          </div>
+
+          {compilationTarget === "workflow" && (
+            <p className="text-sm text-gray-500">Workflow compilation is not supported yet. Will come in the future.</p>
+          )}
+        </div>
+
+      </Modal>
+      <Modal
+        title={"Processing"}
+        open={isProcessingModalOpen}
+        onClose={() => setProcessingModalOpen(false)}
+      >
         <div>
           <h2>Processing</h2>
           {loading ? <p>Loading...</p> : <p>Status: {status || "Unknown"}</p>}
         </div>
       </Modal>
+  
       <Modal
         title={"Configuration"}
         open={isConfigOpen}

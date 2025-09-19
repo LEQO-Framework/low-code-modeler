@@ -10,7 +10,7 @@ type BackendNode = CompileRequest["nodes"][0];
 type BackendEdge = CompileRequest["edges"][0];
 export type StatusResult = components["schemas"]["StatusBody"];
 
-export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[], edges: Edge[]): Promise<Response> => {
+export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[], edges: Edge[], compilation_target: string): Promise<Response> => {
 
     return await fetch(new URL("/compile", baseUrl), {
         method: "POST",
@@ -21,7 +21,8 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                 ...metadata
             },
             nodes: [...nodes.filter(x => !x.parentNode).map(mapNode)],
-            edges: edges.filter(e => !isNestedEdge(e)).map(mapEdge)
+            edges: edges.filter(e => !isNestedEdge(e)).map(mapEdge),
+            compilation_target: compilation_target
         } satisfies CompileRequest),
     });
 
