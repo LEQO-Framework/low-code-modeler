@@ -97,9 +97,9 @@ export const OperationNode = memo((node: Node) => {
   useEffect(() => {
     if (!operatorInitialized && node.data.operator === undefined) {
       let defaultOperator = "+";
-      if (node.data.label === consts.bitwiseOperatorLabel) defaultOperator = "OR";
-      else if (node.data.label === consts.comparisonOperatorLabel) defaultOperator = "<";
-      else if (node.data.label !== consts.arithmeticOperatorLabel) defaultOperator = "min";
+      if (node.data.label === consts.quantumLabel +consts.bitwiseOperatorLabel) defaultOperator = "OR";
+      else if (node.data.label === consts.quantumLabel +consts.comparisonOperatorLabel) defaultOperator = "<";
+      else if (node.data.label !== consts.quantumLabel +consts.arithmeticOperatorLabel) defaultOperator = "min";
 
       updateNodeValue(node.id, "operator", defaultOperator);
       setOperatorInitialized(true);
@@ -216,7 +216,7 @@ export const OperationNode = memo((node: Node) => {
                 );
               })()}
               <div className="h-full w-[1px] bg-black mx-2" />
-              <span className="font-semibold leading-none" style={{ paddingLeft: '25px' }}>{data.label}</span>
+              <span className="font-semibold leading-none" style={{ paddingLeft: '25px' }}>{data.label.split(consts.quantumLabel)[1]}</span>
             </div>
           </div>
 
@@ -227,7 +227,7 @@ export const OperationNode = memo((node: Node) => {
               value={node.data.operator || operation}
               onChange={(e) => handleYChange(e, "operator")}
             >
-              {(node.data.label === "Arithmetic Operator") && (
+              {(node.data.label === consts.quantumLabel + "Arithmetic Operator") && (
                 <>
                   <option value="+">+</option>
                   <option value="-">-</option>
@@ -237,7 +237,7 @@ export const OperationNode = memo((node: Node) => {
                 </>
               )}
 
-              {(node.data.label === "Bitwise Operator") && (
+              {(node.data.label === consts.quantumLabel +"Bitwise Operator") && (
                 <>
                   <option value="|">OR</option>
                   <option value="&">AND</option>
@@ -246,7 +246,7 @@ export const OperationNode = memo((node: Node) => {
                 </>
               )}
 
-              {(node.data.label === "Comparison Operator") && (
+              {(node.data.label === consts.quantumLabel +"Comparison Operator") && (
                 <>
                   <option value="<">&lt;</option>
                   <option value=">">&gt;</option>
@@ -257,7 +257,7 @@ export const OperationNode = memo((node: Node) => {
                 </>
               )}
 
-              {(node.data.label === "Min & Max Operator") && (
+              {(node.data.label === consts.quantumLabel +"Min & Max Operator") && (
                 <>
                   <option value="min">Min</option>
                   <option value="max">Max</option>
@@ -287,7 +287,7 @@ export const OperationNode = memo((node: Node) => {
                 />
                 <span className="text-black text-sm text-center w-full">{node.data.inputs[0]?.outputIdentifier || "Input 1"}</span>
               </div>
-              {node.data.label !== consts.minMaxOperatorLabel && (
+              {node.data.label !== consts.quantumLabel + consts.minMaxOperatorLabel && (
               <div
                 className="relative p-2 mb-1"
                 style={{
@@ -374,7 +374,7 @@ export const OperationNode = memo((node: Node) => {
           </div>
 
           <div className="custom-node-port-out">
-            {(node.data.label === "Arithmetic Operator" || node.data.label === "Bitwise Operator") && (
+            {(node.data.label === consts.quantumLabel +"Arithmetic Operator" || node.data.label === consts.quantumLabel + "Bitwise Operator") && (
               <>
                 <OutputPort
                   node={node}
@@ -394,7 +394,7 @@ export const OperationNode = memo((node: Node) => {
                 />
               </>
             )}
-            {(node.data.label === "Comparison Operator" || node.data.label === "Min & Max Operator") && (
+            {(node.data.label === consts.quantumLabel +"Comparison Operator" || node.data.label === consts.quantumLabel + "Min & Max Operator") && (
               <>
                 <OutputPort
                   node={node}
