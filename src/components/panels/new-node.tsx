@@ -71,6 +71,7 @@ export const AddNodePanel = () => {
                 className="group bg-gray-50 text-black-700 hover:border-gray-400 hover:bg-gray-100 py-2 px-3 rounded-md cursor-pointer flex flex-col items-center gap-2 transition-colors"
                 onDragStart={(event) => onDragStart(event, node)}
                 draggable
+                title={node.description || node.label}
               >
                 {node.icon ? (
                   <img
@@ -127,6 +128,7 @@ export const AddNodePanel = () => {
                 className="border border-gray-300 bg-gray-50 text-black-700 hover:border-gray-400 hover:bg-gray-100 py-2 px-3 rounded-md cursor-pointer flex flex-col items-center gap-2 transition-colors"
                 onDragStart={(event) => onDragStart(event, node)}
                 draggable
+                title={node.description || node.label}
               >
                 {node.icon ? (
                   <img
@@ -137,6 +139,7 @@ export const AddNodePanel = () => {
                     }
                     alt={node.label}
                     className="w-70 h-70 object-contain"
+                    
                   />
                 ) : (
                   <span className="font-semibold">{node.label}</span>
@@ -155,6 +158,7 @@ export const AddNodePanel = () => {
                 className={`w-full text-left py-2 px-4 font-semibold text-black-700 border-b ${activeCategory === category ? "bg-gray-100 text-primary" : "hover:bg-gray-300"
                   }`}
                 onClick={() => toggleCategory(category)}
+
               >
                 <div className="flex items-center gap-2">
                   {categoryIcons[category] && (
