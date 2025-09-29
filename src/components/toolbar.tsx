@@ -37,7 +37,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
   return (
     <div className="flex items-center justify-between bg-gray-100 p-4 border-b border-gray-300 h-[56px]">
       <div className="flex items-center">
-        <img src="/Logo.png" alt="Logo" className="h-8 w-20" />
+        <img src="Logo.png" alt="Logo" className="h-8 w-20" />
         <span className="font-semibold text-lg">Quantum Low-Code Modeler</span>
         <div className="ml-[15px] flex gap-2">
           <Button size="sm" onClick={onLoadJson} title="Open a new diagram">
