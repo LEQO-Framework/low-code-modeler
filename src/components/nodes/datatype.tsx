@@ -1,6 +1,6 @@
 import { memo, useEffect, useState } from "react";
 import { Handle, Position, Node, Edge } from "reactflow";
-import useStore from "@/config/store";
+import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
 import { findDuplicateOutputIdentifiers, isUniqueIdentifier } from "../utils/utils";
 import { AlertCircle } from "lucide-react";

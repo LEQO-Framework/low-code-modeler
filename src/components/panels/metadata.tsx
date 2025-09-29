@@ -1,4 +1,4 @@
-import useStore from "@/config/store";
+import { useStore } from "@/config/store";
 import { ArrowLeft } from "lucide-react";
 import { Node } from "reactflow";
 import { shallow } from "zustand/shallow";

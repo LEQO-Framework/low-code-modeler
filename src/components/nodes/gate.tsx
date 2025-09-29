@@ -1,6 +1,6 @@
 import { memo, useEffect } from "react";
 import { Handle, Position, Node, Edge } from "reactflow";
-import useStore from "@/config/store";
+import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
 
 const selector = (state: {

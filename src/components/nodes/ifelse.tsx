@@ -1,6 +1,6 @@
 import { memo, useState, useEffect } from "react";
 import { Handle, Position, Node, Edge, useUpdateNodeInternals, NodeResizer } from "reactflow";
-import useStore from "@/config/store";
+import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
 import { Input } from "antd";
 import { cn } from "@/lib/utils";

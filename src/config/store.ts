@@ -51,12 +51,14 @@ type RFState = {
   updateNodeLabel: (nodeId: string, nodeVal: string) => void;
   updateNodeValue: (nodeId: string, identifier, nodeVal: string) => void;
   setSelectedNode: (node: Node | null) => void;
+  updateParent: (nodeId: string, parentId: string, position: any) => void;
+  updateChildren: (nodeId: string, childIds: string[]) => void;
   undo: () => void;
   redo: () => void;
 };
 
 // Zustand store with undo/redo logic
-const useStore = create<RFState>((set, get) => ({
+export const useStore = create<RFState>((set, get) => ({
   nodes: nodesConfig.initialNodes,
   edges: nodesConfig.initialEdges,
   ancillaMode: false,
@@ -932,5 +934,3 @@ const useStore = create<RFState>((set, get) => ({
     console.log("Updated state after redo:", get());
   },
 }));
-
-export default useStore;

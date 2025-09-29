@@ -1,6 +1,6 @@
 import { memo, useEffect, useState } from "react";
 import { Handle, Position, Node, Edge, getConnectedEdges, useUpdateNodeInternals } from "reactflow";
-import useStore from "@/config/store";
+import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
 import AncillaPort from "../utils/ancillaPort";
 import UncomputePort from "../utils/uncomputePort";
