@@ -51,7 +51,7 @@ export const GateNode = memo((node: Node) => {
       <div className="w-[100px] h-[100px] border border-solid border-gray-700 shadow-md bg-blue-100 relative overflow-visible">
 
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center font-bold z-0 text-xl">
-          {data.label === "Qubit" ? (
+          {data.label === "Qubit Circuit" ? (
             "|0⟩"
           ) : data.label === "CNOT" ? (
             <img src="/CNOT.png" alt="CNOT gate" className="w-5 h-15" />
