@@ -1,7 +1,7 @@
 import { memo, useState, useRef, useEffect } from "react";
 import { Handle, Position, Node, Edge, useUpdateNodeInternals, NodeResizer } from "reactflow";
 import { motion } from "framer-motion";
-import useStore from "@/config/store";
+import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
 import { Button, Input } from "antd";
 import { cn } from "@/lib/utils";

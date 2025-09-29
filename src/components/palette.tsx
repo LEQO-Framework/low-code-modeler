@@ -1,7 +1,7 @@
 import React from "react";
 import { Node } from "reactflow";
 import { shallow } from "zustand/shallow";
-import useStore from "@/config/store";
+import { useStore } from "@/config/store";
 import { AddNodePanel } from "./panels";
 
 type PanelProps = {

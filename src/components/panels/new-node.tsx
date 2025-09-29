@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { categories, Node } from "./categories";
-import useStore from "@/config/store";
+import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
 import * as consts from "../../constants";
 

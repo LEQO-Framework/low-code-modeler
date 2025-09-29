@@ -1,4 +1,4 @@
-import useStore from "@/config/store";
+import { useStore } from "@/config/store";
 import { AlgorithmNode, ClassicalAlgorithmNode, parameterized_one_qubit, parameterized_two_qubit, multi_parameterized_two_qubit, OperatorNode } from "@/constants";
 import { ArrowLeft } from "lucide-react";
 import { useEffect, useState } from "react";

@@ -1,4 +1,4 @@
-import useStore from "@/config/store";
+import { useStore } from "@/config/store";
 import { cn } from "@/lib/utils";
 import { memo, useEffect, useState } from "react";
 import { Edge, Handle, Node, Position, getConnectedEdges, useUpdateNodeInternals } from "reactflow";

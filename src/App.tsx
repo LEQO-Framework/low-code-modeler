@@ -17,7 +17,7 @@ import "reactflow/dist/style.css";
 import { CustomPanel, Palette } from "./components";
 import Toolbar from "./components/toolbar";
 import { nodesConfig, tutorial } from "./config/site";
-import useStore from "./config/store";
+import { useStore } from "./config/store";
 import { useShallow } from "zustand/react/shallow";
 import { handleDragOver, handleOnDrop } from "./lib/utils";
 import useKeyBindings from "./hooks/useKeyBindings";
@@ -255,7 +255,7 @@ function App() {
       }
     ];
 
-  const [isProcessingModalOpen, setProcessingModalOpen] = useState(false); 
+  const [isProcessingModalOpen, setProcessingModalOpen] = useState(false);
   // TODO: Change here to workflow
   const [compilationTarget, setCompilationTarget] = useState("qasm");
   const handleClose = () => {
@@ -280,9 +280,9 @@ function App() {
   };
 
 
-  const prepareBackendRequest =  () => {
+  const prepareBackendRequest = () => {
     setModalOpen(true);
-  } 
+  }
   const sendToBackend = async () => {
     setLoading(true);
     setModalOpen(false);
@@ -317,7 +317,7 @@ function App() {
 
       // Polling function returns a Promise
       const pollStatus = () => {
-        return new Promise((resolve, reject) => {
+        return new Promise<void>((resolve, reject) => {
           let attempts = 0;
           const maxAttempts = 20;
           const delay = 10000;
@@ -1170,9 +1170,9 @@ function App() {
               Send
             </button>
           </div>
-        }  
+        }
       >
-                <div className="space-y-4">
+        <div className="space-y-4">
           <div>
             <label className="block mb-1 font-semibold">Compilation Target</label>
             <select
@@ -1201,7 +1201,7 @@ function App() {
           {loading ? <p>Loading...</p> : <p>Status: {status || "Unknown"}</p>}
         </div>
       </Modal>
-  
+
       <Modal
         title={"Configuration"}
         open={isConfigOpen}
