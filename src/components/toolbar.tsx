@@ -62,7 +62,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
             <Send className="w-4 h-4 mr-2" /> Send to Backend
           </Button>
           <Button size="sm" onClick={sendToQunicorn} title="Execute the current model">
-            <img src="/qunicorn.jfif" className="w-5 h-5 mr-2" />
+            <img src="qunicorn.jfif" className="w-5 h-5 mr-2" />
             Send to Qunicorn
           </Button>
           <Button size="sm" onClick={startTour} title="Start guided tour">
