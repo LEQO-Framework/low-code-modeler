@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import { findDuplicateOutputIdentifiersInsideNode, isUniqueIdentifier } from "../utils/utils";
 import { Node } from "reactflow";
 import { useEffect, useRef } from 'react';
+import { classicalConstructColor } from '@/constants';
 
 export default function OutputPort({
   node,
@@ -98,7 +99,7 @@ export default function OutputPort({
         className="flex flex-col items-end space-y-1 relative p-2"
         style={{
           backgroundColor: isClassical
-            ? 'rgba(210, 159, 105, 0.2)'
+            ? classicalConstructColor
             : isAncilla
               ? 'rgba(137, 218, 131, 0.2)'
               : 'rgba(105, 145, 210, 0.2)',
