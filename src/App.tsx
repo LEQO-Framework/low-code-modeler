@@ -7,11 +7,8 @@ import ReactFlow, {
   Node,
   ReactFlowProvider,
   MiniMap,
-  getOutgoers,
   getNodesBounds,
-  ConnectionMode,
   Panel,
-  MiniMapNodeProps,
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { CustomPanel, Palette } from "./components";
@@ -23,26 +20,16 @@ import { handleDragOver, handleOnDrop } from "./lib/utils";
 import useKeyBindings from "./hooks/useKeyBindings";
 import { toSvg } from "html-to-image";
 import { initialDiagram } from "./config/site";
-import Modal from "./Modal";
+import Modal, { NewDiagramModal } from "./Modal";
 import './index.css';
-import { useStoreState } from "react-flow-renderer";
-import { useInternalNode } from "@xyflow/react";
 import { Placement } from 'react-joyride';
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-  ResponsiveContainer,
-} from "recharts";
 import { startCompile } from "./backend";
-import { Button } from "antd";
 import { ancillaConstructColor, classicalConstructColor, ClassicalOperatorNode, controlFlowConstructColor, quantumConstructColor } from "./constants";
 import Joyride from 'react-joyride';
-
-
+import { ConfigModal } from "./components/modals/configModal";
+import { QunicornModal } from "./components/modals/qunicornModal";
+import { SendRequestModal } from "./components/modals/backendModal";
+import { Toast } from "./components/modals/toast";
 
 const selector = (state: {
   nodes: Node[];
@@ -127,6 +114,7 @@ function App() {
   const [isPaletteOpen, setIsPaletteOpen] = useState(true);
   const [chartData, setChartData] = useState(null);
   const [progress, setProgress] = useState(0);
+  const [executed, setAlreadyExecuted] = useState(false);
   const [jobId, setJobId] = useState(null);
 
 
@@ -140,7 +128,9 @@ function App() {
     setIsPanelOpen((prev) => !prev);
   };
   const handleLoadJson = () => {
-    setIsLoadJsonModalOpen(true);
+    if (nodes.length > 0) {
+      setIsLoadJsonModalOpen(true);
+    }
   };
 
   const confirmNewDiagram = () => {
@@ -148,15 +138,21 @@ function App() {
     loadFlow(initialDiagram);
   };
 
-  const handleSave = () => {
-    setNisqAnalyzerEndpoint(tempNisqAnalyzerEndpoint);
-    setLowcodeBackendEndpoint(tempLowcodeBackendEndpoint);
-    setQunicornEndpoint(tempQunicornEndpoint);
+  const handleSave = (newValues) => {
+    setTempNisqAnalyzerEndpoint(newValues.tempNisqAnalyzerEndpoint);
+    setTempQunicornEndpoint(newValues.tempQunicornEndpoint);
+    setTempLowcodeBackendEndpoint(newValues.tempLowcodeBackendEndpoint);
+    setTempPatternAtlasUiEndpoint(newValues.tempPatternAtlasUiEndpoint);
+    setTempPatternAtlasApiEndpoint(newValues.tempPatternAtlasApiEndpoint);
+    setTempQcAtlasEndpoint(newValues.tempQcAtlasEndpoint);
+    setTempGithubRepositoryOwner(newValues.tempGithubRepositoryOwner);
+    setTempGithubRepositoryName(newValues.tempGithubRepositoryName);
+    setTempGithubBranch(newValues.tempGithubBranch);
+    setTempGithubToken(newValues.tempGithubToken);
+
     setIsConfigOpen(false);
-    setPatternAtlasApiEndpoint(tempPatternAtlasApiEndpoint);
-    setPatternAtlasUiEndpoint(tempPatternAtlasUiEndpoint);
-    setQcAtlasEndpoint(tempQcAtlasEndpoint);
   };
+
 
   const handleCancel = () => {
     setTempNisqAnalyzerEndpoint(nisqAnalyzerEndpoint);
@@ -211,10 +207,16 @@ function App() {
   const [modalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("");
-  const [modalStep, setModalStep] = useState(0);
+  const [modalStep, setModalStep] = useState(1);
+  const [isQunicornOpen, setIsQunicornOpen] = useState(false);
   const [loadingQunicorn, setLoadingQunicorn] = useState(true);
   const [statusQunicorn, setStatusQunicorn] = useState(null);
   const [ancillaModelingOn, setAncillaModelingOn] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
+
+  const showToast = (message: string, type: "success" | "error" | "info") => {
+    setToast({ message, type });
+  };
 
   const [runTour, setRunTour] = useState(false);
   const [joyrideStepId, setJoyRideStepId] = useState(0);
@@ -256,27 +258,24 @@ function App() {
     ];
 
   const [isProcessingModalOpen, setProcessingModalOpen] = useState(false);
+
   // TODO: Change here to workflow
   const [compilationTarget, setCompilationTarget] = useState("qasm");
   const handleClose = () => {
-    if (modalStep < 3) {
-      setModalStep(modalStep + 1);
-    } else {
-
-      // reset all values
-      setModalStep(0);
-      setChartData(null);
-      setErrorMessage("");
-      setErrorJobMessage("");
-      setJobId(null);
-      setDeploymentId(null);
-      setProgress(0);
-      setSelectedDevice("");
-      setProvider("");
-      setNumShots(1024);
-      setAccessToken("");
-
-    }
+    // reset all values
+    setIsQunicornOpen(false);
+    setModalStep(1);
+    setChartData(null);
+    setErrorMessage("");
+    setErrorJobMessage("");
+    setJobId(null);
+    setDeploymentId(null);
+    setProgress(0);
+    setSelectedDevice("");
+    setProvider("");
+    setNumShots(1024);
+    setAccessToken("");
+    setAlreadyExecuted(false);
   };
 
 
@@ -401,10 +400,9 @@ function App() {
     console.log("load tutorial")
     console.log("load toturial")
   }
-  const sendToQunicorn = async () => {
-    setModalStep(1);
+  const handleDeploy = async () => {
+    setIsQunicornOpen(true);
     setLoading(true);
-
 
     try {
       let program = {
@@ -431,6 +429,7 @@ function App() {
       let data = await response.json();
       console.log(data["id"]);
       setDeploymentId(data["id"]);
+      setModalStep(2);
       //pollStatus(response["Location"]);
     } catch (error) {
       console.error("Error sending data:", error);
@@ -439,8 +438,7 @@ function App() {
   };
 
 
-  const sendToQunicorn2 = async () => {
-    setModalStep(2);
+  const handleCreateJob = async () => {
     setLoading(true);
 
     try {
@@ -468,16 +466,15 @@ function App() {
         setErrorJobMessage(data["message"]);
       } else {
         setJobId(data["self"]);
+        setModalStep(3);
       }
-      //handleClose();
-      //pollStatus(response["Location"]);
     } catch (error) {
       console.error("Error sending data:", error);
       setLoading(false);
     }
   };
 
-  const sendToQunicorn3 = async () => {
+  const handleJobExecute = async () => {
     setModalStep(3);
     setLoading(true);
     setProgress(0);
@@ -544,16 +541,21 @@ function App() {
         setProgress(0);
         return;
       }
-
-      setProgress(100);
-      console.log(getdata.results[1])
-      let counts = getdata.results[1].data;
-      console.log(counts)
-      const chartData = Object.entries(counts || {}).map(([key, value]) => ({
-        register: key,
-        value: Number(value) * 100,
-      }));
-      setChartData(chartData);
+      setTimeout(() => {
+        setProgress(50);
+      }, 1000);
+      setTimeout(() => {
+        setProgress(100);
+        setAlreadyExecuted(true);
+        console.log(getdata.results[1])
+        let counts = getdata.results[1].data;
+        console.log(counts)
+        const chartData = Object.entries(counts || {}).map(([key, value]) => ({
+          register: key,
+          value: Number(value) * 100,
+        }));
+        setChartData(chartData);
+      }, 2000);
       //pollStatus(response["Location"]);
     } catch (error) {
       console.error("Error sending data:", error);
@@ -709,14 +711,14 @@ function App() {
 
   const flowKey = "example-flow";
 
-  async function uploadToGitHub(filename, fileContent) {
+  async function uploadToGitHub() {
+    let flowId = `model-${Date.now()}`;
     const repoOwner = tempGithubRepositoryOwner;
     const repo = tempGithubRepositoryName;
     const branch = tempGithubBranch;
     const token = tempGithubToken;
 
-    const apiUrl = `https://api.github.com/repos/${repoOwner}/${repo}/contents/${filename}`;
-
+    const apiUrl = `https://api.github.com/repos/${repoOwner}/${repo}/contents/${flowId}`;
     let sha = null;
 
     try {
@@ -736,15 +738,25 @@ function App() {
       } else {
         const errorData = await getResponse.json();
         console.error("Failed to check file existence:", errorData);
-        return;
+        return { success: false };
       }
     } catch (error) {
       console.error("Error checking file existence:", error);
-      return;
+      showToast("Upload failed. Credentials or repository fields incorrect.", "error");
+      return { success: false };
     }
 
+    let fileContent = JSON.stringify({
+      metadata: {
+        ...metadata,
+        id: flowId,
+        timestamp: new Date().toISOString(),
+      },
+      flow: reactFlowInstance.toObject(),
+    }, null, 2);
+
     const payload: any = {
-      message: `Upload ${filename} from quantum low-code modeler`,
+      message: `Upload ${flowId} from quantum low-code modeler`,
       content: btoa(fileContent),
       branch: branch,
     };
@@ -753,7 +765,6 @@ function App() {
       payload.sha = sha;
     }
 
-    // Upload the file
     try {
       const uploadResponse = await fetch(`${apiUrl}?ref=${branch}`, {
         method: "PUT",
@@ -766,16 +777,20 @@ function App() {
       });
 
       if (uploadResponse.ok) {
-        console.log(`File ${filename} uploaded to GitHub successfully.`);
+        console.log(`File ${flowId} uploaded to GitHub successfully.`);
+        showToast("Model with id " + flowId + " uploaded successfully!", "success");
+        return { success: true };
       } else {
         const errorData = await uploadResponse.json();
+        showToast("Upload failed. Check console.", "error");
         console.error("GitHub upload failed:", errorData);
+        return { success: false };
       }
     } catch (error) {
       console.error("Error uploading to GitHub:", error);
+      return { success: false };
     }
   }
-
 
   async function handleSaveClick(upload) {
     if (!reactFlowInstance) {
@@ -812,15 +827,8 @@ function App() {
     document.body.removeChild(link);
     URL.revokeObjectURL(downloadUrl);
     if (upload) {
-      await uploadToGitHub(
-        `${validMetadata.name.replace(/\s+/g, "_")}_${validMetadata.id}.json`,
-        jsonString
-      );
+      await uploadToGitHub();
     }
-  }
-
-  function handleMetadataUpdate(updatedMetadata: any) {
-    setMetadata(updatedMetadata);
   }
 
   function handleRestoreClick() {
@@ -901,29 +909,6 @@ function App() {
     [setSelectedNode],
   );
 
-  const [isModalOpen, setIsModalOpen] = useState(true);
-
-  //const handleLoadJson = () => {
-  //setIsModalOpen(true);
-  //loadFlow(initialDiagram);
-  //};
-
-  //const confirmLoadJson = () => {
-  // setIsModalOpen(false);
-  //loadFlow(initialDiagram);
-  //};
-
-
-  //const handleLoadJson = () => {
-  //if (
-  //window.confirm(
-  //"Are you sure you want to create a new model? This will overwrite the current flow."
-  //)
-  //) {
-  // Load the initialDiagram after confirmation
-  //loadFlow(initialDiagram);
-  //}
-  //};
   // Function to load the flow
   const loadFlow = (flow: any) => {
     if (!reactFlowInstance) {
@@ -958,8 +943,6 @@ function App() {
       console.log("Metadata loaded:", flow.metadata);
     }
   };
-
-  const overlappingNodeRef = useRef<Node | null>(null);
 
   const onNodeDrag = React.useCallback((event: React.MouseEvent, node: Node, nodes: Node[]) => {
     console.log(reactFlowInstance.getNodes())
@@ -1071,15 +1054,6 @@ function App() {
 
   const handleOpenConfig = () => setIsConfigOpen(true);
 
-  const handleCloseConfig = () => setIsConfigOpen(false);
-  const handleSaveConfig = (config: {
-    patternRepo: string;
-    solutionRepo: string;
-    backendURL: string;
-  }) => {
-    console.log("Configuration Saved:", config);
-  };
-
   const handleSaveAsSVG = () => {
     if (ref.current === null) {
       console.error("React Flow container reference is null.");
@@ -1087,9 +1061,15 @@ function App() {
     }
 
     toSvg(ref.current, {
-      filter: (node) =>
-        !node?.classList?.contains("react-flow__minimap") &&
-        !node?.classList?.contains("react-flow__controls"),
+      filter: (node) => {
+        if (!node) return false;
+        if (node.classList?.contains("react-flow__minimap")) return false;
+        if (node.classList?.contains("react-flow__controls")) return false;
+        if (node.classList?.contains("react-flow__panel")) return false;
+        if (typeof node.className === "string" && node.className.includes("react-flow__panel")) return false;
+
+        return true;
+      }
     })
       .then((dataUrl) => {
         const a = document.createElement("a");
@@ -1139,58 +1119,23 @@ function App() {
           onRestore={handleRestoreClick}
           onSaveAsSVG={handleSaveAsSVG}
           onOpenConfig={handleOpenConfig}
-          uploadDiagram={() => handleSaveClick(true)}
+          uploadDiagram={() => uploadToGitHub()}
           onLoadJson={handleLoadJson}
           sendToBackend={prepareBackendRequest}
-          sendToQunicorn={sendToQunicorn}
+          sendToQunicorn={() => setIsQunicornOpen(true)}
           startTour={() => { startTour(); }}
         />
       </div>
-      {nodes.length > 0 && <Modal title={"New Diagram"} open={isLoadJsonModalOpen} onClose={cancelLoadJson} footer={
-        <div className="flex justify-end space-x-2">
-          <button className="btn btn-primary" onClick={confirmNewDiagram}>Yes</button>
-          <button className="btn btn-secondary" onClick={cancelLoadJson}>Cancel</button>
-        </div>
-      }>
-        <div>
-          <p>Are you sure you want to create a new model? This will overwrite the current flow.</p>
-        </div>
-      </Modal>}
-      <Modal
-        title={"Send Request"}
+      {<NewDiagramModal open={isLoadJsonModalOpen} onClose={cancelLoadJson} onConfirm={confirmNewDiagram} />}
+
+      <SendRequestModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        footer={
-          <div className="flex justify-end space-x-2">
-            <button
-              className={`btn ${compilationTarget === "workflow" ? "btn-disabled opacity-50 cursor-not-allowed" : "btn-primary"}`}
-              onClick={sendToBackend}
-              disabled={compilationTarget === "workflow"}
-            >
-              Send
-            </button>
-          </div>
-        }
-      >
-        <div className="space-y-4">
-          <div>
-            <label className="block mb-1 font-semibold">Compilation Target</label>
-            <select
-              className="select select-bordered w-full"
-              value={compilationTarget}
-              onChange={(e) => setCompilationTarget(e.target.value)}
-            >
-              <option value="qasm">QASM</option>
-              <option value="workflow">Workflow</option>
-            </select>
-          </div>
+        compilationTarget={compilationTarget}
+        setCompilationTarget={setCompilationTarget}
+        sendToBackend={sendToBackend}
+      />
 
-          {compilationTarget === "workflow" && (
-            <p className="text-sm text-gray-500">Workflow compilation is not supported yet. Will come in the future.</p>
-          )}
-        </div>
-
-      </Modal>
       <Modal
         title={"Processing"}
         open={isProcessingModalOpen}
@@ -1202,368 +1147,45 @@ function App() {
         </div>
       </Modal>
 
-      <Modal
-        title={"Configuration"}
+      <ConfigModal
         open={isConfigOpen}
-        onClose={() => {
-          handleCancel();
-        }}
-        footer={
-          <div className="flex justify-end space-x-2">
-            <button className="btn btn-primary" onClick={() => handleSave()}>
-              Save
-            </button>
-            <button className="btn btn-secondary" onClick={() => handleCancel()}>
-              Cancel
-            </button>
-          </div>
-        }
-      >
-        <div>
-          {/* Subtabs */}
-          <div className="flex border-b mb-4">
-            <button
-              className={`px-4 py-2 ${activeTab === "lowCodeEndpoints" ? "border-b-2 border-blue-500 font-semibold" : "text-gray-600"
-                }`}
-              onClick={() => setActiveTab("lowCodeEndpoints")}
-            >
-              Low-Code Endpoints
-            </button>
-            <button
-              className={`px-4 py-2 ${activeTab === "patternEndpoints" ? "border-b-2 border-blue-500 font-semibold" : "text-gray-600"
-                }`}
-              onClick={() => setActiveTab("patternEndpoints")}
-            >
-              Pattern Endpoints
-            </button>
-            <button
-              className={`px-4 py-2 ${activeTab === "github" ? "border-b-2 border-blue-500 font-semibold" : "text-gray-600"
-                }`}
-              onClick={() => setActiveTab("github")}
-            >
-              GitHub
-            </button>
-          </div>
+        onClose={() => setIsConfigOpen(false)}
+        onSave={handleSave}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
 
-          {/* Endpoints Tab */}
-          {activeTab === "lowCodeEndpoints" && (
-            <div>
-              <h3 className="labels">NISQ Analyzer</h3>
-              <table className="config-table">
-                <tbody>
-                  <tr>
-                    <td align="right">NISQ Analyzer Endpoint:</td>
-                    <td align="left">
-                      <input
-                        className="qwm-input"
-                        type="text"
-                        value={tempNisqAnalyzerEndpoint}
-                        onChange={(event) => setTempNisqAnalyzerEndpoint(event.target.value)}
-                      />
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+        tempNisqAnalyzerEndpoint={tempNisqAnalyzerEndpoint}
+        tempQunicornEndpoint={tempQunicornEndpoint}
+        tempLowcodeBackendEndpoint={tempLowcodeBackendEndpoint}
+        tempPatternAtlasUiEndpoint={tempPatternAtlasUiEndpoint}
+        tempPatternAtlasApiEndpoint={tempPatternAtlasApiEndpoint}
+        tempQcAtlasEndpoint={tempQcAtlasEndpoint}
+        tempGithubRepositoryOwner={tempGithubRepositoryOwner}
+        tempGithubRepositoryName={tempGithubRepositoryName}
+        tempGithubBranch={tempGithubBranch}
+        tempGithubToken={tempGithubToken}
+      />
 
-              <h3 className="labels">Qunicorn</h3>
-              <table className="config-table">
-                <tbody>
-                  <tr>
-                    <td align="right">Qunicorn Endpoint:</td>
-                    <td align="left">
-                      <input
-                        className="qwm-input"
-                        type="text"
-                        value={tempQunicornEndpoint}
-                        onChange={(event) => setTempQunicornEndpoint(event.target.value)}
-                      />
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-
-              <h3 className="labels">Low-Code Backend:</h3>
-              <table className="config-table">
-                <tbody>
-                  <tr>
-                    <td align="right">Low-Code Backend Endpoint:</td>
-                    <td align="left">
-                      <input
-                        className="qwm-input"
-                        type="text"
-                        value={tempLowcodeBackendEndpoint}
-                        onChange={(event) => setTempLowcodeBackendEndpoint(event.target.value)}
-                      />
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {activeTab === "patternEndpoints" && (
-            <div>
-              <h3 className="labels">Pattern Atlas UI</h3>
-              <table className="config-table">
-                <tbody>
-                  <tr>
-                    <td align="right">Pattern Atlas UI Endpoint:</td>
-                    <td align="left">
-                      <input
-                        className="qwm-input"
-                        type="text"
-                        value={tempPatternAtlasUiEndpoint}
-                        onChange={(event) => setTempPatternAtlasUiEndpoint(event.target.value)}
-                      />
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-
-              <h3 className="labels">Pattern Atlas API</h3>
-              <table className="config-table">
-                <tbody>
-                  <tr>
-                    <td align="right">Pattern Atlas API Endpoint:</td>
-                    <td align="left">
-                      <input
-                        className="qwm-input"
-                        type="text"
-                        value={tempPatternAtlasApiEndpoint}
-                        onChange={(event) => setTempPatternAtlasApiEndpoint(event.target.value)}
-                      />
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-
-              <h3 className="labels">QC Atlas:</h3>
-              <table className="config-table">
-                <tbody>
-                  <tr>
-                    <td align="right">QC Atlas Endpoint:</td>
-                    <td align="left">
-                      <input
-                        className="qwm-input"
-                        type="text"
-                        value={tempQcAtlasEndpoint}
-                        onChange={(event) => setTempQcAtlasEndpoint(event.target.value)}
-                      />
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {activeTab === "github" && (
-            <div>
-              <h3 className="labels">GitHub Settings</h3>
-              <table className="config-table">
-                <tbody>
-                  <tr>
-                    <td align="right">GitHub Repository Owner:</td>
-                    <td align="left">
-                      <input
-                        className="qwm-input"
-                        type="text"
-                        value={tempGithubRepositoryOwner}
-                        onChange={(e) => setTempGithubRepositoryOwner(e.target.value)}
-                      />
-                    </td>
-                  </tr>
-                  <tr>
-                    <td align="right">GitHub Repository Name:</td>
-                    <td align="left">
-                      <input
-                        className="qwm-input"
-                        type="text"
-                        value={tempGithubRepositoryName}
-                        onChange={(e) => setTempGithubRepositoryName(e.target.value)}
-                      />
-                    </td>
-                  </tr>
-                  <tr>
-                    <td align="right">GitHub Branch:</td>
-                    <td align="left">
-                      <input
-                        className="qwm-input"
-                        type="text"
-                        value={tempGithubBranch}
-                        onChange={(e) => setTempGithubBranch(e.target.value)}
-                      />
-                    </td>
-                  </tr>
-                  <tr>
-                    <td align="right">GitHub Token:</td>
-                    <td align="left">
-                      <input
-                        className="qwm-input"
-                        type="password"
-                        value={tempGithubToken}
-                        onChange={(e) => setTempGithubToken(e.target.value)}
-                      />
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </Modal>
-      <Modal
-        title={"Qunicorn Deployment (1/2)"}
-        open={modalStep === 1}
+      <QunicornModal
+        open={isQunicornOpen}
+        step={modalStep}
+        executed={executed}
         onClose={handleClose}
-        footer={
-          <div className="flex justify-end space-x-2">
-            <button className="btn btn-primary" onClick={() => { handleClose() }}>Deploy</button>
-            <button className="btn btn-secondary" onClick={() => { setModalStep(0) }}>Cancel</button>
-          </div>
-        }
-      >
-        <div>
-          In the first step, the QASM of the model is deployed to Qunicorn.
-          Qunicorn serves as a unification layer to allow the unified execution across hetegerogeneous quantum cloud offerings such as IBM and AWS.
-        </div>
-      </Modal>
-
-      <Modal
-        title={"Qunicorn Deployment (2/2)"}
-        open={modalStep === 2}
-        onClose={() => { handleClose(); setModalStep(0) }}
-        footer={
-          <div className="flex justify-end space-x-2">
-            <button
-              className={`btn ${selectedDevice.trim() && ['IBM', 'AWS', 'RIGETTI', 'QMWARE'].includes(provider)
-                ? 'btn-primary'
-                : 'btn-secondary'
-                }`}
-              onClick={() => {
-                if (
-                  selectedDevice.trim() &&
-                  ['IBM', 'AWS', 'RIGETTI', 'QMWARE'].includes(provider)
-                ) {
-                  sendToQunicorn2();
-                  handleClose();
-                }
-              }}
-            >
-              Create
-            </button>
-            <button
-              className="btn btn-secondary"
-              onClick={() => { handleClose(); setModalStep(0); }}
-            >
-              Cancel
-            </button>
-          </div>
-        }
-      >
-        <div className="space-y-4">
-          <p>
-            In the next step, a job is created which can be executed on a quantum device.
-            Specify here your quantum device, the provider, and the number of shots.
-            Furthermore, add here your access token.
-          </p>
-
-          <div>
-            <label className="block font-medium mb-1">Quantum Device</label>
-            <input
-              type="text"
-              className="w-full border rounded px-3 py-2"
-              value={selectedDevice}
-              onChange={(e) => setSelectedDevice(e.target.value)}
-              placeholder="aer_simulator"
-            />
-          </div>
-
-          <div>
-            <label className="block font-medium mb-1">Provider</label>
-            <select
-              className="w-full border rounded px-3 py-2"
-              value={provider}
-              onChange={(e) => setProvider(e.target.value)}
-            >
-              <option value="">Select a provider</option>
-              <option value="IBM">IBM</option>
-              <option value="AWS">AWS</option>
-              <option value="RIGETTI">RIGETTI</option>
-              <option value="QMWARE">QMWARE</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block font-medium mb-1">Number of Shots</label>
-            <input
-              type="number"
-              className="w-full border rounded px-3 py-2"
-              value={numShots}
-              onChange={(e) => setNumShots(parseInt(e.target.value))}
-              placeholder="1024"
-            />
-          </div>
-
-          <div>
-            <label className="block font-medium mb-1">Access Token</label>
-            <input
-              type="text"
-              className="w-full border rounded px-3 py-2"
-              value={accessToken}
-              onChange={(e) => setAccessToken(e.target.value)}
-              placeholder="Your quantum provider token"
-            />
-          </div>
-        </div>
-      </Modal>
-
-
-      <Modal
-        title={"Qunicorn Result"}
-        open={modalStep === 3}
-        onClose={() => { handleClose(); setModalStep(0) }}
-        footer={
-          <div className="flex justify-end space-x-2">
-            <button className="btn btn-primary" onClick={() => { sendToQunicorn3() }}>Execute</button>
-            <button className="btn btn-secondary" onClick={() => { handleClose(); setModalStep(0); }}>Cancel</button>
-          </div>
-        }
-      >
-
-        <div>
-          {errorMessage || errorJobMessage ? (
-            <p className="text-red-600 font-semibold">{errorMessage || errorJobMessage}</p>
-          ) : (
-            <p>
-              The job is executed on the <strong>{selectedDevice || "unknown device"}</strong> with <strong>{numShots || "N/A"}</strong> shots.
-            </p>
-          )}
-
-          {chartData && progress === 100 && <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="register" label={{ value: "Register", position: "insideBottom", offset: 5 }} />
-              <YAxis
-                domain={[0, 100]}
-                label={{
-                  value: "Probabilities",
-                  angle: -90,
-                  dx: 0,
-                  dy: 30,
-                  position: 'insideLeft'
-                }}
-              />
-              <Tooltip />
-              <Bar dataKey="value" fill="#8884d8" />
-            </BarChart>
-          </ResponsiveContainer>}
-          <div style={{ marginTop: "20px" }}>
-            <progress value={progress} max={100} style={{ width: "100%" }} />
-            <p>{progress}%</p>
-          </div>
-        </div>
-
-      </Modal>
+        onStep1Deploy={handleDeploy}
+        onStep2CreateJob={handleCreateJob}
+        onStep3Execute={handleJobExecute}
+        selectedDevice={selectedDevice}
+        setSelectedDevice={setSelectedDevice}
+        provider={provider}
+        setProvider={setProvider}
+        numShots={numShots}
+        setNumShots={setNumShots}
+        accessToken={accessToken}
+        setAccessToken={setAccessToken}
+        errorMessage={errorMessage}
+        progress={progress}
+        chartData={chartData}
+      />
 
       <main className="flex flex-col lg:flex-row h-[calc(100vh_-_60px)]">
         <div className="relative flex h-[calc(100vh_-_60px)]  border-gray-200 border">
@@ -1655,6 +1277,14 @@ function App() {
                 Ancilla Modeling: {ancillaModelingOn ? "On" : "Off"}
               </button>
             </Panel>
+
+            {toast && (
+              <Toast
+                message={toast.message}
+                type={toast.type}
+                onClose={() => setToast(null)}
+              />
+            )}
 
             <MiniMap
               nodeClassName={(node) => {

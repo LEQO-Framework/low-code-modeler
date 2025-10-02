@@ -1,0 +1,302 @@
+import { useState, useEffect } from "react";
+import Modal from "./Modal";
+
+interface ConfigModalProps {
+    open: boolean;
+    onClose: () => void;
+    onSave: (values: {
+        tempNisqAnalyzerEndpoint: string;
+        tempQunicornEndpoint: string;
+        tempLowcodeBackendEndpoint: string;
+        tempPatternAtlasUiEndpoint: string;
+        tempPatternAtlasApiEndpoint: string;
+        tempQcAtlasEndpoint: string;
+        tempGithubRepositoryOwner: string;
+        tempGithubRepositoryName: string;
+        tempGithubBranch: string;
+        tempGithubToken: string;
+    }) => void;
+    activeTab: string;
+    setActiveTab: (tab: string) => void;
+
+    // Current App state values
+    tempNisqAnalyzerEndpoint: string;
+    tempQunicornEndpoint: string;
+    tempLowcodeBackendEndpoint: string;
+    tempPatternAtlasUiEndpoint: string;
+    tempPatternAtlasApiEndpoint: string;
+    tempQcAtlasEndpoint: string;
+    tempGithubRepositoryOwner: string;
+    tempGithubRepositoryName: string;
+    tempGithubBranch: string;
+    tempGithubToken: string;
+}
+
+export const ConfigModal = ({
+    open,
+    onClose,
+    onSave,
+    activeTab,
+    setActiveTab,
+
+    tempNisqAnalyzerEndpoint,
+    tempQunicornEndpoint,
+    tempLowcodeBackendEndpoint,
+    tempPatternAtlasUiEndpoint,
+    tempPatternAtlasApiEndpoint,
+    tempQcAtlasEndpoint,
+    tempGithubRepositoryOwner,
+    tempGithubRepositoryName,
+    tempGithubBranch,
+    tempGithubToken,
+}: ConfigModalProps) => {
+
+    // Local state copies
+    const [localNisq, setLocalNisq] = useState(tempNisqAnalyzerEndpoint);
+    const [localQunicorn, setLocalQunicorn] = useState(tempQunicornEndpoint);
+    const [localLowcode, setLocalLowcode] = useState(tempLowcodeBackendEndpoint);
+
+    const [localPatternUI, setLocalPatternUI] = useState(tempPatternAtlasUiEndpoint);
+    const [localPatternAPI, setLocalPatternAPI] = useState(tempPatternAtlasApiEndpoint);
+    const [localQcAtlas, setLocalQcAtlas] = useState(tempQcAtlasEndpoint);
+
+    const [localGitOwner, setLocalGitOwner] = useState(tempGithubRepositoryOwner);
+    const [localGitRepo, setLocalGitRepo] = useState(tempGithubRepositoryName);
+    const [localGitBranch, setLocalGitBranch] = useState(tempGithubBranch);
+    const [localGitToken, setLocalGitToken] = useState(tempGithubToken);
+
+    // Reset local state when modal opens
+    useEffect(() => {
+        if (open) {
+            setLocalNisq(tempNisqAnalyzerEndpoint);
+            setLocalQunicorn(tempQunicornEndpoint);
+            setLocalLowcode(tempLowcodeBackendEndpoint);
+
+            setLocalPatternUI(tempPatternAtlasUiEndpoint);
+            setLocalPatternAPI(tempPatternAtlasApiEndpoint);
+            setLocalQcAtlas(tempQcAtlasEndpoint);
+
+            setLocalGitOwner(tempGithubRepositoryOwner);
+            setLocalGitRepo(tempGithubRepositoryName);
+            setLocalGitBranch(tempGithubBranch);
+            setLocalGitToken(tempGithubToken);
+        }
+    }, [open]);
+
+    const handleSave = () => {
+        onSave({
+            tempNisqAnalyzerEndpoint: localNisq,
+            tempQunicornEndpoint: localQunicorn,
+            tempLowcodeBackendEndpoint: localLowcode,
+            tempPatternAtlasUiEndpoint: localPatternUI,
+            tempPatternAtlasApiEndpoint: localPatternAPI,
+            tempQcAtlasEndpoint: localQcAtlas,
+            tempGithubRepositoryOwner: localGitOwner,
+            tempGithubRepositoryName: localGitRepo,
+            tempGithubBranch: localGitBranch,
+            tempGithubToken: localGitToken,
+        });
+        onClose();
+    };
+
+    return (
+        <Modal
+            title="Configuration"
+            open={open}
+            onClose={onClose}
+            footer={
+                <div className="flex justify-end space-x-2">
+                    <button className="btn btn-primary" onClick={handleSave}>Save</button>
+                    <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
+                </div>
+            }
+        >
+            <div>
+                <div className="flex border-b mb-4">
+                    <button
+                        className={`px-4 py-2 ${activeTab === "lowCodeEndpoints" ? "border-b-2 border-blue-500 font-semibold" : "text-gray-600"}`}
+                        onClick={() => setActiveTab("lowCodeEndpoints")}
+                    >
+                        Low-Code Endpoints
+                    </button>
+                    <button
+                        className={`px-4 py-2 ${activeTab === "patternEndpoints" ? "border-b-2 border-blue-500 font-semibold" : "text-gray-600"}`}
+                        onClick={() => setActiveTab("patternEndpoints")}
+                    >
+                        Pattern Endpoints
+                    </button>
+                    <button
+                        className={`px-4 py-2 ${activeTab === "github" ? "border-b-2 border-blue-500 font-semibold" : "text-gray-600"}`}
+                        onClick={() => setActiveTab("github")}
+                    >
+                        GitHub
+                    </button>
+                </div>
+
+                {activeTab === "lowCodeEndpoints" && (
+                    <div>
+                        <h3 className="labels">NISQ Analyzer</h3>
+                        <table className="config-table">
+                            <tbody>
+                                <tr>
+                                    <td align="right">NISQ Analyzer Endpoint:</td>
+                                    <td align="left">
+                                        <input
+                                            className="qwm-input"
+                                            type="text"
+                                            value={localNisq}
+                                            onChange={(e) => setLocalNisq(e.target.value)}
+                                        />
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h3 className="labels mt-4">Qunicorn</h3>
+                        <table className="config-table">
+                            <tbody>
+                                <tr>
+                                    <td align="right">Qunicorn Endpoint:</td>
+                                    <td align="left">
+                                        <input
+                                            className="qwm-input"
+                                            type="text"
+                                            value={localQunicorn}
+                                            onChange={(e) => setLocalQunicorn(e.target.value)}
+                                        />
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h3 className="labels mt-4">Low-Code Backend</h3>
+                        <table className="config-table">
+                            <tbody>
+                                <tr>
+                                    <td align="right">Low-Code Backend Endpoint:</td>
+                                    <td align="left">
+                                        <input
+                                            className="qwm-input"
+                                            type="text"
+                                            value={localLowcode}
+                                            onChange={(e) => setLocalLowcode(e.target.value)}
+                                        />
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+
+                {activeTab === "patternEndpoints" && (
+                    <div>
+                        <h3 className="labels">Pattern Atlas UI</h3>
+                        <table className="config-table">
+                            <tbody>
+                                <tr>
+                                    <td align="right">Pattern Atlas UI Endpoint:</td>
+                                    <td align="left">
+                                        <input
+                                            className="qwm-input"
+                                            type="text"
+                                            value={localPatternUI}
+                                            onChange={(e) => setLocalPatternUI(e.target.value)}
+                                        />
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h3 className="labels mt-4">Pattern Atlas API</h3>
+                        <table className="config-table">
+                            <tbody>
+                                <tr>
+                                    <td align="right">Pattern Atlas API Endpoint:</td>
+                                    <td align="left">
+                                        <input
+                                            className="qwm-input"
+                                            type="text"
+                                            value={localPatternAPI}
+                                            onChange={(e) => setLocalPatternAPI(e.target.value)}
+                                        />
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h3 className="labels mt-4">QC Atlas</h3>
+                        <table className="config-table">
+                            <tbody>
+                                <tr>
+                                    <td align="right">QC Atlas Endpoint:</td>
+                                    <td align="left">
+                                        <input
+                                            className="qwm-input"
+                                            type="text"
+                                            value={localQcAtlas}
+                                            onChange={(e) => setLocalQcAtlas(e.target.value)}
+                                        />
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+
+                {activeTab === "github" && (
+                    <div>
+                        <h3 className="labels">GitHub Settings</h3>
+                        <table className="config-table">
+                            <tbody>
+                                <tr>
+                                    <td align="right">Repository Owner:</td>
+                                    <td align="left">
+                                        <input
+                                            className="qwm-input"
+                                            type="text"
+                                            value={localGitOwner}
+                                            onChange={(e) => setLocalGitOwner(e.target.value)}
+                                        />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td align="right">Repository Name:</td>
+                                    <td align="left">
+                                        <input
+                                            className="qwm-input"
+                                            type="text"
+                                            value={localGitRepo}
+                                            onChange={(e) => setLocalGitRepo(e.target.value)}
+                                        />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td align="right">Branch:</td>
+                                    <td align="left">
+                                        <input
+                                            className="qwm-input"
+                                            type="text"
+                                            value={localGitBranch}
+                                            onChange={(e) => setLocalGitBranch(e.target.value)}
+                                        />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td align="right">Token:</td>
+                                    <td align="left">
+                                        <input
+                                            className="qwm-input"
+                                            type="password"
+                                            value={localGitToken}
+                                            onChange={(e) => setLocalGitToken(e.target.value)}
+                                        />
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </div>
+        </Modal>
+    );
+};

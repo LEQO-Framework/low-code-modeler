@@ -43,15 +43,3 @@ export default function Modal(props: ModalProps): ReturnType<FC> {
         </div>
     );
 }
-
-
-export const NewDiagramModal = ({ open, onClose, onConfirm }) => (
-  <Modal title="New Diagram" open={open} onClose={onClose} footer={
-    <div className="flex justify-end space-x-2">
-      <button className="btn btn-primary" onClick={onConfirm}>Yes</button>
-      <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
-    </div>
-  }>
-    <p>Are you sure you want to create a new model? This will overwrite the current flow.</p>
-  </Modal>
-);
