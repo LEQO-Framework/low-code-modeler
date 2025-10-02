@@ -114,6 +114,12 @@ export const ConfigModal = ({
             <div>
                 <div className="flex border-b mb-4">
                     <button
+                        className={`px-4 py-2 ${activeTab === "editor" ? "border-b-2 border-blue-500 font-semibold" : "text-gray-600"}`}
+                        onClick={() => setActiveTab("editor")}
+                    >
+                        Editor
+                    </button>
+                    <button
                         className={`px-4 py-2 ${activeTab === "lowCodeEndpoints" ? "border-b-2 border-blue-500 font-semibold" : "text-gray-600"}`}
                         onClick={() => setActiveTab("lowCodeEndpoints")}
                     >
@@ -132,6 +138,61 @@ export const ConfigModal = ({
                         GitHub
                     </button>
                 </div>
+
+                {activeTab === "editor" && (
+                    <div>
+                        <h3 className="labels">Ancilla Mode</h3>
+                        <table className="config-table">
+                            <tbody>
+                                <tr>
+                                    <td align="right">Ancilla Mode:</td>
+                                    <td align="left">
+                                        <input
+                                            className="qwm-input"
+                                            type="text"
+                                            value={localNisq}
+                                            onChange={(e) => setLocalNisq(e.target.value)}
+                                        />
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h3 className="labels mt-4">Experience Level</h3>
+                        <table className="config-table">
+                            <tbody>
+                                <tr>
+                                    <td align="right">Experience Level:</td>
+                                    <td align="left">
+                                        <input
+                                            className="qwm-input"
+                                            type="text"
+                                            value={localQunicorn}
+                                            onChange={(e) => setLocalQunicorn(e.target.value)}
+                                        />
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h3 className="labels mt-4">Completion Guaranteed</h3>
+                        <table className="config-table">
+                            <tbody>
+                                <tr>
+                                    <td align="right">Completion Guaranteed:</td>
+                                    <td align="left">
+                                        <input
+                                            className="qwm-input"
+                                            type="text"
+                                            value={localLowcode}
+                                            onChange={(e) => setLocalLowcode(e.target.value)}
+                                        />
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                )}
 
                 {activeTab === "lowCodeEndpoints" && (
                     <div>

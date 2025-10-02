@@ -88,7 +88,7 @@ function App() {
   const [tempPatternAtlasUiEndpoint, setTempPatternAtlasUiEndpoint] = useState(patternAtlasUiEndpoint);
   const [tempQcAtlasEndpoint, setTempQcAtlasEndpoint] = useState(qcAtlasEndpoint);
 
-  const [activeTab, setActiveTab] = useState("lowCodeEndpoints");
+  const [activeTab, setActiveTab] = useState("editor");
   const [tempNisqAnalyzerEndpoint, setTempNisqAnalyzerEndpoint] = useState(nisqAnalyzerEndpoint);
   const [tempQunicornEndpoint, setTempQunicornEndpoint] = useState(qunicornEndpoint);
   const [tempLowcodeBackendEndpoint, setTempLowcodeBackendEndpoint] = useState(lowcodeBackendEndpoint);
