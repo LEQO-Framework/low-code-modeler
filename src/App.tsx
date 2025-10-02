@@ -1100,9 +1100,15 @@ function App() {
     }
 
     toSvg(ref.current, {
-      filter: (node) =>
-        !node?.classList?.contains("react-flow__minimap") &&
-        !node?.classList?.contains("react-flow__controls"),
+      filter: (node) => {
+        if (!node) return false;
+        if (node.classList?.contains("react-flow__minimap")) return false;
+        if (node.classList?.contains("react-flow__controls")) return false;
+        if (node.classList?.contains("react-flow__panel")) return false;
+        if (typeof node.className === "string" && node.className.includes("react-flow__panel")) return false;
+
+        return true;
+      }
     })
       .then((dataUrl) => {
         const a = document.createElement("a");
