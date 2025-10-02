@@ -1,5 +1,4 @@
 import { useStore } from "@/config/store";
-import { ArrowLeft } from "lucide-react";
 import { Node } from "reactflow";
 import { shallow } from "zustand/shallow";
 
@@ -55,13 +54,25 @@ export const MetadataPanel = ({
   function handleCheckboxChange(event: React.ChangeEvent<HTMLInputElement>) {
     const { id, checked } = event.target;
 
-    const updatedMetadata = {
+    let updatedMetadata = {
       ...metadata,
-      [id]: checked ? true : false,
+      [id]: checked,
     };
+
+    if (id === "optimizeWidth" && !checked) {
+      const { width, ...rest } = updatedMetadata;
+      updatedMetadata = rest;
+    }
+
+    if (id === "optimizeDepth" && !checked) {
+      const { depth, ...rest } = updatedMetadata;
+      updatedMetadata = rest;
+    }
 
     onUpdateMetadata(updatedMetadata);
   }
+
+
 
   return (
     <>
