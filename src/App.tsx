@@ -258,6 +258,7 @@ function App() {
     ];
 
   const [isProcessingModalOpen, setProcessingModalOpen] = useState(false);
+
   // TODO: Change here to workflow
   const [compilationTarget, setCompilationTarget] = useState("qasm");
   const handleClose = () => {
@@ -826,14 +827,8 @@ function App() {
     document.body.removeChild(link);
     URL.revokeObjectURL(downloadUrl);
     if (upload) {
-      await uploadToGitHub(
-        `${validMetadata.name.replace(/\s+/g, "_")}_${validMetadata.id}.json`,
-      );
+      await uploadToGitHub();
     }
-  }
-
-  function handleMetadataUpdate(updatedMetadata: any) {
-    setMetadata(updatedMetadata);
   }
 
   function handleRestoreClick() {
@@ -914,29 +909,6 @@ function App() {
     [setSelectedNode],
   );
 
-  const [isModalOpen, setIsModalOpen] = useState(true);
-
-  //const handleLoadJson = () => {
-  //setIsModalOpen(true);
-  //loadFlow(initialDiagram);
-  //};
-
-  //const confirmLoadJson = () => {
-  // setIsModalOpen(false);
-  //loadFlow(initialDiagram);
-  //};
-
-
-  //const handleLoadJson = () => {
-  //if (
-  //window.confirm(
-  //"Are you sure you want to create a new model? This will overwrite the current flow."
-  //)
-  //) {
-  // Load the initialDiagram after confirmation
-  //loadFlow(initialDiagram);
-  //}
-  //};
   // Function to load the flow
   const loadFlow = (flow: any) => {
     if (!reactFlowInstance) {
@@ -971,8 +943,6 @@ function App() {
       console.log("Metadata loaded:", flow.metadata);
     }
   };
-
-  const overlappingNodeRef = useRef<Node | null>(null);
 
   const onNodeDrag = React.useCallback((event: React.MouseEvent, node: Node, nodes: Node[]) => {
     console.log(reactFlowInstance.getNodes())
@@ -1083,15 +1053,6 @@ function App() {
   }, [setMenu, setSelectedNode]);
 
   const handleOpenConfig = () => setIsConfigOpen(true);
-
-  const handleCloseConfig = () => setIsConfigOpen(false);
-  const handleSaveConfig = (config: {
-    patternRepo: string;
-    solutionRepo: string;
-    backendURL: string;
-  }) => {
-    console.log("Configuration Saved:", config);
-  };
 
   const handleSaveAsSVG = () => {
     if (ref.current === null) {
