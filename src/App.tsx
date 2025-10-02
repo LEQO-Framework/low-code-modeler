@@ -114,6 +114,7 @@ function App() {
   const [isPaletteOpen, setIsPaletteOpen] = useState(true);
   const [chartData, setChartData] = useState(null);
   const [progress, setProgress] = useState(0);
+  const [executed, setAlreadyExecuted] = useState(false);
   const [jobId, setJobId] = useState(null);
 
 
@@ -206,7 +207,7 @@ function App() {
   const [modalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("");
-  const [modalStep, setModalStep] = useState(0);
+  const [modalStep, setModalStep] = useState(1);
   const [isQunicornOpen, setIsQunicornOpen] = useState(false);
   const [loadingQunicorn, setLoadingQunicorn] = useState(true);
   const [statusQunicorn, setStatusQunicorn] = useState(null);
@@ -260,24 +261,20 @@ function App() {
   // TODO: Change here to workflow
   const [compilationTarget, setCompilationTarget] = useState("qasm");
   const handleClose = () => {
-    if (modalStep < 3) {
-      setModalStep(modalStep + 1);
-    } else {
-
-      // reset all values
-      setModalStep(0);
-      setChartData(null);
-      setErrorMessage("");
-      setErrorJobMessage("");
-      setJobId(null);
-      setDeploymentId(null);
-      setProgress(0);
-      setSelectedDevice("");
-      setProvider("");
-      setNumShots(1024);
-      setAccessToken("");
-
-    }
+    // reset all values
+    setIsQunicornOpen(false);
+    setModalStep(1);
+    setChartData(null);
+    setErrorMessage("");
+    setErrorJobMessage("");
+    setJobId(null);
+    setDeploymentId(null);
+    setProgress(0);
+    setSelectedDevice("");
+    setProvider("");
+    setNumShots(1024);
+    setAccessToken("");
+    setAlreadyExecuted(false);
   };
 
 
@@ -403,9 +400,8 @@ function App() {
     console.log("load toturial")
   }
   const handleDeploy = async () => {
-    setModalStep(1);
+    setIsQunicornOpen(true);
     setLoading(true);
-
 
     try {
       let program = {
@@ -432,6 +428,7 @@ function App() {
       let data = await response.json();
       console.log(data["id"]);
       setDeploymentId(data["id"]);
+      setModalStep(2);
       //pollStatus(response["Location"]);
     } catch (error) {
       console.error("Error sending data:", error);
@@ -441,7 +438,6 @@ function App() {
 
 
   const handleCreateJob = async () => {
-    setModalStep(2);
     setLoading(true);
 
     try {
@@ -469,9 +465,8 @@ function App() {
         setErrorJobMessage(data["message"]);
       } else {
         setJobId(data["self"]);
+        setModalStep(3);
       }
-      //handleClose();
-      //pollStatus(response["Location"]);
     } catch (error) {
       console.error("Error sending data:", error);
       setLoading(false);
@@ -545,16 +540,21 @@ function App() {
         setProgress(0);
         return;
       }
-
-      setProgress(100);
-      console.log(getdata.results[1])
-      let counts = getdata.results[1].data;
-      console.log(counts)
-      const chartData = Object.entries(counts || {}).map(([key, value]) => ({
-        register: key,
-        value: Number(value) * 100,
-      }));
-      setChartData(chartData);
+      setTimeout(() => {
+        setProgress(50);
+      }, 1000);
+      setTimeout(() => {
+        setProgress(100);
+        setAlreadyExecuted(true);
+        console.log(getdata.results[1])
+        let counts = getdata.results[1].data;
+        console.log(counts)
+        const chartData = Object.entries(counts || {}).map(([key, value]) => ({
+          register: key,
+          value: Number(value) * 100,
+        }));
+        setChartData(chartData);
+      }, 2000);
       //pollStatus(response["Location"]);
     } catch (error) {
       console.error("Error sending data:", error);
@@ -1155,7 +1155,7 @@ function App() {
           uploadDiagram={() => uploadToGitHub()}
           onLoadJson={handleLoadJson}
           sendToBackend={prepareBackendRequest}
-          sendToQunicorn={handleDeploy}
+          sendToQunicorn={() => setIsQunicornOpen(true)}
           startTour={() => { startTour(); }}
         />
       </div>
@@ -1202,7 +1202,8 @@ function App() {
       <QunicornModal
         open={isQunicornOpen}
         step={modalStep}
-        onClose={() => setIsQunicornOpen(false)}
+        executed={executed}
+        onClose={handleClose}
         onStep1Deploy={handleDeploy}
         onStep2CreateJob={handleCreateJob}
         onStep3Execute={handleJobExecute}
@@ -1309,7 +1310,7 @@ function App() {
                 Ancilla Modeling: {ancillaModelingOn ? "On" : "Off"}
               </button>
             </Panel>
-            
+
             {toast && (
               <Toast
                 message={toast.message}

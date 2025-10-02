@@ -5,6 +5,7 @@ import Modal from "./Modal";
 interface QunicornModalProps {
   open: boolean;
   step: number;
+  executed: boolean;
   onClose: () => void;
   onStep1Deploy: () => void;
   onStep2CreateJob: (jobData: { device: string; provider: string; numShots: number; accessToken: string }) => void;
@@ -25,6 +26,7 @@ interface QunicornModalProps {
 export const QunicornModal = ({
   open,
   step,
+  executed,
   onClose,
   onStep1Deploy,
   onStep2CreateJob,
@@ -72,7 +74,19 @@ export const QunicornModal = ({
           )}
           {step === 3 && (
             <>
-              <button className="btn btn-primary" onClick={onStep3Execute}>Execute</button>
+              {!executed && (
+                <button className="btn btn-primary" onClick={onStep3Execute}>
+                  Execute
+                </button>
+              )}
+              {executed && (
+                <button className="btn btn-primary" onClick={() => {
+                  handleCreateJob();
+                  onStep3Execute();
+                }}>
+                  Rerun
+                </button>
+              )}
               <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
             </>
           )}
@@ -169,10 +183,10 @@ export const QunicornModal = ({
               </ResponsiveContainer>
             )}
 
-            <div style={{ marginTop: "20px" }}>
+            {progress !== 100 && <div style={{ marginTop: "20px" }}>
               <progress value={progress || 0} max={100} style={{ width: "100%" }} />
               <p>{progress || 0}%</p>
-            </div>
+            </div>}
           </div>
         )}
       </div>
