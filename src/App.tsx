@@ -29,6 +29,7 @@ import Joyride from 'react-joyride';
 import { ConfigModal } from "./components/modals/configModal";
 import { QunicornModal } from "./components/modals/qunicornModal";
 import { SendRequestModal } from "./components/modals/backendModal";
+import { Toast } from "./components/modals/toast";
 
 const selector = (state: {
   nodes: Node[];
@@ -210,6 +211,11 @@ function App() {
   const [loadingQunicorn, setLoadingQunicorn] = useState(true);
   const [statusQunicorn, setStatusQunicorn] = useState(null);
   const [ancillaModelingOn, setAncillaModelingOn] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
+
+  const showToast = (message: string, type: "success" | "error" | "info") => {
+    setToast({ message, type });
+  };
 
   const [runTour, setRunTour] = useState(false);
   const [joyrideStepId, setJoyRideStepId] = useState(0);
@@ -704,14 +710,14 @@ function App() {
 
   const flowKey = "example-flow";
 
-  async function uploadToGitHub(filename, fileContent) {
+  async function uploadToGitHub() {
+    let flowId = `model-${Date.now()}`;
     const repoOwner = tempGithubRepositoryOwner;
     const repo = tempGithubRepositoryName;
     const branch = tempGithubBranch;
     const token = tempGithubToken;
 
-    const apiUrl = `https://api.github.com/repos/${repoOwner}/${repo}/contents/${filename}`;
-
+    const apiUrl = `https://api.github.com/repos/${repoOwner}/${repo}/contents/${flowId}`;
     let sha = null;
 
     try {
@@ -731,15 +737,25 @@ function App() {
       } else {
         const errorData = await getResponse.json();
         console.error("Failed to check file existence:", errorData);
-        return;
+        return { success: false };
       }
     } catch (error) {
       console.error("Error checking file existence:", error);
-      return;
+      showToast("Upload failed. Credentials or repository fields incorrect.", "error");
+      return { success: false };
     }
 
+    let fileContent = JSON.stringify({
+      metadata: {
+        ...metadata,
+        id: flowId,
+        timestamp: new Date().toISOString(),
+      },
+      flow: reactFlowInstance.toObject(),
+    }, null, 2);
+
     const payload: any = {
-      message: `Upload ${filename} from quantum low-code modeler`,
+      message: `Upload ${flowId} from quantum low-code modeler`,
       content: btoa(fileContent),
       branch: branch,
     };
@@ -748,7 +764,6 @@ function App() {
       payload.sha = sha;
     }
 
-    // Upload the file
     try {
       const uploadResponse = await fetch(`${apiUrl}?ref=${branch}`, {
         method: "PUT",
@@ -761,16 +776,20 @@ function App() {
       });
 
       if (uploadResponse.ok) {
-        console.log(`File ${filename} uploaded to GitHub successfully.`);
+        console.log(`File ${flowId} uploaded to GitHub successfully.`);
+        showToast("Model with id " + flowId + " uploaded successfully!", "success");
+        return { success: true };
       } else {
         const errorData = await uploadResponse.json();
+        showToast("Upload failed. Check console.", "error");
         console.error("GitHub upload failed:", errorData);
+        return { success: false };
       }
     } catch (error) {
       console.error("Error uploading to GitHub:", error);
+      return { success: false };
     }
   }
-
 
   async function handleSaveClick(upload) {
     if (!reactFlowInstance) {
@@ -809,7 +828,6 @@ function App() {
     if (upload) {
       await uploadToGitHub(
         `${validMetadata.name.replace(/\s+/g, "_")}_${validMetadata.id}.json`,
-        jsonString
       );
     }
   }
@@ -1134,7 +1152,7 @@ function App() {
           onRestore={handleRestoreClick}
           onSaveAsSVG={handleSaveAsSVG}
           onOpenConfig={handleOpenConfig}
-          uploadDiagram={() => handleSaveClick(true)}
+          uploadDiagram={() => uploadToGitHub()}
           onLoadJson={handleLoadJson}
           sendToBackend={prepareBackendRequest}
           sendToQunicorn={handleDeploy}
@@ -1142,6 +1160,7 @@ function App() {
         />
       </div>
       {<NewDiagramModal open={isLoadJsonModalOpen} onClose={cancelLoadJson} onConfirm={confirmNewDiagram} />}
+
       <SendRequestModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
@@ -1290,6 +1309,14 @@ function App() {
                 Ancilla Modeling: {ancillaModelingOn ? "On" : "Off"}
               </button>
             </Panel>
+            
+            {toast && (
+              <Toast
+                message={toast.message}
+                type={toast.type}
+                onClose={() => setToast(null)}
+              />
+            )}
 
             <MiniMap
               nodeClassName={(node) => {
