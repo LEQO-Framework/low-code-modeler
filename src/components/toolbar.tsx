@@ -55,7 +55,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
           <Button size="sm" onClick={uploadDiagram} title="Upload the current diagram to GitHub">
             <UploadCloud className="w-4 h-4 mr-2" /> Upload
           </Button>
-          <Button size="sm" onClick={onOpenConfig} title="Configure the editor">
+          <Button size="sm" onClick={onOpenConfig} title="Configure the editor and the endpoints">
             <Settings className="w-4 h-4 mr-2" /> Configuration
           </Button>
           <Button size="sm" onClick={sendToBackend} title="Send the diagram to the backend">

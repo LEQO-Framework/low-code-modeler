@@ -171,6 +171,10 @@ function App() {
   const [helperLines, setHelperLines] = useState(null);
   const [deploymentId, setDeploymentId] = useState(null);
 
+  const [expanded, setExpanded] = useState(false);
+  const [experienceLevel, setExperienceLevel] = useState("Beginner");
+  const [completionGuaranteed, setCompletionGuaranteed] = useState("Yes");
+
 
   const {
     nodes,
@@ -1268,15 +1272,79 @@ function App() {
           )}
             <Controls />
 
-            <Panel position="top-left" className="p-2">
-              <button
-                onClick={() => { setAncillaModelingOn((prev) => !prev); setAncillaMode(!ancillaModelingOn) }}
-                className={`ancilla-button px-3 py-1 rounded text-white ${ancillaModelingOn ? "bg-blue-600" : "bg-gray-400"
-                  }`}
-              >
-                Ancilla Modeling: {ancillaModelingOn ? "On" : "Off"}
-              </button>
+            <Panel position="top-left" className="p-2 z-50">
+              <div className="w-70">
+                <div
+                  onClick={() => setExpanded(!expanded)}
+                  className={`cursor-pointer px-4 py-2 rounded text-white transition-all duration-300 flex justify-between items-center ${expanded ? "bg-blue-600" : "bg-gray-400"
+                    }`}
+                >
+                  <span>Experience Mode</span>
+                  <div className="flex items-center space-x-2">
+                    <span className={`transition-transform duration-300 ${expanded ? "rotate-90" : ""}`}>
+                      ▼
+                    </span>
+                  </div>
+                </div>
+
+                <div
+                  className={`origin-top transition-all duration-300 overflow-hidden ${expanded ? "max-h-96 opacity-100 scale-y-100 mt-2" : "max-h-0 opacity-0 scale-y-0"
+                    } bg-gray-100 rounded p-4`}
+                  style={{ transformOrigin: "top" }}
+                >
+
+                  <table className="config-table">
+                    <tbody>
+                      <tr>
+                        <td align="right">Ancilla Modeling</td>
+                        <td align="left">
+                          <button
+                            onClick={() => setAncillaModelingOn(!ancillaModelingOn)}
+                            className={`px-2 py-1 rounded text-white ${ancillaModelingOn ? "bg-blue-600" : "bg-gray-400"
+                              }`}
+                          >{ancillaModelingOn ? "On" : "Off"}
+                          </button>
+
+                        </td>
+                      </tr>
+                      <tr>
+                        <td align="right">Experience Level</td>
+                        <td align="left">
+                          <select
+                            value={experienceLevel}
+                            onChange={(e) => setExperienceLevel(e.target.value)}
+                            className="mt-1 px-2 py-1 border rounded"
+                          >
+                            <option>Beginner</option>
+                            <option>Intermediate</option>
+                            <option>Expert</option>
+                          </select>
+                        </td>
+                        </tr>
+                        <tr>
+                        <td align="right">Completion Guaranteed</td>
+                        <td align="left">
+                          <select
+                            value={completionGuaranteed}
+                            onChange={(e) => setCompletionGuaranteed(e.target.value)}
+                            className="px-2 py-1 border rounded"
+                          >
+                            <option>Yes</option>
+                            <option>No</option>
+                          </select>
+                        </td>
+                        </tr>
+                  
+                    </tbody>
+                  </table>
+
+                </div>
+
+
+              </div>
             </Panel>
+
+
 
             {toast && (
               <Toast
