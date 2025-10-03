@@ -1,4 +1,3 @@
-
 import { FC, ReactElement } from "react";
 
 interface ModalProps {
@@ -6,13 +5,14 @@ interface ModalProps {
     onClose: () => void;
     children: ReactElement;
     title?: string;
-    footer?: ReactElement; 
+    footer?: ReactElement;
+    className?: string;
 }
 
-export default function Modal(props: ModalProps): ReturnType<FC> {
+export default function Modal(props: ModalProps) {
     return (
         <div className={`${"modal"} ${props.open ? "display-block" : "display-none"}`}>
-            <div className="modal-main">
+            <div className={`modal-main ${props.className || ""}`}>
                 <div className="modal-header">
                     <h2>{props.title || "Modal Title"}</h2>
                     <button className="qwm-close" aria-label="Close" onClick={props.onClose}>

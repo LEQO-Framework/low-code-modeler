@@ -30,6 +30,7 @@ import { ConfigModal } from "./components/modals/configModal";
 import { QunicornModal } from "./components/modals/qunicornModal";
 import { SendRequestModal } from "./components/modals/backendModal";
 import { Toast } from "./components/modals/toast";
+import { HistoryItem, HistoryModal } from "./components/modals/historyModal";
 
 const selector = (state: {
   nodes: Node[];
@@ -283,14 +284,17 @@ function App() {
     setModalOpen(true);
   }
   const sendToBackend = async () => {
-    setLoading(true);
+    //setLoading(true);
     setModalOpen(false);
     setProcessingModalOpen(true);
+
+    let id = `flow-${Date.now()}`;
+    showToast("QASM request for model " + id + " submitted.", "info");
 
     try {
       const validMetadata = {
         ...metadata,
-        id: `flow-${Date.now()}`,
+        id: id,
         timestamp: new Date().toISOString(),
       };
 
@@ -339,6 +343,7 @@ function App() {
               location = statusData["result"];
 
               if (statusData.status === "completed") {
+                //showToast("Result for model " + id + " is available.", "success");
                 console.log("Operation completed successfully.");
                 return resolve();
               }
@@ -348,6 +353,7 @@ function App() {
                 setTimeout(check, delay);
               } else {
                 console.error("Max polling attempts reached. Operation did not complete.");
+                showToast("Max polling attempts for model " + id + " reached.", "error");
                 reject("Max polling attempts reached");
               }
             } catch (error) {
@@ -377,13 +383,50 @@ function App() {
       console.log("Received OpenQASM code:", openqasmCode);
 
       setOpenQASMCode(openqasmCode);
+      setTimeout(() => {
+        setStatus("completed");
+        setLoading(false);
+        showToast("Result for model " + id + " is available.", "success");
+      }, 3000);
       setStatus("completed");
       setLoading(false);
+
 
     } catch (error) {
       console.error("Error sending data:", error);
       setLoading(false);
     }
+  };
+
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [isHistoryOpen, setHistoryOpen] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(false);
+
+  const fetchHistory = async () => {
+    setHistoryLoading(true);
+    try {
+      const response = await fetch(`${tempLowcodeBackendEndpoint}/history`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (!response.ok) {
+        console.error("Failed to fetch history:", response.statusText);
+        return;
+      }
+
+      const data: HistoryItem[] = await response.json();
+      setHistory(data);
+    } catch (err) {
+      console.error("Error fetching history:", err);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  const openHistoryModal = async () => {
+    await fetchHistory();
+    setHistoryOpen(true);
   };
 
   const startTour2 = () => {
@@ -1123,6 +1166,7 @@ function App() {
           onLoadJson={handleLoadJson}
           sendToBackend={prepareBackendRequest}
           sendToQunicorn={() => setIsQunicornOpen(true)}
+          openHistory={openHistoryModal}
           startTour={() => { startTour(); }}
         />
       </div>
@@ -1135,17 +1179,6 @@ function App() {
         setCompilationTarget={setCompilationTarget}
         sendToBackend={sendToBackend}
       />
-
-      <Modal
-        title={"Processing"}
-        open={isProcessingModalOpen}
-        onClose={() => setProcessingModalOpen(false)}
-      >
-        <div>
-          <h2>Processing</h2>
-          {loading ? <p>Loading...</p> : <p>Status: {status || "Unknown"}</p>}
-        </div>
-      </Modal>
 
       <ConfigModal
         open={isConfigOpen}
@@ -1185,6 +1218,15 @@ function App() {
         errorMessage={errorMessage}
         progress={progress}
         chartData={chartData}
+      />
+
+      <HistoryModal
+        open={isHistoryOpen}
+        onClose={() => setHistoryOpen(false)}
+        history={history}
+        onExecute={(item) => {
+          console.log("Execute clicked for:", item);
+        }}
       />
 
       <main className="flex flex-col lg:flex-row h-[calc(100vh_-_60px)]">
@@ -1267,6 +1309,13 @@ function App() {
             </>
           )}
             <Controls />
+            {toast && (
+              <Toast
+                message={toast.message}
+                type={toast.type}
+                onClose={() => setToast(null)}
+              />
+            )}
 
             <Panel position="top-left" className="p-2">
               <button
@@ -1277,14 +1326,6 @@ function App() {
                 Ancilla Modeling: {ancillaModelingOn ? "On" : "Off"}
               </button>
             </Panel>
-
-            {toast && (
-              <Toast
-                message={toast.message}
-                type={toast.type}
-                onClose={() => setToast(null)}
-              />
-            )}
 
             <MiniMap
               nodeClassName={(node) => {
