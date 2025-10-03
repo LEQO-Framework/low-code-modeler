@@ -37,12 +37,14 @@ type RFState = {
   nodes: any;
   edges: Edge[];
   ancillaMode: boolean;
+  completionGuaranteed: boolean;
   selectedNode: Node | null;
   history: HistoryItem[];
   historyIndex: number;
   setNodes: (node: Node) => void;
   setEdges: (edge: Edge) => void;
   setAncillaMode: (ancillaMode: boolean) => void
+  setCompletionGuaranteed: (completionGuaranteed: boolean) => void
   setNewEdges: (newEdges: Edge[]) => void;
   onNodesChange: OnNodesChange;
   onEdgesChange: OnEdgesChange;
@@ -62,6 +64,7 @@ export const useStore = create<RFState>((set, get) => ({
   nodes: nodesConfig.initialNodes,
   edges: nodesConfig.initialEdges,
   ancillaMode: false,
+  completionGuaranteed: true,
   selectedNode: null,
   history: [],
   historyIndex: -1,
@@ -197,6 +200,11 @@ export const useStore = create<RFState>((set, get) => ({
     set({
       ancillaMode,
       edges: currentEdges,
+    });
+  },
+  setCompletionGuaranteed: (completionGuaranteed: boolean) => {
+    set({
+      completionGuaranteed
     });
   },
 

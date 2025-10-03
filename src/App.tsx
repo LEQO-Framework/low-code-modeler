@@ -35,6 +35,7 @@ const selector = (state: {
   nodes: Node[];
   edges: Edge[];
   ancillaMode: boolean;
+  completionGuaranteed: boolean;
   onNodesChange: any;
   onEdgesChange: any;
   onConnect: any;
@@ -46,11 +47,13 @@ const selector = (state: {
   setNodes: (node: Node) => void;
   setEdges: (edge: Edge) => void;
   setAncillaMode: (ancillaMode: boolean) => void;
+  setCompletionGuaranteed: (completionGuaranteed: boolean) => void;
   undo: () => void;
   redo: () => void;
 }) => ({
   nodes: state.nodes,
   edges: state.edges,
+  completionGuaranteed: state.completionGuaranteed,
   onNodesChange: state.onNodesChange,
   onEdgesChange: state.onEdgesChange,
   onConnect: state.onConnect,
@@ -62,6 +65,7 @@ const selector = (state: {
   setNodes: state.setNodes,
   setEdges: state.setEdges,
   setAncillaMode: state.setAncillaMode,
+  setCompletionGuaranteed: state.setCompletionGuaranteed,
   undo: state.undo,
   redo: state.redo,
 });
@@ -173,17 +177,19 @@ function App() {
 
   const [expanded, setExpanded] = useState(false);
   const [experienceLevel, setExperienceLevel] = useState("Beginner");
-  const [completionGuaranteed, setCompletionGuaranteed] = useState("Yes");
+  const [completionGuaranteedOption, setCompletionGuaranteedOption] = useState("Yes");
 
 
   const {
     nodes,
     edges,
+    completionGuaranteed,
     onNodesChange,
     onEdgesChange,
     onConnect,
     onConnectEnd,
     setAncillaMode,
+    setCompletionGuaranteed,
     setSelectedNode,
     setNodes,
     updateNodeValue,
@@ -1331,8 +1337,8 @@ function App() {
                         <td align="right">Completion Guaranteed</td>
                         <td align="left">
                           <select
-                            value={completionGuaranteed}
-                            onChange={(e) => setCompletionGuaranteed(e.target.value)}
+                            value={completionGuaranteedOption}
+                            onChange={(e) => {setCompletionGuaranteedOption(e.target.value); setCompletionGuaranteed(!completionGuaranteed)}}
                             className="px-2 py-1 border rounded"
                           >
                             <option>Yes</option>
