@@ -1299,7 +1299,7 @@ function App() {
                         <td align="right">Ancilla Modeling</td>
                         <td align="left">
                           <button
-                            onClick={() => setAncillaModelingOn(!ancillaModelingOn)}
+                            onClick={() => { setAncillaModelingOn(!ancillaModelingOn); setAncillaMode(!ancillaModelingOn) }}
                             className={`px-2 py-1 rounded text-white ${ancillaModelingOn ? "bg-blue-600" : "bg-gray-400"
                               }`}
                           >{ancillaModelingOn ? "On" : "Off"}
@@ -1315,13 +1315,19 @@ function App() {
                             onChange={(e) => setExperienceLevel(e.target.value)}
                             className="mt-1 px-2 py-1 border rounded"
                           >
-                            <option>Beginner</option>
-                            <option>Intermediate</option>
-                            <option>Expert</option>
+                            <option value="explorer" title="New to quantum computing, curious and starting the journey.">
+                              Explorer
+                            </option>
+                            <option value="adventurer" title="Comfortable with the basics, ready to use deeper concepts.">
+                              Adventurer
+                            </option>
+                            <option value="pioneer" title="Advanced understanding, pushing the frontier of quantum computing.">
+                              Pioneer
+                            </option>
                           </select>
                         </td>
-                        </tr>
-                        <tr>
+                      </tr>
+                      <tr>
                         <td align="right">Completion Guaranteed</td>
                         <td align="left">
                           <select
@@ -1333,8 +1339,8 @@ function App() {
                             <option>No</option>
                           </select>
                         </td>
-                        </tr>
-                  
+                      </tr>
+
                     </tbody>
                   </table>
 
