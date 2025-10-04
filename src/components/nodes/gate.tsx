@@ -17,7 +17,7 @@ const selector = (state: {
 
 export const GateNode = memo((node: Node) => {
   const { data } = node;
-  const isQubit = data.label === "Qubit";
+  const isQubit = data.label === "Qubit Circuit";
   const isTwoQubit = data.label === "CNOT" || data.label === "SWAP" || data.label === "CZ" || data.label === "CY" || data.label === "CH" || data.label === "CP(λ)" || data.label === "CRX(θ)" || data.label === "CRY(θ)" || data.label === "CRZ(θ)" || data.label === "CU(θ,φ,λ,γ)";
   const isThreeQubit = data.label === "Toffoli" || data.label === "CSWAP";
   const { edges, updateNodeValue } = useStore(selector, shallow);
