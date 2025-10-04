@@ -23,12 +23,12 @@ export const TextPanel = () => {
     selector,
     shallow,
   );
-  
+
   useEffect(() => {
-  if (selectedNode && !selectedNode.data.parameterType && (parameterized_one_qubit.includes(selectedNode.data.label) || parameterized_two_qubit.includes(selectedNode.data.label))) {
-    handleNumberChange("parameterType", "degree");
-  }
-}, [selectedNode]);
+    if (selectedNode && !selectedNode.data.parameterType && (parameterized_one_qubit.includes(selectedNode.data.label) || parameterized_two_qubit.includes(selectedNode.data.label))) {
+      handleNumberChange("parameterType", "degree");
+    }
+  }, [selectedNode]);
 
   const [fileName, setFileName] = useState("");
   const [uncomputeFileName, setUncomputeFileName] = useState("");
@@ -100,7 +100,7 @@ export const TextPanel = () => {
       }
       console.log(value);
       console.log(field)
-      if (field === "gamma" || field === "lambda"|| field === "theta"|| field === "phi" ||field === "parameterType" || field === "outputIdentifier" || field === "quantumStateName" || field === "encodingType" || field === "implementationType" || field === "size"
+      if (field === "gamma" || field === "lambda" || field === "theta" || field === "phi" || field === "parameterType" || field === "outputIdentifier" || field === "quantumStateName" || field === "encodingType" || field === "implementationType" || field === "size"
         || field === "operator" || field === "minMaxOperator" || field === "uncomputeImplementationType" || field === "implementation" || field === "fileName" ||
         field === "uncomputeImplementation" || field === "parameter" || field === "nodeType" || field === "basis") {
         selectedNode.data[field] = value;
@@ -928,20 +928,40 @@ export const TextPanel = () => {
               />
             </div>
 
-            <label className="block text-sm font-medium text-start text-gray-700 mt-2" htmlFor="indices">
-              Basis
-            </label>
-            <div className="mt-1">
-              <input
-                type="text"
-                id="basis"
-                name="basis"
-                value={selectedNode.data.basis || ""}
-                onChange={(e) => handleNumberChange("basis", e.target.value)}
-                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                placeholder="Z"
-              />
-            </div>
+
+            <>
+              <label
+                className="block text-sm font-medium text-start text-gray-700 mt-2"
+                htmlFor="basis"
+              >
+                Basis
+              </label>
+              <div className="mt-1">
+                <input
+                  type="text"
+                  id="basis"
+                  name="basis"
+                  value={selectedNode.data.basis || ""}
+                  onChange={(e) => {
+                    const value = e.target.value.toUpperCase();
+
+                    if (/^[XYZ]*$/.test(value)) {
+                      handleNumberChange("basis", value);
+                    }
+                  }}
+                  className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
+                  placeholder="e.g. XYZ"
+                />
+              </div>
+              {selectedNode.data.basis &&
+                !/^[XYZ]+$/.test(selectedNode.data.basis.toUpperCase()) && (
+                  <p className="text-red-500 text-xs mt-1">
+                    Basis may only contain X, Y, or Z.
+                  </p>
+                )}
+            </>
+
+
 
             <label className="block text-sm font-medium text-start text-gray-700 mt-2" htmlFor="outputIdentifier">
               Output Identifier
@@ -1098,302 +1118,302 @@ export const TextPanel = () => {
               </div>
             )}
 
-          
-                {multi_parameterized_two_qubit.includes(selectedNode.data.label) && (
-                  <div className="p-2 mt-3">
-                    <label className="block text-sm font-medium text-start text-gray-700 mb-2">
-                      Parameters
-                    </label>
 
-                    {[
-                      { key: "theta", label: "θ" },
-                      { key: "phi", label: "φ" },
-                      { key: "lambda", label: "λ" },
-                      { key: "gamma", label: "γ" },
-                    ].map(({ key, label }) => (
-                      <div key={key} className="mb-3">
-                        <label className="block text-xs font-medium text-gray-600" htmlFor={`param-${key}`}>
-                          {label}
-                        </label>
-                        <input
-                          type="text"
-                          id={`param-${key}`}
-                          name={`param-${key}`}
-                          value={
-                            selectedNode.data.parameterType === "degree"
-                              ? radToDeg(selectedNode.data[key] || 0)
-                              : selectedNode.data[key] || ""
-                          }
-                          onChange={(e) => handleNumberChange(key, e.target.value)}
-                          className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                          placeholder={`Enter ${label}`}
-                        />
-                      </div>
-                    ))}
+            {multi_parameterized_two_qubit.includes(selectedNode.data.label) && (
+              <div className="p-2 mt-3">
+                <label className="block text-sm font-medium text-start text-gray-700 mb-2">
+                  Parameters
+                </label>
 
-                    <label className="block text-sm font-medium text-start text-gray-700 mt-4" htmlFor="parameterType">
-                      Parameter Type
+                {[
+                  { key: "theta", label: "θ" },
+                  { key: "phi", label: "φ" },
+                  { key: "lambda", label: "λ" },
+                  { key: "gamma", label: "γ" },
+                ].map(({ key, label }) => (
+                  <div key={key} className="mb-3">
+                    <label className="block text-xs font-medium text-gray-600" htmlFor={`param-${key}`}>
+                      {label}
                     </label>
-                    <div className="mt-1">
-                      <select
-                        id="parameterType"
-                        name="parameterType"
-                        value={selectedNode.data.parameterType || ""}
-                        onChange={(e) => handleNumberChange("parameterType", e.target.value)}
-                        className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                      >
-                        <option value="degree">Degree</option>
-                        <option value="radian">Radian</option>
-                      </select>
-                    </div>
+                    <input
+                      type="text"
+                      id={`param-${key}`}
+                      name={`param-${key}`}
+                      value={
+                        selectedNode.data.parameterType === "degree"
+                          ? radToDeg(selectedNode.data[key] || 0)
+                          : selectedNode.data[key] || ""
+                      }
+                      onChange={(e) => handleNumberChange(key, e.target.value)}
+                      className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
+                      placeholder={`Enter ${label}`}
+                    />
                   </div>
-                )}
+                ))}
 
-              </>
-            )}
-
-            {(selectedNode?.type === AlgorithmNode || selectedNode?.type === ClassicalAlgorithmNode) && (
-              <div className="p-2 mt-3">
-                <label
-                  className="block text-sm font-medium text-start text-gray-700"
-                  htmlFor="numberInputs"
-                >
-                  Number of Inputs
+                <label className="block text-sm font-medium text-start text-gray-700 mt-4" htmlFor="parameterType">
+                  Parameter Type
                 </label>
                 <div className="mt-1">
-                  <input
-                    type="text"
-                    id="numberInputs"
-                    name="numberInputs"
-                    value={selectedNode.data.numberInputs || ""
-                    }
-                    onChange={(e) =>
-                      handleNumberChange("numberInputs", e.target.value)
-                    }
+                  <select
+                    id="parameterType"
+                    name="parameterType"
+                    value={selectedNode.data.parameterType || ""}
+                    onChange={(e) => handleNumberChange("parameterType", e.target.value)}
                     className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                    placeholder="Enter numberInputs"
-                  />
+                  >
+                    <option value="degree">Degree</option>
+                    <option value="radian">Radian</option>
+                  </select>
                 </div>
-
-                <label
-                  className="block text-sm font-medium text-start text-gray-700"
-                  htmlFor="numberOutputs"
-                >
-                  Number of Outputs
-                </label>
-                <div className="mt-1">
-                  <input
-                    type="text"
-                    id="numberOutputs"
-                    name="numberOutputs"
-                    value={selectedNode.data.numberOutputs || ""
-                    }
-                    onChange={(e) =>
-                      handleNumberChange("numberOutputs", e.target.value)
-                    }
-                    className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                    placeholder="Enter numberOutputs"
-                  />
-                </div>
-                <label
-                  className="block text-sm font-medium text-start text-gray-700"
-                  htmlFor="implementationType"
-                >
-                  Implementation Type
-                </label>
-                <div className="mt-1">
-                  <input
-                    type="text"
-                    id="implementationType"
-                    name="implementationType"
-                    value={selectedNode.data.implementationType || ""
-                    }
-                    onChange={(e) =>
-                      handleNumberChange("implementationType", e.target.value)
-                    }
-                    className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                    placeholder="Enter implementation type"
-                  />
-                </div>
-                <label
-                  className="block text-sm font-medium text-start text-gray-700 mt-2"
-                  htmlFor="fileUpload"
-                >
-                  Upload Implementation File
-                </label>
-                <div className="mt-1">
-                  <input
-                    type="file"
-                    id="fileUpload"
-                    name="fileUpload"
-                    onChange={e => handleFileUpload(e, "implementation")}
-                    className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                  />
-                </div>
-                <span className="text-sm text-gray-500">{selectedNode.data.fileName}</span>
-
-                <label className="block text-sm font-medium text-start text-gray-700 mt-2">
-                  Implementation Content
-                </label>
-                <textarea
-                  id="implementationContent"
-                  name="implementationContent"
-                  value={selectedNode.data.implementation || implementationContent}
-                  onChange={(e) => handleNumberChange("implementation", e.target.value)}
-                  className="border block w-full border-gray-300 rounded-md sm:text-sm p-2 h-32 overflow-auto"
-                  placeholder="File content will appear here or enter manually"
-                />
-
               </div>
             )}
-            {selectedNode?.type === "splitterNode" && (
-              <div className="p-2 mt-3">
-                <label
-                  className="block text-sm font-medium text-start text-gray-700"
-                  htmlFor="numberOutputs"
-                >
-                  Number of Outputs
-                </label>
-                <div className="mt-1">
-                  <input
-                    type="text"
-                    id="numberOutputs"
-                    name="numberOutputs"
-                    value={selectedNode.data.numberOutputs || ""
-                    }
-                    onChange={(e) =>
-                      handleNumberChange("numberOutputs", e.target.value)
-                    }
-                    className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                    placeholder="Enter numberOutputs"
-                  />
-                </div>
-                <label
-                  className="block text-sm font-medium text-start text-gray-700"
-                  htmlFor="implementationType"
-                >
-                  Implementation Type
-                </label>
-                <div className="mt-1">
-                  <input
-                    type="text"
-                    id="implementationType"
-                    name="implementationType"
-                    value={selectedNode.data.implementationType || ""
-                    }
-                    onChange={(e) =>
-                      handleNumberChange("implementationType", e.target.value)
-                    }
-                    className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                    placeholder="Enter implementation type"
-                  />
-                </div>
-                <label
-                  className="block text-sm font-medium text-start text-gray-700 mt-2"
-                  htmlFor="fileUpload"
-                >
-                  Upload Implementation File
-                </label>
-                <div className="mt-1">
-                  <input
-                    type="file"
-                    id="fileUpload"
-                    name="fileUpload"
-                    onChange={e => handleFileUpload(e, "implementation")}
-                    className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                  />
-                </div>
-                <span className="text-sm text-gray-500">{selectedNode.data.fileName}</span>
 
-                <label className="block text-sm font-medium text-start text-gray-700 mt-2">
-                  Implementation Content
-                </label>
-                <textarea
-                  id="implementationContent"
-                  name="implementationContent"
-                  value={selectedNode.data.implementation || implementationContent}
-                  onChange={(e) => handleNumberChange("implementation", e.target.value)}
-                  className="border block w-full border-gray-300 rounded-md sm:text-sm p-2 h-32 overflow-auto"
-                  placeholder="File content will appear here or enter manually"
-                />
+          </>
+        )}
 
-              </div>
-            )}
-            {selectedNode?.type === "mergerNode" && (
-              <div className="p-2 mt-3">
-                <label
-                  className="block text-sm font-medium text-start text-gray-700"
-                  htmlFor="numberInputs"
-                >
-                  Number of Inputs
-                </label>
-                <div className="mt-1">
-                  <input
-                    type="text"
-                    id="numberInputs"
-                    name="numberInputs"
-                    value={selectedNode.data.numberInputs || ""
-                    }
-                    onChange={(e) =>
-                      handleNumberChange("numberInputs", e.target.value)
-                    }
-                    className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                    placeholder="Enter numberInputs"
-                  />
-                </div>
+        {(selectedNode?.type === AlgorithmNode || selectedNode?.type === ClassicalAlgorithmNode) && (
+          <div className="p-2 mt-3">
+            <label
+              className="block text-sm font-medium text-start text-gray-700"
+              htmlFor="numberInputs"
+            >
+              Number of Inputs
+            </label>
+            <div className="mt-1">
+              <input
+                type="text"
+                id="numberInputs"
+                name="numberInputs"
+                value={selectedNode.data.numberInputs || ""
+                }
+                onChange={(e) =>
+                  handleNumberChange("numberInputs", e.target.value)
+                }
+                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
+                placeholder="Enter numberInputs"
+              />
+            </div>
 
-                <label
-                  className="block text-sm font-medium text-start text-gray-700"
-                  htmlFor="implementationType"
-                >
-                  Implementation Type
-                </label>
-                <div className="mt-1">
-                  <input
-                    type="text"
-                    id="implementationType"
-                    name="implementationType"
-                    value={selectedNode.data.implementationType || ""
-                    }
-                    onChange={(e) =>
-                      handleNumberChange("implementationType", e.target.value)
-                    }
-                    className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                    placeholder="Enter implementation type"
-                  />
-                </div>
-                <label
-                  className="block text-sm font-medium text-start text-gray-700 mt-2"
-                  htmlFor="fileUpload"
-                >
-                  Upload Implementation File
-                </label>
-                <div className="mt-1">
-                  <input
-                    type="file"
-                    id="fileUpload"
-                    name="fileUpload"
-                    onChange={e => handleFileUpload(e, "implementation")}
-                    className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                  />
-                </div>
-                <span className="text-sm text-gray-500">{selectedNode.data.fileName}</span>
+            <label
+              className="block text-sm font-medium text-start text-gray-700"
+              htmlFor="numberOutputs"
+            >
+              Number of Outputs
+            </label>
+            <div className="mt-1">
+              <input
+                type="text"
+                id="numberOutputs"
+                name="numberOutputs"
+                value={selectedNode.data.numberOutputs || ""
+                }
+                onChange={(e) =>
+                  handleNumberChange("numberOutputs", e.target.value)
+                }
+                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
+                placeholder="Enter numberOutputs"
+              />
+            </div>
+            <label
+              className="block text-sm font-medium text-start text-gray-700"
+              htmlFor="implementationType"
+            >
+              Implementation Type
+            </label>
+            <div className="mt-1">
+              <input
+                type="text"
+                id="implementationType"
+                name="implementationType"
+                value={selectedNode.data.implementationType || ""
+                }
+                onChange={(e) =>
+                  handleNumberChange("implementationType", e.target.value)
+                }
+                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
+                placeholder="Enter implementation type"
+              />
+            </div>
+            <label
+              className="block text-sm font-medium text-start text-gray-700 mt-2"
+              htmlFor="fileUpload"
+            >
+              Upload Implementation File
+            </label>
+            <div className="mt-1">
+              <input
+                type="file"
+                id="fileUpload"
+                name="fileUpload"
+                onChange={e => handleFileUpload(e, "implementation")}
+                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
+              />
+            </div>
+            <span className="text-sm text-gray-500">{selectedNode.data.fileName}</span>
 
-                <label className="block text-sm font-medium text-start text-gray-700 mt-2">
-                  Implementation Content
-                </label>
-                <textarea
-                  id="implementationContent"
-                  name="implementationContent"
-                  value={selectedNode.data.implementation || implementationContent}
-                  onChange={(e) => handleNumberChange("implementation", e.target.value)}
-                  className="border block w-full border-gray-300 rounded-md sm:text-sm p-2 h-32 overflow-auto"
-                  placeholder="File content will appear here or enter manually"
-                />
+            <label className="block text-sm font-medium text-start text-gray-700 mt-2">
+              Implementation Content
+            </label>
+            <textarea
+              id="implementationContent"
+              name="implementationContent"
+              value={selectedNode.data.implementation || implementationContent}
+              onChange={(e) => handleNumberChange("implementation", e.target.value)}
+              className="border block w-full border-gray-300 rounded-md sm:text-sm p-2 h-32 overflow-auto"
+              placeholder="File content will appear here or enter manually"
+            />
 
-              </div>
-            )}
-          </aside>
-      </>
-      );
+          </div>
+        )}
+        {selectedNode?.type === "splitterNode" && (
+          <div className="p-2 mt-3">
+            <label
+              className="block text-sm font-medium text-start text-gray-700"
+              htmlFor="numberOutputs"
+            >
+              Number of Outputs
+            </label>
+            <div className="mt-1">
+              <input
+                type="text"
+                id="numberOutputs"
+                name="numberOutputs"
+                value={selectedNode.data.numberOutputs || ""
+                }
+                onChange={(e) =>
+                  handleNumberChange("numberOutputs", e.target.value)
+                }
+                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
+                placeholder="Enter numberOutputs"
+              />
+            </div>
+            <label
+              className="block text-sm font-medium text-start text-gray-700"
+              htmlFor="implementationType"
+            >
+              Implementation Type
+            </label>
+            <div className="mt-1">
+              <input
+                type="text"
+                id="implementationType"
+                name="implementationType"
+                value={selectedNode.data.implementationType || ""
+                }
+                onChange={(e) =>
+                  handleNumberChange("implementationType", e.target.value)
+                }
+                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
+                placeholder="Enter implementation type"
+              />
+            </div>
+            <label
+              className="block text-sm font-medium text-start text-gray-700 mt-2"
+              htmlFor="fileUpload"
+            >
+              Upload Implementation File
+            </label>
+            <div className="mt-1">
+              <input
+                type="file"
+                id="fileUpload"
+                name="fileUpload"
+                onChange={e => handleFileUpload(e, "implementation")}
+                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
+              />
+            </div>
+            <span className="text-sm text-gray-500">{selectedNode.data.fileName}</span>
+
+            <label className="block text-sm font-medium text-start text-gray-700 mt-2">
+              Implementation Content
+            </label>
+            <textarea
+              id="implementationContent"
+              name="implementationContent"
+              value={selectedNode.data.implementation || implementationContent}
+              onChange={(e) => handleNumberChange("implementation", e.target.value)}
+              className="border block w-full border-gray-300 rounded-md sm:text-sm p-2 h-32 overflow-auto"
+              placeholder="File content will appear here or enter manually"
+            />
+
+          </div>
+        )}
+        {selectedNode?.type === "mergerNode" && (
+          <div className="p-2 mt-3">
+            <label
+              className="block text-sm font-medium text-start text-gray-700"
+              htmlFor="numberInputs"
+            >
+              Number of Inputs
+            </label>
+            <div className="mt-1">
+              <input
+                type="text"
+                id="numberInputs"
+                name="numberInputs"
+                value={selectedNode.data.numberInputs || ""
+                }
+                onChange={(e) =>
+                  handleNumberChange("numberInputs", e.target.value)
+                }
+                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
+                placeholder="Enter numberInputs"
+              />
+            </div>
+
+            <label
+              className="block text-sm font-medium text-start text-gray-700"
+              htmlFor="implementationType"
+            >
+              Implementation Type
+            </label>
+            <div className="mt-1">
+              <input
+                type="text"
+                id="implementationType"
+                name="implementationType"
+                value={selectedNode.data.implementationType || ""
+                }
+                onChange={(e) =>
+                  handleNumberChange("implementationType", e.target.value)
+                }
+                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
+                placeholder="Enter implementation type"
+              />
+            </div>
+            <label
+              className="block text-sm font-medium text-start text-gray-700 mt-2"
+              htmlFor="fileUpload"
+            >
+              Upload Implementation File
+            </label>
+            <div className="mt-1">
+              <input
+                type="file"
+                id="fileUpload"
+                name="fileUpload"
+                onChange={e => handleFileUpload(e, "implementation")}
+                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
+              />
+            </div>
+            <span className="text-sm text-gray-500">{selectedNode.data.fileName}</span>
+
+            <label className="block text-sm font-medium text-start text-gray-700 mt-2">
+              Implementation Content
+            </label>
+            <textarea
+              id="implementationContent"
+              name="implementationContent"
+              value={selectedNode.data.implementation || implementationContent}
+              onChange={(e) => handleNumberChange("implementation", e.target.value)}
+              className="border block w-full border-gray-300 rounded-md sm:text-sm p-2 h-32 overflow-auto"
+              placeholder="File content will appear here or enter manually"
+            />
+
+          </div>
+        )}
+      </aside>
+    </>
+  );
 };
