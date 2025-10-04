@@ -16,6 +16,7 @@ const selector = (state: {
   edges: Edge[];
   nodes: Node[];
   ancillaMode: boolean;
+  completionGuaranteed: boolean;
   updateNodeValue: (nodeId: string, field: string, nodeVal: any) => void;
   setNodes: (node: Node) => void;
   setSelectedNode: (node: Node) => void;
@@ -24,6 +25,7 @@ const selector = (state: {
   edges: state.edges,
   nodes: state.nodes,
   ancillaMode: state.ancillaMode,
+  completionGuaranteed: state.completionGuaranteed,
   setNodes: state.setNodes,
   updateNodeValue: state.updateNodeValue,
   setSelectedNode: state.setSelectedNode,
@@ -43,7 +45,7 @@ export const StatePreparationNode = memo((node: Node) => {
   const [startsWithDigitError, setStartsWithDigitError] = useState(false);
 
 
-  const { updateNodeValue, setSelectedNode, setNodes, edges, nodes, ancillaMode } = useStore(selector, shallow);
+  const { updateNodeValue, setSelectedNode, setNodes, edges, nodes, ancillaMode, completionGuaranteed } = useStore(selector, shallow);
   const isConnected = edges.some(
     edge => edge.target === node.id && edge.targetHandle === `ancillaHandlePrepareState0${node.id}`
   );
@@ -309,8 +311,12 @@ export const StatePreparationNode = memo((node: Node) => {
 
               {node.data.label === "Prepare State" && (
                 <>
-
-                  <label className="text-sm text-black" style={{ visibility: showingChildren ? "hidden" : "visible" }}>Quantum State Name:</label>
+                  <label
+                    className="text-sm text-black"
+                    style={{ visibility: showingChildren ? "hidden" : "visible" }}
+                  >
+                    Quantum State Name:
+                  </label>
                   <select
                     style={{ visibility: showingChildren ? "hidden" : "visible" }}
                     className="w-full p-1 mt-1 bg-white text-center text-sm text-black border-2 border-blue-300 rounded-full"
@@ -324,10 +330,13 @@ export const StatePreparationNode = memo((node: Node) => {
                     <option value="Custom State">Custom State</option>
                     <option value="GHZ">GHZ State</option>
                     <option value="Uniform Superposition">Uniform Superposition</option>
-                    <option value="W-State">W-State</option>
+                    {!completionGuaranteed && (
+                      <option value="W-State">W-State</option>
+                    )}
                   </select>
                 </>
               )}
+
             </div>
           )}
           <div className="custom-node-port-in mb-3 mt-2">
