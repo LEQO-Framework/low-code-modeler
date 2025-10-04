@@ -203,8 +203,30 @@ export const useStore = create<RFState>((set, get) => ({
     });
   },
   setCompletionGuaranteed: (completionGuaranteed: boolean) => {
+
+    const currentNodes = get().nodes.map(node => {
+      if (!node.data.completionGuaranteed) {
+        return { ...node, hidden: completionGuaranteed };
+      }
+      return { ...node, hidden: false };
+    });
+    const hiddenNodeIds = new Set(
+      currentNodes.filter(n => n.hidden).map(n => n.id)
+    );
+    const currentEdges = get().edges.map(edge => {
+      if (
+        hiddenNodeIds.has(edge.source) ||
+        hiddenNodeIds.has(edge.target)
+      ) {
+        return { ...edge, hidden: true };
+      }
+      return { ...edge, hidden: false };
+    });
+
     set({
-      completionGuaranteed
+      completionGuaranteed,
+      edges: currentEdges,
+      nodes: currentNodes
     });
   },
 
