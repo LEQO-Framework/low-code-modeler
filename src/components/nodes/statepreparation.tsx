@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
 import OutputPort from "../utils/outputPort";
 import UncomputePort from "../utils/uncomputePort";
 import AncillaPort from "../utils/ancillaPort";
-import { ancillaConstructColor, dirtyConstructColor, dirtyAncillaHandle } from "@/constants";
+import { ancillaConstructColor, dirtyConstructColor, dirtyAncillaHandle, classicalConstructColor } from "@/constants";
 import { AlertCircle } from "lucide-react";
 import { findDuplicateOutputIdentifiers } from "../utils/utils";
 
@@ -336,7 +336,7 @@ export const StatePreparationNode = memo((node: Node) => {
                 <div
                   className="relative p-2 mb-1"
                   style={{
-                    backgroundColor: 'rgba(255, 165, 0, 0.3)',
+                    backgroundColor: classicalConstructColor,
                     width: '120px',
                     display: 'flex',
                     alignItems: 'center',
