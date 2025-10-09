@@ -30,6 +30,7 @@ import { ConfigModal } from "./components/modals/configModal";
 import { QunicornModal } from "./components/modals/qunicornModal";
 import { SendRequestModal } from "./components/modals/backendModal";
 import { Toast } from "./components/modals/toast";
+import ExperienceModePanel from "./components/modals/experienceLevelModal";
 
 const selector = (state: {
   nodes: Node[];
@@ -222,6 +223,7 @@ function App() {
   const [loadingQunicorn, setLoadingQunicorn] = useState(true);
   const [statusQunicorn, setStatusQunicorn] = useState(null);
   const [ancillaModelingOn, setAncillaModelingOn] = useState(false);
+  const [compactVisualization, setCompactVisualization] = useState("No");
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
 
   const showToast = (message: string, type: "success" | "error" | "info") => {
@@ -1278,85 +1280,18 @@ function App() {
           )}
             <Controls />
 
-            <Panel position="top-left" className="p-2 z-50">
-              <div className="w-70">
-                <div
-                  onClick={() => setExpanded(!expanded)}
-                  className={`cursor-pointer px-4 py-2 rounded text-white transition-all duration-300 flex justify-between items-center ${expanded ? "bg-blue-600" : "bg-gray-400"
-                    }`}
-                >
-                  <span>Experience Mode</span>
-                  <div className="flex items-center space-x-2">
-                    <span className={`transition-transform duration-300 ${expanded ? "rotate-90" : ""}`}>
-                      ▼
-                    </span>
-                  </div>
-                </div>
-
-                <div
-                  className={`origin-top transition-all duration-300 overflow-hidden ${expanded ? "max-h-96 opacity-100 scale-y-100 mt-2" : "max-h-0 opacity-0 scale-y-0"
-                    } bg-gray-100 rounded p-4`}
-                  style={{ transformOrigin: "top" }}
-                >
-
-                  <table className="config-table">
-                    <tbody>
-                      <tr>
-                        <td align="right">Ancilla Modeling</td>
-                        <td align="left">
-                          <button
-                            onClick={() => { setAncillaModelingOn(!ancillaModelingOn); setAncillaMode(!ancillaModelingOn) }}
-                            className={`px-2 py-1 rounded text-white ${ancillaModelingOn ? "bg-blue-600" : "bg-gray-400"
-                              }`}
-                          >{ancillaModelingOn ? "On" : "Off"}
-                          </button>
-
-                        </td>
-                      </tr>
-                      <tr>
-                        <td align="right">Experience Level</td>
-                        <td align="left">
-                          <select
-                            value={experienceLevel}
-                            onChange={(e) => setExperienceLevel(e.target.value)}
-                            className="mt-1 px-2 py-1 border rounded"
-                          >
-                            <option value="explorer" title="New to quantum computing, curious and starting the journey.">
-                              Explorer
-                            </option>
-                            <option value="adventurer" title="Comfortable with the basics, ready to use deeper concepts.">
-                              Adventurer
-                            </option>
-                            <option value="pioneer" title="Advanced understanding, pushing the frontier of quantum computing.">
-                              Pioneer
-                            </option>
-                          </select>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td align="right">Completion Guaranteed</td>
-                        <td align="left">
-                          <select
-                            value={completionGuaranteedOption}
-                            onChange={(e) => {setCompletionGuaranteedOption(e.target.value); setCompletionGuaranteed(!completionGuaranteed)}}
-                            className="px-2 py-1 border rounded"
-                          >
-                            <option>Yes</option>
-                            <option>No</option>
-                          </select>
-                        </td>
-                      </tr>
-
-                    </tbody>
-                  </table>
-
-                </div>
-
-
-              </div>
-            </Panel>
-
-
+            <ExperienceModePanel
+              expanded={expanded}
+              onToggleExpanded={() => setExpanded(!expanded)}
+              ancillaModelingOn={ancillaModelingOn}
+              onToggleAncilla={() => {setAncillaModelingOn(!ancillaModelingOn); setAncillaMode(!ancillaModelingOn)}}
+              experienceLevel={experienceLevel}
+              onExperienceLevelChange={setExperienceLevel}
+              compactVisualization={compactVisualization}
+              onCompactVisualizationChange={setCompactVisualization}
+              completionGuaranteed={completionGuaranteed}
+              onCompletionGuaranteedChange={setCompletionGuaranteed}
+            />
 
             {toast && (
               <Toast

@@ -1,0 +1,158 @@
+import React from "react";
+import { Panel } from "reactflow";
+
+interface ExperienceModePanelProps {
+  expanded: boolean;
+  onToggleExpanded: () => void;
+  ancillaModelingOn: boolean;
+  onToggleAncilla: () => void;
+  experienceLevel: string;
+  onExperienceLevelChange: (level: string) => void;
+  compactVisualization: string;
+  onCompactVisualizationChange: (value: string) => void;
+  completionGuaranteed: boolean;
+  onCompletionGuaranteedChange: (value: boolean) => void;
+}
+
+export default function ExperienceModePanel({
+  expanded,
+  onToggleExpanded,
+  ancillaModelingOn,
+  onToggleAncilla,
+  experienceLevel,
+  onExperienceLevelChange,
+  compactVisualization,
+  onCompactVisualizationChange,
+  completionGuaranteed,
+  onCompletionGuaranteedChange,
+}: ExperienceModePanelProps) {
+  return (
+    <Panel position="top-left" className="p-2 z-50">
+      <div className="w-70">
+        <div
+          onClick={onToggleExpanded}
+          className={`cursor-pointer px-4 py-2 rounded text-white transition-all duration-300 flex justify-between items-center ${
+            expanded ? "bg-blue-600" : "bg-gray-400"
+          }`}
+        >
+          <span>Experience Mode</span>
+          <div className="flex items-center space-x-2">
+            <span className={`transition-transform duration-300 ${expanded ? "rotate-90" : ""}`}>
+              ▼
+            </span>
+          </div>
+        </div>
+
+        <div
+          className={`origin-top transition-all duration-300 overflow-hidden ${
+            expanded ? "max-h-screen opacity-100 scale-y-100 mt-2" : "max-h-0 opacity-0 scale-y-0"
+          } bg-gray-100 rounded p-4`}
+          style={{ transformOrigin: "top" }}
+        >
+          <table className="config-table w-full">
+            <tbody>
+              <tr>
+                <td align="right">
+                  <span title="Ancilla qubits are helper qubits used for intermediate calculations. Turning Ancilla Mode on allows use of additional helper qubits, which can reduce circuit depth but increases qubit count.">
+                    Ancilla Modeling
+                  </span>
+                </td>
+                <td align="left">
+                  <button
+                    onClick={onToggleAncilla}
+                    className={`px-2 py-1 rounded text-white ${
+                      ancillaModelingOn ? "bg-blue-600" : "bg-gray-400"
+                    }`}
+                  >
+                    {ancillaModelingOn ? "On" : "Off"}
+                  </button>
+                </td>
+              </tr>
+
+              <tr>
+                <td align="right">
+                  <span title="Choose your quantum computing experience.">
+                    Experience Level
+                  </span>
+                </td>
+                <td align="left">
+                  <select
+                    value={experienceLevel}
+                    onChange={(e) => onExperienceLevelChange(e.target.value)}
+                    className="mt-1 px-2 py-1 border rounded"
+                  >
+                    <option value="explorer" title="New to quantum computing, curious and starting the journey.">
+                      Explorer
+                    </option>
+                    <option value="pioneer" title="Advanced understanding, pushing the frontier of quantum computing.">
+                      Pioneer
+                    </option>
+                  </select>
+                </td>
+              </tr>
+
+              <tr>
+                <td align="right">
+                  <span title="Compact Visualization reduces visual space by compressing nodes. Recommended for advanced users.">
+                    Compact Visualization
+                  </span>
+                </td>
+                <td align="left">
+                  <select
+                    value={compactVisualization}
+                    onChange={(e) => onCompactVisualizationChange(e.target.value)}
+                    className="px-2 py-1 border rounded"
+                  >
+                    <option>Yes</option>
+                    <option>No</option>
+                  </select>
+                </td>
+              </tr>
+
+              <tr>
+                <td align="right">
+                  <span title="Completion Guaranteed ensures that the backend has a suitable implementation.">
+                    Completion Guaranteed
+                  </span>
+                </td>
+                <td align="left">
+                  <select
+                    value={completionGuaranteed ? "Yes" : "No"}
+                    onChange={(e) => onCompletionGuaranteedChange(e.target.value === "Yes")}
+                    className="px-2 py-1 border rounded"
+                  >
+                    <option>Yes</option>
+                    <option>No</option>
+                  </select>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3 className="mt-6 mb-2 text-lg font-semibold">Recommended Settings</h3>
+          <table className="mt-4 border border-collapse w-full text-sm">
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="border px-3 py-2 text-left">Experience Level</th>
+                <th className="border px-3 py-2 text-left">Compact Visualization</th>
+                <th className="border px-3 py-2 text-left">Ancilla Mode</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td className="border px-3 py-2">Explorer</td>
+                <td className="border px-3 py-2">No</td>
+                <td className="border px-3 py-2">Off</td>
+              </tr>
+              <tr>
+                <td className="border px-3 py-2">Pioneer</td>
+                <td className="border px-3 py-2">Yes</td>
+                <td className="border px-3 py-2">On</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </Panel>
+  );
+}
