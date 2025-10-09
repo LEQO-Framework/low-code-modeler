@@ -11,7 +11,7 @@ import ReactFlow, {
   Panel,
 } from "reactflow";
 import "reactflow/dist/style.css";
-import { CustomPanel, Palette } from "./components";
+import { ContextMenu, CustomPanel, Palette } from "./components";
 import Toolbar from "./components/toolbar";
 import { nodesConfig, tutorial } from "./config/site";
 import { useStore } from "./config/store";
@@ -93,6 +93,35 @@ function App() {
   const [tempQunicornEndpoint, setTempQunicornEndpoint] = useState(qunicornEndpoint);
   const [tempLowcodeBackendEndpoint, setTempLowcodeBackendEndpoint] = useState(lowcodeBackendEndpoint);
 
+  const [contextMenu, setContextMenu] = useState<{
+    visible: boolean;
+    nodeId: string | null;
+    top: number;
+    left: number;
+  }>({
+    visible: false,
+    nodeId: null,
+    top: 0,
+    left: 0,
+  });
+
+  const onNodeContextMenu = useCallback(
+    (event: React.MouseEvent, node: Node) => {
+      event.preventDefault();
+      setContextMenu({
+        visible: true,
+        nodeId: node.id,
+        top: event.clientY,
+        left: event.clientX,
+      });
+    },
+    []
+  );
+
+  const handleAction = (action: string, nodeId: string) => {
+    console.log(`Action: ${action} on Node: ${nodeId}`);
+    setContextMenu((prev) => ({ ...prev, visible: false }));
+  };
 
 
   const [tempGithubRepositoryOwner, setTempGithubRepositoryOwner] = useState("");
@@ -1219,6 +1248,7 @@ function App() {
             edges={edges}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
+            onNodeContextMenu={onNodeContextMenu}
             onNodeClick={(event: React.MouseEvent, node: Node) => {
               handleClick(event, node);
             }}
@@ -1336,6 +1366,14 @@ function App() {
 
 
           </ReactFlow>
+          {contextMenu.visible && contextMenu.nodeId && (
+            <ContextMenu
+              id={contextMenu.nodeId}
+              top={contextMenu.top}
+              left={contextMenu.left}
+              onAction={handleAction}
+            />
+          )}
         </div>
 
         <div className="relative flex bg-gray-100 h-[calc(100vh_-_60px)]  border-gray-200 border">
