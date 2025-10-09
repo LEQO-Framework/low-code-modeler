@@ -1,15 +1,18 @@
-FROM node:18-alpine
+FROM node:20-alpine
 
 WORKDIR /low-code-modeler
 
-RUN npm install -g pnpm
+RUN corepack enable
 
-COPY package*.json ./
- 
-RUN pnpm install
- 
+COPY package.json pnpm-lock.yaml ./
+
+RUN pnpm install --frozen-lockfile
+
 COPY . .
- 
+
+RUN apk add --no-cache dos2unix && \
+     find . -type f -name "*.css" -exec dos2unix {} \;
+
 EXPOSE 4242
- 
-CMD ["npm", "run", "exposed-port"]
+
+CMD ["pnpm", "run", "exposed-port"]
