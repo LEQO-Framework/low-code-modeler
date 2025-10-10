@@ -933,22 +933,34 @@ export const TextPanel = () => {
             {!completionGuaranteed && (
               <>
                 <label
-                  className="block text-sm font-medium text-start text-gray-700 mt-2"
-                  htmlFor="basis"
-                >
-                  Basis
-                </label>
-                <div className="mt-1">
-                  <input
-                    type="text"
-                    id="basis"
-                    name="basis"
-                    value={selectedNode.data.basis || ""}
-                    onChange={(e) => handleNumberChange("basis", e.target.value)}
-                    className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                    placeholder="Z"
-                  />
-                </div>
+                className="block text-sm font-medium text-start text-gray-700 mt-2"
+                htmlFor="basis"
+              >
+                Basis
+              </label>
+              <div className="mt-1">
+                <input
+                  type="text"
+                  id="basis"
+                  name="basis"
+                  value={selectedNode.data.basis || ""}
+                  onChange={(e) => {
+                    const value = e.target.value.toUpperCase();
+
+                    if (/^[XYZ]*$/.test(value)) {
+                      handleNumberChange("basis", value);
+                    }
+                  }}
+                  className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
+                  placeholder="e.g. XYZ"
+                />
+              </div>
+              {selectedNode.data.basis &&
+                !/^[XYZ]+$/.test(selectedNode.data.basis.toUpperCase()) && (
+                  <p className="text-red-500 text-xs mt-1">
+                    Basis may only contain X, Y, or Z.
+                  </p>
+                )}
               </>
             )}
 
