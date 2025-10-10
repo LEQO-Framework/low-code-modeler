@@ -1,12 +1,13 @@
 import Modal from "./Modal";
 
 export interface HistoryItem {
-  id: string;
+  uuid: string;
+  name: string;
   description: string;
-  modelFileUrl: string;
-  resultStatus: string;
-  resultFileUrl: string;
-  createdAt: string;
+  status: string;
+  created: string;
+  modelFileUrl?: string;
+  resultFileUrl?: string;
 }
 
 interface HistoryModalProps {
@@ -21,8 +22,8 @@ export const HistoryModal = ({ open, onClose, history, onExecute }: HistoryModal
     <Modal
       title="History"
       open={open}
-      className="w-[900px] max-w-[95vw]"
       onClose={onClose}
+      className="w-[900px] max-w-[95vw]"
       footer={
         <div className="flex justify-end">
           <button className="btn btn-secondary" onClick={onClose}>Close</button>
@@ -33,43 +34,63 @@ export const HistoryModal = ({ open, onClose, history, onExecute }: HistoryModal
         <table className="min-w-full table-auto border border-gray-300">
           <thead className="bg-gray-100">
             <tr>
-              <th className="px-4 py-2 border">Model ID</th>
+              <th className="px-4 py-2 border">ID</th>
+              <th className="px-4 py-2 border">Name</th>
               <th className="px-4 py-2 border">Description</th>
-              <th className="px-4 py-2 border">Created When</th>
               <th className="px-4 py-2 border">Model File</th>
+              <th className="px-4 py-2 border">Created</th>
               <th className="px-4 py-2 border">Result Status</th>
               <th className="px-4 py-2 border">Result File</th>
               <th className="px-4 py-2 border">Execute</th>
             </tr>
           </thead>
           <tbody>
-            {history.map((item) => (
-              <tr key={item.id} className="hover:bg-gray-50">
-                <td className="px-4 py-2 border">{item.id}</td>
+            {history.map((item, index) => (
+              <tr key={item.uuid || index} className="hover:bg-gray-50">
+                <td className="px-4 py-2 border">{item.uuid}</td>
+                <td className="px-4 py-2 border">{item.name}</td>
                 <td className="px-4 py-2 border">{item.description}</td>
-                <td className="px-4 py-2 border">{new Date(item.createdAt).toLocaleString()}</td>
-                <td className="px-4 py-2 border text-blue-600 underline cursor-pointer"
-                    onClick={() => window.open(item.modelFileUrl, "_blank")}>
-                  Download
-                </td>
-                <td className="px-4 py-2 border">{item.resultStatus}</td>
-                <td className="px-4 py-2 border text-blue-600 underline cursor-pointer"
-                    onClick={() => window.open(item.resultFileUrl, "_blank")}>
-                  Download
-                </td>
+
                 <td className="px-4 py-2 border">
-                  <button
-                    className="btn btn-primary"
-                    onClick={() => onExecute(item)}
-                  >
+                  {item.modelFileUrl ? (
+                    <span
+                      className="text-blue-600 underline cursor-pointer"
+                      onClick={() => window.open(item.modelFileUrl, "_blank")}
+                    >
+                      Download
+                    </span>
+                  ) : (
+                    <span className="text-gray-400">—</span>
+                  )}
+                </td>
+
+                <td className="px-4 py-2 border">{new Date(item.created).toLocaleString()}</td>
+                <td className="px-4 py-2 border">{item.status}</td>
+
+                <td className="px-4 py-2 border">
+                  {item.resultFileUrl ? (
+                    <span
+                      className="text-blue-600 underline cursor-pointer"
+                      onClick={() => window.open(item.resultFileUrl, "_blank")}
+                    >
+                      Download
+                    </span>
+                  ) : (
+                    <span className="text-gray-400">—</span>
+                  )}
+                </td>
+
+                <td className="px-4 py-2 border">
+                  <button className="btn btn-primary" onClick={() => onExecute(item)}>
                     Execute
                   </button>
                 </td>
               </tr>
             ))}
+
             {history.length === 0 && (
               <tr>
-                <td colSpan={7} className="text-center px-4 py-2">No history available</td>
+                <td colSpan={8} className="text-center px-4 py-2">No history available</td>
               </tr>
             )}
           </tbody>
