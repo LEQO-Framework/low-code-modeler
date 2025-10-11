@@ -424,7 +424,7 @@ function App() {
         "name": "DeploymentName"
       };
 
-      let response = await fetch("http://localhost:8080/deployments/", {
+      let response = await fetch(qunicornEndpoint + "/deployments/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(program),
@@ -458,7 +458,7 @@ function App() {
         "deploymentId": deploymentId
       }
 
-      let response = await fetch("http://localhost:8080/jobs/", {
+      let response = await fetch(qunicornEndpoint + "/jobs/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(program),
@@ -486,7 +486,7 @@ function App() {
 
     try {
 
-      const url = `http://localhost:8080/${jobId.startsWith('/') ? jobId.slice(1) : jobId}`;
+      const url = `${qunicornEndpoint}/${jobId.startsWith('/') ? jobId.slice(1) : jobId}`;
 
       let getdata = null;
 
