@@ -84,25 +84,13 @@ function App() {
   const [patternAtlasApiEndpoint, setPatternAtlasApiEndpoint] = useState(import.meta.env.VITE_PATTERN_ATLAS_API);
   const [patternAtlasUiEndpoint, setPatternAtlasUiEndpoint] = useState(import.meta.env.VITE_PATTERN_ATLAS_UI);
   const [qcAtlasEndpoint, setQcAtlasEndpoint] = useState(import.meta.env.VITE_QC_ATLAS);
-  const [tempPatternAtlasApiEndpoint, setTempPatternAtlasApiEndpoint] = useState(patternAtlasApiEndpoint);
-  const [tempPatternAtlasUiEndpoint, setTempPatternAtlasUiEndpoint] = useState(patternAtlasUiEndpoint);
-  const [tempQcAtlasEndpoint, setTempQcAtlasEndpoint] = useState(qcAtlasEndpoint);
 
   const [activeTab, setActiveTab] = useState("lowCodeEndpoints");
-  const [tempNisqAnalyzerEndpoint, setTempNisqAnalyzerEndpoint] = useState(nisqAnalyzerEndpoint);
-  const [tempQunicornEndpoint, setTempQunicornEndpoint] = useState(qunicornEndpoint);
-  const [tempLowcodeBackendEndpoint, setTempLowcodeBackendEndpoint] = useState(lowcodeBackendEndpoint);
 
   const [githubRepositoryOwner, setGithubRepositoryOwner] = useState(import.meta.env.VITE_GITHUB_REPO_OWNER);
   const [githubRepositoryName, setGithubRepositoryName] = useState(import.meta.env.VITE_GITHUB_REPO_NAME);
   const [githubBranch, setGithubBranch] = useState(import.meta.env.VITE_GITHUB_REPO_BRANCH);
   const [githubToken, setGithubToken] = useState(import.meta.env.VITE_GITHUB_TOKEN);
-
-
-  const [tempGithubRepositoryOwner, setTempGithubRepositoryOwner] = useState("");
-  const [tempGithubRepositoryName, setTempGithubRepositoryName] = useState("");
-  const [tempGithubBranch, setTempGithubBranch] = useState("");
-  const [tempGithubToken, setTempGithubToken] = useState("");
   const [openqasmCode, setOpenQASMCode] = useState("");
 
   const [selectedDevice, setSelectedDevice] = useState("");
@@ -143,31 +131,20 @@ function App() {
   };
 
   const handleSave = (newValues) => {
-    setTempNisqAnalyzerEndpoint(newValues.tempNisqAnalyzerEndpoint);
-    setTempQunicornEndpoint(newValues.tempQunicornEndpoint);
-    setTempLowcodeBackendEndpoint(newValues.tempLowcodeBackendEndpoint);
-    setTempPatternAtlasUiEndpoint(newValues.tempPatternAtlasUiEndpoint);
-    setTempPatternAtlasApiEndpoint(newValues.tempPatternAtlasApiEndpoint);
-    setTempQcAtlasEndpoint(newValues.tempQcAtlasEndpoint);
-    setTempGithubRepositoryOwner(newValues.tempGithubRepositoryOwner);
-    setTempGithubRepositoryName(newValues.tempGithubRepositoryName);
-    setTempGithubBranch(newValues.tempGithubBranch);
-    setTempGithubToken(newValues.tempGithubToken);
+    console.log(newValues)
+    setNisqAnalyzerEndpoint(newValues.tempNisqAnalyzerEndpoint);
+    setQunicornEndpoint(newValues.tempQunicornEndpoint);
+    setLowcodeBackendEndpoint(newValues.tempLowcodeBackendEndpoint);
+    setPatternAtlasUiEndpoint(newValues.tempPatternAtlasUiEndpoint);
+    setPatternAtlasApiEndpoint(newValues.tempPatternAtlasApiEndpoint);
+    setQcAtlasEndpoint(newValues.tempQcAtlasEndpoint);
+    setGithubRepositoryOwner(newValues.tempGithubRepositoryOwner);
+    setGithubRepositoryName(newValues.tempGithubRepositoryName);
+    setGithubBranch(newValues.tempGithubBranch);
+    setGithubToken(newValues.tempGithubToken);
 
     setIsConfigOpen(false);
   };
-
-
-  const handleCancel = () => {
-    setTempNisqAnalyzerEndpoint(nisqAnalyzerEndpoint);
-    setTempQunicornEndpoint(qunicornEndpoint);
-    setTempLowcodeBackendEndpoint(lowcodeBackendEndpoint);
-    setIsConfigOpen(false);
-    setTempPatternAtlasApiEndpoint(patternAtlasApiEndpoint);
-    setTempPatternAtlasUiEndpoint(patternAtlasUiEndpoint);
-    setTempQcAtlasEndpoint(qcAtlasEndpoint);
-  };
-
 
   const cancelLoadJson = () => {
     setIsLoadJsonModalOpen(false);
@@ -314,7 +291,7 @@ function App() {
       const jsonData = await response.json();
       const uuid = jsonData["uuid"];
       let location = jsonData["result"];
-      const statusUrl = `${tempLowcodeBackendEndpoint}/status/${uuid}`;
+      const statusUrl = `${lowcodeBackendEndpoint}/status/${uuid}`;
 
       console.log("Initial compile response:", jsonData);
 
@@ -407,6 +384,7 @@ function App() {
   const handleDeploy = async () => {
     setIsQunicornOpen(true);
     setLoading(true);
+    console.log(qunicornEndpoint)
 
     try {
       let program = {
@@ -416,7 +394,7 @@ function App() {
             "quantumCircuit": openqasmCode,
             //"quantumCircuit": "OPENQASM 2.0;include 'qelib1.inc';qreg q[6];creg c[6];gate oracle(q0, q1, q2, q3, q4, q5) {    x q0;    x q1;    x q2;    x q3;    x q4;    x q5;        h q5;    ccx q3, q4, q5;    cx q2, q3;    cx q1, q2;    cx q0, q1;    h q5;    x q0;    x q1;    x q2;    x q3;    x q4;    x q5;}gate diffusion(q0, q1, q2, q3, q4, q5) {    h q0;    h q1;    h q2;    h q3;    h q4;    h q5;        x q0;    x q1;    x q2;    x q3;    x q4;    x q5;        h q5;    ccx q3, q4, q5;    cx q2, q3;    cx q1, q2;    cx q0, q1;    h q5;        x q0;    x q1;    x q2;    x q3;    x q4;    x q5;        h q0;    h q1;    h q2;    h q3;    h q4;    h q5;}h q[0];h q[1];h q[2];h q[3];h q[4];h q[5];oracle(q[0], q[1], q[2], q[3], q[4], q[5]);diffusion(q[0], q[1], q[2], q[3], q[4], q[5]);oracle(q[0], q[1], q[2], q[3], q[4], q[5]);diffusion(q[0], q[1], q[2], q[3], q[4], q[5]);oracle(q[0], q[1], q[2], q[3], q[4], q[5]);diffusion(q[0], q[1], q[2], q[3], q[4], q[5]);oracle(q[0], q[1], q[2], q[3], q[4], q[5]);diffusion(q[0], q[1], q[2], q[3], q[4], q[5]);oracle(q[0], q[1], q[2], q[3], q[4], q[5]);diffusion(q[0], q[1], q[2], q[3], q[4], q[5]);oracle(q[0], q[1], q[2], q[3], q[4], q[5]);diffusion(q[0], q[1], q[2], q[3], q[4], q[5]);measure q[0] -> c[0];measure q[1] -> c[1];measure q[2] -> c[2];measure q[3] -> c[3];measure q[4] -> c[4];measure q[5] -> c[5];",
 
-            "assemblerLanguage": "QASM2",
+            "assemblerLanguage": "QASM3",
             "pythonFilePath": "",
             "pythonFileMetadata": ""
           }
@@ -717,10 +695,10 @@ function App() {
 
   async function uploadToGitHub() {
     let flowId = `model-${Date.now()}`;
-    const repoOwner = tempGithubRepositoryOwner;
-    const repo = tempGithubRepositoryName;
-    const branch = tempGithubBranch;
-    const token = tempGithubToken;
+    const repoOwner = githubRepositoryOwner;
+    const repo = githubRepositoryName;
+    const branch = githubBranch;
+    const token = githubToken;
 
     const apiUrl = `https://api.github.com/repos/${repoOwner}/${repo}/contents/${flowId}`;
     let sha = null;
@@ -1158,16 +1136,16 @@ function App() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
 
-        tempNisqAnalyzerEndpoint={tempNisqAnalyzerEndpoint}
-        tempQunicornEndpoint={tempQunicornEndpoint}
-        tempLowcodeBackendEndpoint={tempLowcodeBackendEndpoint}
-        tempPatternAtlasUiEndpoint={tempPatternAtlasUiEndpoint}
-        tempPatternAtlasApiEndpoint={tempPatternAtlasApiEndpoint}
-        tempQcAtlasEndpoint={tempQcAtlasEndpoint}
-        tempGithubRepositoryOwner={tempGithubRepositoryOwner}
-        tempGithubRepositoryName={tempGithubRepositoryName}
-        tempGithubBranch={tempGithubBranch}
-        tempGithubToken={tempGithubToken}
+        tempNisqAnalyzerEndpoint={nisqAnalyzerEndpoint}
+        tempQunicornEndpoint={qunicornEndpoint}
+        tempLowcodeBackendEndpoint={lowcodeBackendEndpoint}
+        tempPatternAtlasUiEndpoint={patternAtlasUiEndpoint}
+        tempPatternAtlasApiEndpoint={patternAtlasApiEndpoint}
+        tempQcAtlasEndpoint={qcAtlasEndpoint}
+        tempGithubRepositoryOwner={githubRepositoryOwner}
+        tempGithubRepositoryName={githubRepositoryName}
+        tempGithubBranch={githubBranch}
+        tempGithubToken={githubToken}
       />
 
       <QunicornModal
