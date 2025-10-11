@@ -93,6 +93,10 @@ function App() {
   const [tempQunicornEndpoint, setTempQunicornEndpoint] = useState(qunicornEndpoint);
   const [tempLowcodeBackendEndpoint, setTempLowcodeBackendEndpoint] = useState(lowcodeBackendEndpoint);
 
+  const [githubRepositoryOwner, setGithubRepositoryOwner] = useState(import.meta.env.VITE_GITHUB_REPO_OWNER);
+  const [githubRepositoryName, setGithubRepositoryName] = useState(import.meta.env.VITE_GITHUB_REPO_NAME);
+  const [githubBranch, setGithubBranch] = useState(import.meta.env.VITE_GITHUB_REPO_BRANCH);
+  const [githubToken, setGithubToken] = useState(import.meta.env.VITE_GITHUB_TOKEN);
 
 
   const [tempGithubRepositoryOwner, setTempGithubRepositoryOwner] = useState("");
