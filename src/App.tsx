@@ -375,6 +375,10 @@ function App() {
     console.log("load toturial")
   }
 
+  const startTour3 = () => {
+    loadFlow(modeledDiagram);
+  }
+
   const startTour = () => {
     setRunTour(true);
     setAncillaMode(false);
@@ -891,6 +895,7 @@ function App() {
     [setSelectedNode],
   );
 
+  const [modeledDiagram, setModeledDiagram] = useState(null);
   // Function to load the flow
   const loadFlow = (flow: any) => {
     if (!reactFlowInstance) {
@@ -1079,18 +1084,22 @@ function App() {
         callback={(data) => {
           const { status, index, type } = data;
           console.log(index)
+
+          if (type === 'step:before' && index === 1) {
+           let fileContent = JSON.stringify(reactFlowInstance.toObject());
+            setModeledDiagram(fileContent)
+          }
           if (type === 'step:before' && index === 3) {
             startTour2();
 
           }
           if (type === 'step:after' && index === 5) {
-            loadFlow(initialDiagram);
+            startTour3();
           }
-
 
           if (['finished', 'skipped'].includes(data.status)) {
             setRunTour(false);
-            //loadFlow(initialDiagram);
+            loadFlow(JSON.parse(modeledDiagram));
           }
         }}
       />
