@@ -100,9 +100,9 @@ export const TextPanel = () => {
       }
       console.log(value);
       console.log(field)
-      if (field === "gamma" || field === "lambda" || field === "theta" || field === "phi" || field === "parameterType" || field === "outputIdentifier" || field === "quantumStateName" || field === "encodingType" || field === "implementationType" || field === "size"
+      if (field === "gamma" || field === "lambda" || field === "theta" || field === "phi" || field === "parameterType" || field === "quantumStateName" || field === "encodingType" || field === "implementationType"
         || field === "operator" || field === "minMaxOperator" || field === "uncomputeImplementationType" || field === "implementation" || field === "fileName" ||
-        field === "uncomputeImplementation" || field === "parameter" || field === "nodeType" || field === "basis") {
+        field === "uncomputeImplementation" || field === "parameter" || field === "nodeType" || field === "basis" || field === "indices") {
         selectedNode.data[field] = value;
         updateNodeValue(selectedNode.id, field, value);
       }
@@ -180,26 +180,6 @@ export const TextPanel = () => {
                 placeholder="Enter a number"
               />
             </div>
-
-            <label
-              className="block text-sm font-medium text-start text-gray-700 mt-2"
-              htmlFor="outputIdentifier"
-            >
-              Output Identifier
-            </label>
-            <div className="mt-1">
-              <input
-                type="text"
-                id="outputIdentifier"
-                name="outputIdentifier"
-                value={selectedNode.data.outputIdentifier || ""}
-                onChange={(e) =>
-                  handleNumberChange("outputIdentifier", e.target.value)
-                }
-                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                placeholder="Enter output identifier"
-              />
-            </div>
           </div>
         )}
 
@@ -231,23 +211,6 @@ export const TextPanel = () => {
               </select>
             </div>
 
-            {(<><label
-              className="block text-sm font-medium text-start text-gray-700 mt-2"
-              htmlFor="size"
-            >
-              Size
-            </label>
-              <div className="mt-1">
-                <input
-                  type="text"
-                  id="size"
-                  name="size"
-                  value={selectedNode.data.size || ""}
-                  onChange={(e) => handleNumberChange("size", e.target.value)}
-                  className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                  placeholder="Enter size"
-                />
-              </div></>)}
             {selectedNode.data.encodingType !== "Basis Encoding" && selectedNode.data.encodingType !== "Angle Encoding" && (<><label
               className="block text-sm font-medium text-start text-gray-700 mt-2"
               htmlFor="bound"
@@ -342,24 +305,6 @@ export const TextPanel = () => {
         )}
         {selectedNode?.data.label === "Prepare State" && (
           <div className="p-2 mt-3">
-            <label
-              className="block text-sm font-medium text-start text-gray-700"
-              htmlFor="size"
-            >
-              Size (e.g., 10)
-            </label>
-            <div className="mt-1">
-              <input
-                type="text"
-                id="size"
-                name="size"
-                value={selectedNode.data.size || ""}
-                onChange={(e) => handleNumberChange("size", e.target.value)}
-                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                placeholder="Enter size"
-              />
-            </div>
-
             <label
               className="block text-sm font-medium text-start text-gray-700 mt-2"
               htmlFor="quantumState"
@@ -507,23 +452,6 @@ export const TextPanel = () => {
             </div>
 
             <label
-              className="block text-sm font-medium text-start text-gray-700 mt-2"
-              htmlFor="outputIdentifier"
-            >
-              Output Identifier
-            </label>
-            <div className="mt-1">
-              <input
-                type="text"
-                id="outputIdentifier"
-                name="outputIdentifier"
-                value={selectedNode.data.outputIdentifier || ""}
-                onChange={(e) => handleNumberChange("outputIdentifier", e.target.value)}
-                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                placeholder="Enter output identifier"
-              />
-            </div>
-            <label
               className="block text-sm font-medium text-start text-gray-700"
               htmlFor="implementationType"
             >
@@ -647,23 +575,6 @@ export const TextPanel = () => {
             </div>
 
             <label
-              className="block text-sm font-medium text-start text-gray-700 mt-2"
-              htmlFor="outputIdentifier"
-            >
-              Output Identifier
-            </label>
-            <div className="mt-1">
-              <input
-                type="text"
-                id="outputIdentifier"
-                name="outputIdentifier"
-                value={selectedNode.data.outputIdentifier || ""}
-                onChange={(e) => handleNumberChange("outputIdentifier", e.target.value)}
-                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                placeholder="Enter output identifier"
-              />
-            </div>
-            <label
               className="block text-sm font-medium text-start text-gray-700"
               htmlFor="implementationType"
             >
@@ -779,20 +690,6 @@ export const TextPanel = () => {
               </select>
             </div>
 
-            <label className="block text-sm font-medium text-start text-gray-700 mt-2" htmlFor="outputIdentifier">
-              Output Identifier
-            </label>
-            <div className="mt-1">
-              <input
-                type="text"
-                id="outputIdentifier"
-                name="outputIdentifier"
-                value={selectedNode.data.outputIdentifier || ""}
-                onChange={(e) => handleNumberChange("outputIdentifier", e.target.value)}
-                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                placeholder="Enter output identifier"
-              />
-            </div>
             <label
               className="block text-sm font-medium text-start text-gray-700"
               htmlFor="implementationType"
@@ -922,7 +819,10 @@ export const TextPanel = () => {
                 id="indices"
                 name="indices"
                 value={selectedNode.data.indices || ""}
-                onChange={(e) => handleNumberChange("indices", e.target.value)}
+                onChange={(e) => {
+                    const value = e.target.value;
+                    handleNumberChange("indices", value);
+                }}
                 className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
                 placeholder="Enter indices"
               />
@@ -961,22 +861,6 @@ export const TextPanel = () => {
                 )}
             </>
 
-
-
-            <label className="block text-sm font-medium text-start text-gray-700 mt-2" htmlFor="outputIdentifier">
-              Output Identifier
-            </label>
-            <div className="mt-1">
-              <input
-                type="text"
-                id="outputIdentifier"
-                name="outputIdentifier"
-                value={selectedNode.data.outputIdentifier || ""}
-                onChange={(e) => handleNumberChange("outputIdentifier", e.target.value)}
-                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                placeholder="Enter output identifier"
-              />
-            </div>
             <label
               className="block text-sm font-medium text-start text-gray-700"
               htmlFor="implementationType"
