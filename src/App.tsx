@@ -1086,7 +1086,7 @@ function App() {
           console.log(index)
 
           if (type === 'step:before' && index === 1) {
-           let fileContent = JSON.stringify(reactFlowInstance.toObject());
+            let fileContent = JSON.stringify(reactFlowInstance.toObject());
             setModeledDiagram(fileContent)
           }
           if (type === 'step:before' && index === 3) {
@@ -1187,18 +1187,25 @@ function App() {
           </div>
           <button
             onClick={togglePalette}
+            style={{
+              width: "24px"
+            }}
             className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white p-2 rounded-l-lg shadow-md hover:bg-gray-600 z-50 ${isPaletteOpen ? "right-0" : "hidden"}`}
+          >
+            {isPaletteOpen ? "←" : "→"}
+          </button>
+          <button
+            onClick={togglePalette}
+            style={{
+              width: "24px",
+              paddingLeft: "4px"
+            }}
+            className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white p-2 rounded-r-lg shadow-md hover:bg-gray-600 z-50 ${isPaletteOpen ? "hidden" : "-left-0"}`}
           >
             {isPaletteOpen ? "←" : "→"}
           </button>
 
         </div>
-        <button
-          onClick={togglePalette}
-          className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white p-2 rounded-l-lg shadow-md hover:bg-gray-600 z-50 ${isPaletteOpen ? "hidden" : "-left-0"}`}
-        >
-          {isPaletteOpen ? "←" : "→"}
-        </button>
 
         <div
           className="h-[calc(100vh_-_60px)] flex-grow"
@@ -1336,7 +1343,21 @@ function App() {
 
             <button
               onClick={togglePanel}
-              className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white p-2 rounded-l-lg shadow-md hover:bg-gray-600 z-50 ${isPanelOpen ? "left-0" : "hidden"}`}
+              style={{
+                width: "24px",
+                paddingLeft: "4px",
+              }}
+              className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white text-center p-2 rounded-r-lg shadow-md hover:bg-gray-600 z-50 ${isPanelOpen ? "-left-0" : "hidden"}`}
+            >
+
+              {isPanelOpen ? "→" : "←"}
+            </button>
+            <button
+              onClick={togglePanel}
+              style={{
+                width: "24px"
+              }}
+              className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white p-2 rounded-l-lg shadow-md hover:bg-gray-600 z-50 ${isPanelOpen ? "hidden" : "right-0"}`}
             >
               {isPanelOpen ? "→" : "←"}
             </button>
@@ -1346,12 +1367,7 @@ function App() {
           </div>
         </div>
 
-        <button
-          onClick={togglePanel}
-          className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white p-2 rounded-l-lg shadow-md hover:bg-gray-600 z-50 ${isPanelOpen ? "hidden" : "right-0"}`}
-        >
-          {isPanelOpen ? "→" : "←"}
-        </button>
+
       </main>
     </ReactFlowProvider>
   );
