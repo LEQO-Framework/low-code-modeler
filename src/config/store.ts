@@ -258,15 +258,30 @@ export const useStore = create<RFState>((set, get) => ({
     console.log("Current Edges:", currentEdges);
     console.log("New History Item:", newHistoryItem);
 
-    set({
-      nodes: currentNodes,
-      edges: currentEdges,
-      history: [
-        ...get().history.slice(0, get().historyIndex + 1),
-        newHistoryItem,
-      ],
-      historyIndex: get().historyIndex + 1,
-    });
+    if (get().nodes.length < currentNodes) {
+      set({
+        selectedNode: null,
+        nodes: currentNodes,
+        edges: currentEdges,
+        history: [
+          ...get().history.slice(0, get().historyIndex + 1),
+          newHistoryItem,
+        ],
+        historyIndex: get().historyIndex + 1,
+      });
+    } else {
+
+      set({
+        selectedNode: null,
+        nodes: currentNodes,
+        edges: currentEdges,
+        history: [
+          ...get().history.slice(0, get().historyIndex + 1),
+          newHistoryItem,
+        ],
+        historyIndex: get().historyIndex + 1,
+      });
+    }
     console.log("History after update:", get().history);
     console.log("Current historyIndex:", get().historyIndex);
   },
