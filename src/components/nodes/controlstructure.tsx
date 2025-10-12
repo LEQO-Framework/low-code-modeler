@@ -6,7 +6,6 @@ import { shallow } from "zustand/shallow";
 import { Button, Input } from "antd";
 import { cn } from "@/lib/utils";
 
-
 const selector = (state: {
   selectedNode: Node | null;
   edges: Edge[];
@@ -22,7 +21,6 @@ const selector = (state: {
   updateNodeValue: state.updateNodeValue,
   setSelectedNode: state.setSelectedNode,
 });
-// [Imports remain the same]
 
 export const ControlStructureNode = memo((node: Node) => {
   const [showingChildren, setShowingChildren] = useState(false);
@@ -31,6 +29,7 @@ export const ControlStructureNode = memo((node: Node) => {
 
   const [quantumHandles, setQuantumHandles] = useState([0]);
   const [quantumOutputHandles, setQuantumOutputHandles] = useState([0]);
+   const [condition, setCondition] = useState("");
 
   useEffect(() => {
     const connectedQuantumInputs = quantumHandles.filter((index) =>
@@ -46,6 +45,11 @@ export const ControlStructureNode = memo((node: Node) => {
       setQuantumHandles((prev) => [...prev, prev.length]);
     }
 
+    if (node.data.condition !== null) {
+      //updateNodeValue(node.id, "condition", node.data.condition);
+      } else {
+        updateNodeValue(node.id, "condition", condition);
+      }
     setQuantumOutputHandles(connectedQuantumInputs);
     updateNodeInternals(node.id);
   }, [edges, node.id]);
@@ -123,7 +127,7 @@ export const ControlStructureNode = memo((node: Node) => {
                   className="mt-1 w-[80%] text-center"
                   style={{ fontSize: "12px", height: "22px" }}
                   value={node.data.condition || ""}
-                  onChange={(e) => updateNodeValue(node.id, "condition", e.target.value)}
+                  onChange={(e) => {node.data["condition"] = e.target.value;updateNodeValue(node.id, "condition", e.target.value); setSelectedNode(node);}}
                 />
               </div>
 
@@ -276,10 +280,8 @@ export const ControlStructureNode = memo((node: Node) => {
                   );
                 })}
               </div>
-
             </div>
           </div>
-    
         </div>
       </div>
     </div>

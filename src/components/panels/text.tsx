@@ -1,5 +1,5 @@
 import { useStore } from "@/config/store";
-import { AlgorithmNode, ClassicalAlgorithmNode, parameterized_one_qubit, parameterized_two_qubit, multi_parameterized_two_qubit, OperatorNode, minMaxOperatorLabel, comparisonOperatorLabel, ClassicalOperatorNode, bitwiseOperatorLabel } from "@/constants";
+import { AlgorithmNode, ClassicalAlgorithmNode, parameterized_one_qubit, parameterized_two_qubit, multi_parameterized_two_qubit, OperatorNode, minMaxOperatorLabel, comparisonOperatorLabel, ClassicalOperatorNode, bitwiseOperatorLabel, controlStructureNodes, ControlStructureNode, IfElseNode } from "@/constants";
 import { ArrowLeft } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Node } from "reactflow";
@@ -54,10 +54,8 @@ export const TextPanel = () => {
     "nodeType",
     "basis",
     "indices",
+    "condition"
   ];
-
-
-
 
 
   const normalizeDegrees = (deg) => {
@@ -679,6 +677,55 @@ export const TextPanel = () => {
               implementationContent={implementationContent}
               type=""
             />
+          </div>
+        )}
+        {selectedNode?.type === ControlStructureNode && (
+          <div className="p-2 mt-3">
+            <label
+              className="block text-sm font-medium text-start text-gray-700"
+              htmlFor="condition"
+            >
+              Condition
+            </label>
+            <div className="mt-1">
+              <input
+                type="text"
+                id="condition"
+                name="condition"
+                value={selectedNode.data.condition || ""
+                }
+                onChange={(e) =>
+                  handleNumberChange("condition", e.target.value)
+                }
+                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
+                placeholder="Enter condition"
+              />
+            </div>
+          </div>
+        )}
+
+        {selectedNode?.type === IfElseNode && (
+          <div className="p-2 mt-3">
+            <label
+              className="block text-sm font-medium text-start text-gray-700"
+              htmlFor="condition"
+            >
+              Condition
+            </label>
+            <div className="mt-1">
+              <input
+                type="text"
+                id="condition"
+                name="condition"
+                value={selectedNode.data.condition || ""
+                }
+                onChange={(e) =>
+                  handleNumberChange("condition", e.target.value)
+                }
+                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
+                placeholder="Enter condition"
+              />
+            </div>
           </div>
         )}
       </aside>
