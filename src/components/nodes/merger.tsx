@@ -24,10 +24,10 @@ export const MergerNode = memo((node: Node) => {
   let { edges, setEdges, setNewEdges } = useStore(selector, shallow);
   const [edgesGraph, setEdgesGraph] = useState(edges);
 
-  const numberInputs = data.numberInputs||1;
+  const numberInputs = data.numberInputs||2;
   const numberOutputs = data.numberOutputs || 1;
 
-  const handleCount = Math.max(numberInputs, 1);
+  const handleCount = Math.max(numberInputs, 2);
   console.log(handleCount)
 
   const handleGap = 40;
