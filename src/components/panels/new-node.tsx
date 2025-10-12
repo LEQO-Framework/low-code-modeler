@@ -52,12 +52,31 @@ export const AddNodePanel = () => {
 
 
   const filteredNodes = searchQuery
-  ? allNodes.filter((node: Node) => {
-      console.log(node);
-      return node.label.toLowerCase().includes(searchQuery.toLowerCase()) &&
-        !(!ancillaMode && node.type === "ancillaNode")
-    })
-  : [];
+    ? (() => {
+      const query = searchQuery.toLowerCase();
+
+      // Split all matches into prefix (startsWith) vs partial (includes)
+      const prefixMatches: Node[] = [];
+      const partialMatches: Node[] = [];
+
+      for (const node of allNodes) {
+        const labels = [node.label, ...(node.aliases ?? [])].map(l => l.toLowerCase());
+        const allowedInMode = !(!ancillaMode && node.type === "ancillaNode");
+
+        if (!allowedInMode) continue;
+
+        const startsWithMatch = labels.some(l => l.startsWith(query));
+        const includesMatch = !startsWithMatch && labels.some(l => l.includes(query));
+
+        if (startsWithMatch) prefixMatches.push(node);
+        else if (includesMatch) partialMatches.push(node);
+      }
+
+      // Prefix matches appear first, followed by partial matches
+      return [...prefixMatches, ...partialMatches];
+    })()
+    : [];
+
 
   const renderNodes = (nodeGroup: any): React.ReactNode => {
     if (Array.isArray(nodeGroup)) {
@@ -139,7 +158,7 @@ export const AddNodePanel = () => {
                     }
                     alt={node.label}
                     className="w-70 h-70 object-contain"
-                    
+
                   />
                 ) : (
                   <span className="font-semibold">{node.label}</span>
