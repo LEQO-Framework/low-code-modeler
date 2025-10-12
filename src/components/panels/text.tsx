@@ -93,17 +93,22 @@ export const TextPanel = () => {
     if (!isNaN(evaluated)) {
       const storedValue =
         selectedNode.data.parameterType === "degree"
-          ? degToRad(evaluated)
-          : evaluated;
-
+          ? degToRad(value)
+          : radToDeg(value);
+      handleNumberChange("parameter", "" + storedValue);
+    } else {
+      handleNumberChange("parameter", evaluated);
     }
-    handleNumberChange("parameter", evaluated);
   };
 
 
   // Handle other changes based on node type
   function handleNumberChange(field: string, value: string) {
     if (selectedNode) {
+      if (field === "parameterType") {
+        updateNodeValue(selectedNode.id, field, value);
+        handleParameterChange(selectedNode.data.parameter)
+      }
       if (field === "encodingType") {
         setEncodingType(value);
 
@@ -475,15 +480,15 @@ export const TextPanel = () => {
                 </label>
                 <div className="mt-1">
                   <input
-                    type="text"
+                    type="number"
                     id="parameter"
                     name="parameter"
                     value={
                       selectedNode.data.parameterType === "degree"
-                        ? radToDeg(selectedNode.data.parameter || 0)
+                        ? selectedNode.data.parameter
                         : selectedNode.data.parameter || ""
                     }
-                    onChange={(e) => handleParameterChange(e.target.value)}
+                    onChange={(e) => handleNumberChange("parameter",e.target.value)}
                     className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
                     placeholder="Enter parameter"
                   />
