@@ -9,6 +9,7 @@ import {
   Settings,
   Send,
   HelpCircle,
+  Clock
 } from "lucide-react";
 
 interface ToolbarProps {
@@ -19,7 +20,8 @@ interface ToolbarProps {
   uploadDiagram: () => void;
   onLoadJson: () => void;
   sendToBackend: () => void;
-  sendToQunicorn: () => void;
+  //sendToQunicorn: () => void;
+  openHistory: () => void;
   startTour: (tour) => void;
 }
 
@@ -31,7 +33,8 @@ const Toolbar: React.FC<ToolbarProps> = ({
   onOpenConfig,
   onLoadJson,
   sendToBackend,
-  sendToQunicorn,
+  //sendToQunicorn,
+  openHistory,
   startTour
 }) => {
   return (
@@ -61,9 +64,13 @@ const Toolbar: React.FC<ToolbarProps> = ({
           <Button size="sm" onClick={sendToBackend} title="Send the diagram to the backend">
             <Send className="w-4 h-4 mr-2" /> Send to Backend
           </Button>
-          <Button size="sm" onClick={sendToQunicorn} title="Execute the current model">
+          {/**<Button size="sm" onClick={sendToQunicorn} title="Execute the current model">
             <img src="qunicorn.jfif" className="w-5 h-5 mr-2" />
             Send to Qunicorn
+          </Button>**/}
+          <Button size="sm" onClick={openHistory} title="Display the history">
+            <Clock className="w-4 h-4 mr-2" />
+            History
           </Button>
           <Button size="sm" onClick={startTour} title="Start guided tour">
            <HelpCircle className="w-4 h-4 mr-2" />

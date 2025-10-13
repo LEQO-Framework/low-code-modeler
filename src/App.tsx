@@ -31,6 +31,8 @@ import { QunicornModal } from "./components/modals/qunicornModal";
 import { SendRequestModal } from "./components/modals/backendModal";
 import { Toast } from "./components/modals/toast";
 import ExperienceModePanel from "./components/modals/experienceLevelModal";
+import { HistoryItem, HistoryModal } from "./components/modals/historyModal";
+import { ValidationModal } from "./components/modals/validationModal";
 
 const selector = (state: {
   nodes: Node[];
@@ -92,6 +94,8 @@ function App() {
 
   const [activeTab, setActiveTab] = useState("editor");
 
+  const [validationResult, setValidationResult] = useState({ warnings: [], errors: [] });
+  const [isValidationOpen, setIsValidationOpen] = useState(false);
   const [githubRepositoryOwner, setGithubRepositoryOwner] = useState(import.meta.env.VITE_GITHUB_REPO_OWNER);
   const [githubRepositoryName, setGithubRepositoryName] = useState(import.meta.env.VITE_GITHUB_REPO_NAME);
   const [githubBranch, setGithubBranch] = useState(import.meta.env.VITE_GITHUB_REPO_BRANCH);
@@ -276,14 +280,17 @@ function App() {
     setModalOpen(true);
   }
   const sendToBackend = async () => {
-    setLoading(true);
+    //setLoading(true);
     setModalOpen(false);
     setProcessingModalOpen(true);
+
+    let id = `flow-${Date.now()}`;
+    showToast("QASM request for model " + id + " submitted.", "info");
 
     try {
       const validMetadata = {
         ...metadata,
-        id: `flow-${Date.now()}`,
+        id: id,
         timestamp: new Date().toISOString(),
       };
 
@@ -299,6 +306,7 @@ function App() {
         reactFlowInstance.getEdges(),
         compilationTarget
       );
+      console.log(response)
 
       const jsonData = await response.json();
       const uuid = jsonData["uuid"];
@@ -332,6 +340,7 @@ function App() {
               location = statusData["result"];
 
               if (statusData.status === "completed") {
+                //showToast("Result for model " + id + " is available.", "success");
                 console.log("Operation completed successfully.");
                 return resolve();
               }
@@ -341,6 +350,7 @@ function App() {
                 setTimeout(check, delay);
               } else {
                 console.error("Max polling attempts reached. Operation did not complete.");
+                showToast("Max polling attempts for model " + id + " reached.", "error");
                 reject("Max polling attempts reached");
               }
             } catch (error) {
@@ -370,13 +380,52 @@ function App() {
       console.log("Received OpenQASM code:", openqasmCode);
 
       setOpenQASMCode(openqasmCode);
+      setTimeout(() => {
+        setStatus("completed");
+        setLoading(false);
+        showToast("Result for model " + id + " is available.", "success");
+      }, 3000);
       setStatus("completed");
       setLoading(false);
 
+
     } catch (error) {
       console.error("Error sending data:", error);
+      showToast("Error during result generation for model " + id + ".", "error");
       setLoading(false);
     }
+  };
+
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [isHistoryOpen, setHistoryOpen] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(false);
+
+  const fetchHistory = async () => {
+    setHistoryLoading(true);
+    try {
+      const response = await fetch(`${lowcodeBackendEndpoint}/results`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (!response.ok) {
+        console.error("Failed to fetch history:", response.statusText);
+        return;
+      }
+
+      const data: HistoryItem[] = await response.json();
+      console.log(data)
+      setHistory(data);
+    } catch (err) {
+      console.error("Error fetching history:", err);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  const openHistoryModal = async () => {
+    await fetchHistory();
+    setHistoryOpen(true);
   };
 
   const startTour2 = () => {
@@ -386,6 +435,168 @@ function App() {
     loadFlow(tutorial);
     console.log("load toturial")
   }
+
+  interface ValidationItem {
+    nodeId: string;
+    description: string;
+  }
+
+  interface ValidationResult {
+    warnings: ValidationItem[];
+    errors: ValidationItem[];
+  }
+
+  function validateFlow(flow): ValidationResult {
+    const warnings: ValidationItem[] = [];
+    const errors: ValidationItem[] = [];
+
+    const outputIds = new Map<string, string>();
+    const nodesById = new Map(flow.nodes?.map((n) => [n.id, n]));
+
+    // Map targetNodeId => sourceNodeIds[]
+    const nodeConnections = new Map();
+    flow.edges?.forEach((edge) => {
+      if (!nodeConnections.has(edge.target)) nodeConnections.set(edge.target, []);
+      nodeConnections.get(edge.target)?.push(edge.source);
+    });
+
+    flow.nodes?.forEach((node) => {
+      const { outputIdentifier, label, inputs, outputSize, condition, operator } = node.data || {};
+      const inputCount = inputs?.length || 0;
+
+      // outputIdentifier checks
+      if (outputIdentifier && /^[0-9]/.test(outputIdentifier)) {
+        errors.push({
+          nodeId: node.id,
+          description: `Invalid outputIdentifier "${outputIdentifier}" (cannot start with a number).`
+        });
+      }
+
+      if (outputIdentifier) {
+        if (outputIds.has(outputIdentifier)) {
+          const firstNodeId = outputIds.get(outputIdentifier);
+          errors.push({
+            nodeId: node.id,
+            description: `Duplicate outputIdentifier "${outputIdentifier}" already used by node "${firstNodeId}".`
+          });
+        } else {
+          outputIds.set(outputIdentifier, node.id);
+        }
+      }
+
+      // Gate / Operator validation
+      const twoQubitGates = ["CNOT", "SWAP", "CZ", "CY", "CH", "CP(λ)", "CRX(θ)", "CRY(θ)", "CRZ(θ)", "CU(θ,φ,λ,γ)"];
+      const threeQubitGates = ["Toffoli", "CSWAP"];
+      const minMaxOperators = ["Min", "Max"];
+
+      if (
+        twoQubitGates.includes(label) ||
+        ((node.type === "quantumOperatorNode" || node.type === "classicalOperatorNode") &&
+          !minMaxOperators.includes(operator))
+      ) {
+        if (inputCount !== 2) {
+          errors.push({
+            nodeId: node.id,
+            description: `Gate "${label}" requires exactly 2 inputs, but got ${inputCount}.`
+          });
+        }
+      }
+
+      if (threeQubitGates.includes(label)) {
+        if (inputCount !== 3) {
+          errors.push({
+            nodeId: node.id,
+            description: `Gate "${label}" requires exactly 3 inputs, but got ${inputCount}.`
+          });
+        }
+      }
+
+      if (
+        minMaxOperators.includes(label) ||
+        (node.type === "gateNode" && label !== "Qubit Circuit")
+      ) {
+        if (inputCount < 1) {
+          errors.push({
+            nodeId: node.id,
+            description: `Operator "${label}" requires at least 1 input.`
+          });
+        }
+      }
+
+      const connectedSources = nodeConnections.get(node.id) || [];
+
+      // StatePreparationNode classical input check
+      if (node.type === "statePreparationNode") {
+        const hasClassical = connectedSources.some((srcId) => {
+          const sourceNode: any = nodesById.get(srcId);
+          return sourceNode?.type === "dataTypeNode";
+        });
+
+        if (!hasClassical) {
+          errors.push({
+            nodeId: node.id,
+            description: `State preparation node "${label}" has no classical data input connected.`
+          });
+        }
+      }
+
+      // Control structures
+      if (node.type === "ifElseNode") {
+        const hasClassical = connectedSources.some((srcId) => {
+          const sourceNode: any = nodesById.get(srcId);
+          return sourceNode?.type === "dataTypeNode";
+        });
+
+        if (!hasClassical) {
+          errors.push({
+            nodeId: node.id,
+            description: `If-Then-Else node "${label}" requires at least one classical data input.`
+          });
+        }
+
+        if (!condition) {
+          errors.push({
+            nodeId: node.id,
+            description: `If-Then-Else node "${label}" requires a condition.`
+          });
+        }
+      }
+
+      if (node.type === "controlStructureNode" && !condition) {
+        errors.push({
+          nodeId: node.id,
+          description: `Repeat node "${label}" requires a condition.`
+        });
+      }
+
+      // Custom Nodes
+      if (node.type === "algorithmNode" || node.type === "classicalAlgorithmNode") {
+        const expectedInputs = node.data?.numberInputs || 0;
+        const actualInputs = connectedSources.length;
+        if (actualInputs < expectedInputs) {
+          errors.push({
+            nodeId: node.id,
+            description: `Custom node "${label}" requires ${expectedInputs} input(s), but only ${actualInputs} connected.`
+          });
+        }
+      }
+    });
+
+    return { warnings, errors };
+  }
+
+
+
+  const handleOpenValidation = () => {
+    if (!reactFlowInstance) return;
+
+    const flow = reactFlowInstance.toObject();
+    const result = validateFlow(flow);
+
+    setValidationResult(result);
+    setIsValidationOpen(true);
+  };
+
 
   const startTour3 = () => {
     loadFlow(modeledDiagram);
@@ -1124,13 +1335,23 @@ function App() {
           onOpenConfig={handleOpenConfig}
           uploadDiagram={() => uploadToGitHub()}
           onLoadJson={handleLoadJson}
-          sendToBackend={prepareBackendRequest}
-          sendToQunicorn={() => setIsQunicornOpen(true)}
+          sendToBackend={handleOpenValidation}
+          //sendToQunicorn={() => setIsQunicornOpen(true)}
+          openHistory={openHistoryModal}
           startTour={() => { startTour(); }}
         />
       </div>
       {<NewDiagramModal open={isLoadJsonModalOpen} onClose={cancelLoadJson} onConfirm={confirmNewDiagram} />}
 
+      <ValidationModal
+        open={isValidationOpen}
+        onClose={() => setIsValidationOpen(false)}
+        onConfirm={() => {
+          setIsValidationOpen(false);
+          setModalOpen(true);
+        }}
+        validationResult={validationResult}
+      />
       <SendRequestModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
@@ -1138,17 +1359,6 @@ function App() {
         setCompilationTarget={setCompilationTarget}
         sendToBackend={sendToBackend}
       />
-
-      <Modal
-        title={"Processing"}
-        open={isProcessingModalOpen}
-        onClose={() => setProcessingModalOpen(false)}
-      >
-        <div>
-          <h2>Processing</h2>
-          {loading ? <p>Loading...</p> : <p>Status: {status || "Unknown"}</p>}
-        </div>
-      </Modal>
 
       <ConfigModal
         open={isConfigOpen}
@@ -1188,6 +1398,16 @@ function App() {
         errorMessage={errorMessage}
         progress={progress}
         chartData={chartData}
+      />
+
+      <HistoryModal
+        open={isHistoryOpen}
+        onClose={() => setHistoryOpen(false)}
+        history={history}
+        onExecute={() => {
+          setHistoryOpen(false);
+          setIsQunicornOpen(true);
+        }}
       />
 
       <main className="flex flex-col lg:flex-row h-[calc(100vh_-_60px)]">
@@ -1277,6 +1497,13 @@ function App() {
             </>
           )}
             <Controls />
+            {toast && (
+              <Toast
+                message={toast.message}
+                type={toast.type}
+                onClose={() => setToast(null)}
+              />
+            )}
 
             <ExperienceModePanel
               expanded={expanded}
@@ -1290,14 +1517,6 @@ function App() {
               completionGuaranteed={completionGuaranteed}
               onCompletionGuaranteedChange={setCompletionGuaranteed}
             />
-
-            {toast && (
-              <Toast
-                message={toast.message}
-                type={toast.type}
-                onClose={() => setToast(null)}
-              />
-            )}
 
             <MiniMap
               nodeClassName={(node) => {
