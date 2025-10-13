@@ -395,7 +395,7 @@ export const IfElseNode = memo((node: Node) => {
                   className="mt-1 w-[80%] text-center"
                   style={{ fontSize: "12px", height: "22px" }}
                   value={node.data.condition || ""}
-                  onChange={(e) => updateNodeValue(node.id, "condition", e.target.value)}
+                  onChange={(e) => {node.data["condition"] = e.target.value;updateNodeValue(node.id, "condition", e.target.value); setSelectedNode(node);}}
                 />
               </div>
 

@@ -86,25 +86,15 @@ function App() {
   const [patternAtlasApiEndpoint, setPatternAtlasApiEndpoint] = useState(import.meta.env.VITE_PATTERN_ATLAS_API);
   const [patternAtlasUiEndpoint, setPatternAtlasUiEndpoint] = useState(import.meta.env.VITE_PATTERN_ATLAS_UI);
   const [qcAtlasEndpoint, setQcAtlasEndpoint] = useState(import.meta.env.VITE_QC_ATLAS);
-  const [tempPatternAtlasApiEndpoint, setTempPatternAtlasApiEndpoint] = useState(patternAtlasApiEndpoint);
-  const [tempPatternAtlasUiEndpoint, setTempPatternAtlasUiEndpoint] = useState(patternAtlasUiEndpoint);
-  const [tempQcAtlasEndpoint, setTempQcAtlasEndpoint] = useState(qcAtlasEndpoint);
 
   const [activeTab, setActiveTab] = useState("lowCodeEndpoints");
-  const [tempNisqAnalyzerEndpoint, setTempNisqAnalyzerEndpoint] = useState(nisqAnalyzerEndpoint);
-  const [tempQunicornEndpoint, setTempQunicornEndpoint] = useState(qunicornEndpoint);
-  const [tempLowcodeBackendEndpoint, setTempLowcodeBackendEndpoint] = useState(lowcodeBackendEndpoint);
 
   const [validationResult, setValidationResult] = useState({ warnings: [], errors: [] });
   const [isValidationOpen, setIsValidationOpen] = useState(false);
-
-
-
-
-  const [tempGithubRepositoryOwner, setTempGithubRepositoryOwner] = useState("");
-  const [tempGithubRepositoryName, setTempGithubRepositoryName] = useState("");
-  const [tempGithubBranch, setTempGithubBranch] = useState("");
-  const [tempGithubToken, setTempGithubToken] = useState("");
+  const [githubRepositoryOwner, setGithubRepositoryOwner] = useState(import.meta.env.VITE_GITHUB_REPO_OWNER);
+  const [githubRepositoryName, setGithubRepositoryName] = useState(import.meta.env.VITE_GITHUB_REPO_NAME);
+  const [githubBranch, setGithubBranch] = useState(import.meta.env.VITE_GITHUB_REPO_BRANCH);
+  const [githubToken, setGithubToken] = useState(import.meta.env.VITE_GITHUB_TOKEN);
   const [openqasmCode, setOpenQASMCode] = useState("");
 
   const [selectedDevice, setSelectedDevice] = useState("");
@@ -145,31 +135,20 @@ function App() {
   };
 
   const handleSave = (newValues) => {
-    setTempNisqAnalyzerEndpoint(newValues.tempNisqAnalyzerEndpoint);
-    setTempQunicornEndpoint(newValues.tempQunicornEndpoint);
-    setTempLowcodeBackendEndpoint(newValues.tempLowcodeBackendEndpoint);
-    setTempPatternAtlasUiEndpoint(newValues.tempPatternAtlasUiEndpoint);
-    setTempPatternAtlasApiEndpoint(newValues.tempPatternAtlasApiEndpoint);
-    setTempQcAtlasEndpoint(newValues.tempQcAtlasEndpoint);
-    setTempGithubRepositoryOwner(newValues.tempGithubRepositoryOwner);
-    setTempGithubRepositoryName(newValues.tempGithubRepositoryName);
-    setTempGithubBranch(newValues.tempGithubBranch);
-    setTempGithubToken(newValues.tempGithubToken);
+    console.log(newValues)
+    setNisqAnalyzerEndpoint(newValues.tempNisqAnalyzerEndpoint);
+    setQunicornEndpoint(newValues.tempQunicornEndpoint);
+    setLowcodeBackendEndpoint(newValues.tempLowcodeBackendEndpoint);
+    setPatternAtlasUiEndpoint(newValues.tempPatternAtlasUiEndpoint);
+    setPatternAtlasApiEndpoint(newValues.tempPatternAtlasApiEndpoint);
+    setQcAtlasEndpoint(newValues.tempQcAtlasEndpoint);
+    setGithubRepositoryOwner(newValues.tempGithubRepositoryOwner);
+    setGithubRepositoryName(newValues.tempGithubRepositoryName);
+    setGithubBranch(newValues.tempGithubBranch);
+    setGithubToken(newValues.tempGithubToken);
 
     setIsConfigOpen(false);
   };
-
-
-  const handleCancel = () => {
-    setTempNisqAnalyzerEndpoint(nisqAnalyzerEndpoint);
-    setTempQunicornEndpoint(qunicornEndpoint);
-    setTempLowcodeBackendEndpoint(lowcodeBackendEndpoint);
-    setIsConfigOpen(false);
-    setTempPatternAtlasApiEndpoint(patternAtlasApiEndpoint);
-    setTempPatternAtlasUiEndpoint(patternAtlasUiEndpoint);
-    setTempQcAtlasEndpoint(qcAtlasEndpoint);
-  };
-
 
   const cancelLoadJson = () => {
     setIsLoadJsonModalOpen(false);
@@ -320,7 +299,7 @@ function App() {
       const jsonData = await response.json();
       const uuid = jsonData["uuid"];
       let location = jsonData["result"];
-      const statusUrl = `${tempLowcodeBackendEndpoint}/status/${uuid}`;
+      const statusUrl = `${lowcodeBackendEndpoint}/status/${uuid}`;
 
       console.log("Initial compile response:", jsonData);
 
@@ -412,7 +391,7 @@ function App() {
   const fetchHistory = async () => {
     setHistoryLoading(true);
     try {
-      const response = await fetch(`${tempLowcodeBackendEndpoint}/result`, {
+      const response = await fetch(`${lowcodeBackendEndpoint}/result`, {
         method: "GET",
         headers: { "Content-Type": "application/json" },
       });
@@ -607,6 +586,10 @@ function App() {
   };
 
 
+  const startTour3 = () => {
+    loadFlow(modeledDiagram);
+  }
+
   const startTour = () => {
     setRunTour(true);
     setAncillaMode(false);
@@ -616,6 +599,7 @@ function App() {
   const handleDeploy = async () => {
     setIsQunicornOpen(true);
     setLoading(true);
+    console.log(qunicornEndpoint)
 
     try {
       let program = {
@@ -633,7 +617,7 @@ function App() {
         "name": "DeploymentName"
       };
 
-      let response = await fetch("http://localhost:8080/deployments/", {
+      let response = await fetch(qunicornEndpoint + "/deployments/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(program),
@@ -667,7 +651,7 @@ function App() {
         "deploymentId": deploymentId
       }
 
-      let response = await fetch("http://localhost:8080/jobs/", {
+      let response = await fetch(qunicornEndpoint + "/jobs/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(program),
@@ -695,7 +679,7 @@ function App() {
 
     try {
 
-      const url = `http://localhost:8080/${jobId.startsWith('/') ? jobId.slice(1) : jobId}`;
+      const url = `${qunicornEndpoint}/${jobId.startsWith('/') ? jobId.slice(1) : jobId}`;
 
       let getdata = null;
 
@@ -926,10 +910,10 @@ function App() {
 
   async function uploadToGitHub() {
     let flowId = `model-${Date.now()}`;
-    const repoOwner = tempGithubRepositoryOwner;
-    const repo = tempGithubRepositoryName;
-    const branch = tempGithubBranch;
-    const token = tempGithubToken;
+    const repoOwner = githubRepositoryOwner;
+    const repo = githubRepositoryName;
+    const branch = githubBranch;
+    const token = githubToken;
 
     const apiUrl = `https://api.github.com/repos/${repoOwner}/${repo}/contents/${flowId}`;
     let sha = null;
@@ -1122,6 +1106,7 @@ function App() {
     [setSelectedNode],
   );
 
+  const [modeledDiagram, setModeledDiagram] = useState(null);
   // Function to load the flow
   const loadFlow = (flow: any) => {
     if (!reactFlowInstance) {
@@ -1310,18 +1295,22 @@ function App() {
         callback={(data) => {
           const { status, index, type } = data;
           console.log(index)
+
+          if (type === 'step:before' && index === 1) {
+            let fileContent = JSON.stringify(reactFlowInstance.toObject());
+            setModeledDiagram(fileContent)
+          }
           if (type === 'step:before' && index === 3) {
             startTour2();
 
           }
           if (type === 'step:after' && index === 5) {
-            loadFlow(initialDiagram);
+            startTour3();
           }
-
 
           if (['finished', 'skipped'].includes(data.status)) {
             setRunTour(false);
-            //loadFlow(initialDiagram);
+            loadFlow(JSON.parse(modeledDiagram));
           }
         }}
       />
@@ -1366,16 +1355,16 @@ function App() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
 
-        tempNisqAnalyzerEndpoint={tempNisqAnalyzerEndpoint}
-        tempQunicornEndpoint={tempQunicornEndpoint}
-        tempLowcodeBackendEndpoint={tempLowcodeBackendEndpoint}
-        tempPatternAtlasUiEndpoint={tempPatternAtlasUiEndpoint}
-        tempPatternAtlasApiEndpoint={tempPatternAtlasApiEndpoint}
-        tempQcAtlasEndpoint={tempQcAtlasEndpoint}
-        tempGithubRepositoryOwner={tempGithubRepositoryOwner}
-        tempGithubRepositoryName={tempGithubRepositoryName}
-        tempGithubBranch={tempGithubBranch}
-        tempGithubToken={tempGithubToken}
+        tempNisqAnalyzerEndpoint={nisqAnalyzerEndpoint}
+        tempQunicornEndpoint={qunicornEndpoint}
+        tempLowcodeBackendEndpoint={lowcodeBackendEndpoint}
+        tempPatternAtlasUiEndpoint={patternAtlasUiEndpoint}
+        tempPatternAtlasApiEndpoint={patternAtlasApiEndpoint}
+        tempQcAtlasEndpoint={qcAtlasEndpoint}
+        tempGithubRepositoryOwner={githubRepositoryOwner}
+        tempGithubRepositoryName={githubRepositoryName}
+        tempGithubBranch={githubBranch}
+        tempGithubToken={githubToken}
       />
 
       <QunicornModal
@@ -1418,18 +1407,25 @@ function App() {
           </div>
           <button
             onClick={togglePalette}
+            style={{
+              width: "24px"
+            }}
             className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white p-2 rounded-l-lg shadow-md hover:bg-gray-600 z-50 ${isPaletteOpen ? "right-0" : "hidden"}`}
+          >
+            {isPaletteOpen ? "←" : "→"}
+          </button>
+          <button
+            onClick={togglePalette}
+            style={{
+              width: "24px",
+              paddingLeft: "4px"
+            }}
+            className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white p-2 rounded-r-lg shadow-md hover:bg-gray-600 z-50 ${isPaletteOpen ? "hidden" : "-left-0"}`}
           >
             {isPaletteOpen ? "←" : "→"}
           </button>
 
         </div>
-        <button
-          onClick={togglePalette}
-          className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white p-2 rounded-l-lg shadow-md hover:bg-gray-600 z-50 ${isPaletteOpen ? "hidden" : "-left-0"}`}
-        >
-          {isPaletteOpen ? "←" : "→"}
-        </button>
 
         <div
           className="h-[calc(100vh_-_60px)] flex-grow"
@@ -1566,7 +1562,21 @@ function App() {
 
             <button
               onClick={togglePanel}
-              className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white p-2 rounded-l-lg shadow-md hover:bg-gray-600 z-50 ${isPanelOpen ? "left-0" : "hidden"}`}
+              style={{
+                width: "24px",
+                paddingLeft: "4px",
+              }}
+              className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white text-center p-2 rounded-r-lg shadow-md hover:bg-gray-600 z-50 ${isPanelOpen ? "-left-0" : "hidden"}`}
+            >
+
+              {isPanelOpen ? "→" : "←"}
+            </button>
+            <button
+              onClick={togglePanel}
+              style={{
+                width: "24px"
+              }}
+              className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white p-2 rounded-l-lg shadow-md hover:bg-gray-600 z-50 ${isPanelOpen ? "hidden" : "right-0"}`}
             >
               {isPanelOpen ? "→" : "←"}
             </button>
@@ -1576,12 +1586,7 @@ function App() {
           </div>
         </div>
 
-        <button
-          onClick={togglePanel}
-          className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white p-2 rounded-l-lg shadow-md hover:bg-gray-600 z-50 ${isPanelOpen ? "hidden" : "right-0"}`}
-        >
-          {isPanelOpen ? "→" : "←"}
-        </button>
+
       </main>
     </ReactFlowProvider>
   );
