@@ -53,13 +53,32 @@ export const AddNodePanel = () => {
   });
 
   const filteredNodes = searchQuery
-    ? allNodes.filter((node: Node) => {
-        return (
-          node.label.toLowerCase().includes(searchQuery.toLowerCase()) &&
-          !(!ancillaMode && node.type === "ancillaNode") &&
-          (completionGuaranteed ? node.completionGuaranteed : true)
-        );
-      })
+     ? (() => {
+      const query = searchQuery.toLowerCase();
+
+      // Split all matches into prefix (startsWith) vs partial (includes)
+      const prefixMatches: Node[] = [];
+      const partialMatches: Node[] = [];
+
+      for (const node of allNodes) {
+        const labels = [node.label, ...(node.aliases ?? [])].map(l => l.toLowerCase());
+        const allowedInMode = !(!ancillaMode && node.type === "ancillaNode");
+
+        if (!allowedInMode ) continue;
+       if (completionGuaranteed && !node.completionGuaranteed) {
+          continue;
+        }
+
+        const startsWithMatch = labels.some(l => l.startsWith(query));
+        const includesMatch = !startsWithMatch && labels.some(l => l.includes(query));
+
+        if (startsWithMatch) prefixMatches.push(node);
+        else if (includesMatch) partialMatches.push(node);
+      }
+
+      // Prefix matches appear first, followed by partial matches
+      return [...prefixMatches, ...partialMatches];
+    })()
     : [];
 
   const filterNodeGroup = (nodeGroup: any): Node[] => {
@@ -75,6 +94,7 @@ export const AddNodePanel = () => {
       );
     }
   };
+
 
   const renderNodes = (nodeGroup: any): React.ReactNode => {
     if (Array.isArray(nodeGroup)) {

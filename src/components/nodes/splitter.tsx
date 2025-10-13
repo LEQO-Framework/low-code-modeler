@@ -25,9 +25,9 @@ export const SplitterNode = memo((node: Node) => {
   const [edgesGraph, setEdgesGraph] = useState(edges);
 
   const numberInputs = 1;
-  const numberOutputs = data.numberOutputs || 1;
+  const numberOutputs = data.numberOutputs || 2;
 
-  const handleCount = Math.max(1, numberOutputs);
+  const handleCount = Math.max(2, numberOutputs);
   console.log(handleCount)
 
   const handleGap = 40;
