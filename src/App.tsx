@@ -391,7 +391,7 @@ function App() {
   const fetchHistory = async () => {
     setHistoryLoading(true);
     try {
-      const response = await fetch(`${lowcodeBackendEndpoint}/result`, {
+      const response = await fetch(`${lowcodeBackendEndpoint}/results`, {
         method: "GET",
         headers: { "Content-Type": "application/json" },
       });

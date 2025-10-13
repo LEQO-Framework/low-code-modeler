@@ -6,8 +6,10 @@ export interface HistoryItem {
   description: string;
   status: string;
   created: string;
-  modelFileUrl?: string;
-  resultFileUrl?: string;
+  links?: {
+    request?: string;
+    result?: string;
+  };
 }
 
 interface HistoryModalProps {
@@ -52,12 +54,12 @@ export const HistoryModal = ({ open, onClose, history, onExecute }: HistoryModal
                 <td className="px-4 py-2 border">{item.description}</td>
 
                 <td className="px-4 py-2 border">
-                  {item.modelFileUrl ? (
+                  {item.links?.request ? (
                     <span
                       className="text-blue-600 underline cursor-pointer"
-                      onClick={() => window.open(item.modelFileUrl, "_blank")}
+                      onClick={() => window.open(item.links.request, "_blank")}
                     >
-                      Download
+                      Open
                     </span>
                   ) : (
                     <span className="text-gray-400">—</span>
@@ -68,12 +70,12 @@ export const HistoryModal = ({ open, onClose, history, onExecute }: HistoryModal
                 <td className="px-4 py-2 border">{item.status}</td>
 
                 <td className="px-4 py-2 border">
-                  {item.resultFileUrl ? (
+                  {item.links?.result ? (
                     <span
                       className="text-blue-600 underline cursor-pointer"
-                      onClick={() => window.open(item.resultFileUrl, "_blank")}
+                      onClick={() => window.open(item.links.result, "_blank")}
                     >
-                      Download
+                      Open
                     </span>
                   ) : (
                     <span className="text-gray-400">—</span>
