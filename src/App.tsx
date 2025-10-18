@@ -113,6 +113,16 @@ function App() {
   const [executed, setAlreadyExecuted] = useState(false);
   const [jobId, setJobId] = useState(null);
 
+  globalThis.setNisqAnalyzerEndpoint = setNisqAnalyzerEndpoint;
+  globalThis.setQunicornEndpoint = setQunicornEndpoint;
+  globalThis.setLowcodeBackendEndpoint = setLowcodeBackendEndpoint;
+  globalThis.setPatternAtlasUiEndpoint = setPatternAtlasUiEndpoint;
+  globalThis.setPatternAtlasApiEndpoint = setPatternAtlasApiEndpoint;
+  globalThis.setQcAtlasEndpoint = setQcAtlasEndpoint;
+  globalThis.setGithubRepositoryOwner = setGithubRepositoryOwner;
+  globalThis.setGithubRepositoryName = setGithubRepositoryName;
+  globalThis.setGithubBranch = setGithubBranch;
+  globalThis.setGithubToken = setGithubToken;
 
   const togglePalette = () => {
     setIsPaletteOpen((prev) => !prev);
