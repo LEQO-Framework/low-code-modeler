@@ -27,7 +27,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
 }) => {
   const { getNode, setNodes, addNodes, setEdges } = useReactFlow();
 
-  const duplicateNode = useCallback(() => {
+  const duplicateNode = useCallback(() => { // duplicate node at slighlty shifted position
     const node = getNode(id);
     if (node) {
       const randomId = generateRandomId();
@@ -47,7 +47,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
     }
   }, [id, getNode, addNodes, onAction]);
 
-  const deleteNode = useCallback(() => {
+  const deleteNode = useCallback(() => { // delete node
     setNodes((nodes) => nodes.filter((node) => node.id !== id));
     setEdges((edges) => edges.filter((edge) => edge.source !== id));
     if (onAction) onAction("delete", id);
@@ -57,8 +57,8 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
     <div
       style={{
         position: "absolute",
-        top,
-        left,
+        top, // klappt nicht: top: getNode(id).position.y
+        left, // klappt nicht: analog .... .position.x
         ...styles, // Merge passed styles
         backgroundColor: "#fff",
         border: "1px solid #ddd",
