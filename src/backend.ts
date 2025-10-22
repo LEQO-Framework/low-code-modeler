@@ -94,7 +94,7 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
 
             // Circuit Blocks
             case consts.GateNode:
-                if (node.data.label === "Qubit") {
+                if (node.data.label === "Qubit" || node.data.label === "Qubit Circuit") {
                     return {
                         id: node.id,
                         type: "qubit"
