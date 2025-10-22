@@ -8,10 +8,10 @@ import ReactFlow, {
   ReactFlowProvider,
   MiniMap,
   getNodesBounds,
-  Panel,
+  Panel
 } from "reactflow";
 import "reactflow/dist/style.css";
-import { CustomPanel, Palette } from "./components";
+import { ContextMenu, CustomPanel, Palette } from "./components";
 import Toolbar from "./components/toolbar";
 import { nodesConfig, tutorial } from "./config/site";
 import { useStore } from "./config/store";
@@ -20,7 +20,7 @@ import { handleDragOver, handleOnDrop } from "./lib/utils";
 import useKeyBindings from "./hooks/useKeyBindings";
 import { toSvg } from "html-to-image";
 import { initialDiagram } from "./config/site";
-import Modal, { NewDiagramModal } from "./Modal";
+import { NewDiagramModal } from "./Modal";
 import './index.css';
 import { Placement } from 'react-joyride';
 import { startCompile } from "./backend";
@@ -88,6 +88,43 @@ function App() {
   const [qcAtlasEndpoint, setQcAtlasEndpoint] = useState(import.meta.env.VITE_QC_ATLAS);
 
   const [activeTab, setActiveTab] = useState("lowCodeEndpoints");
+
+  const [contextMenu, setContextMenu] = useState<{
+    visible: boolean;
+    nodeId: string | null;
+    top: number;
+    left: number;
+  }>({
+    visible: false,
+    nodeId: null,
+    top: 0,
+    left: 0,
+  });
+
+  //const [contextMenu, setContextMenu] = useState(null);
+
+  const onNodeContextMenu = useCallback(
+    (event: React.MouseEvent, node: Node) => {
+      event.preventDefault();
+      setContextMenu({
+        visible: true,
+        nodeId: node.id,
+        top: event.clientY,
+        left: event.clientX,
+        //top: node.position.y+0.5*node.height, //passt nicht
+        //left: node.position.x-0.5*node.width, //passt nicht
+      });
+    }, 
+    []
+  );
+
+  
+
+  const handleAction = (action: string, nodeId: string) => {
+    console.log(`Action: ${action} on Node: ${nodeId}`);
+    setContextMenu((prev) => ({ ...prev, visible: false }));
+  };
+
 
   const [validationResult, setValidationResult] = useState({ warnings: [], errors: [] });
   const [isValidationOpen, setIsValidationOpen] = useState(false);
@@ -781,8 +818,6 @@ function App() {
 
 
   const onNodeDragStop = useCallback(
-
-
     /**
      * 
      * @param evt {
@@ -890,21 +925,32 @@ function App() {
         }
       });
       //setNodes(nodeT);
-    }, [nodes]);
+      if (node.id == contextMenu.nodeId){
+        console.log("moving context menu for node", node.id)
+        setContextMenu((prev) => ({ ...prev, left: evt.clientX, top: evt.clientY}));
+      }
+    }, [nodes, setContextMenu]);
 
   const onDrop = React.useCallback(
     (event: any) => {
       console.log("dropped")
-      console.log(reactFlowInstance.screenToFlowPosition({
+      const position = reactFlowInstance.screenToFlowPosition({
         x: event.clientX,
         y: event.clientY,
-      }));
+      })
+      console.log(position);
 
       handleOnDrop(event, reactFlowWrapper, reactFlowInstance, setNodes);
 
+      //setContextMenu((prev) => ({ ...prev, left: event.clientX, top: event.clientY,}));
     },
     [reactFlowInstance, setNodes],
   );
+
+  const onNodesDelete = useCallback(() => {
+    setContextMenu((prev) => ({ ...prev, visible: false })); // contextMenu disappears when node is deleted
+  }, [setContextMenu]);
+
 
   const flowKey = "example-flow";
 
@@ -1241,14 +1287,27 @@ function App() {
         }
       }
     })
+    // move contextmenu with dragged node if it belongs to that node
+    // if other node is dragged: make context menu invisible
+    if (node.id == contextMenu.nodeId){
+      console.log("drag contextmenu to nodeid: ", node.id)
+      setContextMenu((prev) => ({ ...prev, top: event.clientY, left: event.clientX}))
+    } else {
+      setContextMenu((prev) => ({ ...prev, visible: false}))
+    }
   }
-    , [reactFlowInstance, helperLines, nodes]);
+    , [reactFlowInstance, helperLines, nodes, setContextMenu]);
 
   const onPaneClick = useCallback(() => {
     setMenu(null);
+    setContextMenu((prev) => ({ ...prev, visible: false })); // contextMenu disappears when clicking on pane
     setSelectedNode(null);
     console.log("reset");
-  }, [setMenu, setSelectedNode]);
+  }, [setMenu, setContextMenu, setSelectedNode]);
+
+  const onClick = useCallback(() => {
+    setContextMenu((prev) => ({ ...prev, visible: false })); // contextMenu disappears when clicking anywhere in canvas (but not other panels)
+  }, [setContextMenu]);
 
   const handleOpenConfig = () => setIsConfigOpen(true);
 
@@ -1437,16 +1496,19 @@ function App() {
             edges={edges}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
+            onNodeContextMenu={onNodeContextMenu}
             onNodeClick={(event: React.MouseEvent, node: Node) => {
               handleClick(event, node);
             }}
             onConnectEnd={onConnectEnd}
             onConnect={onConnect}
             onPaneClick={onPaneClick}
+            onClick={onClick}
             onDragOver={onDragOver}
             onNodeDrag={onNodeDrag}
             onNodeDragStop={onNodeDragStop}
             onDrop={onDrop}
+            onNodesDelete={onNodesDelete}
 
             fitView
             fitViewOptions={{ maxZoom: 1 }}
@@ -1551,8 +1613,15 @@ function App() {
 
             <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
 
-
           </ReactFlow>
+          {contextMenu.visible && contextMenu.nodeId && (
+            <ContextMenu
+              id={contextMenu.nodeId}
+              top={contextMenu.top}
+              left={contextMenu.left}
+              onAction={handleAction}
+            />
+          )}
         </div>
 
         <div className="relative flex bg-gray-100 h-[calc(100vh_-_60px)]  border-gray-200 border">
