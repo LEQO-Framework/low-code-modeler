@@ -1,6 +1,6 @@
 import React, { useCallback } from "react";
 import { useReactFlow, Node } from "reactflow";
-import { FaTrash, FaLink, FaCopy } from "react-icons/fa";
+import { FaTrash, FaLink, FaCopy, FaPlus } from "react-icons/fa";
 
 interface ContextMenuProps {
   id: string;
@@ -26,6 +26,9 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   styles = {}, // Default styles as an empty object
 }) => {
   const { getNode, setNodes, addNodes, setEdges } = useReactFlow();
+
+  const label = getNode(id).data.label
+  console.log("Node label for this context menu: ", label)
 
   const duplicateNode = useCallback(() => { // duplicate node at slighlty shifted position
     const node = getNode(id);
@@ -53,53 +56,96 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
     if (onAction) onAction("delete", id);
   }, [id, setNodes, setEdges, onAction]);
 
-  return (
-    <div
-      style={{
-        position: "absolute",
-        top, // klappt nicht: top: getNode(id).position.y
-        left, // klappt nicht: analog .... .position.x
-        ...styles, // Merge passed styles
-        backgroundColor: "#fff",
-        border: "1px solid #ddd",
-        borderRadius: "8px",
-        boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.1)",
-        padding: "10px",
-        zIndex: 1000,
-        display: "flex",
-        flexDirection: "column",
-        gap: "10px",
-      }}
-      className="context-menu"
-    >
-      <p style={{ margin: "0.5em", fontSize: "14px", color: "#666" }}>
-        <small>Node: {id}</small>
-      </p>
-      <div>
-        <button
-          onClick={duplicateNode}
-          style={buttonStyle}
-          aria-label="Duplicate Node"
-        >
-          <FaCopy style={iconStyle} /> Duplicate
-        </button>
-        <button
-          onClick={() => console.log("Connect Node")} // Placeholder
-          style={buttonStyle}
-          aria-label="Connect Node"
-        >
-          <FaLink style={iconStyle} /> Connect
-        </button>
-        <button
-          onClick={deleteNode}
-          style={buttonStyle}
-          aria-label="Delete Node"
-        >
-          <FaTrash style={iconStyle} /> Delete
-        </button>
+  // find better solution for following (too much duplicated code)
+  if (label == "If-Then-Else" || label == "Repeat"){ // Context Menu for Control Nodes: Add Input, Delete
+    return (
+      <div
+        style={{
+          position: "absolute",
+          top,
+          left,
+          ...styles, // Merge passed styles
+          backgroundColor: "#fff",
+          border: "1px solid #ddd",
+          borderRadius: "8px",
+          boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.1)",
+          padding: "10px",
+          zIndex: 1000,
+          display: "flex",
+          flexDirection: "column",
+          gap: "10px",
+        }}
+        className="context-menu"
+      >
+        <p style={{ margin: "0.5em", fontSize: "14px", color: "#666" }}>
+          <small>Node: {id}</small>
+        </p>
+        <div>
+          <button
+            onClick={() => console.log("Add Input")} // Placeholder
+            style={buttonStyle}
+            aria-label="Add Input"
+          >
+            <FaPlus style={iconStyle} /> Add Input
+          </button>
+          <button
+            onClick={deleteNode}
+            style={buttonStyle}
+            aria-label="Delete Node"
+          >
+            <FaTrash style={iconStyle} /> Delete
+          </button>
+        </div>
       </div>
-    </div>
-  );
+    );
+  } else { // Context Menu for any other node: Duplicate, Connect, Delete
+    return (
+      <div
+        style={{
+          position: "absolute",
+          top,
+          left,
+          ...styles, // Merge passed styles
+          backgroundColor: "#fff",
+          border: "1px solid #ddd",
+          borderRadius: "8px",
+          boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.1)",
+          padding: "10px",
+          zIndex: 1000,
+          display: "flex",
+          flexDirection: "column",
+          gap: "10px",
+        }}
+        className="context-menu"
+      >
+        <p style={{ margin: "0.5em", fontSize: "14px", color: "#666" }}>
+          <small>Node: {id}</small>
+        </p>
+        <div>
+          <button
+            onClick={duplicateNode}
+            style={buttonStyle}
+            aria-label="Duplicate Node"
+          >
+            <FaCopy style={iconStyle} /> Duplicate
+          </button>
+          <button
+            onClick={() => console.log("Connect Node")} // Placeholder
+            style={buttonStyle}
+            aria-label="Connect Node"
+          >
+            <FaLink style={iconStyle} /> Connect
+          </button>
+          <button
+            onClick={deleteNode}
+            style={buttonStyle}
+            aria-label="Delete Node"
+          >
+            <FaTrash style={iconStyle} /> Delete
+          </button>
+        </div>
+      </div>
+    );}
 };
 
 const buttonStyle: React.CSSProperties = {
