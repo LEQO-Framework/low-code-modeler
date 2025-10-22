@@ -8,8 +8,7 @@ import ReactFlow, {
   ReactFlowProvider,
   MiniMap,
   getNodesBounds,
-  Panel,
-  getNodePositionWithOrigin,
+  Panel
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { ContextMenu, CustomPanel, Palette } from "./components";
@@ -21,7 +20,7 @@ import { handleDragOver, handleOnDrop } from "./lib/utils";
 import useKeyBindings from "./hooks/useKeyBindings";
 import { toSvg } from "html-to-image";
 import { initialDiagram } from "./config/site";
-import Modal, { NewDiagramModal } from "./Modal";
+import { NewDiagramModal } from "./Modal";
 import './index.css';
 import { Placement } from 'react-joyride';
 import { startCompile } from "./backend";
@@ -127,10 +126,6 @@ function App() {
   };
 
 
-  const [tempGithubRepositoryOwner, setTempGithubRepositoryOwner] = useState("");
-  const [tempGithubRepositoryName, setTempGithubRepositoryName] = useState("");
-  const [tempGithubBranch, setTempGithubBranch] = useState("");
-  const [tempGithubToken, setTempGithubToken] = useState("");
   const [validationResult, setValidationResult] = useState({ warnings: [], errors: [] });
   const [isValidationOpen, setIsValidationOpen] = useState(false);
   const [githubRepositoryOwner, setGithubRepositoryOwner] = useState(import.meta.env.VITE_GITHUB_REPO_OWNER);
