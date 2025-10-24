@@ -83,9 +83,16 @@ export const HistoryModal = ({ open, onClose, history, onExecute }: HistoryModal
                 </td>
 
                 <td className="px-4 py-2 border">
-                  <button className="btn btn-primary" onClick={() => onExecute(item)}>
-                    Execute
-                  </button>
+                    {item.status.toLowerCase() !== "failed" ? (
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => onExecute(item)}
+                    >
+                      Execute
+                    </button>
+                  ) : (
+                    <span className="text-gray-400">—</span>
+                  )}
                 </td>
               </tr>
             ))}

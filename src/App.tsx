@@ -576,7 +576,7 @@ function App() {
               description: `Encode value node "${node.id}" has no classical data input connected.`
             });
           }
-          if(node.data.encodingType ==="Custom Encoding" && !node.data.implementation){
+          if (node.data.encodingType === "Custom Encoding" && !node.data.implementation) {
             errors.push({
               nodeId: node.id,
               description: `Encode value node "${node.id}" is missing implementation for custom encoding.`
@@ -600,73 +600,73 @@ function App() {
         }
       }
 
-        if (node.type === "dataTypeNode" && !node.data.value) {
+      if (node.type === "dataTypeNode" && !node.data.value) {
+        errors.push({
+          nodeId: node.id,
+          description: `Node "${node.id}" has no value specified.`
+        });
+      }
+
+      if (node.type === "qubitNode" && !node.data.value) {
+        errors.push({
+          nodeId: node.id,
+          description: `Node "${node.id}" has no size specified.`
+        });
+      }
+      console.log("HDHDHHDHDHDH")
+      console.log(node)
+
+      if (node.type === "measurementNode" && !node?.data?.indices) {
+
+        errors.push({
+          nodeId: node.id,
+          description: `Measurement node "${node.id}" has no specified indices.`
+        });
+
+      }
+
+
+      // Control structures
+      if (node.type === "ifElseNode") {
+        const hasClassical = connectedSources.some((srcId) => {
+          const sourceNode: any = nodesById.get(srcId);
+          return sourceNode?.type === "dataTypeNode";
+        });
+
+        if (!hasClassical) {
           errors.push({
             nodeId: node.id,
-            description: `Node "${node.id}" has no value specified.`
+            description: `If-Then-Else node "${label}" requires at least one classical data input.`
           });
         }
 
-        if (node.type === "qubitNode" && !node.data.value) {
+        if (!condition) {
           errors.push({
             nodeId: node.id,
-            description: `Node "${node.id}" has no size specified.`
+            description: `If-Then-Else node "${label}" requires a condition.`
           });
         }
-        console.log("HDHDHHDHDHDH")
-        console.log(node)
+      }
 
-        if (node.type === "measurementNode" && !node?.data?.indices) {
+      if (node.type === "controlStructureNode" && !condition) {
+        errors.push({
+          nodeId: node.id,
+          description: `Repeat node "${label}" requires a condition.`
+        });
+      }
 
+      // Custom Nodes
+      if (node.type === "algorithmNode" || node.type === "classicalAlgorithmNode") {
+        const expectedInputs = node.data?.numberInputs || 0;
+        const actualInputs = connectedSources.length;
+        if (actualInputs < expectedInputs) {
           errors.push({
             nodeId: node.id,
-            description: `Measurement node "${node.id}" has no specified indices.`
-          });
-
-        }
-
-
-        // Control structures
-        if (node.type === "ifElseNode") {
-          const hasClassical = connectedSources.some((srcId) => {
-            const sourceNode: any = nodesById.get(srcId);
-            return sourceNode?.type === "dataTypeNode";
-          });
-
-          if (!hasClassical) {
-            errors.push({
-              nodeId: node.id,
-              description: `If-Then-Else node "${label}" requires at least one classical data input.`
-            });
-          }
-
-          if (!condition) {
-            errors.push({
-              nodeId: node.id,
-              description: `If-Then-Else node "${label}" requires a condition.`
-            });
-          }
-        }
-
-        if (node.type === "controlStructureNode" && !condition) {
-          errors.push({
-            nodeId: node.id,
-            description: `Repeat node "${label}" requires a condition.`
+            description: `Custom node "${label}" requires ${expectedInputs} input(s), but only ${actualInputs} connected.`
           });
         }
-
-        // Custom Nodes
-        if (node.type === "algorithmNode" || node.type === "classicalAlgorithmNode") {
-          const expectedInputs = node.data?.numberInputs || 0;
-          const actualInputs = connectedSources.length;
-          if (actualInputs < expectedInputs) {
-            errors.push({
-              nodeId: node.id,
-              description: `Custom node "${label}" requires ${expectedInputs} input(s), but only ${actualInputs} connected.`
-            });
-          }
-        }
-      });
+      }
+    });
 
     return { warnings, errors };
   }
@@ -1530,17 +1530,23 @@ function App() {
             style={{
               width: "24px"
             }}
-            className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white p-2 rounded-l-lg shadow-md hover:bg-gray-600 z-50 ${isPaletteOpen ? "right-0" : "hidden"}`}
+            className={`
+    absolute top-1/2 transform -translate-y-1/2 
+    bg-gray-400 text-white p-2 rounded-l-lg shadow-md hover:bg-gray-600 z-50 
+    ${isPaletteOpen ? "right-0" : "hidden"} 
+    ${isValidationOpen ? "hidden" : ""}
+  `}
           >
             {isPaletteOpen ? "←" : "→"}
           </button>
+
           <button
             onClick={togglePalette}
             style={{
               width: "24px",
               paddingLeft: "4px"
             }}
-            className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white p-2 rounded-r-lg shadow-md hover:bg-gray-600 z-50 ${isPaletteOpen ? "hidden" : "-left-0"}`}
+            className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white p-2 rounded-r-lg shadow-md hover:bg-gray-600 z-50 ${isPaletteOpen ? "hidden" : "-left-0"} ${isValidationOpen ? "hidden" : ""}`}
           >
             {isPaletteOpen ? "←" : "→"}
           </button>
@@ -1699,7 +1705,7 @@ function App() {
                 width: "24px",
                 paddingLeft: "4px",
               }}
-              className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white text-center p-2 rounded-r-lg shadow-md hover:bg-gray-600 z-50 ${isPanelOpen ? "-left-0" : "hidden"}`}
+              className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white text-center p-2 rounded-r-lg shadow-md hover:bg-gray-600 z-50 ${isPanelOpen ? "-left-0" : "hidden"} ${isValidationOpen ? "hidden" : ""}`}
             >
 
               {isPanelOpen ? "→" : "←"}
@@ -1709,7 +1715,7 @@ function App() {
               style={{
                 width: "24px"
               }}
-              className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white p-2 rounded-l-lg shadow-md hover:bg-gray-600 z-50 ${isPanelOpen ? "hidden" : "right-0"}`}
+              className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white p-2 rounded-l-lg shadow-md hover:bg-gray-600 z-50 ${isPanelOpen ? "hidden" : "right-0"} ${isValidationOpen ? "hidden" : ""}`}
             >
               {isPanelOpen ? "→" : "←"}
             </button>
