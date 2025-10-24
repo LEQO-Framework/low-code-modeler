@@ -1018,6 +1018,15 @@ function App() {
 
     const flowWithMetadata = { metadata: validMetadata, ...flow };
 
+    const event = new CustomEvent("lcm-save", {
+      cancelable: true,
+      detail: flowWithMetadata,
+    });
+    const defaultAction = document.dispatchEvent(event);
+    console.log(`defaultAction: ${defaultAction}`);
+    if (!defaultAction)
+      return;
+
     // Create a downloadable JSON file
     const jsonBlob = new Blob([JSON.stringify(flowWithMetadata, null, 2)], {
       type: "application/json",
