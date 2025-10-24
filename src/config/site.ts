@@ -24,7 +24,6 @@ export const nodesConfig = {
   initialNodes: [ ] as unknown as Node[],
   initialEdges: [] as Edge[],
   nodeTypes: {
-    textNode: TextNode,
     dataTypeNode: DataTypeNode,
     dynamicNode: DynamicNode,
     measurementNode: MeasurementNode,
@@ -54,7 +53,6 @@ export const initialDiagram = {
   nodes: [] as Node[],
   edges: [] as Edge[],
   nodeTypes: {
-    textNode: TextNode,
     dataTypeNode: DataTypeNode,
     dynamicNode: DynamicNode,
     measurementNode: MeasurementNode,

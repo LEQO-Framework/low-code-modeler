@@ -40,7 +40,7 @@ export const StatePreparationNode = memo((node: Node) => {
   const [sizeError, setSizeError] = useState(false);
   const [outputs, setOutputs] = useState(node.data.outputs || []);
   const [outputIdentifierError, setOutputIdentifierError] = useState(false);
-  const [encodingType, setEncodingType] = useState("Amplitude Encoding");
+  const [encodingType, setEncodingType] = useState("Basis Encoding");
   const [mounted, setMounted] = useState(false);
   const [startsWithDigitError, setStartsWithDigitError] = useState(false);
 
@@ -59,28 +59,11 @@ export const StatePreparationNode = memo((node: Node) => {
 
     if (field === "encodingType") {
       setEncodingType(value);
-      updateNodeInternals(node.id);
+      //updateNodeInternals(node.id);
     }
 
     node.data[field] = value;
     updateNodeValue(node.id, field, value);
-    setSelectedNode(node);
-  };
-  const handleYChange = (e, field) => {
-    const value = e.target.value;
-    const number = Number(value);
-
-    if (!/^[a-zA-Z_]/.test(value) && value !== "") {
-      setSizeError(true);
-    } else {
-      setSizeError(false);
-    }
-    if (field === "size") {
-      setSize(value);
-    }
-
-    node.data[field] = value;
-    updateNodeValue(node.id, field, number);
     setSelectedNode(node);
   };
 
@@ -88,8 +71,9 @@ export const StatePreparationNode = memo((node: Node) => {
     if (node.data.label === "Encode Value") {
       console.log(node.data.encodingType)
       if (node.data.encodingType !== null && !mounted) {
-        // updateNodeValue(node.id, "encodingType", node.data.encodingType);
+        updateNodeValue(node.id, "encodingType", node.data.encodingType);
       } else {
+        console.log("test")
         updateNodeValue(node.id, "encodingType", encodingType);
       }
     } else {
@@ -128,18 +112,22 @@ export const StatePreparationNode = memo((node: Node) => {
     } else {
       setStartsWithDigitError(false);
     }
+    if(!node.data.encodingType && node.data.label === "Encode Value"){
+      updateNodeValue(node.id, "encodingType", encodingType);
+    }
+    if(!node.data.quantumStateName && node.data.label === "Prepare State"){
+      updateNodeValue(node.id, "quantumStateName", quantumStateName);
+    }
     console.log(encodingType)
     if ((node.data.encodingType === "Basis Encoding" || node.data.encodingType === "Angle Encoding") && (encodingType !== "Angle Encoding" && encodingType !== "Basis Encoding")) {
       updateNodeInternals(node.id);
-      setEncodingType(node.data.encodingType)
+      setEncodingType(node.data.encodingType);
     }
     console.log(node.data.quantumStateName)
     if (node.data.quantumStateName !== quantumStateName) {
       updateNodeInternals(node.id);
       setQuantumStateName(node.data.quantumStateName)
     }
-
-
   }, [nodes, node.data.outputIdentifier, node.id]);
 
   const { data, selected } = node;

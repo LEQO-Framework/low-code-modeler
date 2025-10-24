@@ -576,7 +576,7 @@ function App() {
               description: `Encode value node "${node.id}" has no classical data input connected.`
             });
           }
-          if(node.data.encoding ==="Custom Encoding" && !node.data.implementation){
+          if(node.data.encodingType ==="Custom Encoding" && !node.data.implementation){
             errors.push({
               nodeId: node.id,
               description: `Encode value node "${node.id}" is missing implementation for custom encoding.`

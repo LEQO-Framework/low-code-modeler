@@ -35,7 +35,6 @@ export const TextPanel = () => {
   const [fileName, setFileName] = useState("");
   const [uncomputeFileName, setUncomputeFileName] = useState("");
   const [implementationContent, setImplementationContent] = useState("");
-  const [encodingType, setEncodingType] = useState("");
   console.log(selectedNode);
   const validFields = [
     "gamma",
@@ -108,10 +107,6 @@ export const TextPanel = () => {
       if (field === "parameterType") {
         updateNodeValue(selectedNode.id, field, value);
         handleParameterChange(selectedNode.data.parameter)
-      }
-      if (field === "encodingType") {
-        setEncodingType(value);
-
       }
       if (field === "implementation") {
         setImplementationContent(value);
@@ -213,12 +208,12 @@ export const TextPanel = () => {
                 }
                 className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
               >
-                <option value="Amplitude Encoding">Amplitude Encoding</option>
+                {!completionGuaranteed && (<option value="Amplitude Encoding">Amplitude Encoding</option>)}
                 <option value="Angle Encoding">Angle Encoding</option>
                 <option value="Basis Encoding">Basis Encoding</option>
                 <option value="Custom Encoding">Custom Encoding</option>
-                <option value="Matrix Encoding">Matrix Encoding</option>
-                <option value="Schmidt Decomposition">Schmidt Decomposition</option>
+                {!completionGuaranteed && (<option value="Matrix Encoding">Matrix Encoding</option>)}
+                {!completionGuaranteed && (<option value="Schmidt Decomposition">Schmidt Decomposition</option>)}
               </select>
             </div>
 
@@ -429,35 +424,35 @@ export const TextPanel = () => {
             {!completionGuaranteed && (
               <>
                 <label
-                className="block text-sm font-medium text-start text-gray-700 mt-2"
-                htmlFor="basis"
-              >
-                Basis
-              </label>
-              <div className="mt-1">
-                <input
-                  type="text"
-                  id="basis"
-                  name="basis"
-                  value={selectedNode.data.basis || ""}
-                  onChange={(e) => {
-                    const value = e.target.value.toUpperCase();
+                  className="block text-sm font-medium text-start text-gray-700 mt-2"
+                  htmlFor="basis"
+                >
+                  Basis
+                </label>
+                <div className="mt-1">
+                  <input
+                    type="text"
+                    id="basis"
+                    name="basis"
+                    value={selectedNode.data.basis || ""}
+                    onChange={(e) => {
+                      const value = e.target.value.toUpperCase();
 
-                    if (/^[XYZ]*$/.test(value)) {
-                      handleNumberChange("basis", value);
-                    }
-                  }}
-                  className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                  placeholder="e.g. XYZ"
-                />
-              </div>
-              {selectedNode.data.basis &&
-                !/^[XYZ]+$/.test(selectedNode.data.basis.toUpperCase()) && (
-                  <p className="text-red-500 text-xs mt-1">
-                    Basis may only contain X, Y, or Z.
-                  </p>
-                )}
-            </>)}
+                      if (/^[XYZ]*$/.test(value)) {
+                        handleNumberChange("basis", value);
+                      }
+                    }}
+                    className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
+                    placeholder="e.g. XYZ"
+                  />
+                </div>
+                {selectedNode.data.basis &&
+                  !/^[XYZ]+$/.test(selectedNode.data.basis.toUpperCase()) && (
+                    <p className="text-red-500 text-xs mt-1">
+                      Basis may only contain X, Y, or Z.
+                    </p>
+                  )}
+              </>)}
 
             <ImplementationFields
               selectedNode={selectedNode}
@@ -467,7 +462,7 @@ export const TextPanel = () => {
               type=""
             />
           </div>
-        
+
         )}
 
 
@@ -489,7 +484,7 @@ export const TextPanel = () => {
                         ? selectedNode.data.parameter
                         : selectedNode.data.parameter || ""
                     }
-                    onChange={(e) => handleNumberChange("parameter",e.target.value)}
+                    onChange={(e) => handleNumberChange("parameter", e.target.value)}
                     className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
                     placeholder="Enter parameter"
                   />
