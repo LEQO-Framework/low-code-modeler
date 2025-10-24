@@ -5,6 +5,24 @@ import { Node } from "reactflow";
 import { useEffect, useRef } from 'react';
 import { classicalConstructColor } from '@/constants';
 
+interface OutputPortProps {
+  node: Node;
+  index?: number;
+  type: string;
+  nodes: Node[];
+  outputs: any[];
+  setOutputs: (outputs: any[]) => void;
+  edges: any[];
+  outputIdentifierError: boolean;
+  updateNodeValue: (nodeId: string, field: string, value: any) => void;
+  setSelectedNode: (node: Node) => void;
+  setOutputIdentifierError: (error: boolean) => void;
+  sizeError: boolean;
+  sizeRequired?: boolean;
+  setSizeError: (error: boolean) => void;
+  active: boolean;
+}
+
 export default function OutputPort({
   node,
   index = 0,
@@ -18,9 +36,10 @@ export default function OutputPort({
   setSelectedNode,
   setOutputIdentifierError,
   sizeError,
+  sizeRequired = false,
   setSizeError,
   active
-}) {
+}: OutputPortProps) {
   const isClassical = type === "classical";
   const isAncilla = type === "ancilla";
   const handleId = isClassical
@@ -156,14 +175,15 @@ export default function OutputPort({
           <label className="text-sm text-black" style={{ paddingLeft: '15px' }}>Size</label>
           <input
             type="text"
-            className={`p-1 text-sm text-black opacity-75 w-20 text-center rounded-full border ${sizeError
-              ? 'bg-red-500 border-red-500 border-dashed'
-              : isClassical
-                ? 'bg-white border-orange-500 border-dashed'
-                : isAncilla
-                ? 'bg-white border-green-500 border-dashed'
-                : 'bg-white border-blue-500 border-dashed'
-              }`}
+            className={`p-1 text-sm text-black opacity-75 w-20 text-center rounded-full border ${
+    sizeError
+      ? 'bg-red-500 border-red-500'
+      : isClassical
+        ? `bg-white border-orange-500 ${sizeRequired ? '' : 'border-dashed'}`
+        : isAncilla
+          ? `bg-white border-green-500 ${sizeRequired ? '' : 'border-dashed'}`
+          : `bg-white border-blue-500 ${sizeRequired ? '' : 'border-dashed'}`
+  }`}
             value={node.data.quantumStateName?.includes("Bell State") ? "2" : outputSize}
             readOnly={node.data.quantumStateName?.includes("Bell State")}
             onChange={(e) => {

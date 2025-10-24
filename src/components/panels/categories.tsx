@@ -33,14 +33,14 @@ export const categories: Record<string, CategoryEntry> = {
           type: consts.StatePreparationNode,
           icon: ["PaletteIcon_EncodeValue.png", "PaletteIcon_Ancilla_EncodeValue.png"],
           description: "Encodes a classical value into a quantum state.",
-          completionGuaranteed: false
+          completionGuaranteed: true
         },
         {
           label: "Prepare State",
           type: consts.StatePreparationNode,
           icon: ["PaletteIcon_PrepareState.png", "PaletteIcon_Ancilla_PrepareState.png"],
           description: "Initializes qubits into a specific quantum state.",
-          completionGuaranteed: false
+          completionGuaranteed: true
         },
       ],
       "Quantum To Classical": [
@@ -80,17 +80,15 @@ export const categories: Record<string, CategoryEntry> = {
         { label: "SX", aliases: ["√X", "square root of X"], type: consts.GateNode, icon: "SX_palette.png", description: "Square root of X gate (√X).", completionGuaranteed: true },
         { label: "SDG", aliases: ["S†", "S-dagger"], type: consts.GateNode, icon: "SDG_palette.png", description: "S† gate: inverse of the S gate.", completionGuaranteed: true },
         { label: "TDG", aliases: ["T†", "T-dagger"], type: consts.GateNode, icon: "TDG_palette.png", description: "T† gate: inverse of the T gate.", completionGuaranteed: true },
-        { label: "P(λ)", aliases: ["Phase(λ)"], type: consts.GateNode, icon: "P_palette.png", description: "Applies a phase λ to the |1⟩ state.", completionGuaranteed: true },
         { label: "CNOT", aliases: ["Controlled-X"], type: consts.GateNode, icon: "CNOT_palette.png", description: "Controlled-X gate: flips target qubit if control is |1⟩.", completionGuaranteed: true },
         { label: "SWAP", type: consts.GateNode, icon: "SWAP_palette.png", description: "Swaps the states of two qubits.", completionGuaranteed: true },
         { label: "CY", aliases: ["Controlled-Y"], type: consts.GateNode, icon: "CY_palette.png", description: "Controlled-Y gate.", completionGuaranteed: true },
         { label: "CZ", aliases: ["Controlled-Z"], type: consts.GateNode, icon: "CZ_palette.png", description: "Controlled-Z gate.", completionGuaranteed: true },
         { label: "CH", aliases: ["Controlled-Hadamard"], type: consts.GateNode, icon: "CH_palette.png", description: "Controlled-Hadamard gate.", completionGuaranteed: true },
-        { label: "CP(λ)", aliases: ["Controlled-Phase(λ)"], type: consts.GateNode, icon: "CP_palette.png", description: "Controlled-Phase gate with phase λ.", completionGuaranteed: true },
         { label: "CRX(θ)", aliases: ["Controlled-RX(θ)"], type: consts.GateNode, icon: "CRX_palette.png", description: "Controlled rotation by θ around X-axis.", completionGuaranteed: true },
         { label: "CRY(θ)", aliases: ["Controlled-RY(θ)"], type: consts.GateNode, icon: "CRY_palette.png", description: "Controlled rotation by θ around Y-axis.", completionGuaranteed: true },
         { label: "CRZ(θ)", aliases: ["Controlled-RZ(θ)"], type: consts.GateNode, icon: "CRZ_palette.png", description: "Controlled rotation by θ around Z-axis.", completionGuaranteed: true },
-        { label: "CU(θ,φ,λ,γ)", aliases: ["Controlled-U"], type: consts.GateNode, icon: "CU_palette.png", description: "Controlled universal unitary gate.", completionGuaranteed: false },
+        //{ label: "CU(θ,φ,λ,γ)", aliases: ["Controlled-U"], type: consts.GateNode, icon: "CU_palette.png", description: "Controlled universal unitary gate.", completionGuaranteed: false },
         { label: "Toffoli", aliases: ["CCNOT", "Controlled-Controlled-NOT"], type: consts.GateNode, icon: "Toffoli_palette.png", description: "CCNOT: flips target if both controls are |1⟩.", completionGuaranteed: true },
         { label: "CSWAP", aliases: ["Fredkin"], type: consts.GateNode, icon: "CSWAP_palette.png", description: "Controlled SWAP: swaps two qubits if control is |1⟩.", completionGuaranteed: false },
         { label: "Splitter", type: consts.SplitterNode, icon: "Splitter_palette.png", description: "Splits a quantum register into individual qubits.", completionGuaranteed: true },
@@ -109,12 +107,12 @@ export const categories: Record<string, CategoryEntry> = {
         { label: "complex", dataType: "complex", type: consts.DataTypeNode, icon: "PaletteIcon_Complex.png", description: "A number with real and imaginary parts.", completionGuaranteed: false },
         { label: "duration", dataType: "duration", type: consts.DataTypeNode, icon: "PaletteIcon_Duration.png", description: "Represents a time duration.", completionGuaranteed: false },
         { label: "int", dataType: "int", type: consts.DataTypeNode, icon: "PaletteIcon_Int.png", description: "Integer value (whole number).", completionGuaranteed: true },
-        { label: "float", dataType: "float", type: consts.DataTypeNode, icon: "PaletteIcon_Float.png", description: "Floating-point number (decimal).", completionGuaranteed: true },
+        { label: "float", dataType: "float", type: consts.DataTypeNode, icon: "PaletteIcon_Float.png", description: "Floating-point number (decimal).", completionGuaranteed: false },
         { label: "Array", dataType: "Array", type: consts.DataTypeNode, icon: "PaletteIcon_Array.png", description: "A list of values, possibly of varying length.", completionGuaranteed: false },
       ],
       "Quantum Datatypes": [
         { label: "Ancilla", dataType: consts.AncillaNode, type: consts.AncillaNode, icon: "PaletteIcon_Ancilla.png", description: "Helper qubit used temporarily in a computation.", completionGuaranteed: false },
-        { label: "Qubit", dataType: consts.QubitNode, type: consts.QubitNode, icon: "PaletteIcon_Qubit.png", description: "Basic unit of quantum information.", completionGuaranteed: true },
+        { label: "Qubit", dataType: consts.QubitNode, type: consts.QubitNode, icon: "PaletteIcon_Qubit.png", description: "Basic unit of quantum information.", completionGuaranteed: false },
       ],
     },
   },
@@ -123,7 +121,7 @@ export const categories: Record<string, CategoryEntry> = {
     description: "Predefined quantum and classical operators, including arithmetic, bitwise, and comparison operations.",
     content: {
       "Quantum Operators": [
-        { label: consts.quantumLabel + consts.arithmeticOperatorLabel, type: consts.OperatorNode, icon: ["PaletteIcon_ArithmeticOperator.png", "PaletteIcon_Ancilla_ArithmeticOperator.png"], description: "Performs quantum arithmetic (add, subtract, etc.).", completionGuaranteed: false },
+        { label: consts.quantumLabel + consts.arithmeticOperatorLabel, type: consts.OperatorNode, icon: ["PaletteIcon_ArithmeticOperator.png", "PaletteIcon_Ancilla_ArithmeticOperator.png"], description: "Performs quantum arithmetic (add, subtract, etc.).", completionGuaranteed: true },
         { label: consts.quantumLabel + consts.bitwiseOperatorLabel, type: consts.OperatorNode, icon: ["PaletteIcon_BitwiseOperator.png", "PaletteIcon_Ancilla_BitwiseOperator.png"], description: "Applies quantum bitwise operations.", completionGuaranteed: false },
         { label: consts.quantumLabel + consts.comparisonOperatorLabel, type: consts.OperatorNode, icon: ["PaletteIcon_ComparisonOperator.png", "PaletteIcon_Ancilla_ComparisonOperator.png"], description: "Performs quantum comparisons (e.g., equality).", completionGuaranteed: false },
         { label: consts.quantumLabel + consts.minMaxOperatorLabel, type: consts.OperatorNode, icon: ["PaletteIcon_MinMaxOperator.png", "PaletteIcon_Ancilla_MinMaxOperator.png"], description: "Finds min or max between quantum values.", completionGuaranteed: false },
@@ -140,8 +138,8 @@ export const categories: Record<string, CategoryEntry> = {
   [consts.controlStructureNodes]: {
     description: "Control structures like conditionals and loops that influence the execution flow.",
     content: [
-      { label: "If-Then-Else", type: consts.IfElseNode, icon: "PaletteIcon_IfElse.png", description: "Conditional block that branches based on a boolean input.", completionGuaranteed: true },
-      { label: "Repeat", type: consts.ControlStructureNode, icon: "PaletteIcon_Repeat.png", description: "Repeats a block of operations a fixed number of times.", completionGuaranteed: true },
+      { label: "If-Then-Else", type: consts.IfElseNode, icon: "PaletteIcon_IfElse.png", description: "Conditional block that branches based on a boolean input.", completionGuaranteed: false },
+      { label: "Repeat", type: consts.ControlStructureNode, icon: "PaletteIcon_Repeat.png", description: "Repeats a block of operations a fixed number of times.", completionGuaranteed: false },
     ],
   },
 

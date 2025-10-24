@@ -284,12 +284,13 @@ export const StatePreparationNode = memo((node: Node) => {
                     style={{ visibility: showingChildren ? "hidden" : "visible" }}
                     onChange={(e) => handleStateChange(e, "encodingType")}
                   >
-                    <option value="Amplitude Encoding">Amplitude Encoding</option>
+                    {!completionGuaranteed && (<option value="Amplitude Encoding">Amplitude Encoding</option>)}
                     <option value="Angle Encoding">Angle Encoding</option>
                     <option value="Basis Encoding">Basis Encoding</option>
                     <option value="Custom Encoding">Custom Encoding</option>
-                    <option value="Matrix Encoding">Matrix Encoding</option>
-                    <option value="Schmidt Decomposition">Schmidt Decomposition</option>
+                    {!completionGuaranteed && (<option value="Matrix Encoding">Matrix Encoding</option>)}
+                    {!completionGuaranteed && (<option value="Schmidt Decomposition">Schmidt Decomposition</option>)}
+
                   </select>
 
                   {node.data.encodingType !== "Basis Encoding" && node.data.encodingType !== "Angle Encoding" && (
@@ -437,22 +438,41 @@ export const StatePreparationNode = memo((node: Node) => {
           <div className="custom-node-port-out">
 
             <>
-              <OutputPort
-                node={node}
-                index={0}
-                type={"quantum"}
-                nodes={nodes}
-                outputs={outputs}
-                setOutputs={setOutputs}
-                edges={edges}
-                sizeError={sizeError}
-                outputIdentifierError={(outputIdentifierError || startsWithDigitError)}
-                updateNodeValue={updateNodeValue}
-                setOutputIdentifierError={setOutputIdentifierError}
-                setSizeError={setSizeError}
-                setSelectedNode={setSelectedNode}
-                active={true}
-              />
+              {node.data.label === "Prepare State" && (
+                <OutputPort
+                  node={node}
+                  index={0}
+                  type={"quantum"}
+                  sizeRequired={true}
+                  nodes={nodes}
+                  outputs={outputs}
+                  setOutputs={setOutputs}
+                  edges={edges}
+                  sizeError={sizeError}
+                  outputIdentifierError={(outputIdentifierError || startsWithDigitError)}
+                  updateNodeValue={updateNodeValue}
+                  setOutputIdentifierError={setOutputIdentifierError}
+                  setSizeError={setSizeError}
+                  setSelectedNode={setSelectedNode}
+                  active={true}
+                />)}
+              {node.data.label === "Encode Value" && (
+                <OutputPort
+                  node={node}
+                  index={0}
+                  type={"quantum"}
+                  nodes={nodes}
+                  outputs={outputs}
+                  setOutputs={setOutputs}
+                  edges={edges}
+                  sizeError={sizeError}
+                  outputIdentifierError={(outputIdentifierError || startsWithDigitError)}
+                  updateNodeValue={updateNodeValue}
+                  setOutputIdentifierError={setOutputIdentifierError}
+                  setSizeError={setSizeError}
+                  setSelectedNode={setSelectedNode}
+                  active={true}
+                />)}
             </>
           </div>
 

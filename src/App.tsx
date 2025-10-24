@@ -119,11 +119,11 @@ function App() {
         //top: node.position.y+0.5*node.height, //passt nicht
         //left: node.position.x-0.5*node.width, //passt nicht
       });
-    }, 
+    },
     []
   );
 
-  
+
 
   const handleAction = (action: string, nodeId: string) => {
     console.log(`Action: ${action} on Node: ${nodeId}`);
@@ -550,7 +550,7 @@ function App() {
 
       if (
         minMaxOperators.includes(label) ||
-        (node.type === "gateNode" && label !== "Qubit Circuit")
+        (node.type === "gateNode" && label !== "Qubit Circuit" && !threeQubitGates.includes(label) && !twoQubitGates.includes(label))
       ) {
         if (inputCount < 1) {
           errors.push({
@@ -564,60 +564,109 @@ function App() {
 
       // StatePreparationNode classical input check
       if (node.type === "statePreparationNode") {
-        const hasClassical = connectedSources.some((srcId) => {
-          const sourceNode: any = nodesById.get(srcId);
-          return sourceNode?.type === "dataTypeNode";
-        });
-
-        if (!hasClassical) {
-          errors.push({
-            nodeId: node.id,
-            description: `State preparation node "${label}" has no classical data input connected.`
+        if (node.data.label === "Encode Value") {
+          const hasClassical = connectedSources.some((srcId) => {
+            const sourceNode: any = nodesById.get(srcId);
+            return sourceNode?.type === "dataTypeNode";
           });
+
+          if (!hasClassical) {
+            errors.push({
+              nodeId: node.id,
+              description: `Encode value node "${node.id}" has no classical data input connected.`
+            });
+          }
+          if(node.data.encoding ==="Custom Encoding" && !node.data.implementation){
+            errors.push({
+              nodeId: node.id,
+              description: `Encode value node "${node.id}" is missing implementation for custom encoding.`
+            });
+          }
+        }
+
+        if (node.data.label === "Prepare State") {
+          if (!node.data.size) {
+            errors.push({
+              nodeId: node.id,
+              description: `Prepare state node "${node.id}" has no quantum register size specified.`
+            });
+          }
+          if (node.data.quantumStateName === "Custom State" && !node.data.implementation) {
+            errors.push({
+              nodeId: node.id,
+              description: `Prepare state node "${node.id}" is missing implementation for custom state.`
+            });
+          }
         }
       }
 
-      // Control structures
-      if (node.type === "ifElseNode") {
-        const hasClassical = connectedSources.some((srcId) => {
-          const sourceNode: any = nodesById.get(srcId);
-          return sourceNode?.type === "dataTypeNode";
-        });
-
-        if (!hasClassical) {
+        if (node.type === "dataTypeNode" && !node.data.value) {
           errors.push({
             nodeId: node.id,
-            description: `If-Then-Else node "${label}" requires at least one classical data input.`
+            description: `Node "${node.id}" has no value specified.`
           });
         }
 
-        if (!condition) {
+        if (node.type === "qubitNode" && !node.data.value) {
           errors.push({
             nodeId: node.id,
-            description: `If-Then-Else node "${label}" requires a condition.`
+            description: `Node "${node.id}" has no size specified.`
           });
         }
-      }
+        console.log("HDHDHHDHDHDH")
+        console.log(node)
 
-      if (node.type === "controlStructureNode" && !condition) {
-        errors.push({
-          nodeId: node.id,
-          description: `Repeat node "${label}" requires a condition.`
-        });
-      }
+        if (node.type === "measurementNode" && !node?.data?.indices) {
 
-      // Custom Nodes
-      if (node.type === "algorithmNode" || node.type === "classicalAlgorithmNode") {
-        const expectedInputs = node.data?.numberInputs || 0;
-        const actualInputs = connectedSources.length;
-        if (actualInputs < expectedInputs) {
           errors.push({
             nodeId: node.id,
-            description: `Custom node "${label}" requires ${expectedInputs} input(s), but only ${actualInputs} connected.`
+            description: `Measurement node "${node.id}" has no specified indices.`
+          });
+
+        }
+
+
+        // Control structures
+        if (node.type === "ifElseNode") {
+          const hasClassical = connectedSources.some((srcId) => {
+            const sourceNode: any = nodesById.get(srcId);
+            return sourceNode?.type === "dataTypeNode";
+          });
+
+          if (!hasClassical) {
+            errors.push({
+              nodeId: node.id,
+              description: `If-Then-Else node "${label}" requires at least one classical data input.`
+            });
+          }
+
+          if (!condition) {
+            errors.push({
+              nodeId: node.id,
+              description: `If-Then-Else node "${label}" requires a condition.`
+            });
+          }
+        }
+
+        if (node.type === "controlStructureNode" && !condition) {
+          errors.push({
+            nodeId: node.id,
+            description: `Repeat node "${label}" requires a condition.`
           });
         }
-      }
-    });
+
+        // Custom Nodes
+        if (node.type === "algorithmNode" || node.type === "classicalAlgorithmNode") {
+          const expectedInputs = node.data?.numberInputs || 0;
+          const actualInputs = connectedSources.length;
+          if (actualInputs < expectedInputs) {
+            errors.push({
+              nodeId: node.id,
+              description: `Custom node "${label}" requires ${expectedInputs} input(s), but only ${actualInputs} connected.`
+            });
+          }
+        }
+      });
 
     return { warnings, errors };
   }
@@ -937,9 +986,9 @@ function App() {
         }
       });
       //setNodes(nodeT);
-      if (node.id == contextMenu.nodeId){
+      if (node.id == contextMenu.nodeId) {
         console.log("moving context menu for node", node.id)
-        setContextMenu((prev) => ({ ...prev, left: evt.clientX, top: evt.clientY}));
+        setContextMenu((prev) => ({ ...prev, left: evt.clientX, top: evt.clientY }));
       }
     }, [nodes, setContextMenu]);
 
@@ -1301,11 +1350,11 @@ function App() {
     })
     // move contextmenu with dragged node if it belongs to that node
     // if other node is dragged: make context menu invisible
-    if (node.id == contextMenu.nodeId){
+    if (node.id == contextMenu.nodeId) {
       console.log("drag contextmenu to nodeid: ", node.id)
-      setContextMenu((prev) => ({ ...prev, top: event.clientY, left: event.clientX}))
+      setContextMenu((prev) => ({ ...prev, top: event.clientY, left: event.clientX }))
     } else {
-      setContextMenu((prev) => ({ ...prev, visible: false}))
+      setContextMenu((prev) => ({ ...prev, visible: false }))
     }
   }
     , [reactFlowInstance, helperLines, nodes, setContextMenu]);
@@ -1571,7 +1620,7 @@ function App() {
               expanded={expanded}
               onToggleExpanded={() => setExpanded(!expanded)}
               ancillaModelingOn={ancillaModelingOn}
-              onToggleAncilla={() => {setAncillaModelingOn(!ancillaModelingOn); setAncillaMode(!ancillaModelingOn)}}
+              onToggleAncilla={() => { setAncillaModelingOn(!ancillaModelingOn); setAncillaMode(!ancillaModelingOn) }}
               experienceLevel={experienceLevel}
               onExperienceLevelChange={setExperienceLevel}
               compactVisualization={compactVisualization}

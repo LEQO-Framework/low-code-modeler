@@ -51,7 +51,7 @@ type RFState = {
   onConnect: OnConnect;
   onConnectEnd: OnConnectEnd;
   updateNodeLabel: (nodeId: string, nodeVal: string) => void;
-  updateNodeValue: (nodeId: string, identifier, nodeVal: string) => void;
+  updateNodeValue: (nodeId: string, identifier, nodeVal: any) => void;
   setSelectedNode: (node: Node | null) => void;
   updateParent: (nodeId: string, parentId: string, position: any) => void;
   updateChildren: (nodeId: string, childIds: string[]) => void;
@@ -709,7 +709,7 @@ export const useStore = create<RFState>((set, get) => ({
     console.log("Current historyIndex:", get().historyIndex);
   },
 
-  updateNodeValue: (nodeId: string, identifier: string, nodeVal: string) => {
+  updateNodeValue: (nodeId: string, identifier: string, nodeVal: any) => {
     console.log("Updating node value for:", nodeId);
     console.log("Identifier:", identifier, "New Value:", nodeVal);
 
