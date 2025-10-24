@@ -999,7 +999,7 @@ function App() {
     }
   }
 
-  async function handleSaveClick(upload) {
+  async function handleSaveClick() {
     if (!reactFlowInstance) {
       console.error("React Flow instance is not initialized.");
       return;
@@ -1033,9 +1033,6 @@ function App() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(downloadUrl);
-    if (upload) {
-      await uploadToGitHub();
-    }
   }
 
   function handleRestoreClick() {
@@ -1327,7 +1324,7 @@ function App() {
 
       <div className="toolbar-container">
         <Toolbar
-          onSave={() => handleSaveClick(false)}
+          onSave={handleSaveClick}
           onRestore={handleRestoreClick}
           onSaveAsSVG={handleSaveAsSVG}
           onOpenConfig={handleOpenConfig}
