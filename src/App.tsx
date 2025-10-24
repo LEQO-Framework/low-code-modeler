@@ -1018,8 +1018,6 @@ function App() {
 
     const flowWithMetadata = { metadata: validMetadata, ...flow };
 
-    localStorage.setItem(flowKey, JSON.stringify(flowWithMetadata));
-    console.log("Flow saved:", flowWithMetadata);
     // Create a downloadable JSON file
     const jsonBlob = new Blob([JSON.stringify(flowWithMetadata, null, 2)], {
       type: "application/json",
@@ -1033,6 +1031,7 @@ function App() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(downloadUrl);
+    console.log("Flow saved:", flowWithMetadata);
   }
 
   function handleRestoreClick() {
