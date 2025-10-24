@@ -1049,6 +1049,45 @@ function App() {
       return;
     }
 
+    function restoreFlow(flow) {
+      console.log("Restoring flow:", flow);
+      if (flow.nodes) {
+	reactFlowInstance.setNodes(
+	  flow.nodes.map((node: Node) => ({
+	    ...node,
+	    data: {
+	      ...node.data,
+	    },
+	  }))
+	);
+	console.log("Nodes restored.");
+      }
+      if (flow.edges) {
+	reactFlowInstance.setEdges(flow.edges || []);
+	console.log("Edges restored.");
+      }
+
+
+      const { x = 0, y = 0, zoom = 1 } = flow.viewport || {};
+      reactFlowInstance.setViewport({ x, y, zoom });
+
+      if (flow.metadata) {
+        setMetadata(flow.metadata);
+        console.log("Metadata restored:", flow.metadata);
+      }
+    }
+
+    const event = new CustomEvent("lcm-open", {
+      cancelable: true,
+      detail: {
+	restoreFlow
+      },
+    });
+    const defaultAction = document.dispatchEvent(event);
+    console.log(`defaultAction: ${defaultAction}`);
+    if (!defaultAction)
+      return;
+
     const fileInput = document.createElement("input");
     fileInput.type = "file";
     fileInput.accept = "application/json";
@@ -1065,31 +1104,7 @@ function App() {
         try {
           const flow = JSON.parse(e.target?.result as string);
 
-          console.log("Restoring flow:", flow);
-          if (flow.nodes) {
-            reactFlowInstance.setNodes(
-              flow.nodes.map((node: Node) => ({
-                ...node,
-                data: {
-                  ...node.data,
-                },
-              }))
-            );
-            console.log("Nodes restored.");
-          }
-          if (flow.edges) {
-            reactFlowInstance.setEdges(flow.edges || []);
-            console.log("Edges restored.");
-          }
-
-
-          const { x = 0, y = 0, zoom = 1 } = flow.viewport || {};
-          reactFlowInstance.setViewport({ x, y, zoom });
-
-          if (flow.metadata) {
-            setMetadata(flow.metadata);
-            console.log("Metadata restored:", flow.metadata);
-          }
+	  restoreFlow(flow);
         } catch (error) {
           console.error("Error parsing JSON file:", error);
           alert("Invalid JSON file. Please ensure it is a valid flow file.");
