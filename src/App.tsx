@@ -616,14 +616,27 @@ function App() {
       console.log("HDHDHHDHDHDH")
       console.log(node)
 
-      if (node.type === "measurementNode" && !node?.data?.indices) {
+      if (node.type === "measurementNode") {
+        if (!node?.data?.indices) {
 
-        errors.push({
-          nodeId: node.id,
-          description: `Measurement node "${node.id}" has no specified indices.`
-        });
+          errors.push({
+            nodeId: node.id,
+            description: `Measurement node "${node.id}" has no specified indices.`
+          });
+        } else {
+          const isValid = /^\d+(,\d+)*$/.test(node?.data?.indices);
+          if (!isValid) {
+            errors.push({
+              nodeId: node.id,
+              description: `Indices of Measurement node "${node.id}" can only contain numbers followed by comma.`
+            });
+
+          }
+        }
 
       }
+
+
 
 
       // Control structures
