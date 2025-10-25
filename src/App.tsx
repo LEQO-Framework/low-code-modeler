@@ -265,6 +265,10 @@ function App() {
         content: 'This is the toolbar where you can save, restore, or send your diagrams.',
       },
       {
+        target: '.backend-button',
+        content: 'This transforms the model into QASM code, which can be executed on quantum devices.',
+      },
+      {
         target: '.palette-container',
         content: 'This is the palette, where you can drag and drop blocks. Quantum blocks are depicted in blue and classical blocks are depicted in orange.',
         placement: "right"
@@ -275,8 +279,8 @@ function App() {
         placement: "top-start"
       },
       {
-        target: '.ancilla-button',
-        content: 'This button enables or disables ancilla modeling.',
+        target: '.experience-mode',
+        content: 'This panel allows you to configure the editor based on your preferences.',
         placement: "right"
       },
       {
@@ -635,9 +639,6 @@ function App() {
         }
 
       }
-
-
-
 
       // Control structures
       if (node.type === "ifElseNode") {
@@ -1431,18 +1432,18 @@ function App() {
 
           if (type === 'step:before' && index === 1) {
             let fileContent = JSON.stringify(reactFlowInstance.toObject());
+            setExpanded(true);
             setModeledDiagram(fileContent)
           }
           if (type === 'step:before' && index === 3) {
             startTour2();
-
           }
           if (type === 'step:after' && index === 5) {
             startTour3();
           }
-
           if (['finished', 'skipped'].includes(data.status)) {
             setRunTour(false);
+            setExpanded(false);
             loadFlow(JSON.parse(modeledDiagram));
           }
         }}

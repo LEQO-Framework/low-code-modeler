@@ -61,7 +61,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
           <Button size="sm" onClick={onOpenConfig} title="Configure the editor and the endpoints">
             <Settings className="w-4 h-4 mr-2" /> Configuration
           </Button>
-          <Button size="sm" onClick={sendToBackend} title="Send the diagram to the backend">
+          <Button className="backend-button" size="sm" onClick={sendToBackend} title="Send the diagram to the backend">
             <Send className="w-4 h-4 mr-2" /> Send to Backend
           </Button>
           {/**<Button size="sm" onClick={sendToQunicorn} title="Execute the current model">

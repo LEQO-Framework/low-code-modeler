@@ -403,24 +403,6 @@ export const TextPanel = () => {
               </>
             )}
 
-            <label className="block text-sm font-medium text-start text-gray-700 mt-2" htmlFor="indices">
-              Indices
-            </label>
-            <div className="mt-1">
-              <input
-                type="text"
-                id="indices"
-                name="indices"
-                value={selectedNode.data.indices || ""}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  handleNumberChange("indices", value);
-                }}
-                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                placeholder="Enter indices"
-              />
-            </div>
-
             {!completionGuaranteed && (
               <>
                 <label

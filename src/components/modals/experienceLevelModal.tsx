@@ -28,7 +28,7 @@ export default function ExperienceModePanel({
 }: ExperienceModePanelProps) {
   return (
     <Panel position="top-left" className="p-2 z-50">
-      <div className="w-70">
+      <div className="experience-mode w-70">
         <div
           onClick={onToggleExpanded}
           className={`cursor-pointer px-4 py-2 rounded text-white transition-all duration-300 flex justify-between items-center ${
