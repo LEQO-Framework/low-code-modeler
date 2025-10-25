@@ -189,6 +189,11 @@ function App() {
     setGithubBranch(newValues.tempGithubBranch);
     setGithubToken(newValues.tempGithubToken);
 
+    setAncillaMode(newValues.ancillaMode);
+    setAncillaModelingOn(newValues.ancillaMode);
+    setExperienceLevel(newValues.experienceLevel);
+    setCompletionGuaranteed(newValues.completionGuaranteed);
+
     setIsConfigOpen(false);
   };
 
@@ -245,7 +250,7 @@ function App() {
   const [loadingQunicorn, setLoadingQunicorn] = useState(true);
   const [statusQunicorn, setStatusQunicorn] = useState(null);
   const [ancillaModelingOn, setAncillaModelingOn] = useState(false);
-  const [compactVisualization, setCompactVisualization] = useState("No");
+  const [compactVisualization, setCompactVisualization] = useState("no");
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
 
   const showToast = (message: string, type: "success" | "error" | "info") => {
@@ -1488,7 +1493,10 @@ function App() {
         onSave={handleSave}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-
+        ancillaMode={ancillaModelingOn}
+        compactVisualization={compactVisualization}
+        completionGuaranteed={completionGuaranteed}
+        experienceLevel={experienceLevel}
         tempNisqAnalyzerEndpoint={nisqAnalyzerEndpoint}
         tempQunicornEndpoint={qunicornEndpoint}
         tempLowcodeBackendEndpoint={lowcodeBackendEndpoint}
