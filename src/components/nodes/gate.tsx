@@ -53,7 +53,7 @@ export const GateNode = memo((node: Node) => {
     <div className="grand-parent overflow-visible">
       <div className="w-[110px] h-[110px] border border-solid border-gray-700 shadow-md bg-blue-100 relative overflow-visible">
 
-        <div className="absolute  top-1/2 -translate-x-1/2 -translate-y-1/2 text-center font-bold z-0 text-xl">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center font-bold z-0 text-xl">
           {experienceLevel === "pioneer" && (data.label === "Qubit Circuit" ? (
             "|0⟩"
           ) : data.label === "CNOT" ? (
@@ -103,35 +103,39 @@ export const GateNode = memo((node: Node) => {
           ) : (
             data.label
           ))}
-
-
-          {experienceLevel === "explorer" && (data.label === "Qubit Circuit" ? (
+        </div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center font-bold z-0 text-xl">
+          {experienceLevel === "explorer" && data.label === "Qubit Circuit" &&(
             "|0⟩"
-          ) : data.label === "CNOT" ? (
+          )}
+        </div>
+        <div className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 text-center font-bold z-0 text-xl">
+
+          {experienceLevel === "explorer" && (data.label === "CNOT" ? (
             <img
               src="cnotBeginner.png"
               alt="CNOT gate"
-              style={{ width: "320px", height: "120px", marginLeft: "58px" }}
+              style={{ width: "80px", height: "100px", marginLeft: "68px" }}
               className=""
             />
           ) : data.label === "Toffoli" ? (
             <img
               src="toffoliBeginner.png"
-              alt="Rotate-Z gate"
-              style={{ width: "320px", height: "120px", marginLeft: "58px" }}
+              alt="Toffoli gate"
+              style={{ width: "80px", height: "90px", marginLeft: "68px" }}
               className=""
             />
           ) : data.label === "SWAP" ? (
             <img
               src="swapBeginner.png"
-              alt="Rotate-Z gate"
-              style={{ width: "320px", height: "120px", marginLeft: "58px" }}
+              alt="SWAP gate"
+              style={{ width: "320px", height: "80px", marginLeft: "58px" }}
               className=""
             />
           ) : data.label === "CSWAP" ? (
             <img
               src="cswapBeginner.png"
-              alt="Rotate-Z gate"
+              alt="Controlled-SWAP gate"
               style={{ width: "320px", height: "120px", marginLeft: "58px" }}
               className=""
             />
@@ -139,42 +143,42 @@ export const GateNode = memo((node: Node) => {
             <img
               src="cyBeginner.png"
               alt="Controlled-Y gate"
-              style={{ width: "320px", height: "120px", marginLeft: "58px" }}
+              style={{ width: "80px", height: "100px", marginLeft: "68px" }}
               className=""
             />
           ) : data.label === "CZ" ? (
             <img
               src="czBeginner.png"
               alt="Controlled-Z gate"
-              style={{ width: "320px", height: "120px", marginLeft: "58px" }}
+              style={{ width: "80px", height: "100px", marginLeft: "68px" }}
               className=""
             />
           ) : data.label === "CH" ? (
             <img
               src="chBeginner.png"
               alt="Controlled-H gate"
-              style={{ width: "320px", height: "120px", marginLeft: "58px" }}
+              style={{ width: "80px", height: "100px", marginLeft: "68px" }}
               className=""
             />
           ) : data.label === "CRX(θ)" ? (
             <img
               src="crxBeginner.png"
               alt="Controlled-Rotate-X gate"
-              style={{ width: "320px", height: "120px", marginLeft: "58px" }}
+              style={{ width: "80px", height: "100px", marginLeft: "70px" }}
               className=""
             />
           ) : data.label === "CRY(θ)" ? (
             <img
               src="cryBeginner.png"
               alt="Controlled-Rotate-Y gate"
-              style={{ width: "320px", height: "120px", marginLeft: "58px" }}
+              style={{ width: "80px", height: "100px", marginLeft: "70px" }}
               className=""
             />
           ) : data.label === "CRZ(θ)" ? (
             <img
               src="crzBeginner.png"
               alt="Controlled-Rotate-Z gate"
-              style={{ width: "320px", height: "120px", marginLeft: "58px" }}
+              style={{ width: "80px", height: "100px", marginLeft: "70px" }}
               className=""
             />
           ) : data.label === "CU(θ,φ,λ,γ)" ? (
@@ -251,10 +255,10 @@ export const GateNode = memo((node: Node) => {
               style={{ width: "320px", height: "120px", marginLeft: "58px" }}
               className=""
             />
-          ) : data.label === "S" ? (
+          ) : data.label === "T" ? (
             <img
-              src="sBeginner.png"
-              alt="S gate"
+              src="tBeginner.png"
+              alt="T gate"
               style={{ width: "320px", height: "120px", marginLeft: "58px" }}
               className=""
             />
