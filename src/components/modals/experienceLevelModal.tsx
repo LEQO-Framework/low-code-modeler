@@ -1,4 +1,3 @@
-import React from "react";
 import { Panel } from "reactflow";
 
 interface ExperienceModePanelProps {
@@ -8,8 +7,8 @@ interface ExperienceModePanelProps {
   onToggleAncilla: () => void;
   experienceLevel: string;
   onExperienceLevelChange: (level: string) => void;
-  compactVisualization: string;
-  onCompactVisualizationChange: (value: string) => void;
+  compactVisualization: boolean;
+  onCompactVisualizationChange: () => void;
   completionGuaranteed: boolean;
   onCompletionGuaranteedChange: (value: boolean) => void;
 }
@@ -98,14 +97,14 @@ export default function ExperienceModePanel({
                   </span>
                 </td>
                 <td align="left">
-                  <select
-                    value={compactVisualization}
-                    onChange={(e) => onCompactVisualizationChange(e.target.value)}
-                    className="px-2 py-1 border rounded"
+                  <button
+                    onClick={onCompactVisualizationChange}
+                    className={`px-2 py-1 rounded text-white ${
+                      compactVisualization ? "bg-blue-600" : "bg-gray-400"
+                    }`}
                   >
-                    <option>Yes</option>
-                    <option>No</option>
-                  </select>
+                    {compactVisualization ? "On" : "Off"}
+                  </button>
                 </td>
               </tr>
 

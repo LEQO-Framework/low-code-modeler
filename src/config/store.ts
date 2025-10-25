@@ -38,6 +38,7 @@ type RFState = {
   edges: Edge[];
   ancillaMode: boolean;
   experienceLevel: string;
+  compact: boolean;
   completionGuaranteed: boolean;
   selectedNode: Node | null;
   history: HistoryItem[];
@@ -46,6 +47,7 @@ type RFState = {
   setEdges: (edge: Edge) => void;
   setAncillaMode: (ancillaMode: boolean) => void
   setCompletionGuaranteed: (completionGuaranteed: boolean) => void
+  setCompact: (compact: boolean) => void
   setExperienceLevel: (experienceLevel: string) => void
   setNewEdges: (newEdges: Edge[]) => void;
   onNodesChange: OnNodesChange;
@@ -66,6 +68,7 @@ export const useStore = create<RFState>((set, get) => ({
   nodes: nodesConfig.initialNodes,
   edges: nodesConfig.initialEdges,
   ancillaMode: false,
+  compact: true,
   completionGuaranteed: true,
   experienceLevel: "explorer",
   selectedNode: null,
@@ -208,6 +211,11 @@ export const useStore = create<RFState>((set, get) => ({
   setExperienceLevel: (experienceLevel: string) => {
     set({
       experienceLevel
+    });
+  },
+    setCompact: (compact: boolean) => {
+    set({
+      compact
     });
   },
   setCompletionGuaranteed: (completionGuaranteed: boolean) => {

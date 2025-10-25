@@ -5,13 +5,13 @@ interface ConfigModalProps {
   open: boolean;
   ancillaMode: boolean;
   experienceLevel: string;
-  compactVisualization:string;
+  compactVisualization:boolean;
   completionGuaranteed: boolean;
   onClose: () => void;
   onSave: (values: {
     ancillaMode: boolean;
     experienceLevel: string;
-    compactVisualization:string;
+    compactVisualization:boolean;
     completionGuaranteed: boolean;
     tempNisqAnalyzerEndpoint: string;
     tempQunicornEndpoint: string;
@@ -187,14 +187,15 @@ export const ConfigModal = ({
                 <tr>
                   <td align="right">Compact Visualization:</td>
                   <td align="left">
-                     <select
-                      className="qwm-input"
-                      value={localCompactVisualization}
-                      onChange={(e) => setLocalCompactVisualization(e.target.value)}
-                    >
-                      <option value="yes">Yes</option>
-                      <option value="no">No</option>
-                    </select>
+                     <input
+                      type="checkbox"
+                      checked={localCompactVisualization}
+                      onChange={(e) => setLocalCompactVisualization(e.target.checked)}
+                      className="w-4 h-4"
+                    />
+                    <span className="ml-2">
+                      {localCompactVisualization ? "True" : "False"}
+                    </span>
                   </td>
                 </tr>
               </tbody>

@@ -39,6 +39,7 @@ const selector = (state: {
   edges: Edge[];
   ancillaMode: boolean;
   experienceLevel: string;
+  compact: boolean;
   completionGuaranteed: boolean;
   onNodesChange: any;
   onEdgesChange: any;
@@ -51,6 +52,7 @@ const selector = (state: {
   setNodes: (node: Node) => void;
   setEdges: (edge: Edge) => void;
   setAncillaMode: (ancillaMode: boolean) => void;
+  setCompact: (compact: boolean) => void;
   setCompletionGuaranteed: (completionGuaranteed: boolean) => void;
   setExperienceLevel: (experienceLevel: string) =>void;
   undo: () => void;
@@ -59,6 +61,7 @@ const selector = (state: {
   nodes: state.nodes,
   edges: state.edges,
   experienceLevel: state.experienceLevel,
+  compact: state.compact,
   completionGuaranteed: state.completionGuaranteed,
   onNodesChange: state.onNodesChange,
   onEdgesChange: state.onEdgesChange,
@@ -71,6 +74,7 @@ const selector = (state: {
   setNodes: state.setNodes,
   setEdges: state.setEdges,
   setAncillaMode: state.setAncillaMode,
+  setCompact: state.setCompact,
   setCompletionGuaranteed: state.setCompletionGuaranteed,
   setExperienceLevel: state.setExperienceLevel,
   undo: state.undo,
@@ -193,6 +197,8 @@ function App() {
     setGithubBranch(newValues.tempGithubBranch);
     setGithubToken(newValues.tempGithubToken);
 
+    setCompact(newValues.compactVisualization);
+    setCompactVisualization(newValues.compactVisualization);
     setAncillaMode(newValues.ancillaMode);
     setAncillaModelingOn(newValues.ancillaMode);
     setExperienceLevel(newValues.experienceLevel);
@@ -215,11 +221,13 @@ function App() {
     nodes,
     edges,
     experienceLevel,
+    compact,
     completionGuaranteed,
     onNodesChange,
     onEdgesChange,
     onConnect,
     onConnectEnd,
+    setCompact,
     setExperienceLevel,
     setAncillaMode,
     setCompletionGuaranteed,
@@ -256,7 +264,7 @@ function App() {
   const [statusQunicorn, setStatusQunicorn] = useState(null);
   const [ancillaModelingOn, setAncillaModelingOn] = useState(false);
   const [experienceLevelOn, setExperienceLevelOn] = useState("explorer");
-  const [compactVisualization, setCompactVisualization] = useState("no");
+  const [compactVisualization, setCompactVisualization] = useState(true);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
 
   const showToast = (message: string, type: "success" | "error" | "info") => {
@@ -1658,7 +1666,7 @@ function App() {
               experienceLevel={experienceLevel}
               onExperienceLevelChange={(event) =>{setExperienceLevel(event); setExperienceLevelOn(event);}}
               compactVisualization={compactVisualization}
-              onCompactVisualizationChange={setCompactVisualization}
+              onCompactVisualizationChange={() =>{setCompactVisualization(!compact); setCompact(!compact)}}
               completionGuaranteed={completionGuaranteed}
               onCompletionGuaranteedChange={setCompletionGuaranteed}
             />
