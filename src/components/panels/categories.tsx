@@ -68,7 +68,7 @@ export const categories: Record<string, CategoryEntry> = {
         },
       ],
       "Circuit Blocks": [
-        { label: "H", aliases: ["Hadamard"], type: consts.GateNode, icon: "hadamard.png", description: "Hadamard gate: puts a qubit into superposition.", completionGuaranteed: true },
+        { label: "H", aliases: ["Hadamard"], type: consts.GateNode, icon: "hadamardBeginner.png", description: "Hadamard gate: puts a qubit into superposition.", completionGuaranteed: true },
         { label: "RX(θ)", type: consts.GateNode, icon: "RX_palette.png", description: "Rotates qubit around X-axis by θ radians.", completionGuaranteed: true },
         { label: "RY(θ)", type: consts.GateNode, icon: "RY_palette.png", description: "Rotates qubit around Y-axis by θ radians.", completionGuaranteed: true },
         { label: "RZ(θ)", type: consts.GateNode, icon: "RZ_palette.png", description: "Rotates qubit around Z-axis by θ radians.", completionGuaranteed: true },

@@ -38,6 +38,7 @@ const selector = (state: {
   nodes: Node[];
   edges: Edge[];
   ancillaMode: boolean;
+  experienceLevel: string;
   completionGuaranteed: boolean;
   onNodesChange: any;
   onEdgesChange: any;
@@ -51,11 +52,13 @@ const selector = (state: {
   setEdges: (edge: Edge) => void;
   setAncillaMode: (ancillaMode: boolean) => void;
   setCompletionGuaranteed: (completionGuaranteed: boolean) => void;
+  setExperienceLevel: (experienceLevel: string) =>void;
   undo: () => void;
   redo: () => void;
 }) => ({
   nodes: state.nodes,
   edges: state.edges,
+  experienceLevel: state.experienceLevel,
   completionGuaranteed: state.completionGuaranteed,
   onNodesChange: state.onNodesChange,
   onEdgesChange: state.onEdgesChange,
@@ -69,6 +72,7 @@ const selector = (state: {
   setEdges: state.setEdges,
   setAncillaMode: state.setAncillaMode,
   setCompletionGuaranteed: state.setCompletionGuaranteed,
+  setExperienceLevel: state.setExperienceLevel,
   undo: state.undo,
   redo: state.redo,
 });
@@ -204,18 +208,19 @@ function App() {
   const [deploymentId, setDeploymentId] = useState(null);
 
   const [expanded, setExpanded] = useState(false);
-  const [experienceLevel, setExperienceLevel] = useState("Beginner");
   const [completionGuaranteedOption, setCompletionGuaranteedOption] = useState("Yes");
 
 
   const {
     nodes,
     edges,
+    experienceLevel,
     completionGuaranteed,
     onNodesChange,
     onEdgesChange,
     onConnect,
     onConnectEnd,
+    setExperienceLevel,
     setAncillaMode,
     setCompletionGuaranteed,
     setSelectedNode,
@@ -250,6 +255,7 @@ function App() {
   const [loadingQunicorn, setLoadingQunicorn] = useState(true);
   const [statusQunicorn, setStatusQunicorn] = useState(null);
   const [ancillaModelingOn, setAncillaModelingOn] = useState(false);
+  const [experienceLevelOn, setExperienceLevelOn] = useState("explorer");
   const [compactVisualization, setCompactVisualization] = useState("no");
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
 
@@ -1650,7 +1656,7 @@ function App() {
               ancillaModelingOn={ancillaModelingOn}
               onToggleAncilla={() => { setAncillaModelingOn(!ancillaModelingOn); setAncillaMode(!ancillaModelingOn) }}
               experienceLevel={experienceLevel}
-              onExperienceLevelChange={setExperienceLevel}
+              onExperienceLevelChange={(event) =>{setExperienceLevel(event); setExperienceLevelOn(event);}}
               compactVisualization={compactVisualization}
               onCompactVisualizationChange={setCompactVisualization}
               completionGuaranteed={completionGuaranteed}
