@@ -26,8 +26,32 @@ const selector = (state: {
 export const IfElseNode = memo((node: Node) => {
   const { nodes, setNodes, updateNodeValue, setSelectedNode, edges } = useStore(selector, shallow);
   const updateNodeInternals = useUpdateNodeInternals();
-  const [quantumHandles, setQuantumHandles] = useState([0]);
-  const [classicalHandles, setClassicalHandles] = useState([0]);
+
+  const { data } = node;
+  const numberClassicalInputs = data.numberClassicalInputs||1;
+  const numberClassicalOutputs = data.numberOutputs || 0;
+
+  const numberQuantumInputs = data.numberQuantumInputs||1;
+  const numberQuantumOutputs = data.numberOutputs || 0;
+
+  //const classicalHandleCount = Math.max(numberClassicalInputs, 1);
+  //const quantumHandleCount = Math.max(numberQuantumInputs, 1);
+  //console.log(quantumHandleCount)
+
+  const handleGap = 40;
+  const handleOffset = 85;
+
+  const quantumHandles = Array.from({ length: numberQuantumInputs }, (_,i) => i);
+  const classicalHandles = Array.from({ length: numberClassicalInputs }, (_,i) =>i);
+
+  //setQuantumHandles(prev => [...prev, numberQuantumInputs]);
+  //setClassicalHandles(prev => [...prev, numberClassicalInputs]);
+  //setClassicalHandles(numberClassicalInputs);
+  console.log("quantumHandles", quantumHandles);
+  console.log("classicalHandles", classicalHandles);
+
+  const nodeHeight = Math.max(handleOffset * 1 + (numberQuantumInputs) * handleGap, 100);
+
 
   const [quantumOutputHandles, setQuantumOutputHandles] = useState([0]);
   const [quantumOutputHandlesElse, setQuantumOutputHandlesElse] = useState([0]);
@@ -97,9 +121,9 @@ export const IfElseNode = memo((node: Node) => {
 
 
   useEffect(() => {
-    const connectedQuantumHandles = edges
-      .filter(edge => edge.target === node.id && edge.targetHandle?.startsWith(`quantumHandleInputInitialization${node.id}`))
-      .map(edge => edge.targetHandle);
+    const connectedQuantumHandles = quantumHandles.filter((index) =>
+      edges.some((edge) => edge.targetHandle === `quantumHandleInputInitialization${node.id}-${index}`)
+    );
 
     const connectedClassicalHandles = edges
       .filter(edge => edge.target === node.id && edge.targetHandle?.startsWith(`classicalHandleInputInitialization${node.id}`))
@@ -111,31 +135,27 @@ export const IfElseNode = memo((node: Node) => {
     const expectedClassicalHandles = classicalHandles.map(index => `classicalHandleInputInitialization${index}${node.id}`);
     const lastClassicalHandle = expectedClassicalHandles[expectedClassicalHandles.length - 1];
 
-    if (connectedQuantumHandles.includes(lastHandle)) {
-      setQuantumHandles(prev => [...prev, prev.length]);
-    }
-    console.log(classicalHandles)
-    console.log(connectedClassicalHandles)
-    console.log(lastClassicalHandle)
+    // if (connectedQuantumHandles.includes(lastHandle)) {
+    //   setQuantumHandles(prev => [...prev, prev.length]);
+    // }
+    console.log("classicalHandles", classicalHandles)
+    console.log("connectedClassicalHandles", connectedClassicalHandles)
+    console.log("lastClassicalHandle", lastClassicalHandle)
 
-    if (connectedClassicalHandles.includes(lastClassicalHandle)) {
-      setClassicalHandles(prev => [...prev, prev.length]);
-      console.log(classicalHandles)
-    } else {
-      console.log(connectedClassicalHandles)
-      const expectedClassicalIndices = connectedClassicalHandles.map(handleId => {
-        const parts = handleId.split("-");
-        return parseInt(parts[parts.length - 1], 10);
-      });
-      const nextClassicalIndex = Math.max(...expectedClassicalIndices, -1) + 1;
-      console.log(expectedClassicalIndices)
-      setClassicalHandles([...expectedClassicalIndices, nextClassicalIndex]);
-
-    }
+    // if (!connectedClassicalHandles.includes(lastClassicalHandle)) {
+    //   console.log(connectedClassicalHandles)
+    //   const expectedClassicalIndices = connectedClassicalHandles.map(handleId => {
+    //     const parts = handleId.split("-");
+    //     return parseInt(parts[parts.length - 1], 10);
+    //   });
+    //   const nextClassicalIndex = Math.max(...expectedClassicalIndices, -1) + 1;
+    //   console.log(expectedClassicalIndices)
+    //   //setClassicalHandles([...expectedClassicalIndices, nextClassicalIndex]);
+    // }
     const connectedOutputHandles = edges
       .filter(edge => edge.target === node.id && (edge.targetHandle?.startsWith(`classicalHandleDynamicOutput${node.id}`) || edge.targetHandle?.startsWith(`classicalHandleDynamicOutputElse${node.id}`)))
       .map(edge => edge.targetHandle);
-    console.log(connectedOutputHandles)
+    console.log("connectedOutputHandles", connectedOutputHandles)
 
     const expected = classicalOutputHandles.map(({ index, branch }) => {
       console.log(index);
@@ -147,48 +167,45 @@ export const IfElseNode = memo((node: Node) => {
     // Extract last branch from the last handleId
     const lastBranch = lastHandleId.includes("Else") ? "else" : "then";
 
-    if (connectedOutputHandles.includes(lastHandleId)) {
-      const nextIndex = classicalOutputHandles.length;
-      setClassicalOutputHandles(prev => [...prev, { index: nextIndex, branch: lastBranch }]);
-    }
+    // if (connectedOutputHandles.includes(lastHandleId)) {
+    //   const nextIndex = classicalOutputHandles.length;
+    //   setClassicalOutputHandles(prev => [...prev, { index: nextIndex, branch: lastBranch }]);
+    // }
 
     const connectedOutputHandlesElse = edges
       .filter(edge => edge.target === node.id && edge.targetHandle?.startsWith(`classicalHandleDynamicOutputElse${node.id}`))
       .map(edge => edge.targetHandle);
-    console.log(connectedOutputHandlesElse)
+    console.log("connectedOutputHandlesElse", connectedOutputHandlesElse)
 
     const expectedElse = connectedClassicalHandles.map(index => `classicalHandleDynamicOutputElse${node.id}-${index}`);
     const lastHandleIdElse = expectedElse[expectedElse.length - 1];
 
-    if (connectedOutputHandlesElse.includes(lastHandleIdElse)) {
-      setClassicalOutputHandlesElse(prev => [...prev, prev.length]);
-    }
+    // if (connectedOutputHandlesElse.includes(lastHandleIdElse)) {
+    //   setClassicalOutputHandlesElse(prev => [...prev, prev.length]);
+    // }
 
     const connectedQuantumOutputHandles = edges
       .filter(edge => edge.target === node.id && edge.targetHandle?.startsWith(`quantumHandleDynamicOutput${node.id}`))
       .map(edge => edge.targetHandle);
-    console.log(connectedOutputHandles)
+    console.log("connectedOutputHandles", connectedOutputHandles)
 
     const quantumExpected = quantumOutputHandles.map(index => `quantumHandleDynamicOutput${index}${node.id}`);
     const lastQuantumHandleId = quantumExpected[quantumExpected.length - 1];
 
-    if (connectedQuantumOutputHandles.includes(lastQuantumHandleId)) {
-      setQuantumOutputHandles(prev => [...prev, prev.length]);
-    }
+    //setQuantumOutputHandles(connectedQuantumHandles);
 
     const connectedOutputHandlesQuantumElse = edges
       .filter(edge => edge.target === node.id && edge.targetHandle?.startsWith(`quantumHandleDynamicOutputElse${node.id}`))
       .map(edge => edge.targetHandle);
-    console.log(connectedOutputHandlesQuantumElse)
+    console.log("connectedOutputHandlesQuantumElse", connectedOutputHandlesQuantumElse)
 
     const expectedQuantumElse = quantumOutputHandlesElse.map(index => `quantumHandleDynamicOutputElse${index}${node.id}`);
     const lastHandleIdQuantumElse = expectedQuantumElse[expectedQuantumElse.length - 1];
 
-    if (connectedOutputHandlesQuantumElse.includes(lastHandleIdQuantumElse)) {
-      setQuantumOutputHandlesElse(prev => [...prev, prev.length]);
-    }
-
-    updateNodeInternals(node.id); // `nodeId` is the ID of the updated node
+    // if (connectedOutputHandlesQuantumElse.includes(lastHandleIdQuantumElse)) {
+    //   setQuantumOutputHandlesElse(prev => [...prev, prev.length]);
+    // }
+    //updateNodeInternals(node.id); // `nodeId` is the ID of the updated node
   }, [edges, node.id, quantumHandles, classicalOutputHandles, quantumOutputHandles, quantumOutputHandlesElse, classicalOutputHandlesElse]);
 
   const dynamicHeight = 900 + Math.max(0, quantumHandles.length - 1 + (classicalHandles.length - 1)) * 30;
@@ -199,7 +216,7 @@ export const IfElseNode = memo((node: Node) => {
 
 
 
-
+ 
   return !collapsed ? (
     <div
       className="grand-parent overflow-visible"
@@ -234,8 +251,8 @@ export const IfElseNode = memo((node: Node) => {
               backgroundColor: "#000",
               zIndex: 9,
             }}
-          >
-
+          > 
+            {/* Classical Output Then */}
             {classicalHandles.map((index, i) => {
               console.log(classicalHandles)
               const handleId = `classicalHandleInputInitialization${index}${node.id}`;
@@ -248,10 +265,7 @@ export const IfElseNode = memo((node: Node) => {
                     type="source"
                     id={`sideClassicalHandleThen${index}${node.id}`}
                     position={Position.Right}
-                    className={cn(
-                      "z-10 classical-circle-port-out",
-                      isConnected ? "!bg-orange-300 !border-black" : "!bg-gray-200  !border-black"
-                    )}
+                    className={"z-10 classical-circle-port-out !bg-orange-300 !border-black"}
                     style={{
                       top: `${100 + i * 30}px`,
                       overflow: "visible",
@@ -264,7 +278,7 @@ export const IfElseNode = memo((node: Node) => {
               );
 
             })}
-
+            {/* Quantum Output Then */}
             {quantumHandles.map((index, i) => {
               const handleId = `quantumHandleInputInitialization${index}${node.id}`;
               const isConnected = edges.some(edge => edge.targetHandle === handleId);
@@ -275,10 +289,7 @@ export const IfElseNode = memo((node: Node) => {
                   type="source"
                   id={`sideQuantumHandleThen${index}${node.id}`}
                   position={Position.Right}
-                  className={cn(
-                    "z-10 circle-port-out",
-                    isConnected ? "!bg-blue-300 !border-black" : "!bg-gray-200 !border-dashed !border-black"
-                  )}
+                  className={"z-10 circle-port-out !bg-blue-300 !border-black"}
                   style={{
                     top: `${100 + classicalHandles.length * 30 + i * 30}px`,
                     overflow: "visible",
@@ -289,7 +300,7 @@ export const IfElseNode = memo((node: Node) => {
                 />
               );
             })}
-
+            {/* Classical Output Else */}
             {classicalHandles.map((handle, i) => {
               const handleId = `classicalHandleInputInitialization${handle}${node.id}`;
               const isConnected = edges.some(edge => edge.targetHandle === handleId);
@@ -314,7 +325,7 @@ export const IfElseNode = memo((node: Node) => {
                 />
               );
             })}
-
+            {/* Quantum Output Else */}
             {quantumHandles.map((index, i) => {
               const handleId = `quantumHandleInputInitialization${index}${node.id}`;
               const isConnected = edges.some(edge => edge.targetHandle === handleId);
@@ -326,10 +337,7 @@ export const IfElseNode = memo((node: Node) => {
                   type="source"
                   id={`sideQuantumHandleElse${index}${node.id}`}
                   position={Position.Right}
-                  className={cn(
-                    "z-10 circle-port-out",
-                    isConnected ? "!bg-blue-300 !border-black" : "!bg-gray-200 !border-dashed !border-black"
-                  )}
+                  className={"z-10 circle-port-out !bg-blue-300 !border-black"}
                   style={{
                     top: `calc(70% + ${30 * (classicalHandles.length + 1 + i)}px)`,
                     left: "50%",
@@ -401,7 +409,7 @@ export const IfElseNode = memo((node: Node) => {
 
               {/* Left handles */}
               <div style={{ position: "absolute", left: "-75px", overflow: "visible" }}>
-
+                {/* Classical Input furthest left */}
                 {classicalHandles.map((index, i) => {
                   const handleId = `classicalHandleInputInitialization${index}${node.id}`;
                   const isConnected = edges.some(edge => edge.targetHandle === handleId);
@@ -412,10 +420,7 @@ export const IfElseNode = memo((node: Node) => {
                       type="target"
                       id={handleId} // check if this makes problem
                       position={Position.Left}
-                      className={cn(
-                        "z-10 classical-circle-port-hex-in",
-                        isConnected ? "!bg-orange-300 !border-black" : "!bg-orange-300  !border-black"
-                      )}
+                      className={"z-10 classical-circle-port-hex-in !bg-orange-300 !border-black"}
                       style={{
                         top: `${hexagonTopOffset + 70 + i * 30}px`,
                         overflow: "visible",
@@ -427,7 +432,7 @@ export const IfElseNode = memo((node: Node) => {
                     />
                   );
                 })}
-
+                {/* Quantum Input furthest left */}
                 {quantumHandles.map((index, i) => {
                   const handleId = `quantumHandleInputInitialization${index}${node.id}`;
                   const isConnected = edges.some(edge => edge.targetHandle === handleId);
@@ -438,10 +443,7 @@ export const IfElseNode = memo((node: Node) => {
                       type="target"
                       id={handleId}
                       position={Position.Left}
-                      className={cn(
-                        "z-10 circle-port-hex-in",
-                        isConnected ? "!bg-blue-300 !border-black" : "!bg-gray-200 !border-dashed !border-black"
-                      )}
+                      className={"z-10 circle-port-hex-in !bg-blue-300 !border-black"}
 
                       style={{
                         top: `${hexagonTopOffset + 100 + classicalHandles.length * 30 + i * 30}px`,
@@ -467,6 +469,7 @@ export const IfElseNode = memo((node: Node) => {
                 zIndex: 9,
               }}
             >
+              {/* Classical Input Then */}
               {classicalHandles.map((index, i) => {
                 console.log(classicalHandles)
                 const handleId = `classicalHandleInputInitialization${index}${node.id}`;
@@ -509,10 +512,7 @@ export const IfElseNode = memo((node: Node) => {
                     type="target"
                     id={handleId}
                     position={Position.Left}
-                    className={cn(
-                      "z-10 circle-port-out",
-                      isConnected ? "!bg-blue-300 !border-black" : "!bg-gray-200 !border-dashed !border-black"
-                    )}
+                    className={"z-10 circle-port-out !bg-blue-300 !border-black"}
                     style={{
                       top: `${100 + classicalHandles.length * 30 + i * 30}px`,
                       overflow: "visible",
@@ -525,7 +525,7 @@ export const IfElseNode = memo((node: Node) => {
               })}
 
 
-
+              {/* Classical Input Else ?*/}
               {classicalHandles.map((index, i) => {
                 let handleId = `classicalHandleInputInitialization${index}${node.id}`;
                 const isConnected = edges.some(edge => edge.targetHandle === handleId);
@@ -566,10 +566,7 @@ export const IfElseNode = memo((node: Node) => {
                     type="target"
                     id={handleId}
                     position={Position.Left}
-                    className={cn(
-                      "z-10 circle-port-out",
-                      isConnected ? "!bg-blue-300 !border-black" : "!bg-gray-200 !border-dashed !border-black"
-                    )}
+                    className={"z-10 circle-port-out !bg-blue-300 !border-black"}
                     style={{
                       top: `calc(70% + ${30 * (classicalHandles.length + 1 + i)}px)`,
                       overflow: "visible",
@@ -650,10 +647,7 @@ export const IfElseNode = memo((node: Node) => {
                     type="source"
                     id={`classicalHandleOutputFinal-${index}`}
                     position={Position.Right}
-                    className={cn(
-                      "absolute z-10 classical-circle-port-hex-out",
-                      isConnected ? "!bg-orange-300 !border-black" : "!bg-gray-200 !border-dashed !border-black"
-                    )}
+                    className={"absolute z-10 classical-circle-port-hex-out !bg-orange-300 !border-black"}
                     style={{ top: `${i * 30}px`, overflow: "visible" }}
                     isConnectable={true}
                   />
@@ -800,10 +794,7 @@ export const IfElseNode = memo((node: Node) => {
                 type="target"
                 id={handleId}
                 position={Position.Left}
-                className={cn(
-                  "z-10 circle-port-hex-in",
-                  isConnected ? "!bg-blue-300 !border-black" : "!bg-gray-200 !border-dashed !border-black"
-                )}
+                className={"z-10 circle-port-hex-in !bg-blue-300 !border-black"}
 
                 style={{
                   top: `${hexagonTopOffset + 100 + classicalHandles.length * 30 + i * 30}px`,
@@ -834,10 +825,7 @@ export const IfElseNode = memo((node: Node) => {
                 type="source"
                 id={`classicalHandleOutputFinal-${index}`}
                 position={Position.Right}
-                className={cn(
-                  "absolute z-10 classical-circle-port-hex-out",
-                  isConnected ? "!bg-orange-300 !border-black" : "!bg-gray-200 !border-dashed !border-black"
-                )}
+                className={"absolute z-10 classical-circle-port-hex-out !bg-orange-300 !border-black"}
                 style={{ top: `${i * 30}px`, overflow: "visible" }}
                 isConnectable={true}
               />

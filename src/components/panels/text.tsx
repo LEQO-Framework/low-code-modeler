@@ -701,6 +701,46 @@ export const TextPanel = () => {
                 placeholder="Enter condition"
               />
             </div>
+            <label
+              className="block text-sm font-medium text-start text-gray-700"
+              htmlFor="numberClassicalInputs"
+            >
+              Number of Classical Inputs
+            </label>
+            <div className="mt-1">
+              <input
+                type="text"
+                id="numberClassicalInputs"
+                name="numberClassicalInputs"
+                value={selectedNode.data.numberClassicalInputs || ""
+                }
+                onChange={(e) =>
+                  handleNumberChange("numberClassicalInputs", e.target.value)
+                }
+                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
+                placeholder="Enter numberClassicalInputs"
+              />
+            </div>
+            <label
+              className="block text-sm font-medium text-start text-gray-700"
+              htmlFor="numberQuantumInputs"
+            >
+              Number of Quantum Inputs
+            </label>
+            <div className="mt-1">
+              <input
+                type="text"
+                id="numberQuantumInputs"
+                name="numberQuantumInputs"
+                value={selectedNode.data.numberQuantumInputs || ""
+                }
+                onChange={(e) =>
+                  handleNumberChange("numberQuantumInputs", e.target.value)
+                }
+                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
+                placeholder="Enter numberQuantumInputs"
+              />
+            </div>
           </div>
         )}
 
@@ -724,6 +764,46 @@ export const TextPanel = () => {
                 }
                 className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
                 placeholder="Enter condition"
+              />
+            </div>
+            <label
+              className="block text-sm font-medium text-start text-gray-700"
+              htmlFor="numberClassicalInputs"
+            >
+              Number of Classical Inputs
+            </label>
+            <div className="mt-1">
+              <input
+                type="text"
+                id="numberClassicalInputs"
+                name="numberClassicalInputs"
+                value={selectedNode.data.numberClassicalInputs || ""
+                }
+                onChange={(e) =>
+                  handleNumberChange("numberClassicalInputs", e.target.value)
+                }
+                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
+                placeholder="Enter numberClassicalInputs"
+              />
+            </div>
+            <label
+              className="block text-sm font-medium text-start text-gray-700"
+              htmlFor="numberQuantumInputs"
+            >
+              Number of Quantum Inputs
+            </label>
+            <div className="mt-1">
+              <input
+                type="text"
+                id="numberQuantumInputs"
+                name="numberQuantumInputs"
+                value={selectedNode.data.numberQuantumInputs || ""
+                }
+                onChange={(e) =>
+                  handleNumberChange("numberQuantumInputs", e.target.value)
+                }
+                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
+                placeholder="Enter numberQuantumInputs"
               />
             </div>
           </div>

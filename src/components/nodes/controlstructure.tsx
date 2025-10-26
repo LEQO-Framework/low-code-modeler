@@ -23,15 +23,21 @@ const selector = (state: {
 });
 
 export const ControlStructureNode = memo((node: Node) => {
+  const {data} = node
   const [showingChildren, setShowingChildren] = useState(false);
   const { setNodes, updateNodeValue, setSelectedNode, edges } = useStore(selector, shallow);
   const updateNodeInternals = useUpdateNodeInternals();
-
-  const [quantumHandles, setQuantumHandles] = useState([0]);
+  const numberQuantumInputs = data.numberQuantumInputs || 1;
+  const quantumHandles = Array.from({ length: numberQuantumInputs }, (_, index) => index);
   const [quantumOutputHandles, setQuantumOutputHandles] = useState([0]);
-   const [condition, setCondition] = useState("");
+  const [condition, setCondition] = useState("");
+
+  console.log("quantumHandles", quantumHandles)
+  console.log("data.numberQuantumInputs", data.numberQuantumInputs)
+  console.log("numberQuantumInputs", numberQuantumInputs)
 
   useEffect(() => {
+    //updateNodeInternals(node.id);
     const connectedQuantumInputs = quantumHandles.filter((index) =>
       edges.some((edge) => edge.targetHandle === `quantumHandleInputInitialization${node.id}-${index}`)
     );
@@ -41,9 +47,9 @@ export const ControlStructureNode = memo((node: Node) => {
     const isLastConnected = edges.some(edge => edge.targetHandle === lastHandleId);
 
     // Add only if not already added
-    if (isLastConnected && quantumHandles.length === connectedQuantumInputs.length) {
-      setQuantumHandles((prev) => [...prev, prev.length]);
-    }
+    // if (isLastConnected && quantumHandles.length === connectedQuantumInputs.length) {
+    //   setQuantumHandles((prev) => [...prev, prev.length]);
+    // }
 
     if (node.data.condition !== null) {
       //updateNodeValue(node.id, "condition", node.data.condition);
@@ -142,7 +148,7 @@ export const ControlStructureNode = memo((node: Node) => {
                       type="target"
                       id={handleId}
                       position={Position.Left}
-                      className={cn("z-10 circle-port-hex-in", isConnected ? "!bg-blue-300 !border-black" : "!bg-gray-200 !border-dashed !border-black")}
+                      className={"z-10 circle-port-hex-in !bg-blue-300 !border-black"}
                       style={{ top: `${hexagonTopOffset + 100 + i * 30}px`, overflow: "visible" }}
                       isConnectable={true}
                       isConnectableStart={false}
@@ -164,7 +170,7 @@ export const ControlStructureNode = memo((node: Node) => {
                       type="source"
                       id={handleId}
                       position={Position.Right}
-                      className={cn("z-10 circle-port-hex-out", isConnected ? "!bg-blue-300 !border-black" : "!bg-gray-200 !border-dashed !border-black")}
+                      className={"z-10 circle-port-hex-out !bg-blue-300 !border-black"}
                       style={{
                         top: `${hexagonTopOffset + 100 + i * 30}px`,
                         overflow: "visible"
@@ -244,10 +250,7 @@ export const ControlStructureNode = memo((node: Node) => {
                       type="target"
                       id={handleId}
                       position={Position.Left}
-                      className={cn(
-                        "z-10 circle-port-hex-in",
-                        isConnected ? "!bg-blue-300 !border-black" : "!bg-gray-200 !border-dashed !border-black"
-                      )}
+                      className={"z-10 circle-port-hex-in !bg-blue-300 !border-black"}
                       style={{ top: `${hexagonTopOffset + 100 + i * 30}px`, overflow: "visible" }}
                       isConnectable={true}
                       isConnectableStart={false}
@@ -269,10 +272,7 @@ export const ControlStructureNode = memo((node: Node) => {
                       type="source"
                       id={handleId}
                       position={Position.Right}
-                      className={cn(
-                        "z-10 circle-port-hex-out",
-                        isConnected ? "!bg-blue-300 !border-black" : "!bg-gray-200 !border-dashed !border-black"
-                      )}
+                      className={"z-10 circle-port-hex-out !bg-blue-300 !border-black"}
                       style={{ top: `${hexagonTopOffset + 100 + i * 30}px`, overflow: "visible" }}
                       isConnectable={true}
                       isConnectableEnd={false}
