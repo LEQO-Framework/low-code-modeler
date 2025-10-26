@@ -50,7 +50,7 @@ export const MeasurementNode = memo((node: Node) => {
 
   const baseHeight = 400;
   const extraHeightPerVariable = 40;
-  const dynamicHeight = baseHeight + (inputs.length) * extraHeightPerVariable;
+  const dynamicHeight = baseHeight + extraHeightPerVariable;
   console.log(dynamicHeight)
 
 

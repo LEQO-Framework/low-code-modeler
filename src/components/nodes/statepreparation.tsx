@@ -113,6 +113,15 @@ export const StatePreparationNode = memo((node: Node) => {
     } else {
       setStartsWithDigitError(false);
     }
+    if (!node.data.encodingType && node.data.label === "Basis Encoding") {
+      updateNodeValue(node.id, "encodingType", node.data.label);
+    }
+    if (!node.data.encodingType && node.data.label === "Angle Encoding") {
+      updateNodeValue(node.id, "encodingType", node.data.label);
+    }
+    if (!node.data.encodingType && node.data.label === "Amplitude Encoding") {
+      updateNodeValue(node.id, "encodingType", node.data.label);
+    }
     if (!node.data.encodingType && node.data.label === "Encode Value") {
       updateNodeValue(node.id, "encodingType", encodingType);
     }
