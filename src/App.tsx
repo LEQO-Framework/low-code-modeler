@@ -147,8 +147,8 @@ function App() {
   const [githubToken, setGithubToken] = useState(import.meta.env.VITE_GITHUB_TOKEN);
   const [openqasmCode, setOpenQASMCode] = useState("");
 
-  const [selectedDevice, setSelectedDevice] = useState("");
-  const [provider, setProvider] = useState("");
+  const [selectedDevice, setSelectedDevice] = useState("aer_simulator");
+  const [provider, setProvider] = useState("IBM");
 
   const [numShots, setNumShots] = useState(1024);
   const [accessToken, setAccessToken] = useState("");
@@ -264,7 +264,7 @@ function App() {
   const [statusQunicorn, setStatusQunicorn] = useState(null);
   const [ancillaModelingOn, setAncillaModelingOn] = useState(false);
   const [experienceLevelOn, setExperienceLevelOn] = useState("explorer");
-  const [compactVisualization, setCompactVisualization] = useState(true);
+  const [compactVisualization, setCompactVisualization] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
 
   const showToast = (message: string, type: "success" | "error" | "info") => {
