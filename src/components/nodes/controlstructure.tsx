@@ -29,7 +29,7 @@ export const ControlStructureNode = memo((node: Node) => {
   const updateNodeInternals = useUpdateNodeInternals();
   const numberQuantumInputs = data.numberQuantumInputs || 1;
   const quantumHandles = Array.from({ length: numberQuantumInputs }, (_, index) => index);
-  const [quantumOutputHandles, setQuantumOutputHandles] = useState([0]);
+  const [quantumOutputHandles, setQuantumOutputHandles] = useState([0]); //wird nicht genutzt, kann eigentlich gelöscht werden
   const [condition, setCondition] = useState("");
 
   console.log("quantumHandles", quantumHandles)
@@ -56,7 +56,7 @@ export const ControlStructureNode = memo((node: Node) => {
       } else {
         updateNodeValue(node.id, "condition", condition);
       }
-    setQuantumOutputHandles(connectedQuantumInputs);
+    //setQuantumOutputHandles(connectedQuantumInputs);
     updateNodeInternals(node.id);
   }, [edges, node.id]);
 
