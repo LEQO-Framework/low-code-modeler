@@ -1,7 +1,7 @@
 import AncillaEdge from "@/components/edges/ancillaEdgeType";
 import ClassicalEdge from "@/components/edges/classicalEdgeType";
 import QuantumEdge from "@/components/edges/customEdgeType";
-import { TextNode, DataTypeNode } from "@/components/nodes";
+import { DataTypeNode } from "@/components/nodes";
 import { AlgorithmNode } from "@/components/nodes/algorithm";
 import { AncillaNode } from "@/components/nodes/ancilla";
 import {  IfElseNode } from "@/components/nodes/ifelse";
