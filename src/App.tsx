@@ -642,7 +642,7 @@ function App() {
       if (node.type === "measurementNode") {
         if (!node?.data?.indices) {
 
-          errors.push({
+          warnings.push({
             nodeId: node.id,
             description: `Measurement node "${node.id}" has no specified indices.`
           });

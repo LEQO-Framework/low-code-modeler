@@ -62,43 +62,47 @@ export const MeasurementNode = memo((node: Node) => {
     let isDuplicate = duplicates.has(identifier);
     const startsWithDigit = /^\d/.test(outputIdentifier);
     setIndices(node.data.indices);
- 
-    isDuplicate = isDuplicate || findDuplicateOutputIdentifiersInsideNode(nodes, selectedNode, identifier) ||startsWithDigit;
-    
+
+    isDuplicate = isDuplicate || findDuplicateOutputIdentifiersInsideNode(nodes, selectedNode, identifier) || startsWithDigit;
+
     setOutputIdentifierError(isDuplicate && identifier !== "");
     setClassicalOutputIdentifierError(isDuplicate && identifier !== "");
 
   }, [nodes, node.data]);
 
   const handleYChange = (e, field) => {
-  const value = e.target.value;
+    const value = e.target.value;
 
-  if (field === "indices") {
-    setIndices(value);
+    if (field === "indices") {
+      setIndices(value);
 
-    // Validate: Only allow digits separated by commas
-    const isValid = /^(\d+)(,\d+)*$/.test(value);
-    setError(!isValid);
+      let isValid = true;
+      if (value.trim() !== "") {
+        isValid = /^(\d+)(,\d+)*$/.test(value);
+      }
 
-    node.data[field] = value;
-    updateNodeValue(node.id, field, value);  // Store raw value
-  } else {
-    // Other fields: only allow numeric input
-    const number = Number(value);
+      setError(!isValid);
 
-    // If it's NaN or starts with a letter, set error
-    const startsWithLetter = /^[a-zA-Z_]/.test(value) && value !== "";
-    const invalidNumber = isNaN(number);
+      node.data[field] = value;
+      updateNodeValue(node.id, field, value); // Store raw value
+    } else {
+      // Other fields: only allow numeric input
+      const number = Number(value);
 
-    setError(startsWithLetter || invalidNumber);
+      // If it's NaN or starts with a letter, set error
+      const startsWithLetter = /^[a-zA-Z_]/.test(value) && value !== "";
+      const invalidNumber = isNaN(number);
 
-    node.data[field] = value;
-    updateNodeValue(node.id, field, number);
-  }
-  setSelectedNode(node);
-};
+      setError(startsWithLetter || invalidNumber);
 
-  
+      node.data[field] = value;
+      updateNodeValue(node.id, field, number);
+    }
+
+    setSelectedNode(node);
+  };
+
+
 
   return (
     <div className="grand-parent">
@@ -134,13 +138,13 @@ export const MeasurementNode = memo((node: Node) => {
           </div>
         )}
         <div className="w-full flex items-center" style={{ height: '52px' }}>
-           {node.data.implementation && (
-              <img
-                src="implementation-icon.png"
-                alt="Custom Icon"
-                className="absolute -top-4 -right-4 w-8 h-8"
-              />
-            )}
+          {node.data.implementation && (
+            <img
+              src="implementation-icon.png"
+              alt="Custom Icon"
+              className="absolute -top-4 -right-4 w-8 h-8"
+            />
+          )}
           <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
             <img src="measurementIcon2.png" alt="icon" className="w-[40px] h-[40px] object-contain flex-shrink-0" />
             <div className="h-full w-[1px] bg-black mx-2" />
