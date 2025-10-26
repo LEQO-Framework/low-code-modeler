@@ -136,7 +136,7 @@ export const GateNode = memo((node: Node) => {
             <img
               src="cswapBeginner.png"
               alt="Controlled-SWAP gate"
-              style={{ width: "320px", height: "120px", marginLeft: "58px" }}
+              style={{ width: "80px", height: "100px", marginLeft: "68px" }}
               className=""
             />
           ) : data.label === "CY" ? (

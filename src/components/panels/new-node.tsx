@@ -7,9 +7,11 @@ import * as consts from "../../constants";
 const selector = (state: {
   ancillaMode: boolean;
   compact: boolean;
+  experienceLevel: string;
   completionGuaranteed: boolean;
 }) => ({
   ancillaMode: state.ancillaMode,
+  experienceLevel: state.experienceLevel,
   compact: state.compact,
   completionGuaranteed: state.completionGuaranteed,
 });
@@ -26,7 +28,7 @@ const categoryIcons: Record<string, string> = {
 export const AddNodePanel = () => {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const { ancillaMode, completionGuaranteed, compact } = useStore(
+  const { ancillaMode, completionGuaranteed, compact, experienceLevel } = useStore(
     selector,
     shallow
   );
@@ -124,21 +126,23 @@ export const AddNodePanel = () => {
                 <img
                   src={
                     Array.isArray(node.icon)
-                      ? node.icon[ancillaMode ? 1 : 0]
+                      ? node.type === consts.GateNode
+                        ? node.icon[experienceLevel === "explorer" ? 1 : 0]
+                        : node.icon[ancillaMode ? 1 : 0] // Use ancillaMode for others
                       : node.icon
                   }
                   alt={typeof node.label === "string" ? node.label : ""}
                   className={`object-contain ${node.type === consts.GateNode
-                      ? "w-[120px] h-[140px]"
-                      : node.type === consts.SplitterNode ||
-                        node.type === consts.MergerNode
-                        ? "w-[190px] h-[190px]"
-                        : "w-70 h-70"
+                    ? "w-[120px] h-[140px]"
+                    : node.type === consts.SplitterNode || node.type === consts.MergerNode
+                      ? "w-[190px] h-[190px]"
+                      : "w-70 h-70"
                     }`}
                 />
               ) : (
                 <span className="font-semibold">{node.label}</span>
               )}
+
             </div>
           ))}
         </div>
@@ -190,15 +194,23 @@ export const AddNodePanel = () => {
                   <img
                     src={
                       Array.isArray(node.icon)
-                        ? node.icon[ancillaMode ? 1 : 0]
+                        ? node.type === consts.GateNode
+                          ? node.icon[experienceLevel === "explorer" ? 1 : 0]
+                          : node.icon[ancillaMode ? 1 : 0] // Use ancillaMode for others
                         : node.icon
                     }
-                    alt={node.label}
-                    className="w-70 h-70 object-contain"
+                    alt={typeof node.label === "string" ? node.label : ""}
+                    className={`object-contain ${node.type === consts.GateNode
+                      ? "w-[120px] h-[140px]"
+                      : node.type === consts.SplitterNode || node.type === consts.MergerNode
+                        ? "w-[190px] h-[190px]"
+                        : "w-70 h-70"
+                      }`}
                   />
                 ) : (
                   <span className="font-semibold">{node.label}</span>
                 )}
+
               </div>
             ))}
           </div>
@@ -214,8 +226,8 @@ export const AddNodePanel = () => {
                 <div key={category}>
                   <button
                     className={`w-full text-left py-2 px-4 font-semibold text-black-700 border-b ${activeCategory === category
-                        ? "bg-gray-100 text-primary"
-                        : "hover:bg-gray-300"
+                      ? "bg-gray-100 text-primary"
+                      : "hover:bg-gray-300"
                       }`}
                     onClick={() => toggleCategory(category)}
                   >
