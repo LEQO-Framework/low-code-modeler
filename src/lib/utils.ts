@@ -1,5 +1,6 @@
 import { ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { categories } from "@/components/panels/categories";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -39,7 +40,7 @@ export function handleOnDrop(
     const label = event.dataTransfer.getData("application/reactflow/label");
     console.log(type)
     console.log(dataType)
-   
+
     //let position2 = reactFlowInstance.screenToFlowPosition();
 
     //console.log(position2)
@@ -49,6 +50,10 @@ export function handleOnDrop(
     if (typeof type === "undefined" || !type) {
       return;
     }
+    const def = findNodeDefinition(type, label);
+    console.log(def)
+
+    const compactOptions = def.compactOptions;
 
     const position = reactFlowInstance.project({
       x: event.clientX - reactFlowBounds.left,
@@ -58,9 +63,35 @@ export function handleOnDrop(
       id: getId(),
       type,
       position,
-      data: { label: label, inputs: [], children: [], implementation: "", implementationType: "", uncomputeImplementationType: "", uncomputeImplementation: ""}
+      data: { label: label, inputs: [], children: [], implementation: "", implementationType: "", uncomputeImplementationType: "", uncomputeImplementation: "", completionGuaranteed: def?.completionGuaranteed ?? false, compactOptions: compactOptions }
     };
 
     setNodes(newNode);
   }
+}
+
+function findNodeDefinition(type: string, label: string) {
+  for (const cat of Object.values(categories)) {
+    const content = cat.content;
+
+    if (Array.isArray(content)) {
+      const match = content.find(n => n.type === type && n.label === label);
+      if (match) return match;
+    } else {
+      for (const sub of Object.values(content)) {
+        if (Array.isArray(sub)) {
+          const match = sub.find(n => n.type === type && n.label === label);
+          if (match) return match;
+        } else {
+          for (const subsub of Object.values(sub)) {
+            if (Array.isArray(subsub)) {
+              const match = subsub.find(n => n.type === type && n.label === label);
+              if (match) return match;
+            }
+          }
+        }
+      }
+    }
+  }
+  return undefined;
 }

@@ -53,6 +53,28 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                             }, node.data.encodingType),
                             bounds: (node.data.encodingType === "Basis Encoding") ? 0 : parseFloat(node.data.bound)
                         }
+                    
+                    case "Basis Encoding":
+                        return {
+                            id: node.id,
+                            type: "encode",
+                            encoding: "basis",
+                            bounds: 0
+                        }
+                    case "Angle Encoding":
+                        return {
+                            id: node.id,
+                            type: "encode",
+                            encoding: "angle",
+                            bounds: 0
+                        }
+                    case "Amplitude Encoding":
+                        return {
+                            id: node.id,
+                            type: "encode",
+                            encoding: "amplitude",
+                            bounds: parseFloat(node.data.bound)
+                        }
 
                     case "Prepare State":
                         return {

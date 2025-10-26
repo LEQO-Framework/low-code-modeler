@@ -30,6 +30,7 @@ import { ConfigModal } from "./components/modals/configModal";
 import { QunicornModal } from "./components/modals/qunicornModal";
 import { SendRequestModal } from "./components/modals/backendModal";
 import { Toast } from "./components/modals/toast";
+import ExperienceModePanel from "./components/modals/experienceLevelModal";
 import { HistoryItem, HistoryModal } from "./components/modals/historyModal";
 import { ValidationModal } from "./components/modals/validationModal";
 
@@ -37,6 +38,9 @@ const selector = (state: {
   nodes: Node[];
   edges: Edge[];
   ancillaMode: boolean;
+  experienceLevel: string;
+  compact: boolean;
+  completionGuaranteed: boolean;
   onNodesChange: any;
   onEdgesChange: any;
   onConnect: any;
@@ -48,11 +52,17 @@ const selector = (state: {
   setNodes: (node: Node) => void;
   setEdges: (edge: Edge) => void;
   setAncillaMode: (ancillaMode: boolean) => void;
+  setCompact: (compact: boolean) => void;
+  setCompletionGuaranteed: (completionGuaranteed: boolean) => void;
+  setExperienceLevel: (experienceLevel: string) =>void;
   undo: () => void;
   redo: () => void;
 }) => ({
   nodes: state.nodes,
   edges: state.edges,
+  experienceLevel: state.experienceLevel,
+  compact: state.compact,
+  completionGuaranteed: state.completionGuaranteed,
   onNodesChange: state.onNodesChange,
   onEdgesChange: state.onEdgesChange,
   onConnect: state.onConnect,
@@ -64,6 +74,9 @@ const selector = (state: {
   setNodes: state.setNodes,
   setEdges: state.setEdges,
   setAncillaMode: state.setAncillaMode,
+  setCompact: state.setCompact,
+  setCompletionGuaranteed: state.setCompletionGuaranteed,
+  setExperienceLevel: state.setExperienceLevel,
   undo: state.undo,
   redo: state.redo,
 });
@@ -87,7 +100,7 @@ function App() {
   const [patternAtlasUiEndpoint, setPatternAtlasUiEndpoint] = useState(import.meta.env.VITE_PATTERN_ATLAS_UI);
   const [qcAtlasEndpoint, setQcAtlasEndpoint] = useState(import.meta.env.VITE_QC_ATLAS);
 
-  const [activeTab, setActiveTab] = useState("lowCodeEndpoints");
+  const [activeTab, setActiveTab] = useState("editor");
 
   const [contextMenu, setContextMenu] = useState<{
     visible: boolean;
@@ -114,11 +127,11 @@ function App() {
         //top: node.position.y+0.5*node.height, //passt nicht
         //left: node.position.x-0.5*node.width, //passt nicht
       });
-    }, 
+    },
     []
   );
 
-  
+
 
   const handleAction = (action: string, nodeId: string) => {
     console.log(`Action: ${action} on Node: ${nodeId}`);
@@ -134,8 +147,8 @@ function App() {
   const [githubToken, setGithubToken] = useState(import.meta.env.VITE_GITHUB_TOKEN);
   const [openqasmCode, setOpenQASMCode] = useState("");
 
-  const [selectedDevice, setSelectedDevice] = useState("");
-  const [provider, setProvider] = useState("");
+  const [selectedDevice, setSelectedDevice] = useState("aer_simulator");
+  const [provider, setProvider] = useState("IBM");
 
   const [numShots, setNumShots] = useState(1024);
   const [accessToken, setAccessToken] = useState("");
@@ -184,6 +197,13 @@ function App() {
     setGithubBranch(newValues.tempGithubBranch);
     setGithubToken(newValues.tempGithubToken);
 
+    setCompact(newValues.compactVisualization);
+    setCompactVisualization(newValues.compactVisualization);
+    setAncillaMode(newValues.ancillaMode);
+    setAncillaModelingOn(newValues.ancillaMode);
+    setExperienceLevel(newValues.experienceLevel);
+    setCompletionGuaranteed(newValues.completionGuaranteed);
+
     setIsConfigOpen(false);
   };
 
@@ -193,15 +213,24 @@ function App() {
   const [helperLines, setHelperLines] = useState(null);
   const [deploymentId, setDeploymentId] = useState(null);
 
+  const [expanded, setExpanded] = useState(false);
+  const [completionGuaranteedOption, setCompletionGuaranteedOption] = useState("Yes");
+
 
   const {
     nodes,
     edges,
+    experienceLevel,
+    compact,
+    completionGuaranteed,
     onNodesChange,
     onEdgesChange,
     onConnect,
     onConnectEnd,
+    setCompact,
+    setExperienceLevel,
     setAncillaMode,
+    setCompletionGuaranteed,
     setSelectedNode,
     setNodes,
     updateNodeValue,
@@ -234,6 +263,8 @@ function App() {
   const [loadingQunicorn, setLoadingQunicorn] = useState(true);
   const [statusQunicorn, setStatusQunicorn] = useState(null);
   const [ancillaModelingOn, setAncillaModelingOn] = useState(false);
+  const [experienceLevelOn, setExperienceLevelOn] = useState("explorer");
+  const [compactVisualization, setCompactVisualization] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
 
   const showToast = (message: string, type: "success" | "error" | "info") => {
@@ -253,6 +284,10 @@ function App() {
         content: 'This is the toolbar where you can save, restore, or send your diagrams.',
       },
       {
+        target: '.backend-button',
+        content: 'This transforms the model into QASM code, which can be executed on quantum devices.',
+      },
+      {
         target: '.palette-container',
         content: 'This is the palette, where you can drag and drop blocks. Quantum blocks are depicted in blue and classical blocks are depicted in orange.',
         placement: "right"
@@ -263,8 +298,8 @@ function App() {
         placement: "top-start"
       },
       {
-        target: '.ancilla-button',
-        content: 'This button enables or disables ancilla modeling.',
+        target: '.experience-mode',
+        content: 'This panel allows you to configure the editor based on your preferences.',
         placement: "right"
       },
       {
@@ -538,7 +573,7 @@ function App() {
 
       if (
         minMaxOperators.includes(label) ||
-        (node.type === "gateNode" && label !== "Qubit Circuit")
+        (node.type === "gateNode" && label !== "Qubit Circuit" && !threeQubitGates.includes(label) && !twoQubitGates.includes(label))
       ) {
         if (inputCount < 1) {
           errors.push({
@@ -552,17 +587,76 @@ function App() {
 
       // StatePreparationNode classical input check
       if (node.type === "statePreparationNode") {
-        const hasClassical = connectedSources.some((srcId) => {
-          const sourceNode: any = nodesById.get(srcId);
-          return sourceNode?.type === "dataTypeNode";
-        });
-
-        if (!hasClassical) {
-          errors.push({
-            nodeId: node.id,
-            description: `State preparation node "${label}" has no classical data input connected.`
+        if (node.data.label === "Encode Value") {
+          const hasClassical = connectedSources.some((srcId) => {
+            const sourceNode: any = nodesById.get(srcId);
+            return sourceNode?.type === "dataTypeNode";
           });
+
+          if (!hasClassical) {
+            errors.push({
+              nodeId: node.id,
+              description: `Encode value node "${node.id}" has no classical data input connected.`
+            });
+          }
+          if (node.data.encodingType === "Custom Encoding" && !node.data.implementation) {
+            errors.push({
+              nodeId: node.id,
+              description: `Encode value node "${node.id}" is missing implementation for custom encoding.`
+            });
+          }
         }
+
+        if (node.data.label === "Prepare State") {
+          if (!node.data.size) {
+            errors.push({
+              nodeId: node.id,
+              description: `Prepare state node "${node.id}" has no quantum register size specified.`
+            });
+          }
+          if (node.data.quantumStateName === "Custom State" && !node.data.implementation) {
+            errors.push({
+              nodeId: node.id,
+              description: `Prepare state node "${node.id}" is missing implementation for custom state.`
+            });
+          }
+        }
+      }
+
+      if (node.type === "dataTypeNode" && !node.data.value) {
+        errors.push({
+          nodeId: node.id,
+          description: `Node "${node.id}" has no value specified.`
+        });
+      }
+
+      if (node.type === "qubitNode" && !node.data.value) {
+        errors.push({
+          nodeId: node.id,
+          description: `Node "${node.id}" has no size specified.`
+        });
+      }
+      console.log("HDHDHHDHDHDH")
+      console.log(node)
+
+      if (node.type === "measurementNode") {
+        if (!node?.data?.indices) {
+
+          warnings.push({
+            nodeId: node.id,
+            description: `Measurement node "${node.id}" has no specified indices.`
+          });
+        } else {
+          const isValid = /^\d+(,\d+)*$/.test(node?.data?.indices);
+          if (!isValid) {
+            errors.push({
+              nodeId: node.id,
+              description: `Indices of Measurement node "${node.id}" can only contain numbers followed by comma.`
+            });
+
+          }
+        }
+
       }
 
       // Control structures
@@ -925,9 +1019,9 @@ function App() {
         }
       });
       //setNodes(nodeT);
-      if (node.id == contextMenu.nodeId){
+      if (node.id == contextMenu.nodeId) {
         console.log("moving context menu for node", node.id)
-        setContextMenu((prev) => ({ ...prev, left: evt.clientX, top: evt.clientY}));
+        setContextMenu((prev) => ({ ...prev, left: evt.clientX, top: evt.clientY }));
       }
     }, [nodes, setContextMenu]);
 
@@ -1289,11 +1383,11 @@ function App() {
     })
     // move contextmenu with dragged node if it belongs to that node
     // if other node is dragged: make context menu invisible
-    if (node.id == contextMenu.nodeId){
+    if (node.id == contextMenu.nodeId) {
       console.log("drag contextmenu to nodeid: ", node.id)
-      setContextMenu((prev) => ({ ...prev, top: event.clientY, left: event.clientX}))
+      setContextMenu((prev) => ({ ...prev, top: event.clientY, left: event.clientX }))
     } else {
-      setContextMenu((prev) => ({ ...prev, visible: false}))
+      setContextMenu((prev) => ({ ...prev, visible: false }))
     }
   }
     , [reactFlowInstance, helperLines, nodes, setContextMenu]);
@@ -1357,18 +1451,18 @@ function App() {
 
           if (type === 'step:before' && index === 1) {
             let fileContent = JSON.stringify(reactFlowInstance.toObject());
+            setExpanded(true);
             setModeledDiagram(fileContent)
           }
           if (type === 'step:before' && index === 3) {
             startTour2();
-
           }
           if (type === 'step:after' && index === 5) {
             startTour3();
           }
-
           if (['finished', 'skipped'].includes(data.status)) {
             setRunTour(false);
+            setExpanded(false);
             loadFlow(JSON.parse(modeledDiagram));
           }
         }}
@@ -1413,7 +1507,10 @@ function App() {
         onSave={handleSave}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-
+        ancillaMode={ancillaModelingOn}
+        compactVisualization={compactVisualization}
+        completionGuaranteed={completionGuaranteed}
+        experienceLevel={experienceLevel}
         tempNisqAnalyzerEndpoint={nisqAnalyzerEndpoint}
         tempQunicornEndpoint={qunicornEndpoint}
         tempLowcodeBackendEndpoint={lowcodeBackendEndpoint}
@@ -1469,17 +1566,23 @@ function App() {
             style={{
               width: "24px"
             }}
-            className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white p-2 rounded-l-lg shadow-md hover:bg-gray-600 z-50 ${isPaletteOpen ? "right-0" : "hidden"}`}
+            className={`
+    absolute top-1/2 transform -translate-y-1/2 
+    bg-gray-400 text-white p-2 rounded-l-lg shadow-md hover:bg-gray-600 z-50 
+    ${isPaletteOpen ? "right-0" : "hidden"} 
+    ${isValidationOpen ? "hidden" : ""}
+  `}
           >
             {isPaletteOpen ? "←" : "→"}
           </button>
+
           <button
             onClick={togglePalette}
             style={{
               width: "24px",
               paddingLeft: "4px"
             }}
-            className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white p-2 rounded-r-lg shadow-md hover:bg-gray-600 z-50 ${isPaletteOpen ? "hidden" : "-left-0"}`}
+            className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white p-2 rounded-r-lg shadow-md hover:bg-gray-600 z-50 ${isPaletteOpen ? "hidden" : "-left-0"} ${isValidationOpen ? "hidden" : ""}`}
           >
             {isPaletteOpen ? "←" : "→"}
           </button>
@@ -1555,15 +1658,18 @@ function App() {
               />
             )}
 
-            <Panel position="top-left" className="p-2">
-              <button
-                onClick={() => { setAncillaModelingOn((prev) => !prev); setAncillaMode(!ancillaModelingOn) }}
-                className={`ancilla-button px-3 py-1 rounded text-white ${ancillaModelingOn ? "bg-blue-600" : "bg-gray-400"
-                  }`}
-              >
-                Ancilla Modeling: {ancillaModelingOn ? "On" : "Off"}
-              </button>
-            </Panel>
+            <ExperienceModePanel
+              expanded={expanded}
+              onToggleExpanded={() => setExpanded(!expanded)}
+              ancillaModelingOn={ancillaModelingOn}
+              onToggleAncilla={() => { setAncillaModelingOn(!ancillaModelingOn); setAncillaMode(!ancillaModelingOn) }}
+              experienceLevel={experienceLevel}
+              onExperienceLevelChange={(event) =>{setExperienceLevel(event); setExperienceLevelOn(event);}}
+              compactVisualization={compactVisualization}
+              onCompactVisualizationChange={() =>{setCompactVisualization(!compact); setCompact(!compact)}}
+              completionGuaranteed={completionGuaranteed}
+              onCompletionGuaranteedChange={setCompletionGuaranteed}
+            />
 
             <MiniMap
               nodeClassName={(node) => {
@@ -1635,7 +1741,7 @@ function App() {
                 width: "24px",
                 paddingLeft: "4px",
               }}
-              className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white text-center p-2 rounded-r-lg shadow-md hover:bg-gray-600 z-50 ${isPanelOpen ? "-left-0" : "hidden"}`}
+              className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white text-center p-2 rounded-r-lg shadow-md hover:bg-gray-600 z-50 ${isPanelOpen ? "-left-0" : "hidden"} ${isValidationOpen ? "hidden" : ""}`}
             >
 
               {isPanelOpen ? "→" : "←"}
@@ -1645,7 +1751,7 @@ function App() {
               style={{
                 width: "24px"
               }}
-              className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white p-2 rounded-l-lg shadow-md hover:bg-gray-600 z-50 ${isPanelOpen ? "hidden" : "right-0"}`}
+              className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white p-2 rounded-l-lg shadow-md hover:bg-gray-600 z-50 ${isPanelOpen ? "hidden" : "right-0"} ${isValidationOpen ? "hidden" : ""}`}
             >
               {isPanelOpen ? "→" : "←"}
             </button>
