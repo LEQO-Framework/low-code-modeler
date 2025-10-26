@@ -67,6 +67,7 @@ export const StatePreparationNode = memo((node: Node) => {
     setSelectedNode(node);
   };
 
+  console.log(node)
   useEffect(() => {
     if (node.data.label === "Encode Value") {
       console.log(node.data.encodingType)
@@ -112,10 +113,10 @@ export const StatePreparationNode = memo((node: Node) => {
     } else {
       setStartsWithDigitError(false);
     }
-    if(!node.data.encodingType && node.data.label === "Encode Value"){
+    if (!node.data.encodingType && node.data.label === "Encode Value") {
       updateNodeValue(node.id, "encodingType", encodingType);
     }
-    if(!node.data.quantumStateName && node.data.label === "Prepare State"){
+    if (!node.data.quantumStateName && node.data.label === "Prepare State") {
       updateNodeValue(node.id, "quantumStateName", quantumStateName);
     }
     console.log(encodingType)
@@ -187,7 +188,16 @@ export const StatePreparationNode = memo((node: Node) => {
             "w-[320px] bg-white border border-solid border-gray-700 shadow-md",
             selected && "border-blue-500"
           )}
-          style={{ height: !ancillaMode ? '370px' : `${dynamicHeight}px` }}
+          style={{
+            height:
+              ["Basis Encoding", "Angle Encoding", "Amplitude Encoding"].includes(data.label)
+                ? !ancillaMode
+                  ? "300px"
+                  : `${Math.max(dynamicHeight - 70, 200)}px`
+                : !ancillaMode
+                  ? "370px"
+                  : `${dynamicHeight}px`,
+          }}
         >
           {outputIdentifierError && (
             <div className="absolute top-2 right-[-40px] group z-20">
@@ -235,21 +245,36 @@ export const StatePreparationNode = memo((node: Node) => {
               />
             )}
             <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
-              {data.label === "Prepare State" || data.label === "Encode Value" ? (
-                <img
-                  src={
-                    data.label === "Prepare State"
-                      ? "prepareStateIcon.png"
-                      : "encodeValueIcon.png"
-                  }
-                  alt="icon"
-                  className={
-                    data.label === "Prepare State"
-                      ? "w-[45px] h-[45px] object-contain flex-shrink-0"
-                      : "w-[40px] h-[40px] object-contain flex-shrink-0"
-                  }
-                />
-              ) : null}
+              {[
+                "Prepare State",
+                "Encode Value",
+                "Basis Encoding",
+                "Angle Encoding",
+                "Amplitude Encoding",
+              ].includes(data.label) && (
+                  <img
+                    src={
+                      data.label === "Prepare State"
+                        ? "prepareStateIcon.png"
+                        : data.label === "Encode Value"
+                          ? "encodeValueIcon.png"
+                          : data.label === "Basis Encoding"
+                            ? "basisEncodingIcon.png"
+                            : data.label === "Angle Encoding"
+                              ? "angleEncodingIcon.png"
+                              : "amplitudeEncodingIcon.png"
+                    }
+                    alt={`${data.label} icon`}
+                    className={
+                      data.label === "Prepare State"
+                        ? "w-[45px] h-[45px] object-contain flex-shrink-0"
+                        : data.label === "Amplitude Encoding"
+                          ? "w-[42px] h-[42px] object-contain flex-shrink-0"
+                          : "w-[40px] h-[40px] object-contain flex-shrink-0"
+                    }
+                  />
+                )}
+
 
               <div className="h-full w-[1px] bg-black mx-2" />
 
@@ -330,7 +355,7 @@ export const StatePreparationNode = memo((node: Node) => {
           )}
           <div className="custom-node-port-in mb-3 mt-2">
             <div className="relative flex flex-col overflow-visible">
-              {node.data.label === "Encode Value" && (
+              {(node.data.label === "Encode Value" || node.data.label === "Basis Encoding" || node.data.label === "Angle Encoding" || node.data.label === "Amplitude Encoding") && (
                 <div
                   className="relative p-2 mb-1"
                   style={{
@@ -444,7 +469,7 @@ export const StatePreparationNode = memo((node: Node) => {
                   setSelectedNode={setSelectedNode}
                   active={true}
                 />)}
-              {node.data.label === "Encode Value" && (
+              {(node.data.label === "Encode Value" || node.data.label === "Basis Encoding" || node.data.label === "Amplitude Encoding" || node.data.label === "Angle Encoding") && (
                 <OutputPort
                   node={node}
                   index={0}

@@ -53,6 +53,8 @@ export function handleOnDrop(
     const def = findNodeDefinition(type, label);
     console.log(def)
 
+    const compactOptions = def.compactOptions;
+
     const position = reactFlowInstance.project({
       x: event.clientX - reactFlowBounds.left,
       y: event.clientY - reactFlowBounds.top,
@@ -61,7 +63,7 @@ export function handleOnDrop(
       id: getId(),
       type,
       position,
-      data: { label: label, inputs: [], children: [], implementation: "", implementationType: "", uncomputeImplementationType: "", uncomputeImplementation: "", completionGuaranteed: def?.completionGuaranteed ?? false }
+      data: { label: label, inputs: [], children: [], implementation: "", implementationType: "", uncomputeImplementationType: "", uncomputeImplementation: "", completionGuaranteed: def?.completionGuaranteed ?? false, compactOptions: compactOptions }
     };
 
     setNodes(newNode);

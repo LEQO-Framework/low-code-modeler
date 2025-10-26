@@ -213,9 +213,32 @@ export const useStore = create<RFState>((set, get) => ({
       experienceLevel
     });
   },
-    setCompact: (compact: boolean) => {
+  setCompact: (compact: boolean) => {
+    const currentNodes = get().nodes.map(node => {
+      console.log(node)
+      if (!node.data.compactOptions.includes(compact)) {
+        return { ...node, hidden: !compact };
+      }
+  
+      return { ...node, hidden: false };
+    });
+    const hiddenNodeIds = new Set(
+      currentNodes.filter(n => n.hidden).map(n => n.id)
+    );
+    const currentEdges = get().edges.map(edge => {
+      if (
+        hiddenNodeIds.has(edge.source) ||
+        hiddenNodeIds.has(edge.target)
+      ) {
+        return { ...edge, hidden: true };
+      }
+      return { ...edge, hidden: false };
+    });
+
     set({
-      compact
+      compact,
+      nodes: currentNodes,
+      edges: currentEdges
     });
   },
   setCompletionGuaranteed: (completionGuaranteed: boolean) => {
