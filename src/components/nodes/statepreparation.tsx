@@ -43,6 +43,8 @@ export const StatePreparationNode = memo((node: Node) => {
   const [encodingType, setEncodingType] = useState("Basis Encoding");
   const [mounted, setMounted] = useState(false);
   const [startsWithDigitError, setStartsWithDigitError] = useState(false);
+  const [boundError, setBoundError] = useState(false);
+
 
 
   const { updateNodeValue, setSelectedNode, setNodes, edges, nodes, ancillaMode, completionGuaranteed } = useStore(selector, shallow);
@@ -59,7 +61,13 @@ export const StatePreparationNode = memo((node: Node) => {
 
     if (field === "encodingType") {
       setEncodingType(value);
-      //updateNodeInternals(node.id);
+    }
+
+    if (field === "bound") {
+      // must be between 0 and 1 (inclusive)
+      const num = parseFloat(value);
+      const isValid = value === "" || (!isNaN(num) && num >= 0 && num <= 1);
+      setBoundError(!isValid);
     }
 
     node.data[field] = value;
@@ -75,7 +83,17 @@ export const StatePreparationNode = memo((node: Node) => {
         updateNodeValue(node.id, "encodingType", node.data.encodingType);
       } else {
         console.log("test")
-        updateNodeValue(node.id, "encodingType", encodingType);
+        if (node.data.label === "Basis Encoding") {
+          updateNodeValue(node.id, "encodingType", node.data.label);
+        }
+        else if (node.data.label === "Angle Encoding") {
+          updateNodeValue(node.id, "encodingType", node.data.label);
+        }
+        else if (node.data.label === "Amplitude Encoding") {
+          updateNodeValue(node.id, "encodingType", node.data.label);
+        } else {
+          updateNodeValue(node.id, "encodingType", encodingType);
+        }
       }
     } else {
       if (node.data.encodingType !== null && !mounted) {
@@ -245,6 +263,23 @@ export const StatePreparationNode = memo((node: Node) => {
             </div>
           )}
 
+          {boundError && (
+            <div className="absolute top-2 right-[-40px] group z-20">
+              <AlertCircle className="text-red-600 w-5 h-5" />
+              <div
+                className="absolute left-[30px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap"
+                style={{
+                  top: !(outputIdentifierError || startsWithDigitError || sizeError)
+                    ? '35px'
+                    : '110px',
+                }}
+              >
+                Bound must be a number between 0 and 1.
+              </div>
+            </div>
+          )}
+
+
           <div className="w-full flex items-center" style={{ height: '52px' }}>
             {node.data.implementation && (
               <img
@@ -314,6 +349,25 @@ export const StatePreparationNode = memo((node: Node) => {
                     {!completionGuaranteed && (<option value="Schmidt Decomposition">Schmidt Decomposition</option>)}
 
                   </select>
+
+                  {node.data.encodingType !== "Basis Encoding" && node.data.encodingType !== "Angle Encoding" && (
+                    <>
+                      <label className="text-sm text-black">Bound:</label>
+                      <input
+                        className="w-full p-1 mt-1 text-sm text-center text-black border-2 border-blue-300 rounded-full"
+                        type="text"
+                        id="bound"
+                        value={node.data.bound || bound}
+                        onChange={(e) => handleStateChange(e, "bound")}
+                        placeholder="Enter bound"
+                      />
+                    </>
+                  )}
+
+                </>
+              )}
+              {node.data.label === "Amplitude Encoding" && (
+                <>
 
                   {node.data.encodingType !== "Basis Encoding" && node.data.encodingType !== "Angle Encoding" && (
                     <>
