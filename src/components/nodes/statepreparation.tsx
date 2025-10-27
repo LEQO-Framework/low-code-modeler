@@ -34,7 +34,7 @@ const selector = (state: {
 export const StatePreparationNode = memo((node: Node) => {
   const [size, setSize] = useState("");
   const [bound, setBound] = useState("");
-  const [quantumStateName, setQuantumStateName] = useState("Bell State ϕ+");
+  const [quantumStateName, setQuantumStateName] = useState("Bell State φ+");
   const [outputIdentifier, setOutputIdentifier] = useState("");
   const [showingChildren, setShowingChildren] = useState(false);
   const [sizeError, setSizeError] = useState(false);
