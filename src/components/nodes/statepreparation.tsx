@@ -98,6 +98,8 @@ export const StatePreparationNode = memo((node: Node) => {
     } else {
       if (node.data.encodingType !== null && !mounted) {
       } else {
+
+
         updateNodeValue(node.id, "quantumStateName", quantumStateName);
       }
     }
@@ -113,6 +115,20 @@ export const StatePreparationNode = memo((node: Node) => {
   const isDirtyAncillaConnected = edges.some(
     edge => edge.target === node.id && edge.targetHandle === `${dirtyAncillaHandle}OperationInput3${node.id}`
   );
+
+  useEffect(() => {
+    if (quantumStateName === "GHZ" || quantumStateName === "Uniform Superposition" || quantumStateName === "Custom State") {
+      const numSize = parseInt(node.data.size);
+      if (isNaN(numSize) || numSize < 3) {
+        setSizeError(true);
+      } else {
+        setSizeError(false);
+      }
+    } else {
+      setSizeError(false);
+    }
+  }, [quantumStateName, size]);
+
 
 
   useEffect(() => {

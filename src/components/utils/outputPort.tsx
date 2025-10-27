@@ -57,20 +57,20 @@ export default function OutputPort({
   const outputSize = outputs[index]?.size || "";
   const isConnected = edges.some(edge => edge.sourceHandle === handleId);
 
-  const handleYChange = (value, field) => {
-    const number = Number(value);
-    console.log(value)
+  const handleYChange = (value: string, field: string) => {
+    const num = Number(value);
+    let hasError = false;
 
-    if (/^[a-zA-Z_]/.test(value) || number < 0) {
-      console.log(sizeError)
-      setSizeError(true);
-      console.log(sizeError)
-    } else {
-      setSizeError(false);
+    // Only validate if user entered something
+    if (value !== "" && (!/^\d+$/.test(value) || num <= 0)) {
+      hasError = true;
     }
 
+    setSizeError(hasError);
+
+    // Update node data
     node.data[field] = value;
-    updateNodeValue(node.id, field, number);
+    updateNodeValue(node.id, field, num);
     setSelectedNode(node);
   };
 
@@ -95,7 +95,7 @@ export default function OutputPort({
       setSelectedNode(node);
 
       wasBellState.current = true;
-    } else if (wasBellState.current && node.data.label ==="Prepare State") {
+    } else if (wasBellState.current && node.data.label === "Prepare State") {
       // Only reset when transitioning from Bell State
       updatedOutputs[index] = {
         ...updatedOutputs[index],
@@ -175,15 +175,14 @@ export default function OutputPort({
           <label className="text-sm text-black" style={{ paddingLeft: '15px' }}>Size</label>
           <input
             type="text"
-            className={`p-1 text-sm text-black opacity-75 w-20 text-center rounded-full border ${
-    sizeError
-      ? 'bg-red-500 border-red-500'
-      : isClassical
-        ? `bg-white border-orange-500 ${sizeRequired ? '' : 'border-dashed'}`
-        : isAncilla
-          ? `bg-white border-green-500 ${sizeRequired ? '' : 'border-dashed'}`
-          : `bg-white border-blue-500 ${sizeRequired ? '' : 'border-dashed'}`
-  }`}
+            className={`p-1 text-sm text-black opacity-75 w-20 text-center rounded-full border ${sizeError
+                ? 'bg-red-500 border-red-500'
+                : isClassical
+                  ? `bg-white border-orange-500 ${sizeRequired ? '' : 'border-dashed'}`
+                  : isAncilla
+                    ? `bg-white border-green-500 ${sizeRequired ? '' : 'border-dashed'}`
+                    : `bg-white border-blue-500 ${sizeRequired ? '' : 'border-dashed'}`
+              }`}
             value={node.data.quantumStateName?.includes("Bell State") ? "2" : outputSize}
             readOnly={node.data.quantumStateName?.includes("Bell State")}
             onChange={(e) => {
