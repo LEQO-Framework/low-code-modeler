@@ -328,8 +328,8 @@ function App() {
     setJobId(null);
     setDeploymentId(null);
     setProgress(0);
-    setSelectedDevice("");
-    setProvider("");
+    //setSelectedDevice("");
+    //setProvider("");
     setNumShots(1024);
     setAccessToken("");
     setAlreadyExecuted(false);

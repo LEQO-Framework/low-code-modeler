@@ -232,7 +232,7 @@ export const OperationNode = memo((node: Node) => {
               {(node.data.label === consts.quantumLabel + "Arithmetic Operator") && (
                 <>
                   <option value="+">+</option>
-                  <option value="-">-</option>
+                  {!completionGuaranteed &&(<option value="-">-</option>)}
                   {!completionGuaranteed &&( <option value="/">/</option>)}
                   {!completionGuaranteed &&(<option value="*">*</option>)}
                   {!completionGuaranteed &&(<option value="**">**</option>)}

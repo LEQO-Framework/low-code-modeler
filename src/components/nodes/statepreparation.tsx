@@ -34,7 +34,7 @@ const selector = (state: {
 export const StatePreparationNode = memo((node: Node) => {
   const [size, setSize] = useState("");
   const [bound, setBound] = useState("");
-  const [quantumStateName, setQuantumStateName] = useState("Bell State ϕ+");
+  const [quantumStateName, setQuantumStateName] = useState("Bell State φ+");
   const [outputIdentifier, setOutputIdentifier] = useState("");
   const [showingChildren, setShowingChildren] = useState(false);
   const [sizeError, setSizeError] = useState(false);
@@ -98,6 +98,8 @@ export const StatePreparationNode = memo((node: Node) => {
     } else {
       if (node.data.encodingType !== null && !mounted) {
       } else {
+
+
         updateNodeValue(node.id, "quantumStateName", quantumStateName);
       }
     }
@@ -113,6 +115,20 @@ export const StatePreparationNode = memo((node: Node) => {
   const isDirtyAncillaConnected = edges.some(
     edge => edge.target === node.id && edge.targetHandle === `${dirtyAncillaHandle}OperationInput3${node.id}`
   );
+
+  useEffect(() => {
+    if (quantumStateName === "GHZ" || quantumStateName === "Uniform Superposition" || quantumStateName === "Custom State") {
+      const numSize = parseInt(node.data.size);
+      if (isNaN(numSize) || numSize < 3) {
+        setSizeError(true);
+      } else {
+        setSizeError(false);
+      }
+    } else {
+      setSizeError(false);
+    }
+  }, [quantumStateName, size]);
+
 
 
   useEffect(() => {
