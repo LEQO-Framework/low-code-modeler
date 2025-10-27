@@ -203,7 +203,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
             style={buttonStyle}
             aria-label="Add Classical Input"
           >
-            <FaGear style={iconStyle} /> Classic
+            <FaGear style={iconStyle} /> Classical
           </button>
         </div>
       )}
@@ -238,7 +238,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
             style={buttonStyle}
             aria-label="Remove Classical Input"
           >
-            <FaGear style={iconStyle} /> Classic
+            <FaGear style={iconStyle} /> Classical
           </button>
         </div>
       )}
