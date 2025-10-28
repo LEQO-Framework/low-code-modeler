@@ -54,7 +54,7 @@ const selector = (state: {
   setAncillaMode: (ancillaMode: boolean) => void;
   setCompact: (compact: boolean) => void;
   setCompletionGuaranteed: (completionGuaranteed: boolean) => void;
-  setExperienceLevel: (experienceLevel: string) =>void;
+  setExperienceLevel: (experienceLevel: string) => void;
   undo: () => void;
   redo: () => void;
 }) => ({
@@ -101,7 +101,7 @@ function App() {
   const [qcAtlasEndpoint, setQcAtlasEndpoint] = useState(import.meta.env.VITE_QC_ATLAS);
 
   const [activeTab, setActiveTab] = useState("editor");
-
+  const [warningExecution, setWarningExecution] = useState(false);
   const [contextMenu, setContextMenu] = useState<{
     visible: boolean;
     nodeId: string | null;
@@ -328,6 +328,7 @@ function App() {
     setJobId(null);
     setDeploymentId(null);
     setProgress(0);
+    setWarningExecution(false);
     //setSelectedDevice("");
     //setProvider("");
     setNumShots(1024);
@@ -711,6 +712,7 @@ function App() {
 
     const flow = reactFlowInstance.toObject();
     const result = validateFlow(flow);
+    console.log(flow)
 
     setValidationResult(result);
     setIsValidationOpen(true);
@@ -739,7 +741,6 @@ function App() {
             //"quantumCircuit": "OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[2];\ncreg meas[2];\nh q[0];\ncx q[0],q[1];\nbarrier q[0],q[1];\nmeasure q[0] -> meas[0];\nmeasure q[1] -> meas[1];",
             "quantumCircuit": openqasmCode,
             //"quantumCircuit": "OPENQASM 2.0;include 'qelib1.inc';qreg q[6];creg c[6];gate oracle(q0, q1, q2, q3, q4, q5) {    x q0;    x q1;    x q2;    x q3;    x q4;    x q5;        h q5;    ccx q3, q4, q5;    cx q2, q3;    cx q1, q2;    cx q0, q1;    h q5;    x q0;    x q1;    x q2;    x q3;    x q4;    x q5;}gate diffusion(q0, q1, q2, q3, q4, q5) {    h q0;    h q1;    h q2;    h q3;    h q4;    h q5;        x q0;    x q1;    x q2;    x q3;    x q4;    x q5;        h q5;    ccx q3, q4, q5;    cx q2, q3;    cx q1, q2;    cx q0, q1;    h q5;        x q0;    x q1;    x q2;    x q3;    x q4;    x q5;        h q0;    h q1;    h q2;    h q3;    h q4;    h q5;}h q[0];h q[1];h q[2];h q[3];h q[4];h q[5];oracle(q[0], q[1], q[2], q[3], q[4], q[5]);diffusion(q[0], q[1], q[2], q[3], q[4], q[5]);oracle(q[0], q[1], q[2], q[3], q[4], q[5]);diffusion(q[0], q[1], q[2], q[3], q[4], q[5]);oracle(q[0], q[1], q[2], q[3], q[4], q[5]);diffusion(q[0], q[1], q[2], q[3], q[4], q[5]);oracle(q[0], q[1], q[2], q[3], q[4], q[5]);diffusion(q[0], q[1], q[2], q[3], q[4], q[5]);oracle(q[0], q[1], q[2], q[3], q[4], q[5]);diffusion(q[0], q[1], q[2], q[3], q[4], q[5]);oracle(q[0], q[1], q[2], q[3], q[4], q[5]);diffusion(q[0], q[1], q[2], q[3], q[4], q[5]);measure q[0] -> c[0];measure q[1] -> c[1];measure q[2] -> c[2];measure q[3] -> c[3];measure q[4] -> c[4];measure q[5] -> c[5];",
-
             "assemblerLanguage": "QASM3",
             "pythonFilePath": "",
             "pythonFileMetadata": ""
@@ -747,7 +748,20 @@ function App() {
         ],
         "name": "DeploymentName"
       };
+      console.log(openqasmCode)
+      const qubitMatches = openqasmCode.match(/\w+\[(\d+)\]/g);
+      console.log(qubitMatches)
 
+      if (qubitMatches) {
+        const qubitIndices = qubitMatches.map(m => parseInt(m.match(/\d+/)[0], 10));
+        const maxQubitIndex = Math.max(...qubitIndices);
+
+        // Example: trigger warning if any qubit index >= 30
+        if (maxQubitIndex >= 30) {
+          setWarningExecution(true);
+          console.warn(`⚠️ Warning: High qubit index detected (${maxQubitIndex})`);
+        }
+      }
       let response = await fetch(qunicornEndpoint + "/deployments/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1528,6 +1542,7 @@ function App() {
         step={modalStep}
         executed={executed}
         onClose={handleClose}
+        simulatorWarning={warningExecution}
         onStep1Deploy={handleDeploy}
         onStep2CreateJob={handleCreateJob}
         onStep3Execute={handleJobExecute}
@@ -1548,9 +1563,21 @@ function App() {
         open={isHistoryOpen}
         onClose={() => setHistoryOpen(false)}
         history={history}
-        onExecute={() => {
+        onExecute={async (item) => {
+          console.log(item)
           setHistoryOpen(false);
           setIsQunicornOpen(true);
+          try {
+            // Fetch the QASM content from the result link
+            const response = await fetch(item.links.result);
+            if (!response.ok) throw new Error("Failed to fetch QASM result");
+            const qasmText = await response.text(); // assuming result is plain text QASM
+
+            // Set it in your state
+            setOpenQASMCode(qasmText);
+          } catch (error) {
+            console.error("Error fetching QASM result:", error);
+          }
         }}
       />
 
@@ -1664,9 +1691,9 @@ function App() {
               ancillaModelingOn={ancillaModelingOn}
               onToggleAncilla={() => { setAncillaModelingOn(!ancillaModelingOn); setAncillaMode(!ancillaModelingOn) }}
               experienceLevel={experienceLevel}
-              onExperienceLevelChange={(event) =>{setExperienceLevel(event); setExperienceLevelOn(event);}}
+              onExperienceLevelChange={(event) => { setExperienceLevel(event); setExperienceLevelOn(event); }}
               compactVisualization={compactVisualization}
-              onCompactVisualizationChange={() =>{setCompactVisualization(!compact); setCompact(!compact)}}
+              onCompactVisualizationChange={() => { setCompactVisualization(!compact); setCompact(!compact) }}
               completionGuaranteed={completionGuaranteed}
               onCompletionGuaranteedChange={setCompletionGuaranteed}
             />

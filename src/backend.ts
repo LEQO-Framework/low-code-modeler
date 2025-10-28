@@ -178,12 +178,14 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                             type: "bit",
                             value: node.data.value === "1" ? 1 : 0
                         }
-                    // Currently no Backend support
-                    case "array":
+                  
+                    case "Array":
                         return {
                             id: node.id,
-                            type: "bit",
-                            value: node.data.value
+                            type: "array",
+                            value: Array.isArray(node.data.value)
+            ? node.data.value.map(Number)
+            : String(node.data.value).split(",").map(Number)
                         }
                 }
                 break;
