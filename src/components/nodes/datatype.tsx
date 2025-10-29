@@ -111,20 +111,6 @@ export const DataTypeNode = memo((node: Node) => {
     return fullComplex.test(trimmed) || imaginaryOnly.test(trimmed) || realOnly.test(trimmed);
   }
 
-
-  const changeSize = (e) => {
-    let size = e.target.value.trim();
-    setValue(size);
-    node.data["size"] = size;
-    updateNodeValue(node.id, "size", size);
-
-    if (!/^-?\d+$/.test(size) && size !== "") {
-      setSizeError(true);
-      return;
-    }
-    setValueError(false);
-  };
-
   function parseToNormalizedAngle(angle) {
     const trimmed = angle.trim().toLowerCase();
     const piMatch = /^([0-9]*\.?[0-9]*)\s*\*?\s*pi$/.exec(trimmed);
