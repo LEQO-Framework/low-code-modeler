@@ -523,7 +523,9 @@ function App() {
 
     flow.nodes?.forEach((node) => {
       const { outputIdentifier, label, inputs, outputSize, condition, operator } = node.data || {};
-      const inputCount = inputs?.length || 0;
+      const incomingEdges = flow.edges?.filter(edge => edge.target === node.id) || [];
+      const connectedNodeSources = incomingEdges.map(edge => edge.source);
+      const inputCount = connectedNodeSources.length;
 
       // outputIdentifier checks
       if (outputIdentifier && /^[0-9]/.test(outputIdentifier)) {
@@ -550,6 +552,8 @@ function App() {
       const threeQubitGates = ["Toffoli", "CSWAP"];
       const minMaxOperators = ["Min", "Max"];
 
+      console.log(node.type === "quantumOperatorNode");
+      console.log(!minMaxOperators.includes(operator))
       if (
         twoQubitGates.includes(label) ||
         ((node.type === "quantumOperatorNode" || node.type === "classicalOperatorNode") &&
@@ -588,7 +592,7 @@ function App() {
 
       // StatePreparationNode classical input check
       if (node.type === "statePreparationNode") {
-        if (node.data.label === "Encode Value") {
+        if (node.data.label === "Encode Value" || node.data.label === "Basis Encoding" || node.data.label === "Angle Encoding" || node.data.label === "Amplitude Encoding") {
           const hasClassical = connectedSources.some((srcId) => {
             const sourceNode: any = nodesById.get(srcId);
             return sourceNode?.type === "dataTypeNode";
