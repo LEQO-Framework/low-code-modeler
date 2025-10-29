@@ -32,7 +32,7 @@ export const HistoryModal = ({ open, onClose, history, onExecute }: HistoryModal
         </div>
       }
     >
-      <div className="overflow-x-auto">
+      <div className="max-h-[70vh] overflow-y-auto overflow-x-auto">
         <table className="min-w-full table-auto border border-gray-300">
           <thead className="bg-gray-100">
             <tr>
@@ -83,9 +83,16 @@ export const HistoryModal = ({ open, onClose, history, onExecute }: HistoryModal
                 </td>
 
                 <td className="px-4 py-2 border">
-                  <button className="btn btn-primary" onClick={() => onExecute(item)}>
-                    Execute
-                  </button>
+                    {item.status.toLowerCase() !== "failed" ? (
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => onExecute(item)}
+                    >
+                      Execute
+                    </button>
+                  ) : (
+                    <span className="text-gray-400">—</span>
+                  )}
                 </td>
               </tr>
             ))}

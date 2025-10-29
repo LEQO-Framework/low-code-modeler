@@ -1,6 +1,7 @@
 import React, { useCallback } from "react";
 import { useReactFlow, Node } from "reactflow";
-import { FaTrash, FaLink, FaCopy } from "react-icons/fa";
+import { FaTrash, FaCopy } from "react-icons/fa";
+import { v4 as uuid } from "uuid";
 
 interface ContextMenuProps {
   id: string;
@@ -27,10 +28,10 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
 }) => {
   const { getNode, setNodes, addNodes, setEdges } = useReactFlow();
 
-  const duplicateNode = useCallback(() => {
+  const duplicateNode = useCallback(() => { // duplicate node at slighlty shifted position
     const node = getNode(id);
     if (node) {
-      const randomId = generateRandomId();
+      const randomId = uuid();
       const position = {
         x: node.position.x + 50,
         y: node.position.y + 50,
@@ -47,7 +48,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
     }
   }, [id, getNode, addNodes, onAction]);
 
-  const deleteNode = useCallback(() => {
+  const deleteNode = useCallback(() => { // delete node
     setNodes((nodes) => nodes.filter((node) => node.id !== id));
     setEdges((edges) => edges.filter((edge) => edge.source !== id));
     if (onAction) onAction("delete", id);
@@ -59,7 +60,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
         position: "absolute",
         top,
         left,
-        ...styles, // Merge passed styles
+        ...styles,
         backgroundColor: "#fff",
         border: "1px solid #ddd",
         borderRadius: "8px",
@@ -82,13 +83,6 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
           aria-label="Duplicate Node"
         >
           <FaCopy style={iconStyle} /> Duplicate
-        </button>
-        <button
-          onClick={() => console.log("Connect Node")} // Placeholder
-          style={buttonStyle}
-          aria-label="Connect Node"
-        >
-          <FaLink style={iconStyle} /> Connect
         </button>
         <button
           onClick={deleteNode}

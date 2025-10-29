@@ -53,6 +53,28 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                             }, node.data.encodingType),
                             bounds: (node.data.encodingType === "Basis Encoding") ? 0 : parseFloat(node.data.bound)
                         }
+                    
+                    case "Basis Encoding":
+                        return {
+                            id: node.id,
+                            type: "encode",
+                            encoding: "basis",
+                            bounds: 0
+                        }
+                    case "Angle Encoding":
+                        return {
+                            id: node.id,
+                            type: "encode",
+                            encoding: "angle",
+                            bounds: 0
+                        }
+                    case "Amplitude Encoding":
+                        return {
+                            id: node.id,
+                            type: "encode",
+                            encoding: "amplitude",
+                            bounds: parseFloat(node.data.bound)
+                        }
 
                     case "Prepare State":
                         return {
@@ -156,12 +178,14 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                             type: "bit",
                             value: node.data.value === "1" ? 1 : 0
                         }
-                    // Currently no Backend support
-                    case "array":
+                  
+                    case "Array":
                         return {
                             id: node.id,
-                            type: "bit",
-                            value: node.data.value
+                            type: "array",
+                            value: Array.isArray(node.data.value)
+            ? node.data.value.map(Number)
+            : String(node.data.value).split(",").map(Number)
                         }
                 }
                 break;

@@ -27,14 +27,14 @@ export const Toast = ({ message, type, onClose, duration = 5000 }: ToastProps) =
     }, intervalTime);
 
     return () => clearInterval(interval);
-  }, [duration, onClose]);
+  }, [type, duration]);
 
   const bgColor =
     type === "success"
       ? "bg-green-500"
       : type === "error"
-      ? "bg-red-500"
-      : "bg-blue-500";
+        ? "bg-red-500"
+        : "bg-blue-500";
 
   return (
     <div
