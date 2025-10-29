@@ -749,11 +749,13 @@ function App() {
         "name": "DeploymentName"
       };
       console.log(openqasmCode)
-      const qubitMatches = openqasmCode.match(/\w+\[(\d+)\]/g);
+      const regex = /^qubit\[\d+\]\s+\w+;$/gm;
+      const qubitMatches = openqasmCode.match(regex);
       console.log(qubitMatches)
 
       if (qubitMatches) {
         const qubitIndices = qubitMatches.map(m => parseInt(m.match(/\d+/)[0], 10));
+        console.log(qubitIndices)
         const maxQubitIndex = Math.max(...qubitIndices);
 
         // Example: trigger warning if any qubit index >= 30
