@@ -219,7 +219,7 @@ console.log(selectedDevice.trim().toLowerCase() === "aer_simulator")
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="register" label={{ value: "Register", position: "insideBottom", offset: 5 }} />
+                  <XAxis dataKey="register" label={{ value: "Register", position: "insideBottom", offset: -3 }} />
                   <YAxis
                     domain={[0, 100]}
                     label={{ value: "Probabilities", angle: -90, dx: 0, dy: 30, position: "insideLeft" }}

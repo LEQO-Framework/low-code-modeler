@@ -53,7 +53,7 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                             }, node.data.encodingType),
                             bounds: (node.data.encodingType === "Basis Encoding") ? 0 : parseFloat(node.data.bound)
                         }
-                    
+
                     case "Basis Encoding":
                         return {
                             id: node.id,
@@ -178,14 +178,14 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                             type: "bit",
                             value: node.data.value === "1" ? 1 : 0
                         }
-                  
+
                     case "Array":
                         return {
                             id: node.id,
                             type: "array",
                             value: Array.isArray(node.data.value)
-            ? node.data.value.map(Number)
-            : String(node.data.value).split(",").map(Number)
+                                ? node.data.value.map(Number)
+                                : String(node.data.value).split(",").map(Number)
                         }
                 }
                 break;
