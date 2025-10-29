@@ -23,13 +23,8 @@ export const SendRequestModal = ({
       footer={
         <div className="flex justify-end space-x-2">
           <button
-            className={`btn ${
-              //compilationTarget === "workflow"
-                //? "btn-disabled opacity-50 cursor-not-allowed":
-              "btn-primary"
-            }`}
+            className={`btn"btn-primary"}`}
             onClick={sendToBackend}
-            disabled={compilationTarget === "workflow"}
           >
             Send
           </button>
@@ -50,15 +45,10 @@ export const SendRequestModal = ({
             onChange={(e) => setCompilationTarget(e.target.value)}
           >
             <option value="qasm">QASM</option>
-             {/* <option value="workflow">Workflow</option> */}
+            <option value="workflow">Workflow</option>
           </select>
         </div>
 
-       {/* {compilationTarget === "workflow" && (
-          <p className="text-sm text-gray-500">
-            Workflow compilation is not supported yet. Will come in the future.
-          </p>
-        )} */}
       </div>
     </Modal>
   );
