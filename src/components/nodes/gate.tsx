@@ -187,7 +187,7 @@ export const GateNode = memo((node: Node) => {
             <img src="CP.png" alt="CP gate" className="w-10 h-22 object-fit object-center" />
           ) : data.label === "H" ? (
             <img
-              src="hadamardBeginner23.png"
+              src="hadamardBeginner.png"
               alt="Hadamard gate"
               style={{ width: "320px", height: "120px", marginLeft: "53px" }}
               className=""
