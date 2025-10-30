@@ -222,14 +222,10 @@ export const IfElseNode = memo((node: Node) => {
   }, [edges, node.id]);
 
   const dynamicHeight = 900 + Math.max(0, quantumHandles.length - 1 + (classicalHandles.length - 1)) * 30;
-  const totalHandles = Math.max(classicalHandles.length + quantumHandles.length, classicalOutputHandles.length + classicalOutputHandlesElse.length + quantumOutputHandles.length + quantumOutputHandlesElse.length);
+  const totalHandles = Math.max(classicalHandles.length + quantumHandles.length, classicalOutputHandles.length + quantumOutputHandles.length);
   const hexagonHeight = Math.max(250, 280 + totalHandles * 30);
   const hexagonTopOffset = -(hexagonHeight / 2) + 20;
 
-
-
-
- 
   return !collapsed ? (
     <div
       className="grand-parent overflow-visible"
@@ -323,10 +319,7 @@ export const IfElseNode = memo((node: Node) => {
                   type="source"
                   id={`sideClassicalHandleElse${handle}${node.id}`}
                   position={Position.Right}
-                  className={cn(
-                    "z-10 classical-circle-port-hex-out",
-                    isConnected ? "!bg-orange-300 !border-black" : "!bg-gray-200  !border-black"
-                  )}
+                  className={"z-10 classical-circle-port-hex-out !bg-orange-300 !border-black"}
                   style={{
                     top: `calc(70% + ${30 + i * 30}px)`,
                     left: "50%",
@@ -495,10 +488,7 @@ export const IfElseNode = memo((node: Node) => {
                       type="target"
                       id={`classicalHandleDynamicOutput${index}${node.id}`}
                       position={Position.Left}
-                      className={cn(
-                        "z-10 classical-circle-port-out",
-                        isConnected ? "!bg-orange-300 !border-black" : "!bg-gray-200 !border-black"
-                      )}
+                      className={"z-10 classical-circle-port-out !bg-orange-300 !border-black" }
                       style={{
                         top: `${100 + i * 30}px`,
                         overflow: "visible",
@@ -551,10 +541,7 @@ export const IfElseNode = memo((node: Node) => {
                     type="target"
                     id={handleId}
                     position={Position.Left}
-                    className={cn(
-                      "z-10 classical-circle-port-out",
-                      isConnected ? "!bg-orange-300 !border-black" : "!bg-gray-200  !border-black"
-                    )}
+                    className={"z-10 classical-circle-port-out !bg-orange-300 !border-black"}
                     style={{
                       top: `calc(70% + ${30 + i * 30}px)`,
                       overflow: "visible",
@@ -669,44 +656,19 @@ export const IfElseNode = memo((node: Node) => {
                 ) : null;
               })}
 
-              {/* Final Classical Output (right polygon)*/}
-              {classicalOutputHandles.map((index, i) => {
-                console.log(classicalOutputHandles)
-                console.log(classicalOutputHandles[i])
-                console.log(index)
-
-                const handleId = `classicalHandleDynamicOutput${index}${node.id}`;
+              {/* Final Quantum Output (right polygon)*/}
+              {quantumHandles.map((index, i) => {
+                const handleId = `quantumHandleDynamicOutput${index}${node.id}`;
                 const isConnected = edges.some(edge => edge.targetHandle === handleId);
 
-                const elseHandleId = `classicalHandleDynamicOutputElse${index}${node.id}`;
+                const elseHandleId = `quantumHandleDynamicOutputElse${index}${node.id}`;
                 const isElseConnected = edges.some(edge => edge.targetHandle === elseHandleId);
                 const actualHandleId = isElseConnected ? elseHandleId : handleId;
-                console.log(actualHandleId)
-
+                console.log("actualHandleId", actualHandleId)
 
                 return (isConnected || isElseConnected) ? (
                   <Handle
                     key={actualHandleId}
-                    type="source"
-                    id={`classicalHandleOutputFinal-${index}`}
-                    position={Position.Right}
-                    className={"absolute z-10 classical-circle-port-hex-out !bg-orange-300 !border-black"}
-                    style={{ 
-                      top: `${hexagonTopOffset + 100 + i * 30}px`, 
-                      overflow: "visible" }}
-                    isConnectable={true}
-                  />
-                ) : null;
-              })}
-
-              {/* Final Quantum Output (Then) (right polygon)*/}
-              {quantumOutputHandles.map((index, i) => {
-                const handleId = `quantumHandleDynamicOutput${index}${node.id}`;
-                const isConnected = edges.some(edge => edge.targetHandle === handleId);
-
-                return isConnected ? (
-                  <Handle
-                    key={handleId}
                     type="source"
                     id={`quantumHandleOutputFinal-${index}`}
                     position={Position.Right}
@@ -718,26 +680,6 @@ export const IfElseNode = memo((node: Node) => {
                   />
                 ) : null;
               })}
-              {/* Final Quantum Output (Else) (right polygon)*/}
-              {quantumOutputHandlesElse.map((index, i) => {
-                const handleId = `quantumHandleDynamicOutputElse${index}${node.id}`;
-                const isConnected = edges.some(edge => edge.targetHandle === handleId);
-
-                return isConnected ? (
-                  <Handle
-                    key={handleId}
-                    type="source"
-                    id={`quantumHandleOutputElseFinal-${index}`}
-                    position={Position.Right}
-                    className="absolute z-10 circle-port-hex-out !bg-blue-300 !border-black"
-                    style={{ 
-                        top: `${hexagonTopOffset + 100 + classicalOutputHandles.length * 30 + quantumOutputHandles.length * 30 + i * 30}px`, 
-                        overflow: "visible" }}
-                    isConnectable={true}
-                  />
-                ) : null;
-              })}
-
             </div>
           </div>
         </div>
@@ -886,31 +828,18 @@ export const IfElseNode = memo((node: Node) => {
             const handleId = `quantumHandleDynamicOutput${index}${node.id}`;
             const isConnected = edges.some(edge => edge.targetHandle === handleId);
 
-            return isConnected ? (
+            const elseHandleId = `quantumHandleDynamicOutputElse${index}${node.id}`;
+            const isElseConnected = edges.some(edge => edge.targetHandle === elseHandleId);
+            const actualHandleId = isElseConnected ? elseHandleId : handleId;
+
+            return (isConnected || isElseConnected) ? (
               <Handle
-                key={handleId}
+                key={actualHandleId}
                 type="source"
                 id={`quantumHandleOutputFinal-${index}`}
                 position={Position.Right}
                 className="absolute z-10 circle-port-hex-out !bg-blue-300 !border-black"
-                style={{ top: `${160 + i * 30}px`, overflow: "visible" }}
-                isConnectable={true}
-              />
-            ) : null;
-          })}
-
-          {quantumOutputHandlesElse.map((index, i) => {
-            const handleId = `quantumHandleDynamicOutputElse${index}${node.id}`;
-            const isConnected = edges.some(edge => edge.targetHandle === handleId);
-
-            return isConnected ? (
-              <Handle
-                key={handleId}
-                type="source"
-                id={`quantumHandleOutputElseFinal-${index}`}
-                position={Position.Right}
-                className="absolute z-10 circle-port-hex-out !bg-blue-300 !border-black"
-                style={{ top: `${220 + i * 30}px`, overflow: "visible" }}
+                style={{ top: `${100 + classicalHandles.length * 30 + i * 30}px`, overflow: "visible" }}
                 isConnectable={true}
               />
             ) : null;
