@@ -80,18 +80,31 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
       )
     );
   }, [id, getNode, setNodes, onAction]);
-  const [submenuAddOpen, setSubmenuAddOpen] = useState(false);
-  const [submenuRemoveOpen, setSubmenuRemoveOpen] = useState(false);
+  const [submenuInputAddOpen, setSubmenuInputAddOpen] = useState(false);
+  const [submenuInputRemoveOpen, setSubmenuInputRemoveOpen] = useState(false);
+  const [submenuOutputAddOpen, setSubmenuOutputAddOpen] = useState(false);
+  const [submenuOutputRemoveOpen, setSubmenuOutputRemoveOpen] = useState(false);
 
-  const toggleSubmenuAdd = useCallback((e: React.MouseEvent) => {
+  const toggleSubmenuInputAdd = useCallback((e: React.MouseEvent) => {
     e.stopPropagation(); // prevent closing parent
-    setSubmenuAddOpen(prev => !prev);
-    console.log("submenuAdd", submenuAddOpen);
+    setSubmenuInputAddOpen(prev => !prev);
+    console.log("submenuAdd", submenuInputAddOpen);
   }, []);
 
-  const toggleSubmenuRemove = useCallback((e: React.MouseEvent) => {
+  const toggleSubmenuInputRemove = useCallback((e: React.MouseEvent) => {
     e.stopPropagation(); // prevent closing parent
-    setSubmenuRemoveOpen(prev => !prev);
+    setSubmenuInputRemoveOpen(prev => !prev);
+  }, []);
+
+  const toggleSubmenuOutputAdd = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation(); // prevent closing parent
+    setSubmenuOutputAddOpen(prev => !prev);
+    console.log("submenuAdd", submenuInputAddOpen);
+  }, []);
+
+  const toggleSubmenuOutputRemove = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation(); // prevent closing parent
+    setSubmenuOutputRemoveOpen(prev => !prev);
   }, []);
 
   let buttons = [];
@@ -175,8 +188,8 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
         </p>
       <div 
         style = {{position: 'relative'}}
-        onMouseEnter={() => setSubmenuAddOpen(true)}
-        onMouseLeave={() => setSubmenuAddOpen(false)}>
+        onMouseEnter={() => setSubmenuInputAddOpen(true)}
+        onMouseLeave={() => setSubmenuInputAddOpen(false)}>
         <button
           style={{
           ...buttonStyle,
@@ -188,7 +201,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
             alignItems: "center",
           }}><FaPlus style={iconStyle} /> Add Input</span> <FaCaretRight />
         </button>
-      {submenuAddOpen && (
+      {submenuInputAddOpen && (
         <div
           style={submenuStyle}>
           <button
@@ -209,10 +222,9 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
       )}
       </div>
       <div style = {{position: 'relative'}}
-        onMouseEnter={() => setSubmenuRemoveOpen(true)}
-        onMouseLeave={() => setSubmenuRemoveOpen(false)}>
+        onMouseEnter={() => setSubmenuInputRemoveOpen(true)}
+        onMouseLeave={() => setSubmenuInputRemoveOpen(false)}>
       <button
-        onClick={toggleSubmenuRemove}
         style={{
           ...buttonStyle,
           justifyContent: "space-between",
@@ -223,7 +235,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
             alignItems: "center",
           }}><FaMinus style={iconStyle} /> Remove Input </span> <FaCaretRight />
       </button>
-      {submenuRemoveOpen && (
+      {submenuInputRemoveOpen && (
         <div
           style={submenuStyle}>
           <button
@@ -237,6 +249,171 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
             onClick={() => decrementNodeDataField("numberClassicalInputs",1)}
             style={buttonStyle}
             aria-label="Remove Classical Input"
+          >
+            <FaGear style={iconStyle} /> Classical
+          </button>
+        </div>
+      )}
+      </div>
+      {buttons}
+      </div>
+    );
+  } else if (type == "algorithmNode" || type == "classicalAlgorithmNode") {
+        return (
+      <div
+        style={{
+          position: "absolute",
+          top,
+          left,
+          ...styles, // Merge passed styles
+          backgroundColor: "#fff",
+          border: "1px solid #ddd",
+          borderRadius: "8px",
+          boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.1)",
+          padding: "10px",
+          zIndex: 1000,
+          display: "flex",
+          flexDirection: "column",
+        }}
+        className="context-menu"
+      >
+        <p style={{ margin: "0.5em", fontSize: "14px", color: "#666" }}>
+          <small>Node: {id}</small>
+        </p>
+      <div 
+        style = {{position: 'relative'}}
+        onMouseEnter={() => setSubmenuInputAddOpen(true)}
+        onMouseLeave={() => setSubmenuInputAddOpen(false)}>
+        <button
+          style={{
+          ...buttonStyle,
+          justifyContent: "space-between",
+        }}
+        >
+          <span style={{
+            display: "flex",
+            alignItems: "center",
+          }}><FaPlus style={iconStyle} /> Add Input</span> <FaCaretRight />
+        </button>
+      {submenuInputAddOpen && (
+        <div
+          style={submenuStyle}>
+          <button
+            onClick={() => incrementNodeDataField("numberQuantumInputs",0)}
+            style={buttonStyle}
+            aria-label="Add Quantum Input"
+          >
+            <FaReact style={iconStyle} /> Quantum
+          </button>
+          <button
+            onClick={() => incrementNodeDataField("numberClassicalInputs",0)}
+            style={buttonStyle}
+            aria-label="Add Classical Input"
+          >
+            <FaGear style={iconStyle} /> Classical
+          </button>
+        </div>
+      )}
+      </div>
+            <div 
+        style = {{position: 'relative'}}
+        onMouseEnter={() => setSubmenuOutputAddOpen(true)}
+        onMouseLeave={() => setSubmenuOutputAddOpen(false)}>
+        <button
+          style={{
+          ...buttonStyle,
+          justifyContent: "space-between",
+        }}
+        >
+          <span style={{
+            display: "flex",
+            alignItems: "center",
+          }}><FaPlus style={iconStyle} /> Add Output</span> <FaCaretRight />
+        </button>
+      {submenuOutputAddOpen && (
+        <div
+          style={submenuStyle}>
+          <button
+            onClick={() => incrementNodeDataField("numberQuantumOutputs",0)}
+            style={buttonStyle}
+            aria-label="Add Quantum Output"
+          >
+            <FaReact style={iconStyle} /> Quantum
+          </button>
+          <button
+            onClick={() => incrementNodeDataField("numberClassicalOutputs",0)}
+            style={buttonStyle}
+            aria-label="Add Classical Output"
+          >
+            <FaGear style={iconStyle} /> Classical
+          </button>
+        </div>
+      )}
+      </div>
+      <div style = {{position: 'relative'}}
+        onMouseEnter={() => setSubmenuInputRemoveOpen(true)}
+        onMouseLeave={() => setSubmenuInputRemoveOpen(false)}>
+      <button
+        onClick={toggleSubmenuInputRemove}
+        style={{
+          ...buttonStyle,
+          justifyContent: "space-between",
+        }}
+      >
+        <span  style={{
+            display: "flex",
+            alignItems: "center",
+          }}><FaMinus style={iconStyle} /> Remove Input </span> <FaCaretRight />
+      </button>
+      {submenuInputRemoveOpen && (
+        <div
+          style={submenuStyle}>
+          <button
+            onClick={() => decrementNodeDataField("numberQuantumInputs",0)}
+            style={buttonStyle}
+            aria-label="Remove Quantum Input"
+          >
+            <FaReact style={iconStyle} /> Quantum
+          </button>
+          <button
+            onClick={() => decrementNodeDataField("numberClassicalInputs",0)}
+            style={buttonStyle}
+            aria-label="Remove Classical Input"
+          >
+            <FaGear style={iconStyle} /> Classical
+          </button>
+        </div>
+      )}
+      </div>
+      <div style = {{position: 'relative'}}
+        onMouseEnter={() => setSubmenuOutputRemoveOpen(true)}
+        onMouseLeave={() => setSubmenuOutputRemoveOpen(false)}>
+      <button
+        onClick={toggleSubmenuInputRemove}
+        style={{
+          ...buttonStyle,
+          justifyContent: "space-between",
+        }}
+      >
+        <span  style={{
+            display: "flex",
+            alignItems: "center",
+          }}><FaMinus style={iconStyle} /> Remove Output </span> <FaCaretRight />
+      </button>
+      {submenuOutputRemoveOpen && (
+        <div
+          style={submenuStyle}>
+          <button
+            onClick={() => decrementNodeDataField("numberQuantumOutputs",0)}
+            style={buttonStyle}
+            aria-label="Remove Quantum Output"
+          >
+            <FaReact style={iconStyle} /> Quantum
+          </button>
+          <button
+            onClick={() => decrementNodeDataField("numberClassicalOutputs",0)}
+            style={buttonStyle}
+            aria-label="Remove Classical Output"
           >
             <FaGear style={iconStyle} /> Classical
           </button>

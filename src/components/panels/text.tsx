@@ -568,43 +568,84 @@ export const TextPanel = () => {
           <div className="p-2 mt-3">
             <label
               className="block text-sm font-medium text-start text-gray-700"
-              htmlFor="numberInputs"
+              htmlFor="numberQuantumInputs"
             >
-              Number of Inputs
+              Number of Quantum Inputs
             </label>
             <div className="mt-1">
               <input
                 type="text"
-                id="numberInputs"
-                name="numberInputs"
+                id="numberQuantumInputs"
+                name="numberQuantumInputs"
                 value={selectedNode.data.numberInputs || ""
                 }
                 onChange={(e) =>
-                  handleNumberChange("numberInputs", e.target.value)
+                  handleNumberChange("numberQuantumInputs", e.target.value)
                 }
                 className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                placeholder="Enter numberInputs"
+                placeholder="Enter numberQuantumInputs"
               />
             </div>
 
             <label
               className="block text-sm font-medium text-start text-gray-700"
-              htmlFor="numberOutputs"
+              htmlFor="numberClassicalInputs"
             >
-              Number of Outputs
+              Number of Classical Inputs
             </label>
             <div className="mt-1">
               <input
                 type="text"
-                id="numberOutputs"
-                name="numberOutputs"
-                value={selectedNode.data.numberOutputs || ""
+                id="numberClassicalInputs"
+                name="numberClassicalInputs"
+                value={selectedNode.data.numberInputs || ""
                 }
                 onChange={(e) =>
-                  handleNumberChange("numberOutputs", e.target.value)
+                  handleNumberChange("numberClassicalInputs", e.target.value)
                 }
                 className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                placeholder="Enter numberOutputs"
+                placeholder="Enter numberClassicalInputs"
+              />
+            </div>
+
+            <label
+              className="block text-sm font-medium text-start text-gray-700"
+              htmlFor="numberQuantumOutputs"
+            >
+              Number of Quantum Outputs
+            </label>
+            <div className="mt-1">
+              <input
+                type="text"
+                id="numberQuantumOutputs"
+                name="numberQuantumOutputs"
+                value={selectedNode.data.numberQuantumOutputs || ""
+                }
+                onChange={(e) =>
+                  handleNumberChange("numberQuantumOutputs", e.target.value)
+                }
+                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
+                placeholder="Enter numberQuantumOutputs"
+              />
+            </div>
+            <label
+              className="block text-sm font-medium text-start text-gray-700"
+              htmlFor="numberClassicalOutputs"
+            >
+              Number of Classical Outputs
+            </label>
+            <div className="mt-1">
+              <input
+                type="text"
+                id="numberClassicalOutputs"
+                name="numberClassicalOutputs"
+                value={selectedNode.data.numberClassicalOutputs || ""
+                }
+                onChange={(e) =>
+                  handleNumberChange("numberQuantumClassical", e.target.value)
+                }
+                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
+                placeholder="Enter numberClassicalOutputs"
               />
             </div>
             <ImplementationFields

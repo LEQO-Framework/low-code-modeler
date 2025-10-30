@@ -22,8 +22,8 @@ const selector = (state: any) => ({
 
 export const ClassicalAlgorithmNode = memo((node: Node) => {
   const { data, selected } = node;
-  const numberInputs = data.numberInputs || 0;
-  const numberOutputs = data.numberOutputs || 0;
+  const numberInputs = data.numberClassicalInputs || 0;
+  const numberOutputs = data.numberClassicalOutputs || 0;
 
   const { edges, nodes, updateNodeValue, setSelectedNode, setNewEdges, ancillaMode } = useStore(selector, shallow);
   const updateNodeInternals = useUpdateNodeInternals();

@@ -34,9 +34,9 @@ const selector = (state: {
 export const AlgorithmNode = memo((node: Node) => {
   const { data, selected } = node;
   console.log(selected)
-  console.log(data.numberInputs)
-  const numberInputs = data.numberInputs || 0;
-  const numberOutputs = data.numberOutputs || 0;
+  console.log(data.numberQuantumInputs)
+  const numberInputs = data.numberQuantumInputs || 0;
+  const numberOutputs = data.numberQuantumOutputs || 0;
 
   const handleCount = Math.max(numberInputs, numberOutputs);
   console.log(handleCount)
