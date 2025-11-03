@@ -122,3 +122,13 @@ export const multi_qubit_gates = [
   "CSWAP",
 ];
 
+export const quantum_types = [
+  StatePreparationNode,
+  MeasurementNode,
+  QubitNode,
+  GateNode,
+  OperatorNode,
+  AlgorithmNode,
+  SplitterNode,
+  MergerNode
+]

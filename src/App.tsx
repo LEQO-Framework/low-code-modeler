@@ -24,7 +24,7 @@ import { NewDiagramModal } from "./Modal";
 import './index.css';
 import { Placement } from 'react-joyride';
 import { startCompile } from "./backend";
-import { ancillaConstructColor, classicalConstructColor, ClassicalOperatorNode, controlFlowConstructColor, quantumConstructColor } from "./constants";
+import { ancillaConstructColor, classicalConstructColor, ClassicalOperatorNode, controlFlowConstructColor, quantum_types, quantumConstructColor } from "./constants";
 import Joyride from 'react-joyride';
 import { ConfigModal } from "./components/modals/configModal";
 import { QunicornModal } from "./components/modals/qunicornModal";
@@ -590,6 +590,7 @@ function App() {
 
       const connectedSources = nodeConnections.get(node.id) || [];
 
+
       // StatePreparationNode classical input check
       if (node.type === "statePreparationNode") {
         if (node.data.label === "Encode Value" || node.data.label === "Basis Encoding" || node.data.label === "Angle Encoding" || node.data.label === "Amplitude Encoding") {
@@ -645,6 +646,19 @@ function App() {
       console.log(node)
 
       if (node.type === "measurementNode") {
+        const missingRegister = connectedSources.some((srcId) => {
+          const sourceNode: any = nodesById.get(srcId);
+          return quantum_types.includes(sourceNode?.type);
+        });
+        console.log("missing")
+        console.log(missingRegister)
+        if (!missingRegister) {
+          errors.push({
+            nodeId: node.id,
+            description: `Measurement node "${node.id}" requires a quantum register.`
+          });
+
+        }
         if (!node?.data?.indices) {
 
           warnings.push({
@@ -653,6 +667,7 @@ function App() {
           });
         } else {
           const isValid = /^\d+(,\d+)*$/.test(node?.data?.indices);
+
           if (!isValid) {
             errors.push({
               nodeId: node.id,
