@@ -358,7 +358,7 @@ export const StatePreparationNode = memo((node: Node) => {
                     onChange={(e) => handleStateChange(e, "encodingType")}
                   >
                     {!completionGuaranteed && (<option value="Amplitude Encoding">Amplitude Encoding</option>)}
-                    <option value="Angle Encoding">Angle Encoding</option>
+                    {!completionGuaranteed && (<option value="Angle Encoding">Angle Encoding</option>)}
                     <option value="Basis Encoding">Basis Encoding</option>
                     <option value="Custom Encoding">Custom Encoding</option>
                     {!completionGuaranteed && (<option value="Matrix Encoding">Matrix Encoding</option>)}
