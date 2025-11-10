@@ -92,13 +92,26 @@ function App() {
   });
   const [menu, setMenu] = useState(null);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
-  const [nisqAnalyzerEndpoint, setNisqAnalyzerEndpoint] = useState(import.meta.env.VITE_NISQ_ANALYZER);
-  const [qunicornEndpoint, setQunicornEndpoint] = useState(import.meta.env.VITE_QUNICORN);
-  const [lowcodeBackendEndpoint, setLowcodeBackendEndpoint] = useState(import.meta.env.VITE_LOW_CODE_BACKEND);
+  const [nisqAnalyzerEndpoint, setNisqAnalyzerEndpoint] = useState(
+    import.meta.env.VITE_NISQ_ANALYZER || "http://localhost:8098/nisq-analyzer"
+  );
+  const [qunicornEndpoint, setQunicornEndpoint] = useState(
+    import.meta.env.VITE_QUNICORN || "http://localhost:8080"
+  );
+  const [lowcodeBackendEndpoint, setLowcodeBackendEndpoint] = useState(
+    import.meta.env.VITE_LOW_CODE_BACKEND || "http://localhost:8000"
+  );
 
-  const [patternAtlasApiEndpoint, setPatternAtlasApiEndpoint] = useState(import.meta.env.VITE_PATTERN_ATLAS_API);
-  const [patternAtlasUiEndpoint, setPatternAtlasUiEndpoint] = useState(import.meta.env.VITE_PATTERN_ATLAS_UI);
-  const [qcAtlasEndpoint, setQcAtlasEndpoint] = useState(import.meta.env.VITE_QC_ATLAS);
+  const [patternAtlasApiEndpoint, setPatternAtlasApiEndpoint] = useState(
+    import.meta.env.VITE_PATTERN_ATLAS_API || "http://localhost:1977/patternatlas/patternLanguages/af7780d5-1f97-4536-8da7-4194b093ab1d"
+  );
+  const [patternAtlasUiEndpoint, setPatternAtlasUiEndpoint] = useState(
+    import.meta.env.VITE_PATTERN_ATLAS_UI || "http://localhost:1978"
+  );
+  const [qcAtlasEndpoint, setQcAtlasEndpoint] = useState(
+    import.meta.env.VITE_QC_ATLAS || "http://localhost:6626"
+  );
+
 
   const [activeTab, setActiveTab] = useState("editor");
   const [warningExecution, setWarningExecution] = useState(false);
