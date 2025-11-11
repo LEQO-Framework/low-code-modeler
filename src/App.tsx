@@ -33,6 +33,7 @@ import { Toast } from "./components/modals/toast";
 import ExperienceModePanel from "./components/modals/experienceLevelModal";
 import { HistoryItem, HistoryModal } from "./components/modals/historyModal";
 import { ValidationModal } from "./components/modals/validationModal";
+import JSZip, { JSZipObject } from "jszip";
 
 const selector = (state: {
   nodes: Node[];
@@ -279,6 +280,8 @@ function App() {
   const [experienceLevelOn, setExperienceLevelOn] = useState("explorer");
   const [compactVisualization, setCompactVisualization] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
+  const [workflow, setWorkflow] = useState("");
+
 
   const showToast = (message: string, type: "success" | "error" | "info") => {
     setToast({ message, type });
@@ -1479,6 +1482,73 @@ function App() {
       .catch((err) => console.error("Error exporting SVG:", err));
   };
 
+
+  /**
+   * Uploads a QRMS ZIP file to GitHub, updating files if they already exist.
+   */
+  async function uploadQRMS(qrmsUrl: string, modelId: string): Promise<void> {
+    const token = githubToken;
+    if (!token) throw new Error("Missing GitHub token");
+    const owner = githubRepositoryOwner;
+    const repo = githubRepositoryName;
+    const basePath = `qrms_uploads/${modelId}`;
+
+    const res = await fetch(qrmsUrl);
+    if (!res.ok) throw new Error("Failed to fetch QRMS zip");
+     const baseUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${basePath}`;
+
+     const folderCheck = await fetch(baseUrl, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (folderCheck.ok) {
+    console.log(`Folder ${basePath} already exists — skipping upload.`);
+    return; // exit early — skip re-upload
+  }
+    const buf = await res.arrayBuffer();
+    const zip = await JSZip.loadAsync(buf);
+
+    for (const [relative, file] of Object.entries(zip.files)) {
+      if (file.dir) continue;
+      const content = await file.async("string");
+      const encoded = btoa(unescape(encodeURIComponent(content)));
+      const githubPath = `${basePath}/${relative}`;
+      const url = `https://api.github.com/repos/${owner}/${repo}/contents/${githubPath}`;
+
+      // look up sha if file already exists
+      let sha: string | undefined;
+      const head = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (head.ok) {
+        const data = await head.json();
+        sha = data.sha;
+      }
+
+      // create or update file
+      const put = await fetch(url, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          message: sha
+            ? `Update existing QRMS file: ${relative}`
+            : `Upload new QRMS file: ${relative}`,
+          content: encoded,
+          sha,
+        }),
+      });
+
+      if (!put.ok) {
+        const txt = await put.text();
+        throw new Error(`Failed to upload ${relative}: ${txt}`);
+      }
+      console.log("QRMs uploaded", githubPath);
+    }
+  }
+
   return (
     <ReactFlowProvider>
       <Joyride
@@ -1598,22 +1668,47 @@ function App() {
         onClose={() => setHistoryOpen(false)}
         history={history}
         onExecute={async (item) => {
-          console.log(item)
+          console.log(item);
           setHistoryOpen(false);
-          setIsQunicornOpen(true);
-          try {
-            // Fetch the QASM content from the result link
-            const response = await fetch(item.links.result);
-            if (!response.ok) throw new Error("Failed to fetch QASM result");
-            const qasmText = await response.text(); // assuming result is plain text QASM
 
-            // Set it in your state
+          try {
+            // Fetch the model JSON from the request link to check compilation_target
+            const requestResponse = await fetch(item.links.request);
+            if (!requestResponse.ok) throw new Error("Failed to fetch model file");
+            const modelData = await requestResponse.json();
+
+            const compilationTarget = modelData?.compilation_target;
+
+            // If the model is a workflow
+            if (compilationTarget === "workflow") {
+              //store the workflow data in your state
+              setWorkflow(modelData);
+
+              // Upload the QRMS file to GitHub if available
+              if (item.links?.qrms) {
+                try {
+                  await uploadQRMS(item.links.qrms, item.uuid);
+                } catch (err) {
+                  console.error("QRMS upload failed:", err);
+                }
+              }
+
+              return;
+            }
+
+            setIsQunicornOpen(true);
+            const resultResponse = await fetch(item.links.result);
+            if (!resultResponse.ok) throw new Error("Failed to fetch QASM result");
+
+            const qasmText = await resultResponse.text();
             setOpenQASMCode(qasmText);
+
           } catch (error) {
-            console.error("Error fetching QASM result:", error);
+            console.error("Error handling execution:", error);
           }
         }}
       />
+
 
       <main className="flex flex-col lg:flex-row h-[calc(100vh_-_60px)]">
         <div className="relative flex h-[calc(100vh_-_60px)]  border-gray-200 border">

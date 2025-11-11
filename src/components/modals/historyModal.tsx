@@ -10,6 +10,8 @@ export interface HistoryItem {
   links?: {
     request?: string;
     result?: string;
+    qrms?: string;
+    service_deployment_models?: string;
   };
 }
 
