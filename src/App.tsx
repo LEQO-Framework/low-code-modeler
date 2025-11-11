@@ -34,6 +34,7 @@ import ExperienceModePanel from "./components/modals/experienceLevelModal";
 import { HistoryItem, HistoryModal } from "./components/modals/historyModal";
 import { ValidationModal } from "./components/modals/validationModal";
 import JSZip, { JSZipObject } from "jszip";
+import { createDeploymentModel, createServiceTemplate } from "./winery";
 
 const selector = (state: {
   nodes: Node[];
@@ -1495,16 +1496,16 @@ function App() {
 
     const res = await fetch(qrmsUrl);
     if (!res.ok) throw new Error("Failed to fetch QRMS zip");
-     const baseUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${basePath}`;
+    const baseUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${basePath}`;
 
-     const folderCheck = await fetch(baseUrl, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+    const folderCheck = await fetch(baseUrl, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
 
-  if (folderCheck.ok) {
-    console.log(`Folder ${basePath} already exists — skipping upload.`);
-    return; // exit early — skip re-upload
-  }
+    if (folderCheck.ok) {
+      console.log(`Folder ${basePath} already exists — skipping upload.`);
+      return; // exit early — skip re-upload
+    }
     const buf = await res.arrayBuffer();
     const zip = await JSZip.loadAsync(buf);
 
@@ -1547,6 +1548,74 @@ function App() {
       }
       console.log("QRMs uploaded", githubPath);
     }
+  }
+
+  async function createServiceTemplates(serviceDeploymentModelsUrl: string, namespace: string): Promise<void> {
+    const res = await fetch(serviceDeploymentModelsUrl);
+    if (!res.ok) throw new Error(`Failed to fetch service deployment models: ${res.statusText}`);
+
+    // Load ZIP into JSZip
+    const arrayBuffer = await res.arrayBuffer();
+    const zip = await JSZip.loadAsync(arrayBuffer);
+
+    // Extract folder names
+    const folderNames = new Set<string>();
+
+    for (const [path, entry] of Object.entries(zip.files)) {
+      const match = path.match(/^(Activity_[^/]+)/);
+      if (match) {
+        folderNames.add(match[1]);
+      }
+    }
+
+    console.log(`Found service deployment folders:`, Array.from(folderNames));
+
+
+    const masterZip = await JSZip.loadAsync(arrayBuffer);
+    // Process each folder 
+     for (const [path, entry] of Object.entries(masterZip.files)) {
+    if (entry.dir) continue;
+    if (!path.endsWith(".zip")) continue;
+
+    // Extract activity name
+    const activityName = path.replace(".zip", "");
+    console.log(`Processing activity ZIP: ${activityName}`);
+
+    // Load the activity ZIP in memory
+    const activityArrayBuffer = await entry.async("arraybuffer");
+    const activityZip = await JSZip.loadAsync(activityArrayBuffer);
+
+    // Find service.zip inside activity ZIP
+    const serviceEntry = Object.values(activityZip.files).find(
+      (f) => !f.dir && f.name.endsWith("service.zip")
+    );
+
+    if (!serviceEntry) {
+      console.warn(`No service.zip found in ${activityName}`);
+      continue;
+    }
+
+    // Extract service.zip as Blob
+    const serviceArrayBuffer = await serviceEntry.async("arraybuffer");
+    const serviceBlob = new Blob([serviceArrayBuffer], { type: "application/zip" });
+
+    // Create deployment model
+    const versionUrl = `http://localhost:8093/winery/servicetemplates/${activityName}`;
+    await createDeploymentModel(
+      serviceBlob, 
+      "http://localhost:8093/winery",
+      `${activityName}_DA`,
+      "http://opentosca.org/artifacttemplates",
+      "{http://opentosca.org/artifacttypes}DockerContainerArtifact",
+      "service.zip",
+      versionUrl
+    );
+
+    // Create service template
+    await createServiceTemplate(activityName, namespace);
+    console.log(`Service template created for: ${activityName}`);
+  }
+
   }
 
   return (
@@ -1688,6 +1757,16 @@ function App() {
               if (item.links?.qrms) {
                 try {
                   await uploadQRMS(item.links.qrms, item.uuid);
+                } catch (err) {
+                  console.error("QRMS upload failed:", err);
+                }
+              }
+
+              if (item.links?.serviceDeploymentModels) {
+                try {
+                  const QUANTME_NAMESPACE_PULL = "http://quantil.org/quantme/pull";
+                  await createServiceTemplates(item.links.serviceDeploymentModels, QUANTME_NAMESPACE_PULL);
+
                 } catch (err) {
                   console.error("QRMS upload failed:", err);
                 }

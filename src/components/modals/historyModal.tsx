@@ -11,7 +11,7 @@ export interface HistoryItem {
     request?: string;
     result?: string;
     qrms?: string;
-    service_deployment_models?: string;
+    serviceDeploymentModels?: string;
   };
 }
 
