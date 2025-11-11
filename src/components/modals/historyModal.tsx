@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import Modal from "./Modal";
 
 export interface HistoryItem {
@@ -20,6 +21,26 @@ interface HistoryModalProps {
 }
 
 export const HistoryModal = ({ open, onClose, history, onExecute }: HistoryModalProps) => {
+  const [compilationTargets, setCompilationTargets] = useState<Record<string, string | null>>({});
+
+  useEffect(() => {
+    if (!open) return; // only load when modal is open
+
+    history.forEach((item) => {
+      if (!item.links?.request || compilationTargets[item.uuid]) return;
+
+      fetch(item.links.request)
+        .then((res) => res.json())
+        .then((data) => {
+          const target = data?.compilation_target || null;
+          setCompilationTargets((prev) => ({ ...prev, [item.uuid]: target }));
+        })
+        .catch(() => {
+          setCompilationTargets((prev) => ({ ...prev, [item.uuid]: null }));
+        });
+    });
+  }, [open, history]);
+
   return (
     <Modal
       title="History"
@@ -43,59 +64,68 @@ export const HistoryModal = ({ open, onClose, history, onExecute }: HistoryModal
               <th className="px-4 py-2 border">Created</th>
               <th className="px-4 py-2 border">Result Status</th>
               <th className="px-4 py-2 border">Result File</th>
-              <th className="px-4 py-2 border">Execute</th>
+              <th className="px-4 py-2 border">Action</th>
             </tr>
           </thead>
           <tbody>
-            {history.map((item, index) => (
-              <tr key={item.uuid || index} className="hover:bg-gray-50">
-                <td className="px-4 py-2 border">{item.uuid}</td>
-                <td className="px-4 py-2 border">{item.name}</td>
-                <td className="px-4 py-2 border">{item.description}</td>
+            {history.map((item, index) => {
+              const target = compilationTargets[item.uuid];
 
-                <td className="px-4 py-2 border">
-                  {item.links?.request ? (
-                    <span
-                      className="text-blue-600 underline cursor-pointer"
-                      onClick={() => window.open(item.links.request, "_blank")}
-                    >
-                      Open
-                    </span>
-                  ) : (
-                    <span className="text-gray-400">—</span>
-                  )}
-                </td>
+              return (
+                <tr key={item.uuid || index} className="hover:bg-gray-50">
+                  <td className="px-4 py-2 border">{item.uuid}</td>
+                  <td className="px-4 py-2 border">{item.name}</td>
+                  <td className="px-4 py-2 border">{item.description}</td>
 
-                <td className="px-4 py-2 border">{new Date(item.created).toLocaleString()}</td>
-                <td className="px-4 py-2 border">{item.status}</td>
+                  <td className="px-4 py-2 border">
+                    {item.links?.request ? (
+                      <span
+                        className="text-blue-600 underline cursor-pointer"
+                        onClick={() => window.open(item.links.request, "_blank")}
+                      >
+                        Open
+                      </span>
+                    ) : (
+                      <span className="text-gray-400">—</span>
+                    )}
+                  </td>
 
-                <td className="px-4 py-2 border">
-                  {item.links?.result ? (
-                    <span
-                      className="text-blue-600 underline cursor-pointer"
-                      onClick={() => window.open(item.links.result, "_blank")}
-                    >
-                      Open
-                    </span>
-                  ) : (
-                    <span className="text-gray-400">—</span>
-                  )}
-                </td>
+                  <td className="px-4 py-2 border">{new Date(item.created).toLocaleString()}</td>
+                  <td className="px-4 py-2 border">{item.status}</td>
 
-                <td className="px-4 py-2 border">
+                  <td className="px-4 py-2 border">
+                    {item.links?.result ? (
+                      <span
+                        className="text-blue-600 underline cursor-pointer"
+                        onClick={() => window.open(item.links.result, "_blank")}
+                      >
+                        Open
+                      </span>
+                    ) : (
+                      <span className="text-gray-400">—</span>
+                    )}
+                  </td>
+
+                  <td className="px-4 py-2 border text-center">
                     {item.status.toLowerCase() !== "failed" ? (
-                    <button
-                      className="btn btn-primary"
-                      onClick={() => onExecute(item)}
-                    >
-                      Execute
-                    </button>
-                  ) : (
-                    <span className="text-gray-400">—</span>
-                  )}
-                </td>
-              </tr>
-            ))}
+                      <button
+                        className="btn btn-primary"
+                        onClick={() => onExecute(item)}
+                        disabled={target === undefined} // disable until target is loaded
+                      >
+                        {target === undefined
+                          ? "Loading..."
+                          : target === "workflow"
+                            ? "Deploy Workflow"
+                            : "Execute"}
+                      </button>
+                    ) : (
+                      <span className="text-gray-400">—</span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
 
             {history.length === 0 && (
               <tr>
