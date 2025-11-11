@@ -34,7 +34,7 @@ import ExperienceModePanel from "./components/modals/experienceLevelModal";
 import { HistoryItem, HistoryModal } from "./components/modals/historyModal";
 import { ValidationModal } from "./components/modals/validationModal";
 import JSZip, { JSZipObject } from "jszip";
-import { createDeploymentModel, createServiceTemplate } from "./winery";
+import { createDeploymentModel, createNodeType, createServiceTemplate, updateNodeType, updateServiceTemplate } from "./winery";
 
 const selector = (state: {
   nodes: Node[];
@@ -1610,9 +1610,23 @@ function App() {
       "service.zip",
       versionUrl
     );
+    const OPENTOSCA_NAMESPACE_NODETYPE = "http://opentosca.org/nodetypes";
+    const QUANTME_NAMESPACE_PULL = "http://quantil.org/quantme/pull";
 
     // Create service template
-    await createServiceTemplate(activityName, namespace);
+    let serviceTemplate = await createServiceTemplate(activityName, namespace);
+     await createNodeType(
+        activityName + "Container",
+        OPENTOSCA_NAMESPACE_NODETYPE
+      );
+      await updateNodeType(
+        activityName + "Container",
+        OPENTOSCA_NAMESPACE_NODETYPE
+      );
+      serviceTemplate = await updateServiceTemplate(
+        activityName,
+        QUANTME_NAMESPACE_PULL
+      );
     console.log(`Service template created for: ${activityName}`);
   }
 
