@@ -931,7 +931,7 @@ function App() {
         let counts = getdata.results[1].data;
         console.log(counts)
         const chartData = Object.entries(counts || {}).map(([key, value]) => ({
-          register: key,
+          register: parseInt(key, 16),
           value: Number(value) * 100,
         }));
         setChartData(chartData);
