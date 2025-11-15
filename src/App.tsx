@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useRef, useState, useEffect } from "react";
 import ReactFlow, {
   Background,
   BackgroundVariant,
@@ -796,6 +796,30 @@ function App() {
 
     const flowWithMetadata = { metadata: validMetadata, ...flow };
 
+    // Dispatch save event for QHAna integration
+    const saveEvent = new CustomEvent('lcm-save', {
+      detail: flowWithMetadata,
+      bubbles: true,
+      cancelable: true
+    });
+    document.dispatchEvent(saveEvent);
+
+    // Save to backend and show solution ID
+    try {
+      const response = await fetch(`${lowcodeBackendEndpoint}/models/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(flowWithMetadata)
+      });
+
+      if (response.ok) {
+        const solutionId = validMetadata.id;
+        alert(`Model "${validMetadata.name}" saved successfully!\n\nSolution ID: ${solutionId}\n\nTest URL: ${window.location.origin}/?solutionId=${solutionId}`);
+      }
+    } catch (error) {
+      console.error('Error saving to backend:', error);
+    }
+
     localStorage.setItem(flowKey, JSON.stringify(flowWithMetadata));
     console.log("Flow saved:", flowWithMetadata);
     // Create a downloadable JSON file
@@ -902,62 +926,86 @@ function App() {
   );
 
   const [isModalOpen, setIsModalOpen] = useState(true);
-
-  //const handleLoadJson = () => {
-  //setIsModalOpen(true);
-  //loadFlow(initialDiagram);
-  //};
-
-  //const confirmLoadJson = () => {
-  // setIsModalOpen(false);
-  //loadFlow(initialDiagram);
-  //};
-
-
-  //const handleLoadJson = () => {
-  //if (
-  //window.confirm(
-  //"Are you sure you want to create a new model? This will overwrite the current flow."
-  //)
-  //) {
-  // Load the initialDiagram after confirmation
-  //loadFlow(initialDiagram);
-  //}
-  //};
-  // Function to load the flow
+ 
   const loadFlow = (flow: any) => {
     if (!reactFlowInstance) {
       console.error("React Flow instance is not initialized.");
       return;
     }
-    console.log(flow.initialEdges)
-    if (flow.initialEdges) {
-      reactFlowInstance.setEdges(flow.initialEdges);
-      console.log("Edges loaded.");
+    // For backward compatibility
+    const edgesToLoad = flow.edges || flow.initialEdges;
+    if (edgesToLoad) {
+      reactFlowInstance.setEdges(edgesToLoad);
     }
-    console.log(flow.nodes)
+
+    // Add default inputs/outputs 
     if (flow.nodes) {
       reactFlowInstance.setNodes(
         flow.nodes?.map((node: Node) => ({
           ...node,
           data: {
             ...node.data,
+            inputs: node.data?.inputs || [],
+            outputs: node.data?.outputs || [],
           },
         }))
       );
     }
     console.log(nodes);
 
-    // Reset the viewport (optional based on your use case)
+    // Reset the viewport 
     const { x = 0, y = 0, zoom = 1 } = flow.viewport || {};
     reactFlowInstance.setViewport({ x, y, zoom });
 
-    // Set the metadata (if any) - assuming initialDiagram has metadata
+    // Set the metadata 
     if (flow.metadata) {
       setMetadata(flow.metadata);
       console.log("Metadata loaded:", flow.metadata);
     }
   };
+
+  // Get model from backend
+  const fetchModelData = async (modelId: string) => {
+    const url = `${lowcodeBackendEndpoint}/models/${modelId}/`;
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch model: ${response.status} ${response.statusText}`);
+    }
+
+    return await response.json();
+  };
+
+  // Load model from URL parameter
+  const loadSolutionFromUrl = async (solutionId: string) => {
+    try {
+      const modelData = await fetchModelData(solutionId);
+      loadFlow(modelData);
+
+      // Clear URL parameter to prevent reload on refresh
+      const url = new URL(window.location.href);
+      url.searchParams.delete('solutionId');
+      window.history.replaceState({}, '', url.toString());
+    } catch (error) {
+      console.error("Error loading solution from URL:", error);
+      alert(`Failed to load solution: ${error?.message || error}`);
+    }
+  };
+
+  // Check for solutionId URL parameter on mount
+  useEffect(() => {
+    if (!reactFlowInstance) return;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const solutionId = urlParams.get('solutionId');
+
+    if (solutionId) {
+      loadSolutionFromUrl(solutionId);
+    }
+  }, [reactFlowInstance]);
 
   const overlappingNodeRef = useRef<Node | null>(null);
 
