@@ -162,7 +162,7 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                         return {
                             id: node.id,
                             type: "float",
-                            value: parseFloat(node.data.value)
+                            value: node.data.value
                         }
 
                     case "boolean":
