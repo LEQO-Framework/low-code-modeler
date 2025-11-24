@@ -319,7 +319,7 @@ export interface components {
              */
             bitSize?: number;
             /** Value */
-            value: number;
+            value: number | string;
         };
         /** MeasurementNode */
         MeasurementNode: {
