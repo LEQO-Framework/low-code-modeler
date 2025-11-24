@@ -43,6 +43,7 @@ const selector = (state: {
   experienceLevel: string;
   compact: boolean;
   completionGuaranteed: boolean;
+  containsPlaceholder: boolean;
   onNodesChange: any;
   onEdgesChange: any;
   onConnect: any;
@@ -57,6 +58,7 @@ const selector = (state: {
   setCompact: (compact: boolean) => void;
   setCompletionGuaranteed: (completionGuaranteed: boolean) => void;
   setExperienceLevel: (experienceLevel: string) => void;
+  setContainsPlaceholder: (containsPlaceholder: boolean) => void;
   undo: () => void;
   redo: () => void;
 }) => ({
@@ -65,6 +67,7 @@ const selector = (state: {
   experienceLevel: state.experienceLevel,
   compact: state.compact,
   completionGuaranteed: state.completionGuaranteed,
+  containsPlaceholder: state.containsPlaceholder,
   onNodesChange: state.onNodesChange,
   onEdgesChange: state.onEdgesChange,
   onConnect: state.onConnect,
@@ -78,6 +81,7 @@ const selector = (state: {
   setAncillaMode: state.setAncillaMode,
   setCompact: state.setCompact,
   setCompletionGuaranteed: state.setCompletionGuaranteed,
+  setContainsPlaceholder: state.setContainsPlaceholder,
   setExperienceLevel: state.setExperienceLevel,
   undo: state.undo,
   redo: state.redo,
@@ -86,11 +90,35 @@ const selector = (state: {
 function App() {
   const reactFlowWrapper = React.useRef<any>(null);
   const [reactFlowInstance, setReactFlowInstance] = React.useState<any>(null);
+   const {
+    nodes,
+    edges,
+    experienceLevel,
+    compact,
+    completionGuaranteed,
+    containsPlaceholder,
+    onNodesChange,
+    onEdgesChange,
+    onConnect,
+    onConnectEnd,
+    setCompact,
+    setExperienceLevel,
+    setAncillaMode,
+    setCompletionGuaranteed,
+    setContainsPlaceholder,
+    setSelectedNode,
+    setNodes,
+    updateNodeValue,
+    updateParent,
+    updateChildren,
+    setEdges,
+  } = useStore(useShallow(selector));
+
   const [metadata, setMetadata] = React.useState<any>({
     version: "1.0.0",
     name: "My Model",
     description: "This is a model.",
-    author: "",
+    author: ""
   });
   const [menu, setMenu] = useState(null);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
@@ -231,29 +259,6 @@ function App() {
   const [expanded, setExpanded] = useState(false);
   const [completionGuaranteedOption, setCompletionGuaranteedOption] = useState("Yes");
 
-
-  const {
-    nodes,
-    edges,
-    experienceLevel,
-    compact,
-    completionGuaranteed,
-    onNodesChange,
-    onEdgesChange,
-    onConnect,
-    onConnectEnd,
-    setCompact,
-    setExperienceLevel,
-    setAncillaMode,
-    setCompletionGuaranteed,
-    setSelectedNode,
-    setNodes,
-    updateNodeValue,
-    updateParent,
-    updateChildren,
-    setEdges,
-  } = useStore(useShallow(selector));
-
   const { undo } = useStore((state) => ({
     undo: state.undo,
   }));
@@ -353,10 +358,6 @@ function App() {
     setAlreadyExecuted(false);
   };
 
-
-  const prepareBackendRequest = () => {
-    setModalOpen(true);
-  }
   const sendToBackend = async () => {
     //setLoading(true);
     setModalOpen(false);
@@ -368,6 +369,7 @@ function App() {
     try {
       const validMetadata = {
         ...metadata,
+        containsPlaceholder: containsPlaceholder,
         id: id,
         timestamp: new Date().toISOString(),
       };
@@ -375,11 +377,9 @@ function App() {
       console.log(validMetadata);
       console.log(metadata);
 
-      const flow = reactFlowInstance.toObject();
-
       const response = await startCompile(
         lowcodeBackendEndpoint,
-        metadata,
+        validMetadata,
         reactFlowInstance.getNodes(),
         reactFlowInstance.getEdges(),
         compilationTarget
@@ -1135,9 +1135,12 @@ function App() {
       return { success: false };
     }
 
+    console.log(containsPlaceholder)
+
     let fileContent = JSON.stringify({
       metadata: {
         ...metadata,
+        containsPlaceholder: containsPlaceholder,
         id: flowId,
         timestamp: new Date().toISOString(),
       },
@@ -1191,6 +1194,7 @@ function App() {
     console.log(flow);
     const validMetadata = {
       ...metadata,
+      containsPlaceholder: containsPlaceholder,
       id: `flow-${Date.now()}`,
       timestamp: new Date().toISOString(),
     };
@@ -1698,6 +1702,7 @@ function App() {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         compilationTarget={compilationTarget}
+        containsPlaceholder={containsPlaceholder}
         setCompilationTarget={setCompilationTarget}
         sendToBackend={sendToBackend}
       />

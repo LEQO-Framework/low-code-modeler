@@ -155,7 +155,7 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                         return {
                             id: node.id,
                             type: "int",
-                            value: parseInt(node.data.value, 10)
+                            value: node.data.value
                         }
 
                     case "float":
