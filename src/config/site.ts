@@ -19,12 +19,14 @@ import { ClassicalAlgorithmNode } from "@/components/nodes/classicalalgorithm";
 import { QubitNode } from "@/components/nodes/qubit";
 import { ClassicalOperationNode } from "@/components/nodes/classicalOperation";
 import { GroupNode } from "@/components/nodes/group";
+import { BuildingBlockNode } from "@/components/nodes/oracle";
 
 export const nodesConfig = {
   initialNodes: [ ] as unknown as Node[],
   initialEdges: [] as Edge[],
   nodeTypes: {
     dataTypeNode: DataTypeNode,
+    oracleNode: BuildingBlockNode,
     dynamicNode: DynamicNode,
     measurementNode: MeasurementNode,
     statePreparationNode: StatePreparationNode,

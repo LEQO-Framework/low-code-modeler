@@ -31,6 +31,7 @@ export function handleOnDrop(
   reactFlowWrapper: any,
   reactFlowInstance: any,
   setNodes: any,
+  nodesMap: any,
 ) {
   event.preventDefault();
   if (reactFlowWrapper) {
@@ -70,7 +71,7 @@ export function handleOnDrop(
   }
 }
 
-function findNodeDefinition(type: string, label: string) {
+export function findNodeDefinition(type: string, label: string) {
   for (const cat of Object.values(categories)) {
     const content = cat.content;
 

@@ -1,10 +1,11 @@
-import { memo, useEffect, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import { Handle, Position, Node, Edge } from "reactflow";
 import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
 import { findDuplicateOutputIdentifiers, isUniqueIdentifier } from "../utils/utils";
 import { AlertCircle } from "lucide-react";
 import OutputPort from "../utils/outputPort";
+import { HocuspocusProvider } from "@hocuspocus/provider";
 
 const selector = (state: {
   selectedNode: Node | null;
@@ -148,11 +149,12 @@ export const DataTypeNode = memo((node: Node) => {
       updateNodeValue(node.id, "value", "true");
     }
     setOutputIdentifierError(isDuplicate && identifier !== "");
-  }, [nodes, node.id]);
+  }, [node.id]);
 
 
 
   const iconMap = {
+    "Number": 'intIcon.png',
     "int": 'intIcon.png',
     "float": 'floatIcon.png',
     "bit": 'bitIcon.png',
@@ -165,6 +167,7 @@ export const DataTypeNode = memo((node: Node) => {
   const label = data.label;
   const iconSrc = iconMap[label];
   const iconSizeMap = {
+    "Number": { width: 60, height: 60 },
     "int": { width: 60, height: 60 },
     "float": { width: 55, height: 55 },
     "bit": { width: 50, height: 50 },
@@ -225,7 +228,7 @@ export const DataTypeNode = memo((node: Node) => {
                   paddingLeft:
                     data.label === "bit"
                       ? "32px"
-                      : data.label === "int"
+                      : data.label === "Number"
                         ? "28px"
                         : data.label === "duration"
                           ? "25px"

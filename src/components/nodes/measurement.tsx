@@ -6,6 +6,7 @@ import { shallow } from "zustand/shallow";
 import OutputPort from "../utils/outputPort";
 import { AlertCircle } from "lucide-react";
 import { findDuplicateOutputIdentifiers, findDuplicateOutputIdentifiersInsideNode } from "../utils/utils";
+import ExperienceModePanel from "../modals/experienceLevelModal";
 
 const selector = (state: {
   selectedNode: Node | null;
@@ -14,18 +15,20 @@ const selector = (state: {
   updateNodeValue: (nodeId: string, field: string, nodeVal: any) => void;
   setNodes: (node: Node) => void;
   setSelectedNode: (node: Node) => void;
+  experienceLevel: string
 }) => ({
   selectedNode: state.selectedNode,
   edges: state.edges,
   nodes: state.nodes,
   setNodes: state.setNodes,
   updateNodeValue: state.updateNodeValue,
-  setSelectedNode: state.setSelectedNode
+  setSelectedNode: state.setSelectedNode, 
+  experienceLevel: state.experienceLevel
 });
 
 export const MeasurementNode = memo((node: Node) => {
   const { data, selected } = node;
-  const { edges, nodes, updateNodeValue, setSelectedNode } = useStore(selector, shallow);
+  const { edges, nodes, updateNodeValue, setSelectedNode, experienceLevel } = useStore(selector, shallow);
   const alledges = getConnectedEdges([node], edges);
   const [y, setY] = useState("");
   const [classicalOutputIdentifierError, setClassicalOutputIdentifierError] = useState(false);
@@ -146,10 +149,13 @@ export const MeasurementNode = memo((node: Node) => {
             />
           )}
           <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
-            <img src="measurementIcon2.png" alt="icon" className="w-[40px] h-[40px] object-contain flex-shrink-0" />
-            <div className="h-full w-[1px] bg-black mx-2" />
-            <span className="truncate font-semibold leading-none" style={{ paddingLeft: '55px' }}>{data.label}</span>
-          </div>
+  <img src="measurementIcon2.png" alt="icon" className="w-[40px] h-[40px] object-contain flex-shrink-0" />
+  <div className="h-full w-[1px] bg-black mx-2" />
+  <span className="truncate font-semibold leading-none" style={{ paddingLeft: '55px' }}>
+    {experienceLevel === "explorer" ? "Pick the Winner" : data.label || "Measurement"}
+  </span>
+</div>
+
         </div>
         <div className="flex justify-center">
           <div className="custom-node-port-in mb-3 mt-2">

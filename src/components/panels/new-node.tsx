@@ -18,6 +18,7 @@ const selector = (state: {
 
 const categoryIcons: Record<string, string> = {
   [consts.boundaryNodes]: "BoundaryNodes.png",
+  [consts.algorithmicPrimitives]: "buildingBlocks.png",
   [consts.circuitLevelNodes]: "CircuitLevelNodes.png",
   [consts.controlStructureNodes]: "ControlStructureNodes.png",
   [consts.customOperators]: "CustomOperators.png",

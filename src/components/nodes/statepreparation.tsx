@@ -20,6 +20,7 @@ const selector = (state: {
   updateNodeValue: (nodeId: string, field: string, nodeVal: any) => void;
   setNodes: (node: Node) => void;
   setSelectedNode: (node: Node) => void;
+  experienceLevel: string;
 }) => ({
   selectedNode: state.selectedNode,
   edges: state.edges,
@@ -29,6 +30,7 @@ const selector = (state: {
   setNodes: state.setNodes,
   updateNodeValue: state.updateNodeValue,
   setSelectedNode: state.setSelectedNode,
+  experienceLevel: state.experienceLevel
 });
 
 export const StatePreparationNode = memo((node: Node) => {
@@ -47,7 +49,7 @@ export const StatePreparationNode = memo((node: Node) => {
 
 
 
-  const { updateNodeValue, setSelectedNode, setNodes, edges, nodes, ancillaMode, completionGuaranteed } = useStore(selector, shallow);
+  const { updateNodeValue, setSelectedNode, setNodes, edges, nodes, ancillaMode, completionGuaranteed, experienceLevel } = useStore(selector, shallow);
   const isConnected = edges.some(
     edge => edge.target === node.id && edge.targetHandle === `ancillaHandlePrepareState0${node.id}`
   );
@@ -172,7 +174,7 @@ export const StatePreparationNode = memo((node: Node) => {
       updateNodeInternals(node.id);
       setQuantumStateName(node.data.quantumStateName)
     }
-  }, [nodes, node.data.outputIdentifier, node.id]);
+  }, [node.data.outputIdentifier, node.id]);
 
   const { data, selected } = node;
 
@@ -308,6 +310,7 @@ export const StatePreparationNode = memo((node: Node) => {
               {[
                 "Prepare State",
                 "Encode Value",
+                "Uniform Superposition",
                 "Basis Encoding",
                 "Angle Encoding",
                 "Amplitude Encoding",
@@ -318,11 +321,15 @@ export const StatePreparationNode = memo((node: Node) => {
                         ? "prepareStateIcon.png"
                         : data.label === "Encode Value"
                           ? "encodeValueIcon.png"
-                          : data.label === "Basis Encoding"
-                            ? "basisEncodingIcon.png"
-                            : data.label === "Angle Encoding"
-                              ? "angleEncodingIcon.png"
-                              : "amplitudeEncodingIcon.png"
+                          : data.label === "Uniform Superposition"
+                            ? "uniformSuperposition.png"
+                            : data.label === "Start With Everything"
+                              ? "uniformSuperposition.png"
+                              : data.label === "Basis Encoding"
+                                ? "basisEncodingIcon.png"
+                                : data.label === "Angle Encoding"
+                                  ? "angleEncodingIcon.png"
+                                  : "amplitudeEncodingIcon.png"
                     }
                     alt={`${data.label} icon`}
                     className={
@@ -339,8 +346,9 @@ export const StatePreparationNode = memo((node: Node) => {
               <div className="h-full w-[1px] bg-black mx-2" />
 
               <span className="font-semibold leading-none" style={{ paddingLeft: '45px' }}>
-                {data.label}
+                {(experienceLevel === "explorer" && node.data.label === "Uniform Superposition") ? "Start with Everything" : data.label}
               </span>
+
             </div>
           </div>
 
@@ -434,7 +442,7 @@ export const StatePreparationNode = memo((node: Node) => {
           )}
           <div className="custom-node-port-in mb-3 mt-2">
             <div className="relative flex flex-col overflow-visible">
-              {(node.data.label === "Encode Value" || node.data.label === "Basis Encoding" || node.data.label === "Angle Encoding" || node.data.label === "Amplitude Encoding") && (
+              {(node.data.label === "Encode Value" || node.data.label === "Basis Encoding" || node.data.label === "Angle Encoding" || node.data.label === "Amplitude Encoding" || node.data.label === "Uniform Superposition") && (
                 <div
                   className="relative p-2 mb-1"
                   style={{

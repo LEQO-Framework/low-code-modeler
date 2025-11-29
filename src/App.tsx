@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from "react";
+import React, { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactFlow, {
   Background,
   BackgroundVariant,
@@ -8,7 +8,11 @@ import ReactFlow, {
   ReactFlowProvider,
   MiniMap,
   getNodesBounds,
-  Panel
+  Panel,
+  Connection,
+  MarkerType,
+  NodeChange,
+  applyNodeChanges
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { ContextMenu, CustomPanel, Palette } from "./components";
@@ -16,7 +20,7 @@ import Toolbar from "./components/toolbar";
 import { nodesConfig, tutorial } from "./config/site";
 import { useStore } from "./config/store";
 import { useShallow } from "zustand/react/shallow";
-import { handleDragOver, handleOnDrop } from "./lib/utils";
+import { findNodeDefinition, handleDragOver, handleOnDrop } from "./lib/utils";
 import useKeyBindings from "./hooks/useKeyBindings";
 import { toSvg } from "html-to-image";
 import { initialDiagram } from "./config/site";
@@ -33,6 +37,10 @@ import { Toast } from "./components/modals/toast";
 import ExperienceModePanel from "./components/modals/experienceLevelModal";
 import { HistoryItem, HistoryModal } from "./components/modals/historyModal";
 import { ValidationModal } from "./components/modals/validationModal";
+import { HocuspocusProvider } from "@hocuspocus/provider";
+import UserCountPanel from "./components/modals/userAwareness";
+import { v4 as uuid } from "uuid";
+import VersioningPanel from "./components/modals/versioningModal";
 
 const selector = (state: {
   nodes: Node[];
@@ -84,6 +92,7 @@ const selector = (state: {
 function App() {
   const reactFlowWrapper = React.useRef<any>(null);
   const [reactFlowInstance, setReactFlowInstance] = React.useState<any>(null);
+  
   const [metadata, setMetadata] = React.useState<any>({
     version: "1.0.0",
     name: "My Model",
@@ -111,6 +120,116 @@ function App() {
   const [qcAtlasEndpoint, setQcAtlasEndpoint] = useState(
     import.meta.env.VITE_QC_ATLAS || "http://localhost:6626"
   );
+  const {
+    nodes,
+    edges,
+    experienceLevel,
+    compact,
+    completionGuaranteed,
+    onNodesChange,
+    onEdgesChange,
+    onConnect,
+    onConnectEnd,
+    setCompact,
+    setExperienceLevel,
+    setAncillaMode,
+    setCompletionGuaranteed,
+    setSelectedNode,
+    setNodes,
+    updateNodeValue,
+    updateParent,
+    updateChildren,
+    setEdges,
+  } = useStore(useShallow(selector));
+
+
+  const hocusPocusServer = useMemo(() => {
+    return new HocuspocusProvider({
+      url: "ws://127.0.0.1:1234",
+      name: "reactflow-yjs",
+    });
+  }, []);
+
+  const ydoc = hocusPocusServer.document;
+  const historyArray = ydoc.getArray<any>("history");
+  const [versioningHistory, setVersioningHistory] = useState<any[]>([]);
+
+
+  const nodesMap = ydoc.getMap<Node>("nodes");
+  const edgesMap = ydoc.getMap<Edge>("edges");
+
+  const awareness = hocusPocusServer.awareness;
+
+  console.log(nodesMap)
+  console.log(awareness)
+
+  const [nodesI, setNodesI] = useState<Node[]>([]);
+   const [edgesI, setEdgesI] = useState<Edge[]>([]);
+   useEffect(() => {
+  const update = () => {
+    setVersioningHistory([...historyArray.toArray()]);
+  };
+
+  historyArray.observe(update);
+  update();
+
+  return () => historyArray.unobserve(update);
+}, []);
+
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (reactFlowInstance) {
+        reactFlowInstance.fitView({ maxZoom: 1 });
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [reactFlowInstance]);
+
+
+  useEffect(() => {
+    console.log("rerun")
+
+
+    // observe remote changes
+    const nodesObserver = () => {
+      const sharedNodes = Array.from(nodesMap.values());
+      setNodesI(sharedNodes);
+      console.log(nodesI)
+    };
+
+    const edgesObserver = () => {
+      const sharedEdges = Array.from(edgesMap.values());
+      setEdgesI(sharedEdges);
+      console.log(edgesI)
+    };
+
+    nodesObserver();
+    edgesObserver()
+    nodesMap.observe(nodesObserver);
+    edgesMap.observe(edgesObserver);
+    return () => {nodesMap.unobserve(nodesObserver); edgesMap.unobserve(edgesObserver)};
+
+  }, []);
+
+  const handleMouseMove = (event: React.MouseEvent) => {
+    if (!hocusPocusServer) return;
+
+    const bounds = reactFlowWrapper.current?.getBoundingClientRect();
+    if (!bounds) return;
+
+    const x = event.clientX - bounds.left;
+    const y = event.clientY - bounds.top;
+
+    hocusPocusServer.awareness.setLocalStateField("cursor", {
+      ...hocusPocusServer.awareness.getLocalState()?.cursor,
+      x,
+      y
+    });
+  };
+
 
 
   const [activeTab, setActiveTab] = useState("editor");
@@ -176,6 +295,59 @@ function App() {
   const [executed, setAlreadyExecuted] = useState(false);
   const [jobId, setJobId] = useState(null);
 
+  const [cursors, setCursors] = useState<{
+    [clientId: number]: {
+      name: string; x: number, y: number, color: string
+    }
+  }>({});
+  const [myClientId, setMyClientId] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!hocusPocusServer) return;
+
+    const updateCursors = () => {
+      const newCursors: typeof cursors = {};
+      hocusPocusServer.awareness.getStates().forEach((state: any, clientId: number) => {
+        if (state.cursor) {
+          // Replace name with "Me" if this is your client
+          newCursors[clientId] = {
+            ...state.cursor,
+            name: clientId === hocusPocusServer.awareness.clientID ? "Me" : state.cursor.name
+          };
+        }
+      });
+      setCursors(newCursors);
+    };
+
+
+    hocusPocusServer.awareness.on("change", updateCursors);
+    updateCursors();
+
+    return () => hocusPocusServer.awareness.off("change", updateCursors);
+  }, [hocusPocusServer]);
+
+  useEffect(() => {
+    if (!hocusPocusServer) return;
+
+    // Generate a random username
+    const randomNames = ["Alice", "Bob", "Charlie", "Dana", "Eve", "Frank", "Grace", "Hugo"];
+    const randomUsername = randomNames[Math.floor(Math.random() * randomNames.length)];
+    // Store local clientId
+    setMyClientId(hocusPocusServer.awareness.clientID);
+
+    const color = "#" + Math.floor(Math.random() * 16777215).toString(16);
+
+    // Set initial cursor state with username
+    hocusPocusServer.awareness.setLocalStateField("cursor", {
+      x: 0,
+      y: 0,
+      color,
+      name: randomUsername
+    });
+  }, [hocusPocusServer]);
+
+
+
 
   const togglePalette = () => {
     setIsPaletteOpen((prev) => !prev);
@@ -230,27 +402,10 @@ function App() {
   const [completionGuaranteedOption, setCompletionGuaranteedOption] = useState("Yes");
 
 
-  const {
-    nodes,
-    edges,
-    experienceLevel,
-    compact,
-    completionGuaranteed,
-    onNodesChange,
-    onEdgesChange,
-    onConnect,
-    onConnectEnd,
-    setCompact,
-    setExperienceLevel,
-    setAncillaMode,
-    setCompletionGuaranteed,
-    setSelectedNode,
-    setNodes,
-    updateNodeValue,
-    updateParent,
-    updateChildren,
-    setEdges,
-  } = useStore(useShallow(selector));
+  const addNode = () => {
+    console.log("add node===============================================================")
+    nodesMap.set(nodes[0].id, nodes[0]);
+  };
 
   const { undo } = useStore((state) => ({
     undo: state.undo,
@@ -1082,12 +1237,145 @@ function App() {
       })
       console.log(position);
 
-      handleOnDrop(event, reactFlowWrapper, reactFlowInstance, setNodes);
+
+      //handleOnDrop(event, reactFlowWrapper, reactFlowInstance, setNodes, nodesMap);
+      event.preventDefault();
+      if (reactFlowWrapper) {
+        const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
+        const type = event.dataTransfer.getData("application/reactflow");
+        const dataType = event.dataTransfer.getData("application/reactflow/dataType");
+        const label = event.dataTransfer.getData("application/reactflow/label");
+        console.log(type)
+        console.log(dataType)
+
+        //let position2 = reactFlowInstance.screenToFlowPosition();
+
+        //console.log(position2)
+
+
+        // check if the dropped element is valid
+        if (typeof type === "undefined" || !type) {
+          return;
+        }
+        const def = findNodeDefinition(type, label);
+        console.log(def)
+
+        const getId = () => crypto.randomUUID();
+        const compactOptions = def.compactOptions;
+
+        const position = reactFlowInstance.project({
+          x: event.clientX - reactFlowBounds.left,
+          y: event.clientY - reactFlowBounds.top,
+        });
+        const newNode = {
+          id: getId(),
+          type,
+          position,
+          data: { label: label, inputs: [], children: [], implementation: "", implementationType: "", uncomputeImplementationType: "", uncomputeImplementation: "", completionGuaranteed: def?.completionGuaranteed ?? false, compactOptions: compactOptions }
+        };
+
+        setNodes(newNode);
+        nodesMap.set(newNode.id, newNode);
+        console.log(hocusPocusServer.awareness.getLocalState())
+        Object.entries(cursors).map(([clientId, cursor]) => {
+    const displayName = Number(clientId) === myClientId ? "Me" : cursor.name;
+
+    // Store name in a variable for history usage
+    const userName = cursor.name;
+
+    historyArray.push([{
+        type: "node-added",
+        nodeId: newNode.id,
+        label: newNode.data?.label,
+        user: Number(clientId) === myClientId ? "Me" : userName,
+        timestamp: Date.now(),
+    }]);
+});
+
+
+      }
+
+
+
 
       //setContextMenu((prev) => ({ ...prev, left: event.clientX, top: event.clientY,}));
     },
     [reactFlowInstance, setNodes],
   );
+
+  const onNodesChangeSync = useCallback((params: NodeChange[]) => {
+    // Add your logic here
+    console.log("Node changed:", params);
+    onNodesChange(params);
+    
+    const currentNodes = applyNodeChanges(params, nodesI);
+    console.log(currentNodes)
+    //setNodesI(currentNodes)
+  
+  }, []);
+
+  const onConnectSync = useCallback((params: Connection) => {
+    console.log(params)
+   let type = "classicalEdge";
+  let color = "#F5A843"; // default classical color
+
+  // Quantum edge
+  if (
+    (params.sourceHandle.includes("quantumHandle") || params.sourceHandle.includes("sideQuantumHandle")) &&
+    params.targetHandle.includes("quantumHandle")
+  ) {
+    type = "quantumEdge";
+    color = "#93C5FD";
+  }
+
+  // Ancilla edge
+  if (
+    (params.sourceHandle.includes("ancilla") || params.sourceHandle.includes("dirtyAncilla")) &&
+    (params.targetHandle.includes("ancilla") || params.targetHandle.includes("dirtyAncilla"))
+  ) {
+    type = "ancillaEdge";
+    color = "#86EFAC";
+  }
+
+  const edge: Edge = {
+    ...params,
+    id: uuid(),
+    type,
+    markerEnd: {
+      type: MarkerType.ArrowClosed,
+      width: 20,
+      height: 20,
+      color: color,
+    },
+    style: { stroke: color }, 
+  };
+  
+   const user = hocusPocusServer.awareness.getLocalState()?.user?.name ?? "Unknown";
+
+  // 1. Update local Zustand store (your existing store logic)
+  onConnect(params);
+
+  // 2. Save edge to Yjs shared map
+  edgesMap.set(edge.id, edge);
+  Object.entries(cursors).map(([clientId, cursor]) => {
+    const displayName = Number(clientId) === myClientId ? "Me" : cursor.name;
+
+    // Store name in a variable for history usage
+    const userName = cursor.name;
+
+    historyArray.push([{
+    type: "edge-added",
+    source: edge.source,
+    target: edge.target,
+    edgeId: edge.id,
+    user: cursor.name,
+    timestamp: Date.now(),
+  }]);
+});
+
+ 
+}, []);
+
 
   const onNodesDelete = useCallback(() => {
     setContextMenu((prev) => ({ ...prev, visible: false })); // contextMenu disappears when node is deleted
@@ -1520,7 +1808,7 @@ function App() {
         <Toolbar
           onSave={() => handleSaveClick(false)}
           onRestore={handleRestoreClick}
-          onSaveAsSVG={handleSaveAsSVG}
+          onSaveAsSVG={addNode}
           onOpenConfig={handleOpenConfig}
           uploadDiagram={() => uploadToGitHub()}
           onLoadJson={handleLoadJson}
@@ -1615,57 +1903,36 @@ function App() {
         }}
       />
 
-      <main className="flex flex-col lg:flex-row h-[calc(100vh_-_60px)]">
+
+      <main className="flex flex-row lg:flex-row h-[calc(100vh_-_60px)]">
         <div className="relative flex h-[calc(100vh_-_60px)]  border-gray-200 border">
           <div
-            className={`transition-all duration-300 ${isPaletteOpen ? "w-[300px] lg:w-[350px]" : "w-0 overflow-hidden"}`}
+            className={`transition-all duration-300 overflow-hidden 
+      ${isPaletteOpen ? "w-[300px] lg:w-[350px]" : "w-0 lg:w-0"}
+      h-full flex-shrink-0`}
           >
             {isPaletteOpen && <Palette ancillaMode={ancillaModelingOn} />}
           </div>
-          <button
-            onClick={togglePalette}
-            style={{
-              width: "24px"
-            }}
-            className={`
-    absolute top-1/2 transform -translate-y-1/2 
-    bg-gray-400 text-white p-2 rounded-l-lg shadow-md hover:bg-gray-600 z-50 
-    ${isPaletteOpen ? "right-0" : "hidden"} 
-    ${isValidationOpen ? "hidden" : ""}
-  `}
-          >
-            {isPaletteOpen ? "←" : "→"}
-          </button>
-
-          <button
-            onClick={togglePalette}
-            style={{
-              width: "24px",
-              paddingLeft: "4px"
-            }}
-            className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white p-2 rounded-r-lg shadow-md hover:bg-gray-600 z-50 ${isPaletteOpen ? "hidden" : "-left-0"} ${isValidationOpen ? "hidden" : ""}`}
-          >
-            {isPaletteOpen ? "←" : "→"}
-          </button>
 
         </div>
 
         <div
-          className="h-[calc(100vh_-_60px)] flex-grow"
+          className="flex-grow min-w-[200px] h-full relative"
           ref={reactFlowWrapper}
         >
           <ReactFlow
             ref={ref}
-            nodes={nodes}
-            edges={edges}
-            onNodesChange={onNodesChange}
+            nodes={nodesI}
+            edges={edgesI}
+            onMouseMove={handleMouseMove}
+            onNodesChange={onNodesChangeSync}
             onEdgesChange={onEdgesChange}
             onNodeContextMenu={onNodeContextMenu}
             onNodeClick={(event: React.MouseEvent, node: Node) => {
               handleClick(event, node);
             }}
             onConnectEnd={onConnectEnd}
-            onConnect={onConnect}
+            onConnect={onConnectSync}
             onPaneClick={onPaneClick}
             onClick={onClick}
             onDragOver={onDragOver}
@@ -1711,6 +1978,50 @@ function App() {
             </>
           )}
             <Controls />
+            {Object.entries(cursors).map(([clientId, cursor]) => {
+              const displayName = Number(clientId) === myClientId ? "Me" : cursor.name;
+              return (
+                <div
+                  key={clientId}
+                  style={{
+                    position: "absolute",
+                    left: cursor.x,
+                    top: cursor.y,
+                    pointerEvents: "none",
+                    transform: "translate(-50%, -50%)",
+                    zIndex: 999,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                  }}
+                >
+                  <div
+                    style={{
+                      marginBottom: 4,
+                      fontSize: 12,
+                      color: "#fff",
+                      backgroundColor: cursor.color,
+                      padding: "1px 4px",
+                      borderRadius: 4,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {displayName}
+                  </div>
+                  <div
+                    style={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: "50%",
+                      backgroundColor: cursor.color,
+                      transition: "left 0.05s linear, top 0.05s linear",
+                    }}
+                  />
+                </div>
+              );
+            })}
+
+
             {toast && (
               <Toast
                 message={toast.message}
@@ -1718,6 +2029,8 @@ function App() {
                 onClose={() => setToast(null)}
               />
             )}
+            <UserCountPanel provider={hocusPocusServer} roomName="demo" />
+            <VersioningPanel history={versioningHistory} />
 
             <ExperienceModePanel
               expanded={expanded}
@@ -1731,7 +2044,6 @@ function App() {
               completionGuaranteed={completionGuaranteed}
               onCompletionGuaranteedChange={setCompletionGuaranteed}
             />
-
             <MiniMap
               nodeClassName={(node) => {
                 if (node.type === 'dataTypeNode' || node.type === "classicalAlgorithmNode" || node.type === ClassicalOperatorNode) return 'minimap-node-circle';
@@ -1793,29 +2105,11 @@ function App() {
 
         <div className="relative flex bg-gray-100 h-[calc(100vh_-_60px)]  border-gray-200 border">
           <div
-            className={`transition-all duration-300 ${isPanelOpen ? "w-[300px] lg:w-[350px]" : "w-0 overflow-hidden"}`}
+            className={`transition-all duration-300 overflow-hidden
+      ${isPanelOpen ? "w-[300px] lg:w-[350px]" : "w-0 lg:w-0"}
+      h-full flex-shrink-0`}
           >
 
-            <button
-              onClick={togglePanel}
-              style={{
-                width: "24px",
-                paddingLeft: "4px",
-              }}
-              className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white text-center p-2 rounded-r-lg shadow-md hover:bg-gray-600 z-50 ${isPanelOpen ? "-left-0" : "hidden"} ${isValidationOpen ? "hidden" : ""}`}
-            >
-
-              {isPanelOpen ? "→" : "←"}
-            </button>
-            <button
-              onClick={togglePanel}
-              style={{
-                width: "24px"
-              }}
-              className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white p-2 rounded-l-lg shadow-md hover:bg-gray-600 z-50 ${isPanelOpen ? "hidden" : "right-0"} ${isValidationOpen ? "hidden" : ""}`}
-            >
-              {isPanelOpen ? "→" : "←"}
-            </button>
 
 
             {isPanelOpen && <CustomPanel metadata={metadata} onUpdateMetadata={setMetadata} />}

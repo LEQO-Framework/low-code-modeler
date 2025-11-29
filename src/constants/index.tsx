@@ -57,6 +57,7 @@ export const arithmeticOperatorLabel = "Arithmetic Operator";
 export const bitwiseOperatorLabel = "Bitwise Operator";
 export const minMaxOperatorLabel = "Min & Max Operator";
 export const comparisonOperatorLabel = "Comparison Operator";
+export const algorithmicPrimitives = "Algorithm Primitives"
 
 // categories of modeling constructs
 export const boundaryNodes = "Boundary Nodes";
