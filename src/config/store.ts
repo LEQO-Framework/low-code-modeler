@@ -20,6 +20,8 @@ import { v4 as uuid } from "uuid";
 import * as consts from "../constants";
 import TabPane from "antd/es/tabs/TabPane";
 
+import { nodesMap } from "@/yjs";
+
 export type NodeData = {
   label: string;
   dataType: string;
@@ -219,7 +221,7 @@ export const useStore = create<RFState>((set, get) => ({
       if (!node.data.compactOptions.includes(compact)) {
         return { ...node, hidden: !compact };
       }
-  
+
       return { ...node, hidden: false };
     });
     const hiddenNodeIds = new Set(
@@ -866,6 +868,10 @@ export const useStore = create<RFState>((set, get) => ({
         }
         return node;
       });
+      const updatedNode = get().nodes.find(n => n.id === nodeId);
+
+
+      if (updatedNode) nodesMap.set(nodeId, updatedNode);
 
       console.log(updatedNodes)
 
@@ -878,8 +884,16 @@ export const useStore = create<RFState>((set, get) => ({
         ],
         historyIndex: state.historyIndex + 1,
       };
+      
     });
-
+  const updatedNode = get().nodes.find((n) => n.id === nodeId);
+  console.log(get().nodes)
+  console.log("pppppppppppppppppppppppppppppppppppppppp");
+  console.log(updatedNode)
+  if (updatedNode) {
+    nodesMap.set(nodeId, updatedNode); 
+    console.log("Updated Yjs node:", updatedNode);
+  }
     console.log("History updated successfully.");
   },
   updateParent: (nodeId: string, parentId: string, position: any) => {

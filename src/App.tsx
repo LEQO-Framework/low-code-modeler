@@ -41,6 +41,7 @@ import { HocuspocusProvider } from "@hocuspocus/provider";
 import UserCountPanel from "./components/modals/userAwareness";
 import { v4 as uuid } from "uuid";
 import VersioningPanel from "./components/modals/versioningModal";
+import { nodesMap, edgesMap, ydoc, awareness, yProvider } from "@/yjs";
 
 const selector = (state: {
   nodes: Node[];
@@ -142,26 +143,9 @@ function App() {
     setEdges,
   } = useStore(useShallow(selector));
 
-
-  const hocusPocusServer = useMemo(() => {
-    return new HocuspocusProvider({
-      url: "ws://127.0.0.1:1234",
-      name: "reactflow-yjs",
-    });
-  }, []);
-
-  const ydoc = hocusPocusServer.document;
   const historyArray = ydoc.getArray<any>("history");
   const [versioningHistory, setVersioningHistory] = useState<any[]>([]);
 
-
-  const nodesMap = ydoc.getMap<Node>("nodes");
-  const edgesMap = ydoc.getMap<Edge>("edges");
-
-  const awareness = hocusPocusServer.awareness;
-
-  console.log(nodesMap)
-  console.log(awareness)
 
   const [nodesI, setNodesI] = useState<Node[]>([]);
    const [edgesI, setEdgesI] = useState<Edge[]>([]);
@@ -215,7 +199,7 @@ function App() {
   }, []);
 
   const handleMouseMove = (event: React.MouseEvent) => {
-    if (!hocusPocusServer) return;
+    if (!awareness) return;
 
     const bounds = reactFlowWrapper.current?.getBoundingClientRect();
     if (!bounds) return;
@@ -223,8 +207,8 @@ function App() {
     const x = event.clientX - bounds.left;
     const y = event.clientY - bounds.top;
 
-    hocusPocusServer.awareness.setLocalStateField("cursor", {
-      ...hocusPocusServer.awareness.getLocalState()?.cursor,
+    awareness.setLocalStateField("cursor", {
+      ...awareness.getLocalState()?.cursor,
       x,
       y
     });
@@ -303,16 +287,15 @@ function App() {
   const [myClientId, setMyClientId] = useState<number | null>(null);
 
   useEffect(() => {
-    if (!hocusPocusServer) return;
 
     const updateCursors = () => {
       const newCursors: typeof cursors = {};
-      hocusPocusServer.awareness.getStates().forEach((state: any, clientId: number) => {
+      awareness.getStates().forEach((state: any, clientId: number) => {
         if (state.cursor) {
           // Replace name with "Me" if this is your client
           newCursors[clientId] = {
             ...state.cursor,
-            name: clientId === hocusPocusServer.awareness.clientID ? "Me" : state.cursor.name
+            name: clientId === awareness.clientID ? "Me" : state.cursor.name
           };
         }
       });
@@ -320,31 +303,31 @@ function App() {
     };
 
 
-    hocusPocusServer.awareness.on("change", updateCursors);
+    awareness.on("change", updateCursors);
     updateCursors();
 
-    return () => hocusPocusServer.awareness.off("change", updateCursors);
-  }, [hocusPocusServer]);
+    return () =>awareness.off("change", updateCursors);
+  }, []);
 
   useEffect(() => {
-    if (!hocusPocusServer) return;
+
 
     // Generate a random username
     const randomNames = ["Alice", "Bob", "Charlie", "Dana", "Eve", "Frank", "Grace", "Hugo"];
     const randomUsername = randomNames[Math.floor(Math.random() * randomNames.length)];
     // Store local clientId
-    setMyClientId(hocusPocusServer.awareness.clientID);
+    setMyClientId(awareness.clientID);
 
     const color = "#" + Math.floor(Math.random() * 16777215).toString(16);
 
     // Set initial cursor state with username
-    hocusPocusServer.awareness.setLocalStateField("cursor", {
+    awareness.setLocalStateField("cursor", {
       x: 0,
       y: 0,
       color,
       name: randomUsername
     });
-  }, [hocusPocusServer]);
+  }, []);
 
 
 
@@ -1276,7 +1259,7 @@ function App() {
 
         setNodes(newNode);
         nodesMap.set(newNode.id, newNode);
-        console.log(hocusPocusServer.awareness.getLocalState())
+        console.log(awareness.getLocalState())
         Object.entries(cursors).map(([clientId, cursor]) => {
     const displayName = Number(clientId) === myClientId ? "Me" : cursor.name;
 
@@ -1350,7 +1333,6 @@ function App() {
     style: { stroke: color }, 
   };
   
-   const user = hocusPocusServer.awareness.getLocalState()?.user?.name ?? "Unknown";
 
   // 1. Update local Zustand store (your existing store logic)
   onConnect(params);
@@ -2029,7 +2011,7 @@ function App() {
                 onClose={() => setToast(null)}
               />
             )}
-            <UserCountPanel provider={hocusPocusServer} roomName="demo" />
+            <UserCountPanel provider={yProvider} roomName="demo" />
             <VersioningPanel history={versioningHistory} />
 
             <ExperienceModePanel
