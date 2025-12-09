@@ -45,7 +45,7 @@ export const categories: Record<string, CategoryEntry> = {
           label: "Prepare State", type: consts.StatePreparationNode, icon: ["PaletteIcon_PrepareState.png", "PaletteIcon_Ancilla_PrepareState.png"], description: "Initializes qubits into a specific quantum state.", completionGuaranteed: true, compactOptions: [true, false],
         },
         {
-          label: "Uniform Superposition", type: consts.StatePreparationNode, icon: ["PaletteIcon_PrepareState.png", "PaletteIcon_Ancilla_PrepareState.png"], description: "Initializes qubits into an equal superposition.", completionGuaranteed: true, compactOptions: [false],
+          label: "Uniform Superposition", type: consts.StatePreparationNode, icon: ["uniformSuperposition_palette.png", "PaletteIcon_Ancilla_PrepareState.png"], description: "Initializes qubits into an equal superposition.", completionGuaranteed: true, compactOptions: [false],
         },
       ],
       "Quantum To Classical": [
@@ -103,7 +103,7 @@ export const categories: Record<string, CategoryEntry> = {
         //{ label: "boolean", dataType: "boolean", type: consts.DataTypeNode, icon: "PaletteIcon_Boolean.png", description: "True/false value used for logic.", completionGuaranteed: true, compactOptions: [true, false] },
         //{ label: "complex", dataType: "complex", type: consts.DataTypeNode, icon: "PaletteIcon_Complex.png", description: "A number with real and imaginary parts.", completionGuaranteed: false, compactOptions: [true, false] },
         //{ label: "duration", dataType: "duration", type: consts.DataTypeNode, icon: "PaletteIcon_Duration.png", description: "Represents a time duration.", completionGuaranteed: false, compactOptions: [true, false] },
-        { label: "Number", dataType: "int", type: consts.DataTypeNode, icon: "PaletteIcon_Int.png", description: "Integer value (whole number).", completionGuaranteed: true, compactOptions: [true, false] },
+        { label: "Number", dataType: "int", type: consts.DataTypeNode, icon: "Number_palette.png", description: "Integer value (whole number).", completionGuaranteed: true, compactOptions: [true, false] },
         //{ label: "float", dataType: "float", type: consts.DataTypeNode, icon: "PaletteIcon_Float.png", description: "Floating-point number (decimal).", completionGuaranteed: false, compactOptions: [true, false] },
         { label: "Array", dataType: "Array", type: consts.DataTypeNode, icon: "PaletteIcon_Array.png", description: "A list of values, possibly of varying length.", completionGuaranteed: true, compactOptions: [true, false] },
       ],
@@ -139,7 +139,7 @@ export const categories: Record<string, CategoryEntry> = {
         {
           label: "Oracle",
           type: "oracleNode",
-          icon: ["PaletteIcon_Oracle.png"],
+          icon: ["Oracle_palette.png"],
           description: "A black-box function encoded as a quantum operation.",
           completionGuaranteed: true,
           compactOptions: [true, false],
@@ -147,7 +147,7 @@ export const categories: Record<string, CategoryEntry> = {
         {
           label: "Diffusion Operator",
           type: "oracleNode",
-          icon: ["PaletteIcon_AmplitudeAmplification.png"],
+          icon: ["diffusionOperator.png"],
           description: "Amplifies the probability of marked quantum states.",
           completionGuaranteed: true,
           compactOptions: [false],

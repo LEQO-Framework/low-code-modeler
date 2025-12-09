@@ -225,29 +225,29 @@ export const AddNodePanel = () => {
 
               return (
                 <div key={category}>
-                  <button
-                    className={`w-full text-left py-2 px-4 font-semibold text-black-700 border-b ${activeCategory === category
-                      ? "bg-gray-100 text-primary"
-                      : "hover:bg-gray-300"
-                      }`}
-                    onClick={() => toggleCategory(category)}
-                  >
-                    <div className="flex items-center gap-2">
-                      {categoryIcons[category] && (
-                        <img
-                          src={categoryIcons[category]}
-                          alt={`${category} icon`}
-                          className="w-9 h-9"
-                        />
-                      )}
-                      <span>{category}</span>
-                    </div>
-                    {description && (
-                      <div className="text-sm text-gray-600 mt-1 ml-11">
-                        {description}
-                      </div>
-                    )}
-                  </button>
+           
+<button
+  className={`w-full text-left py-2 px-4 font-semibold text-black-700 border-b text-lg`}
+  style={{ fontFamily: "'Times New Roman', serif" }}
+  onClick={() => toggleCategory(category)}
+>
+  <div className="flex items-center gap-2">
+    {categoryIcons[category] && (
+      <img
+        src={categoryIcons[category]}
+        alt={`${category} icon`}
+        className="w-9 h-9"
+      />
+    )}
+    <span>{category}</span>
+  </div>
+  {description && (
+    <div className="text-sm text-gray-600 mt-1 ml-11">
+      {description}
+    </div>
+  )}
+</button>
+
 
                   {activeCategory === category && (
                     <div className="pl-4 mt-2 space-y-4">

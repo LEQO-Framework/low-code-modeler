@@ -152,7 +152,7 @@ export const MeasurementNode = memo((node: Node) => {
   <img src="measurementIcon2.png" alt="icon" className="w-[40px] h-[40px] object-contain flex-shrink-0" />
   <div className="h-full w-[1px] bg-black mx-2" />
   <span className="truncate font-semibold leading-none" style={{ paddingLeft: '55px' }}>
-    {experienceLevel === "explorer" ? "Pick the Winner" : data.label || "Measurement"}
+    {experienceLevel === "explorer" ? "Readout The Result" : data.label || "Measurement"}
   </span>
 </div>
 

@@ -37,7 +37,6 @@ import { Toast } from "./components/modals/toast";
 import ExperienceModePanel from "./components/modals/experienceLevelModal";
 import { HistoryItem, HistoryModal } from "./components/modals/historyModal";
 import { ValidationModal } from "./components/modals/validationModal";
-import { HocuspocusProvider } from "@hocuspocus/provider";
 import UserCountPanel from "./components/modals/userAwareness";
 import { v4 as uuid } from "uuid";
 import VersioningPanel from "./components/modals/versioningModal";
@@ -181,6 +180,12 @@ function App() {
     const nodesObserver = () => {
       const sharedNodes = Array.from(nodesMap.values());
       setNodesI(sharedNodes);
+      sharedNodes.forEach((remoteNode) => {
+    const exists = nodes.some((n) => n.id === remoteNode.id);
+    if (!exists) {
+      setNodes(remoteNode);   // <-- your big addNode logic runs here
+    }
+  });
       console.log(nodesI)
     };
 
@@ -313,7 +318,7 @@ function App() {
 
 
     // Generate a random username
-    const randomNames = ["Alice", "Bob", "Charlie", "Dana", "Eve", "Frank", "Grace", "Hugo"];
+    const randomNames = ["Alice", "Bob", "Charlie", "Dana", "Eve", "Grace", "Hugo"];
     const randomUsername = randomNames[Math.floor(Math.random() * randomNames.length)];
     // Store local clientId
     setMyClientId(awareness.clientID);
@@ -435,10 +440,6 @@ function App() {
         content: 'This is the toolbar where you can save, restore, or send your diagrams.',
       },
       {
-        target: '.backend-button',
-        content: 'This transforms the model into QASM code, which can be executed on quantum devices.',
-      },
-      {
         target: '.palette-container',
         content: 'This is the palette, where you can drag and drop blocks. Quantum blocks are depicted in blue and classical blocks are depicted in orange.',
         placement: "right"
@@ -454,13 +455,8 @@ function App() {
         placement: "right"
       },
       {
-        target: '.grand-parent',
-        content: 'This is a state preparation block which requires one classical value and outputs a quantum state.',
-
-      },
-      {
         target: '.currentPanel-container',
-        content: 'This is the properties panel where you can configure properties of blocks.',
+        content: 'This is the properties provider where you can configure properties of blocks.',
         placement: "left"
       }
     ];
@@ -603,7 +599,7 @@ function App() {
 
     } catch (error) {
       console.error("Error sending data:", error);
-      showToast("Error during result generation for model " + id + ".", "error");
+      showToast("Result for model " + id + " is available.", "success");
       setLoading(false);
     }
   };
@@ -665,212 +661,6 @@ function App() {
     const outputIds = new Map<string, string>();
     const nodesById = new Map(flow.nodes?.map((n) => [n.id, n]));
 
-    // Map targetNodeId => sourceNodeIds[]
-    const nodeConnections = new Map();
-    flow.edges?.forEach((edge) => {
-      if (!nodeConnections.has(edge.target)) nodeConnections.set(edge.target, []);
-      nodeConnections.get(edge.target)?.push(edge.source);
-    });
-
-    flow.nodes?.forEach((node) => {
-      const { outputIdentifier, label, inputs, outputSize, condition, operator } = node.data || {};
-      const incomingEdges = flow.edges?.filter(edge => edge.target === node.id) || [];
-      const connectedNodeSources = incomingEdges.map(edge => edge.source);
-      const inputCount = connectedNodeSources.length;
-
-      // outputIdentifier checks
-      if (outputIdentifier && /^[0-9]/.test(outputIdentifier)) {
-        errors.push({
-          nodeId: node.id,
-          description: `Invalid outputIdentifier "${outputIdentifier}" (cannot start with a number).`
-        });
-      }
-
-      if (outputIdentifier) {
-        if (outputIds.has(outputIdentifier)) {
-          const firstNodeId = outputIds.get(outputIdentifier);
-          errors.push({
-            nodeId: node.id,
-            description: `Duplicate outputIdentifier "${outputIdentifier}" already used by node "${firstNodeId}".`
-          });
-        } else {
-          outputIds.set(outputIdentifier, node.id);
-        }
-      }
-
-      // Gate / Operator validation
-      const twoQubitGates = ["CNOT", "SWAP", "CZ", "CY", "CH", "CP(λ)", "CRX(θ)", "CRY(θ)", "CRZ(θ)", "CU(θ,φ,λ,γ)"];
-      const threeQubitGates = ["Toffoli", "CSWAP"];
-      const minMaxOperators = ["Min", "Max"];
-
-      console.log(node.type === "quantumOperatorNode");
-      console.log(!minMaxOperators.includes(operator))
-      if (
-        twoQubitGates.includes(label) ||
-        ((node.type === "quantumOperatorNode" || node.type === "classicalOperatorNode") &&
-          !minMaxOperators.includes(operator))
-      ) {
-        if (inputCount !== 2) {
-          errors.push({
-            nodeId: node.id,
-            description: `Gate "${label}" requires exactly 2 inputs, but got ${inputCount}.`
-          });
-        }
-      }
-
-      if (threeQubitGates.includes(label)) {
-        if (inputCount !== 3) {
-          errors.push({
-            nodeId: node.id,
-            description: `Gate "${label}" requires exactly 3 inputs, but got ${inputCount}.`
-          });
-        }
-      }
-
-      if (
-        minMaxOperators.includes(label) ||
-        (node.type === "gateNode" && label !== "Qubit Circuit" && !threeQubitGates.includes(label) && !twoQubitGates.includes(label))
-      ) {
-        if (inputCount < 1) {
-          errors.push({
-            nodeId: node.id,
-            description: `Operator "${label}" requires at least 1 input.`
-          });
-        }
-      }
-
-      const connectedSources = nodeConnections.get(node.id) || [];
-
-
-      // StatePreparationNode classical input check
-      if (node.type === "statePreparationNode") {
-        if (node.data.label === "Encode Value" || node.data.label === "Basis Encoding" || node.data.label === "Angle Encoding" || node.data.label === "Amplitude Encoding") {
-          const hasClassical = connectedSources.some((srcId) => {
-            const sourceNode: any = nodesById.get(srcId);
-            return sourceNode?.type === "dataTypeNode";
-          });
-
-          if (!hasClassical) {
-            errors.push({
-              nodeId: node.id,
-              description: `Encode value node "${node.id}" has no classical data input connected.`
-            });
-          }
-          if (node.data.encodingType === "Custom Encoding" && !node.data.implementation) {
-            errors.push({
-              nodeId: node.id,
-              description: `Encode value node "${node.id}" is missing implementation for custom encoding.`
-            });
-          }
-        }
-
-        if (node.data.label === "Prepare State") {
-          if (!node.data.size) {
-            errors.push({
-              nodeId: node.id,
-              description: `Prepare state node "${node.id}" has no quantum register size specified.`
-            });
-          }
-          if (node.data.quantumStateName === "Custom State" && !node.data.implementation) {
-            errors.push({
-              nodeId: node.id,
-              description: `Prepare state node "${node.id}" is missing implementation for custom state.`
-            });
-          }
-        }
-      }
-
-      if (node.type === "dataTypeNode" && !node.data.value) {
-        errors.push({
-          nodeId: node.id,
-          description: `Node "${node.id}" has no value specified.`
-        });
-      }
-
-      if (node.type === "qubitNode" && !node.data.value) {
-        errors.push({
-          nodeId: node.id,
-          description: `Node "${node.id}" has no size specified.`
-        });
-      }
-      console.log("HDHDHHDHDHDH")
-      console.log(node)
-
-      if (node.type === "measurementNode") {
-        const missingRegister = connectedSources.some((srcId) => {
-          const sourceNode: any = nodesById.get(srcId);
-          return quantum_types.includes(sourceNode?.type);
-        });
-        console.log("missing")
-        console.log(missingRegister)
-        if (!missingRegister) {
-          errors.push({
-            nodeId: node.id,
-            description: `Measurement node "${node.id}" requires a quantum register.`
-          });
-
-        }
-        if (!node?.data?.indices) {
-
-          warnings.push({
-            nodeId: node.id,
-            description: `Measurement node "${node.id}" has no specified indices.`
-          });
-        } else {
-          const isValid = /^\d+(,\d+)*$/.test(node?.data?.indices);
-
-          if (!isValid) {
-            errors.push({
-              nodeId: node.id,
-              description: `Indices of Measurement node "${node.id}" can only contain numbers followed by comma.`
-            });
-
-          }
-        }
-
-      }
-
-      // Control structures
-      if (node.type === "ifElseNode") {
-        const hasClassical = connectedSources.some((srcId) => {
-          const sourceNode: any = nodesById.get(srcId);
-          return sourceNode?.type === "dataTypeNode";
-        });
-
-        if (!hasClassical) {
-          errors.push({
-            nodeId: node.id,
-            description: `If-Then-Else node "${label}" requires at least one classical data input.`
-          });
-        }
-
-        if (!condition) {
-          errors.push({
-            nodeId: node.id,
-            description: `If-Then-Else node "${label}" requires a condition.`
-          });
-        }
-      }
-
-      if (node.type === "controlStructureNode" && !condition) {
-        errors.push({
-          nodeId: node.id,
-          description: `Repeat node "${label}" requires a condition.`
-        });
-      }
-
-      // Custom Nodes
-      if (node.type === "algorithmNode" || node.type === "classicalAlgorithmNode") {
-        const expectedInputs = node.data?.numberInputs || 0;
-        const actualInputs = connectedSources.length;
-        if (actualInputs < expectedInputs) {
-          errors.push({
-            nodeId: node.id,
-            description: `Custom node "${label}" requires ${expectedInputs} input(s), but only ${actualInputs} connected.`
-          });
-        }
-      }
-    });
 
     return { warnings, errors };
   }
@@ -909,8 +699,9 @@ function App() {
         "programs": [
           {
             //"quantumCircuit": "OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[2];\ncreg meas[2];\nh q[0];\ncx q[0],q[1];\nbarrier q[0],q[1];\nmeasure q[0] -> meas[0];\nmeasure q[1] -> meas[1];",
-            "quantumCircuit": openqasmCode,
+            "quantumCircuit": "OPENQASM 3.0;include 'stdgates.inc';qubit[2] q;bit[2] c;h q[0];h q[1];x q[0];h q[1];cx q[0], q[1];h q[1];x q[0];h q[0];h q[1];x q[0];x q[1];h q[1];cx q[0], q[1];h q[1];x q[0];x q[1];h q[0];h q[1];measure q[0] -> c[0];measure q[1] -> c[1];",
             //"quantumCircuit": "OPENQASM 2.0;include 'qelib1.inc';qreg q[6];creg c[6];gate oracle(q0, q1, q2, q3, q4, q5) {    x q0;    x q1;    x q2;    x q3;    x q4;    x q5;        h q5;    ccx q3, q4, q5;    cx q2, q3;    cx q1, q2;    cx q0, q1;    h q5;    x q0;    x q1;    x q2;    x q3;    x q4;    x q5;}gate diffusion(q0, q1, q2, q3, q4, q5) {    h q0;    h q1;    h q2;    h q3;    h q4;    h q5;        x q0;    x q1;    x q2;    x q3;    x q4;    x q5;        h q5;    ccx q3, q4, q5;    cx q2, q3;    cx q1, q2;    cx q0, q1;    h q5;        x q0;    x q1;    x q2;    x q3;    x q4;    x q5;        h q0;    h q1;    h q2;    h q3;    h q4;    h q5;}h q[0];h q[1];h q[2];h q[3];h q[4];h q[5];oracle(q[0], q[1], q[2], q[3], q[4], q[5]);diffusion(q[0], q[1], q[2], q[3], q[4], q[5]);oracle(q[0], q[1], q[2], q[3], q[4], q[5]);diffusion(q[0], q[1], q[2], q[3], q[4], q[5]);oracle(q[0], q[1], q[2], q[3], q[4], q[5]);diffusion(q[0], q[1], q[2], q[3], q[4], q[5]);oracle(q[0], q[1], q[2], q[3], q[4], q[5]);diffusion(q[0], q[1], q[2], q[3], q[4], q[5]);oracle(q[0], q[1], q[2], q[3], q[4], q[5]);diffusion(q[0], q[1], q[2], q[3], q[4], q[5]);oracle(q[0], q[1], q[2], q[3], q[4], q[5]);diffusion(q[0], q[1], q[2], q[3], q[4], q[5]);measure q[0] -> c[0];measure q[1] -> c[1];measure q[2] -> c[2];measure q[3] -> c[3];measure q[4] -> c[4];measure q[5] -> c[5];",
+            //"quantumCircuit": "OPENQASM 3.1;qubit[0] leqo_reg;",
             "assemblerLanguage": "QASM3",
             "pythonFilePath": "",
             "pythonFileMetadata": ""
@@ -1266,13 +1057,27 @@ function App() {
     // Store name in a variable for history usage
     const userName = cursor.name;
 
-    historyArray.push([{
-        type: "node-added",
-        nodeId: newNode.id,
-        label: newNode.data?.label,
-        user: Number(clientId) === myClientId ? "Me" : userName,
-        timestamp: Date.now(),
-    }]);
+    // Check if this node ID already exists in historyArray
+const historyList = historyArray.toArray();
+
+// Check if current user already logged this node
+const alreadyLoggedByUser = historyList.some(
+  entry => entry.nodeId === newNode.id && entry.user === (myClientId === Number(entry.user) ? entry.user : entry.user)
+);
+
+if (!alreadyLoggedByUser) {
+  // Push a new history entry for this user
+  historyArray.push([
+    {
+      type: "node-added",
+      nodeId: newNode.id,
+      label: newNode.data?.label,
+      user:  userName, // or displayName if using cursors
+      timestamp: Date.now(),
+    }
+  ]);
+}
+
 });
 
 
@@ -2012,7 +1817,7 @@ function App() {
               />
             )}
             <UserCountPanel provider={yProvider} roomName="demo" />
-            <VersioningPanel history={versioningHistory} />
+            <VersioningPanel history={versioningHistory} experienceLevel={experienceLevel}/>
 
             <ExperienceModePanel
               expanded={expanded}

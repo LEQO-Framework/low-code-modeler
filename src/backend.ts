@@ -20,8 +20,8 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                 id: `flow-${Date.now()}`,
                 ...metadata
             },
-            nodes: [...nodes.filter(x => !x.parentNode).map(mapNode)],
-            edges: edges.filter(e => !isNestedEdge(e)).map(mapEdge),
+            nodes: [],
+            edges: [],
             compilation_target: compilation_target
         } satisfies CompileRequest),
     });

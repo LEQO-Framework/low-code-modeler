@@ -71,10 +71,24 @@ export const BuildingBlockNode = memo((node: Node) => {
   const handleOutputChange = (id, newValue) => {
     setOutputs(outputs.map((output) => (output.id === id ? { ...output, value: newValue } : output)));
   };
+
+    const [markedElementRequired, setMarkedElementRequired] = useState(
+    !(node.data?.operator && node.data.operator.trim() !== "")
+  );
+
+  const [markedElementChanged, setMarkedElementChanged] = useState(false);
+  const [lastOracleValue, setLastOracleValue] = useState(node.data.operator || "");
+
   const handleYChange = (e, field) => {
     const value = e.target.value;
     node.data[field] = value;
+    setMarkedElementRequired(false);
     updateNodeValue(node.id, field, value);
+    if (experienceLevel === "pioneer") {
+      if (lastOracleValue !== "" && value !== lastOracleValue) {
+        setMarkedElementChanged(true);
+      }
+    }
     setSelectedNode(node);
     setY(value);
   };
@@ -94,14 +108,16 @@ export const BuildingBlockNode = memo((node: Node) => {
   };
 
 
+
   // 1. Validate output identifier on change
   const [operatorInitialized, setOperatorInitialized] = useState(false);
-console.log("==========================")
+  console.log("==========================")
   console.log(node.data.label)
 
   // Only run operator initialization once
 
   useEffect(() => {
+  
     const identifier = node.data.outputIdentifier;
     const duplicates = findDuplicateOutputIdentifiers(nodes, node.id);
     const isDuplicate = duplicates.has(identifier);
@@ -116,8 +132,25 @@ console.log("==========================")
     } else {
       setStartsWithDigitError(false);
     }
+     if (node.data.label === "Oracle") {
+    const hasOperator = !!(node.data.operator && node.data.operator.trim() !== "");
 
-  }, [nodes, node.data.outputIdentifier, node.id, ancillaMode]);
+    // Update required flag
+    setMarkedElementRequired(!hasOperator);
+
+    // Update changed flag (expert mode only)
+    if (experienceLevel === "pioneer") {
+      if (lastOracleValue !== "" && node.data.operator !== lastOracleValue) {
+        setMarkedElementChanged(true);
+      }
+    }
+
+    // Store last value to compare next time
+    setLastOracleValue(node.data.operator || "");
+  }
+
+
+  }, [nodes, node.data.outputIdentifier, node.id, ancillaMode, node.data.operator]);
 
   const baseHeight = 550;
   const dynamicHeight = baseHeight;
@@ -136,6 +169,8 @@ console.log("==========================")
     "Amplitude Amplification": { width: 45, height: 45 },
   };
 
+
+
   return (
     <motion.div
       className="grand-parent"
@@ -144,6 +179,48 @@ console.log("==========================")
       transition={{ duration: 0.3, ease: "easeInOut" }}
     >
       <div className="grand-parent">
+        {node.data.label === "Oracle" && markedElementRequired && (
+          <div className="absolute top-2 right-[-40px] group z-20">
+            <AlertCircle className="text-red-600 w-5 h-5" />
+            <div
+              className="absolute top-5 left-[25px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap"
+
+            >
+              Marked element required.
+            </div>
+          </div>
+        )}
+        {node.data.label === "Oracle" && !markedElementRequired && experienceLevel=="pioneer" &&(
+          <div className="absolute top-2 right-[-40px] group z-20">
+            <AlertCircle className="text-orange-500 w-5 h-5" />
+            <div
+              className="absolute top-5 left-[25px] z-10 bg-white text-xs text-orange-500 border border-orange-400 px-3 py-1 rounded shadow min-w-[170px] whitespace-nowrap"
+              style={{
+                top: (outputIdentifierError || startsWithDigitError || sizeError || markedElementRequired)
+                  ? "110px"
+                  : "35px",
+              }}
+            >
+              Marked element changed — update implementation.
+            </div>
+          </div>
+        )}
+        {node.data.label === "Oracle" && !markedElementRequired && experienceLevel=="explorer" &&(
+          <div className="absolute top-2 right-[-40px] group z-20">
+            <AlertCircle className="text-orange-500 w-5 h-5" />
+            <div
+              className="absolute top-5 left-[25px] z-10 bg-white text-xs text-orange-500 border border-orange-400 px-3 py-1 rounded shadow min-w-[170px] whitespace-nowrap"
+              style={{
+                top: (outputIdentifierError || startsWithDigitError || sizeError || markedElementRequired)
+                  ? "110px"
+                  : "35px",
+              }}
+            >
+              Marked element changed — consult expert.
+            </div>
+          </div>
+        )}
+
         {outputIdentifierError && (
           <div className="absolute top-2 right-[-40px] group z-20">
             <AlertCircle className="text-red-600 w-5 h-5" />
@@ -211,8 +288,8 @@ console.log("==========================")
               <span className="font-semibold leading-none" style={{ paddingLeft: '25px' }}>
                 {experienceLevel === "explorer" && node.data.label === "Oracle"
                   ? "Mark The Target"
-                  : experienceLevel === "beginner" && node.data.label === "Diffusion Operator"
-                    ? "Boost the Right Answer"
+                  : experienceLevel === "explorer" && node.data.label === "Diffusion Operator"
+                    ? "Emphasize the Marked Element"
                     : data.label}
               </span>
 
@@ -220,12 +297,23 @@ console.log("==========================")
           </div>
 
           {node.data.label === "Oracle" && (<div className="px-3 py-1 mb-1">
-            <label className="text-sm text-black">Mark element:</label>
+            <label className="text-sm text-black">Target Element:</label>
             <input
               type="text"
               className="w-full p-1 mt-1 bg-white text-center text-lg text-black border-2 border-blue-300 rounded-full"
               value={node.data.operator || operation}
-              onChange={(e) => handleYChange(e, "operator")}
+              onChange={(e) => {
+                const value = e.target.value;
+
+
+
+                // Change detection (expert only)
+                
+
+
+                setLastOracleValue(value);
+                handleYChange(e, "operator");
+              }}
               placeholder="Enter the search element"
             />
           </div>)}

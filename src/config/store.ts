@@ -386,6 +386,7 @@ export const useStore = create<RFState>((set, get) => ({
 
   onConnect: (connection: Connection) => {
     const currentNodes = get().nodes;
+    console.log("=============================CURRENT")
     const ancillaMode = get().ancillaMode;
     console.log(connection)
     //const currentEdges = addEdge(connection, get().edges);
@@ -462,38 +463,38 @@ export const useStore = create<RFState>((set, get) => ({
         insertEdge = true;
       }
 
-      if (nodeDataSource.type === "splitterNode" || nodeDataSource.type === "mergerNode") {
+      //if (nodeDataSource.type === "splitterNode" || nodeDataSource.type === "mergerNode") {
         // only allow source connections that are inside the node
         //if (connection.sourceHandle && connection.sourceHandle.startsWith("quantumHandle") && connection.sourceHandle.endsWith(nodeDataSource.id) && connection.targetHandle.endsWith(nodeDataSource.id)) {
-        insertEdge = true;
+       // insertEdge = true;
         //} else {
         //insertEdge = false;
         //}
-      }
+      //}
 
       console.log(nodeDataSource.type)
       console.log(connection);
       console.log(nodeDataTarget)
 
       // only allow connections from inside quantum handles 
-      if (nodeDataSource.type === "ifElseNode" && connection.sourceHandle.includes("sideQuantumHandle") && connection.targetHandle.includes("quantumHandle") && nodeDataTarget.parentNode === nodeDataSource.id) {
-        insertEdge = true;
-      }
+      //if (nodeDataSource.type === "ifElseNode" && connection.sourceHandle.includes("sideQuantumHandle") && connection.targetHandle.includes("quantumHandle") && nodeDataTarget.parentNode === nodeDataSource.id) {
+        //insertEdge = true;
+      //}
 
       // only allow connections to inside quantum handles 
-      if (nodeDataTarget.type === "ifElseNode" && connection.targetHandle.includes("quantumHandleDynamic") && connection.targetHandle.includes("quantumHandle") && nodeDataSource.parentNode === nodeDataTarget.id) {
-        insertEdge = true;
-      }
+      //if (nodeDataTarget.type === "ifElseNode" && connection.targetHandle.includes("quantumHandleDynamic") && connection.targetHandle.includes("quantumHandle") && nodeDataSource.parentNode === nodeDataTarget.id) {
+        //insertEdge = true;
+      //}
 
       // only allow connections from inside classical handles 
-      if (nodeDataSource.type === "ifElseNode" && connection.sourceHandle.includes("sideClassicalHandle") && connection.targetHandle.includes("classicalHandle") && nodeDataTarget.parentNode === nodeDataSource.id) {
-        insertEdge = true;
-      }
+      //if (nodeDataSource.type === "ifElseNode" && connection.sourceHandle.includes("sideClassicalHandle") && connection.targetHandle.includes("classicalHandle") && nodeDataTarget.parentNode === nodeDataSource.id) {
+        //insertEdge = true;
+      //}
 
       // only allow connections from inside classical handles 
-      if (nodeDataSource.type === "ifElseNode" && connection.sourceHandle.includes("sideClassicalHandle") && connection.targetHandle.includes("classicalHandle") && nodeDataTarget.parentNode === nodeDataSource.id) {
-        insertEdge = true;
-      }
+      //if (nodeDataSource.type === "ifElseNode" && connection.sourceHandle.includes("sideClassicalHandle") && connection.targetHandle.includes("classicalHandle") && nodeDataTarget.parentNode === nodeDataSource.id) {
+        //insertEdge = true;
+      //}
 
       console.log(connection);
 
@@ -507,12 +508,12 @@ export const useStore = create<RFState>((set, get) => ({
       if ((nodeDataSource.parentNode !== nodeDataTarget.parentNode)) {
         insertEdge = false;
       }
-      if (nodeDataSource.id === nodeDataTarget.parentNode) {
-        insertEdge = true;
-      }
-      if (nodeDataTarget.id === nodeDataSource.parentNode) {
-        insertEdge = true;
-      }
+      //IF (nodeDataSource.id === nodeDataTarget.parentNode) {
+        //insertEdge = true;
+      //}
+      //if (nodeDataTarget.id === nodeDataSource.parentNode) {
+       // insertEdge = true;
+      //}
     }
     // Überprüfung: Existiert bereits eine Edge zur connection.targetHandle?
     const edgeExists = currentEdges.some(edge =>

@@ -323,7 +323,7 @@ export const StatePreparationNode = memo((node: Node) => {
                           ? "encodeValueIcon.png"
                           : data.label === "Uniform Superposition"
                             ? "uniformSuperposition.png"
-                            : data.label === "Start With Everything"
+                            : data.label === "Start With All Values"
                               ? "uniformSuperposition.png"
                               : data.label === "Basis Encoding"
                                 ? "basisEncodingIcon.png"
@@ -346,7 +346,7 @@ export const StatePreparationNode = memo((node: Node) => {
               <div className="h-full w-[1px] bg-black mx-2" />
 
               <span className="font-semibold leading-none" style={{ paddingLeft: '45px' }}>
-                {(experienceLevel === "explorer" && node.data.label === "Uniform Superposition") ? "Start with Everything" : data.label}
+                {(experienceLevel === "explorer" && node.data.label === "Uniform Superposition") ? "Start With All Values" : data.label}
               </span>
 
             </div>
@@ -442,7 +442,7 @@ export const StatePreparationNode = memo((node: Node) => {
           )}
           <div className="custom-node-port-in mb-3 mt-2">
             <div className="relative flex flex-col overflow-visible">
-              {(node.data.label === "Encode Value" || node.data.label === "Basis Encoding" || node.data.label === "Angle Encoding" || node.data.label === "Amplitude Encoding" || node.data.label === "Uniform Superposition") && (
+              {(node.data.label === "Encode Value" || node.data.label === "Basis Encoding" || node.data.label === "Angle Encoding" || node.data.label === "Amplitude Encoding" )&& (
                 <div
                   className="relative p-2 mb-1"
                   style={{
@@ -538,7 +538,7 @@ export const StatePreparationNode = memo((node: Node) => {
           <div className="custom-node-port-out">
 
             <>
-              {node.data.label === "Prepare State" && (
+              {(node.data.label === "Prepare State" || node.data.label === "Uniform Superposition" )&& (
                 <OutputPort
                   node={node}
                   index={0}

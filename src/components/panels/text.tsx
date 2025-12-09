@@ -371,7 +371,7 @@ export const TextPanel = () => {
               </>
             )}
 
-            {selectedNode?.type === OperatorNode && (<ImplementationFields
+            {(selectedNode?.type === OperatorNode)&& (<ImplementationFields
               selectedNode={selectedNode}
               handleNumberChange={handleNumberChange}
               handleFileUpload={handleFileUpload}
@@ -381,6 +381,19 @@ export const TextPanel = () => {
             )}
           </div>
         )}
+
+        
+
+        
+            {(selectedNode?.data.label === "Oracle")&& (<ImplementationFields
+              selectedNode={selectedNode}
+              handleNumberChange={handleNumberChange}
+              handleFileUpload={handleFileUpload}
+              implementationContent={implementationContent}
+              type=""
+            />
+            )}
+
 
         {selectedNode?.type === "measurementNode" && (
           <div className="p-2 mt-3">
