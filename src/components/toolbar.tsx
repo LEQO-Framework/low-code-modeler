@@ -20,6 +20,7 @@ interface ToolbarProps {
   uploadDiagram: () => void;
   onLoadJson: () => void;
   sendToBackend: () => void;
+  detectAlgorithm: () => void;
   //sendToQunicorn: () => void;
   openHistory: () => void;
   startTour: (tour) => void;
@@ -33,6 +34,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
   onOpenConfig,
   onLoadJson,
   sendToBackend,
+  detectAlgorithm,
   //sendToQunicorn,
   openHistory,
   startTour
@@ -60,6 +62,9 @@ const Toolbar: React.FC<ToolbarProps> = ({
           </Button>
           <Button size="sm" onClick={onOpenConfig} title="Configure the editor and the endpoints">
             <Settings className="w-4 h-4 mr-2" /> Configuration
+          </Button>
+          <Button size="sm" onClick={detectAlgorithm} title="Configure the editor and the endpoints">
+            <Settings className="w-4 h-4 mr-2" /> Detect Algorithm
           </Button>
           <Button className="backend-button" size="sm" onClick={sendToBackend} title="Send the diagram to the backend">
             <Send className="w-4 h-4 mr-2" /> Send to Backend

@@ -33,6 +33,7 @@ import { Toast } from "./components/modals/toast";
 import ExperienceModePanel from "./components/modals/experienceLevelModal";
 import { HistoryItem, HistoryModal } from "./components/modals/historyModal";
 import { ValidationModal } from "./components/modals/validationModal";
+import { AlgorithmItem, DetectAlgorithmModal } from "./components/modals/algorithmModal";
 
 const selector = (state: {
   nodes: Node[];
@@ -175,6 +176,147 @@ function App() {
   const [progress, setProgress] = useState(0);
   const [executed, setAlreadyExecuted] = useState(false);
   const [jobId, setJobId] = useState(null);
+
+  const [isDetectAlgorithmOpen, setIsDetectAlgorithmOpen] = useState(false);
+  const [selectedAlgorithm, setSelectedAlgorithm] = useState<AlgorithmItem | null>(null);
+  const [selectedAlgorithmType, setSelectedAlgorithmType] = useState<
+    "classical" | "quantum" | null
+  >(null);
+
+  const classicalAlgorithms: AlgorithmItem[] = [
+    {
+      id: "knn",
+      name: "KNN",
+      description: "K-Nearest Neighbors",
+    },
+  ];
+
+  const quantumAlgorithms: AlgorithmItem[] = [
+    {
+      id: "swap-test",
+      name: "Swap Test",
+      description: "Measures the similarity between two quantum states.",
+      patternGraphPng: "/assets/patterns/swap-test.png",
+    },
+    {
+      id: "hadamard-test",
+      name: "Hadamard Test",
+      description: "Estimates expectation values of unitary operators.",
+      patternGraphPng: "/assets/patterns/hadamard-test.png",
+    },
+    {
+      id: "grover",
+      name: "Grover’s Algorithm",
+      description: "Provides quadratic speedup for unstructured search problems.",
+      patternGraphPng: "/assets/patterns/grover.png",
+    },
+    {
+      id: "quantum-clustering",
+      name: "Quantum Clustering",
+      description: "Uses quantum techniques to perform clustering on datasets.",
+      patternGraphPng: "/assets/patterns/quantum-clustering.png",
+    },
+    {
+      id: "quantum-classification",
+      name: "Quantum Classification",
+      description: "Applies quantum circuits to supervised classification tasks.",
+      patternGraphPng: "/assets/patterns/quantum-classification.png",
+    },
+    {
+      id: "uniform-superposition",
+      name: "Uniform Superposition",
+      description: "Creates an equal superposition of all basis states.",
+      patternGraphPng: "/assets/patterns/uniform-superposition.png",
+    },
+    {
+      id: "matrix-encoding",
+      name: "Matrix Encoding",
+      description: "Encodes classical matrices into quantum states.",
+      patternGraphPng: "/assets/patterns/matrix-encoding.png",
+    },
+    {
+      id: "basis-encoding",
+      name: "Basis Encoding",
+      description: "Encodes classical data directly into computational basis states.",
+      patternGraphPng: "/assets/patterns/basis-encoding.png",
+    },
+    {
+      id: "angle-encoding",
+      name: "Angle Encoding",
+      description: "Encodes data into rotation angles of quantum gates.",
+      patternGraphPng: "/assets/patterns/angle-encoding.png",
+    },
+    {
+      id: "amplitude-encoding",
+      name: "Amplitude Encoding",
+      description: "Encodes data into the amplitudes of a quantum state.",
+      patternGraphPng: "/assets/patterns/amplitude-encoding.png",
+    },
+    {
+      id: "creating-entanglement",
+      name: "Creating Entanglement",
+      description: "Generates entanglement between multiple qubits.",
+      patternGraphPng: "/assets/patterns/creating-entanglement.png",
+    },
+    {
+      id: "amplitude-amplification",
+      name: "Amplitude Amplification",
+      description: "Generalization of Grover’s algorithm to amplify target states.",
+      patternGraphPng: "/assets/patterns/amplitude-amplification.png",
+    },
+    {
+      id: "initialization",
+      name: "Initialization",
+      description: "Prepares qubits in a desired initial quantum state.",
+      patternGraphPng: "/assets/patterns/initialization.png",
+    },
+    {
+      id: "qft",
+      name: "Quantum Fourier Transform (QFT)",
+      description: "Performs the quantum analogue of the discrete Fourier transform.",
+      patternGraphPng: "/assets/patterns/qft.png",
+    },
+    {
+      id: "mid-circuit-measurement",
+      name: "Mid-Circuit Measurement",
+      description: "Measures qubits during circuit execution without ending the circuit.",
+      patternGraphPng: "/assets/patterns/mid-circuit-measurement.png",
+    },
+    {
+      id: "dynamic-circuits",
+      name: "Dynamic Circuits",
+      description: "Allows circuit structure to change based on measurement outcomes.",
+      patternGraphPng: "/assets/patterns/dynamic-circuits.png",
+    },
+    {
+      id: "vqe",
+      name: "Variational Quantum Eigensolver (VQE)",
+      description: "Hybrid algorithm for estimating ground state energies.",
+      patternGraphPng: "/assets/patterns/vqe.png",
+    },
+    {
+      id: "qpe",
+      name: "Quantum Phase Estimation (QPE)",
+      description: "Estimates the phase (eigenvalue) of a unitary operator.",
+      patternGraphPng: "/assets/patterns/qpe.png",
+    },
+    {
+      id: "oracle",
+      name: "Oracle",
+      description: "Problem-specific black-box function used in quantum algorithms.",
+      patternGraphPng: "/assets/patterns/oracle.png",
+    },
+  ];
+
+
+  const handleSelectAlgorithm = (
+    algo: AlgorithmItem,
+    type: "classical" | "quantum"
+  ) => {
+    setSelectedAlgorithm(algo);
+    setSelectedAlgorithmType(type);
+    setIsDetectAlgorithmOpen(false);
+  };
 
   globalThis.setNisqAnalyzerEndpoint = setNisqAnalyzerEndpoint;
   globalThis.setQunicornEndpoint = setQunicornEndpoint;
@@ -482,6 +624,7 @@ function App() {
 
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [isHistoryOpen, setHistoryOpen] = useState(false);
+  const [isAlgorithmDetectionOpen, setAlgorithmDetectionOpen] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
 
   const fetchHistory = async () => {
@@ -510,6 +653,11 @@ function App() {
   const openHistoryModal = async () => {
     await fetchHistory();
     setHistoryOpen(true);
+  };
+
+  const detectAlgorithm = async () => {
+    setAlgorithmDetectionOpen(true);
+    setIsDetectAlgorithmOpen(true);
   };
 
   const startTour2 = () => {
@@ -1240,19 +1388,19 @@ function App() {
     function restoreFlow(flow) {
       console.log("Restoring flow:", flow);
       if (flow.nodes) {
-	reactFlowInstance.setNodes(
-	  flow.nodes.map((node: Node) => ({
-	    ...node,
-	    data: {
-	      ...node.data,
-	    },
-	  }))
-	);
-	console.log("Nodes restored.");
+        reactFlowInstance.setNodes(
+          flow.nodes.map((node: Node) => ({
+            ...node,
+            data: {
+              ...node.data,
+            },
+          }))
+        );
+        console.log("Nodes restored.");
       }
       if (flow.edges) {
-	reactFlowInstance.setEdges(flow.edges || []);
-	console.log("Edges restored.");
+        reactFlowInstance.setEdges(flow.edges || []);
+        console.log("Edges restored.");
       }
 
 
@@ -1268,7 +1416,7 @@ function App() {
     const event = new CustomEvent("lcm-open", {
       cancelable: true,
       detail: {
-	restoreFlow
+        restoreFlow
       },
     });
     const defaultAction = document.dispatchEvent(event);
@@ -1292,7 +1440,7 @@ function App() {
         try {
           const flow = JSON.parse(e.target?.result as string);
 
-	  restoreFlow(flow);
+          restoreFlow(flow);
         } catch (error) {
           console.error("Error parsing JSON file:", error);
           alert("Invalid JSON file. Please ensure it is a valid flow file.");
@@ -1555,6 +1703,7 @@ function App() {
           uploadDiagram={() => uploadToGitHub()}
           onLoadJson={handleLoadJson}
           sendToBackend={handleOpenValidation}
+          detectAlgorithm={detectAlgorithm}
           //sendToQunicorn={() => setIsQunicornOpen(true)}
           openHistory={openHistoryModal}
           startTour={() => { startTour(); }}
@@ -1621,6 +1770,14 @@ function App() {
         errorMessage={errorMessage}
         progress={progress}
         chartData={chartData}
+      />
+
+      <DetectAlgorithmModal
+        open={isDetectAlgorithmOpen}
+        onClose={() => setIsDetectAlgorithmOpen(false)}
+        classicalAlgorithms={classicalAlgorithms}
+        quantumAlgorithms={quantumAlgorithms}
+        onSelectAlgorithm={handleSelectAlgorithm}
       />
 
       <HistoryModal
