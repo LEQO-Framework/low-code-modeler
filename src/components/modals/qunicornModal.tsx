@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
+import { AlertTriangle } from "lucide-react";
 import Modal from "./Modal";
 
 interface QunicornModalProps {
   open: boolean;
   step: number;
   executed: boolean;
+  simulatorWarning: boolean;
   onClose: () => void;
   onStep1Deploy: () => void;
   onStep2CreateJob: (jobData: { device: string; provider: string; numShots: number; accessToken: string }) => void;
@@ -27,6 +29,7 @@ export const QunicornModal = ({
   open,
   step,
   executed,
+  simulatorWarning,
   onClose,
   onStep1Deploy,
   onStep2CreateJob,
@@ -43,10 +46,22 @@ export const QunicornModal = ({
   progress,
   chartData,
 }: QunicornModalProps) => {
+
+  console.log(simulatorWarning)
+console.log(selectedDevice.trim().toLowerCase() === "aer_simulator")
+  const [warningExecution, setWarningExecution] = useState(simulatorWarning && selectedDevice.trim().toLowerCase() === "aer_simulator");
+  console.log(warningExecution)
+  console.log(selectedDevice.trim().toLowerCase() === "aer_simulator")
+
   const handleCreateJob = () => {
     if (!selectedDevice.trim() || !["IBM", "AWS", "RIGETTI", "QMWARE"].includes(provider)) return;
     onStep2CreateJob({ device: selectedDevice, provider, numShots, accessToken });
   };
+
+  useEffect(() => {
+  // Trigger warning if both conditions are true
+  setWarningExecution(simulatorWarning && selectedDevice.trim().toLowerCase() === "aer_simulator");
+}, [simulatorWarning, selectedDevice]);
 
   return (
     <Modal
@@ -61,29 +76,51 @@ export const QunicornModal = ({
               <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
             </>
           )}
+
           {step === 2 && (
             <>
               <button
-                className={`btn ${selectedDevice.trim() && ["IBM", "AWS", "RIGETTI", "QMWARE"].includes(provider) ? "btn-primary" : "btn-secondary"}`}
-                onClick={handleCreateJob}
+                className={`btn ${warningExecution
+                    ? "btn-disabled opacity-60 cursor-not-allowed"
+                    : selectedDevice.trim() && ["IBM", "AWS", "RIGETTI", "QMWARE"].includes(provider)
+                      ? "btn-primary"
+                      : "btn-secondary"
+                  }`}
+                onClick={!warningExecution ? handleCreateJob : undefined}
+                disabled={warningExecution}
               >
                 Create
               </button>
               <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
             </>
           )}
+
           {step === 3 && (
             <>
               {!executed && (
-                <button className="btn btn-primary" onClick={onStep3Execute}>
+                <button
+                  className={`btn ${warningExecution ? "btn-disabled opacity-60" : "btn-primary"}`}
+                  onClick={!warningExecution ? onStep3Execute : undefined}
+                  disabled={warningExecution}
+                  title={warningExecution ? "Execution disabled for aer_simulator" : ""}
+                >
                   Execute
                 </button>
               )}
               {executed && (
-                <button className="btn btn-primary" onClick={() => {
-                  handleCreateJob();
-                  onStep3Execute();
-                }}>
+                <button
+                  className={`btn ${warningExecution ? "btn-disabled opacity-60" : "btn-primary"}`}
+                  onClick={
+                    !warningExecution
+                      ? () => {
+                        handleCreateJob();
+                        onStep3Execute();
+                      }
+                      : undefined
+                  }
+                  disabled={warningExecution}
+                  title={warningExecution ? "Execution disabled for aer_simulator" : ""}
+                >
                   Rerun
                 </button>
               )}
@@ -110,13 +147,23 @@ export const QunicornModal = ({
 
             <div>
               <label className="block font-medium mb-1">Quantum Device</label>
-              <input
-                type="text"
-                className="w-full border rounded px-3 py-2"
-                value={selectedDevice}
-                onChange={(e) => setSelectedDevice(e.target.value)}
-                placeholder="aer_simulator"
-              />
+              <div className="flex items-center space-x-2">
+                <input
+                  type="text"
+                  className="w-full border rounded px-3 py-2"
+                  value={selectedDevice}
+                  onChange={(e) => setSelectedDevice(e.target.value)}
+                  placeholder="aer_simulator"
+                />
+                {warningExecution && (
+                  <AlertTriangle className="text-yellow-500" />
+                )}
+              </div>
+              {warningExecution && (
+                <p className="text-yellow-600 text-sm mt-1">
+                  ⚠️ Execution on <code>aer_simulator</code> is only possible till 29 qubits. Please specify another device.
+                </p>
+              )}
             </div>
 
             <div>
@@ -172,7 +219,7 @@ export const QunicornModal = ({
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="register" label={{ value: "Register", position: "insideBottom", offset: 5 }} />
+                  <XAxis dataKey="register" label={{ value: "Register", position: "insideBottom", offset: -3 }} />
                   <YAxis
                     domain={[0, 100]}
                     label={{ value: "Probabilities", angle: -90, dx: 0, dy: 30, position: "insideLeft" }}
@@ -183,10 +230,12 @@ export const QunicornModal = ({
               </ResponsiveContainer>
             )}
 
-            {progress !== 100 && <div style={{ marginTop: "20px" }}>
-              <progress value={progress || 0} max={100} style={{ width: "100%" }} />
-              <p>{progress || 0}%</p>
-            </div>}
+            {progress !== 100 && (
+              <div style={{ marginTop: "20px" }}>
+                <progress value={progress || 0} max={100} style={{ width: "100%" }} />
+                <p>{progress || 0}%</p>
+              </div>
+            )}
           </div>
         )}
       </div>

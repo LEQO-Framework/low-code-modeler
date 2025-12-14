@@ -87,6 +87,7 @@ export const QubitNode = memo((node: Node) => {
             setOutputs={setOutputs}
             edges={edges}
             sizeError={sizeError}
+            sizeRequired={true}
             outputIdentifierError={outputIdentifierError}
             updateNodeValue={updateNodeValue}
             setOutputIdentifierError={setOutputIdentifierError}
