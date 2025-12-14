@@ -176,6 +176,16 @@ function App() {
   const [executed, setAlreadyExecuted] = useState(false);
   const [jobId, setJobId] = useState(null);
 
+  globalThis.setNisqAnalyzerEndpoint = setNisqAnalyzerEndpoint;
+  globalThis.setQunicornEndpoint = setQunicornEndpoint;
+  globalThis.setLowcodeBackendEndpoint = setLowcodeBackendEndpoint;
+  globalThis.setPatternAtlasUiEndpoint = setPatternAtlasUiEndpoint;
+  globalThis.setPatternAtlasApiEndpoint = setPatternAtlasApiEndpoint;
+  globalThis.setQcAtlasEndpoint = setQcAtlasEndpoint;
+  globalThis.setGithubRepositoryOwner = setGithubRepositoryOwner;
+  globalThis.setGithubRepositoryName = setGithubRepositoryName;
+  globalThis.setGithubBranch = setGithubBranch;
+  globalThis.setGithubToken = setGithubToken;
 
   const togglePalette = () => {
     setIsPaletteOpen((prev) => !prev);
@@ -1177,7 +1187,7 @@ function App() {
     }
   }
 
-  async function handleSaveClick(upload) {
+  async function handleSaveClick() {
     if (!reactFlowInstance) {
       console.error("React Flow instance is not initialized.");
       return;
@@ -1196,8 +1206,15 @@ function App() {
 
     const flowWithMetadata = { metadata: validMetadata, ...flow };
 
-    localStorage.setItem(flowKey, JSON.stringify(flowWithMetadata));
-    console.log("Flow saved:", flowWithMetadata);
+    const event = new CustomEvent("lcm-save", {
+      cancelable: true,
+      detail: flowWithMetadata,
+    });
+    const defaultAction = document.dispatchEvent(event);
+    console.log(`defaultAction: ${defaultAction}`);
+    if (!defaultAction)
+      return;
+
     // Create a downloadable JSON file
     const jsonBlob = new Blob([JSON.stringify(flowWithMetadata, null, 2)], {
       type: "application/json",
@@ -1211,9 +1228,7 @@ function App() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(downloadUrl);
-    if (upload) {
-      await uploadToGitHub();
-    }
+    console.log("Flow saved:", flowWithMetadata);
   }
 
   function handleRestoreClick() {
@@ -1221,6 +1236,45 @@ function App() {
       console.error("React Flow instance is not initialized.");
       return;
     }
+
+    function restoreFlow(flow) {
+      console.log("Restoring flow:", flow);
+      if (flow.nodes) {
+	reactFlowInstance.setNodes(
+	  flow.nodes.map((node: Node) => ({
+	    ...node,
+	    data: {
+	      ...node.data,
+	    },
+	  }))
+	);
+	console.log("Nodes restored.");
+      }
+      if (flow.edges) {
+	reactFlowInstance.setEdges(flow.edges || []);
+	console.log("Edges restored.");
+      }
+
+
+      const { x = 0, y = 0, zoom = 1 } = flow.viewport || {};
+      reactFlowInstance.setViewport({ x, y, zoom });
+
+      if (flow.metadata) {
+        setMetadata(flow.metadata);
+        console.log("Metadata restored:", flow.metadata);
+      }
+    }
+
+    const event = new CustomEvent("lcm-open", {
+      cancelable: true,
+      detail: {
+	restoreFlow
+      },
+    });
+    const defaultAction = document.dispatchEvent(event);
+    console.log(`defaultAction: ${defaultAction}`);
+    if (!defaultAction)
+      return;
 
     const fileInput = document.createElement("input");
     fileInput.type = "file";
@@ -1238,31 +1292,7 @@ function App() {
         try {
           const flow = JSON.parse(e.target?.result as string);
 
-          console.log("Restoring flow:", flow);
-          if (flow.nodes) {
-            reactFlowInstance.setNodes(
-              flow.nodes.map((node: Node) => ({
-                ...node,
-                data: {
-                  ...node.data,
-                },
-              }))
-            );
-            console.log("Nodes restored.");
-          }
-          if (flow.edges) {
-            reactFlowInstance.setEdges(flow.edges || []);
-            console.log("Edges restored.");
-          }
-
-
-          const { x = 0, y = 0, zoom = 1 } = flow.viewport || {};
-          reactFlowInstance.setViewport({ x, y, zoom });
-
-          if (flow.metadata) {
-            setMetadata(flow.metadata);
-            console.log("Metadata restored:", flow.metadata);
-          }
+	  restoreFlow(flow);
         } catch (error) {
           console.error("Error parsing JSON file:", error);
           alert("Invalid JSON file. Please ensure it is a valid flow file.");
@@ -1518,7 +1548,7 @@ function App() {
 
       <div className="toolbar-container">
         <Toolbar
-          onSave={() => handleSaveClick(false)}
+          onSave={handleSaveClick}
           onRestore={handleRestoreClick}
           onSaveAsSVG={handleSaveAsSVG}
           onOpenConfig={handleOpenConfig}
