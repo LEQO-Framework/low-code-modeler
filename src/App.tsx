@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import ReactFlow, {
   Background,
   BackgroundVariant,
@@ -219,6 +219,7 @@ function App() {
   }));
 
   const ref = useRef(null);
+  const hasLoadedFromUrl = useRef(false);
 
   const onDragOver = React.useCallback(
     (event: React.DragEvent<HTMLDivElement>) => {
@@ -1153,7 +1154,37 @@ function App() {
   );
 
   const [modeledDiagram, setModeledDiagram] = useState(null);
-  // Function to load the flow
+
+  useEffect(() => {
+    if (!reactFlowInstance || hasLoadedFromUrl.current) return;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const loadUrl = urlParams.get("load-url");
+    if (!loadUrl) return;
+
+    hasLoadedFromUrl.current = true;
+
+    fetch(loadUrl)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Failed to fetch model: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then((modelData) => {
+        const flowData = {
+          ...modelData,
+          initialEdges: modelData.edges || modelData.initialEdges
+        };
+        loadFlow(flowData);
+        showToast("Model loaded successfully from URL", "success");
+      })
+      .catch((error) => {
+        showToast(`Error loading model from URL: ${error.message}`, "error");
+        hasLoadedFromUrl.current = false;
+      });
+  }, [reactFlowInstance]);
+
   const loadFlow = (flow: any) => {
     if (!reactFlowInstance) {
       console.error("React Flow instance is not initialized.");
