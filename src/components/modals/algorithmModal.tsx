@@ -1,12 +1,13 @@
 import { useState } from "react";
 import Modal from "./Modal";
-import { PatternGraphModal } from "./patternGraphModal";
+import { PatternGraphModal, PatternRef } from "./patternGraphModal";
 
 export interface AlgorithmItem {
   id: string;
   name: string;
   description: string;
   patternGraphPng?: string;
+  patterns?: PatternRef[];
 }
 
 interface DetectAlgorithmModalProps {
@@ -17,6 +18,7 @@ interface DetectAlgorithmModalProps {
   quantumAlgorithms: AlgorithmItem[];
 
   onSelectAlgorithm: (algorithm: AlgorithmItem, type: "classical" | "quantum") => void;
+  patternAtlasPluginEndpoint: string;
 }
 
 
@@ -26,6 +28,7 @@ export const DetectAlgorithmModal = ({
   classicalAlgorithms,
   quantumAlgorithms,
   onSelectAlgorithm,
+  patternAtlasPluginEndpoint,
 }: DetectAlgorithmModalProps) => {
   const [graphModalOpen, setGraphModalOpen] = useState(false);
   const [selectedAlgorithm, setSelectedAlgorithm] = useState<AlgorithmItem | null>(null);
@@ -100,6 +103,8 @@ export const DetectAlgorithmModal = ({
         onClose={() => setGraphModalOpen(false)}
         imageUrl={selectedAlgorithm?.patternGraphPng ?? null}
         title={selectedAlgorithm?.name}
+        patterns={selectedAlgorithm?.patterns ?? []}
+        patternAtlasPluginEndpoint={patternAtlasPluginEndpoint}
       />
     </>
   );

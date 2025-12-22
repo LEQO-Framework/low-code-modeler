@@ -34,6 +34,7 @@ import ExperienceModePanel from "./components/modals/experienceLevelModal";
 import { HistoryItem, HistoryModal } from "./components/modals/historyModal";
 import { ValidationModal } from "./components/modals/validationModal";
 import { AlgorithmItem, DetectAlgorithmModal } from "./components/modals/algorithmModal";
+import { PATTERNS } from "./constants/patterns";
 
 const selector = (state: {
   nodes: Node[];
@@ -112,6 +113,7 @@ function App() {
   const [qcAtlasEndpoint, setQcAtlasEndpoint] = useState(
     import.meta.env.VITE_QC_ATLAS || "http://localhost:6626"
   );
+  const patternAtlasPluginEndpoint = "http://localhost:5005/plugins/pattern-atlas@v0-0-0/ui/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d";
 
 
   const [activeTab, setActiveTab] = useState("editor");
@@ -197,114 +199,186 @@ function App() {
       name: "Swap Test",
       description: "Measures the similarity between two quantum states.",
       patternGraphPng: "patterns/swap-test.png",
+      patterns: [
+        PATTERNS.swapTest,
+      ],
     },
     {
       id: "hadamard-test",
       name: "Hadamard Test",
       description: "Estimates expectation values of unitary operators.",
       patternGraphPng: "patterns/hadamard-test.png",
+      patterns: [
+        PATTERNS.hadamardTest,
+      ],
     },
     {
       id: "grover",
       name: "Grover’s Algorithm",
       description: "Provides quadratic speedup for unstructured search problems.",
       patternGraphPng: "patterns/grover.png",
+      patterns: [
+        PATTERNS.grover, PATTERNS.oracle, PATTERNS.amplitudeAmplification, PATTERNS.initialization, 
+      ],
     },
     {
       id: "quantum-clustering",
       name: "Quantum Clustering",
       description: "Uses quantum techniques to perform clustering on datasets.",
       patternGraphPng: "patterns/quantum-clustering.png",
+      patterns: [
+        PATTERNS.quantumClustering, PATTERNS.hybridModule, PATTERNS.qke, PATTERNS.quantClassicSplit,
+        PATTERNS.qramEncoding,
+      ],
     },
     {
       id: "quantum-classification",
       name: "Quantum Classification",
       description: "Applies quantum circuits to supervised classification tasks.",
       patternGraphPng: "patterns/quantum-classification.png",
+      patterns: [
+        PATTERNS.quantumClassification, PATTERNS.vqa, PATTERNS.qramEncoding,
+      ],
     },
     {
       id: "uniform-superposition",
       name: "Uniform Superposition",
       description: "Creates an equal superposition of all basis states.",
       patternGraphPng: "patterns/uniform-superposition.png",
+      patterns: [
+        PATTERNS.uniformSuperposition, PATTERNS.oracle, PATTERNS.basisEncoding, PATTERNS.initialization,
+        PATTERNS.funcTable, PATTERNS.quamEcoding, PATTERNS.standaloneCircuitExec,
+        PATTERNS.creatingEntanglement,
+      ],
     },
     {
       id: "matrix-encoding",
       name: "Matrix Encoding",
       description: "Encodes classical matrices into quantum states.",
       patternGraphPng: "patterns/matrix-encoding.png",
+      patterns: [
+        PATTERNS.matrixEncoding, PATTERNS.qpe,
+      ],
     },
     {
       id: "basis-encoding",
       name: "Basis Encoding",
       description: "Encodes classical data directly into computational basis states.",
       patternGraphPng: "patterns/basis-encoding.png",
+      patterns: [
+        PATTERNS.basisEncoding, PATTERNS.qnn, PATTERNS.aoa, PATTERNS.qramEncoding, PATTERNS.qpe,
+        PATTERNS.initialization, PATTERNS.quamEcoding, PATTERNS.uniformSuperposition, PATTERNS.qaoa,
+      ],
     },
     {
       id: "angle-encoding",
       name: "Angle Encoding",
       description: "Encodes data into rotation angles of quantum gates.",
       patternGraphPng: "patterns/angle-encoding.png",
+      patterns: [
+        PATTERNS.angleEncoding, PATTERNS.amplitudeEncoding, PATTERNS.initialization,
+        PATTERNS.qnn,
+      ],
     },
     {
       id: "amplitude-encoding",
       name: "Amplitude Encoding",
       description: "Encodes data into the amplitudes of a quantum state.",
       patternGraphPng: "patterns/amplitude-encoding.png",
+      patterns: [
+        PATTERNS.amplitudeEncoding, PATTERNS.schmidtDecomp, PATTERNS.initialization,
+        PATTERNS.qramEncoding, PATTERNS.angleEncoding, PATTERNS.qpe,
+      ],
     },
     {
       id: "creating-entanglement",
       name: "Creating Entanglement",
       description: "Generates entanglement between multiple qubits.",
       patternGraphPng: "patterns/creating-entanglement.png",
+      patterns: [
+        PATTERNS.creatingEntanglement, PATTERNS.qramEncoding, PATTERNS.initialization,
+        PATTERNS.uniformSuperposition, PATTERNS.funcTable,
+      ],
     },
     {
       id: "amplitude-amplification",
       name: "Amplitude Amplification",
       description: "Generalization of Grover’s algorithm to amplify target states.",
       patternGraphPng: "patterns/amplitude-amplification.png",
+      patterns: [
+        PATTERNS.amplitudeAmplification, PATTERNS.grover, PATTERNS.postSelectMeasurement,
+        PATTERNS.speedVerify, PATTERNS.phaseShift, PATTERNS.funcTable,
+      ],
     },
     {
       id: "initialization",
       name: "Initialization",
       description: "Prepares qubits in a desired initial quantum state.",
       patternGraphPng: "patterns/initialization.png",
+      patterns: [
+        PATTERNS.initialization, PATTERNS.biasedInitState, PATTERNS.oracle, PATTERNS.qramEncoding,
+        PATTERNS.basisEncoding, PATTERNS.schmidtDecomp, PATTERNS.quamEcoding, PATTERNS.angleEncoding,
+        PATTERNS.vqa, PATTERNS.uniformSuperposition, PATTERNS.creatingEntanglement, PATTERNS.amplitudeEncoding,
+        PATTERNS.wireCut, PATTERNS.grover, PATTERNS.quantClassicSplit, PATTERNS.funcTable,
+        PATTERNS.preTrainedFeatExtr, PATTERNS.preDepExecution,
+      ],
     },
     {
       id: "qft",
       name: "Quantum Fourier Transform (QFT)",
       description: "Performs the quantum analogue of the discrete Fourier transform.",
       patternGraphPng: "patterns/qft.png",
+      patterns: [
+        PATTERNS.qft,
+      ],
     },
     {
       id: "mid-circuit-measurement",
       name: "Mid-Circuit Measurement",
       description: "Measures qubits during circuit execution without ending the circuit.",
       patternGraphPng: "patterns/mid-circuit-measurement.png",
+      patterns: [
+        PATTERNS.midCircuitMeasurement,
+      ],
     },
     {
       id: "dynamic-circuits",
       name: "Dynamic Circuits",
       description: "Allows circuit structure to change based on measurement outcomes.",
       patternGraphPng: "patterns/dynamic-circuits.png",
+      patterns: [
+        PATTERNS.dynamicCircuits,
+      ],
     },
     {
       id: "vqe",
       name: "Variational Quantum Eigensolver (VQE)",
       description: "Hybrid algorithm for estimating ground state energies.",
       patternGraphPng: "patterns/vqe.png",
+      patterns: [
+        PATTERNS.vqe, PATTERNS.circuitCutting, PATTERNS.gateCut, PATTERNS.prioExecution,
+        PATTERNS.warmStart, PATTERNS.wireCut, PATTERNS.vqa, PATTERNS.preDepExecution,
+      ],
     },
     {
       id: "qpe",
       name: "Quantum Phase Estimation (QPE)",
       description: "Estimates the phase (eigenvalue) of a unitary operator.",
       patternGraphPng: "patterns/qpe.png",
+      patterns: [
+        PATTERNS.qpe, PATTERNS.matrixEncoding, PATTERNS.basisEncoding, PATTERNS.amplitudeEncoding,
+      ],
     },
     {
       id: "oracle",
       name: "Oracle",
       description: "Problem-specific black-box function used in quantum algorithms.",
       patternGraphPng: "patterns/oracle.png",
+      patterns: [
+        PATTERNS.oracle, PATTERNS.uncompute, PATTERNS.phaseShift, PATTERNS.initialization,
+        PATTERNS.quantModuleTemplate, PATTERNS.grover, PATTERNS.uniformSuperposition,
+        PATTERNS.speedVerify, PATTERNS.funcTable,
+      ],
     },
   ];
 
@@ -1778,6 +1852,7 @@ function App() {
         classicalAlgorithms={classicalAlgorithms}
         quantumAlgorithms={quantumAlgorithms}
         onSelectAlgorithm={handleSelectAlgorithm}
+        patternAtlasPluginEndpoint={patternAtlasPluginEndpoint}
       />
 
       <HistoryModal
