@@ -101,7 +101,6 @@ function App() {
     left: 0,
   });
 
-  //const [contextMenu, setContextMenu] = useState(null);
 
   const onNodeContextMenu = useCallback(
     (event: React.MouseEvent, node: Node) => {
@@ -111,8 +110,6 @@ function App() {
         nodeId: node.id,
         top: event.clientY,
         left: event.clientX,
-        //top: node.position.y+0.5*node.height, //passt nicht
-        //left: node.position.x-0.5*node.width, //passt nicht
       });
     }, 
     []
@@ -282,10 +279,8 @@ function App() {
 
   const [isProcessingModalOpen, setProcessingModalOpen] = useState(false);
 
-  // TODO: Change here to workflow
   const [compilationTarget, setCompilationTarget] = useState("qasm");
   const handleClose = () => {
-    // reset all values
     setIsQunicornOpen(false);
     setModalStep(1);
     setChartData(null);
@@ -306,7 +301,6 @@ function App() {
     setModalOpen(true);
   }
   const sendToBackend = async () => {
-    //setLoading(true);
     setModalOpen(false);
     setProcessingModalOpen(true);
 
@@ -341,7 +335,6 @@ function App() {
 
       console.log("Initial compile response:", jsonData);
 
-      // Polling function returns a Promise
       const pollStatus = () => {
         return new Promise<void>((resolve, reject) => {
           let attempts = 0;
@@ -366,7 +359,6 @@ function App() {
               location = statusData["result"];
 
               if (statusData.status === "completed") {
-                //showToast("Result for model " + id + " is available.", "success");
                 console.log("Operation completed successfully.");
                 return resolve();
               }
@@ -389,7 +381,6 @@ function App() {
         });
       };
 
-      // Wait for polling to complete
       await pollStatus();
 
       console.log("Fetching final result from:", location);
@@ -399,9 +390,6 @@ function App() {
         headers: { "Content-Type": "application/json" },
       });
 
-      // TODO: change for workflow
-      // TODO: add modals for service deployment
-      // TODO: add QRMS upload
       const openqasmCode = await result.text();
       console.log("Received OpenQASM code:", openqasmCode);
 
@@ -479,7 +467,6 @@ function App() {
     const outputIds = new Map<string, string>();
     const nodesById = new Map(flow.nodes?.map((n) => [n.id, n]));
 
-    // Map targetNodeId => sourceNodeIds[]
     const nodeConnections = new Map();
     flow.edges?.forEach((edge) => {
       if (!nodeConnections.has(edge.target)) nodeConnections.set(edge.target, []);
@@ -490,7 +477,6 @@ function App() {
       const { outputIdentifier, label, inputs, outputSize, condition, operator } = node.data || {};
       const inputCount = inputs?.length || 0;
 
-      // outputIdentifier checks
       if (outputIdentifier && /^[0-9]/.test(outputIdentifier)) {
         errors.push({
           nodeId: node.id,
@@ -510,7 +496,6 @@ function App() {
         }
       }
 
-      // Gate / Operator validation
       const twoQubitGates = ["CNOT", "SWAP", "CZ", "CY", "CH", "CP(λ)", "CRX(θ)", "CRY(θ)", "CRZ(θ)", "CU(θ,φ,λ,γ)"];
       const threeQubitGates = ["Toffoli", "CSWAP"];
       const minMaxOperators = ["Min", "Max"];
@@ -551,7 +536,6 @@ function App() {
 
       const connectedSources = nodeConnections.get(node.id) || [];
 
-      // StatePreparationNode classical input check
       if (node.type === "statePreparationNode") {
         const hasClassical = connectedSources.some((srcId) => {
           const sourceNode: any = nodesById.get(srcId);
@@ -566,7 +550,6 @@ function App() {
         }
       }
 
-      // Control structures
       if (node.type === "ifElseNode") {
         const hasClassical = connectedSources.some((srcId) => {
           const sourceNode: any = nodesById.get(srcId);
@@ -595,7 +578,6 @@ function App() {
         });
       }
 
-      // Custom Nodes
       if (node.type === "algorithmNode" || node.type === "classicalAlgorithmNode") {
         const expectedInputs = node.data?.numberInputs || 0;
         const actualInputs = connectedSources.length;
@@ -643,9 +625,7 @@ function App() {
       let program = {
         "programs": [
           {
-            //"quantumCircuit": "OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[2];\ncreg meas[2];\nh q[0];\ncx q[0],q[1];\nbarrier q[0],q[1];\nmeasure q[0] -> meas[0];\nmeasure q[1] -> meas[1];",
             "quantumCircuit": openqasmCode,
-            //"quantumCircuit": "OPENQASM 2.0;include 'qelib1.inc';qreg q[6];creg c[6];gate oracle(q0, q1, q2, q3, q4, q5) {    x q0;    x q1;    x q2;    x q3;    x q4;    x q5;        h q5;    ccx q3, q4, q5;    cx q2, q3;    cx q1, q2;    cx q0, q1;    h q5;    x q0;    x q1;    x q2;    x q3;    x q4;    x q5;}gate diffusion(q0, q1, q2, q3, q4, q5) {    h q0;    h q1;    h q2;    h q3;    h q4;    h q5;        x q0;    x q1;    x q2;    x q3;    x q4;    x q5;        h q5;    ccx q3, q4, q5;    cx q2, q3;    cx q1, q2;    cx q0, q1;    h q5;        x q0;    x q1;    x q2;    x q3;    x q4;    x q5;        h q0;    h q1;    h q2;    h q3;    h q4;    h q5;}h q[0];h q[1];h q[2];h q[3];h q[4];h q[5];oracle(q[0], q[1], q[2], q[3], q[4], q[5]);diffusion(q[0], q[1], q[2], q[3], q[4], q[5]);oracle(q[0], q[1], q[2], q[3], q[4], q[5]);diffusion(q[0], q[1], q[2], q[3], q[4], q[5]);oracle(q[0], q[1], q[2], q[3], q[4], q[5]);diffusion(q[0], q[1], q[2], q[3], q[4], q[5]);oracle(q[0], q[1], q[2], q[3], q[4], q[5]);diffusion(q[0], q[1], q[2], q[3], q[4], q[5]);oracle(q[0], q[1], q[2], q[3], q[4], q[5]);diffusion(q[0], q[1], q[2], q[3], q[4], q[5]);oracle(q[0], q[1], q[2], q[3], q[4], q[5]);diffusion(q[0], q[1], q[2], q[3], q[4], q[5]);measure q[0] -> c[0];measure q[1] -> c[1];measure q[2] -> c[2];measure q[3] -> c[3];measure q[4] -> c[4];measure q[5] -> c[5];",
 
             "assemblerLanguage": "QASM3",
             "pythonFilePath": "",
@@ -665,7 +645,6 @@ function App() {
       console.log(data["id"]);
       setDeploymentId(data["id"]);
       setModalStep(2);
-      //pollStatus(response["Location"]);
     } catch (error) {
       console.error("Error sending data:", error);
       setLoading(false);
@@ -721,7 +700,6 @@ function App() {
 
       let getdata = null;
 
-      // Initial fetch
       let getresponse = await fetch(url, {
         method: "GET",
         headers: { "Content-Type": "application/json" },
@@ -791,7 +769,6 @@ function App() {
         }));
         setChartData(chartData);
       }, 2000);
-      //pollStatus(response["Location"]);
     } catch (error) {
       console.error("Error sending data:", error);
       setLoading(false);
@@ -841,25 +818,20 @@ function App() {
       console.log(node);
       let nodeT = nodes[0];
       nodes.forEach((nd) => {
-        // Check if there's a group node in the array of nodes on the screen
         if ((nd.type === "controlStructureNode" || nd.type === "ifElseNode") && node.type !== "controlStructureNode" && node.type !== "ifElseNode") {
-          //safety check to make sure there's a height and width
           console.log(node);
           console.log(nd.id);
           let intersectionNodes = reactFlowInstance.getIntersectingNodes(node).map((n) => n.id);
           console.log(intersectionNodes)
 
-          // Check if the dragged node is inside the group
           if (intersectionNodes[0] == nd.id) {
             console.log(nd);
             const rec = { height: nd.height, width: nd.width, ...nd.position };
 
-            //Check if dragged node isn't already a child to the group
             if (!node.parentNode) {
 
               console.log("update node")
               node.parentNode = nd.id;
-              // node cannot be moved outside parent
               node.extent = "parent";
               node.expandParent = true;
 
@@ -869,13 +841,11 @@ function App() {
                 y: node.positionAbsolute.y - nd.position.y,
               };
 
-              // Get the main node
               const mainNode = document.querySelector<HTMLDivElement>(
                 'div.react-flow__node-controlStructureNode'
               );
 
               if (mainNode) {
-                // Get the first child div (grand-parent where you set width)
                 const firstChild = mainNode.querySelector<HTMLDivElement>(
                   'div.grand-parent'
                 );
@@ -885,24 +855,18 @@ function App() {
                 if (firstChild) {
                   console.log()
 
-                  // Get the current minWidth from computed styles
                   const currentMinWidth = window.getComputedStyle(firstChild).minWidth;
 
-                  // Get the current minWidth from computed styles
                   const currentHeight = window.getComputedStyle(firstChild).height;
-                  // Parse it into a number
                   const currentMinWidthValue = parseFloat(currentMinWidth);
-                  // Add 100 to it
                   const newMinWidth = currentMinWidthValue + 100;
 
-                  // Parse it into a number
                   const currentHeightValue = parseFloat(currentHeight);
                   console.log(currentHeightValue);
                   console.log(node.height)
 
                   const newHeight = node.height + 200 > currentHeightValue ? currentHeightValue + 100 : currentHeightValue + 100;
 
-                  // Set it back with "px"
                   firstChild.style.minWidth = `${newMinWidth}px`;
                   firstChild.style.height = `${newHeight}px`;
                   console.log(`Updated minWidth to ${newMinWidth}px`);
@@ -912,20 +876,16 @@ function App() {
               }
 
 
-              //nd.style.width = 10;
               console.log(node);
-              //intersectionNodes[0].width = 1000;
               nodeT = node;
               updateParent(node.id, nd.id, node.position);
               updateChildren(node.parentNode, node.id);
-              //updateNodeValue(node.id, "hidden", "true")
               updateNodeValue(node.id, "position", node.position);
               updateNodeValue(node.id, "scope", "if");
             }
           }
         }
       });
-      //setNodes(nodeT);
       if (node.id == contextMenu.nodeId){
         console.log("moving context menu for node", node.id)
         setContextMenu((prev) => ({ ...prev, left: evt.clientX, top: evt.clientY}));
@@ -943,7 +903,6 @@ function App() {
 
       handleOnDrop(event, reactFlowWrapper, reactFlowInstance, setNodes);
 
-      //setContextMenu((prev) => ({ ...prev, left: event.clientX, top: event.clientY,}));
     },
     [reactFlowInstance, setNodes],
   );
@@ -1057,7 +1016,6 @@ function App() {
 
     localStorage.setItem(flowKey, JSON.stringify(flowWithMetadata));
     console.log("Flow saved:", flowWithMetadata);
-    // Create a downloadable JSON file
     const jsonBlob = new Blob([JSON.stringify(flowWithMetadata, null, 2)], {
       type: "application/json",
     });
@@ -1097,31 +1055,8 @@ function App() {
         try {
           const flow = JSON.parse(e.target?.result as string);
 
-          console.log("Restoring flow:", flow);
-          if (flow.nodes) {
-            reactFlowInstance.setNodes(
-              flow.nodes.map((node: Node) => ({
-                ...node,
-                data: {
-                  ...node.data,
-                },
-              }))
-            );
-            console.log("Nodes restored.");
-          }
-          if (flow.edges) {
-            reactFlowInstance.setEdges(flow.edges || []);
-            console.log("Edges restored.");
-          }
-
-
-          const { x = 0, y = 0, zoom = 1 } = flow.viewport || {};
-          reactFlowInstance.setViewport({ x, y, zoom });
-
-          if (flow.metadata) {
-            setMetadata(flow.metadata);
-            console.log("Metadata restored:", flow.metadata);
-          }
+          console.log("Restoring flow from file:", flow);
+          loadFlow(flow);
         } catch (error) {
           console.error("Error parsing JSON file:", error);
           alert("Invalid JSON file. Please ensure it is a valid flow file.");
@@ -1143,10 +1078,8 @@ function App() {
 
   const handleClick = React.useCallback(
     (event: React.MouseEvent, node: Node) => {
-      // Prevent the default action (if any)
       event.preventDefault();
 
-      // Set the selected node
       setSelectedNode(node);
 
     },
@@ -1190,29 +1123,59 @@ function App() {
       console.error("React Flow instance is not initialized.");
       return;
     }
-    console.log(flow.initialEdges)
-    if (flow.initialEdges) {
-      reactFlowInstance.setEdges(flow.initialEdges);
-      console.log("Edges loaded.");
-    }
-    console.log(flow.nodes)
-    if (flow.nodes) {
-      reactFlowInstance.setNodes(
-        flow.nodes?.map((node: Node) => ({
-          ...node,
-          data: {
-            ...node.data,
-          },
-        }))
-      );
-    }
-    console.log(nodes);
 
-    // Reset the viewport (optional based on your use case)
+    const edges = flow.initialEdges || flow.edges || [];
+    const convertedEdges = edges.map((edge: any) => {
+      if (Array.isArray(edge.source)) {
+        return {
+          id: edge.id || `${edge.source[0]}-${edge.target[0]}`,
+          source: edge.source[0],
+          target: edge.target[0],
+        };
+      }
+      return edge;
+    });
+
+    if (convertedEdges.length > 0) {
+      reactFlowInstance.setEdges(convertedEdges);
+      console.log("Edges loaded:", convertedEdges.length);
+    }
+
+    if (flow.nodes) {
+      const convertedNodes = flow.nodes.map((node: Node, index: number) => {
+        const { id, type, position, data, label, ...backendProps } = node;
+
+        let frontendType = type;
+        let frontendData = data || { ...backendProps };
+
+        if (type === "qubit") {
+          frontendType = "gateNode";
+          frontendData = { ...frontendData, label: label || "Qubit Circuit" };
+        } else if (type === "gate") {
+          frontendType = "gateNode";
+          frontendData = { ...frontendData, label: label || backendProps.gate?.toUpperCase() };
+        } else if (type === "measure") {
+          frontendType = "measurementNode";
+          frontendData = { ...frontendData, label: label || "Measurement" };
+        } else {
+          frontendType = type.endsWith('Node') ? type : type + 'Node';
+          frontendData = { ...frontendData, label: label };
+        }
+
+        return {
+          id,
+          type: frontendType,
+          position: position || { x: 100 + index * 150, y: 100 + index * 50 },
+          data: frontendData,
+        };
+      });
+      reactFlowInstance.setNodes(convertedNodes);
+      console.log("Nodes loaded:", convertedNodes.length);
+    }
+
     const { x = 0, y = 0, zoom = 1 } = flow.viewport || {};
     reactFlowInstance.setViewport({ x, y, zoom });
 
-    // Set the metadata (if any) - assuming initialDiagram has metadata
     if (flow.metadata) {
       setMetadata(flow.metadata);
       console.log("Metadata loaded:", flow.metadata);
@@ -1248,11 +1211,9 @@ function App() {
     console.log(screenY);
     console.log(reactFlowInstance.getZoom())
 
-    // Find closest nodes for alignment
     currentNodes.forEach((otherNode) => {
       if (otherNode.id === node.id) return;
 
-      // Check for horizontal alignment
       if (Math.abs(node.position.y - otherNode.position.y) === snapThreshold) {
         console.log("horizontalLine")
         const screen = reactFlowInstance.flowToScreenPosition({ x: node.position.x, y: node.position.y });
@@ -1261,7 +1222,6 @@ function App() {
       }
     });
 
-    // Only update helperLines if there's alignment
     if (verticalLine !== null) {
       setHelperLines({
         x: verticalLine,
@@ -1286,11 +1246,9 @@ function App() {
     console.log(node.position.x)
 
 
-    //findGuidelines(node);
     console.log(reactFlowInstance)
     const intersections = reactFlowInstance.getIntersectingNodes(node).map((n) => n.id);
     console.log(intersections)
-    //updateNodeValue(node.id, "parentNode", intersections)
     console.log("trest")
     console.log(intersections)
     console.log(nodes);
@@ -1310,7 +1268,6 @@ function App() {
 
         if (isForbidden) {
           const maxY = relativeY > nd.height / 2;
-          //node.position.y = relativeY ;
 
           console.warn("Cannot drop node in the right half due to 'if' constraint.");
           return;
@@ -1318,8 +1275,6 @@ function App() {
         }
       }
     })
-    // move contextmenu with dragged node if it belongs to that node
-    // if other node is dragged: make context menu invisible
     if (node.id == contextMenu.nodeId){
       console.log("drag contextmenu to nodeid: ", node.id)
       setContextMenu((prev) => ({ ...prev, top: event.clientY, left: event.clientX}))
@@ -1414,7 +1369,6 @@ function App() {
           uploadDiagram={() => uploadToGitHub()}
           onLoadJson={handleLoadJson}
           sendToBackend={handleOpenValidation}
-          //sendToQunicorn={() => setIsQunicornOpen(true)}
           openHistory={openHistoryModal}
           startTour={() => { startTour(); }}
         />
