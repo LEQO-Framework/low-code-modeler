@@ -61,10 +61,11 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   const incrementNodeDataField = useCallback((field: string, min_value: number) => { //TODO: richtiges Feld verwenden (bei merger: numberInputs) --> Feld als Argument übergeben?
     const node = getNode(id);
     //const field = "numberQuantumInputs";
+    console.log("[INCREMENT] field value", node.data[field], "field value type", typeof node.data[field])
     setNodes((nodes) =>
       nodes.map((n) =>
         n.id === id
-          ? { ...n, data: { ...n.data, [field]: n.data[field]? n.data[field] + 1 : min_value+1 } }
+          ? { ...n, data: { ...n.data, [field]: n.data[field]? Number(n.data[field]) + 1 : min_value+1 } }
           : n
       )
     );
@@ -72,10 +73,11 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
 
   const decrementNodeDataField = useCallback((field: string, min_value: number) => {
     const node = getNode(id);
+    console.log("[DECREMENT] field value", node.data[field], "field value type", typeof node.data[field])
     setNodes((nodes) =>
       nodes.map((n) =>
         n.id === id
-          ? { ...n, data: { ...n.data, [field]: n.data[field]>min_value? n.data[field] - 1 : min_value } }
+          ? { ...n, data: { ...n.data, [field]: Number(n.data[field])>min_value? Number(n.data[field]) - 1 : min_value } }
           : n
       )
     );

@@ -118,7 +118,7 @@ export const TextPanel = () => {
         updateNodeValue(selectedNode.id, field, value);
       }
       else if (!isNaN(Number(value))) {
-        selectedNode.data[field] = value;
+        selectedNode.data[field] = Number(value);
         updateNodeValue(selectedNode.id, field, value);
       }
 
@@ -283,10 +283,10 @@ export const TextPanel = () => {
                     className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
                   >
                     <option value="+">+</option>
-                    <option value="-">-</option>
+                    {/* <option value="-">-</option>
                     <option value="/">/</option>
                     <option value="*">*</option>
-                    <option value="**">**</option>
+                    <option value="**">**</option> */}
                   </select>
                 </div>
               </>
@@ -554,10 +554,10 @@ export const TextPanel = () => {
             </label>
             <div className="mt-1">
               <input
-                type="text"
+                type="number"
                 id="numberQuantumInputs"
                 name="numberQuantumInputs"
-                value={selectedNode.data.numberInputs || ""
+                value={selectedNode.data.numberQuantumInputs || ""
                 }
                 onChange={(e) =>
                   handleNumberChange("numberQuantumInputs", e.target.value)
@@ -575,10 +575,10 @@ export const TextPanel = () => {
             </label>
             <div className="mt-1">
               <input
-                type="text"
+                type="number"
                 id="numberClassicalInputs"
                 name="numberClassicalInputs"
-                value={selectedNode.data.numberInputs || ""
+                value={selectedNode.data.numberClassicalInputs || ""
                 }
                 onChange={(e) =>
                   handleNumberChange("numberClassicalInputs", e.target.value)
@@ -596,7 +596,7 @@ export const TextPanel = () => {
             </label>
             <div className="mt-1">
               <input
-                type="text"
+                type="number"
                 id="numberQuantumOutputs"
                 name="numberQuantumOutputs"
                 value={selectedNode.data.numberQuantumOutputs || ""
@@ -616,13 +616,13 @@ export const TextPanel = () => {
             </label>
             <div className="mt-1">
               <input
-                type="text"
+                type="number"
                 id="numberClassicalOutputs"
                 name="numberClassicalOutputs"
                 value={selectedNode.data.numberClassicalOutputs || ""
                 }
                 onChange={(e) =>
-                  handleNumberChange("numberQuantumClassical", e.target.value)
+                  handleNumberChange("numberClassicalOutputs", e.target.value)
                 }
                 className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
                 placeholder="Enter numberClassicalOutputs"
