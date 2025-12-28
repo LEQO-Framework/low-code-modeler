@@ -127,6 +127,7 @@ export const AlgorithmNode = memo((node: Node) => {
 
     setOutputIdentifierErrors(newErrors);
     setSizeErrors(sizeErrors)
+     updateNodeInternals(node.id);
   }, [nodes, outputs, node.id]);
 
 

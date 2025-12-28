@@ -505,11 +505,15 @@ export const useStore = create<RFState>((set, get) => ({
       }
 
       // only allow connections from inside classical handles 
-      if (nodeDataSource.type === "ifElseNode" && connection.sourceHandle.includes("sideClassicalHandle") && connection.targetHandle.includes("classicalHandle") && nodeDataTarget.parentNode === nodeDataSource.id) {
+      if (nodeDataSource.type === "controlStructureNode" && connection.sourceHandle.includes("classicalHandle") && connection.targetHandle.includes("classicalHandle") && nodeDataTarget.parentNode === nodeDataSource.id) {
         insertEdge = true;
       }
 
       console.log(connection);
+
+      if (node.id === connection.source && connection.sourceHandle.startsWith("quantumHandle") && connection.targetHandle.includes("quantumHandle")) {
+        insertEdge = true;
+      }
 
       if (node.id === connection.source && connection.sourceHandle.startsWith("quantumHandle") && connection.targetHandle.includes("quantumHandle")) {
         insertEdge = true;
@@ -550,6 +554,8 @@ export const useStore = create<RFState>((set, get) => ({
       }
       //label: label
     };
+    console.log(edge)
+    console.log(connection)
 
     console.log("Updating history (onConnect):");
     console.log("Current Nodes:", currentNodes);
@@ -692,8 +698,6 @@ export const useStore = create<RFState>((set, get) => ({
 
           }
         }
-
-
         console.log(edge);
         console.log(updatedNodes)
 
@@ -708,6 +712,8 @@ export const useStore = create<RFState>((set, get) => ({
         });
       });
     } else {
+
+      console.log("Add ege")
 
       set({
         nodes: currentNodes,

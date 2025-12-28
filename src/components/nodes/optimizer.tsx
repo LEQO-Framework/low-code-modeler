@@ -106,8 +106,8 @@ export const OptimizerNode = memo((node: Node) => {
   };
   const label = "Optimizer";
   const iconSrc = iconMap[label];
-    const iconSizeMap = {
-       "Optimizer": { width: 45, height: 45 },
+  const iconSizeMap = {
+    "Optimizer": { width: 45, height: 45 },
     "Classical Arithmetic Operator": { width: 45, height: 45 },
     "Classical Bitwise Operator": { width: 45, height: 45 },
     "Classical Min & Max Operator": { width: 45, height: 45 },
@@ -130,9 +130,9 @@ export const OptimizerNode = memo((node: Node) => {
           style={{ height: `${dynamicHeight}px`, borderRadius: "40px" }}
         >
           <div className="w-full flex items-center" style={{ height: '52px' }}>
-            <div className="w-full bg-orange-300 py-1 px-2 flex items-center" style={{ height: "inherit", borderTopLeftRadius: "28px", borderTopRightRadius: "28px", overflow: "hidden", paddingLeft: '25px',}}
+            <div className="w-full bg-orange-300 py-1 px-2 flex items-center" style={{ height: "inherit", borderTopLeftRadius: "28px", borderTopRightRadius: "28px", overflow: "hidden", paddingLeft: '25px', }}
             >
-             {(() => {
+              {(() => {
                 const { width, height } = iconSizeMap[node.data.label];
                 return (
                   <img
@@ -161,7 +161,7 @@ export const OptimizerNode = memo((node: Node) => {
                   alignItems: 'center',
                   justifyContent: 'flex-start',
                   borderTopRightRadius: '20px',
-                    borderBottomRightRadius: '20px',
+                  borderBottomRightRadius: '20px',
                 }}
               >
                 <Handle
@@ -173,69 +173,69 @@ export const OptimizerNode = memo((node: Node) => {
                 />
                 <span className="text-black text-sm text-center w-full">{node.data.inputs[0]?.outputIdentifier || "iterations"}</span>
               </div>
-               {node.data.label !== consts.classicalLabel + consts.minMaxOperatorLabel && (
+              {node.data.label !== consts.classicalLabel + consts.minMaxOperatorLabel && (
                 <div>
-              <div
-                className="relative p-2 mb-1"
-                style={{
-                  backgroundColor: consts.classicalConstructColor,
-                  width: '120px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'flex-start',
-                  borderTopRightRadius: '20px',
-                  borderBottomRightRadius: '20px',
-                }}
-              >
-                <Handle
-                  type="target"
-                  id={`ancillaHandleOperationInput1${node.id}`}
-                  position={Position.Left}
-                  className="z-10 classical-circle-port-operation !bg-orange-300 !border-black -left-[8px]"
-                  style={{ top: '50%', transform: 'translateY(-50%)' }}
-                />
-                <span className="text-black text-sm text-center w-full">{node.data.inputs[1]?.outputIdentifier || "beta"}</span>
-              </div><div
-                className="relative p-2 mb-1"
-                style={{
-                  backgroundColor: consts.classicalConstructColor,
-                  width: '120px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'flex-start',
-                  borderTopRightRadius: '20px',
-                  borderBottomRightRadius: '20px',
-                }}
-              >
-                <Handle
-                  type="target"
-                  id={`ancillaHandleOperationInput2${node.id}`}
-                  position={Position.Left}
-                  className="z-10 classical-circle-port-operation !bg-orange-300 !border-black -left-[8px]"
-                  style={{ top: '50%', transform: 'translateY(-50%)' }}
-                />
-                <span className="text-black text-sm text-center w-full">{node.data.inputs[1]?.outputIdentifier || "gamma"}</span>
-              </div><div
-                className="relative p-2 mb-1"
-                style={{
-                  backgroundColor: consts.classicalConstructColor,
-                  width: '120px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'flex-start',
-                  borderTopRightRadius: '20px',
-                  borderBottomRightRadius: '20px',
-                }}
-              >
-                <Handle
-                  type="target"
-                  id={`ancillaHandleOperationInput3${node.id}`}
-                  position={Position.Left}
-                  className="z-10 classical-circle-port-operation !bg-orange-300 !border-black -left-[8px]"
-                  style={{ top: '50%', transform: 'translateY(-50%)' }}
-                />
-                <span className="text-black text-sm text-center w-full">{node.data.inputs[1]?.outputIdentifier || "measurements"}</span>
-              </div></div>)}
+                  <div
+                    className="relative p-2 mb-1"
+                    style={{
+                      backgroundColor: consts.classicalConstructColor,
+                      width: '120px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'flex-start',
+                      borderTopRightRadius: '20px',
+                      borderBottomRightRadius: '20px',
+                    }}
+                  >
+                    <Handle
+                      type="target"
+                      id={`classicalHandleOperationInput1${node.id}`}
+                      position={Position.Left}
+                      className="z-10 classical-circle-port-operation !bg-orange-300 !border-black -left-[8px]"
+                      style={{ top: '50%', transform: 'translateY(-50%)' }}
+                    />
+                    <span className="text-black text-sm text-center w-full">{node.data.inputs[1]?.outputIdentifier || "beta"}</span>
+                  </div><div
+                    className="relative p-2 mb-1"
+                    style={{
+                      backgroundColor: consts.classicalConstructColor,
+                      width: '120px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'flex-start',
+                      borderTopRightRadius: '20px',
+                      borderBottomRightRadius: '20px',
+                    }}
+                  >
+                    <Handle
+                      type="target"
+                      id={`classicalHandleOperationInput2${node.id}`}
+                      position={Position.Left}
+                      className="z-10 classical-circle-port-operation !bg-orange-300 !border-black -left-[8px]"
+                      style={{ top: '50%', transform: 'translateY(-50%)' }}
+                    />
+                    <span className="text-black text-sm text-center w-full">{node.data.inputs[1]?.outputIdentifier || "gamma"}</span>
+                  </div><div
+                    className="relative p-2 mb-1"
+                    style={{
+                      backgroundColor: consts.classicalConstructColor,
+                      width: '120px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'flex-start',
+                      borderTopRightRadius: '20px',
+                      borderBottomRightRadius: '20px',
+                    }}
+                  >
+                    <Handle
+                      type="target"
+                      id={`classicalHandleOperationInput3${node.id}`}
+                      position={Position.Left}
+                      className="z-10 classical-circle-port-operation !bg-orange-300 !border-black -left-[8px]"
+                      style={{ top: '50%', transform: 'translateY(-50%)' }}
+                    />
+                    <span className="text-black text-sm text-center w-full">{node.data.inputs[1]?.outputIdentifier || "measurements"}</span>
+                  </div></div>)}
               <div
                 className="relative p-2 mb-1 overflow-visible flex flex-col gap-2"
                 style={{
@@ -247,7 +247,7 @@ export const OptimizerNode = memo((node: Node) => {
                 }}
               >
                 <OutputPort
-                key={`output-port-1`}
+                  key={`output-port-1`}
                   node={node}
                   index={0}
                   type={"classical"}
@@ -262,8 +262,8 @@ export const OptimizerNode = memo((node: Node) => {
                   setSizeError={setSizeError}
                   setSelectedNode={setSelectedNode}
                   active={true} />
-                   <OutputPort
-                   key={`output-port-2`}
+                <OutputPort
+                  key={`output-port-2`}
                   node={node}
                   index={1}
                   type={"classical"}
