@@ -30,7 +30,7 @@ export function handleOnDrop(
   event: React.DragEvent<HTMLDivElement>,
   reactFlowWrapper: any,
   reactFlowInstance: any,
-  setNodes: any,
+  setNodes: any
 ) {
   event.preventDefault();
   if (reactFlowWrapper) {

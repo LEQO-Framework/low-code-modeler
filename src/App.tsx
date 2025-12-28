@@ -13,7 +13,7 @@ import ReactFlow, {
 import "reactflow/dist/style.css";
 import { ContextMenu, CustomPanel, Palette } from "./components";
 import Toolbar from "./components/toolbar";
-import { nodesConfig, tutorial } from "./config/site";
+import { nodesConfig, testDiagram, tutorial } from "./config/site";
 import { useStore } from "./config/store";
 import { useShallow } from "zustand/react/shallow";
 import { handleDragOver, handleOnDrop } from "./lib/utils";
@@ -33,6 +33,8 @@ import { Toast } from "./components/modals/toast";
 import ExperienceModePanel from "./components/modals/experienceLevelModal";
 import { HistoryItem, HistoryModal } from "./components/modals/historyModal";
 import { ValidationModal } from "./components/modals/validationModal";
+import AiModal from "./components/modals/aiModal";
+import Modal from "./components/modals/Modal";
 
 const selector = (state: {
   nodes: Node[];
@@ -45,6 +47,7 @@ const selector = (state: {
   onEdgesChange: any;
   onConnect: any;
   onConnectEnd: any;
+  setAllNodes: (nodes: Node[]) => void;
   setSelectedNode: (node: Node | null) => void;
   updateNodeValue: (nodeId: string, field: string, nodeVal: string) => void;
   updateParent: (nodeId: string, parentId: string, position: any) => void;
@@ -67,6 +70,7 @@ const selector = (state: {
   onEdgesChange: state.onEdgesChange,
   onConnect: state.onConnect,
   onConnectEnd: state.onConnectEnd,
+  setAllNodes: state.setAllNodes,
   setSelectedNode: state.setSelectedNode,
   updateNodeValue: state.updateNodeValue,
   updateParent: state.updateParent,
@@ -168,7 +172,31 @@ function App() {
   const [errorMessage, setErrorMessage] = useState("");
   const [errorJobMessage, setErrorJobMessage] = useState("");
 
+  const [quantumAlgorithmModalStep, setQuantumAlgorithmModalStep] = useState(0);
+  const [quantumAlgorithms, setQuantumAlgorithms] = useState([
+    { name: "Quantum Approximate Optimization Algorithm (QAOA)", configCount: 0, patternGraphPng: "patterns/qaoa.png" },
+    { name: "Variational Quantum Eigensolver (VQE)", configCount: 0, patternGraphPng: "patterns/qaoa.png" },
+    { name: "Grover's Algorithm", configCount: 0, patternGraphPng: "patterns/qaoa.png" },
+  ]);
 
+  const [patternGraph, setPatternGraph] = useState(null);
+
+function viewPatternGraph(algo) {
+  setPatternGraph(algo.patternGraphPng);
+}
+
+
+  const handleQuantumAlgorithmModalClose = () => {
+    if (quantumAlgorithmModalStep <= 1) {
+      setQuantumAlgorithmModalStep(quantumAlgorithmModalStep + 1)
+    } else {
+      setQuantumAlgorithmModalStep(0);
+    }
+  }
+
+  const startQuantumAlgorithmSelection = () => {
+    setQuantumAlgorithmModalStep(1);
+  }
   const [isLoadJsonModalOpen, setIsLoadJsonModalOpen] = useState(false);
   const [isPaletteOpen, setIsPaletteOpen] = useState(true);
   const [chartData, setChartData] = useState(null);
@@ -1090,9 +1118,21 @@ function App() {
         x: event.clientX,
         y: event.clientY,
       })
-      console.log(position);
 
-      handleOnDrop(event, reactFlowWrapper, reactFlowInstance, setNodes);
+      console.log(reactFlowInstance.screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
+      }));
+      const type = event.dataTransfer.getData("application/reactflow");
+      const label = event.dataTransfer.getData("application/reactflow/label");
+      console.log(label);
+      if (type === "Templates") {
+        if (label === "qaoa") {
+          loadFlow(testDiagram)
+        } 
+      } else {
+        handleOnDrop(event, reactFlowWrapper, reactFlowInstance, setNodes);
+      }
 
       //setContextMenu((prev) => ({ ...prev, left: event.clientX, top: event.clientY,}));
     },
@@ -1240,19 +1280,19 @@ function App() {
     function restoreFlow(flow) {
       console.log("Restoring flow:", flow);
       if (flow.nodes) {
-	reactFlowInstance.setNodes(
-	  flow.nodes.map((node: Node) => ({
-	    ...node,
-	    data: {
-	      ...node.data,
-	    },
-	  }))
-	);
-	console.log("Nodes restored.");
+        reactFlowInstance.setNodes(
+          flow.nodes.map((node: Node) => ({
+            ...node,
+            data: {
+              ...node.data,
+            },
+          }))
+        );
+        console.log("Nodes restored.");
       }
       if (flow.edges) {
-	reactFlowInstance.setEdges(flow.edges || []);
-	console.log("Edges restored.");
+        reactFlowInstance.setEdges(flow.edges || []);
+        console.log("Edges restored.");
       }
 
 
@@ -1268,7 +1308,7 @@ function App() {
     const event = new CustomEvent("lcm-open", {
       cancelable: true,
       detail: {
-	restoreFlow
+        restoreFlow
       },
     });
     const defaultAction = document.dispatchEvent(event);
@@ -1292,7 +1332,7 @@ function App() {
         try {
           const flow = JSON.parse(e.target?.result as string);
 
-	  restoreFlow(flow);
+          restoreFlow(flow);
         } catch (error) {
           console.error("Error parsing JSON file:", error);
           alert("Invalid JSON file. Please ensure it is a valid flow file.");
@@ -1555,6 +1595,7 @@ function App() {
           uploadDiagram={() => uploadToGitHub()}
           onLoadJson={handleLoadJson}
           sendToBackend={handleOpenValidation}
+          startQuantumAlgorithmSelection={startQuantumAlgorithmSelection}
           //sendToQunicorn={() => setIsQunicornOpen(true)}
           openHistory={openHistoryModal}
           startTour={() => { startTour(); }}
@@ -1621,6 +1662,24 @@ function App() {
         errorMessage={errorMessage}
         progress={progress}
         chartData={chartData}
+      />
+      {patternGraph && (
+  <Modal
+    title="Pattern Graph"
+    open={true}
+    onClose={() => setPatternGraph(null)}
+  >
+    <img src={patternGraph} alt="Pattern graph" className="w-full rounded" />
+  </Modal>
+)}
+
+
+      <AiModal
+        quantumAlgorithmModalStep={quantumAlgorithmModalStep}
+        quantumAlgorithms={quantumAlgorithms}
+        handleQuantumAlgorithmModalClose={handleQuantumAlgorithmModalClose}
+        setQuantumAlgorithmModalStep={setQuantumAlgorithmModalStep}
+        loadFlow={loadFlow}
       />
 
       <HistoryModal

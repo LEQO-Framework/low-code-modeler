@@ -18,7 +18,6 @@ import { create } from "zustand";
 import { nodesConfig } from "./site";
 import { v4 as uuid } from "uuid";
 import * as consts from "../constants";
-import TabPane from "antd/es/tabs/TabPane";
 
 export type NodeData = {
   label: string;
@@ -43,6 +42,7 @@ type RFState = {
   selectedNode: Node | null;
   history: HistoryItem[];
   historyIndex: number;
+  setAllNodes: (nodes: Node[])=> void;
   setNodes: (node: Node) => void;
   setEdges: (edge: Edge) => void;
   setAncillaMode: (ancillaMode: boolean) => void
@@ -74,6 +74,21 @@ export const useStore = create<RFState>((set, get) => ({
   selectedNode: null,
   history: [],
   historyIndex: -1,
+      setAllNodes: (nodes: Node[]) => {
+    const currentEdges = get().edges;
+    const currentNodes = get()
+    set({
+      nodes: nodes,
+      edges: currentEdges,
+      history: [
+        ...get().history.slice(0, get().historyIndex + 1),
+        //newHistoryItem,
+      ],
+      historyIndex: get().historyIndex + 1,
+    });
+    console.log("History after update:", get().history);
+    console.log("Current historyIndex:", get().historyIndex);
+  },
 
   setSelectedNode: (node: Node | null) => {
     set({
@@ -381,6 +396,7 @@ export const useStore = create<RFState>((set, get) => ({
     console.log("History after update:", get().history);
     console.log("Current historyIndex:", get().historyIndex);
   },
+
 
   onConnect: (connection: Connection) => {
     const currentNodes = get().nodes;

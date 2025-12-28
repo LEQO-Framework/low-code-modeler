@@ -48,15 +48,15 @@ export const DataTypeNode = memo((node: Node) => {
       if (trimmedValue === "") return; // optional empty
       const arrayRegex = /^-?\d+(?:,-?\d+)*$/;
       if (!arrayRegex.test(trimmedValue)) {
-        setValueError("Array must be comma-separated integers (e.g., 1,2,3)");
+        setValueError("Array must be comma-separated Numberegers (e.g., 1,2,3)");
         return;
       }
     }
 
-    // Integer validation
-    if (data.dataType === "int") {
+    // Numbereger validation
+    if (data.dataType === "Number") {
       if (!/^-?\d+$/.test(value) && value !== "") {
-        setValueError("Value must be an integer");
+        setValueError("Value must be an Numbereger");
         return;
       }
     }
@@ -153,7 +153,7 @@ export const DataTypeNode = memo((node: Node) => {
 
 
   const iconMap = {
-    "int": 'intIcon.png',
+    "Number": 'NumberIcon.png',
     "float": 'floatIcon.png',
     "bit": 'bitIcon.png',
     "duration": 'durationIcon.png',
@@ -165,7 +165,7 @@ export const DataTypeNode = memo((node: Node) => {
   const label = data.label;
   const iconSrc = iconMap[label];
   const iconSizeMap = {
-    "int": { width: 60, height: 60 },
+    "Number": { width: 60, height: 60 },
     "float": { width: 55, height: 55 },
     "bit": { width: 50, height: 50 },
     "duration": { width: 45, height: 45 },
@@ -197,7 +197,7 @@ export const DataTypeNode = memo((node: Node) => {
         <div className="absolute top-2 right-2 group z-20">
           <AlertCircle className="text-red-600 w-5 h-5" />
           <div className="absolute top-12 left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
-            Size is not an integer
+            Size is not an Numbereger
           </div>
         </div>
       )}
@@ -225,7 +225,7 @@ export const DataTypeNode = memo((node: Node) => {
                   paddingLeft:
                     data.label === "bit"
                       ? "32px"
-                      : data.label === "int"
+                      : data.label === "Number"
                         ? "28px"
                         : data.label === "duration"
                           ? "25px"

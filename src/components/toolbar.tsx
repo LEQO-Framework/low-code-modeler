@@ -20,6 +20,7 @@ interface ToolbarProps {
   uploadDiagram: () => void;
   onLoadJson: () => void;
   sendToBackend: () => void;
+  startQuantumAlgorithmSelection: ()=> void;
   //sendToQunicorn: () => void;
   openHistory: () => void;
   startTour: (tour) => void;
@@ -33,6 +34,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
   onOpenConfig,
   onLoadJson,
   sendToBackend,
+  startQuantumAlgorithmSelection,
   //sendToQunicorn,
   openHistory,
   startTour
@@ -64,10 +66,9 @@ const Toolbar: React.FC<ToolbarProps> = ({
           <Button className="backend-button" size="sm" onClick={sendToBackend} title="Send the diagram to the backend">
             <Send className="w-4 h-4 mr-2" /> Send to Backend
           </Button>
-          {/**<Button size="sm" onClick={sendToQunicorn} title="Execute the current model">
-            <img src="qunicorn.jfif" className="w-5 h-5 mr-2" />
-            Send to Qunicorn
-          </Button>**/}
+             <Button size="sm" onClick={startQuantumAlgorithmSelection}>
+          <Settings className="w-4 h-4 mr-2" /> Detect Algorithm
+        </Button>
           <Button size="sm" onClick={openHistory} title="Display the history">
             <Clock className="w-4 h-4 mr-2" />
             History

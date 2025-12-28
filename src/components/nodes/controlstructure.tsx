@@ -33,11 +33,11 @@ export const ControlStructureNode = memo((node: Node) => {
 
   useEffect(() => {
     const connectedQuantumInputs = quantumHandles.filter((index) =>
-      edges.some((edge) => edge.targetHandle === `quantumHandleInputInitialization${node.id}-${index}`)
+      edges.some((edge) => edge.targetHandle === `classicalHandleInputInitialization${node.id}-${index}`)
     );
 
     const lastIndex = quantumHandles[quantumHandles.length - 1];
-    const lastHandleId = `quantumHandleInputInitialization${node.id}-${lastIndex}`;
+    const lastHandleId = `classicalHandleInputInitialization${node.id}-${lastIndex}`;
     const isLastConnected = edges.some(edge => edge.targetHandle === lastHandleId);
 
     // Add only if not already added
@@ -67,7 +67,7 @@ export const ControlStructureNode = memo((node: Node) => {
       <div className="rounded-none bg-white border border-solid border-gray-700 shadow-md w-full h-full flex items-center justify-center relative overflow-visible">
         <div className="rounded-none border border-solid border-gray-700 shadow-md w-full h-full flex flex-col items-center relative z-10 overflow-visible">
           <div className="w-full bg-purple-300 text-black text-center font-semibold py-1">
-            <span className="text-sm">Repeat</span>
+            <span className="text-sm">while</span>
           </div>
 
           <div className="absolute left-0 top-1/2 transform -translate-y-1/2 overflow-visible text-center" style={{ zIndex: 30 }}>
@@ -117,7 +117,7 @@ export const ControlStructureNode = memo((node: Node) => {
                   <div className="w-full bg-purple-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
                     <img src="repeatIcon.png" alt="icon" className="w-[65px] h-[65px] object-contain flex-shrink-0" style={{ paddingLeft: '25px' }} />
                     <div className="h-full w-[1px] bg-black mx-2" />
-                    <span className="font-semibold leading-none" style={{ paddingLeft: '25px' }}>Repeat Start</span>
+                    <span className="font-semibold leading-none" style={{ paddingLeft: '25px' }}>while start</span>
                   </div>
                 </div>
                 <span className="text-sm block mt-3">Number:</span>
@@ -142,7 +142,7 @@ export const ControlStructureNode = memo((node: Node) => {
                       type="target"
                       id={handleId}
                       position={Position.Left}
-                      className={cn("z-10 circle-port-hex-in", isConnected ? "!bg-blue-300 !border-black" : "!bg-gray-200 !border-dashed !border-black")}
+                      className={cn("z-10 classical-circle-port-hex-in", isConnected ? "!bg-blue-300 !border-black" : "!bg-gray-200 !border-dashed !border-black")}
                       style={{ top: `${hexagonTopOffset + 100 + i * 30}px`, overflow: "visible" }}
                       isConnectable={true}
                       isConnectableStart={false}
@@ -225,7 +225,7 @@ export const ControlStructureNode = memo((node: Node) => {
                   <div className="w-full bg-purple-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
                     <img src="repeatIcon.png" alt="icon" className="w-[65px] h-[65px] object-contain flex-shrink-0" style={{ paddingLeft: '25px' }} />
                     <div className="h-full w-[1px] bg-black mx-2" />
-                    <span className=" font-semibold leading-none" style={{ paddingLeft: '25px' }}>Repeat End</span>
+                    <span className=" font-semibold leading-none" style={{ paddingLeft: '25px' }}>while end</span>
                   </div>
                 </div>
 
@@ -234,9 +234,9 @@ export const ControlStructureNode = memo((node: Node) => {
               {/* Handles - Left side of the right polygon */}
               <div style={{ position: "absolute", left: "140px", overflow: "visible" }}>
                 {quantumHandles.map((index, i) => {
-                  const handleInputId = `quantumHandleInputInitialization${node.id}-${index}`;
+                  const handleInputId = `classicalHandleInputInitialization${node.id}-${index}`;
                   const isInputConnected = edges.some(edge => edge.targetHandle === handleInputId);
-                  const handleId = `quantumHandleInputDynamic${node.id}-${index}`;
+                  const handleId = `classicalHandleInputDynamic${node.id}-${index}`;
                   const isConnected = edges.some(edge => edge.targetHandle === handleId);
                   return isInputConnected && (
                     <Handle
@@ -245,7 +245,7 @@ export const ControlStructureNode = memo((node: Node) => {
                       id={handleId}
                       position={Position.Left}
                       className={cn(
-                        "z-10 circle-port-hex-in",
+                        "z-10 classical-circle-port-hex-in",
                         isConnected ? "!bg-blue-300 !border-black" : "!bg-gray-200 !border-dashed !border-black"
                       )}
                       style={{ top: `${hexagonTopOffset + 100 + i * 30}px`, overflow: "visible" }}
@@ -259,9 +259,9 @@ export const ControlStructureNode = memo((node: Node) => {
               {/* Handles - Right side of the right polygon */}
               <div style={{ position: "absolute", right: "0px", overflow: "visible" }}>
                 {quantumHandles.map((index, i) => {
-                  const handleInputId = `quantumHandleInputInitialization${node.id}-${index}`;
+                  const handleInputId = `classicalHandleInputInitialization${node.id}-${index}`;
                   const isInputConnected = edges.some(edge => edge.targetHandle === handleInputId);
-                  const handleId = `quantumHandleOutputDynamic${node.id}-${index}`;
+                  const handleId = `classicalHandleOutputDynamic${node.id}-${index}`;
                   const isConnected = edges.some(edge => edge.sourceHandle === handleId);
                   return isInputConnected && (
                     <Handle
@@ -270,7 +270,7 @@ export const ControlStructureNode = memo((node: Node) => {
                       id={handleId}
                       position={Position.Right}
                       className={cn(
-                        "z-10 circle-port-hex-out",
+                        "z-10 classical-circle-port-hex-out",
                         isConnected ? "!bg-blue-300 !border-black" : "!bg-gray-200 !border-dashed !border-black"
                       )}
                       style={{ top: `${hexagonTopOffset + 100 + i * 30}px`, overflow: "visible" }}

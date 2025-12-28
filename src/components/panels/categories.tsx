@@ -100,7 +100,7 @@ export const categories: Record<string, CategoryEntry> = {
         { label: "boolean", dataType: "boolean", type: consts.DataTypeNode, icon: "PaletteIcon_Boolean.png", description: "True/false value used for logic.", completionGuaranteed: true, compactOptions: [true, false] },
         //{ label: "complex", dataType: "complex", type: consts.DataTypeNode, icon: "PaletteIcon_Complex.png", description: "A number with real and imaginary parts.", completionGuaranteed: false, compactOptions: [true, false] },
         //{ label: "duration", dataType: "duration", type: consts.DataTypeNode, icon: "PaletteIcon_Duration.png", description: "Represents a time duration.", completionGuaranteed: false, compactOptions: [true, false] },
-        { label: "int", dataType: "int", type: consts.DataTypeNode, icon: "PaletteIcon_Int.png", description: "Integer value (whole number).", completionGuaranteed: true, compactOptions: [true, false] },
+        { label: "Number", dataType: "int", type: consts.DataTypeNode, icon: "PaletteIcon_Int.png", description: "Integer value (whole number).", completionGuaranteed: true, compactOptions: [true, false] },
         { label: "float", dataType: "float", type: consts.DataTypeNode, icon: "PaletteIcon_Float.png", description: "Floating-point number (decimal).", completionGuaranteed: false, compactOptions: [true, false] },
         { label: "Array", dataType: "Array", type: consts.DataTypeNode, icon: "PaletteIcon_Array.png", description: "A list of values, possibly of varying length.", completionGuaranteed: true, compactOptions: [true, false] },
       ],
@@ -133,7 +133,7 @@ export const categories: Record<string, CategoryEntry> = {
     description: "Control structures like conditionals and loops that influence the execution flow.",
     content: [
       { label: "If-Then-Else", type: consts.IfElseNode, icon: "PaletteIcon_IfElse.png", description: "Conditional block that branches based on a boolean input.", completionGuaranteed: false, compactOptions: [true, false] },
-      { label: "Repeat", type: consts.ControlStructureNode, icon: "PaletteIcon_Repeat.png", description: "Repeats a block of operations a fixed number of times.", completionGuaranteed: false, compactOptions: [true, false] },
+      { label: "While", type: consts.ControlStructureNode, icon: "PaletteIcon_Repeat.png", description: "Repeats a block of operations a fixed number of times.", completionGuaranteed: false, compactOptions: [true, false] },
     ],
   },
 
