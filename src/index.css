@@ -292,6 +292,20 @@ h1 {
   left: -8px !important;
 }
 
+.classical-circle-port-op {
+  width: 15px !important;
+  height: 15px !important;
+  border-radius: 50% !important;
+  background: #898d9c;
+  border: 1px solid #edeff5;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+  position: absolute;
+  top: 14px;
+  left: -8px !important;
+}
+
+
 .circle-port-splitter {
   width: 15px !important;
   height: 15px !important;
@@ -346,13 +360,12 @@ h1 {
 .classical-circle-port-op {
   width: 15px !important;
   height: 15px !important;
-  border-radius: 0 !important; /* Make it fully circular */
+  border-radius: 50% !important; /* Make it fully circular */
   background: #898d9c;
   border: 1px solid #edeff5;
   cursor: pointer;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
   position: absolute;
-  top: 2px !important;
   left: -7px !important;
 }
 

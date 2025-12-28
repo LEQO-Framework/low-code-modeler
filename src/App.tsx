@@ -1749,7 +1749,7 @@ function viewPatternGraph(algo) {
             edges={edges}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
-            onNodeContextMenu={onNodeContextMenu}
+      
             onNodeClick={(event: React.MouseEvent, node: Node) => {
               handleClick(event, node);
             }}

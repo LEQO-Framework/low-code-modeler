@@ -140,8 +140,10 @@ export const categories: Record<string, CategoryEntry> = {
   [consts.customOperators]: {
     description: "User-defined custom operation with arbitrarily classical and quantum inputs/outputs.",
     content: [
-      { label: "Custom Quantum Operator", type: consts.AlgorithmNode, icon: ["PaletteIcon_CustomQuantumOperator.png", "PaletteIcon_Ancilla_CustomQuantumOperator.png"], description: "Encapsulates a reusable quantum operation defined by the user.", completionGuaranteed: true, compactOptions: [true, false] },
+      
+      { label: "QAOA Operator", type: consts.AlgorithmNode, icon: ["PaletteIcon_CustomQuantumOperator.png", "PaletteIcon_Ancilla_CustomQuantumOperator.png"], description: "Encapsulates a reusable quantum operation defined by the user.", completionGuaranteed: true, compactOptions: [true, false] },
       { label: "Custom Classical Operator", type: consts.ClassicalAlgorithmNode, icon: "PaletteIcon_CustomClassicalOperator.png", description: "Encapsulates a reusable classical computation defined by the user.", completionGuaranteed: true, compactOptions: [true, false] },
+      { label: "Optimizer", type: "optimizer", icon: "PaletteIcon_CustomClassicalOperator.png", description: "Encapsulates a reusable classical computation defined by the user.", completionGuaranteed: true, compactOptions: [true, false] },
     ],
   },
 };

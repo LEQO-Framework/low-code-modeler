@@ -1,15 +1,16 @@
 import { memo, useEffect, useState } from "react";
 import { Handle, Position, Node, Edge, getConnectedEdges, useUpdateNodeInternals } from "reactflow";
-import {useStore} from "@/config/store";
+import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
 import AncillaPort from "../utils/ancillaPort";
 import UncomputePort from "../utils/uncomputePort";
 import OutputPort from "../utils/outputPort";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { ancillaConstructColor, dirtyAncillaHandle, dirtyConstructColor, quantumConstructColor } from "@/constants";
+import { ancillaConstructColor, classicalConstructColor, dirtyAncillaHandle, dirtyConstructColor, quantumConstructColor } from "@/constants";
 import { findDuplicateOutputIdentifier, findDuplicateOutputIdentifiers, findDuplicateOutputIdentifiersInsideNode } from "../utils/utils";
 import { AlertCircle } from "lucide-react";
+import { Input } from "antd";
 
 const selector = (state: {
   selectedNode: Node | null;
@@ -152,7 +153,7 @@ export const AlgorithmNode = memo((node: Node) => {
     // Clean up edges with sourceHandles related to removed identifiers
     const edgesToRemove = edges.filter((edge) =>
       !removedIdentifiers.some((id, index) =>
-        edge.sourceHandle === `quantumHandleGateOutput${numberOutputs + index + 1}${node.id}`
+        edge.sourceHandle === `classicalHandleGateOutput${numberOutputs + index + 1}${node.id}`
       )
     );
     console.log("EDGES")
@@ -179,7 +180,7 @@ export const AlgorithmNode = memo((node: Node) => {
       transition={{ duration: 0.3, ease: "easeInOut" }}
     >
       <div className="grand-parent">
-          
+
         <div
           className={cn(
             "w-[320px] bg-white border border-solid border-gray-700 shadow-md",
@@ -207,9 +208,13 @@ export const AlgorithmNode = memo((node: Node) => {
               />
             )}
             <div
-              className="w-full bg-blue-300 py-1 px-2 flex items-center"
-              style={{ height: "inherit" }}
+              className="w-full py-1 px-2 flex items-center"
+              style={{
+                height: "inherit",
+                background: `linear-gradient(90deg, #e1ad69ff, #79a5ecff)`
+              }}
             >
+
               <img
                 src="algorithmIcon.png"
                 alt="icon"
@@ -245,138 +250,169 @@ export const AlgorithmNode = memo((node: Node) => {
             <div className="relative flex flex-col overflow-visible">
               <div className="custom-node-port-in">
                 <div className="relative flex flex-col overflow-visible">
-                  {Array.from({ length: numberInputs }).map((_, index) => (
-                    <div
-                      key={`quantum-input-${index}`}
-                      className="relative p-2 mb-1"
-                      style={{
-                        backgroundColor: quantumConstructColor,
-                        width: "120px",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "flex-start",
-                      }}
-                    >
-                      <Handle
-                        type="target"
-                        id={`quantumHandleOperationInput${index}${node.id}`}
-                        position={Position.Left}
-                        className="z-10 circle-port-op !bg-blue-300 !border-black -left-[8px]"
-                        style={{ top: "50%", transform: "translateY(-50%)" }}
+           
+                    <div className="w-full flex flex-col items-center mt-3">
+                      <span className="text-sm">p:</span>
+
+                      <Input
+                        size="small"
+                        placeholder="Enter p"
+                        className="mt-1 w-[80%] text-center"
+                        style={{ fontSize: "12px", height: "22px" }}
+                        value={node.data.condition || ""}
+                        onChange={(e) => {
+                          node.data["condition"] = e.target.value;
+                          updateNodeValue(node.id, "condition", e.target.value);
+                          setSelectedNode(node);
+                        }}
                       />
-                      <span className="text-black text-sm text-center w-full">
-                        {node.data.inputs?.[index]?.outputIdentifier || `Input ${index + 1}`}
-                      </span>
                     </div>
-                  ))}
+
+                    {Array.from({ length: numberInputs }).map((_, index) => (
+                      <div
+                        key={`classical-input-${index}`}
+                        className="relative p-2 mb-1 mt-1"
+                        style={{
+                          backgroundColor: classicalConstructColor,
+                          width: "120px",
+                          display: "flex",
+                          alignItems: "center",
+                          borderTop: "20px",
+                          justifyContent: "flex-start",
+                        }}
+                      >
+                        <Handle
+                          type="target"
+                          id={`classicalHandleOperationInput${index}${node.id}`}
+                          position={Position.Left}
+                          className="z-10 classical-circle-port-op !bg-orange-300 !border-black -left-[8px]"
+                          style={{ top: "50%", transform: "translateY(-50%)" }}
+                        />
+                        <span className="text-black text-sm text-center w-full">
+                          {node.data.inputs?.[index]?.outputIdentifier ||
+                            (index === 0 ? "beta" : index === 1 ? "gamma" : `Input ${index + 1}`)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
+                {ancillaMode && (<div>
+                  <div
+                    className="relative p-2 mb-1"
+                    style={{
+                      width: "120px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "flex-start",
+                    }}
+                  >
+                    <div
+                      className="absolute inset-0 custom-shape-mirrored"
+                      style={{ backgroundColor: ancillaConstructColor }}
+                    />
+                    <Handle
+                      type="target"
+                      id={`ancillaHandleOperationInput2${node.id}`}
+                      position={Position.Left}
+                      className={cn(
+                        "z-10 ancilla-port-in w-4 transform rotate-45 -left-[8px]",
+                        isAncillaConnected
+                          ? "!bg-green-100 !border-solid !border-black"
+                          : "!bg-gray-200 !border-dashed !border-black"
+                      )}
+                      style={{ zIndex: 1, top: '50% !important', transform: 'translateY(-50%) rotate(45deg)' }}
+                    />
+                    <span
+                      className="text-black text-sm text-center w-full"
+                      style={{ zIndex: 1 }}
+                    >
+                      Ancilla
+                    </span>
+                  </div>
+                  <div
+                    className="relative p-2"
+                    style={{
+                      width: "120px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "flex-start",
+                    }}
+                  >
+                    <div
+                      className="absolute inset-0 custom-shape-mirrored"
+                      style={{ backgroundColor: dirtyConstructColor }}
+                    />
+                    <Handle
+                      type="target"
+                      id={`${dirtyAncillaHandle}OperationInput3${node.id}`}
+                      position={Position.Left}
+                      className={cn(
+                        "z-10 ancilla-port-in w-4 transform rotate-45 -left-[8px]",
+                        isDirtyAncillaConnected
+                          ? "!bg-green-100 !border-solid !border-black"
+                          : "!bg-gray-200 !border-dashed !border-black"
+                      )}
+                      style={{ zIndex: 1, top: '50% !important', transform: 'translateY(-50%) rotate(45deg)' }}
+                    />
+                    <span
+                      className="text-black text-sm text-center w-full"
+                      style={{ zIndex: 1 }}
+                    >
+                      Dirty Ancilla
+                    </span>
+                  </div>
+                </div>)}
               </div>
-              {ancillaMode && (<div>
-                <div
-                  className="relative p-2 mb-1"
-                  style={{
-                    width: "120px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "flex-start",
-                  }}
-                >
-                  <div
-                    className="absolute inset-0 custom-shape-mirrored"
-                    style={{ backgroundColor: ancillaConstructColor }}
-                  />
-                  <Handle
-                    type="target"
-                    id={`ancillaHandleOperationInput2${node.id}`}
-                    position={Position.Left}
-                    className={cn(
-                      "z-10 ancilla-port-in w-4 transform rotate-45 -left-[8px]",
-                      isAncillaConnected
-                        ? "!bg-green-100 !border-solid !border-black"
-                        : "!bg-gray-200 !border-dashed !border-black"
-                    )}
-                    style={{ zIndex: 1, top: '50% !important', transform: 'translateY(-50%) rotate(45deg)' }}
-                  />
-                  <span
-                    className="text-black text-sm text-center w-full"
-                    style={{ zIndex: 1 }}
-                  >
-                    Ancilla
-                  </span>
-                </div>
-                <div
-                  className="relative p-2"
-                  style={{
-                    width: "120px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "flex-start",
-                  }}
-                >
-                  <div
-                    className="absolute inset-0 custom-shape-mirrored"
-                    style={{ backgroundColor: dirtyConstructColor }}
-                  />
-                  <Handle
-                    type="target"
-                    id={`${dirtyAncillaHandle}OperationInput3${node.id}`}
-                    position={Position.Left}
-                    className={cn(
-                      "z-10 ancilla-port-in w-4 transform rotate-45 -left-[8px]",
-                      isDirtyAncillaConnected
-                        ? "!bg-green-100 !border-solid !border-black"
-                        : "!bg-gray-200 !border-dashed !border-black"
-                    )}
-                    style={{ zIndex: 1, top: '50% !important', transform: 'translateY(-50%) rotate(45deg)' }}
-                  />
-                  <span
-                    className="text-black text-sm text-center w-full"
-                    style={{ zIndex: 1 }}
-                  >
-                    Dirty Ancilla
-                  </span>
-                </div>
-              </div>)}
             </div>
-          </div>
 
 
-          <div className="custom-node-port-out">
-            {Array.from({ length: numberOutputs }).map((_, index) => (
-              <OutputPort
-                key={`output-port-${index}`}
-                node={node}
-                index={index}
-                type={"quantum"}
-                nodes={nodes}
-                outputs={outputs}
-                setOutputs={setOutputs}
-                edges={edges}
-                outputIdentifierError={outputIdentifierErrors[index]}
-                updateNodeValue={updateNodeValue}
-                setOutputIdentifierError={(error) =>
-                  setOutputIdentifierErrors(prev => ({ ...prev, [index]: error }))
-                }
-                sizeError={sizeErrors[index]}
-                setSizeError={(error) =>
-                  setSizeErrors((prev) => ({ ...prev, [index]: error }))
-                }
-                setSelectedNode={setSelectedNode}
-                active={true}
-              />
-            ))}
+            <div className="custom-node-port-out">
+              {Array.from({ length: numberOutputs }).map((_, index) => (
+                <OutputPort
+                  key={`output-port-${index}`}
+                  node={node}
+                  index={index}
+                  type={"quantum"}
+                  nodes={nodes}
+                  outputs={outputs}
+                  setOutputs={setOutputs}
+                  edges={edges}
+                  outputIdentifierError={outputIdentifierErrors[index]}
+                  updateNodeValue={updateNodeValue}
+                  setOutputIdentifierError={(error) =>
+                    setOutputIdentifierErrors(prev => ({ ...prev, [index]: error }))
+                  }
+                  sizeError={sizeErrors[index]}
+                  setSizeError={(error) =>
+                    setSizeErrors((prev) => ({ ...prev, [index]: error }))
+                  }
+                  setSelectedNode={setSelectedNode}
+                  active={true}
+                />
+              ))}
+              {/* Bottom-centered "+" button */}
+              <button
+                onClick={() => console.log("Plus clicked")}
+                className="absolute left-1/2 -translate-x-1/2 -bottom-0 w-8 h-8 rounded-lg border border-gray-700 bg-white flex items-center justify-center shadow hover:bg-gray-50"
+              >
+                +
+              </button>
+
+
+            </div>
+
+            {ancillaMode && (
+              <div>
+                <AncillaPort node={node} edges={edges} dirty={false} index={numberOutputs} />
+                <AncillaPort node={node} edges={edges} dirty={true} index={numberOutputs + 1} />
+                <UncomputePort node={node} edges={edges} index={numberOutputs + 2} />
+              </div>
+            )}
 
           </div>
 
-          {ancillaMode && (
-            <div>
-              <AncillaPort node={node} edges={edges} dirty={false} index={numberOutputs} />
-              <AncillaPort node={node} edges={edges} dirty={true} index={numberOutputs + 1} />
-              <UncomputePort node={node} edges={edges} index={numberOutputs + 2} />
-            </div>
-          )}
         </div>
-      </div>
+
     </motion.div>
   );
 });

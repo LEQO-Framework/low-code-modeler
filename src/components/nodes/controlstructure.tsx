@@ -41,7 +41,7 @@ export const ControlStructureNode = memo((node: Node) => {
     const isLastConnected = edges.some(edge => edge.targetHandle === lastHandleId);
 
     // Add only if not already added
-    if (isLastConnected && quantumHandles.length === connectedQuantumInputs.length) {
+    if (isLastConnected && quantumHandles.length === connectedQuantumInputs.length && quantumHandles.length <3) {
       setQuantumHandles((prev) => [...prev, prev.length]);
     }
 
@@ -56,7 +56,7 @@ export const ControlStructureNode = memo((node: Node) => {
 
 
 
-  const dynamicHeight = 600 + Math.max(0, quantumHandles.length - 1) * 30;
+  const dynamicHeight = 1000 + Math.max(0, quantumHandles.length - 1) * 30;
   const totalHandles = Math.max(quantumHandles.length, 0);
   const hexagonHeight = Math.max(250, 180 + totalHandles * 30);
   const hexagonTopOffset = -(hexagonHeight / 2) + 20;
@@ -64,7 +64,7 @@ export const ControlStructureNode = memo((node: Node) => {
   return (
     <div className="grand-parent overflow-visible"
       style={{ minWidth: "1100px", height: `${dynamicHeight}px`, position: "relative", zIndex: -100 }}>
-      <div className="rounded-none bg-white border border-solid border-gray-700 shadow-md w-full h-full flex items-center justify-center relative overflow-visible">
+      <div className="rounded-none  border border-solid border-gray-700 shadow-md w-full h-full flex items-center justify-center relative overflow-visible">
         <div className="rounded-none border border-solid border-gray-700 shadow-md w-full h-full flex flex-col items-center relative z-10 overflow-visible">
           <div className="w-full bg-purple-300 text-black text-center font-semibold py-1">
             <span className="text-sm">while</span>
@@ -120,7 +120,7 @@ export const ControlStructureNode = memo((node: Node) => {
                     <span className="font-semibold leading-none" style={{ paddingLeft: '25px' }}>while start</span>
                   </div>
                 </div>
-                <span className="text-sm block mt-3">Number:</span>
+                <span className="text-sm block mt-3">Condition:</span>
                 <Input
                   size="small"
                   placeholder="Enter condition"
@@ -134,7 +134,7 @@ export const ControlStructureNode = memo((node: Node) => {
               {/* Handles - Left */}
               <div style={{ position: "absolute", left: "-75px", overflow: "visible" }}>
                 {quantumHandles.map((index, i) => {
-                  const handleId = `quantumHandleInputInitialization${node.id}-${index}`;
+                  const handleId = `classicalHandleInputInitialization${node.id}-${index}`;
                   const isConnected = edges.some(edge => edge.targetHandle === handleId);
                   return (
                     <Handle
@@ -142,7 +142,7 @@ export const ControlStructureNode = memo((node: Node) => {
                       type="target"
                       id={handleId}
                       position={Position.Left}
-                      className={cn("z-10 classical-circle-port-hex-in", isConnected ? "!bg-blue-300 !border-black" : "!bg-gray-200 !border-dashed !border-black")}
+                      className={cn("z-10 classical-circle-port-hex-in", isConnected ? "!bg-orange-300 !border-black" : "!bg-gray-200 !border-dashed !border-black")}
                       style={{ top: `${hexagonTopOffset + 100 + i * 30}px`, overflow: "visible" }}
                       isConnectable={true}
                       isConnectableStart={false}
@@ -153,9 +153,9 @@ export const ControlStructureNode = memo((node: Node) => {
               {/* Output Handles - Right side of the left polygon */}
               <div style={{ position: "absolute", right: "215px", overflow: "visible" }}>
                 {quantumHandles.map((index, i) => {
-                  const handleInputId = `quantumHandleInputInitialization${node.id}-${index}`;
+                  const handleInputId = `classicalHandleInputInitialization${node.id}-${index}`;
                   const isInputConnected = edges.some(edge => edge.targetHandle === handleInputId);
-                  const handleId = `quantumHandleOutputInitialization${node.id}-${index}`;
+                  const handleId = `classicalHandleOutputInitialization${node.id}-${index}`;
                   const isConnected = edges.some(edge => edge.sourceHandle === handleId);
                   console.log(isConnected)
                   return isInputConnected && (
@@ -164,7 +164,7 @@ export const ControlStructureNode = memo((node: Node) => {
                       type="source"
                       id={handleId}
                       position={Position.Right}
-                      className={cn("z-10 circle-port-hex-out", isConnected ? "!bg-blue-300 !border-black" : "!bg-gray-200 !border-dashed !border-black")}
+                      className={cn("z-10 classical-circle-port-hex-out", isConnected ? "!bg-orange-300 !border-black" : "!bg-gray-200 !border-dashed !border-black")}
                       style={{
                         top: `${hexagonTopOffset + 100 + i * 30}px`,
                         overflow: "visible"
@@ -246,7 +246,7 @@ export const ControlStructureNode = memo((node: Node) => {
                       position={Position.Left}
                       className={cn(
                         "z-10 classical-circle-port-hex-in",
-                        isConnected ? "!bg-blue-300 !border-black" : "!bg-gray-200 !border-dashed !border-black"
+                        isConnected ? "!bg-orange-300 !border-black" : "!bg-gray-200 !border-dashed !border-black"
                       )}
                       style={{ top: `${hexagonTopOffset + 100 + i * 30}px`, overflow: "visible" }}
                       isConnectable={true}
