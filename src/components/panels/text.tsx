@@ -283,10 +283,10 @@ export const TextPanel = () => {
                     className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
                   >
                     <option value="+">+</option>
-                    {/* <option value="-">-</option>
-                    <option value="/">/</option>
-                    <option value="*">*</option>
-                    <option value="**">**</option> */}
+                    {!completionGuaranteed &&(<option value="-">-</option>)}
+                    {!completionGuaranteed &&(<option value="/">/</option>)}
+                    {!completionGuaranteed &&(<option value="*">*</option>)}
+                    {!completionGuaranteed &&(<option value="**">**</option>)}
                   </select>
                 </div>
               </>
