@@ -14,7 +14,7 @@ export interface Node {
 }
 
 interface CategoryEntry {
-  description?: string;
+  description?: string | string[];
   content: CategoryContent;
 }
 
@@ -92,7 +92,7 @@ export const categories: Record<string, CategoryEntry> = {
   },
 
   [consts.dataTypes]: {
-    description: "Classical and quantum data types such as bits, angles, qubits, and arrays used to define block inputs.",
+    description: ["Classical and quantum data types such as bits, angles, qubits, and arrays used to define block inputs.", "Classical data types such as bits and arrays used to define block inputs."],
     content: {
       "Classical Datatypes": [
         //{ label: "angle", dataType: "angle", type: consts.DataTypeNode, icon: "PaletteIcon_Angle.png", description: "Represents a rotation angle.", completionGuaranteed: false, compactOptions: [true, false] },
@@ -112,7 +112,7 @@ export const categories: Record<string, CategoryEntry> = {
   },
 
   [consts.operator]: {
-    description: "Predefined quantum and classical operators, including arithmetic, bitwise, and comparison operations.",
+    description: ["Predefined quantum and classical operators, including arithmetic, bitwise, and comparison operations.", "Predefined classical arithematic operator."],
     content: {
       "Quantum Operators": [
         { label: consts.quantumLabel + consts.arithmeticOperatorLabel, type: consts.OperatorNode, icon: ["PaletteIcon_ArithmeticOperator.png", "PaletteIcon_Ancilla_ArithmeticOperator.png"], description: "Performs quantum arithmetic (add, subtract, etc.).", completionGuaranteed: true, compactOptions: [true, false] },
