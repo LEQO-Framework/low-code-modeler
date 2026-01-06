@@ -1501,8 +1501,15 @@ function App() {
       }
     })
       .then((dataUrl) => {
+        let id = `flow-${Date.now()}`;
+        const validMetadata = {
+        ...metadata,
+        id: id,
+        timestamp: new Date().toISOString(),
+      };
         const a = document.createElement("a");
-        a.setAttribute("download", "reactflow-diagram.svg");
+        const filename = `${validMetadata.name.replace(/\s+/g, "_")}_${validMetadata.id}.svg`
+        a.setAttribute("download", filename);
         a.setAttribute("href", dataUrl);
         a.click();
       })
@@ -1770,6 +1777,7 @@ function App() {
               completionGuaranteed={completionGuaranteed}
               onCompletionGuaranteedChange={setCompletionGuaranteed}
             />
+
 
             <MiniMap
               nodeClassName={(node) => {
