@@ -1,5 +1,9 @@
 import * as consts from "../../constants";
 
+// Pattern Atlas icon base URL for ML-related icons
+const PATTERN_ATLAS_ICON_BASE = import.meta.env.VITE_PATTERN_ATLAS_UI || 'http://localhost:1978';
+const PATTERN_ATLAS_ICON_PATH = `${PATTERN_ATLAS_ICON_BASE}/icons/quantum_computing_patterns`;
+
 export type NodeType = (typeof consts.NodeTypes)[number];
 
 export interface Node {
@@ -104,7 +108,9 @@ export const categories: Record<string, CategoryEntry> = {
         { label: "duration", dataType: "duration", type: consts.DataTypeNode, icon: "PaletteIcon_Duration.png", description: "Represents a time duration." },
         { label: "int", dataType: "int", type: consts.DataTypeNode, icon: "PaletteIcon_Int.png", description: "Integer value (whole number)." },
         { label: "float", dataType: "float", type: consts.DataTypeNode, icon: "PaletteIcon_Float.png", description: "Floating-point number (decimal)." },
+        { label: "string", dataType: "string", type: consts.DataTypeNode, icon: `${PATTERN_ATLAS_ICON_PATH}/basis_encoding_icon.png`, description: "Text string value." },
         { label: "Array", dataType: "Array", type: consts.DataTypeNode, icon: "PaletteIcon_Array.png", description: "A list of values, possibly of varying length." },
+        { label: "file", dataType: "file", type: consts.DataTypeNode, icon: `${PATTERN_ATLAS_ICON_PATH}/matrix_encoding_icon.png`, description: "URL or file path to data (for ML plugin inputs)." },
       ],
       "Quantum Datatypes": [
         { label: "Ancilla", dataType: consts.AncillaNode, type: consts.AncillaNode, icon: "PaletteIcon_Ancilla.png", description: "Helper qubit used temporarily in a computation." },
@@ -155,5 +161,10 @@ export const categories: Record<string, CategoryEntry> = {
         description: "Encapsulates a reusable classical computation defined by the user."
       },
     ],
+  },
+
+  [consts.machineLearningNodes]: {
+    description: "Machine learning and quantum machine learning plugins from the QHAna Plugin Runner.",
+    content: [],  // Will be populated dynamically from Plugin Runner API
   },
 };

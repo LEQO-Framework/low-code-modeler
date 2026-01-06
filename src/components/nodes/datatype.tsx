@@ -149,6 +149,10 @@ export const DataTypeNode = memo((node: Node) => {
 
 
 
+  // Pattern Atlas icon base URL
+  const patternAtlasIconBase = import.meta.env.VITE_PATTERN_ATLAS_UI || 'http://localhost:1978';
+  const patternAtlasIconPath = `${patternAtlasIconBase}/icons/quantum_computing_patterns`;
+
   const iconMap = {
     "int": 'intIcon.png',
     "float": 'floatIcon.png',
@@ -157,7 +161,9 @@ export const DataTypeNode = memo((node: Node) => {
     "boolean": 'booleanIcon.png',
     "angle": 'angleIcon.png',
     "complex": 'complexIcon.png',
+    "string": `${patternAtlasIconPath}/basis_encoding_icon.png`,
     "Array": 'arrayIcon.png',
+    "file": `${patternAtlasIconPath}/matrix_encoding_icon.png`,
   };
   const label = data.label;
   const iconSrc = iconMap[label];
@@ -169,7 +175,9 @@ export const DataTypeNode = memo((node: Node) => {
     "boolean": { width: 45, height: 45 },
     "angle": { width: 45, height: 45 },
     "complex": { width: 55, height: 55 },
+    "string": { width: 50, height: 50 },
     "Array": { width: 60, height: 60 },
+    "file": { width: 55, height: 55 },
   };
 
   return (
@@ -230,6 +238,10 @@ export const DataTypeNode = memo((node: Node) => {
         ? "23px"
         : data.label === "angle"
         ? "29px"
+        : data.label === "file"
+        ? "30px"
+        : data.label === "string"
+        ? "22px"
         : "10px",
   }}
 >
@@ -309,6 +321,25 @@ export const DataTypeNode = memo((node: Node) => {
                   <option value="h">h</option>
                 </select>
               </div>
+            ) : data.label === "file" ? (
+              <input
+                id="value"
+                type="text"
+                className={`input-classical-focus p-1 text-black opacity-75 text-sm rounded-lg w-full text-center border-2 ${valueError ? 'bg-red-500 border-red-500' : 'bg-white border-orange-300'}`}
+                value={node.data.value || value}
+                placeholder="http://example.com/data.json"
+                onChange={changeValue}
+                style={{ minWidth: '200px' }}
+              />
+            ) : data.label === "string" ? (
+              <input
+                id="value"
+                type="text"
+                className={`input-classical-focus p-1 text-black opacity-75 text-sm rounded-lg w-32 text-center border-2 ${valueError ? 'bg-red-500 border-red-500' : 'bg-white border-orange-300'}`}
+                value={node.data.value || value}
+                placeholder="text"
+                onChange={changeValue}
+              />
             ) : (
               <input
                 id="value"

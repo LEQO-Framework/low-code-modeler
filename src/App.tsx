@@ -1076,11 +1076,10 @@ function App() {
     console.log(node.position.x)
 
 
-    //findGuidelines(node);
     console.log(reactFlowInstance)
     const intersections = reactFlowInstance.getIntersectingNodes(node).map((n) => n.id);
     console.log(intersections)
-    //updateNodeValue(node.id, "parentNode", intersections)
+    //updateNodeValue
     console.log("trest")
     console.log(intersections)
     console.log(nodes);
@@ -1100,7 +1099,7 @@ function App() {
 
         if (isForbidden) {
           const maxY = relativeY > nd.height / 2;
-          //node.position.y = relativeY ;
+        
 
           console.warn("Cannot drop node in the right half due to 'if' constraint.");
           return;

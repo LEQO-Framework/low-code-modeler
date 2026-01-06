@@ -29,6 +29,7 @@ export const MergerNode: string = "mergerNode";
 export const OperatorNode: string = "quantumOperatorNode";
 export const ClassicalOperatorNode: string = "classicalOperatorNode";
 export const GroupNode: string = "groupNode";
+export const PluginNode: string = "pluginNode";
 
 
 export const NodeTypes = [
@@ -47,7 +48,8 @@ export const NodeTypes = [
   MergerNode,
   OperatorNode,
   ClassicalOperatorNode,
-  GroupNode
+  GroupNode,
+  PluginNode
 ]
 
 export const quantumLabel = "Quantum ";
@@ -65,6 +67,7 @@ export const dataTypes = "Data Types";
 export const controlStructureNodes = "Control Structure Nodes";
 export const operator = "Operators";
 export const customOperators = "Custom Operators";
+export const machineLearningNodes = "Machine Learning Nodes";
 
 // handle prefix ensures correctness of edges
 export const classicalHandle: string = "classicalHandle";
