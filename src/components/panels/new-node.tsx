@@ -334,54 +334,50 @@ export const AddNodePanel = () => {
     }
   };
 
-  // Get icon for plugin based on name/tags - using Pattern Atlas icons
+  // Get icon for plugin based on name/tags - using Pattern Atlas icons (local copies)
   const getPluginIcon = (plugin: any) => {
     const name = plugin.name.toLowerCase();
     const tags = plugin.tags || [];
-
-    // Pattern Atlas icon base URL (served from Pattern Atlas UI)
-    const patternAtlasIconBase = import.meta.env.VITE_PATTERN_ATLAS_UI || 'http://localhost:1978';
-    const iconPath = `${patternAtlasIconBase}/icons/quantum_computing_patterns`;
 
     // Specific plugin icons (most specific first)
 
     // K-Means (classical and quantum) - specific icon
     if (name.includes('k-means') || name === 'classical-k-means' || name === 'quantum-k-means') {
-      return `${iconPath}/kmeans_icon.png`;
+      return '/plugin-icons/kmeans_icon.png';
     }
 
     // Neural Networks (QNN, CNN) - specific icon
     if (name.includes('qnn') || name.includes('neural') || name.includes('-cnn')) {
-      return `${iconPath}/quantum_neural_network-thin.svg`;
+      return '/plugin-icons/quantum_neural_network-thin.svg';
     }
 
     // Parzen Window / Kernel methods - SVM-like icon
     if (name.includes('parzen') || name.includes('kernel')) {
-      return `${iconPath}/qsvm_icon.png`;
+      return '/plugin-icons/qsvm_icon.png';
     }
 
     // K-Medoids - clustering icon
     if (name.includes('medoid')) {
-      return `${iconPath}/quantum_clustering-thin.svg`;
+      return '/plugin-icons/quantum_clustering-thin.svg';
     }
 
     // OPTICS - clustering icon
     if (name.includes('optics')) {
-      return `${iconPath}/quantum_clustering-thin.svg`;
+      return '/plugin-icons/quantum_clustering-thin.svg';
     }
 
     // K-Nearest Neighbours - clustering icon
     if (name.includes('k-nearest') || name.includes('knn')) {
-      return `${iconPath}/quantum_clustering-thin.svg`;
+      return '/plugin-icons/quantum_clustering-thin.svg';
     }
 
     // Generic fallback based on tags
     if (tags.includes('clustering')) {
-      return `${iconPath}/quantum_clustering-thin.svg`;
+      return '/plugin-icons/quantum_clustering-thin.svg';
     }
 
     if (tags.includes('classification')) {
-      return `${iconPath}/quantum_classification-thin.svg`;
+      return '/plugin-icons/quantum_classification-thin.svg';
     }
 
     return undefined;

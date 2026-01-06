@@ -149,10 +149,6 @@ export const DataTypeNode = memo((node: Node) => {
 
 
 
-  // Pattern Atlas icon base URL
-  const patternAtlasIconBase = import.meta.env.VITE_PATTERN_ATLAS_UI || 'http://localhost:1978';
-  const patternAtlasIconPath = `${patternAtlasIconBase}/icons/quantum_computing_patterns`;
-
   const iconMap = {
     "int": 'intIcon.png',
     "float": 'floatIcon.png',
@@ -161,9 +157,9 @@ export const DataTypeNode = memo((node: Node) => {
     "boolean": 'booleanIcon.png',
     "angle": 'angleIcon.png',
     "complex": 'complexIcon.png',
-    "string": `${patternAtlasIconPath}/basis_encoding_icon.png`,
+    "string": 'basis_encoding_icon.png',
     "Array": 'arrayIcon.png',
-    "file": `${patternAtlasIconPath}/matrix_encoding_icon.png`,
+    "file": 'matrix_encoding_icon.png',
   };
   const label = data.label;
   const iconSrc = iconMap[label];
