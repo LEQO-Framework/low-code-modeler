@@ -1509,6 +1509,15 @@ function App() {
       .catch((err) => console.error("Error exporting SVG:", err));
   };
 
+  const onExperienceLevelChange = (event) => {
+    setExperienceLevel(event); 
+    setExperienceLevelOn(event);
+    const bool_value = (experienceLevel === "pioneer")?false:true; // if previous experience level was pioneer...
+    setCompactVisualization(bool_value)
+    setAncillaMode(bool_value)
+    setAncillaModelingOn(bool_value)  
+  };
+
   return (
     <ReactFlowProvider>
       <Joyride
@@ -1755,7 +1764,7 @@ function App() {
               ancillaModelingOn={ancillaModelingOn}
               onToggleAncilla={() => { setAncillaModelingOn(!ancillaModelingOn); setAncillaMode(!ancillaModelingOn) }}
               experienceLevel={experienceLevel}
-              onExperienceLevelChange={(event) => { setExperienceLevel(event); setExperienceLevelOn(event); }}
+              onExperienceLevelChange={onExperienceLevelChange}
               compactVisualization={compactVisualization}
               onCompactVisualizationChange={() => { setCompactVisualization(!compact); setCompact(!compact) }}
               completionGuaranteed={completionGuaranteed}
