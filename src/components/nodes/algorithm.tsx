@@ -93,7 +93,8 @@ export const AlgorithmNode = memo((node: Node) => {
   useEffect(() => {
     const identifier = node.data.outputIdentifier;
     console.log(nodes)
-    let selectedNode = nodes.find(n => n.id === node.id);
+    //let selectedNode = nodes.find(n => n.id === node.id);
+    let selectedNode = node;
     const newErrors = {};
     console.log("ALGORITHM", outputs)
 

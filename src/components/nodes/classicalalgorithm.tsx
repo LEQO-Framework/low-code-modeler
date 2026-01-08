@@ -55,7 +55,8 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
   }, [ancillaMode]);
 
   useEffect(() => {
-    const selectedNode = nodes.find(n => n.id === node.id);
+    //const selectedNode = nodes.find(n => n.id === node.id);
+    let selectedNode = node;
     const newErrors: { [key: number]: boolean } = {};
     const newSizeErrors: { [key: number]: boolean } = {};
 
