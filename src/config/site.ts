@@ -103,7 +103,8 @@ export const tutorial = {
       "positionAbsolute": {
         "x": 330,
         "y": 300
-      }
+      },
+      "selected": true
     }
   ],
   edges: [],

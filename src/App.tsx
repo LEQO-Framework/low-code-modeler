@@ -518,6 +518,9 @@ function App() {
     console.log("load tutorial")
     loadFlow(tutorial);
     console.log("load toturial")
+    //setSelectedNode(node)
+    //const selectedNode = useStore(selector)
+    //setIsPanelOpen(true);
   }
 
   interface ValidationItem {
@@ -1347,7 +1350,7 @@ function App() {
         }))
       );
     }
-    console.log(nodes);
+    console.log("load flow nodes", nodes);
 
     // Reset the viewport (optional based on your use case)
     const { x = 0, y = 0, zoom = 1 } = flow.viewport || {};
@@ -1501,28 +1504,12 @@ function App() {
       }
     })
       .then((dataUrl) => {
-        let id = `flow-${Date.now()}`;
-        const validMetadata = {
-        ...metadata,
-        id: id,
-        timestamp: new Date().toISOString(),
-      };
         const a = document.createElement("a");
-        const filename = `${validMetadata.name.replace(/\s+/g, "_")}_${validMetadata.id}.svg`
-        a.setAttribute("download", filename);
+        a.setAttribute("download", "reactflow-diagram.svg");
         a.setAttribute("href", dataUrl);
         a.click();
       })
       .catch((err) => console.error("Error exporting SVG:", err));
-  };
-
-  const onExperienceLevelChange = (event) => {
-    setExperienceLevel(event); 
-    setExperienceLevelOn(event);
-    const bool_value = (experienceLevel === "pioneer")?false:true; // if previous experience level was pioneer...
-    setCompactVisualization(bool_value)
-    setAncillaMode(bool_value)
-    setAncillaModelingOn(bool_value)  
   };
 
   return (
@@ -1541,15 +1528,32 @@ function App() {
         }}
         callback={(data) => {
           const { status, index, type } = data;
-          console.log(index)
-
+          console.log("HELP");
+          console.log(index);
+          console.log(type);
+          if(type === 'step:before' && index === 0) {
+            // open both side panels if they're not opened
+            setIsPaletteOpen(true);
+            setIsPanelOpen(true);
+            //setExpanded(true);
+          }
           if (type === 'step:before' && index === 1) {
             let fileContent = JSON.stringify(reactFlowInstance.toObject());
-            setExpanded(true);
-            setModeledDiagram(fileContent)
+            setModeledDiagram(fileContent);
           }
           if (type === 'step:before' && index === 3) {
             startTour2();
+            setExpanded(true);
+          }
+          if (type === 'step:before' && index === 4) {
+            const id = "e2a719bf-516c-4601-84d1-de643b05ea02";
+            const node = nodes.find(n => n.id === id);
+            setSelectedNode(node);
+            console.log("NODES", nodes);
+            console.log("SELECTED NODE", node);
+          }
+          if (type === 'step:before' && index === 5) {
+            setExpanded(false);
           }
           if (type === 'step:after' && index === 5) {
             startTour3();
@@ -1771,13 +1775,12 @@ function App() {
               ancillaModelingOn={ancillaModelingOn}
               onToggleAncilla={() => { setAncillaModelingOn(!ancillaModelingOn); setAncillaMode(!ancillaModelingOn) }}
               experienceLevel={experienceLevel}
-              onExperienceLevelChange={onExperienceLevelChange}
+              onExperienceLevelChange={(event) => { setExperienceLevel(event); setExperienceLevelOn(event); }}
               compactVisualization={compactVisualization}
               onCompactVisualizationChange={() => { setCompactVisualization(!compact); setCompact(!compact) }}
               completionGuaranteed={completionGuaranteed}
               onCompletionGuaranteedChange={setCompletionGuaranteed}
             />
-
 
             <MiniMap
               nodeClassName={(node) => {
