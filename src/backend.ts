@@ -156,6 +156,21 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                             type: "bit",
                             value: node.data.value === "1" ? 1 : 0
                         }
+
+                    case "string":
+                        return {
+                            id: node.id,
+                            type: "string",
+                            value: node.data.value
+                        }
+
+                    case "file":
+                        return {
+                            id: node.id,
+                            type: "file",
+                            value: node.data.value
+                        }
+
                     // Currently no Backend support
                     case "array":
                         return {
