@@ -100,6 +100,12 @@ export const TextPanel = () => {
     }
   };
 
+  let validMinValue = 0;
+  if(selectedNode.type === 'splitterNode' || selectedNode.type === 'mergerNode') {
+    validMinValue = 2;
+  } else if (selectedNode.type === 'ifElseNode' || selectedNode.type === 'controlStructureNode') {
+    validMinValue = 1;
+  }
 
   // Handle other changes based on node type
   function handleNumberChange(field: string, value: string) {
@@ -117,9 +123,15 @@ export const TextPanel = () => {
         selectedNode.data[field] = value;
         updateNodeValue(selectedNode.id, field, value);
       }
+      // funktioniert nicht ganz richtig, man kann Eingabe nicht mit delete key löschen.
       else if (!isNaN(Number(value))) {
-        selectedNode.data[field] = Number(value);
-        updateNodeValue(selectedNode.id, field, value);
+        if(Number(value) < validMinValue) {
+          selectedNode.data[field] = Number(validMinValue);
+          updateNodeValue(selectedNode.id, field, String(validMinValue));
+        } else {
+          selectedNode.data[field] = Number(value);
+          updateNodeValue(selectedNode.id, field, value);
+        }
       }
 
     }
@@ -546,7 +558,7 @@ export const TextPanel = () => {
 
         {(selectedNode?.type === AlgorithmNode || selectedNode?.type === ClassicalAlgorithmNode) && (
           <div className="p-2 mt-3">
-            <label
+            {/* <label
               className="block text-sm font-medium text-start text-gray-700"
               htmlFor="numberQuantumInputs"
             >
@@ -627,7 +639,7 @@ export const TextPanel = () => {
                 className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
                 placeholder="Enter numberClassicalOutputs"
               />
-            </div>
+            </div> */}
             <ImplementationFields
               selectedNode={selectedNode}
               handleNumberChange={handleNumberChange}
@@ -639,7 +651,7 @@ export const TextPanel = () => {
         )}
         {selectedNode?.type === "splitterNode" && (
           <div className="p-2 mt-3">
-            <label
+            {/* <label
               className="block text-sm font-medium text-start text-gray-700"
               htmlFor="numberOutputs"
             >
@@ -658,7 +670,7 @@ export const TextPanel = () => {
                 className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
                 placeholder="Enter numberOutputs"
               />
-            </div>
+            </div> */}
             <ImplementationFields
               selectedNode={selectedNode}
               handleNumberChange={handleNumberChange}
@@ -670,7 +682,7 @@ export const TextPanel = () => {
         )}
         {selectedNode?.type === "mergerNode" && (
           <div className="p-2 mt-3">
-            <label
+{/*             <label
               className="block text-sm font-medium text-start text-gray-700"
               htmlFor="numberInputs"
             >
@@ -689,7 +701,7 @@ export const TextPanel = () => {
                 className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
                 placeholder="Enter numberInputs"
               />
-            </div>
+            </div> */}
 
             <ImplementationFields
               selectedNode={selectedNode}
@@ -722,7 +734,7 @@ export const TextPanel = () => {
                 placeholder="Enter condition"
               />
             </div>
-            <label
+            {/* <label
               className="block text-sm font-medium text-start text-gray-700"
               htmlFor="numberClassicalInputs"
             >
@@ -761,7 +773,7 @@ export const TextPanel = () => {
                 className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
                 placeholder="Enter numberQuantumInputs"
               />
-            </div>
+            </div> */}
           </div>
         )}
 
@@ -787,7 +799,7 @@ export const TextPanel = () => {
                 placeholder="Enter condition"
               />
             </div>
-            <label
+            {/* <label
               className="block text-sm font-medium text-start text-gray-700"
               htmlFor="numberClassicalInputs"
             >
@@ -826,7 +838,7 @@ export const TextPanel = () => {
                 className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
                 placeholder="Enter numberQuantumInputs"
               />
-            </div>
+            </div> */}
           </div>
         )}
       </aside>
