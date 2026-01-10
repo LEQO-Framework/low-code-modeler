@@ -1486,6 +1486,15 @@ function App() {
 
   const handleOpenConfig = () => setIsConfigOpen(true);
 
+  const onExperienceLevelChange = (event) => {
+    setExperienceLevel(event); 
+    setExperienceLevelOn(event);
+    const bool_value = (experienceLevel === "pioneer")?false:true; // if previous experience level was pioneer...
+    setCompactVisualization(bool_value)
+    setAncillaMode(bool_value)
+    setAncillaModelingOn(bool_value)  
+  };
+
   const handleSaveAsSVG = () => {
     if (ref.current === null) {
       console.error("React Flow container reference is null.");
@@ -1775,7 +1784,8 @@ function App() {
               ancillaModelingOn={ancillaModelingOn}
               onToggleAncilla={() => { setAncillaModelingOn(!ancillaModelingOn); setAncillaMode(!ancillaModelingOn) }}
               experienceLevel={experienceLevel}
-              onExperienceLevelChange={(event) => { setExperienceLevel(event); setExperienceLevelOn(event); }}
+              onExperienceLevelChange={onExperienceLevelChange}
+              //onExperienceLevelChange={(event) => { setExperienceLevel(event); setExperienceLevelOn(event); }}
               compactVisualization={compactVisualization}
               onCompactVisualizationChange={() => { setCompactVisualization(!compact); setCompact(!compact) }}
               completionGuaranteed={completionGuaranteed}
