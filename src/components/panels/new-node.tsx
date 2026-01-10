@@ -220,6 +220,8 @@ export const AddNodePanel = () => {
           {Object.entries(categories).map(
             ([category, { content, description }]) => {
               const visibleNodes = filterNodeGroup(content);
+              const shownDescription = (category === consts.dataTypes ||category === consts.operator)?
+                              description[completionGuaranteed?1:0] : description;
               if (visibleNodes.length === 0) return null;
 
               return (
@@ -243,7 +245,7 @@ export const AddNodePanel = () => {
                     </div>
                     {description && (
                       <div className="text-sm text-gray-600 mt-1 ml-11">
-                        {description}
+                        {shownDescription}
                       </div>
                     )}
                   </button>

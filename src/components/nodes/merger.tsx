@@ -28,7 +28,7 @@ export const MergerNode = memo((node: Node) => {
   const numberOutputs = data.numberOutputs || 1;
 
   const handleCount = Math.max(numberInputs, 2);
-  console.log(handleCount)
+  console.log("handle count", handleCount)
 
   const handleGap = 40;
   const handleOffset = 85;
@@ -50,7 +50,7 @@ export const MergerNode = memo((node: Node) => {
       isConnectableStart={false}
     />
   ));
-
+  console.log("input handles", inputHandles)
   const outputHandles = Array.from({ length: numberOutputs }, (_, i) => (
     <Handle
       key={`output-${i}`}
@@ -72,6 +72,7 @@ export const MergerNode = memo((node: Node) => {
 
   useEffect(() => {
     updateNodeInternals(node.id);
+    console.log("useEffect inputHandles", inputHandles)
 
     const edgesToRemove = edges.filter((edge) => {
       const match = edge.targetHandle?.match(

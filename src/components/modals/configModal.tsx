@@ -194,7 +194,7 @@ export const ConfigModal = ({
                       className="w-4 h-4"
                     />
                     <span className="ml-2">
-                      {localCompactVisualization ? "True" : "False"}
+                      {localCompactVisualization ? "On" : "Off"}
                     </span>
                   </td>
                 </tr>
@@ -214,7 +214,7 @@ export const ConfigModal = ({
                       className="w-4 h-4"
                     />
                     <span className="ml-2">
-                      {localCompletionGuaranteed ? "True" : "False"}
+                      {localCompletionGuaranteed ? "Yes" : "No"}
                     </span>
                   </td>
                 </tr>

@@ -140,12 +140,12 @@ export default function ExperienceModePanel({
             <tbody>
               <tr>
                 <td className="border px-3 py-2">Explorer</td>
-                <td className="border px-3 py-2">No</td>
+                <td className="border px-3 py-2">Off</td>
                 <td className="border px-3 py-2">Off</td>
               </tr>
               <tr>
                 <td className="border px-3 py-2">Pioneer</td>
-                <td className="border px-3 py-2">Yes</td>
+                <td className="border px-3 py-2">On</td>
                 <td className="border px-3 py-2">On</td>
               </tr>
             </tbody>
