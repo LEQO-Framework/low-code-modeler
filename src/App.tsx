@@ -518,6 +518,9 @@ function App() {
     console.log("load tutorial")
     loadFlow(tutorial);
     console.log("load toturial")
+    //setSelectedNode(node)
+    //const selectedNode = useStore(selector)
+    //setIsPanelOpen(true);
   }
 
   interface ValidationItem {
@@ -1347,7 +1350,7 @@ function App() {
         }))
       );
     }
-    console.log(nodes);
+    console.log("load flow nodes", nodes);
 
     // Reset the viewport (optional based on your use case)
     const { x = 0, y = 0, zoom = 1 } = flow.viewport || {};
@@ -1483,6 +1486,15 @@ function App() {
 
   const handleOpenConfig = () => setIsConfigOpen(true);
 
+  const onExperienceLevelChange = (event) => {
+    setExperienceLevel(event); 
+    setExperienceLevelOn(event);
+    const bool_value = (experienceLevel === "pioneer")?false:true; // if previous experience level was pioneer...
+    setCompactVisualization(bool_value)
+    setAncillaMode(bool_value)
+    setAncillaModelingOn(bool_value)  
+  };
+
   const handleSaveAsSVG = () => {
     if (ref.current === null) {
       console.error("React Flow container reference is null.");
@@ -1525,15 +1537,32 @@ function App() {
         }}
         callback={(data) => {
           const { status, index, type } = data;
-          console.log(index)
-
+          console.log("HELP");
+          console.log(index);
+          console.log(type);
+          if(type === 'step:before' && index === 0) {
+            // open both side panels if they're not opened
+            setIsPaletteOpen(true);
+            setIsPanelOpen(true);
+            //setExpanded(true);
+          }
           if (type === 'step:before' && index === 1) {
             let fileContent = JSON.stringify(reactFlowInstance.toObject());
-            setExpanded(true);
-            setModeledDiagram(fileContent)
+            setModeledDiagram(fileContent);
           }
           if (type === 'step:before' && index === 3) {
             startTour2();
+            setExpanded(true);
+          }
+          if (type === 'step:before' && index === 4) {
+            const id = "e2a719bf-516c-4601-84d1-de643b05ea02";
+            const node = nodes.find(n => n.id === id);
+            setSelectedNode(node);
+            console.log("NODES", nodes);
+            console.log("SELECTED NODE", node);
+          }
+          if (type === 'step:before' && index === 5) {
+            setExpanded(false);
           }
           if (type === 'step:after' && index === 5) {
             startTour3();
@@ -1755,7 +1784,8 @@ function App() {
               ancillaModelingOn={ancillaModelingOn}
               onToggleAncilla={() => { setAncillaModelingOn(!ancillaModelingOn); setAncillaMode(!ancillaModelingOn) }}
               experienceLevel={experienceLevel}
-              onExperienceLevelChange={(event) => { setExperienceLevel(event); setExperienceLevelOn(event); }}
+              onExperienceLevelChange={onExperienceLevelChange}
+              //onExperienceLevelChange={(event) => { setExperienceLevel(event); setExperienceLevelOn(event); }}
               compactVisualization={compactVisualization}
               onCompactVisualizationChange={() => { setCompactVisualization(!compact); setCompact(!compact) }}
               completionGuaranteed={completionGuaranteed}

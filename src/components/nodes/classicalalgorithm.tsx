@@ -22,8 +22,8 @@ const selector = (state: any) => ({
 
 export const ClassicalAlgorithmNode = memo((node: Node) => {
   const { data, selected } = node;
-  const numberInputs = data.numberInputs || 0;
-  const numberOutputs = data.numberOutputs || 0;
+  const numberInputs = data.numberClassicalInputs || 0;
+  const numberOutputs = data.numberClassicalOutputs || 0;
 
   const { edges, nodes, updateNodeValue, setSelectedNode, setNewEdges, ancillaMode } = useStore(selector, shallow);
   const updateNodeInternals = useUpdateNodeInternals();
@@ -55,7 +55,8 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
   }, [ancillaMode]);
 
   useEffect(() => {
-    const selectedNode = nodes.find(n => n.id === node.id);
+    //const selectedNode = nodes.find(n => n.id === node.id);
+    let selectedNode = node;
     const newErrors: { [key: number]: boolean } = {};
     const newSizeErrors: { [key: number]: boolean } = {};
 
