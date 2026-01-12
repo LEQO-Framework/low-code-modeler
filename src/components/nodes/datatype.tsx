@@ -154,7 +154,7 @@ export const DataTypeNode = memo((node: Node) => {
 
   const iconMap = {
     "int": 'intIcon.png',
-    "float": 'floatIcon.png',
+    "Number": 'floatIcon.png',
     "bit": 'bitIcon.png',
     "duration": 'durationIcon.png',
     "boolean": 'booleanIcon.png',
@@ -166,7 +166,7 @@ export const DataTypeNode = memo((node: Node) => {
   const iconSrc = iconMap[label];
   const iconSizeMap = {
     "int": { width: 60, height: 60 },
-    "float": { width: 55, height: 55 },
+    "Number": { width: 55, height: 55 },
     "bit": { width: 50, height: 50 },
     "duration": { width: 45, height: 45 },
     "boolean": { width: 45, height: 45 },
