@@ -161,6 +161,13 @@ export const categories: Record<string, CategoryEntry> = {
 
   [consts.machineLearningNodes]: {
     description: "Machine learning and quantum machine learning plugins from the QHAna Plugin Runner.",
-    content: [],  // Will be populated dynamically from Plugin Runner API
+    content: {
+      "Quantum ML Nodes": [
+        // Quantum machine learning nodes will be populated here
+      ],
+      "Classical ML Nodes": [
+        // Classical machine learning nodes will be populated here
+      ],
+    },
   },
 };

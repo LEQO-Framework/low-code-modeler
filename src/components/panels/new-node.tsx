@@ -21,6 +21,7 @@ const categoryIcons: Record<string, string> = {
 
 export const AddNodePanel = () => {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [activeSubcategories, setActiveSubcategories] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState<string>("");
   const { ancillaMode } = useStore(selector, shallow);
 
@@ -41,8 +42,8 @@ export const AddNodePanel = () => {
         const data = await response.json();
         const allPlugins = data.plugins || [];
 
-        // Filter for ML plugins by tags (only clustering and classification)
-        const mlTags = ["clustering", "classification"];
+        // Filter for ML plugins by tags (ML, QML, clustering, classification, supervised-learning)
+        const mlTags = ["ML", "QML", "clustering", "classification", "supervised-learning"];
         const filtered = allPlugins.filter((plugin: any) =>
           plugin.tags?.some((tag: string) => mlTags.includes(tag))
         );
@@ -387,25 +388,43 @@ export const AddNodePanel = () => {
   const dynamicCategories = useMemo(() => {
     const cats = { ...categories };
 
-    // Populate Machine Learning Nodes category with ML plugins only
+    // Populate Machine Learning Nodes category with ML plugins split into quantum and classical
     if (mlPlugins.length > 0) {
+      // Separate quantum and classical ML plugins
+      const quantumPlugins: any[] = [];
+      const classicalPlugins: any[] = [];
+
+      mlPlugins.forEach(plugin => {
+        const name = plugin.name.toLowerCase();
+        const isQuantum = name.startsWith('quantum') || name === 'qnn' || name.includes('quantum-');
+
+        const mockMetadata = getMockPluginMetadata(plugin.name);
+        const pluginNode = {
+          label: plugin.name,
+          type: consts.PluginNode,
+          description: plugin.description,
+          icon: getPluginIcon(plugin), // Pattern Atlas icon
+          pluginData: {
+            ...plugin,
+            // Add mock metadata to pluginData so it's available in the drag handler
+            mockDataInputs: mockMetadata.dataInputs,
+            mockDataOutputs: mockMetadata.dataOutputs,
+          },
+        };
+
+        if (isQuantum) {
+          quantumPlugins.push(pluginNode);
+        } else {
+          classicalPlugins.push(pluginNode);
+        }
+      });
+
       cats[consts.machineLearningNodes] = {
         description: "Machine learning and quantum machine learning plugins from the QHAna Plugin Runner.",
-        content: mlPlugins.map(plugin => {
-          const mockMetadata = getMockPluginMetadata(plugin.name);
-          return {
-            label: plugin.name,
-            type: consts.PluginNode,
-            description: plugin.description,
-            icon: getPluginIcon(plugin), // Pattern Atlas icon
-            pluginData: {
-              ...plugin,
-              // Add mock metadata to pluginData so it's available in the drag handler
-              mockDataInputs: mockMetadata.dataInputs,
-              mockDataOutputs: mockMetadata.dataOutputs,
-            },
-          };
-        })
+        content: {
+          "Quantum ML Nodes": quantumPlugins,
+          "Classical ML Nodes": classicalPlugins,
+        }
       };
     }
 
@@ -430,6 +449,18 @@ export const AddNodePanel = () => {
     setActiveCategory((prevCategory) =>
       prevCategory === category ? null : category
     );
+  };
+
+  const toggleSubcategory = (subcategory: string) => {
+    setActiveSubcategories((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(subcategory)) {
+        newSet.delete(subcategory);
+      } else {
+        newSet.add(subcategory);
+      }
+      return newSet;
+    });
   };
 
   const allNodes = Object.values(dynamicCategories).flatMap(({ content }) => {
@@ -581,8 +612,20 @@ export const AddNodePanel = () => {
                   ) : (
                     Object.entries(content).map(([subcategory, subGroup]) => (
                       <div key={subcategory}>
-                        <div className="text-md font-bold text-gray-800 mt-2">{subcategory}</div>
-                        {renderNodes(subGroup)}
+                        <button
+                          className="w-full text-left py-2 px-3 font-semibold text-gray-700 hover:bg-gray-200 rounded flex items-center justify-between"
+                          onClick={() => toggleSubcategory(`${category}-${subcategory}`)}
+                        >
+                          <span>{subcategory}</span>
+                          <span className="text-gray-500">
+                            {activeSubcategories.has(`${category}-${subcategory}`) ? '▼' : '▶'}
+                          </span>
+                        </button>
+                        {activeSubcategories.has(`${category}-${subcategory}`) && (
+                          <div className="pl-2 mt-2">
+                            {renderNodes(subGroup)}
+                          </div>
+                        )}
                       </div>
                     ))
                   )}
