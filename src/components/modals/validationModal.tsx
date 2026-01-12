@@ -3,56 +3,67 @@ export function ValidationModal({ open, onClose, onConfirm, validationResult }) 
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
-      <div className="bg-white rounded-lg shadow-lg p-6 max-w-lg w-full">
+      <div className="bg-white rounded-lg shadow-lg p-6 max-w-lg w-full max-h-[80vh] flex flex-col">
         <h2 className="text-lg font-bold mb-4">Validation Results</h2>
 
-        {validationResult.errors.length === 0 && validationResult.warnings.length === 0 && (
-          <p className="text-green-600">No issues found. You can continue.</p>
-        )}
+        <div className="flex-1 overflow-y-auto pr-2">
+          {validationResult.errors.length === 0 &&
+            validationResult.warnings.length === 0 && (
+              <p className="text-green-600">No issues found. You can continue.</p>
+            )}
 
-        {validationResult.errors.length > 0 && (
-          <div className="mb-4">
-            <h3 className="font-semibold text-red-600">Errors</h3>
-            <table className="w-full text-left border-collapse border border-gray-300">
-              <thead>
-                <tr>
-                  <th className="border border-gray-300 px-2 py-1">Node ID</th>
-                  <th className="border border-gray-300 px-2 py-1">Description</th>
-                </tr>
-              </thead>
-              <tbody>
-                {validationResult.errors.map((err, idx) => (
-                  <tr key={idx}>
-                    <td className="border border-gray-300 px-2 py-1">{err.nodeId}</td>
-                    <td className="border border-gray-300 px-2 py-1">{err.description}</td>
+          {validationResult.errors.length > 0 && (
+            <div className="mb-4">
+              <h3 className="font-semibold text-red-600 mb-2">Errors</h3>
+              <table className="w-full text-left border-collapse border border-gray-300">
+                <thead className="sticky top-0 bg-white">
+                  <tr>
+                    <th className="border border-gray-300 px-2 py-1">Node ID</th>
+                    <th className="border border-gray-300 px-2 py-1">Description</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                </thead>
+                <tbody>
+                  {validationResult.errors.map((err, idx) => (
+                    <tr key={idx}>
+                      <td className="border border-gray-300 px-2 py-1">
+                        {err.nodeId}
+                      </td>
+                      <td className="border border-gray-300 px-2 py-1">
+                        {err.description}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
 
-        {validationResult.warnings.length > 0 && (
-          <div className="mb-4">
-            <h3 className="font-semibold text-yellow-600">Warnings</h3>
-            <table className="w-full text-left border-collapse border border-gray-300">
-              <thead>
-                <tr>
-                  <th className="border border-gray-300 px-2 py-1">Node ID</th>
-                  <th className="border border-gray-300 px-2 py-1">Description</th>
-                </tr>
-              </thead>
-              <tbody>
-                {validationResult.warnings.map((warn, idx) => (
-                  <tr key={idx}>
-                    <td className="border border-gray-300 px-2 py-1">{warn.nodeId}</td>
-                    <td className="border border-gray-300 px-2 py-1">{warn.description}</td>
+          {validationResult.warnings.length > 0 && (
+            <div className="mb-4">
+              <h3 className="font-semibold text-yellow-600 mb-2">Warnings</h3>
+              <table className="w-full text-left border-collapse border border-gray-300">
+                <thead className="sticky top-0 bg-white">
+                  <tr>
+                    <th className="border border-gray-300 px-2 py-1">Node ID</th>
+                    <th className="border border-gray-300 px-2 py-1">Description</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                </thead>
+                <tbody>
+                  {validationResult.warnings.map((warn, idx) => (
+                    <tr key={idx}>
+                      <td className="border border-gray-300 px-2 py-1">
+                        {warn.nodeId}
+                      </td>
+                      <td className="border border-gray-300 px-2 py-1">
+                        {warn.description}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
 
         <div className="flex justify-end space-x-2 mt-4">
           <button
