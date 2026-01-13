@@ -144,6 +144,19 @@ function App() {
     []
   );
 
+  const onEdgesDelete = (edges: Edge[]) => {
+    edges.forEach((edge) => {
+      console.log("ON EDGES DELETE")
+      console.log("EDGE", edge)
+      const targetNodeId = edge.target
+      const targetHandle = edge.targetHandle
+      const targetNode = nodes.find(n => n.id === targetNodeId);
+      const newInputs = targetNode.data.inputs.filter(i => i.targetHandle !== targetHandle)
+      updateNodeValue(targetNodeId, "inputs", newInputs)
+      console.log("NEW INPUTS", targetNode.data.inputs)
+    })
+  };
+
 
 
   const handleAction = (action: string, nodeId: string) => {
@@ -1732,6 +1745,7 @@ function App() {
             onNodeDragStop={onNodeDragStop}
             onDrop={onDrop}
             onNodesDelete={onNodesDelete}
+            onEdgesDelete={onEdgesDelete}
 
             fitView
             fitViewOptions={{ maxZoom: 1 }}
