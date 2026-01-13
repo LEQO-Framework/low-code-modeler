@@ -518,13 +518,11 @@ function App() {
     console.log("load tutorial")
     loadFlow(tutorial);
     console.log("load toturial")
-    //setSelectedNode(node)
-    //const selectedNode = useStore(selector)
-    //setIsPanelOpen(true);
   }
 
   interface ValidationItem {
     nodeId: string;
+    nodeType: string;
     description: string;
   }
 
@@ -538,26 +536,40 @@ function App() {
     const errors: ValidationItem[] = [];
 
     const outputIds = new Map<string, string>();
-    const nodesById = new Map(flow.nodes?.map((n) => [n.id, n]));
+    const nodesById: any = new Map(flow.nodes?.map((n) => [n.id, n]));
 
     // Map targetNodeId => sourceNodeIds[]
-    const nodeConnections = new Map();
+    const nodeConnections = new Map<string, string[]>();
     flow.edges?.forEach((edge) => {
       if (!nodeConnections.has(edge.target)) nodeConnections.set(edge.target, []);
       nodeConnections.get(edge.target)?.push(edge.source);
     });
 
-    flow.nodes?.forEach((node) => {
-      const { outputIdentifier, label, inputs, outputSize, condition, operator } = node.data || {};
-      const incomingEdges = flow.edges?.filter(edge => edge.target === node.id) || [];
-      const connectedNodeSources = incomingEdges.map(edge => edge.source);
-      const inputCount = connectedNodeSources.length;
+    // Map sourceNodeId => targetNodeIds[] for output checks
+    const outgoingConnections = new Map<string, string[]>();
+    flow.edges?.forEach((edge) => {
+      if (!outgoingConnections.has(edge.source)) outgoingConnections.set(edge.source, []);
+      outgoingConnections.get(edge.source)?.push(edge.target);
+    });
 
-      // outputIdentifier checks
+    // Existing node validation 
+    flow.nodes?.forEach((node) => {
+      const { outputIdentifier, label, inputs, outputSize, condition, operator } =
+        node.data || {};
+      const connectedSources = nodeConnections.get(node.id) || [];
+      const inputCount = connectedSources.length;
+
+      const hasQuantumOutput = connectedSources.some((srcId) => {
+        const sourceNode: any = nodesById.get(srcId);
+        return sourceNode !== undefined;
+      });
+
+      // Output Identifier Checks 
       if (outputIdentifier && /^[0-9]/.test(outputIdentifier)) {
         errors.push({
           nodeId: node.id,
-          description: `Invalid outputIdentifier "${outputIdentifier}" (cannot start with a number).`
+          nodeType: node.type,
+          description: `Invalid outputIdentifier "${outputIdentifier}" (cannot start with a number).`,
         });
       }
 
@@ -566,20 +578,30 @@ function App() {
           const firstNodeId = outputIds.get(outputIdentifier);
           errors.push({
             nodeId: node.id,
-            description: `Duplicate outputIdentifier "${outputIdentifier}" already used by node "${firstNodeId}".`
+            nodeType: node.type,
+            description: `Duplicate outputIdentifier "${outputIdentifier}" already used by node "${firstNodeId}".`,
           });
         } else {
           outputIds.set(outputIdentifier, node.id);
         }
       }
 
-      // Gate / Operator validation
-      const twoQubitGates = ["CNOT", "SWAP", "CZ", "CY", "CH", "CP(λ)", "CRX(θ)", "CRY(θ)", "CRZ(θ)", "CU(θ,φ,λ,γ)"];
+      // Gate / Operator Validation 
+      const twoQubitGates = [
+        "CNOT",
+        "SWAP",
+        "CZ",
+        "CY",
+        "CH",
+        "CP(λ)",
+        "CRX(θ)",
+        "CRY(θ)",
+        "CRZ(θ)",
+        "CU(θ,φ,λ,γ)",
+      ];
       const threeQubitGates = ["Toffoli", "CSWAP"];
       const minMaxOperators = ["Min", "Max"];
 
-      console.log(node.type === "quantumOperatorNode");
-      console.log(!minMaxOperators.includes(operator))
       if (
         twoQubitGates.includes(label) ||
         ((node.type === "quantumOperatorNode" || node.type === "classicalOperatorNode") &&
@@ -588,53 +610,85 @@ function App() {
         if (inputCount !== 2) {
           errors.push({
             nodeId: node.id,
-            description: `Gate "${label}" requires exactly 2 inputs, but got ${inputCount}.`
+            nodeType: node.type,
+            description: `Node "${node.id}" with label "${label}" requires exactly 2 inputs, but got ${inputCount}.`,
           });
         }
+        if(node.data.label === "Quantum Comparison Operator" || node.data.label === "Quantum Min & Max Operator"){
+          warnings.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Node "${node.id}" (${node.data.label}) produces a classical output but its output is not used.`,
+          });
+        }else if (!twoQubitGates.includes(label) && !hasQuantumOutput) {
+          warnings.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Node "${node.id}" (${node.data.label}) produces a quantum state but its output is not used.`,
+          });
+        }
+        
       }
 
       if (threeQubitGates.includes(label)) {
         if (inputCount !== 3) {
           errors.push({
             nodeId: node.id,
-            description: `Gate "${label}" requires exactly 3 inputs, but got ${inputCount}.`
+            nodeType: node.type,
+            description: `Gate "${label}" requires exactly 3 inputs, but got ${inputCount}.`,
           });
         }
       }
 
       if (
         minMaxOperators.includes(label) ||
-        (node.type === "gateNode" && label !== "Qubit Circuit" && !threeQubitGates.includes(label) && !twoQubitGates.includes(label))
+        (node.type === "gateNode" &&
+          label !== "Qubit Circuit" &&
+          !threeQubitGates.includes(label) &&
+          !twoQubitGates.includes(label))
       ) {
         if (inputCount < 1) {
           errors.push({
             nodeId: node.id,
-            description: `Operator "${label}" requires at least 1 input.`
+            nodeType: node.type,
+            description: `Operator "${label}" requires at least 1 input.`,
+          });
+        }
+
+        // Warn if Min/Max operator has no output connection 
+        const outgoing = outgoingConnections.get(node.id) || [];
+        if (outgoing.length === 0) {
+          warnings.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Operator "${label}" has no output connection (unused result).`,
           });
         }
       }
 
-      const connectedSources = nodeConnections.get(node.id) || [];
-
-
-      // StatePreparationNode classical input check
+      // State Preparation Node 
       if (node.type === "statePreparationNode") {
-        if (node.data.label === "Encode Value" || node.data.label === "Basis Encoding" || node.data.label === "Angle Encoding" || node.data.label === "Amplitude Encoding") {
+        if (
+          ["Encode Value", "Basis Encoding", "Angle Encoding", "Amplitude Encoding"].includes(
+            node.data.label
+          )
+        ) {
           const hasClassical = connectedSources.some((srcId) => {
             const sourceNode: any = nodesById.get(srcId);
             return sourceNode?.type === "dataTypeNode";
           });
-
           if (!hasClassical) {
             errors.push({
               nodeId: node.id,
-              description: `Encode value node "${node.id}" has no classical data input connected.`
+              nodeType: node.type,
+              description: `Node "${node.id}" has no classical data input connected.`,
             });
           }
           if (node.data.encodingType === "Custom Encoding" && !node.data.implementation) {
             errors.push({
               nodeId: node.id,
-              description: `Encode value node "${node.id}" is missing implementation for custom encoding.`
+              nodeType: node.type,
+              description: `Node "${node.id}" is missing an implementation for custom encoding.`,
             });
           }
         }
@@ -643,86 +697,87 @@ function App() {
           if (!node.data.size) {
             errors.push({
               nodeId: node.id,
-              description: `Prepare state node "${node.id}" has no quantum register size specified.`
+              nodeType: node.type,
+              description: `Node "${node.id}" has no quantum register size specified.`,
             });
           }
           if (node.data.quantumStateName === "Custom State" && !node.data.implementation) {
             errors.push({
               nodeId: node.id,
-              description: `Prepare state node "${node.id}" is missing implementation for custom state.`
+              nodeType: node.type,
+              description: `Node "${node.id}" is missing implementation for custom state.`,
             });
           }
         }
-      }
 
-      if (node.type === "dataTypeNode" && !node.data.value) {
-        errors.push({
-          nodeId: node.id,
-          description: `Node "${node.id}" has no value specified.`
-        });
-      }
-
-      if (node.type === "qubitNode" && !node.data.value) {
-        errors.push({
-          nodeId: node.id,
-          description: `Node "${node.id}" has no size specified.`
-        });
-      }
-      console.log("HDHDHHDHDHDH")
-      console.log(node)
-
-      if (node.type === "measurementNode") {
-        const missingRegister = connectedSources.some((srcId) => {
-          const sourceNode: any = nodesById.get(srcId);
-          return quantum_types.includes(sourceNode?.type);
-        });
-        console.log("missing")
-        console.log(missingRegister)
-        if (!missingRegister) {
-          errors.push({
-            nodeId: node.id,
-            description: `Measurement node "${node.id}" requires a quantum register.`
-          });
-
-        }
-        if (!node?.data?.indices) {
-
+        if (!hasQuantumOutput) {
           warnings.push({
             nodeId: node.id,
-            description: `Measurement node "${node.id}" has no specified indices.`
+            nodeType: node.type,
+            description: `Node "${node.id}" is missing an output connection.`,
           });
-        } else {
-          const isValid = /^\d+(,\d+)*$/.test(node?.data?.indices);
-
-          if (!isValid) {
-            errors.push({
-              nodeId: node.id,
-              description: `Indices of Measurement node "${node.id}" can only contain numbers followed by comma.`
-            });
-
-          }
         }
-
       }
 
-      // Control structures
+      // DataTypeNode: warn if no output connection 
+      if (node.type === "dataTypeNode") {
+        const outgoing = outgoingConnections.get(node.id) || [];
+        if (outgoing.length === 0) {
+          warnings.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Classical data node "${node.id}" has no output connection (unused variable).`,
+          });
+        }
+      }
+
+      // Measurement Node 
+      if (node.type === "measurementNode") {
+        const missingRegister = connectedSources.every((srcId) => {
+          const sourceNode: any = nodesById.get(srcId);
+          return sourceNode?.type !== "qubitNode" && sourceNode?.type !== "gateNode";
+        });
+        if (missingRegister) {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Node "${node.id}" requires a quantum register.`,
+          });
+        }
+
+        if (!node?.data?.indices) {
+          warnings.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Node "${node.id}" has no specified indices.`,
+          });
+        } else if (!/^\d+(,\d+)*$/.test(node.data.indices)) {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Indices of measurement node "${node.id}" can only contain numbers separated by commas.`,
+          });
+        }
+      }
+
+      // Control / If Nodes 
       if (node.type === "ifElseNode") {
         const hasClassical = connectedSources.some((srcId) => {
           const sourceNode: any = nodesById.get(srcId);
           return sourceNode?.type === "dataTypeNode";
         });
-
         if (!hasClassical) {
           errors.push({
             nodeId: node.id,
-            description: `If-Then-Else node "${label}" requires at least one classical data input.`
+            nodeType: node.type,
+            description: `Node "${label}" requires at least one classical data input.`,
           });
         }
-
         if (!condition) {
           errors.push({
             nodeId: node.id,
-            description: `If-Then-Else node "${label}" requires a condition.`
+            nodeType: node.type,
+            description: `Node "${label}" requires a condition.`,
           });
         }
       }
@@ -730,22 +785,73 @@ function App() {
       if (node.type === "controlStructureNode" && !condition) {
         errors.push({
           nodeId: node.id,
-          description: `Repeat node "${label}" requires a condition.`
+          nodeType: node.type,
+          description: `Node "${label}" requires a condition.`,
         });
       }
 
-      // Custom Nodes
+      // Algorithm / Custom Nodes 
       if (node.type === "algorithmNode" || node.type === "classicalAlgorithmNode") {
         const expectedInputs = node.data?.numberInputs || 0;
         const actualInputs = connectedSources.length;
         if (actualInputs < expectedInputs) {
           errors.push({
             nodeId: node.id,
-            description: `Custom node "${label}" requires ${expectedInputs} input(s), but only ${actualInputs} connected.`
+            nodeType: node.type,
+            description: `Node "${label}" requires ${expectedInputs} input(s), but only ${actualInputs} connected.`,
           });
         }
+
+
+        // Quantum outputs check based on numberQuantumOutputs 
+        const numberQuantumOutputs = node.data?.numberQuantumOutputs || 0;
+        if (numberQuantumOutputs > 0) {
+          const outgoing = outgoingConnections.get(node.id) || [];
+          if (outgoing.length < numberQuantumOutputs) {
+            warnings.push({
+              nodeId: node.id,
+              nodeType: node.type,
+              description: `Node "${node.id}" produces ${numberQuantumOutputs} quantum outputs but only ${outgoing.length} are connected (some quantum outputs are unused).`,
+            });
+          }
+        }
       }
+
     });
+
+    // Gate node connection to measurement 
+    const gateNodes = flow.nodes?.filter((n) => n.type === "gateNode") || [];
+    const measurementNodes = new Set(
+      flow.nodes?.filter((n) => n.type === "measurementNode").map((n) => n.id)
+    );
+
+    const visited = new Set<string>();
+    function reachesMeasurement(nodeId: string): boolean {
+      if (visited.has(nodeId)) return false;
+      visited.add(nodeId);
+
+      if (measurementNodes.has(nodeId)) return true;
+
+      const outputs =
+        flow.edges?.filter((e) => e.source === nodeId).map((e) => e.target) || [];
+      return outputs.some((outId) => reachesMeasurement(outId));
+    }
+
+    const meaningfulGateExists = gateNodes.some((gate) => {
+      visited.clear();
+      return reachesMeasurement(gate.id);
+    });
+
+    if (!meaningfulGateExists && gateNodes.length > 0) {
+      warnings.push({
+        nodeId: null,
+        nodeType: "flow",
+        description:
+          "No gate node in the model has a path to a measurement node. " +
+          "Executing this flow will not produce meaningful results.",
+      });
+    }
+
 
     return { warnings, errors };
   }
@@ -1243,19 +1349,19 @@ function App() {
     function restoreFlow(flow) {
       console.log("Restoring flow:", flow);
       if (flow.nodes) {
-	reactFlowInstance.setNodes(
-	  flow.nodes.map((node: Node) => ({
-	    ...node,
-	    data: {
-	      ...node.data,
-	    },
-	  }))
-	);
-	console.log("Nodes restored.");
+        reactFlowInstance.setNodes(
+          flow.nodes.map((node: Node) => ({
+            ...node,
+            data: {
+              ...node.data,
+            },
+          }))
+        );
+        console.log("Nodes restored.");
       }
       if (flow.edges) {
-	reactFlowInstance.setEdges(flow.edges || []);
-	console.log("Edges restored.");
+        reactFlowInstance.setEdges(flow.edges || []);
+        console.log("Edges restored.");
       }
 
 
@@ -1271,7 +1377,7 @@ function App() {
     const event = new CustomEvent("lcm-open", {
       cancelable: true,
       detail: {
-	restoreFlow
+        restoreFlow
       },
     });
     const defaultAction = document.dispatchEvent(event);
@@ -1295,7 +1401,7 @@ function App() {
         try {
           const flow = JSON.parse(e.target?.result as string);
 
-	  restoreFlow(flow);
+          restoreFlow(flow);
         } catch (error) {
           console.error("Error parsing JSON file:", error);
           alert("Invalid JSON file. Please ensure it is a valid flow file.");
@@ -1487,12 +1593,12 @@ function App() {
   const handleOpenConfig = () => setIsConfigOpen(true);
 
   const onExperienceLevelChange = (event) => {
-    setExperienceLevel(event); 
+    setExperienceLevel(event);
     setExperienceLevelOn(event);
-    const bool_value = (experienceLevel === "pioneer")?false:true; // if previous experience level was pioneer...
+    const bool_value = (experienceLevel === "pioneer") ? false : true; // if previous experience level was pioneer...
     setCompactVisualization(bool_value)
     setAncillaMode(bool_value)
-    setAncillaModelingOn(bool_value)  
+    setAncillaModelingOn(bool_value)
   };
 
   const handleSaveAsSVG = () => {
@@ -1540,7 +1646,7 @@ function App() {
           console.log("HELP");
           console.log(index);
           console.log(type);
-          if(type === 'step:before' && index === 0) {
+          if (type === 'step:before' && index === 0) {
             // open both side panels if they're not opened
             setIsPaletteOpen(true);
             setIsPanelOpen(true);
