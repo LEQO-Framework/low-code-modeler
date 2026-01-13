@@ -173,7 +173,7 @@ export const AlgorithmNode = memo((node: Node) => {
     data.identifiers = data.identifiers.slice(0, outputHandleCount);
   }
 
-  console.log(nodeHeight)
+  //console.log(nodeHeight)
 
   return (
     <motion.div
@@ -254,7 +254,7 @@ export const AlgorithmNode = memo((node: Node) => {
                 <div className="relative flex flex-col overflow-visible">
                   {Array.from({ length: numberClassicalInputs }).map((_, index) => (
                     <div
-                      key={`quantum-input-${index}`}
+                      key={`classical-input-${index}`}
                       className="relative p-2 mb-1"
                       style={{
                         backgroundColor: classicalConstructColor,
@@ -274,7 +274,8 @@ export const AlgorithmNode = memo((node: Node) => {
                         style={{ top: "50%", transform: "translateY(-50%)" }}
                       />
                       <span className="text-black text-sm text-center w-full">
-                        {node.data.inputs?.[index]?.outputIdentifier || `Input ${index + 1}`}
+                        {node.data.inputs.find(
+                        (input) => input.targetHandle === `classicalHandleOperationInput${index}${node.id}`)?.[index]?.outputIdentifier || `Input ${index + 1}`}
                       </span>
                     </div>
                   ))}
@@ -283,7 +284,7 @@ export const AlgorithmNode = memo((node: Node) => {
                       key={`quantum-input-${index}`}
                       className="relative p-2 mb-1"
                       style={{
-                        backgroundColor: quantumConstructColor, // TODO
+                        backgroundColor: quantumConstructColor, 
                         width: "120px",
                         display: "flex",
                         alignItems: "center",
@@ -298,7 +299,8 @@ export const AlgorithmNode = memo((node: Node) => {
                         style={{ top: "50%", transform: "translateY(-50%)" }} //TODO
                       />
                       <span className="text-black text-sm text-center w-full">
-                        {node.data.inputs?.[index]?.outputIdentifier || `Input ${index + 1}`}
+                        {node.data.inputs.find(
+                        (input) => input.targetHandle === `quantumHandleOperationInput${index}${node.id}`)?.[index]?.outputIdentifier || `Input ${index + 1}`}
                       </span>
                     </div>
                   ))}

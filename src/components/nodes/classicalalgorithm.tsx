@@ -191,7 +191,8 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
                 style={{ top: "50%", transform: "translateY(-50%)" }}
               />
               <span className="text-black text-sm text-center w-full">
-                {node.data.inputs?.[index]?.outputIdentifier || `Input ${index + 1}`}
+                {node.data.inputs.find(
+                        (input) => input.targetHandle === `classicalHandleOperationInput${index}${node.id}`)?.[index]?.outputIdentifier || `Input ${index + 1}`}
               </span>
             </div>
           ))}

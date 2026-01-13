@@ -19,6 +19,7 @@ import { nodesConfig } from "./site";
 import { v4 as uuid } from "uuid";
 import * as consts from "../constants";
 import TabPane from "antd/es/tabs/TabPane";
+import { IPortData } from "@/components/nodes/model";
 
 export type NodeData = {
   label: string;
@@ -162,6 +163,7 @@ export const useStore = create<RFState>((set, get) => ({
     });
     console.log("History after update:", get().history);
     console.log("Current historyIndex:", get().historyIndex);
+    console.log(node)
   },
 
   setEdges: (edge: Edge) => {
@@ -541,8 +543,10 @@ export const useStore = create<RFState>((set, get) => ({
     console.log("New History Item:", newHistoryItem);
 
     if (insertEdge && !edgeExists) {
-
+      console.log("ONCONNECT")
+      console.log(connection)
       console.log(connection.source);
+
       console.log(nodeDataSource);
       const existingInput = nodeDataTarget.data.inputs.find(
         (input) => input.id === nodeDataSource.id
@@ -556,7 +560,7 @@ export const useStore = create<RFState>((set, get) => ({
           // Push a new entry
           nodeDataTarget.data.inputs.push({
             id: nodeDataSource.id,
-
+            targetHandle: connection.targetHandle
           });
         }
 
@@ -565,30 +569,35 @@ export const useStore = create<RFState>((set, get) => ({
           if (nodeDataTarget.data.label === "CNOT" && connection.sourceHandle.includes("Output1")) {
             nodeDataTarget.data.inputs.push({
               id: nodeDataSource.id,
-              identifiers: [nodeDataSource.data.identifiers[0]]
+              identifiers: [nodeDataSource.data.identifiers[0]],
+              targetHandle: connection.targetHandle
             });
           }
           else if (nodeDataTarget.label === "CNOT" && connection.sourceHandle.endsWith("Output2")) {
             nodeDataTarget.data.inputs.push({
               id: nodeDataSource.id,
-              identifiers: [nodeDataSource.data.identifiers[1]]
+              identifiers: [nodeDataSource.data.identifiers[1]],
+              targetHandle: connection.targetHandle
             });
           } else if (nodeDataTarget.data.label === "Toffoli" && connection.sourceHandle.includes("Output1")) {
             nodeDataTarget.data.inputs.push({
               id: nodeDataSource.id,
-              identifiers: [nodeDataSource.data.identifiers[0]]
+              identifiers: [nodeDataSource.data.identifiers[0]],
+              targetHandle: connection.targetHandle
             });
           }
           else if (nodeDataTarget.label === "Toffoli" && connection.sourceHandle.endsWith("Output2")) {
             nodeDataTarget.data.inputs.push({
               id: nodeDataSource.id,
-              identifiers: [nodeDataSource.data.identifiers[1]]
+              identifiers: [nodeDataSource.data.identifiers[1]],
+              targetHandle: connection.targetHandle
             });
           }
           else if (nodeDataTarget.label === "Toffoli" && connection.sourceHandle.endsWith("Output3")) {
             nodeDataTarget.data.inputs.push({
               id: nodeDataSource.id,
-              identifiers: [nodeDataSource.data.identifiers[2]]
+              identifiers: [nodeDataSource.data.identifiers[2]],
+              targetHandle: connection.targetHandle
             });
           } else {
             if (!edge.sourceHandle.includes("side") && !edge.targetHandle.includes("side")) {
@@ -596,7 +605,8 @@ export const useStore = create<RFState>((set, get) => ({
               console.log("push entry")
               nodeDataTarget.data.inputs.push({
                 id: nodeDataSource.id,
-                identifiers: nodeDataSource.data.identifiers
+                identifiers: nodeDataSource.data.identifiers,
+                targetHandle: edge.targetHandle
               });
             }
           }
@@ -606,7 +616,8 @@ export const useStore = create<RFState>((set, get) => ({
             console.log("push entry")
             nodeDataTarget.data.inputs.push({
               id: nodeDataSource.id,
-              identifiers: nodeDataSource.data.identifiers
+              identifiers: nodeDataSource.data.identifiers,
+              targetHandle: edge.targetHandle
             });
           }
 
@@ -646,7 +657,8 @@ export const useStore = create<RFState>((set, get) => ({
             if (!targetData.inputs) targetData.inputs = [];
 
             const inputIndex = targetData.inputs.findIndex((input) => input.id === connection.source);
-
+            console.log("input index", inputIndex)
+            console.log("target inputs", targetData.inputs)
 
             if (inputIndex !== -1) {
               if (targetData.inputs[inputIndex].outputIdentifier === sourceOutputIdentifier) {
@@ -667,6 +679,7 @@ export const useStore = create<RFState>((set, get) => ({
                 id: connection.source,
                 outputIdentifier: sourceNode.data.outputIdentifier,
                 "identifiers": sourceIdentifier,
+                targetHandle: connection.targetHandle
               });
               targetData["identifiers"] = sourceIdentifier
               console.log(targetData["identifiers"])
@@ -762,6 +775,7 @@ export const useStore = create<RFState>((set, get) => ({
 
       // Update the target nodes that receive inputs from this node
       edges.forEach((edge) => {
+        console.log("Update target node that receive inputs from this node")
         console.log(sourceIdentifier)
         console.log(edge)
         console.log(nodeId)
@@ -802,6 +816,7 @@ export const useStore = create<RFState>((set, get) => ({
                   id: nodeId,
                   outputIdentifier: nodeVal,
                   "identifiers": sourceIdentifier,
+                  //targetHandle: connection.targetHandle
                 });
                 targetData["identifiers"] = sourceIdentifier
                 console.log(targetData["identifiers"])
