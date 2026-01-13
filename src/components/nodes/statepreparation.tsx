@@ -16,6 +16,7 @@ const selector = (state: {
   edges: Edge[];
   nodes: Node[];
   ancillaMode: boolean;
+  compact: boolean;
   completionGuaranteed: boolean;
   updateNodeValue: (nodeId: string, field: string, nodeVal: any) => void;
   setNodes: (node: Node) => void;
@@ -26,6 +27,7 @@ const selector = (state: {
   nodes: state.nodes,
   ancillaMode: state.ancillaMode,
   completionGuaranteed: state.completionGuaranteed,
+  compact: state.compact,
   setNodes: state.setNodes,
   updateNodeValue: state.updateNodeValue,
   setSelectedNode: state.setSelectedNode,
@@ -48,7 +50,7 @@ export const StatePreparationNode = memo((node: Node) => {
 
 
 
-  const { updateNodeValue, setSelectedNode, setNodes, edges, nodes, ancillaMode, completionGuaranteed } = useStore(selector, shallow);
+  const { updateNodeValue, setSelectedNode, setNodes, edges, nodes, ancillaMode, completionGuaranteed, compact } = useStore(selector, shallow);
   const isConnected = edges.some(
     edge => edge.target === node.id && edge.targetHandle === `ancillaHandlePrepareState0${node.id}`
   );
@@ -121,9 +123,9 @@ export const StatePreparationNode = memo((node: Node) => {
     const value = node.data.size;
     const num = Number(value);
     console.log(value)
-    if(num === 0 && node.data.label === "Prepare State"){
+    if (num === 0 && node.data.label === "Prepare State") {
       setMissingSizeError(true);
-    }else if (
+    } else if (
       quantumStateName === "GHZ") {
       const value = node.data.size;
       const num = Number(value);
@@ -135,7 +137,7 @@ export const StatePreparationNode = memo((node: Node) => {
       setSizeError(isInvalid);
       setMissingSizeError(false);
     } else if ((quantumStateName === "Uniform Superposition" ||
-      quantumStateName === "Custom State" )) {
+      quantumStateName === "Custom State")) {
       const isInvalid =
         value === "" ||
         num < 1;
@@ -194,12 +196,15 @@ export const StatePreparationNode = memo((node: Node) => {
       updateNodeInternals(node.id);
       setQuantumStateName(node.data.quantumStateName)
     }
-  }, [nodes, node.data.outputIdentifier]);
+  }, [nodes, node.data.outputIdentifier, node.id]);
+  useEffect(() => {
+    updateNodeInternals(node.id);
+  }, [compact])
 
-  
-useEffect(() => {
-  updateNodeInternals(node.id);
-}, [node.data.encodingType, ancillaMode]);
+
+  useEffect(() => {
+    updateNodeInternals(node.id);
+  }, [node.data.encodingType, ancillaMode]);
 
   const { data, selected } = node;
 
