@@ -16,6 +16,7 @@ const selector = (state: {
   edges: Edge[];
   nodes: Node[];
   ancillaMode: boolean;
+  compact: boolean;
   completionGuaranteed: boolean;
   updateNodeValue: (nodeId: string, field: string, nodeVal: any) => void;
   setNodes: (node: Node) => void;
@@ -26,6 +27,7 @@ const selector = (state: {
   nodes: state.nodes,
   ancillaMode: state.ancillaMode,
   completionGuaranteed: state.completionGuaranteed,
+  compact: state.compact,
   setNodes: state.setNodes,
   updateNodeValue: state.updateNodeValue,
   setSelectedNode: state.setSelectedNode,
@@ -47,7 +49,7 @@ export const StatePreparationNode = memo((node: Node) => {
 
 
 
-  const { updateNodeValue, setSelectedNode, setNodes, edges, nodes, ancillaMode, completionGuaranteed } = useStore(selector, shallow);
+  const { updateNodeValue, setSelectedNode, setNodes, edges, nodes, ancillaMode, completionGuaranteed, compact } = useStore(selector, shallow);
   const isConnected = edges.some(
     edge => edge.target === node.id && edge.targetHandle === `ancillaHandlePrepareState0${node.id}`
   );
@@ -173,6 +175,9 @@ export const StatePreparationNode = memo((node: Node) => {
       setQuantumStateName(node.data.quantumStateName)
     }
   }, [nodes, node.data.outputIdentifier, node.id]);
+  useEffect(()=>{
+    updateNodeInternals(node.id);
+  }, [compact])
 
   const { data, selected } = node;
 
