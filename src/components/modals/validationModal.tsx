@@ -26,7 +26,7 @@ export function ValidationModal({
 }: ValidationModalProps) {
   return (
     <Modal
-      title="Validation Results"
+      title="Validation"
       open={open}
       onClose={onClose}
       className="w-[900px] max-w-[95vw]"

@@ -525,6 +525,7 @@ function App() {
 
   interface ValidationItem {
     nodeId: string;
+    nodeType: string;
     description: string;
   }
 
@@ -539,6 +540,7 @@ function App() {
 
     const outputIds = new Map<string, string>();
     const nodesById = new Map(flow.nodes?.map((n) => [n.id, n]));
+    
 
     // Map targetNodeId => sourceNodeIds[]
     const nodeConnections = new Map();
@@ -546,17 +548,24 @@ function App() {
       if (!nodeConnections.has(edge.target)) nodeConnections.set(edge.target, []);
       nodeConnections.get(edge.target)?.push(edge.source);
     });
+    
 
     flow.nodes?.forEach((node) => {
       const { outputIdentifier, label, inputs, outputSize, condition, operator } = node.data || {};
       const incomingEdges = flow.edges?.filter(edge => edge.target === node.id) || [];
       const connectedNodeSources = incomingEdges.map(edge => edge.source);
       const inputCount = connectedNodeSources.length;
+      const connectedSources = nodeConnections.get(node.id) || [];
+      const hasQuantumOutput = connectedSources.some((srcId) => {
+            const sourceNode: any = nodesById.get(srcId);
+            return sourceNode !== undefined;
+          });
 
       // outputIdentifier checks
       if (outputIdentifier && /^[0-9]/.test(outputIdentifier)) {
         errors.push({
           nodeId: node.id,
+          nodeType: node.type,
           description: `Invalid outputIdentifier "${outputIdentifier}" (cannot start with a number).`
         });
       }
@@ -566,6 +575,7 @@ function App() {
           const firstNodeId = outputIds.get(outputIdentifier);
           errors.push({
             nodeId: node.id,
+            nodeType: node.type,
             description: `Duplicate outputIdentifier "${outputIdentifier}" already used by node "${firstNodeId}".`
           });
         } else {
@@ -588,7 +598,15 @@ function App() {
         if (inputCount !== 2) {
           errors.push({
             nodeId: node.id,
-            description: `Gate "${label}" requires exactly 2 inputs, but got ${inputCount}.`
+            nodeType: node.type,
+            description: `Node "${node.id}" with label "${label}" requires exactly 2 inputs, but got ${inputCount}.`
+          });
+        }
+        if (!twoQubitGates.includes(label) && !hasQuantumOutput) {
+          warnings.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Node "${node.id}" (${node.data.label}) produces a quantum state but its output is not used.`
           });
         }
       }
@@ -597,6 +615,7 @@ function App() {
         if (inputCount !== 3) {
           errors.push({
             nodeId: node.id,
+            nodeType: node.type,
             description: `Gate "${label}" requires exactly 3 inputs, but got ${inputCount}.`
           });
         }
@@ -606,58 +625,81 @@ function App() {
         minMaxOperators.includes(label) ||
         (node.type === "gateNode" && label !== "Qubit Circuit" && !threeQubitGates.includes(label) && !twoQubitGates.includes(label))
       ) {
+       
         if (inputCount < 1) {
           errors.push({
             nodeId: node.id,
+            nodeType: node.type,
             description: `Operator "${label}" requires at least 1 input.`
+          });
+        }
+        if (!hasQuantumOutput) {
+          warnings.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Node "${node.id}" is missing a classical output connection.`
           });
         }
       }
 
-      const connectedSources = nodeConnections.get(node.id) || [];
-
 
       // StatePreparationNode classical input check
       if (node.type === "statePreparationNode") {
+         
         if (node.data.label === "Encode Value" || node.data.label === "Basis Encoding" || node.data.label === "Angle Encoding" || node.data.label === "Amplitude Encoding") {
           const hasClassical = connectedSources.some((srcId) => {
             const sourceNode: any = nodesById.get(srcId);
             return sourceNode?.type === "dataTypeNode";
           });
 
+
+
           if (!hasClassical) {
             errors.push({
               nodeId: node.id,
-              description: `Encode value node "${node.id}" has no classical data input connected.`
+              nodeType: node.type,
+              description: `Node "${node.id}" has no classical data input connected.`
             });
           }
           if (node.data.encodingType === "Custom Encoding" && !node.data.implementation) {
             errors.push({
               nodeId: node.id,
-              description: `Encode value node "${node.id}" is missing implementation for custom encoding.`
+              nodeType: node.type,
+              description: `Node "${node.id}" is missing an implementation for custom encoding.`
             });
           }
+
         }
 
         if (node.data.label === "Prepare State") {
           if (!node.data.size) {
             errors.push({
               nodeId: node.id,
-              description: `Prepare state node "${node.id}" has no quantum register size specified.`
+              nodeType: node.type,
+              description: `Node "${node.id}" has no quantum register size specified.`
             });
           }
           if (node.data.quantumStateName === "Custom State" && !node.data.implementation) {
             errors.push({
               nodeId: node.id,
-              description: `Prepare state node "${node.id}" is missing implementation for custom state.`
+              nodeType: node.type,
+              description: `Node "${node.id}" is missing implementation for custom state.`
             });
           }
         }
+          if (!hasQuantumOutput) {
+            warnings.push({
+              nodeId: node.id,
+              nodeType: node.type,
+              description: `Node "${node.id}" is missing an output connection.`
+            });
+          }
       }
 
       if (node.type === "dataTypeNode" && !node.data.value) {
         errors.push({
           nodeId: node.id,
+          nodeType: node.type,
           description: `Node "${node.id}" has no value specified.`
         });
       }
@@ -665,10 +707,11 @@ function App() {
       if (node.type === "qubitNode" && !node.data.value) {
         errors.push({
           nodeId: node.id,
+          nodeType: node.type,
           description: `Node "${node.id}" has no size specified.`
         });
       }
-      console.log("HDHDHHDHDHDH")
+
       console.log(node)
 
       if (node.type === "measurementNode") {
@@ -681,7 +724,8 @@ function App() {
         if (!missingRegister) {
           errors.push({
             nodeId: node.id,
-            description: `Measurement node "${node.id}" requires a quantum register.`
+            nodeType: node.type,
+            description: `Node "${node.id}" requires a quantum register.`
           });
 
         }
@@ -689,7 +733,8 @@ function App() {
 
           warnings.push({
             nodeId: node.id,
-            description: `Measurement node "${node.id}" has no specified indices.`
+            nodeType: node.type,
+            description: `Node "${node.id}" has no specified indices.`
           });
         } else {
           const isValid = /^\d+(,\d+)*$/.test(node?.data?.indices);
@@ -697,7 +742,8 @@ function App() {
           if (!isValid) {
             errors.push({
               nodeId: node.id,
-              description: `Indices of Measurement node "${node.id}" can only contain numbers followed by comma.`
+              nodeType: node.type,
+              description: `Indices of measurement node "${node.id}" can only contain numbers followed by comma.`
             });
 
           }
@@ -715,14 +761,16 @@ function App() {
         if (!hasClassical) {
           errors.push({
             nodeId: node.id,
-            description: `If-Then-Else node "${label}" requires at least one classical data input.`
+            nodeType: node.type,
+            description: `Node "${label}" requires at least one classical data input.`
           });
         }
 
         if (!condition) {
           errors.push({
             nodeId: node.id,
-            description: `If-Then-Else node "${label}" requires a condition.`
+            nodeType: node.type,
+            description: `Node "${label}" requires a condition.`
           });
         }
       }
@@ -730,7 +778,8 @@ function App() {
       if (node.type === "controlStructureNode" && !condition) {
         errors.push({
           nodeId: node.id,
-          description: `Repeat node "${label}" requires a condition.`
+          nodeType: node.type,
+          description: `Node "${label}" requires a condition.`
         });
       }
 
@@ -741,7 +790,8 @@ function App() {
         if (actualInputs < expectedInputs) {
           errors.push({
             nodeId: node.id,
-            description: `Custom node "${label}" requires ${expectedInputs} input(s), but only ${actualInputs} connected.`
+            nodeType: node.type,
+            description: `Node "${label}" requires ${expectedInputs} input(s), but only ${actualInputs} connected.`
           });
         }
       }
