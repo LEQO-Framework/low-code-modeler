@@ -248,20 +248,18 @@ export const AlgorithmNode = memo((node: Node) => {
             </div>
           </div>
 
-          <div className="custom-node-port-in mb-3 mt-[5px]">
-            <div className="relative flex flex-col overflow-visible">
-              <div className="custom-node-port-in">
+{/*           <div className="custom-node-port-in mb-3 mt-[5px]">
+            <div className="relative flex flex-col overflow-visible"> */}
+              {/* <div className="custom-node-port-in"> */}
+              <div className="custom-node-port-in mb-3 mt-2">
                 <div className="relative flex flex-col overflow-visible">
                   {Array.from({ length: numberClassicalInputs }).map((_, index) => (
                     <div
                       key={`classical-input-${index}`}
-                      className="relative p-2 mb-1"
+                      className="relative p-2 mb-1 flex items-center"
                       style={{
                         backgroundColor: classicalConstructColor,
                         width: "120px",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "flex-start",
                         borderTopRightRadius: '20px',
                         borderBottomRightRadius: '20px',
                       }}
@@ -270,12 +268,12 @@ export const AlgorithmNode = memo((node: Node) => {
                         type="target"
                         id={`classicalHandleOperationInput${index}${node.id}`}
                         position={Position.Left}
-                        className="z-10 classical-circle-port-hex-out !bg-orange-300 !border-black -left-[8px]"
+                        className="z-10 classical-circle-port-operation !bg-orange-300 !border-black -left-[8px]"
                         style={{ top: "50%", transform: "translateY(-50%)" }}
                       />
                       <span className="text-black text-sm text-center w-full">
                         {node.data.inputs.find(
-                        (input) => input.targetHandle === `classicalHandleOperationInput${index}${node.id}`)?.[index]?.outputIdentifier || `Input ${index + 1}`}
+                        (input) => input.targetHandle === `classicalHandleOperationInput${index}${node.id}`)?.outputIdentifier || `Input ${index + 1}`}
                       </span>
                     </div>
                   ))}
@@ -296,17 +294,18 @@ export const AlgorithmNode = memo((node: Node) => {
                         id={`quantumHandleOperationInput${index}${node.id}`} 
                         position={Position.Left}
                         className="z-10 circle-port-op !bg-blue-300 !border-black -left-[8px]"
-                        style={{ top: "50%", transform: "translateY(-50%)" }} //TODO
+                        style={{ top: "50%", transform: "translateY(-50%)" }} 
                       />
                       <span className="text-black text-sm text-center w-full">
                         {node.data.inputs.find(
-                        (input) => input.targetHandle === `quantumHandleOperationInput${index}${node.id}`)?.[index]?.outputIdentifier || `Input ${index + 1}`}
+                        (input) => input.targetHandle === `quantumHandleOperationInput${index}${node.id}`)?.outputIdentifier || `Input ${index + 1}`}
                       </span>
                     </div>
                   ))}
-                </div>
-              </div>
-              {ancillaMode && (<div>
+
+              
+              {ancillaMode && (
+                <div>
                 <div
                   className="relative p-2 mb-1"
                   style={{
@@ -400,6 +399,8 @@ export const AlgorithmNode = memo((node: Node) => {
             ))
 
             }
+          </div>
+          <div className="custom-node-port-out">
             {Array.from({ length: numberQuantumOutputs }).map((_, index) => (
               <OutputPort
                 key={`output-port-${numberClassicalOutputs+index}`}
