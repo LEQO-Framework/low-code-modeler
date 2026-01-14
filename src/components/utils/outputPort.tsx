@@ -74,6 +74,25 @@ export default function OutputPort({
     setSelectedNode(node);
   };
 
+  const getDisplayedOutputType = () => {
+    // Highest priority: explicit data type node
+    if (node.type === "dataTypeNode") {
+      return node.data?.dataType ?? "unknown";
+    }
+
+    // Quantum vs classical outputs
+    if (type === "quantum") {
+      return "quantum register";
+    }
+
+    if (type === "classical") {
+      return "array";
+    }
+
+    return "unknown";
+  };
+
+
   useEffect(() => {
     const isNowBellState = node.data.quantumStateName?.includes("Bell State");
 
@@ -127,7 +146,15 @@ export default function OutputPort({
           borderRadius: isClassical ? '16px' : '0px',
         }}
       >
-        <div className="w-full text-left text-sm text-black font-semibold">Output:</div>
+        <div className="w-full flex justify-between items-center">
+          <span className="text-left text-sm text-black font-semibold">
+            Output:
+          </span>
+          <span className="text-[10px] text-gray-600">
+            type: {getDisplayedOutputType().toLowerCase()}
+          </span>
+        </div>
+
 
         <div className="flex items-center justify-between w-full space-x-2">
           <label className="text-sm text-black" style={{ paddingLeft: '15px' }}>Identifier</label>
@@ -176,12 +203,12 @@ export default function OutputPort({
           <input
             type="text"
             className={`p-1 text-sm text-black opacity-75 w-20 text-center rounded-full border ${sizeError
-                ? 'bg-red-500 border-red-500'
-                : isClassical
-                  ? `bg-white border-orange-500 ${sizeRequired ? '' : 'border-dashed'}`
-                  : isAncilla
-                    ? `bg-white border-green-500 ${sizeRequired ? '' : 'border-dashed'}`
-                    : `bg-white border-blue-500 ${sizeRequired ? '' : 'border-dashed'}`
+              ? 'bg-red-500 border-red-500'
+              : isClassical
+                ? `bg-white border-orange-500 ${sizeRequired ? '' : 'border-dashed'}`
+                : isAncilla
+                  ? `bg-white border-green-500 ${sizeRequired ? '' : 'border-dashed'}`
+                  : `bg-white border-blue-500 ${sizeRequired ? '' : 'border-dashed'}`
               }`}
             value={node.data.quantumStateName?.includes("Bell State") ? "2" : outputSize}
             readOnly={node.data.quantumStateName?.includes("Bell State")}

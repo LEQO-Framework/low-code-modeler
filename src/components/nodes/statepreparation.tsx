@@ -78,6 +78,28 @@ export const StatePreparationNode = memo((node: Node) => {
     setSelectedNode(node);
   };
 
+
+  const getValueTypeLabel = () => {
+    const enc = node.data.encodingType || encodingType;
+
+    switch (enc) {
+      case "Basis Encoding":
+        return "any";
+      case "Angle Encoding":
+        return "number";
+      case "Amplitude Encoding":
+        return "array";
+      case "Matrix Encoding":
+        return "array";
+      case "Schmidt Decomposition":
+        return "array";
+      case "Custom Encoding":
+        return "any"
+      default:
+        return "number";
+    }
+  };
+
   console.log(node)
   useEffect(() => {
     if (node.data.label === "Encode Value") {
@@ -504,7 +526,15 @@ export const StatePreparationNode = memo((node: Node) => {
                     className="z-10 classical-circle-port-operation !bg-orange-300 !border-black -left-[8px]"
                     style={{ top: '50%', transform: 'translateY(-50%)' }}
                   />
-                  <span className="text-black text-sm text-center w-full">{node.data.inputs[0]?.outputIdentifier || "Value"}</span>
+                  <div className="flex flex-col items-center w-full leading-tight">
+                    <span className="text-black text-sm">
+                      {node.data.inputs[0]?.outputIdentifier || "Value"}
+                    </span>
+                    <span className="text-[10px] text-gray-600">
+                      type: {getValueTypeLabel()}
+                    </span>
+                  </div>
+
                 </div>)}
 
               {ancillaMode && (<div>
