@@ -54,6 +54,12 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
     setSelectedNode(node);
   }, [ancillaMode]);
 
+    useEffect(() => {
+    updateNodeInternals(node.id);
+    setSelectedNode(node);
+  }, [node.data.numberClassicalInputs, node.data.numberClassicalOutputs]);
+
+
   useEffect(() => {
     //const selectedNode = nodes.find(n => n.id === node.id);
     let selectedNode = node;

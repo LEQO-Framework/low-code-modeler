@@ -27,7 +27,7 @@ export const ControlStructureNode = memo((node: Node) => {
   const [showingChildren, setShowingChildren] = useState(false);
   const { setNodes, updateNodeValue, setSelectedNode, edges } = useStore(selector, shallow);
   const updateNodeInternals = useUpdateNodeInternals();
-  const numberQuantumInputs = data.numberQuantumInputs || 1;
+  const numberQuantumInputs = 0;
   const numberClassicalInputs = data.numberClassicalInputs || 1;
   const quantumHandles = Array.from({ length: numberQuantumInputs }, (_, index) => index);
   const classicalHandles = Array.from({ length: numberClassicalInputs }, (_, index) => index);
@@ -69,14 +69,14 @@ export const ControlStructureNode = memo((node: Node) => {
   }, [edges, node.id]);
 
 
-  const dynamicHeight = 600 + Math.max(0, quantumHandles.length - 1 + (classicalHandles.length - 1)) * 30;
+  const dynamicHeight = 900 + Math.max(0, quantumHandles.length - 1 + (classicalHandles.length - 1)) * 30;
   const totalHandles = Math.max(classicalHandles.length + quantumHandles.length, classicalOutputHandles.length + quantumOutputHandles.length);
   const hexagonHeight = Math.max(250, 180 + totalHandles * 30);
   const hexagonTopOffset = -(hexagonHeight / 2) + 20;
 
   return (
     <div className="grand-parent overflow-visible"
-      style={{ minWidth: "1100px", height: `${dynamicHeight}px`, position: "relative", zIndex: -100 }}>
+      style={{ minWidth: "1500px", height: `${dynamicHeight}px`, position: "relative", zIndex: -100 }}>
       <div className="rounded-none bg-white border border-solid border-gray-700 shadow-md w-full h-full flex items-center justify-center relative overflow-visible">
         <div className="rounded-none border border-solid border-gray-700 shadow-md w-full h-full flex flex-col items-center relative z-10 overflow-visible">
           <div className="w-full bg-purple-300 text-black text-center font-semibold py-1">
