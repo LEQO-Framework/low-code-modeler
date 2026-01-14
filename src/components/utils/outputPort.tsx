@@ -43,10 +43,10 @@ export default function OutputPort({
   const isClassical = type === "classical";
   const isAncilla = type === "ancilla";
   const handleId = isClassical
-    ? `classicalHandle${node.id}`
+    ? `classicalHandle${node.type}Output${index}-${node.id}`
     : isAncilla
-      ? `ancillaHandleOutput${index}${node.id}`
-      : `quantumHandle${node.type}Output${index}${node.id}`;
+      ? `ancillaHandleOutput${index}-${node.id}`
+      : `quantumHandle${node.type}Output${index}-${node.id}`;
 
   const handleClass = isClassical
     ? "classical-circle-port-out"
@@ -153,6 +153,11 @@ export default function OutputPort({
                 type: isClassical ? "classical" : "quantum",
               };
 
+              // Ensure immutability by creating a new array
+              setOutputs(updatedOutputs);
+              node.data.outputs = updatedOutputs;
+              updateNodeValue(node.id, "outputs", updatedOutputs);
+              setSelectedNode(node);
               handleOutputIdentifierChange({
                 e,
                 node,
@@ -161,12 +166,6 @@ export default function OutputPort({
                 setSelectedNode,
                 setOutputIdentifierError,
               });
-
-              // Ensure immutability by creating a new array
-              setOutputs(updatedOutputs);
-              node.data.outputs = updatedOutputs;
-              updateNodeValue(node.id, "outputs", updatedOutputs);
-              setSelectedNode(node);
             }}
           />
         </div>

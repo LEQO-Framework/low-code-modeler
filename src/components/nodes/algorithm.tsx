@@ -56,6 +56,7 @@ export const AlgorithmNode = memo((node: Node) => {
 
   const [inputs, setInputs] = useState(data.inputs || []);
   const [outputs, setOutputs] = useState(data.outputs || []);
+  const [classicalOutputs, setClassicalOutputs] = useState(data.classicalOutputs || []);
   const [yError, setYError] = useState(false);
   const [y, setY] = useState("");
   const [outputIdentifierError, setOutputIdentifierError] = useState(false);
@@ -92,12 +93,18 @@ export const AlgorithmNode = memo((node: Node) => {
 
   useEffect(() => {
     const identifier = node.data.outputIdentifier;
-    console.log(nodes)
+    console.log("nodes", nodes)
+    console.log("edges", edges)
     //let selectedNode = nodes.find(n => n.id === node.id);
     let selectedNode = node;
-    const newErrors = {};
+    let newErrors = {};
     console.log("ALGORITHM", outputs)
+    //const classicalOutputs = outputs.find(o => {o.type === "classical"})
+    //const quantumOutputs = outputs.find(o => {o.type === "quantum"})
+    //console.log("classical outputs", classicalOutputs)
+    //console.log("quantum outputs", quantumOutputs)
 
+    // quantum outputs
     outputs.forEach((output, index) => {
       const outputIdentifier = output?.identifier?.trim();
       console.log("Outputidentifier", outputIdentifier)
@@ -125,6 +132,7 @@ export const AlgorithmNode = memo((node: Node) => {
       console.log(outputIdentifier)
       // Flag error if identifier is invalid or duplicated
       newErrors[index] = startsWithDigit || isDuplicate;
+      console.log(newErrors)
       console.log(newErrors[index])
       if (!size) return;
       const startsWithDigitSize = !/^\d/.test(size);
@@ -386,26 +394,26 @@ export const AlgorithmNode = memo((node: Node) => {
                 outputs={outputs}
                 setOutputs={setOutputs}
                 edges={edges}
-                sizeError={classicalSizeErrors[index]}
+                sizeError={sizeErrors[index]}
                 outputIdentifierError={outputIdentifierErrors[index]}//(outputIdentifierError || startsWithDigitError)}
                 updateNodeValue={updateNodeValue}
                 setOutputIdentifierError={(error) =>
                   setOutputIdentifierErrors(prev => ({ ...prev, [index]: error }))}
                 setSizeError={(error) =>
-                  setClassicalSizeErrors((prev) => ({ ...prev, [index]: error }))}
+                  setSizeErrors((prev) => ({ ...prev, [index]: error }))}
                 setSelectedNode={setSelectedNode}
                 active={true}
               />
             ))
 
             }
-          </div>
-          <div className="custom-node-port-out">
+{/*           </div>
+          <div className="custom-node-port-out"> */}
             {Array.from({ length: numberQuantumOutputs }).map((_, index) => (
               <OutputPort
                 key={`output-port-${numberClassicalOutputs+index}`}
                 node={node}
-                index={numberClassicalOutputs+index}
+                index={numberClassicalOutputs + index}
                 type={"quantum"}
                 nodes={nodes}
                 outputs={outputs}

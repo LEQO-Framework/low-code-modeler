@@ -8,7 +8,8 @@ import ReactFlow, {
   ReactFlowProvider,
   MiniMap,
   getNodesBounds,
-  Panel
+  Panel,
+  useUpdateNodeInternals
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { ContextMenu, CustomPanel, Palette } from "./components";
@@ -153,6 +154,8 @@ function App() {
       const targetNode = nodes.find(n => n.id === targetNodeId);
       const newInputs = targetNode.data.inputs.filter(i => i.targetHandle !== targetHandle)
       updateNodeValue(targetNodeId, "inputs", newInputs)
+      console.log(targetHandle)
+      console.log("update new inputs", newInputs)
       console.log("NEW INPUTS", targetNode.data.inputs)
     })
   };
@@ -528,6 +531,12 @@ function App() {
   const startTour2 = () => {
     setRunTour(true);
     setAncillaMode(false);
+    setAncillaModelingOn(false);
+    //updateNodeInternals since ancilla mode changes number of handles
+    const updateNodeInternals = useUpdateNodeInternals();
+    nodes.forEach((node) => {
+      updateNodeInternals(node.id);
+    })
     console.log("load tutorial")
     loadFlow(tutorial);
     console.log("load toturial")
@@ -784,6 +793,12 @@ function App() {
   const startTour = () => {
     setRunTour(true);
     setAncillaMode(false);
+    setAncillaModelingOn(false);
+    //updateNodeInternals since ancilla mode changes number of handles
+    const updateNodeInternals = useUpdateNodeInternals();
+    nodes.forEach((node) => {
+      updateNodeInternals(node.id);
+    })
     console.log("load tutorial")
     console.log("load toturial")
   }
@@ -1506,7 +1521,24 @@ function App() {
     setCompactVisualization(bool_value)
     setAncillaMode(bool_value)
     setAncillaModelingOn(bool_value)  
+    //updateNodeInternals since ancilla mode changes number of handles
+    const updateNodeInternals = useUpdateNodeInternals();
+    nodes.forEach((node) => {
+      updateNodeInternals(node.id);
+    })
   };
+
+  
+
+  const onToggleAncilla = () => { 
+    setAncillaModelingOn(!ancillaModelingOn); 
+    setAncillaMode(!ancillaModelingOn); 
+    //updateNodeInternals since ancilla mode changes number of handles
+    const updateNodeInternals = useUpdateNodeInternals();
+    nodes.forEach((node) => {
+      updateNodeInternals(node.id);
+    })
+  }
 
   const handleSaveAsSVG = () => {
     if (ref.current === null) {
@@ -1796,7 +1828,7 @@ function App() {
               expanded={expanded}
               onToggleExpanded={() => setExpanded(!expanded)}
               ancillaModelingOn={ancillaModelingOn}
-              onToggleAncilla={() => { setAncillaModelingOn(!ancillaModelingOn); setAncillaMode(!ancillaModelingOn) }}
+              onToggleAncilla={onToggleAncilla}
               experienceLevel={experienceLevel}
               onExperienceLevelChange={onExperienceLevelChange}
               //onExperienceLevelChange={(event) => { setExperienceLevel(event); setExperienceLevelOn(event); }}

@@ -181,7 +181,7 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
             </div>
           ))}
         </div>
-
+        <div className="custom-node-port-out">
         {Array.from({ length: numberOutputs }).map((_, index) => (
           <div
             key={`output-wrapper-${index}`}
@@ -189,6 +189,7 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
             style={{ top: `${outputsStartTop + index * outputHeight}px` }}
           >
             <OutputPort
+              key={`output-port-${index}`}
               node={node}
               index={index}
               type={"classical"}
@@ -210,6 +211,7 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
             />
           </div>
         ))}
+        </div>
 
       </div>
     </motion.div>
