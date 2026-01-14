@@ -151,15 +151,15 @@ export const categories: Record<string, CategoryEntry> = {
       {
         label: consts.grover,
         type: consts.templates,
-        icon: "PaletteIcon_CustomClassicalOperator.png",
+        icon: "Grover.png",
         description: "Searches for the correct answer in a large set of possibilities faster than a normal search.",
-        completionGuaranteed: true,
+        completionGuaranteed: false,
         compactOptions: [true, false],
       },
       {
         label: consts.hadamard_test_real_part,
         type: consts.templates,
-        icon: "PaletteIcon_CustomClassicalOperator.png",
+        icon: "HadamardTestRealPart.png",
         description: "Measures the real (non-imaginary) part of a result produced by a quantum operation.",
         completionGuaranteed: true,
         compactOptions: [true, false],
@@ -167,7 +167,7 @@ export const categories: Record<string, CategoryEntry> = {
       {
         label: consts.hadamard_test_imaginary_part,
         type: consts.templates,
-        icon: "PaletteIcon_CustomClassicalOperator.png",
+        icon: "HadamardTestImaginaryPart.png",
         description: "Measures the imaginary part of a result produced by a quantum operation.",
         completionGuaranteed: true,
         compactOptions: [true, false],
@@ -175,7 +175,7 @@ export const categories: Record<string, CategoryEntry> = {
       {
         label: consts.swap_test,
         type: consts.templates,
-        icon: "PaletteIcon_CustomClassicalOperator.png",
+        icon: "SWAPTest.png",
         description: "Compares two quantum states and tells how similar they are.",
         completionGuaranteed: true,
         compactOptions: [true, false],
@@ -188,7 +188,7 @@ export const categories: Record<string, CategoryEntry> = {
           "PaletteIcon_Ancilla_CustomQuantumOperator.png",
         ],
         description: "Solves optimization problems by combining a quantum process with a classical optimizer.",
-        completionGuaranteed: true,
+        completionGuaranteed: false,
         compactOptions: [true, false],
       },
     ]

@@ -24,7 +24,7 @@ import { NewDiagramModal } from "./Modal";
 import './index.css';
 import { Placement } from 'react-joyride';
 import { startCompile } from "./backend";
-import { ancillaConstructColor, classicalConstructColor, ClassicalOperatorNode, controlFlowConstructColor, hadamard_test_imaginary_part, hadamard_test_real_part, qaoa, quantum_types, quantumConstructColor, swap_test } from "./constants";
+import { ancillaConstructColor, classicalConstructColor, ClassicalOperatorNode, controlFlowConstructColor, grover, hadamard_test_imaginary_part, hadamard_test_real_part, qaoa, quantum_types, quantumConstructColor, swap_test } from "./constants";
 import Joyride from 'react-joyride';
 import { ConfigModal } from "./components/modals/configModal";
 import { QunicornModal } from "./components/modals/qunicornModal";
@@ -33,7 +33,7 @@ import { Toast } from "./components/modals/toast";
 import ExperienceModePanel from "./components/modals/experienceLevelModal";
 import { HistoryItem, HistoryModal } from "./components/modals/historyModal";
 import { ValidationModal } from "./components/modals/validationModal";
-import { hadamard_test_imaginary_part_algorithm, hadamard_test_real_part_algorithm, qaoa_algorithm, swap_test_algorithm } from "./constants/templates";
+import { grover_algorithm, hadamard_test_imaginary_part_algorithm, hadamard_test_real_part_algorithm, qaoa_algorithm, swap_test_algorithm } from "./constants/templates";
 
 const selector = (state: {
   nodes: Node[];
@@ -1205,13 +1205,16 @@ function App() {
       if (label == qaoa) {
         loadFlow(qaoa_algorithm)
       } else if (label == swap_test) {
-        loadFlow(swap_test_algorithm)
+        loadFlow(swap_test_algorithm);
       }
       else if (label == hadamard_test_imaginary_part) {
-        loadFlow(hadamard_test_imaginary_part_algorithm)
+        loadFlow(hadamard_test_imaginary_part_algorithm);
       }
       else if (label == hadamard_test_real_part) {
-        loadFlow(hadamard_test_real_part_algorithm)
+        loadFlow(hadamard_test_real_part_algorithm);
+      }
+      else if (label == grover) {
+        loadFlow(grover_algorithm);
       }
       else {
         handleOnDrop(event, reactFlowWrapper, reactFlowInstance, setNodes);
