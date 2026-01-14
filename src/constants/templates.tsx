@@ -1233,8 +1233,8 @@ export const qaoa_algorithm =
         "numberQuantumInputs": 1,
         "numberClassicalInputs": 3
       },
-      "width": 1600,
-      "height": 1030,
+      "width": 1500,
+      "height": 930,
       "positionAbsolute": {
         "x": 570,
         "y": 255
@@ -1245,8 +1245,8 @@ export const qaoa_algorithm =
       "id": "e75184d3-1085-4110-bcbf-3f7f1a667072",
       "type": "algorithmNode",
       "position": {
-        "x": 195,
-        "y": 510
+        "x": 225,
+        "y": 405
       },
       "data": {
         "label": "QAOA Operator",
@@ -1297,8 +1297,8 @@ export const qaoa_algorithm =
       "width": 320,
       "height": 373,
       "positionAbsolute": {
-        "x": 765,
-        "y": 765
+        "x": 795,
+        "y": 660
       },
       "selected": false,
       "dragging": true,
@@ -1569,9 +1569,10 @@ export const qaoa_algorithm =
       "parentNode": "8cf10732-dd4d-4a82-9592-2e8808b5d82f",
       "extent": "parent"
     }
+  
   ],
   initialEdges: [
-    {
+   {
       "source": "022f6fad-cc55-40d0-8319-f94798a36150",
       "sourceHandle": "classicalHandle0022f6fad-cc55-40d0-8319-f94798a36150",
       "target": "8cf10732-dd4d-4a82-9592-2e8808b5d82f",
@@ -1800,13 +1801,11 @@ export const qaoa_algorithm =
       }
     }
   ],
-  viewport: [
-    {
-    "x": -2.5,
-    "y": 50.74999999999994,
+  viewport: [{
+    "x": 322.2505861282349,
+    "y": 74,
     "zoom": 0.5
-  }
-  ]
+  }]
 }
 
 export const grover_algorithm =
