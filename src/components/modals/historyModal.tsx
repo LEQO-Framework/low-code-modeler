@@ -23,10 +23,50 @@ interface HistoryModalProps {
 }
 
 export const HistoryModal = ({ open, onClose, history, onExecute }: HistoryModalProps) => {
+  const [noMeasurementMap, setNoMeasurementMap] = useState<Record<string, boolean>>({});
+  const [loadingMap, setLoadingMap] = useState<Record<string, boolean>>({});
   const [compilationTargets, setCompilationTargets] = useState<Record<string, string | null>>({});
 
+  const containsMeasurement = (qasm: string) => /\bmeasure\b/i.test(qasm);
+
+  // Check for measurements
   useEffect(() => {
-    if (!open) return; // only load when modal is open
+    if (!open) return;
+
+    const checkMeasurements = async () => {
+      const result: Record<string, boolean> = {};
+      const loading: Record<string, boolean> = {};
+
+      await Promise.all(
+        history.map(async (item) => {
+          if (!item.links?.result) return;
+
+          loading[item.uuid] = true;
+
+          try {
+            const res = await fetch(item.links.result);
+            if (!res.ok) return;
+
+            const qasm = await res.text();
+            result[item.uuid] = !containsMeasurement(qasm);
+          } catch {
+            // ignore errors
+          } finally {
+            loading[item.uuid] = false;
+          }
+        })
+      );
+
+      setNoMeasurementMap(result);
+      setLoadingMap(loading);
+    };
+
+    checkMeasurements();
+  }, [open, history]);
+
+  // Load compilation targets
+  useEffect(() => {
+    if (!open) return;
 
     history.forEach((item) => {
       if (!item.links?.request || compilationTargets[item.uuid]) return;
@@ -51,7 +91,9 @@ export const HistoryModal = ({ open, onClose, history, onExecute }: HistoryModal
       className="w-[900px] max-w-[95vw]"
       footer={
         <div className="flex justify-end">
-          <button className="btn btn-secondary" onClick={onClose}>Close</button>
+          <button className="btn btn-secondary" onClick={onClose}>
+            Close
+          </button>
         </div>
       }
     >
@@ -63,14 +105,19 @@ export const HistoryModal = ({ open, onClose, history, onExecute }: HistoryModal
               <th className="px-4 py-2 border">Name</th>
               <th className="px-4 py-2 border">Description</th>
               <th className="px-4 py-2 border">Model File</th>
+              <th className="px-4 py-2 border">QRMS</th>
+              <th className="px-4 py-2 border">Service Deployment</th>
               <th className="px-4 py-2 border">Created</th>
               <th className="px-4 py-2 border">Result Status</th>
               <th className="px-4 py-2 border">Result File</th>
-              <th className="px-4 py-2 border">Action</th>
+              <th className="px-4 py-2 border">Execute</th>
             </tr>
           </thead>
+
           <tbody>
             {history.map((item, index) => {
+              const noMeasurement = noMeasurementMap[item.uuid];
+              const loading = loadingMap[item.uuid];
               const target = compilationTargets[item.uuid];
 
               return (
@@ -83,7 +130,33 @@ export const HistoryModal = ({ open, onClose, history, onExecute }: HistoryModal
                     {item.links?.request ? (
                       <span
                         className="text-blue-600 underline cursor-pointer"
-                        onClick={() => window.open(item.links.request, "_blank")}
+                        onClick={() => window.open(item.links.request!, "_blank")}
+                      >
+                        Open
+                      </span>
+                    ) : (
+                      <span className="text-gray-400">—</span>
+                    )}
+                  </td>
+
+                  <td className="px-4 py-2 border">
+                    {item.links?.qrms ? (
+                      <span
+                        className="text-blue-600 underline cursor-pointer"
+                        onClick={() => window.open(item.links.qrms!, "_blank")}
+                      >
+                        Open
+                      </span>
+                    ) : (
+                      <span className="text-gray-400">—</span>
+                    )}
+                  </td>
+
+                  <td className="px-4 py-2 border">
+                    {item.links?.serviceDeploymentModels ? (
+                      <span
+                        className="text-blue-600 underline cursor-pointer"
+                        onClick={() => window.open(item.links.serviceDeploymentModels!, "_blank")}
                       >
                         Open
                       </span>
@@ -99,7 +172,7 @@ export const HistoryModal = ({ open, onClose, history, onExecute }: HistoryModal
                     {item.links?.result ? (
                       <span
                         className="text-blue-600 underline cursor-pointer"
-                        onClick={() => window.open(item.links.result, "_blank")}
+                        onClick={() => window.open(item.links.result!, "_blank")}
                       >
                         Open
                       </span>
@@ -109,11 +182,22 @@ export const HistoryModal = ({ open, onClose, history, onExecute }: HistoryModal
                   </td>
 
                   <td className="px-4 py-2 border text-center">
-                    {item.status.toLowerCase() !== "failed" ? (
+                    {item.status.toLowerCase() === "failed" ? (
+                      <span className="text-gray-400">—</span>
+                    ) : loading ? (
+                      <span className="text-gray-400">…</span>
+                    ) : noMeasurement ? (
+                      <span
+                        className="text-yellow-600 cursor-help"
+                        title="This OpenQASM program contains no measurements. Execution would produce no meaningful results."
+                      >
+                        ⚠️
+                      </span>
+                    ) : (
                       <button
                         className="btn btn-primary"
                         onClick={() => onExecute(item)}
-                        disabled={target === undefined} // disable until target is loaded
+                        disabled={target === undefined}
                       >
                         {target === undefined
                           ? "Loading..."
@@ -121,8 +205,6 @@ export const HistoryModal = ({ open, onClose, history, onExecute }: HistoryModal
                             ? "Deploy Workflow"
                             : "Execute"}
                       </button>
-                    ) : (
-                      <span className="text-gray-400">—</span>
                     )}
                   </td>
                 </tr>
@@ -131,7 +213,9 @@ export const HistoryModal = ({ open, onClose, history, onExecute }: HistoryModal
 
             {history.length === 0 && (
               <tr>
-                <td colSpan={8} className="text-center px-4 py-2">No history available</td>
+                <td colSpan={10} className="text-center px-4 py-2">
+                  No history available
+                </td>
               </tr>
             )}
           </tbody>

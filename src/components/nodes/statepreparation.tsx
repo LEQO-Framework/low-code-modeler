@@ -16,6 +16,7 @@ const selector = (state: {
   edges: Edge[];
   nodes: Node[];
   ancillaMode: boolean;
+  compact: boolean;
   completionGuaranteed: boolean;
   updateNodeValue: (nodeId: string, field: string, nodeVal: any) => void;
   setNodes: (node: Node) => void;
@@ -26,6 +27,7 @@ const selector = (state: {
   nodes: state.nodes,
   ancillaMode: state.ancillaMode,
   completionGuaranteed: state.completionGuaranteed,
+  compact: state.compact,
   setNodes: state.setNodes,
   updateNodeValue: state.updateNodeValue,
   setSelectedNode: state.setSelectedNode,
@@ -38,6 +40,7 @@ export const StatePreparationNode = memo((node: Node) => {
   const [outputIdentifier, setOutputIdentifier] = useState("");
   const [showingChildren, setShowingChildren] = useState(false);
   const [sizeError, setSizeError] = useState(false);
+  const [missingSizeError, setMissingSizeError] = useState(false);
   const [outputs, setOutputs] = useState(node.data.outputs || []);
   const [outputIdentifierError, setOutputIdentifierError] = useState(false);
   const [encodingType, setEncodingType] = useState("Basis Encoding");
@@ -47,7 +50,7 @@ export const StatePreparationNode = memo((node: Node) => {
 
 
 
-  const { updateNodeValue, setSelectedNode, setNodes, edges, nodes, ancillaMode, completionGuaranteed } = useStore(selector, shallow);
+  const { updateNodeValue, setSelectedNode, setNodes, edges, nodes, ancillaMode, completionGuaranteed, compact } = useStore(selector, shallow);
   const isConnected = edges.some(
     edge => edge.target === node.id && edge.targetHandle === `ancillaHandlePrepareState0${node.id}`
   );
@@ -117,17 +120,38 @@ export const StatePreparationNode = memo((node: Node) => {
   );
 
   useEffect(() => {
-    if (quantumStateName === "GHZ" || quantumStateName === "Uniform Superposition" || quantumStateName === "Custom State") {
-      const numSize = parseInt(node.data.size);
-      if (isNaN(numSize) || numSize < 3) {
-        setSizeError(true);
-      } else {
-        setSizeError(false);
-      }
-    } else {
-      setSizeError(false);
+    const value = node.data.size;
+    const num = Number(value);
+    console.log(value)
+    if (num === 0 && node.data.label === "Prepare State") {
+      setMissingSizeError(true);
+    } else if (
+      quantumStateName === "GHZ") {
+      const value = node.data.size;
+      const num = Number(value);
+
+      const isInvalid =
+        value === "" ||
+        num < 3;
+
+      setSizeError(isInvalid);
+      setMissingSizeError(false);
+    } else if ((quantumStateName === "Uniform Superposition" ||
+      quantumStateName === "Custom State")) {
+      const isInvalid =
+        value === "" ||
+        num < 1;
+
+      setSizeError(isInvalid);
+      setMissingSizeError(false);
     }
-  }, [quantumStateName, size]);
+
+    else {
+      setSizeError(false);
+      setMissingSizeError(false);
+    }
+  }, [quantumStateName, node.data.size]);
+
 
 
 
@@ -173,6 +197,14 @@ export const StatePreparationNode = memo((node: Node) => {
       setQuantumStateName(node.data.quantumStateName)
     }
   }, [nodes, node.data.outputIdentifier, node.id]);
+  useEffect(() => {
+    updateNodeInternals(node.id);
+  }, [compact])
+
+
+  useEffect(() => {
+    updateNodeInternals(node.id);
+  }, [node.data.encodingType, ancillaMode]);
 
   const { data, selected } = node;
 
@@ -265,7 +297,7 @@ export const StatePreparationNode = memo((node: Node) => {
             </div>
           )}
 
-          {sizeError && (
+          {node.data.size !== "" && sizeError && (
             <div className="absolute top-2 right-[-40px] group z-20">
               <AlertCircle className="text-red-600 w-5 h-5" />
               <div
@@ -274,7 +306,20 @@ export const StatePreparationNode = memo((node: Node) => {
                   top: !(outputIdentifierError || startsWithDigitError) ? '35px' : '80px',
                 }}
               >
-                Size is not an integer.
+                Size must be at least 3.
+              </div>
+            </div>
+          )}
+          {((node.data.size === "" || missingSizeError) && node.data.label === "Prepare State") && (
+            <div className="absolute top-2 right-[-40px] group z-20">
+              <AlertCircle className="text-red-600 w-5 h-5" />
+              <div
+                className="absolute left-[30px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap"
+                style={{
+                  top: !(outputIdentifierError || startsWithDigitError) ? '35px' : '80px',
+                }}
+              >
+                Size is required.
               </div>
             </div>
           )}
@@ -540,7 +585,7 @@ export const StatePreparationNode = memo((node: Node) => {
                   outputs={outputs}
                   setOutputs={setOutputs}
                   edges={edges}
-                  sizeError={sizeError}
+                  sizeError={sizeError || missingSizeError}
                   outputIdentifierError={(outputIdentifierError || startsWithDigitError)}
                   updateNodeValue={updateNodeValue}
                   setOutputIdentifierError={setOutputIdentifierError}

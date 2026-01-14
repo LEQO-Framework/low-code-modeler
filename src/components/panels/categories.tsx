@@ -14,7 +14,7 @@ export interface Node {
 }
 
 interface CategoryEntry {
-  description?: string;
+  description?: string | string[];
   content: CategoryContent;
 }
 
@@ -67,13 +67,13 @@ export const categories: Record<string, CategoryEntry> = {
         { label: "RY(θ)", type: consts.GateNode, icon: ["RY_palette.png", "PaletteIcon_RotateY_Beginner.png"], description: "Rotates qubit around Y-axis by θ radians.", completionGuaranteed: true, compactOptions: [true, false] },
         { label: "RZ(θ)", type: consts.GateNode, icon: ["RZ_palette.png", "PaletteIcon_RotateZ_Beginner.png"], description: "Rotates qubit around Z-axis by θ radians.", completionGuaranteed: true, compactOptions: [true, false] },
         { label: "T", aliases: ["π/4 Phase"], type: consts.GateNode, icon: ["t.png", "PaletteIcon_T_Beginner.png"], description: "T gate: a π/4 phase shift.", completionGuaranteed: true, compactOptions: [true, false] },
+        { label: "TDG", aliases: ["T†", "T-dagger"], type: consts.GateNode, icon: ["TDG_palette.png", "PaletteIcon_TDG_Beginner.png"], description: "T† gate: inverse of the T gate.", completionGuaranteed: true, compactOptions: [true, false] },
         { label: "X", aliases: ["Pauli-X", "NOT"], type: consts.GateNode, icon: ["pauliX.png", "PaletteIcon_X_Beginner.png"], description: "Pauli-X gate: flips the state (like a NOT gate).", completionGuaranteed: true, compactOptions: [true, false] },
         { label: "Y", aliases: ["Pauli-Y"], type: consts.GateNode, icon: ["pauliY.png", "PaletteIcon_Y_Beginner.png"], description: "Pauli-Y gate: flips and phases the qubit state.", completionGuaranteed: true, compactOptions: [true, false] },
         { label: "Z", aliases: ["Pauli-Z"], type: consts.GateNode, icon: ["pauliZ.png", "PaletteIcon_Z_Beginner.png"], description: "Pauli-Z gate: adds a π phase shift to |1⟩ state.", completionGuaranteed: true, compactOptions: [true, false] },
         { label: "S", aliases: ["π/2 Phase"], type: consts.GateNode, icon: ["S_palette.png", "PaletteIcon_S_Beginner.png"], description: "S gate: a π/2 phase shift.", completionGuaranteed: true, compactOptions: [true, false] },
         { label: "SX", aliases: ["√X", "square root of X"], type: consts.GateNode, icon: ["SX_palette.png", "PaletteIcon_SX_Beginner.png"], description: "Square root of X gate (√X).", completionGuaranteed: true, compactOptions: [true, false] },
         { label: "SDG", aliases: ["S†", "S-dagger"], type: consts.GateNode, icon: ["SDG_palette.png", "PaletteIcon_SDG_Beginner.png"], description: "S† gate: inverse of the S gate.", completionGuaranteed: true, compactOptions: [true, false] },
-        { label: "TDG", aliases: ["T†", "T-dagger"], type: consts.GateNode, icon: ["TDG_palette.png", "PaletteIcon_TDG_Beginner.png"], description: "T† gate: inverse of the T gate.", completionGuaranteed: true, compactOptions: [true, false] },
         { label: "CNOT", aliases: ["Controlled-X"], type: consts.GateNode, icon: ["CNOT_palette.png", "PaletteIcon_CNOT_Beginner.png"], description: "Controlled-X gate: flips target qubit if control is |1⟩.", completionGuaranteed: true, compactOptions: [true, false] },
         { label: "SWAP", type: consts.GateNode, icon: ["SWAP_palette.png", "PaletteIcon_SWAP_Beginner.png"], description: "Swaps the states of two qubits.", completionGuaranteed: true, compactOptions: [true, false] },
         { label: "CY", aliases: ["Controlled-Y"], type: consts.GateNode, icon: ["CY_palette.png", "PaletteIcon_CY_Beginner.png"], description: "Controlled-Y gate.", completionGuaranteed: true, compactOptions: [true, false] },
@@ -92,7 +92,7 @@ export const categories: Record<string, CategoryEntry> = {
   },
 
   [consts.dataTypes]: {
-    description: "Classical and quantum data types such as bits, angles, qubits, and arrays used to define block inputs.",
+    description: ["Classical and quantum data types such as bits, angles, qubits, and arrays used to define block inputs.", "Classical data types such as bits and arrays used to define block inputs."],
     content: {
       "Classical Datatypes": [
         //{ label: "angle", dataType: "angle", type: consts.DataTypeNode, icon: "PaletteIcon_Angle.png", description: "Represents a rotation angle.", completionGuaranteed: false, compactOptions: [true, false] },
@@ -100,8 +100,8 @@ export const categories: Record<string, CategoryEntry> = {
         { label: "boolean", dataType: "boolean", type: consts.DataTypeNode, icon: "PaletteIcon_Boolean.png", description: "True/false value used for logic.", completionGuaranteed: true, compactOptions: [true, false] },
         //{ label: "complex", dataType: "complex", type: consts.DataTypeNode, icon: "PaletteIcon_Complex.png", description: "A number with real and imaginary parts.", completionGuaranteed: false, compactOptions: [true, false] },
         //{ label: "duration", dataType: "duration", type: consts.DataTypeNode, icon: "PaletteIcon_Duration.png", description: "Represents a time duration.", completionGuaranteed: false, compactOptions: [true, false] },
-        { label: "int", dataType: "int", type: consts.DataTypeNode, icon: "PaletteIcon_Int.png", description: "Integer value (whole number).", completionGuaranteed: true, compactOptions: [true, false] },
-        { label: "float", dataType: "float", type: consts.DataTypeNode, icon: "PaletteIcon_Float.png", description: "Floating-point number (decimal).", completionGuaranteed: false, compactOptions: [true, false] },
+        //{ label: "int", dataType: "int", type: consts.DataTypeNode, icon: "PaletteIcon_Int.png", description: "Integer value (whole number).", completionGuaranteed: true, compactOptions: [true, false] },
+        { label: "Number", dataType: "float", type: consts.DataTypeNode, icon: "PaletteIcon_Number.png", description: "Integer value (whole number) or floating-point number (decimal).", completionGuaranteed: true, compactOptions: [true, false] },
         { label: "Array", dataType: "Array", type: consts.DataTypeNode, icon: "PaletteIcon_Array.png", description: "A list of values, possibly of varying length.", completionGuaranteed: true, compactOptions: [true, false] },
       ],
       "Quantum Datatypes": [
@@ -112,7 +112,7 @@ export const categories: Record<string, CategoryEntry> = {
   },
 
   [consts.operator]: {
-    description: "Predefined quantum and classical operators, including arithmetic, bitwise, and comparison operations.",
+    description: ["Predefined quantum and classical operators, including arithmetic, bitwise, and comparison operations.", "Predefined classical arithematic operator."],
     content: {
       "Quantum Operators": [
         { label: consts.quantumLabel + consts.arithmeticOperatorLabel, type: consts.OperatorNode, icon: ["PaletteIcon_ArithmeticOperator.png", "PaletteIcon_Ancilla_ArithmeticOperator.png"], description: "Performs quantum arithmetic (add, subtract, etc.).", completionGuaranteed: true, compactOptions: [true, false] },
