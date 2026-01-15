@@ -287,7 +287,8 @@ export const OperationNode = memo((node: Node) => {
                   className="z-10 circle-port-op !bg-blue-300 !border-black -left-[8px]"
                   style={{ top: '50%', transform: 'translateY(-50%)' }}
                 />
-                <span className="text-black text-sm text-center w-full">{node.data.inputs[0]?.outputIdentifier || "Input 1"}</span>
+                <span className="text-black text-sm text-center w-full">{node.data.inputs.find(
+                    (input) => input.targetHandle === `quantumHandleOperationInput0${node.id}`)?.outputIdentifier || "Input 1"}</span>
               </div>
               {node.data.label !== consts.quantumLabel + consts.minMaxOperatorLabel && (
               <div
@@ -307,7 +308,8 @@ export const OperationNode = memo((node: Node) => {
                   className="z-10 circle-port-op !bg-blue-300 !border-black -left-[8px]"
                   style={{ top: '50%', transform: 'translateY(-50%)' }}
                 />
-                <span className="text-black text-sm text-center w-full">{node.data.inputs[1]?.outputIdentifier || "Input 2"}</span>
+                <span className="text-black text-sm text-center w-full">{node.data.inputs.find(
+                    (input) => input.targetHandle === `quantumHandleOperationInput1${node.id}`)?.outputIdentifier || "Input 2"}</span>
               </div>
               )}
               {ancillaMode && (<div>

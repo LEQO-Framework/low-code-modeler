@@ -8,7 +8,8 @@ import ReactFlow, {
   ReactFlowProvider,
   MiniMap,
   getNodesBounds,
-  Panel
+  Panel,
+  useUpdateNodeInternals
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { ContextMenu, CustomPanel, Palette } from "./components";
@@ -24,7 +25,7 @@ import Modal, { NewDiagramModal } from "./Modal";
 import './index.css';
 import { Placement } from 'react-joyride';
 import { startCompile } from "./backend";
-import { ancillaConstructColor, classicalConstructColor, ClassicalOperatorNode, controlFlowConstructColor, quantum_types, quantumConstructColor } from "./constants";
+import { ancillaConstructColor, classicalConstructColor, ClassicalOperatorNode, controlFlowConstructColor, grover, hadamard_test_imaginary_part, hadamard_test_real_part, qaoa, quantum_types, quantumConstructColor, swap_test } from "./constants";
 import Joyride from 'react-joyride';
 import { ConfigModal } from "./components/modals/configModal";
 import { QunicornModal } from "./components/modals/qunicornModal";
@@ -35,6 +36,9 @@ import { HistoryItem, HistoryModal } from "./components/modals/historyModal";
 import { ValidationModal } from "./components/modals/validationModal";
 import AiModal from "./components/modals/aiModal";
 import OpenAI from "openai";
+import { grover_algorithm, hadamard_test_imaginary_part_algorithm, hadamard_test_real_part_algorithm, qaoa_algorithm, swap_test_algorithm } from "./constants/templates";
+import JSZip, { JSZipObject } from "jszip";
+import { createDeploymentModel, createNodeType, createServiceTemplate, updateNodeType, updateServiceTemplate } from "./winery";
 
 const selector = (state: {
   nodes: Node[];
@@ -43,6 +47,7 @@ const selector = (state: {
   experienceLevel: string;
   compact: boolean;
   completionGuaranteed: boolean;
+  containsPlaceholder: boolean;
   onNodesChange: any;
   onEdgesChange: any;
   onConnect: any;
@@ -57,6 +62,7 @@ const selector = (state: {
   setCompact: (compact: boolean) => void;
   setCompletionGuaranteed: (completionGuaranteed: boolean) => void;
   setExperienceLevel: (experienceLevel: string) => void;
+  setContainsPlaceholder: (containsPlaceholder: boolean) => void;
   undo: () => void;
   redo: () => void;
 }) => ({
@@ -65,6 +71,7 @@ const selector = (state: {
   experienceLevel: state.experienceLevel,
   compact: state.compact,
   completionGuaranteed: state.completionGuaranteed,
+  containsPlaceholder: state.containsPlaceholder,
   onNodesChange: state.onNodesChange,
   onEdgesChange: state.onEdgesChange,
   onConnect: state.onConnect,
@@ -78,6 +85,7 @@ const selector = (state: {
   setAncillaMode: state.setAncillaMode,
   setCompact: state.setCompact,
   setCompletionGuaranteed: state.setCompletionGuaranteed,
+  setContainsPlaceholder: state.setContainsPlaceholder,
   setExperienceLevel: state.setExperienceLevel,
   undo: state.undo,
   redo: state.redo,
@@ -86,11 +94,35 @@ const selector = (state: {
 function App() {
   const reactFlowWrapper = React.useRef<any>(null);
   const [reactFlowInstance, setReactFlowInstance] = React.useState<any>(null);
+   const {
+    nodes,
+    edges,
+    experienceLevel,
+    compact,
+    completionGuaranteed,
+    containsPlaceholder,
+    onNodesChange,
+    onEdgesChange,
+    onConnect,
+    onConnectEnd,
+    setCompact,
+    setExperienceLevel,
+    setAncillaMode,
+    setCompletionGuaranteed,
+    setContainsPlaceholder,
+    setSelectedNode,
+    setNodes,
+    updateNodeValue,
+    updateParent,
+    updateChildren,
+    setEdges,
+  } = useStore(useShallow(selector));
+
   const [metadata, setMetadata] = React.useState<any>({
     version: "1.0.0",
     name: "My Model",
     description: "This is a model.",
-    author: "",
+    author: ""
   });
   const [menu, setMenu] = useState(null);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
@@ -133,8 +165,6 @@ function App() {
     left: 0,
   });
 
-  //const [contextMenu, setContextMenu] = useState(null);
-
   const onNodeContextMenu = useCallback(
     (event: React.MouseEvent, node: Node) => {
       event.preventDefault();
@@ -149,6 +179,21 @@ function App() {
     },
     []
   );
+
+  const onEdgesDelete = (edges: Edge[]) => {
+    edges.forEach((edge) => {
+      console.log("ON EDGES DELETE")
+      console.log("EDGE", edge)
+      const targetNodeId = edge.target
+      const targetHandle = edge.targetHandle
+      const targetNode = nodes.find(n => n.id === targetNodeId);
+      const newInputs = targetNode.data.inputs.filter(i => i.targetHandle !== targetHandle)
+      updateNodeValue(targetNodeId, "inputs", newInputs)
+      console.log(targetHandle)
+      console.log("update new inputs", newInputs)
+      console.log("NEW INPUTS", targetNode.data.inputs)
+    })
+  };
 
 
 
@@ -361,29 +406,6 @@ If none apply, return { "algorithms": [] }.
   const [expanded, setExpanded] = useState(false);
   const [completionGuaranteedOption, setCompletionGuaranteedOption] = useState("Yes");
 
-
-  const {
-    nodes,
-    edges,
-    experienceLevel,
-    compact,
-    completionGuaranteed,
-    onNodesChange,
-    onEdgesChange,
-    onConnect,
-    onConnectEnd,
-    setCompact,
-    setExperienceLevel,
-    setAncillaMode,
-    setCompletionGuaranteed,
-    setSelectedNode,
-    setNodes,
-    updateNodeValue,
-    updateParent,
-    updateChildren,
-    setEdges,
-  } = useStore(useShallow(selector));
-
   const { undo } = useStore((state) => ({
     undo: state.undo,
   }));
@@ -411,6 +433,10 @@ If none apply, return { "algorithms": [] }.
   const [experienceLevelOn, setExperienceLevelOn] = useState("explorer");
   const [compactVisualization, setCompactVisualization] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
+  const [workflow, setWorkflow] = useState("");
+
+
+  const updateNodeInternals = useUpdateNodeInternals();
 
   const showToast = (message: string, type: "success" | "error" | "info") => {
     setToast({ message, type });
@@ -481,10 +507,6 @@ If none apply, return { "algorithms": [] }.
     setAlreadyExecuted(false);
   };
 
-
-  const prepareBackendRequest = () => {
-    setModalOpen(true);
-  }
   const sendToBackend = async () => {
     //setLoading(true);
     setModalOpen(false);
@@ -496,6 +518,7 @@ If none apply, return { "algorithms": [] }.
     try {
       const validMetadata = {
         ...metadata,
+        containsPlaceholder: containsPlaceholder,
         id: id,
         timestamp: new Date().toISOString(),
       };
@@ -503,11 +526,9 @@ If none apply, return { "algorithms": [] }.
       console.log(validMetadata);
       console.log(metadata);
 
-      const flow = reactFlowInstance.toObject();
-
       const response = await startCompile(
         lowcodeBackendEndpoint,
-        metadata,
+        validMetadata,
         reactFlowInstance.getNodes(),
         reactFlowInstance.getEdges(),
         compilationTarget
@@ -637,6 +658,11 @@ If none apply, return { "algorithms": [] }.
   const startTour2 = () => {
     setRunTour(true);
     setAncillaMode(false);
+    setAncillaModelingOn(false);
+    //updateNodeInternals since ancilla mode changes number of handles
+    nodes.forEach((node) => {
+      updateNodeInternals(node.id);
+    })
     console.log("load tutorial")
     loadFlow(tutorial);
     console.log("load toturial")
@@ -1002,6 +1028,11 @@ If none apply, return { "algorithms": [] }.
   const startTour = () => {
     setRunTour(true);
     setAncillaMode(false);
+    setAncillaModelingOn(false);
+    //updateNodeInternals since ancilla mode changes number of handles
+    nodes.forEach((node) => {
+      updateNodeInternals(node.id);
+    })
     console.log("load tutorial")
     console.log("load toturial")
   }
@@ -1324,9 +1355,25 @@ If none apply, return { "algorithms": [] }.
         x: event.clientX,
         y: event.clientY,
       })
+      const label = event.dataTransfer.getData("application/reactflow/label");
       console.log(position);
-
-      handleOnDrop(event, reactFlowWrapper, reactFlowInstance, setNodes);
+      if (label == qaoa) {
+        loadFlow(qaoa_algorithm)
+      } else if (label == swap_test) {
+        loadFlow(swap_test_algorithm);
+      }
+      else if (label == hadamard_test_imaginary_part) {
+        loadFlow(hadamard_test_imaginary_part_algorithm);
+      }
+      else if (label == hadamard_test_real_part) {
+        loadFlow(hadamard_test_real_part_algorithm);
+      }
+      else if (label == grover) {
+        loadFlow(grover_algorithm);
+      }
+      else {
+        handleOnDrop(event, reactFlowWrapper, reactFlowInstance, setNodes);
+      }
 
       //setContextMenu((prev) => ({ ...prev, left: event.clientX, top: event.clientY,}));
     },
@@ -1375,9 +1422,12 @@ If none apply, return { "algorithms": [] }.
       return { success: false };
     }
 
+    console.log(containsPlaceholder)
+
     let fileContent = JSON.stringify({
       metadata: {
         ...metadata,
+        containsPlaceholder: containsPlaceholder,
         id: flowId,
         timestamp: new Date().toISOString(),
       },
@@ -1431,6 +1481,7 @@ If none apply, return { "algorithms": [] }.
     console.log(flow);
     const validMetadata = {
       ...metadata,
+      containsPlaceholder: containsPlaceholder,
       id: `flow-${Date.now()}`,
       timestamp: new Date().toISOString(),
     };
@@ -1723,8 +1774,23 @@ If none apply, return { "algorithms": [] }.
     const bool_value = (experienceLevel === "pioneer") ? false : true; // if previous experience level was pioneer...
     setCompactVisualization(bool_value)
     setAncillaMode(bool_value)
-    setAncillaModelingOn(bool_value)
+    setAncillaModelingOn(bool_value)  
+    //updateNodeInternals since ancilla mode changes number of handles
+    nodes.forEach((node) => {
+      updateNodeInternals(node.id);
+    })
   };
+
+  
+
+  const onToggleAncilla = () => { 
+    setAncillaModelingOn(!ancillaModelingOn); 
+    setAncillaMode(!ancillaModelingOn); 
+    //updateNodeInternals since ancilla mode changes number of handles
+    nodes.forEach((node) => {
+      updateNodeInternals(node.id);
+    })
+  }
 
   const handleSaveAsSVG = () => {
     if (ref.current === null) {
@@ -1752,8 +1818,157 @@ If none apply, return { "algorithms": [] }.
       .catch((err) => console.error("Error exporting SVG:", err));
   };
 
+
+  /**
+   * Uploads a QRMS ZIP file to GitHub, updating files if they already exist.
+   */
+  async function uploadQRMS(qrmsUrl: string, modelId: string): Promise<void> {
+    const token = githubToken;
+    if (!token) throw new Error("Missing GitHub token");
+    const owner = githubRepositoryOwner;
+    const repo = githubRepositoryName;
+    const basePath = `qrms_uploads/${modelId}`;
+
+    const res = await fetch(qrmsUrl);
+    if (!res.ok) throw new Error("Failed to fetch QRMS zip");
+    const baseUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${basePath}`;
+
+    const folderCheck = await fetch(baseUrl, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (folderCheck.ok) {
+      console.log(`Folder ${basePath} already exists — skipping upload.`);
+      return; // exit early — skip re-upload
+    }
+    const buf = await res.arrayBuffer();
+    const zip = await JSZip.loadAsync(buf);
+
+    for (const [relative, file] of Object.entries(zip.files)) {
+      if (file.dir) continue;
+      const content = await file.async("string");
+      const encoded = btoa(unescape(encodeURIComponent(content)));
+      const githubPath = `${basePath}/${relative}`;
+      const url = `https://api.github.com/repos/${owner}/${repo}/contents/${githubPath}`;
+
+      // look up sha if file already exists
+      let sha: string | undefined;
+      const head = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (head.ok) {
+        const data = await head.json();
+        sha = data.sha;
+      }
+
+      // create or update file
+      const put = await fetch(url, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          message: sha
+            ? `Update existing QRMS file: ${relative}`
+            : `Upload new QRMS file: ${relative}`,
+          content: encoded,
+          sha,
+        }),
+      });
+
+      if (!put.ok) {
+        const txt = await put.text();
+        throw new Error(`Failed to upload ${relative}: ${txt}`);
+      }
+      console.log("QRMs uploaded", githubPath);
+    }
+  }
+
+  async function createServiceTemplates(serviceDeploymentModelsUrl: string, namespace: string): Promise<void> {
+    const res = await fetch(serviceDeploymentModelsUrl);
+    if (!res.ok) throw new Error(`Failed to fetch service deployment models: ${res.statusText}`);
+
+    // Load ZIP into JSZip
+    const arrayBuffer = await res.arrayBuffer();
+    const zip = await JSZip.loadAsync(arrayBuffer);
+
+    // Extract folder names
+    const folderNames = new Set<string>();
+
+    for (const [path, entry] of Object.entries(zip.files)) {
+      const match = path.match(/^(Activity_[^/]+)/);
+      if (match) {
+        folderNames.add(match[1]);
+      }
+    }
+
+    console.log(`Found service deployment folders:`, Array.from(folderNames));
+
+
+    const masterZip = await JSZip.loadAsync(arrayBuffer);
+    // Process each folder 
+     for (const [path, entry] of Object.entries(masterZip.files)) {
+    if (entry.dir) continue;
+    if (!path.endsWith(".zip")) continue;
+
+    // Extract activity name
+    const activityName = path.replace(".zip", "");
+    console.log(`Processing activity ZIP: ${activityName}`);
+
+    // Load the activity ZIP in memory
+    const activityArrayBuffer = await entry.async("arraybuffer");
+    const activityZip = await JSZip.loadAsync(activityArrayBuffer);
+
+    // Find service.zip inside activity ZIP
+    const serviceEntry = Object.values(activityZip.files).find(
+      (f) => !f.dir && f.name.endsWith("service.zip")
+    );
+
+    if (!serviceEntry) {
+      console.warn(`No service.zip found in ${activityName}`);
+      continue;
+    }
+
+    // Extract service.zip as Blob
+    const serviceArrayBuffer = await serviceEntry.async("arraybuffer");
+    const serviceBlob = new Blob([serviceArrayBuffer], { type: "application/zip" });
+
+    // Create deployment model
+    const versionUrl = `http://localhost:8093/winery/servicetemplates/${activityName}`;
+    await createDeploymentModel(
+      serviceBlob, 
+      "http://localhost:8093/winery",
+      `${activityName}_DA`,
+      "http://opentosca.org/artifacttemplates",
+      "{http://opentosca.org/artifacttypes}DockerContainerArtifact",
+      "service.zip",
+      versionUrl
+    );
+    const OPENTOSCA_NAMESPACE_NODETYPE = "http://opentosca.org/nodetypes";
+    const QUANTME_NAMESPACE_PULL = "http://quantil.org/quantme/pull";
+
+    // Create service template
+    let serviceTemplate = await createServiceTemplate(activityName, namespace);
+     await createNodeType(
+        activityName + "Container",
+        OPENTOSCA_NAMESPACE_NODETYPE
+      );
+      await updateNodeType(
+        activityName + "Container",
+        OPENTOSCA_NAMESPACE_NODETYPE
+      );
+      serviceTemplate = await updateServiceTemplate(
+        activityName,
+        QUANTME_NAMESPACE_PULL
+      );
+    console.log(`Service template created for: ${activityName}`);
+  }
+
+  }
+
   return (
-    <ReactFlowProvider>
+    <>
       <Joyride
         steps={joyrideSteps}
         run={runTour}
@@ -1836,6 +2051,7 @@ If none apply, return { "algorithms": [] }.
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         compilationTarget={compilationTarget}
+        containsPlaceholder={containsPlaceholder}
         setCompilationTarget={setCompilationTarget}
         sendToBackend={sendToBackend}
       />
@@ -1911,22 +2127,57 @@ If none apply, return { "algorithms": [] }.
         onClose={() => setHistoryOpen(false)}
         history={history}
         onExecute={async (item) => {
-          console.log(item)
+          console.log(item);
           setHistoryOpen(false);
-          setIsQunicornOpen(true);
-          try {
-            // Fetch the QASM content from the result link
-            const response = await fetch(item.links.result);
-            if (!response.ok) throw new Error("Failed to fetch QASM result");
-            const qasmText = await response.text(); // assuming result is plain text QASM
 
-            // Set it in your state
+          try {
+            // Fetch the model JSON from the request link to check compilation_target
+            const requestResponse = await fetch(item.links.request);
+            if (!requestResponse.ok) throw new Error("Failed to fetch model file");
+            const modelData = await requestResponse.json();
+
+            const compilationTarget = modelData?.compilation_target;
+
+            // If the model is a workflow
+            if (compilationTarget === "workflow") {
+              //store the workflow data in your state
+              setWorkflow(modelData);
+
+              // Upload the QRMS file to GitHub if available
+              if (item.links?.qrms) {
+                try {
+                  await uploadQRMS(item.links.qrms, item.uuid);
+                } catch (err) {
+                  console.error("QRMS upload failed:", err);
+                }
+              }
+
+              if (item.links?.serviceDeploymentModels) {
+                try {
+                  const QUANTME_NAMESPACE_PULL = "http://quantil.org/quantme/pull";
+                  await createServiceTemplates(item.links.serviceDeploymentModels, QUANTME_NAMESPACE_PULL);
+
+                } catch (err) {
+                  console.error("QRMS upload failed:", err);
+                }
+              }
+
+              return;
+            }
+
+            setIsQunicornOpen(true);
+            const resultResponse = await fetch(item.links.result);
+            if (!resultResponse.ok) throw new Error("Failed to fetch QASM result");
+
+            const qasmText = await resultResponse.text();
             setOpenQASMCode(qasmText);
+
           } catch (error) {
-            console.error("Error fetching QASM result:", error);
+            console.error("Error handling execution:", error);
           }
         }}
       />
+
 
       <main className="flex flex-col lg:flex-row h-[calc(100vh_-_60px)]">
         <div className="relative flex h-[calc(100vh_-_60px)]  border-gray-200 border">
@@ -1986,6 +2237,7 @@ If none apply, return { "algorithms": [] }.
             onNodeDragStop={onNodeDragStop}
             onDrop={onDrop}
             onNodesDelete={onNodesDelete}
+            onEdgesDelete={onEdgesDelete}
 
             fitView
             fitViewOptions={{ maxZoom: 1 }}
@@ -2036,7 +2288,7 @@ If none apply, return { "algorithms": [] }.
               expanded={expanded}
               onToggleExpanded={() => setExpanded(!expanded)}
               ancillaModelingOn={ancillaModelingOn}
-              onToggleAncilla={() => { setAncillaModelingOn(!ancillaModelingOn); setAncillaMode(!ancillaModelingOn) }}
+              onToggleAncilla={onToggleAncilla}
               experienceLevel={experienceLevel}
               onExperienceLevelChange={onExperienceLevelChange}
               //onExperienceLevelChange={(event) => { setExperienceLevel(event); setExperienceLevelOn(event); }}
@@ -2138,8 +2390,9 @@ If none apply, return { "algorithms": [] }.
 
 
       </main>
-    </ReactFlowProvider>
+      </>
   );
 }
+
 
 export default App;
