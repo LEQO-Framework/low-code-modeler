@@ -59,10 +59,10 @@ export const minMaxOperatorLabel = "Min & Max Operator";
 export const comparisonOperatorLabel = "Comparison Operator";
 
 // categories of modeling constructs
-export const boundaryNodes = "Boundary Nodes";
-export const circuitLevelNodes = "Circuit-level Nodes";
+export const boundaryNodes = "Boundary Elements";
+export const circuitLevelNodes = "Circuit Primitives";
 export const dataTypes = "Data Types";
-export const controlStructureNodes = "Control Structure Nodes";
+export const controlStructureNodes = "Control Structure Elements";
 export const operator = "Operators";
 export const customOperators = "Custom Operators";
 

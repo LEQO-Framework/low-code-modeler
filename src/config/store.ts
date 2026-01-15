@@ -43,6 +43,7 @@ type RFState = {
   experienceLevel: string;
   compact: boolean;
   completionGuaranteed: boolean;
+  containsPlaceholder: boolean;
   selectedNode: Node | null;
   history: HistoryItem[];
   historyIndex: number;
@@ -50,6 +51,7 @@ type RFState = {
   setEdges: (edge: Edge) => void;
   setAncillaMode: (ancillaMode: boolean) => void
   setCompletionGuaranteed: (completionGuaranteed: boolean) => void
+  setContainsPlaceholder: (containsPlaceholder: boolean) => void
   setCompact: (compact: boolean) => void
   setExperienceLevel: (experienceLevel: string) => void
   setNewEdges: (newEdges: Edge[]) => void;
@@ -77,7 +79,7 @@ export const useStore = create<RFState>((set, get) => ({
   selectedNode: null,
   history: [],
   historyIndex: -1,
-
+  containsPlaceholder: false,
   setSelectedNode: (node: Node | null) => {
     set({
       selectedNode: node,
@@ -217,23 +219,45 @@ export const useStore = create<RFState>((set, get) => ({
       experienceLevel
     });
   },
+  setContainsPlaceholder: (containsPlaceholder: boolean) => {
+    set({
+      containsPlaceholder
+    });
+  },
   setCompact: (compact: boolean) => {
     const currentNodes = get().nodes.map(node => {
-      console.log(node)
-      if (!node.data.compactOptions.includes(compact)) {
-        return { ...node, hidden: !compact };
+      let newNode = { ...node };
+
+      // handle compact change
+      if (compact && (node.data.label === "Basis Encoding" || node.data.label === "Angle Encoding" || node.data.label === "Amplitude Encoding")) {
+        newNode = {
+          ...newNode,
+          data: { ...newNode.data, label: "Encode Value" },
+          hidden: false
+        };
+      } else if (!compact && node.data.label === "Encode Value") {
+        // Restore original encoding type when leaving compact mode
+        const originalLabel = node.data.encodingType || "Encode Value";
+        newNode = {
+          ...newNode,
+          data: { ...newNode.data, label: originalLabel },
+          hidden: false
+        };
+      } else {
+
+        const hideNode = !node.data.compactOptions?.includes(compact);
+        newNode = { ...newNode, hidden: hideNode };
       }
-  
-      return { ...node, hidden: false };
+
+      return newNode;
     });
+
     const hiddenNodeIds = new Set(
       currentNodes.filter(n => n.hidden).map(n => n.id)
     );
+
     const currentEdges = get().edges.map(edge => {
-      if (
-        hiddenNodeIds.has(edge.source) ||
-        hiddenNodeIds.has(edge.target)
-      ) {
+      if (hiddenNodeIds.has(edge.source) || hiddenNodeIds.has(edge.target)) {
         return { ...edge, hidden: true };
       }
       return { ...edge, hidden: false };

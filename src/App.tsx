@@ -34,6 +34,8 @@ import { Toast } from "./components/modals/toast";
 import ExperienceModePanel from "./components/modals/experienceLevelModal";
 import { HistoryItem, HistoryModal } from "./components/modals/historyModal";
 import { ValidationModal } from "./components/modals/validationModal";
+import JSZip, { JSZipObject } from "jszip";
+import { createDeploymentModel, createNodeType, createServiceTemplate, updateNodeType, updateServiceTemplate } from "./winery";
 
 const selector = (state: {
   nodes: Node[];
@@ -42,6 +44,7 @@ const selector = (state: {
   experienceLevel: string;
   compact: boolean;
   completionGuaranteed: boolean;
+  containsPlaceholder: boolean;
   onNodesChange: any;
   onEdgesChange: any;
   onConnect: any;
@@ -56,6 +59,7 @@ const selector = (state: {
   setCompact: (compact: boolean) => void;
   setCompletionGuaranteed: (completionGuaranteed: boolean) => void;
   setExperienceLevel: (experienceLevel: string) => void;
+  setContainsPlaceholder: (containsPlaceholder: boolean) => void;
   undo: () => void;
   redo: () => void;
 }) => ({
@@ -64,6 +68,7 @@ const selector = (state: {
   experienceLevel: state.experienceLevel,
   compact: state.compact,
   completionGuaranteed: state.completionGuaranteed,
+  containsPlaceholder: state.containsPlaceholder,
   onNodesChange: state.onNodesChange,
   onEdgesChange: state.onEdgesChange,
   onConnect: state.onConnect,
@@ -77,6 +82,7 @@ const selector = (state: {
   setAncillaMode: state.setAncillaMode,
   setCompact: state.setCompact,
   setCompletionGuaranteed: state.setCompletionGuaranteed,
+  setContainsPlaceholder: state.setContainsPlaceholder,
   setExperienceLevel: state.setExperienceLevel,
   undo: state.undo,
   redo: state.redo,
@@ -85,11 +91,35 @@ const selector = (state: {
 function App() {
   const reactFlowWrapper = React.useRef<any>(null);
   const [reactFlowInstance, setReactFlowInstance] = React.useState<any>(null);
+   const {
+    nodes,
+    edges,
+    experienceLevel,
+    compact,
+    completionGuaranteed,
+    containsPlaceholder,
+    onNodesChange,
+    onEdgesChange,
+    onConnect,
+    onConnectEnd,
+    setCompact,
+    setExperienceLevel,
+    setAncillaMode,
+    setCompletionGuaranteed,
+    setContainsPlaceholder,
+    setSelectedNode,
+    setNodes,
+    updateNodeValue,
+    updateParent,
+    updateChildren,
+    setEdges,
+  } = useStore(useShallow(selector));
+
   const [metadata, setMetadata] = React.useState<any>({
     version: "1.0.0",
     name: "My Model",
     description: "This is a model.",
-    author: "",
+    author: ""
   });
   const [menu, setMenu] = useState(null);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
@@ -253,29 +283,6 @@ function App() {
   const [expanded, setExpanded] = useState(false);
   const [completionGuaranteedOption, setCompletionGuaranteedOption] = useState("Yes");
 
-
-  const {
-    nodes,
-    edges,
-    experienceLevel,
-    compact,
-    completionGuaranteed,
-    onNodesChange,
-    onEdgesChange,
-    onConnect,
-    onConnectEnd,
-    setCompact,
-    setExperienceLevel,
-    setAncillaMode,
-    setCompletionGuaranteed,
-    setSelectedNode,
-    setNodes,
-    updateNodeValue,
-    updateParent,
-    updateChildren,
-    setEdges,
-  } = useStore(useShallow(selector));
-
   const { undo } = useStore((state) => ({
     undo: state.undo,
   }));
@@ -303,6 +310,8 @@ function App() {
   const [experienceLevelOn, setExperienceLevelOn] = useState("explorer");
   const [compactVisualization, setCompactVisualization] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
+  const [workflow, setWorkflow] = useState("");
+
 
   const updateNodeInternals = useUpdateNodeInternals();
 
@@ -375,10 +384,6 @@ function App() {
     setAlreadyExecuted(false);
   };
 
-
-  const prepareBackendRequest = () => {
-    setModalOpen(true);
-  }
   const sendToBackend = async () => {
     //setLoading(true);
     setModalOpen(false);
@@ -390,6 +395,7 @@ function App() {
     try {
       const validMetadata = {
         ...metadata,
+        containsPlaceholder: containsPlaceholder,
         id: id,
         timestamp: new Date().toISOString(),
       };
@@ -397,11 +403,9 @@ function App() {
       console.log(validMetadata);
       console.log(metadata);
 
-      const flow = reactFlowInstance.toObject();
-
       const response = await startCompile(
         lowcodeBackendEndpoint,
-        metadata,
+        validMetadata,
         reactFlowInstance.getNodes(),
         reactFlowInstance.getEdges(),
         compilationTarget
@@ -539,13 +543,11 @@ function App() {
     console.log("load tutorial")
     loadFlow(tutorial);
     console.log("load toturial")
-    //setSelectedNode(node)
-    //const selectedNode = useStore(selector)
-    //setIsPanelOpen(true);
   }
 
   interface ValidationItem {
     nodeId: string;
+    nodeType: string;
     description: string;
   }
 
@@ -559,26 +561,40 @@ function App() {
     const errors: ValidationItem[] = [];
 
     const outputIds = new Map<string, string>();
-    const nodesById = new Map(flow.nodes?.map((n) => [n.id, n]));
+    const nodesById: any = new Map(flow.nodes?.map((n) => [n.id, n]));
 
     // Map targetNodeId => sourceNodeIds[]
-    const nodeConnections = new Map();
+    const nodeConnections = new Map<string, string[]>();
     flow.edges?.forEach((edge) => {
       if (!nodeConnections.has(edge.target)) nodeConnections.set(edge.target, []);
       nodeConnections.get(edge.target)?.push(edge.source);
     });
 
-    flow.nodes?.forEach((node) => {
-      const { outputIdentifier, label, inputs, outputSize, condition, operator } = node.data || {};
-      const incomingEdges = flow.edges?.filter(edge => edge.target === node.id) || [];
-      const connectedNodeSources = incomingEdges.map(edge => edge.source);
-      const inputCount = connectedNodeSources.length;
+    // Map sourceNodeId => targetNodeIds[] for output checks
+    const outgoingConnections = new Map<string, string[]>();
+    flow.edges?.forEach((edge) => {
+      if (!outgoingConnections.has(edge.source)) outgoingConnections.set(edge.source, []);
+      outgoingConnections.get(edge.source)?.push(edge.target);
+    });
 
-      // outputIdentifier checks
+    // Existing node validation 
+    flow.nodes?.forEach((node) => {
+      const { outputIdentifier, label, inputs, outputSize, condition, operator } =
+        node.data || {};
+      const connectedSources = nodeConnections.get(node.id) || [];
+      const inputCount = connectedSources.length;
+
+      const hasQuantumOutput = connectedSources.some((srcId) => {
+        const sourceNode: any = nodesById.get(srcId);
+        return sourceNode !== undefined;
+      });
+
+      // Output Identifier Checks 
       if (outputIdentifier && /^[0-9]/.test(outputIdentifier)) {
         errors.push({
           nodeId: node.id,
-          description: `Invalid outputIdentifier "${outputIdentifier}" (cannot start with a number).`
+          nodeType: node.type,
+          description: `Invalid outputIdentifier "${outputIdentifier}" (cannot start with a number).`,
         });
       }
 
@@ -587,20 +603,30 @@ function App() {
           const firstNodeId = outputIds.get(outputIdentifier);
           errors.push({
             nodeId: node.id,
-            description: `Duplicate outputIdentifier "${outputIdentifier}" already used by node "${firstNodeId}".`
+            nodeType: node.type,
+            description: `Duplicate outputIdentifier "${outputIdentifier}" already used by node "${firstNodeId}".`,
           });
         } else {
           outputIds.set(outputIdentifier, node.id);
         }
       }
 
-      // Gate / Operator validation
-      const twoQubitGates = ["CNOT", "SWAP", "CZ", "CY", "CH", "CP(λ)", "CRX(θ)", "CRY(θ)", "CRZ(θ)", "CU(θ,φ,λ,γ)"];
+      // Gate / Operator Validation 
+      const twoQubitGates = [
+        "CNOT",
+        "SWAP",
+        "CZ",
+        "CY",
+        "CH",
+        "CP(λ)",
+        "CRX(θ)",
+        "CRY(θ)",
+        "CRZ(θ)",
+        "CU(θ,φ,λ,γ)",
+      ];
       const threeQubitGates = ["Toffoli", "CSWAP"];
       const minMaxOperators = ["Min", "Max"];
 
-      console.log(node.type === "quantumOperatorNode");
-      console.log(!minMaxOperators.includes(operator))
       if (
         twoQubitGates.includes(label) ||
         ((node.type === "quantumOperatorNode" || node.type === "classicalOperatorNode") &&
@@ -609,53 +635,85 @@ function App() {
         if (inputCount !== 2) {
           errors.push({
             nodeId: node.id,
-            description: `Gate "${label}" requires exactly 2 inputs, but got ${inputCount}.`
+            nodeType: node.type,
+            description: `Node "${node.id}" with label "${label}" requires exactly 2 inputs, but got ${inputCount}.`,
           });
         }
+        if(node.data.label === "Quantum Comparison Operator" || node.data.label === "Quantum Min & Max Operator"){
+          warnings.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Node "${node.id}" (${node.data.label}) produces a classical output but its output is not used.`,
+          });
+        }else if (!twoQubitGates.includes(label) && !hasQuantumOutput) {
+          warnings.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Node "${node.id}" (${node.data.label}) produces a quantum state but its output is not used.`,
+          });
+        }
+        
       }
 
       if (threeQubitGates.includes(label)) {
         if (inputCount !== 3) {
           errors.push({
             nodeId: node.id,
-            description: `Gate "${label}" requires exactly 3 inputs, but got ${inputCount}.`
+            nodeType: node.type,
+            description: `Gate "${label}" requires exactly 3 inputs, but got ${inputCount}.`,
           });
         }
       }
 
       if (
         minMaxOperators.includes(label) ||
-        (node.type === "gateNode" && label !== "Qubit Circuit" && !threeQubitGates.includes(label) && !twoQubitGates.includes(label))
+        (node.type === "gateNode" &&
+          label !== "Qubit Circuit" &&
+          !threeQubitGates.includes(label) &&
+          !twoQubitGates.includes(label))
       ) {
         if (inputCount < 1) {
           errors.push({
             nodeId: node.id,
-            description: `Operator "${label}" requires at least 1 input.`
+            nodeType: node.type,
+            description: `Operator "${label}" requires at least 1 input.`,
+          });
+        }
+
+        // Warn if Min/Max operator has no output connection 
+        const outgoing = outgoingConnections.get(node.id) || [];
+        if (outgoing.length === 0) {
+          warnings.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Operator "${label}" has no output connection (unused result).`,
           });
         }
       }
 
-      const connectedSources = nodeConnections.get(node.id) || [];
-
-
-      // StatePreparationNode classical input check
+      // State Preparation Node 
       if (node.type === "statePreparationNode") {
-        if (node.data.label === "Encode Value" || node.data.label === "Basis Encoding" || node.data.label === "Angle Encoding" || node.data.label === "Amplitude Encoding") {
+        if (
+          ["Encode Value", "Basis Encoding", "Angle Encoding", "Amplitude Encoding"].includes(
+            node.data.label
+          )
+        ) {
           const hasClassical = connectedSources.some((srcId) => {
             const sourceNode: any = nodesById.get(srcId);
             return sourceNode?.type === "dataTypeNode";
           });
-
           if (!hasClassical) {
             errors.push({
               nodeId: node.id,
-              description: `Encode value node "${node.id}" has no classical data input connected.`
+              nodeType: node.type,
+              description: `Node "${node.id}" has no classical data input connected.`,
             });
           }
           if (node.data.encodingType === "Custom Encoding" && !node.data.implementation) {
             errors.push({
               nodeId: node.id,
-              description: `Encode value node "${node.id}" is missing implementation for custom encoding.`
+              nodeType: node.type,
+              description: `Node "${node.id}" is missing an implementation for custom encoding.`,
             });
           }
         }
@@ -664,86 +722,87 @@ function App() {
           if (!node.data.size) {
             errors.push({
               nodeId: node.id,
-              description: `Prepare state node "${node.id}" has no quantum register size specified.`
+              nodeType: node.type,
+              description: `Node "${node.id}" has no quantum register size specified.`,
             });
           }
           if (node.data.quantumStateName === "Custom State" && !node.data.implementation) {
             errors.push({
               nodeId: node.id,
-              description: `Prepare state node "${node.id}" is missing implementation for custom state.`
+              nodeType: node.type,
+              description: `Node "${node.id}" is missing implementation for custom state.`,
             });
           }
         }
-      }
 
-      if (node.type === "dataTypeNode" && !node.data.value) {
-        errors.push({
-          nodeId: node.id,
-          description: `Node "${node.id}" has no value specified.`
-        });
-      }
-
-      if (node.type === "qubitNode" && !node.data.value) {
-        errors.push({
-          nodeId: node.id,
-          description: `Node "${node.id}" has no size specified.`
-        });
-      }
-      console.log("HDHDHHDHDHDH")
-      console.log(node)
-
-      if (node.type === "measurementNode") {
-        const missingRegister = connectedSources.some((srcId) => {
-          const sourceNode: any = nodesById.get(srcId);
-          return quantum_types.includes(sourceNode?.type);
-        });
-        console.log("missing")
-        console.log(missingRegister)
-        if (!missingRegister) {
-          errors.push({
-            nodeId: node.id,
-            description: `Measurement node "${node.id}" requires a quantum register.`
-          });
-
-        }
-        if (!node?.data?.indices) {
-
+        if (!hasQuantumOutput) {
           warnings.push({
             nodeId: node.id,
-            description: `Measurement node "${node.id}" has no specified indices.`
+            nodeType: node.type,
+            description: `Node "${node.id}" is missing an output connection.`,
           });
-        } else {
-          const isValid = /^\d+(,\d+)*$/.test(node?.data?.indices);
-
-          if (!isValid) {
-            errors.push({
-              nodeId: node.id,
-              description: `Indices of Measurement node "${node.id}" can only contain numbers followed by comma.`
-            });
-
-          }
         }
-
       }
 
-      // Control structures
+      // DataTypeNode: warn if no output connection 
+      if (node.type === "dataTypeNode") {
+        const outgoing = outgoingConnections.get(node.id) || [];
+        if (outgoing.length === 0) {
+          warnings.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Classical data node "${node.id}" has no output connection (unused variable).`,
+          });
+        }
+      }
+
+      // Measurement Node 
+      if (node.type === "measurementNode") {
+        const missingRegister = connectedSources.every((srcId) => {
+          const sourceNode: any = nodesById.get(srcId);
+          return sourceNode?.type !== "qubitNode" && sourceNode?.type !== "gateNode";
+        });
+        if (missingRegister) {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Node "${node.id}" requires a quantum register.`,
+          });
+        }
+
+        if (!node?.data?.indices) {
+          warnings.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Node "${node.id}" has no specified indices.`,
+          });
+        } else if (!/^\d+(,\d+)*$/.test(node.data.indices)) {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Indices of measurement node "${node.id}" can only contain numbers separated by commas.`,
+          });
+        }
+      }
+
+      // Control / If Nodes 
       if (node.type === "ifElseNode") {
         const hasClassical = connectedSources.some((srcId) => {
           const sourceNode: any = nodesById.get(srcId);
           return sourceNode?.type === "dataTypeNode";
         });
-
         if (!hasClassical) {
           errors.push({
             nodeId: node.id,
-            description: `If-Then-Else node "${label}" requires at least one classical data input.`
+            nodeType: node.type,
+            description: `Node "${label}" requires at least one classical data input.`,
           });
         }
-
         if (!condition) {
           errors.push({
             nodeId: node.id,
-            description: `If-Then-Else node "${label}" requires a condition.`
+            nodeType: node.type,
+            description: `Node "${label}" requires a condition.`,
           });
         }
       }
@@ -751,22 +810,73 @@ function App() {
       if (node.type === "controlStructureNode" && !condition) {
         errors.push({
           nodeId: node.id,
-          description: `Repeat node "${label}" requires a condition.`
+          nodeType: node.type,
+          description: `Node "${label}" requires a condition.`,
         });
       }
 
-      // Custom Nodes
+      // Algorithm / Custom Nodes 
       if (node.type === "algorithmNode" || node.type === "classicalAlgorithmNode") {
         const expectedInputs = node.data?.numberInputs || 0;
         const actualInputs = connectedSources.length;
         if (actualInputs < expectedInputs) {
           errors.push({
             nodeId: node.id,
-            description: `Custom node "${label}" requires ${expectedInputs} input(s), but only ${actualInputs} connected.`
+            nodeType: node.type,
+            description: `Node "${label}" requires ${expectedInputs} input(s), but only ${actualInputs} connected.`,
           });
         }
+
+
+        // Quantum outputs check based on numberQuantumOutputs 
+        const numberQuantumOutputs = node.data?.numberQuantumOutputs || 0;
+        if (numberQuantumOutputs > 0) {
+          const outgoing = outgoingConnections.get(node.id) || [];
+          if (outgoing.length < numberQuantumOutputs) {
+            warnings.push({
+              nodeId: node.id,
+              nodeType: node.type,
+              description: `Node "${node.id}" produces ${numberQuantumOutputs} quantum outputs but only ${outgoing.length} are connected (some quantum outputs are unused).`,
+            });
+          }
+        }
       }
+
     });
+
+    // Gate node connection to measurement 
+    const gateNodes = flow.nodes?.filter((n) => n.type === "gateNode") || [];
+    const measurementNodes = new Set(
+      flow.nodes?.filter((n) => n.type === "measurementNode").map((n) => n.id)
+    );
+
+    const visited = new Set<string>();
+    function reachesMeasurement(nodeId: string): boolean {
+      if (visited.has(nodeId)) return false;
+      visited.add(nodeId);
+
+      if (measurementNodes.has(nodeId)) return true;
+
+      const outputs =
+        flow.edges?.filter((e) => e.source === nodeId).map((e) => e.target) || [];
+      return outputs.some((outId) => reachesMeasurement(outId));
+    }
+
+    const meaningfulGateExists = gateNodes.some((gate) => {
+      visited.clear();
+      return reachesMeasurement(gate.id);
+    });
+
+    if (!meaningfulGateExists && gateNodes.length > 0) {
+      warnings.push({
+        nodeId: null,
+        nodeType: "flow",
+        description:
+          "No gate node in the model has a path to a measurement node. " +
+          "Executing this flow will not produce meaningful results.",
+      });
+    }
+
 
     return { warnings, errors };
   }
@@ -1170,9 +1280,12 @@ function App() {
       return { success: false };
     }
 
+    console.log(containsPlaceholder)
+
     let fileContent = JSON.stringify({
       metadata: {
         ...metadata,
+        containsPlaceholder: containsPlaceholder,
         id: flowId,
         timestamp: new Date().toISOString(),
       },
@@ -1226,6 +1339,7 @@ function App() {
     console.log(flow);
     const validMetadata = {
       ...metadata,
+      containsPlaceholder: containsPlaceholder,
       id: `flow-${Date.now()}`,
       timestamp: new Date().toISOString(),
     };
@@ -1269,19 +1383,19 @@ function App() {
     function restoreFlow(flow) {
       console.log("Restoring flow:", flow);
       if (flow.nodes) {
-	reactFlowInstance.setNodes(
-	  flow.nodes.map((node: Node) => ({
-	    ...node,
-	    data: {
-	      ...node.data,
-	    },
-	  }))
-	);
-	console.log("Nodes restored.");
+        reactFlowInstance.setNodes(
+          flow.nodes.map((node: Node) => ({
+            ...node,
+            data: {
+              ...node.data,
+            },
+          }))
+        );
+        console.log("Nodes restored.");
       }
       if (flow.edges) {
-	reactFlowInstance.setEdges(flow.edges || []);
-	console.log("Edges restored.");
+        reactFlowInstance.setEdges(flow.edges || []);
+        console.log("Edges restored.");
       }
 
 
@@ -1297,7 +1411,7 @@ function App() {
     const event = new CustomEvent("lcm-open", {
       cancelable: true,
       detail: {
-	restoreFlow
+        restoreFlow
       },
     });
     const defaultAction = document.dispatchEvent(event);
@@ -1321,7 +1435,7 @@ function App() {
         try {
           const flow = JSON.parse(e.target?.result as string);
 
-	  restoreFlow(flow);
+          restoreFlow(flow);
         } catch (error) {
           console.error("Error parsing JSON file:", error);
           alert("Invalid JSON file. Please ensure it is a valid flow file.");
@@ -1513,9 +1627,9 @@ function App() {
   const handleOpenConfig = () => setIsConfigOpen(true);
 
   const onExperienceLevelChange = (event) => {
-    setExperienceLevel(event); 
+    setExperienceLevel(event);
     setExperienceLevelOn(event);
-    const bool_value = (experienceLevel === "pioneer")?false:true; // if previous experience level was pioneer...
+    const bool_value = (experienceLevel === "pioneer") ? false : true; // if previous experience level was pioneer...
     setCompactVisualization(bool_value)
     setAncillaMode(bool_value)
     setAncillaModelingOn(bool_value)  
@@ -1562,6 +1676,155 @@ function App() {
       .catch((err) => console.error("Error exporting SVG:", err));
   };
 
+
+  /**
+   * Uploads a QRMS ZIP file to GitHub, updating files if they already exist.
+   */
+  async function uploadQRMS(qrmsUrl: string, modelId: string): Promise<void> {
+    const token = githubToken;
+    if (!token) throw new Error("Missing GitHub token");
+    const owner = githubRepositoryOwner;
+    const repo = githubRepositoryName;
+    const basePath = `qrms_uploads/${modelId}`;
+
+    const res = await fetch(qrmsUrl);
+    if (!res.ok) throw new Error("Failed to fetch QRMS zip");
+    const baseUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${basePath}`;
+
+    const folderCheck = await fetch(baseUrl, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (folderCheck.ok) {
+      console.log(`Folder ${basePath} already exists — skipping upload.`);
+      return; // exit early — skip re-upload
+    }
+    const buf = await res.arrayBuffer();
+    const zip = await JSZip.loadAsync(buf);
+
+    for (const [relative, file] of Object.entries(zip.files)) {
+      if (file.dir) continue;
+      const content = await file.async("string");
+      const encoded = btoa(unescape(encodeURIComponent(content)));
+      const githubPath = `${basePath}/${relative}`;
+      const url = `https://api.github.com/repos/${owner}/${repo}/contents/${githubPath}`;
+
+      // look up sha if file already exists
+      let sha: string | undefined;
+      const head = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (head.ok) {
+        const data = await head.json();
+        sha = data.sha;
+      }
+
+      // create or update file
+      const put = await fetch(url, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          message: sha
+            ? `Update existing QRMS file: ${relative}`
+            : `Upload new QRMS file: ${relative}`,
+          content: encoded,
+          sha,
+        }),
+      });
+
+      if (!put.ok) {
+        const txt = await put.text();
+        throw new Error(`Failed to upload ${relative}: ${txt}`);
+      }
+      console.log("QRMs uploaded", githubPath);
+    }
+  }
+
+  async function createServiceTemplates(serviceDeploymentModelsUrl: string, namespace: string): Promise<void> {
+    const res = await fetch(serviceDeploymentModelsUrl);
+    if (!res.ok) throw new Error(`Failed to fetch service deployment models: ${res.statusText}`);
+
+    // Load ZIP into JSZip
+    const arrayBuffer = await res.arrayBuffer();
+    const zip = await JSZip.loadAsync(arrayBuffer);
+
+    // Extract folder names
+    const folderNames = new Set<string>();
+
+    for (const [path, entry] of Object.entries(zip.files)) {
+      const match = path.match(/^(Activity_[^/]+)/);
+      if (match) {
+        folderNames.add(match[1]);
+      }
+    }
+
+    console.log(`Found service deployment folders:`, Array.from(folderNames));
+
+
+    const masterZip = await JSZip.loadAsync(arrayBuffer);
+    // Process each folder 
+     for (const [path, entry] of Object.entries(masterZip.files)) {
+    if (entry.dir) continue;
+    if (!path.endsWith(".zip")) continue;
+
+    // Extract activity name
+    const activityName = path.replace(".zip", "");
+    console.log(`Processing activity ZIP: ${activityName}`);
+
+    // Load the activity ZIP in memory
+    const activityArrayBuffer = await entry.async("arraybuffer");
+    const activityZip = await JSZip.loadAsync(activityArrayBuffer);
+
+    // Find service.zip inside activity ZIP
+    const serviceEntry = Object.values(activityZip.files).find(
+      (f) => !f.dir && f.name.endsWith("service.zip")
+    );
+
+    if (!serviceEntry) {
+      console.warn(`No service.zip found in ${activityName}`);
+      continue;
+    }
+
+    // Extract service.zip as Blob
+    const serviceArrayBuffer = await serviceEntry.async("arraybuffer");
+    const serviceBlob = new Blob([serviceArrayBuffer], { type: "application/zip" });
+
+    // Create deployment model
+    const versionUrl = `http://localhost:8093/winery/servicetemplates/${activityName}`;
+    await createDeploymentModel(
+      serviceBlob, 
+      "http://localhost:8093/winery",
+      `${activityName}_DA`,
+      "http://opentosca.org/artifacttemplates",
+      "{http://opentosca.org/artifacttypes}DockerContainerArtifact",
+      "service.zip",
+      versionUrl
+    );
+    const OPENTOSCA_NAMESPACE_NODETYPE = "http://opentosca.org/nodetypes";
+    const QUANTME_NAMESPACE_PULL = "http://quantil.org/quantme/pull";
+
+    // Create service template
+    let serviceTemplate = await createServiceTemplate(activityName, namespace);
+     await createNodeType(
+        activityName + "Container",
+        OPENTOSCA_NAMESPACE_NODETYPE
+      );
+      await updateNodeType(
+        activityName + "Container",
+        OPENTOSCA_NAMESPACE_NODETYPE
+      );
+      serviceTemplate = await updateServiceTemplate(
+        activityName,
+        QUANTME_NAMESPACE_PULL
+      );
+    console.log(`Service template created for: ${activityName}`);
+  }
+
+  }
+
   return (
     <>
       <Joyride
@@ -1581,7 +1844,7 @@ function App() {
           console.log("HELP");
           console.log(index);
           console.log(type);
-          if(type === 'step:before' && index === 0) {
+          if (type === 'step:before' && index === 0) {
             // open both side panels if they're not opened
             setIsPaletteOpen(true);
             setIsPanelOpen(true);
@@ -1645,6 +1908,7 @@ function App() {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         compilationTarget={compilationTarget}
+        containsPlaceholder={containsPlaceholder}
         setCompilationTarget={setCompilationTarget}
         sendToBackend={sendToBackend}
       />
@@ -1698,22 +1962,57 @@ function App() {
         onClose={() => setHistoryOpen(false)}
         history={history}
         onExecute={async (item) => {
-          console.log(item)
+          console.log(item);
           setHistoryOpen(false);
-          setIsQunicornOpen(true);
-          try {
-            // Fetch the QASM content from the result link
-            const response = await fetch(item.links.result);
-            if (!response.ok) throw new Error("Failed to fetch QASM result");
-            const qasmText = await response.text(); // assuming result is plain text QASM
 
-            // Set it in your state
+          try {
+            // Fetch the model JSON from the request link to check compilation_target
+            const requestResponse = await fetch(item.links.request);
+            if (!requestResponse.ok) throw new Error("Failed to fetch model file");
+            const modelData = await requestResponse.json();
+
+            const compilationTarget = modelData?.compilation_target;
+
+            // If the model is a workflow
+            if (compilationTarget === "workflow") {
+              //store the workflow data in your state
+              setWorkflow(modelData);
+
+              // Upload the QRMS file to GitHub if available
+              if (item.links?.qrms) {
+                try {
+                  await uploadQRMS(item.links.qrms, item.uuid);
+                } catch (err) {
+                  console.error("QRMS upload failed:", err);
+                }
+              }
+
+              if (item.links?.serviceDeploymentModels) {
+                try {
+                  const QUANTME_NAMESPACE_PULL = "http://quantil.org/quantme/pull";
+                  await createServiceTemplates(item.links.serviceDeploymentModels, QUANTME_NAMESPACE_PULL);
+
+                } catch (err) {
+                  console.error("QRMS upload failed:", err);
+                }
+              }
+
+              return;
+            }
+
+            setIsQunicornOpen(true);
+            const resultResponse = await fetch(item.links.result);
+            if (!resultResponse.ok) throw new Error("Failed to fetch QASM result");
+
+            const qasmText = await resultResponse.text();
             setOpenQASMCode(qasmText);
+
           } catch (error) {
-            console.error("Error fetching QASM result:", error);
+            console.error("Error handling execution:", error);
           }
         }}
       />
+
 
       <main className="flex flex-col lg:flex-row h-[calc(100vh_-_60px)]">
         <div className="relative flex h-[calc(100vh_-_60px)]  border-gray-200 border">
