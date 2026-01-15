@@ -8,7 +8,8 @@ import ReactFlow, {
   ReactFlowProvider,
   MiniMap,
   getNodesBounds,
-  Panel
+  Panel,
+  useUpdateNodeInternals
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { ContextMenu, CustomPanel, Palette } from "./components";
@@ -157,8 +158,6 @@ function App() {
     left: 0,
   });
 
-  //const [contextMenu, setContextMenu] = useState(null);
-
   const onNodeContextMenu = useCallback(
     (event: React.MouseEvent, node: Node) => {
       event.preventDefault();
@@ -173,6 +172,21 @@ function App() {
     },
     []
   );
+
+  const onEdgesDelete = (edges: Edge[]) => {
+    edges.forEach((edge) => {
+      console.log("ON EDGES DELETE")
+      console.log("EDGE", edge)
+      const targetNodeId = edge.target
+      const targetHandle = edge.targetHandle
+      const targetNode = nodes.find(n => n.id === targetNodeId);
+      const newInputs = targetNode.data.inputs.filter(i => i.targetHandle !== targetHandle)
+      updateNodeValue(targetNodeId, "inputs", newInputs)
+      console.log(targetHandle)
+      console.log("update new inputs", newInputs)
+      console.log("NEW INPUTS", targetNode.data.inputs)
+    })
+  };
 
 
 
@@ -298,6 +312,8 @@ function App() {
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
   const [workflow, setWorkflow] = useState("");
 
+
+  const updateNodeInternals = useUpdateNodeInternals();
 
   const showToast = (message: string, type: "success" | "error" | "info") => {
     setToast({ message, type });
@@ -519,6 +535,11 @@ function App() {
   const startTour2 = () => {
     setRunTour(true);
     setAncillaMode(false);
+    setAncillaModelingOn(false);
+    //updateNodeInternals since ancilla mode changes number of handles
+    nodes.forEach((node) => {
+      updateNodeInternals(node.id);
+    })
     console.log("load tutorial")
     loadFlow(tutorial);
     console.log("load toturial")
@@ -881,6 +902,11 @@ function App() {
   const startTour = () => {
     setRunTour(true);
     setAncillaMode(false);
+    setAncillaModelingOn(false);
+    //updateNodeInternals since ancilla mode changes number of handles
+    nodes.forEach((node) => {
+      updateNodeInternals(node.id);
+    })
     console.log("load tutorial")
     console.log("load toturial")
   }
@@ -1606,8 +1632,23 @@ function App() {
     const bool_value = (experienceLevel === "pioneer") ? false : true; // if previous experience level was pioneer...
     setCompactVisualization(bool_value)
     setAncillaMode(bool_value)
-    setAncillaModelingOn(bool_value)
+    setAncillaModelingOn(bool_value)  
+    //updateNodeInternals since ancilla mode changes number of handles
+    nodes.forEach((node) => {
+      updateNodeInternals(node.id);
+    })
   };
+
+  
+
+  const onToggleAncilla = () => { 
+    setAncillaModelingOn(!ancillaModelingOn); 
+    setAncillaMode(!ancillaModelingOn); 
+    //updateNodeInternals since ancilla mode changes number of handles
+    nodes.forEach((node) => {
+      updateNodeInternals(node.id);
+    })
+  }
 
   const handleSaveAsSVG = () => {
     if (ref.current === null) {
@@ -1785,7 +1826,7 @@ function App() {
   }
 
   return (
-    <ReactFlowProvider>
+    <>
       <Joyride
         steps={joyrideSteps}
         run={runTour}
@@ -2031,6 +2072,7 @@ function App() {
             onNodeDragStop={onNodeDragStop}
             onDrop={onDrop}
             onNodesDelete={onNodesDelete}
+            onEdgesDelete={onEdgesDelete}
 
             fitView
             fitViewOptions={{ maxZoom: 1 }}
@@ -2081,7 +2123,7 @@ function App() {
               expanded={expanded}
               onToggleExpanded={() => setExpanded(!expanded)}
               ancillaModelingOn={ancillaModelingOn}
-              onToggleAncilla={() => { setAncillaModelingOn(!ancillaModelingOn); setAncillaMode(!ancillaModelingOn) }}
+              onToggleAncilla={onToggleAncilla}
               experienceLevel={experienceLevel}
               onExperienceLevelChange={onExperienceLevelChange}
               //onExperienceLevelChange={(event) => { setExperienceLevel(event); setExperienceLevelOn(event); }}
@@ -2183,8 +2225,9 @@ function App() {
 
 
       </main>
-    </ReactFlowProvider>
+      </>
   );
 }
+
 
 export default App;

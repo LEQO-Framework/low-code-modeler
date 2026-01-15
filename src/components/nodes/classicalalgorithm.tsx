@@ -153,22 +153,6 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
               </span>
             )}
           </div>
-
-          {Array.from({ length: numberInputs }).map((_, index) => (
-            <Handle
-              key={`input-handle-${index}`}
-              type="target"
-              id={`classicalHandleOperationInput${index}${node.id}`}
-              position={Position.Left}
-              className="!bg-orange-300 !border-black"
-              style={{
-                top: `${52 + index * 50}px`, // adjust vertical position below header
-                left: "-8px",
-                position: "absolute",
-                zIndex: 10,
-              }}
-            />
-          ))}
         </div>
 
         <div className="mt-[5px] flex flex-col relative z-0">
@@ -191,12 +175,13 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
                 style={{ top: "50%", transform: "translateY(-50%)" }}
               />
               <span className="text-black text-sm text-center w-full">
-                {node.data.inputs?.[index]?.outputIdentifier || `Input ${index + 1}`}
+                {node.data.inputs.find(
+                        (input) => input.targetHandle === `classicalHandleOperationInput${index}${node.id}`)?.outputIdentifier || `Input ${index + 1}`}
               </span>
             </div>
           ))}
         </div>
-
+        <div className="custom-node-port-out">
         {Array.from({ length: numberOutputs }).map((_, index) => (
           <div
             key={`output-wrapper-${index}`}
@@ -204,6 +189,7 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
             style={{ top: `${outputsStartTop + index * outputHeight}px` }}
           >
             <OutputPort
+              key={`output-port-${index}`}
               node={node}
               index={index}
               type={"classical"}
@@ -225,6 +211,7 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
             />
           </div>
         ))}
+        </div>
 
       </div>
     </motion.div>

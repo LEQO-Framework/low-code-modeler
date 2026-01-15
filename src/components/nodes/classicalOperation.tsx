@@ -213,7 +213,8 @@ export const ClassicalOperationNode = memo((node: Node) => {
                   className="z-10 classical-circle-port-operation !bg-orange-300 !border-black -left-[8px]"
                   style={{ top: '50%', transform: 'translateY(-50%)' }}
                 />
-                <span className="text-black text-sm text-center w-full">{node.data.inputs[0]?.outputIdentifier || "Input 1"}</span>
+                <span className="text-black text-sm text-center w-full">{node.data.inputs.find(
+                    (input) => input.targetHandle === `classicalHandleOperationInput0${node.id}`)?.outputIdentifier || "Input 1"}</span>
               </div>
                {node.data.label !== consts.classicalLabel + consts.minMaxOperatorLabel && (
               <div
@@ -230,12 +231,13 @@ export const ClassicalOperationNode = memo((node: Node) => {
               >
                 <Handle
                   type="target"
-                  id={`ancillaHandleOperationInput1${node.id}`}
+                  id={`classicalHandleOperationInput1${node.id}`}
                   position={Position.Left}
                   className="z-10 classical-circle-port-operation !bg-orange-300 !border-black -left-[8px]"
                   style={{ top: '50%', transform: 'translateY(-50%)' }}
                 />
-                <span className="text-black text-sm text-center w-full">{node.data.inputs[1]?.outputIdentifier || "Input 2"}</span>
+                <span className="text-black text-sm text-center w-full">{node.data.inputs.find(
+                    (input) => input.targetHandle === `classicalHandleOperationInput1${node.id}`)?.outputIdentifier || "Input 2"}</span>
               </div>)}
               <div
                 className="relative p-2 mb-1 overflow-visible"
