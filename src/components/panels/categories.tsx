@@ -184,8 +184,7 @@ export const categories: Record<string, CategoryEntry> = {
         label: consts.qaoa,
         type: consts.templates,
         icon: [
-          "PaletteIcon_CustomQuantumOperator.png",
-          "PaletteIcon_Ancilla_CustomQuantumOperator.png",
+          "QAOA.png",
         ],
         description: "Solves optimization problems by combining a quantum process with a classical optimizer.",
         completionGuaranteed: false,
