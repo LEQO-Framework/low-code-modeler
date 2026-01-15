@@ -159,22 +159,6 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
               </span>
             )}
           </div>
-
-          {Array.from({ length: numberInputs }).map((_, index) => (
-            <Handle
-              key={`input-handle-${index}`}
-              type="target"
-              id={`classicalHandleOperationInput${index}${node.id}`}
-              position={Position.Left}
-              className="!bg-orange-300 !border-black"
-              style={{
-                top: `${52 + index * 50}px`, // adjust vertical position below header
-                left: "-8px",
-                position: "absolute",
-                zIndex: 10,
-              }}
-            />
-          ))}
         </div>
 
         <div className="mt-[5px] flex flex-col relative z-0">
