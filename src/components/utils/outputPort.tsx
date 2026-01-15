@@ -57,89 +57,92 @@ export default function OutputPort({
   const outputSize = outputs[index]?.size || "";
   const isConnected = edges.some(edge => edge.sourceHandle === handleId);
 
+  // Handle numeric size change and validation
   const handleYChange = (value: string, field: string) => {
     const num = Number(value);
-    let hasError = false;
-
-    // Only validate if user entered something
-    if (value !== "" && (!/^\d+$/.test(value) || num <= 0)) {
-      hasError = true;
-    }
-
+    const hasError = value !== "" && (!/^\d+$/.test(value) || num <= 0);
     setSizeError(hasError);
 
-    // Update node data
     node.data[field] = value;
     updateNodeValue(node.id, field, num);
     setSelectedNode(node);
   };
 
+  // Get input type for classical arithmetic operator
+  const getInputType = (inputIndex: number) => {
+    const handleId = `classicalHandleOperationInput${inputIndex}${node.id}`;
+    const edge = edges.find(e => e.target === node.id && e.targetHandle === handleId);
+    if (!edge) return "any";
+
+    const sourceNode = nodes.find(n => n.id === edge.source);
+    if (!sourceNode) return "any";
+
+    if (sourceNode.type === "measurementNode") return "array";
+    if (sourceNode.data?.outputs?.[0]?.value !== undefined) return typeof sourceNode.data.outputs[0].value;
+    if (sourceNode.type === "dataTypeNode") return sourceNode.data?.dataType ?? "any";
+
+    return "any";
+  };
+
+  // Determine displayed output type dynamically
   const getDisplayedOutputType = () => {
-    // Highest priority: explicit data type node
-    if (node.type === "dataTypeNode") {
-      return node.data?.dataType ?? "unknown";
+    let outputType = "unknown";
+
+    // Classical Arithmetic Operator: infer from inputs
+    if (type === "classical" && node.data.label?.includes("Arithmetic Operator")) {
+      const t0 = getInputType(0);
+      const t1 = getInputType(1);
+
+      if (t0 !== "any" && t1 !== "any" && t0 === t1) outputType = t0;
+      else if (t0 !== "any") outputType = t0;
+      else if (t1 !== "any") outputType = t1;
+      else outputType = "any";
     }
-    if (node.data.label?.includes("Comparison Operator")) {
-      return "boolean";
+    // Other classical operators
+    else if (type === "classical" && node.data.label?.includes("Bitwise Operator")) {
+      outputType = "bit";
+    }
+    else if (node.data.label?.includes("Comparison Operator")) {
+      outputType = "boolean";
+    }
+    else if (node.data.label?.includes("Min & Max Operator")) {
+      outputType = "number";
+    }
+    // Quantum or fallback
+    else if (type === "quantum") {
+      outputType = "quantum register";
+    }
+    else if (type === "classical") {
+      outputType = "array";
     }
 
-    if (node.data.label?.includes("Min & Max Operator")) {
-      return "number";
-    }
-    if (type === "classical" && node.data.label?.includes("Bitwise Operator")) {
-      return "bit";
-    }
-    if (type === "classical" && (node.type === ClassicalAlgorithmNode || node.type === AlgorithmNode)) {
-      return "any";
-    }
+    // Update the node's outputType in the store
+    updateNodeValue(node.id, "outputType", outputType);
 
-    // Quantum vs classical outputs
-    if (type === "quantum") {
-      return "quantum register";
-    }
-
-    if (type === "classical") {
-      return "array";
-    }
-
-    return "unknown";
+    return outputType;
   };
 
 
   useEffect(() => {
     const isNowBellState = node.data.quantumStateName?.includes("Bell State");
-
     const updatedOutputs = [...outputs];
-    if (!updatedOutputs[index]) {
-      updatedOutputs[index] = { identifier: "", size: "" };
-    }
+    if (!updatedOutputs[index]) updatedOutputs[index] = { identifier: "", size: "" };
 
     if (isNowBellState) {
-      updatedOutputs[index] = {
-        ...updatedOutputs[index],
-        size: "2",
-      };
-
+      updatedOutputs[index] = { ...updatedOutputs[index], size: "2" };
       setOutputs(updatedOutputs);
       node.data.outputs = updatedOutputs;
       updateNodeValue(node.id, "size", "2");
       updateNodeValue(node.id, "outputs", updatedOutputs);
       setSelectedNode(node);
-
       wasBellState.current = true;
     } else if (wasBellState.current && node.data.label === "Prepare State") {
-      // Only reset when transitioning from Bell State
-      updatedOutputs[index] = {
-        ...updatedOutputs[index],
-        size: "",
-      };
-
+      updatedOutputs[index] = { ...updatedOutputs[index], size: "" };
       setOutputs(updatedOutputs);
       node.data.outputs = updatedOutputs;
       updateNodeValue(node.id, "size", "");
       updateNodeValue(node.id, "outputs", updatedOutputs);
       setSelectedNode(node);
-
       wasBellState.current = false;
     }
   }, [node.data.quantumStateName]);
@@ -154,39 +157,33 @@ export default function OutputPort({
             : isAncilla
               ? 'rgba(137, 218, 131, 0.2)'
               : 'rgba(105, 145, 210, 0.2)',
-
           width: "180px",
           borderRadius: isClassical ? '16px' : '0px',
         }}
       >
         <div className="w-full flex justify-between items-center">
-          <span className="text-left text-sm text-black font-semibold">
-            Output:
-          </span>
+          <span className="text-left text-sm text-black font-semibold">Output:</span>
           <span className="text-[10px] text-gray-600">
             type: {getDisplayedOutputType().toLowerCase()}
           </span>
         </div>
-
 
         <div className="flex items-center justify-between w-full space-x-2">
           <label className="text-sm text-black" style={{ paddingLeft: '15px' }}>Identifier</label>
           <input
             type="text"
             className={`p-1 text-sm text-black opacity-75 w-20 text-center rounded-full border ${outputIdentifierError
-              ? 'bg-red-500 border-red-500'
-              : isClassical
-                ? 'bg-white border-orange-500'
-                : isAncilla
-                  ? 'bg-white border-green-500'
-                  : 'bg-white border-blue-500'
+                ? 'bg-red-500 border-red-500'
+                : isClassical
+                  ? 'bg-white border-orange-500'
+                  : isAncilla
+                    ? 'bg-white border-green-500'
+                    : 'bg-white border-blue-500'
               }`}
             value={outputIdentifier}
             onChange={(e) => {
               const updatedOutputs = [...outputs];
-              if (!updatedOutputs[index]) {
-                updatedOutputs[index] = { identifier: "", size: "" };
-              }
+              if (!updatedOutputs[index]) updatedOutputs[index] = { identifier: "", size: "" };
               updatedOutputs[index] = {
                 ...updatedOutputs[index],
                 identifier: e.target.value,
@@ -202,7 +199,6 @@ export default function OutputPort({
                 setOutputIdentifierError,
               });
 
-              // Ensure immutability by creating a new array
               setOutputs(updatedOutputs);
               node.data.outputs = updatedOutputs;
               updateNodeValue(node.id, "outputs", updatedOutputs);
@@ -216,29 +212,22 @@ export default function OutputPort({
           <input
             type="text"
             className={`p-1 text-sm text-black opacity-75 w-20 text-center rounded-full border ${sizeError
-              ? 'bg-red-500 border-red-500'
-              : isClassical
-                ? `bg-white border-orange-500 ${sizeRequired ? '' : 'border-dashed'}`
-                : isAncilla
-                  ? `bg-white border-green-500 ${sizeRequired ? '' : 'border-dashed'}`
-                  : `bg-white border-blue-500 ${sizeRequired ? '' : 'border-dashed'}`
+                ? 'bg-red-500 border-red-500'
+                : isClassical
+                  ? `bg-white border-orange-500 ${sizeRequired ? '' : 'border-dashed'}`
+                  : isAncilla
+                    ? `bg-white border-green-500 ${sizeRequired ? '' : 'border-dashed'}`
+                    : `bg-white border-blue-500 ${sizeRequired ? '' : 'border-dashed'}`
               }`}
             value={node.data.quantumStateName?.includes("Bell State") ? "2" : outputSize}
             readOnly={node.data.quantumStateName?.includes("Bell State")}
             onChange={(e) => {
               const updatedOutputs = [...outputs];
-              if (!updatedOutputs[index]) {
-                updatedOutputs[index] = { identifier: "", size: "" };
-              }
-              updatedOutputs[index] = {
-                ...updatedOutputs[index],
-                size: e.target.value,
-              };
+              if (!updatedOutputs[index]) updatedOutputs[index] = { identifier: "", size: "" };
+              updatedOutputs[index] = { ...updatedOutputs[index], size: e.target.value };
 
-              // Call handleYChange for size validation and state update
               handleYChange(e.target.value, "size");
 
-              // Again, create a new array to maintain immutability
               setOutputs(updatedOutputs);
               node.data.outputs = updatedOutputs;
               updateNodeValue(node.id, "outputs", updatedOutputs);
@@ -246,8 +235,6 @@ export default function OutputPort({
             }}
           />
         </div>
-
-
       </div>
 
       {node.type !== "dataTypeNode" && (
@@ -269,15 +256,13 @@ export default function OutputPort({
                 ? "!bg-orange-300 !border-black"
                 : isAncilla
                   ? "!bg-green-100 !border-black rotate-45"
-                  : "!bg-blue-300 !border-black"
-              }`
+                  : "!bg-blue-300 !border-black"}`
               : "!bg-gray-200 !border-dashed !border-gray-500"
           )}
           isConnectable={edges.filter(edge => edge.sourceHandle === handleId).length < 1}
           isConnectableEnd={false}
         />
       )}
-
     </div>
   );
 }

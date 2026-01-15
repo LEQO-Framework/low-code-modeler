@@ -411,9 +411,11 @@ export const useStore = create<RFState>((set, get) => ({
     const getNodeLockedType = (nodeId: string): string => {
       const node = get().nodes.find(n => n.id === nodeId);
       if (!node || !node.data.inputs) return "any";
-      if(node.type === consts.AlgorithmNode || node.type === consts.ClassicalAlgorithmNode){
+      if (node.type === consts.AlgorithmNode || node.type === consts.ClassicalAlgorithmNode) {
         return "any"
       }
+
+      
 
       // Find the first input that has a type other than "any"
       for (const input of node.data.inputs) {
@@ -432,32 +434,54 @@ export const useStore = create<RFState>((set, get) => ({
       return "any"; // no locked type yet
     };
 
-    const getNodeOutputType = (nodeId: string, handleId: string) => {
-      const sourceNode = get().nodes.find(n => n.id === nodeId);
-      if (!sourceNode) return "any";
+    const getNodeOutputType = (nodeId: string, handleId?: string): string => {
+      const node = get().nodes.find(n => n.id === nodeId);
+      if (!node) return "any";
 
-      // If it's a dataTypeNode, return its type
-      if (sourceNode.type === "dataTypeNode") return sourceNode.data?.dataType ?? "any";
-
-      // Otherwise, infer from operator type
-      if (sourceNode.type === "classicalAlgorithmNode" || sourceNode.type === "ClassicalAlgorithmNode") {
-        if (sourceNode.data.label === "Classical Arithmetic Operator") return "number";
-        if (sourceNode.data.label === "Classical Bitwise Operator") return "bit";
-        if (sourceNode.data.label === "Classical Min & Max Operator") return "array";
-        if (sourceNode.data.label === "Classical Comparison Operator") return "number";
+      // Measurement Node
+      if (node.type === "measurementNode") {
+        // If handleId is specified, pick the correct output
+        if (handleId === node.data.outputs?.[0]?.id) return "array";
+        if (handleId === node.data.outputs?.[1]?.id) return "quantum register";
+        // Default fallback
+        return "any";
       }
 
-      if (sourceNode.type === consts.ClassicalOperatorNode || sourceNode.type === "ClassicalAlgorithmNode") {
-        if (sourceNode.data.label === "Classical Arithmetic Operator") return "number";
-        if (sourceNode.data.label === "Classical Bitwise Operator") return "bit";
-        if (sourceNode.data.label === "Classical Min & Max Operator") return "array";
-        if (sourceNode.data.label === "Classical Comparison Operator") return "number";
+      // Data type node
+      if (node.type === "dataTypeNode") return node.data?.dataType ?? "any";
+
+      // Classical Operators
+      if (
+        node.type === consts.ClassicalOperatorNode ||
+        node.type === "ClassicalAlgorithmNode"
+      ) {
+        switch (node.data.label) {
+          case "Classical Arithmetic Operator":
+            // Arithmetic operator: output type comes from first input type (assuming input types match)
+            const firstInputEdge = get().edges.find(
+              (e) => e.target === node.id && e.targetHandle === `classicalHandleOperationInput0${node.id}`
+            );
+            if (firstInputEdge) return getNodeOutputType(firstInputEdge.source, firstInputEdge.sourceHandle);
+            return "any"; // fallback if no input
+          case "Classical Bitwise Operator":
+            return "bit";
+          case "Classical Min & Max Operator":
+            return "number";
+          case "Classical Comparison Operator":
+            return "boolean";
+          default:
+            return "any";
+        }
       }
 
+      // Algorithm nodes or unknown node types
+      if (node.type === consts.AlgorithmNode || node.type === consts.ClassicalAlgorithmNode) {
+        return "any";
+      }
 
-      // fallback
-      return "any";
+      return "any"; // fallback
     };
+
 
     const getNodeInputType = (nodeId: string, handleId: string) => {
       const targetNode = get().nodes.find(n => n.id === nodeId);
@@ -659,6 +683,49 @@ export const useStore = create<RFState>((set, get) => ({
 
 
     if (insertEdge && !edgeExists) {
+      // Determine source type
+      let sourceType = getNodeOutputType(connection.source, connection.sourceHandle);
+
+      // Determine target type
+      let targetNode = get().nodes.find(n => n.id === connection.target);
+      if (!targetNode) return false;
+
+      // Special handling for state preparation nodes
+      const encodingNodes = [
+        "Angle Encoding",
+        "Amplitude Encoding",
+        "Matrix Encoding",
+        "Schmidt Decomposition",
+      ];
+
+      if (
+        encodingNodes.includes(targetNode.data.label) &&
+        sourceType.toLowerCase() !== "array"
+      ) {
+        console.warn(
+          `Cannot connect: ${sourceType} is incompatible with ${targetNode.type}, expected "array".`
+        );
+        return false; // reject edge
+      }
+
+      let outputType = sourceNode.data.outputType;
+
+      // Normal type check (locked types, etc.)
+      const targetType = getNodeInputType(connection.target, connection.targetHandle);
+      const lockedType = getNodeLockedType(targetNode.id);
+
+      if (targetType !== "any" && sourceType !== "any" && sourceType !== targetType) {
+        console.log(`Type mismatch: ${sourceType} -> ${targetType}, connection rejected`);
+        return false;
+      }
+
+      if (lockedType !== "any" && sourceType !== "any" && sourceType !== lockedType) {
+        console.warn(`Cannot connect: type "${sourceType}" does not match locked type "${lockedType}"`);
+        return false;
+      }
+
+    
+
 
       console.log(connection.source);
       console.log(nodeDataSource);

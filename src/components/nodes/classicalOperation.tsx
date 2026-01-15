@@ -87,6 +87,10 @@ export const ClassicalOperationNode = memo((node: Node) => {
         if (sourceNode.type === "dataTypeNode") {
           return sourceNode.data?.dataType ?? "any";
         }
+
+        if (sourceNode.type === "measurementNode") {
+          return "array";
+        }
         // Optionally infer type from source node outputs
         if (sourceNode.data?.outputs?.[0]?.value) {
           return typeof sourceNode.data.outputs[0].value;
