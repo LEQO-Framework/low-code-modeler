@@ -86,7 +86,7 @@ export const StatePreparationNode = memo((node: Node) => {
       case "Basis Encoding":
         return "any";
       case "Angle Encoding":
-        return "number";
+        return "array";
       case "Amplitude Encoding":
         return "array";
       case "Matrix Encoding":
