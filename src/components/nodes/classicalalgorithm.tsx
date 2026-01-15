@@ -181,12 +181,13 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
                 style={{ top: "50%", transform: "translateY(-50%)" }}
               />
               <span className="text-black text-sm text-center w-full">
-                {node.data.inputs?.[index]?.outputIdentifier || `Input ${index + 1}`}
+                {node.data.inputs.find(
+                        (input) => input.targetHandle === `classicalHandleOperationInput${index}${node.id}`)?.outputIdentifier || `Input ${index + 1}`}
               </span>
             </div>
           ))}
         </div>
-
+        <div className="custom-node-port-out">
         {Array.from({ length: numberOutputs }).map((_, index) => (
           <div
             key={`output-wrapper-${index}`}
@@ -194,6 +195,7 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
             style={{ top: `${outputsStartTop + index * outputHeight}px` }}
           >
             <OutputPort
+              key={`output-port-${index}`}
               node={node}
               index={index}
               type={"classical"}
@@ -215,6 +217,7 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
             />
           </div>
         ))}
+        </div>
 
       </div>
     </motion.div>

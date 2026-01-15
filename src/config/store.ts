@@ -13,12 +13,15 @@ import {
   applyEdgeChanges,
   applyNodeChanges,
   getOutgoers,
+  useUpdateNodeInternals,
 } from "reactflow";
 import { create } from "zustand";
 import { nodesConfig } from "./site";
 import { v4 as uuid } from "uuid";
 import * as consts from "../constants";
 import TabPane from "antd/es/tabs/TabPane";
+import { IPortData } from "@/components/nodes/model";
+import { Regex } from "lucide-react";
 
 export type NodeData = {
   label: string;
@@ -40,6 +43,7 @@ type RFState = {
   experienceLevel: string;
   compact: boolean;
   completionGuaranteed: boolean;
+  containsPlaceholder: boolean;
   selectedNode: Node | null;
   history: HistoryItem[];
   historyIndex: number;
@@ -47,6 +51,7 @@ type RFState = {
   setEdges: (edge: Edge) => void;
   setAncillaMode: (ancillaMode: boolean) => void
   setCompletionGuaranteed: (completionGuaranteed: boolean) => void
+  setContainsPlaceholder: (containsPlaceholder: boolean) => void
   setCompact: (compact: boolean) => void
   setExperienceLevel: (experienceLevel: string) => void
   setNewEdges: (newEdges: Edge[]) => void;
@@ -74,7 +79,7 @@ export const useStore = create<RFState>((set, get) => ({
   selectedNode: null,
   history: [],
   historyIndex: -1,
-
+  containsPlaceholder: false,
   setSelectedNode: (node: Node | null) => {
     set({
       selectedNode: node,
@@ -162,6 +167,7 @@ export const useStore = create<RFState>((set, get) => ({
     });
     console.log("History after update:", get().history);
     console.log("Current historyIndex:", get().historyIndex);
+    console.log(node)
   },
 
   setEdges: (edge: Edge) => {
@@ -211,6 +217,11 @@ export const useStore = create<RFState>((set, get) => ({
   setExperienceLevel: (experienceLevel: string) => {
     set({
       experienceLevel
+    });
+  },
+  setContainsPlaceholder: (containsPlaceholder: boolean) => {
+    set({
+      containsPlaceholder
     });
   },
   setCompact: (compact: boolean) => {
@@ -400,6 +411,7 @@ export const useStore = create<RFState>((set, get) => ({
   },
 
   onConnect: (connection: Connection) => {
+    console.log("ON CONNECT")
     const currentNodes = get().nodes;
     const ancillaMode = get().ancillaMode;
     console.log(connection)
@@ -556,24 +568,52 @@ export const useStore = create<RFState>((set, get) => ({
     console.log("Current Nodes:", currentNodes);
     console.log("Current Edges:", get().edges);
     console.log("New History Item:", newHistoryItem);
+    const getOutputIndex = (sourceHandle: String, nodeDataSource: Node) => {
+      const tmpHandle = sourceHandle.split(nodeDataSource.id)[0];
+      if (!tmpHandle) {
+        return null;
+      }
+      const match = tmpHandle.match(/\d+$/);
+
+      if (!match) {
+        return null;
+      }
+
+      return parseInt(match[0], 10);
+    };
 
     if (insertEdge && !edgeExists) {
-
+      console.log("ONCONNECT")
+      console.log(connection)
       console.log(connection.source);
+
       console.log(nodeDataSource);
       const existingInput = nodeDataTarget.data.inputs.find(
-        (input) => input.id === nodeDataSource.id
+        (input) => (input.id === nodeDataSource.id && input.targetHandle === connection.targetHandle)
       );
-
+      console.log("existing input", existingInput)
+      const outputIndex = getOutputIndex(connection.sourceHandle, nodeDataSource);
+      console.log("sourceHandle", connection.sourceHandle)
+      console.log("index", outputIndex)
+      console.log(nodeDataSource.data.outputs?.[outputIndex]?.identifier)
+      var sourceOutputIdentifier = "";
+      if (nodeDataSource.type === "algorithmNode" || nodeDataSource.type === "classicalAlgorithmNode" || nodeDataSource.type === "measurementNode") {
+        sourceOutputIdentifier = nodeDataSource.data.outputs?.[outputIndex]?.identifier
+      } else {
+        sourceOutputIdentifier = nodeDataSource.data.outputs?.[outputIndex]?.identifier ?? nodeDataSource.data?.outputIdentifier
+      }
       if (existingInput) {
+
         // Update the existing entry
-        existingInput.label = nodeDataSource.data.outputIdentifier;
+        existingInput.outputIdentifier = sourceOutputIdentifier;
       } else {
         if (nodeDataTarget.type === "statePreparationNode") {
           // Push a new entry
+          console.log("VNSOIVNOIDNO")
           nodeDataTarget.data.inputs.push({
             id: nodeDataSource.id,
-
+            outputIdentifier: sourceOutputIdentifier,
+            targetHandle: connection.targetHandle
           });
         }
 
@@ -582,30 +622,35 @@ export const useStore = create<RFState>((set, get) => ({
           if (nodeDataTarget.data.label === "CNOT" && connection.sourceHandle.includes("Output1")) {
             nodeDataTarget.data.inputs.push({
               id: nodeDataSource.id,
-              identifiers: [nodeDataSource.data.identifiers[0]]
+              identifiers: [nodeDataSource.data.identifiers[0]],
+              targetHandle: connection.targetHandle
             });
           }
           else if (nodeDataTarget.label === "CNOT" && connection.sourceHandle.endsWith("Output2")) {
             nodeDataTarget.data.inputs.push({
               id: nodeDataSource.id,
-              identifiers: [nodeDataSource.data.identifiers[1]]
+              identifiers: [nodeDataSource.data.identifiers[1]],
+              targetHandle: connection.targetHandle
             });
           } else if (nodeDataTarget.data.label === "Toffoli" && connection.sourceHandle.includes("Output1")) {
             nodeDataTarget.data.inputs.push({
               id: nodeDataSource.id,
-              identifiers: [nodeDataSource.data.identifiers[0]]
+              identifiers: [nodeDataSource.data.identifiers[0]],
+              targetHandle: connection.targetHandle
             });
           }
           else if (nodeDataTarget.label === "Toffoli" && connection.sourceHandle.endsWith("Output2")) {
             nodeDataTarget.data.inputs.push({
               id: nodeDataSource.id,
-              identifiers: [nodeDataSource.data.identifiers[1]]
+              identifiers: [nodeDataSource.data.identifiers[1]],
+              targetHandle: connection.targetHandle
             });
           }
           else if (nodeDataTarget.label === "Toffoli" && connection.sourceHandle.endsWith("Output3")) {
             nodeDataTarget.data.inputs.push({
               id: nodeDataSource.id,
-              identifiers: [nodeDataSource.data.identifiers[2]]
+              identifiers: [nodeDataSource.data.identifiers[2]],
+              targetHandle: connection.targetHandle
             });
           } else {
             if (!edge.sourceHandle.includes("side") && !edge.targetHandle.includes("side")) {
@@ -613,7 +658,8 @@ export const useStore = create<RFState>((set, get) => ({
               console.log("push entry")
               nodeDataTarget.data.inputs.push({
                 id: nodeDataSource.id,
-                identifiers: nodeDataSource.data.identifiers
+                identifiers: nodeDataSource.data.identifiers,
+                targetHandle: edge.targetHandle
               });
             }
           }
@@ -621,9 +667,26 @@ export const useStore = create<RFState>((set, get) => ({
         } else {
           if (!edge.sourceHandle.includes("side") && !edge.targetHandle.includes("side") && !edge.sourceHandle.includes("Dynamic") && !edge.targetHandle.includes("Dynamic")) {
             console.log("push entry")
+            console.log(edge)
+            console.log(connection)
+            console.log(nodeDataSource)
+            console.log(nodeDataTarget)
+            const outputIndex = getOutputIndex(connection.sourceHandle, nodeDataSource);
+            console.log("sourceHandle", connection.sourceHandle)
+            console.log("index", outputIndex)
+            const sourceNode = currentNodes.find(n => n.id === edge.source)
+            console.log(sourceNode.data.outputs?.[outputIndex]?.identifier)
+            var sourceOutputIdentifier = "";
+            if (nodeDataSource.type === "algorithmNode" || nodeDataSource.type === "classicalAlgorithmNode" || nodeDataSource.type === "measurementNode") {
+              sourceOutputIdentifier = nodeDataSource.data.outputs?.[outputIndex]?.identifier
+            } else {
+              sourceOutputIdentifier = nodeDataSource.data.outputs?.[outputIndex]?.identifier ?? nodeDataSource.data?.outputIdentifier
+            }
             nodeDataTarget.data.inputs.push({
               id: nodeDataSource.id,
-              identifiers: nodeDataSource.data.identifiers
+              outputIdentifier: sourceOutputIdentifier,
+              identifiers: nodeDataSource.data.identifiers,
+              targetHandle: edge.targetHandle
             });
           }
 
@@ -649,6 +712,7 @@ export const useStore = create<RFState>((set, get) => ({
 
         if (edge.source === connection.source) {
           const targetNodeIndex = updatedNodes.findIndex((n) => n.id === edge.target);
+          const sourceHandle = connection.sourceHandle;
           console.log(targetNodeIndex)
           if (targetNodeIndex !== -1) {
             const targetNode = { ...updatedNodes[targetNodeIndex] };
@@ -657,23 +721,35 @@ export const useStore = create<RFState>((set, get) => ({
             sourceIdentifier = sourceNode?.data?.identifiers;
             console.log("sourceIdentifier");
             console.log(sourceIdentifier)
-            const sourceOutputIdentifier = sourceNode?.data?.outputIdentifier;
+            //let sourceOutputIdentifier = sourceNode?.data?.outputIdentifier;
+            const outputIndex = getOutputIndex(sourceHandle, sourceNode);
+            console.log("sourceHandle", sourceHandle)
+            console.log("index", outputIndex)
+            var sourceOutputIdentifier = "";
+            if (sourceNode.type === "algorithmNode" || sourceNode.type === "classicalAlgorithmNode" || sourceNode.type === "measurementNode") {
+              sourceOutputIdentifier = sourceNode.data.outputs?.[outputIndex]?.identifier
+            } else {
+              sourceOutputIdentifier = sourceNode.data.outputs?.[outputIndex]?.identifier ?? sourceNode?.data?.outputIdentifier
+            }
+            console.log("sourceNode", sourceNode)
+
             console.log(sourceIdentifier)
 
             if (!targetData.inputs) targetData.inputs = [];
 
-            const inputIndex = targetData.inputs.findIndex((input) => input.id === connection.source);
-
+            const inputIndex = targetData.inputs.findIndex((input) => (input.id === connection.source && connection.targetHandle === input.targetHandle));
+            console.log("input index", inputIndex)
+            console.log("target inputs", targetData.inputs)
 
             if (inputIndex !== -1) {
               if (targetData.inputs[inputIndex].outputIdentifier === sourceOutputIdentifier) {
-                targetData.inputs[inputIndex].outputIdentifier = sourceNode.data.outputIdentifier;
+                targetData.inputs[inputIndex].outputIdentifier = sourceOutputIdentifier;
                 targetData.inputs[inputIndex]["identifiers"] = sourceIdentifier;
                 targetData["identifiers"] = sourceIdentifier
                 reuseQubit = true;
                 console.log(targetData["identifier"])
               } else {
-                targetData.inputs[inputIndex].outputIdentifier = sourceNode.data.outputIdentifier;
+                targetData.inputs[inputIndex].outputIdentifier = sourceOutputIdentifier;
                 targetData.inputs[inputIndex]["identifiers"] = sourceIdentifier;
                 targetData["identifiers"] = sourceIdentifier
                 console.log(targetData["identifiers"])
@@ -682,8 +758,9 @@ export const useStore = create<RFState>((set, get) => ({
             } else {
               targetData.inputs.push({
                 id: connection.source,
-                outputIdentifier: sourceNode.data.outputIdentifier,
+                outputIdentifier: sourceOutputIdentifier,
                 "identifiers": sourceIdentifier,
+                targetHandle: connection.targetHandle
               });
               targetData["identifiers"] = sourceIdentifier
               console.log(targetData["identifiers"])
@@ -768,6 +845,12 @@ export const useStore = create<RFState>((set, get) => ({
   updateNodeValue: (nodeId: string, identifier: string, nodeVal: any) => {
     console.log("Updating node value for:", nodeId);
     console.log("Identifier:", identifier, "New Value:", nodeVal);
+    const getOutputIndex = (sourceHandle: String, nodeDataSource: Node) => {
+      const tmpHandle = sourceHandle.split(nodeDataSource.id)[0];
+      const outputIndex = tmpHandle.match(/\d+$/)[0];
+      return parseInt(outputIndex, 10);
+    };
+
 
     set((state) => {
       const { nodes, edges } = state;
@@ -779,10 +862,11 @@ export const useStore = create<RFState>((set, get) => ({
 
       // Update the target nodes that receive inputs from this node
       edges.forEach((edge) => {
+        console.log("Update target node that receive inputs from this node")
         console.log(sourceIdentifier)
         console.log(edge)
         console.log(nodeId)
-        if (edge.source === nodeId) {
+        if (edge.source === nodeId) { // todo korrekte targetNode input updaten
           const targetNodeIndex = updatedNodes.findIndex((n) => n.id === edge.target);
           if (targetNodeIndex !== -1) {
             const targetNode = { ...updatedNodes[targetNodeIndex] };
@@ -791,22 +875,37 @@ export const useStore = create<RFState>((set, get) => ({
             sourceIdentifier = sourceNode?.data?.identifiers;
             console.log("sourceIdentifier");
             console.log(sourceIdentifier)
-            const sourceOutputIdentifier = sourceNode?.data?.outputIdentifier;
+            const sourceHandle = edge.sourceHandle;
+            const outputIndex = getOutputIndex(sourceHandle, sourceNode);
+            var sourceOutputIdentifier = "";
+            if (sourceNode.type === "algorithmNode" || sourceNode.type === "classicalAlgorithmNode" || sourceNode.type === "measurementNode") {
+              sourceOutputIdentifier = sourceNode.data.outputs?.[outputIndex]?.identifier;
+            } else {
+              sourceOutputIdentifier = sourceNode.data.outputs?.[outputIndex]?.identifier ?? nodeVal;
+            }
+            console.log("sourceHandle", sourceHandle);
+            console.log("index", outputIndex);
+            console.log("source Output Identifier", sourceOutputIdentifier);
+            console.log("source node", sourceNode);
 
             if (!targetData.inputs) targetData.inputs = [];
 
-            const inputIndex = targetData.inputs.findIndex((input) => input.id === nodeId);
+            const inputIndex = targetData.inputs.findIndex((input) => (input.id === nodeId && edge.targetHandle === input.targetHandle));
+            console.log("inputIndex", inputIndex);
 
             if (identifier === "outputIdentifier") {
+              console.log("erstes if")
               if (inputIndex !== -1) {
+                console.log("inputIndex != -1")
                 if (targetData.inputs[inputIndex].outputIdentifier === sourceOutputIdentifier) {
-                  targetData.inputs[inputIndex].outputIdentifier = nodeVal;
+                  console.log("targetData outputidentifier === sourceOutput ")
+                  targetData.inputs[inputIndex].outputIdentifier = sourceOutputIdentifier;
                   targetData.inputs[inputIndex]["identifiers"] = sourceIdentifier;
                   targetData["identifiers"] = sourceIdentifier
                   reuseQubit = true;
                   console.log(targetData["identifier"])
                 } else {
-                  targetData.inputs[inputIndex].outputIdentifier = nodeVal;
+                  targetData.inputs[inputIndex].outputIdentifier = sourceOutputIdentifier;
                   targetData.inputs[inputIndex]["identifiers"] = sourceIdentifier;
                   targetData["identifiers"] = sourceIdentifier
                   console.log(targetData["identifiers"])
@@ -817,8 +916,9 @@ export const useStore = create<RFState>((set, get) => ({
               } else {
                 targetData.inputs.push({
                   id: nodeId,
-                  outputIdentifier: nodeVal,
+                  outputIdentifier: sourceOutputIdentifier,
                   "identifiers": sourceIdentifier,
+                  //targetHandle: connection.targetHandle
                 });
                 targetData["identifiers"] = sourceIdentifier
                 console.log(targetData["identifiers"])
@@ -896,6 +996,8 @@ export const useStore = create<RFState>((set, get) => ({
         historyIndex: state.historyIndex + 1,
       };
     });
+    console.log("History after update:", get().history);
+    console.log("Current historyIndex:", get().historyIndex);
 
     console.log("History updated successfully.");
   },

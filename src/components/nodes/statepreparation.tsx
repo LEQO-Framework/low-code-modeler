@@ -34,6 +34,7 @@ const selector = (state: {
 });
 
 export const StatePreparationNode = memo((node: Node) => {
+  console.log("StatePreparation Node Beginning to exist")
   const [size, setSize] = useState("");
   const [bound, setBound] = useState("");
   const [quantumStateName, setQuantumStateName] = useState("Bell State φ+");
@@ -76,6 +77,7 @@ export const StatePreparationNode = memo((node: Node) => {
     node.data[field] = value;
     updateNodeValue(node.id, field, value);
     setSelectedNode(node);
+    updateNodeInternals(node.id);
   };
 
   console.log(node)
@@ -188,13 +190,13 @@ export const StatePreparationNode = memo((node: Node) => {
     }
     console.log(encodingType)
     if ((node.data.encodingType === "Basis Encoding" || node.data.encodingType === "Angle Encoding") && (encodingType !== "Angle Encoding" && encodingType !== "Basis Encoding")) {
-      updateNodeInternals(node.id);
       setEncodingType(node.data.encodingType);
+      updateNodeInternals(node.id);
     }
     console.log(node.data.quantumStateName)
     if (node.data.quantumStateName !== quantumStateName) {
+      setQuantumStateName(node.data.quantumStateName);
       updateNodeInternals(node.id);
-      setQuantumStateName(node.data.quantumStateName)
     }
   }, [nodes, node.data.outputIdentifier, node.id]);
   useEffect(() => {

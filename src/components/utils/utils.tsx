@@ -53,7 +53,7 @@ export function findDuplicateOutputIdentifier(nodes, currentNodeId, currentNode,
     }
 
   });
-
+  console.log(identifierMap);
   return identifierMap;
 }
 export function findDuplicateOutputIdentifiersInsideNode(nodes, currentNode, identifier) {

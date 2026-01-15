@@ -10,6 +10,8 @@ export interface HistoryItem {
   links?: {
     request?: string;
     result?: string;
+    qrms?: string;
+    serviceDeploymentModels?: string;
   };
 }
 
@@ -20,18 +22,14 @@ interface HistoryModalProps {
   onExecute: (item: HistoryItem) => void;
 }
 
-export const HistoryModal = ({
-  open,
-  onClose,
-  history,
-  onExecute,
-}: HistoryModalProps) => {
+export const HistoryModal = ({ open, onClose, history, onExecute }: HistoryModalProps) => {
   const [noMeasurementMap, setNoMeasurementMap] = useState<Record<string, boolean>>({});
   const [loadingMap, setLoadingMap] = useState<Record<string, boolean>>({});
+  const [compilationTargets, setCompilationTargets] = useState<Record<string, string | null>>({});
 
-  const containsMeasurement = (qasm: string): boolean =>
-    /\bmeasure\b/i.test(qasm);
+  const containsMeasurement = (qasm: string) => /\bmeasure\b/i.test(qasm);
 
+  // Check for measurements
   useEffect(() => {
     if (!open) return;
 
@@ -52,7 +50,7 @@ export const HistoryModal = ({
             const qasm = await res.text();
             result[item.uuid] = !containsMeasurement(qasm);
           } catch {
-            /* ignore */
+            // ignore errors
           } finally {
             loading[item.uuid] = false;
           }
@@ -64,6 +62,25 @@ export const HistoryModal = ({
     };
 
     checkMeasurements();
+  }, [open, history]);
+
+  // Load compilation targets
+  useEffect(() => {
+    if (!open) return;
+
+    history.forEach((item) => {
+      if (!item.links?.request || compilationTargets[item.uuid]) return;
+
+      fetch(item.links.request)
+        .then((res) => res.json())
+        .then((data) => {
+          const target = data?.compilation_target || null;
+          setCompilationTargets((prev) => ({ ...prev, [item.uuid]: target }));
+        })
+        .catch(() => {
+          setCompilationTargets((prev) => ({ ...prev, [item.uuid]: null }));
+        });
+    });
   }, [open, history]);
 
   return (
@@ -88,6 +105,8 @@ export const HistoryModal = ({
               <th className="px-4 py-2 border">Name</th>
               <th className="px-4 py-2 border">Description</th>
               <th className="px-4 py-2 border">Model File</th>
+              <th className="px-4 py-2 border">QRMS</th>
+              <th className="px-4 py-2 border">Service Deployment</th>
               <th className="px-4 py-2 border">Created</th>
               <th className="px-4 py-2 border">Result Status</th>
               <th className="px-4 py-2 border">Result File</th>
@@ -99,6 +118,7 @@ export const HistoryModal = ({
             {history.map((item, index) => {
               const noMeasurement = noMeasurementMap[item.uuid];
               const loading = loadingMap[item.uuid];
+              const target = compilationTargets[item.uuid];
 
               return (
                 <tr key={item.uuid || index} className="hover:bg-gray-50">
@@ -110,7 +130,7 @@ export const HistoryModal = ({
                     {item.links?.request ? (
                       <span
                         className="text-blue-600 underline cursor-pointer"
-                        onClick={() => window.open(item.links!.request!, "_blank")}
+                        onClick={() => window.open(item.links.request!, "_blank")}
                       >
                         Open
                       </span>
@@ -120,16 +140,39 @@ export const HistoryModal = ({
                   </td>
 
                   <td className="px-4 py-2 border">
-                    {new Date(item.created).toLocaleString()}
+                    {item.links?.qrms ? (
+                      <span
+                        className="text-blue-600 underline cursor-pointer"
+                        onClick={() => window.open(item.links.qrms!, "_blank")}
+                      >
+                        Open
+                      </span>
+                    ) : (
+                      <span className="text-gray-400">—</span>
+                    )}
                   </td>
 
+                  <td className="px-4 py-2 border">
+                    {item.links?.serviceDeploymentModels ? (
+                      <span
+                        className="text-blue-600 underline cursor-pointer"
+                        onClick={() => window.open(item.links.serviceDeploymentModels!, "_blank")}
+                      >
+                        Open
+                      </span>
+                    ) : (
+                      <span className="text-gray-400">—</span>
+                    )}
+                  </td>
+
+                  <td className="px-4 py-2 border">{new Date(item.created).toLocaleString()}</td>
                   <td className="px-4 py-2 border">{item.status}</td>
 
                   <td className="px-4 py-2 border">
                     {item.links?.result ? (
                       <span
                         className="text-blue-600 underline cursor-pointer"
-                        onClick={() => window.open(item.links!.result!, "_blank")}
+                        onClick={() => window.open(item.links.result!, "_blank")}
                       >
                         Open
                       </span>
@@ -154,8 +197,13 @@ export const HistoryModal = ({
                       <button
                         className="btn btn-primary"
                         onClick={() => onExecute(item)}
+                        disabled={target === undefined}
                       >
-                        Execute
+                        {target === undefined
+                          ? "Loading..."
+                          : target === "workflow"
+                            ? "Deploy Workflow"
+                            : "Execute"}
                       </button>
                     )}
                   </td>
@@ -165,7 +213,7 @@ export const HistoryModal = ({
 
             {history.length === 0 && (
               <tr>
-                <td colSpan={8} className="text-center px-4 py-2">
+                <td colSpan={10} className="text-center px-4 py-2">
                   No history available
                 </td>
               </tr>
