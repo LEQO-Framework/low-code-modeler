@@ -7,14 +7,11 @@ import ReactFlow, {
   Node,
   ReactFlowProvider,
   MiniMap,
-  getOutgoers,
   getNodesBounds,
-  ConnectionMode,
-  Panel,
-  MiniMapNodeProps,
+  Panel
 } from "reactflow";
 import "reactflow/dist/style.css";
-import { CustomPanel, Palette } from "./components";
+import { ContextMenu, CustomPanel, Palette } from "./components";
 import Toolbar from "./components/toolbar";
 import { nodesConfig, tutorial } from "./config/site";
 import { useStore } from "./config/store";
@@ -23,31 +20,30 @@ import { handleDragOver, handleOnDrop } from "./lib/utils";
 import useKeyBindings from "./hooks/useKeyBindings";
 import { toSvg } from "html-to-image";
 import { initialDiagram } from "./config/site";
-import Modal from "./Modal";
+import { NewDiagramModal } from "./Modal";
 import './index.css';
-import { useStoreState } from "react-flow-renderer";
-import { useInternalNode } from "@xyflow/react";
 import { Placement } from 'react-joyride';
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-  ResponsiveContainer,
-} from "recharts";
 import { startCompile } from "./backend";
-import { Button } from "antd";
-import { ancillaConstructColor, classicalConstructColor, ClassicalOperatorNode, controlFlowConstructColor, quantumConstructColor } from "./constants";
+import { ancillaConstructColor, classicalConstructColor, ClassicalOperatorNode, controlFlowConstructColor, quantum_types, quantumConstructColor } from "./constants";
 import Joyride from 'react-joyride';
-
-
+import { ConfigModal } from "./components/modals/configModal";
+import { QunicornModal } from "./components/modals/qunicornModal";
+import { SendRequestModal } from "./components/modals/backendModal";
+import { Toast } from "./components/modals/toast";
+import ExperienceModePanel from "./components/modals/experienceLevelModal";
+import { HistoryItem, HistoryModal } from "./components/modals/historyModal";
+import { ValidationModal } from "./components/modals/validationModal";
+import JSZip, { JSZipObject } from "jszip";
+import { createDeploymentModel, createNodeType, createServiceTemplate, updateNodeType, updateServiceTemplate } from "./winery";
 
 const selector = (state: {
   nodes: Node[];
   edges: Edge[];
   ancillaMode: boolean;
+  experienceLevel: string;
+  compact: boolean;
+  completionGuaranteed: boolean;
+  containsPlaceholder: boolean;
   onNodesChange: any;
   onEdgesChange: any;
   onConnect: any;
@@ -59,11 +55,19 @@ const selector = (state: {
   setNodes: (node: Node) => void;
   setEdges: (edge: Edge) => void;
   setAncillaMode: (ancillaMode: boolean) => void;
+  setCompact: (compact: boolean) => void;
+  setCompletionGuaranteed: (completionGuaranteed: boolean) => void;
+  setExperienceLevel: (experienceLevel: string) => void;
+  setContainsPlaceholder: (containsPlaceholder: boolean) => void;
   undo: () => void;
   redo: () => void;
 }) => ({
   nodes: state.nodes,
   edges: state.edges,
+  experienceLevel: state.experienceLevel,
+  compact: state.compact,
+  completionGuaranteed: state.completionGuaranteed,
+  containsPlaceholder: state.containsPlaceholder,
   onNodesChange: state.onNodesChange,
   onEdgesChange: state.onEdgesChange,
   onConnect: state.onConnect,
@@ -75,6 +79,10 @@ const selector = (state: {
   setNodes: state.setNodes,
   setEdges: state.setEdges,
   setAncillaMode: state.setAncillaMode,
+  setCompact: state.setCompact,
+  setCompletionGuaranteed: state.setCompletionGuaranteed,
+  setContainsPlaceholder: state.setContainsPlaceholder,
+  setExperienceLevel: state.setExperienceLevel,
   undo: state.undo,
   redo: state.redo,
 });
@@ -82,40 +90,108 @@ const selector = (state: {
 function App() {
   const reactFlowWrapper = React.useRef<any>(null);
   const [reactFlowInstance, setReactFlowInstance] = React.useState<any>(null);
+   const {
+    nodes,
+    edges,
+    experienceLevel,
+    compact,
+    completionGuaranteed,
+    containsPlaceholder,
+    onNodesChange,
+    onEdgesChange,
+    onConnect,
+    onConnectEnd,
+    setCompact,
+    setExperienceLevel,
+    setAncillaMode,
+    setCompletionGuaranteed,
+    setContainsPlaceholder,
+    setSelectedNode,
+    setNodes,
+    updateNodeValue,
+    updateParent,
+    updateChildren,
+    setEdges,
+  } = useStore(useShallow(selector));
+
   const [metadata, setMetadata] = React.useState<any>({
     version: "1.0.0",
     name: "My Model",
     description: "This is a model.",
-    author: "",
+    author: ""
   });
   const [menu, setMenu] = useState(null);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
-  const [nisqAnalyzerEndpoint, setNisqAnalyzerEndpoint] = useState(import.meta.env.VITE_NISQ_ANALYZER);
-  const [qunicornEndpoint, setQunicornEndpoint] = useState(import.meta.env.VITE_QUNICORN);
-  const [lowcodeBackendEndpoint, setLowcodeBackendEndpoint] = useState(import.meta.env.VITE_LOW_CODE_BACKEND);
+  const [nisqAnalyzerEndpoint, setNisqAnalyzerEndpoint] = useState(
+    import.meta.env.VITE_NISQ_ANALYZER || "http://localhost:8098/nisq-analyzer"
+  );
+  const [qunicornEndpoint, setQunicornEndpoint] = useState(
+    import.meta.env.VITE_QUNICORN || "http://localhost:8080"
+  );
+  const [lowcodeBackendEndpoint, setLowcodeBackendEndpoint] = useState(
+    import.meta.env.VITE_LOW_CODE_BACKEND || "http://localhost:8000"
+  );
 
-  const [patternAtlasApiEndpoint, setPatternAtlasApiEndpoint] = useState(import.meta.env.VITE_PATTERN_ATLAS_API);
-  const [patternAtlasUiEndpoint, setPatternAtlasUiEndpoint] = useState(import.meta.env.VITE_PATTERN_ATLAS_UI);
-  const [qcAtlasEndpoint, setQcAtlasEndpoint] = useState(import.meta.env.VITE_QC_ATLAS);
-  const [tempPatternAtlasApiEndpoint, setTempPatternAtlasApiEndpoint] = useState(patternAtlasApiEndpoint);
-  const [tempPatternAtlasUiEndpoint, setTempPatternAtlasUiEndpoint] = useState(patternAtlasUiEndpoint);
-  const [tempQcAtlasEndpoint, setTempQcAtlasEndpoint] = useState(qcAtlasEndpoint);
-
-  const [activeTab, setActiveTab] = useState("lowCodeEndpoints");
-  const [tempNisqAnalyzerEndpoint, setTempNisqAnalyzerEndpoint] = useState(nisqAnalyzerEndpoint);
-  const [tempQunicornEndpoint, setTempQunicornEndpoint] = useState(qunicornEndpoint);
-  const [tempLowcodeBackendEndpoint, setTempLowcodeBackendEndpoint] = useState(lowcodeBackendEndpoint);
+  const [patternAtlasApiEndpoint, setPatternAtlasApiEndpoint] = useState(
+    import.meta.env.VITE_PATTERN_ATLAS_API || "http://localhost:1977/patternatlas/patternLanguages/af7780d5-1f97-4536-8da7-4194b093ab1d"
+  );
+  const [patternAtlasUiEndpoint, setPatternAtlasUiEndpoint] = useState(
+    import.meta.env.VITE_PATTERN_ATLAS_UI || "http://localhost:1978"
+  );
+  const [qcAtlasEndpoint, setQcAtlasEndpoint] = useState(
+    import.meta.env.VITE_QC_ATLAS || "http://localhost:6626"
+  );
 
 
+  const [activeTab, setActiveTab] = useState("editor");
+  const [warningExecution, setWarningExecution] = useState(false);
+  const [contextMenu, setContextMenu] = useState<{
+    visible: boolean;
+    nodeId: string | null;
+    top: number;
+    left: number;
+  }>({
+    visible: false,
+    nodeId: null,
+    top: 0,
+    left: 0,
+  });
 
-  const [tempGithubRepositoryOwner, setTempGithubRepositoryOwner] = useState("");
-  const [tempGithubRepositoryName, setTempGithubRepositoryName] = useState("");
-  const [tempGithubBranch, setTempGithubBranch] = useState("");
-  const [tempGithubToken, setTempGithubToken] = useState("");
+  //const [contextMenu, setContextMenu] = useState(null);
+
+  const onNodeContextMenu = useCallback(
+    (event: React.MouseEvent, node: Node) => {
+      event.preventDefault();
+      setContextMenu({
+        visible: true,
+        nodeId: node.id,
+        top: event.clientY,
+        left: event.clientX,
+        //top: node.position.y+0.5*node.height, //passt nicht
+        //left: node.position.x-0.5*node.width, //passt nicht
+      });
+    },
+    []
+  );
+
+
+
+  const handleAction = (action: string, nodeId: string) => {
+    console.log(`Action: ${action} on Node: ${nodeId}`);
+    setContextMenu((prev) => ({ ...prev, visible: false }));
+  };
+
+
+  const [validationResult, setValidationResult] = useState({ warnings: [], errors: [] });
+  const [isValidationOpen, setIsValidationOpen] = useState(false);
+  const [githubRepositoryOwner, setGithubRepositoryOwner] = useState(import.meta.env.VITE_GITHUB_REPO_OWNER);
+  const [githubRepositoryName, setGithubRepositoryName] = useState(import.meta.env.VITE_GITHUB_REPO_NAME);
+  const [githubBranch, setGithubBranch] = useState(import.meta.env.VITE_GITHUB_REPO_BRANCH);
+  const [githubToken, setGithubToken] = useState(import.meta.env.VITE_GITHUB_TOKEN);
   const [openqasmCode, setOpenQASMCode] = useState("");
 
-  const [selectedDevice, setSelectedDevice] = useState("");
-  const [provider, setProvider] = useState("");
+  const [selectedDevice, setSelectedDevice] = useState("aer_simulator");
+  const [provider, setProvider] = useState("IBM");
 
   const [numShots, setNumShots] = useState(1024);
   const [accessToken, setAccessToken] = useState("");
@@ -127,8 +203,19 @@ function App() {
   const [isPaletteOpen, setIsPaletteOpen] = useState(true);
   const [chartData, setChartData] = useState(null);
   const [progress, setProgress] = useState(0);
+  const [executed, setAlreadyExecuted] = useState(false);
   const [jobId, setJobId] = useState(null);
 
+  globalThis.setNisqAnalyzerEndpoint = setNisqAnalyzerEndpoint;
+  globalThis.setQunicornEndpoint = setQunicornEndpoint;
+  globalThis.setLowcodeBackendEndpoint = setLowcodeBackendEndpoint;
+  globalThis.setPatternAtlasUiEndpoint = setPatternAtlasUiEndpoint;
+  globalThis.setPatternAtlasApiEndpoint = setPatternAtlasApiEndpoint;
+  globalThis.setQcAtlasEndpoint = setQcAtlasEndpoint;
+  globalThis.setGithubRepositoryOwner = setGithubRepositoryOwner;
+  globalThis.setGithubRepositoryName = setGithubRepositoryName;
+  globalThis.setGithubBranch = setGithubBranch;
+  globalThis.setGithubToken = setGithubToken;
 
   const togglePalette = () => {
     setIsPaletteOpen((prev) => !prev);
@@ -140,7 +227,9 @@ function App() {
     setIsPanelOpen((prev) => !prev);
   };
   const handleLoadJson = () => {
-    setIsLoadJsonModalOpen(true);
+    if (nodes.length > 0) {
+      setIsLoadJsonModalOpen(true);
+    }
   };
 
   const confirmNewDiagram = () => {
@@ -148,26 +237,28 @@ function App() {
     loadFlow(initialDiagram);
   };
 
-  const handleSave = () => {
-    setNisqAnalyzerEndpoint(tempNisqAnalyzerEndpoint);
-    setLowcodeBackendEndpoint(tempLowcodeBackendEndpoint);
-    setQunicornEndpoint(tempQunicornEndpoint);
-    setIsConfigOpen(false);
-    setPatternAtlasApiEndpoint(tempPatternAtlasApiEndpoint);
-    setPatternAtlasUiEndpoint(tempPatternAtlasUiEndpoint);
-    setQcAtlasEndpoint(tempQcAtlasEndpoint);
-  };
+  const handleSave = (newValues) => {
+    console.log(newValues)
+    setNisqAnalyzerEndpoint(newValues.tempNisqAnalyzerEndpoint);
+    setQunicornEndpoint(newValues.tempQunicornEndpoint);
+    setLowcodeBackendEndpoint(newValues.tempLowcodeBackendEndpoint);
+    setPatternAtlasUiEndpoint(newValues.tempPatternAtlasUiEndpoint);
+    setPatternAtlasApiEndpoint(newValues.tempPatternAtlasApiEndpoint);
+    setQcAtlasEndpoint(newValues.tempQcAtlasEndpoint);
+    setGithubRepositoryOwner(newValues.tempGithubRepositoryOwner);
+    setGithubRepositoryName(newValues.tempGithubRepositoryName);
+    setGithubBranch(newValues.tempGithubBranch);
+    setGithubToken(newValues.tempGithubToken);
 
-  const handleCancel = () => {
-    setTempNisqAnalyzerEndpoint(nisqAnalyzerEndpoint);
-    setTempQunicornEndpoint(qunicornEndpoint);
-    setTempLowcodeBackendEndpoint(lowcodeBackendEndpoint);
-    setIsConfigOpen(false);
-    setTempPatternAtlasApiEndpoint(patternAtlasApiEndpoint);
-    setTempPatternAtlasUiEndpoint(patternAtlasUiEndpoint);
-    setTempQcAtlasEndpoint(qcAtlasEndpoint);
-  };
+    setCompact(newValues.compactVisualization);
+    setCompactVisualization(newValues.compactVisualization);
+    setAncillaMode(newValues.ancillaMode);
+    setAncillaModelingOn(newValues.ancillaMode);
+    setExperienceLevel(newValues.experienceLevel);
+    setCompletionGuaranteed(newValues.completionGuaranteed);
 
+    setIsConfigOpen(false);
+  };
 
   const cancelLoadJson = () => {
     setIsLoadJsonModalOpen(false);
@@ -175,22 +266,8 @@ function App() {
   const [helperLines, setHelperLines] = useState(null);
   const [deploymentId, setDeploymentId] = useState(null);
 
-
-  const {
-    nodes,
-    edges,
-    onNodesChange,
-    onEdgesChange,
-    onConnect,
-    onConnectEnd,
-    setAncillaMode,
-    setSelectedNode,
-    setNodes,
-    updateNodeValue,
-    updateParent,
-    updateChildren,
-    setEdges,
-  } = useStore(useShallow(selector));
+  const [expanded, setExpanded] = useState(false);
+  const [completionGuaranteedOption, setCompletionGuaranteedOption] = useState("Yes");
 
   const { undo } = useStore((state) => ({
     undo: state.undo,
@@ -211,10 +288,20 @@ function App() {
   const [modalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("");
-  const [modalStep, setModalStep] = useState(0);
+  const [modalStep, setModalStep] = useState(1);
+  const [isQunicornOpen, setIsQunicornOpen] = useState(false);
   const [loadingQunicorn, setLoadingQunicorn] = useState(true);
   const [statusQunicorn, setStatusQunicorn] = useState(null);
   const [ancillaModelingOn, setAncillaModelingOn] = useState(false);
+  const [experienceLevelOn, setExperienceLevelOn] = useState("explorer");
+  const [compactVisualization, setCompactVisualization] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
+  const [workflow, setWorkflow] = useState("");
+
+
+  const showToast = (message: string, type: "success" | "error" | "info") => {
+    setToast({ message, type });
+  };
 
   const [runTour, setRunTour] = useState(false);
   const [joyrideStepId, setJoyRideStepId] = useState(0);
@@ -229,6 +316,10 @@ function App() {
         content: 'This is the toolbar where you can save, restore, or send your diagrams.',
       },
       {
+        target: '.backend-button',
+        content: 'This transforms the model into QASM code, which can be executed on quantum devices.',
+      },
+      {
         target: '.palette-container',
         content: 'This is the palette, where you can drag and drop blocks. Quantum blocks are depicted in blue and classical blocks are depicted in orange.',
         placement: "right"
@@ -239,8 +330,8 @@ function App() {
         placement: "top-start"
       },
       {
-        target: '.ancilla-button',
-        content: 'This button enables or disables ancilla modeling.',
+        target: '.experience-mode',
+        content: 'This panel allows you to configure the editor based on your preferences.',
         placement: "right"
       },
       {
@@ -256,62 +347,59 @@ function App() {
     ];
 
   const [isProcessingModalOpen, setProcessingModalOpen] = useState(false);
+
   // TODO: Change here to workflow
   const [compilationTarget, setCompilationTarget] = useState("qasm");
   const handleClose = () => {
-    if (modalStep < 3) {
-      setModalStep(modalStep + 1);
-    } else {
-
-      // reset all values
-      setModalStep(0);
-      setChartData(null);
-      setErrorMessage("");
-      setErrorJobMessage("");
-      setJobId(null);
-      setDeploymentId(null);
-      setProgress(0);
-      setSelectedDevice("");
-      setProvider("");
-      setNumShots(1024);
-      setAccessToken("");
-
-    }
+    // reset all values
+    setIsQunicornOpen(false);
+    setModalStep(1);
+    setChartData(null);
+    setErrorMessage("");
+    setErrorJobMessage("");
+    setJobId(null);
+    setDeploymentId(null);
+    setProgress(0);
+    setWarningExecution(false);
+    //setSelectedDevice("");
+    //setProvider("");
+    setNumShots(1024);
+    setAccessToken("");
+    setAlreadyExecuted(false);
   };
 
-
-  const prepareBackendRequest = () => {
-    setModalOpen(true);
-  }
   const sendToBackend = async () => {
-    setLoading(true);
+    //setLoading(true);
     setModalOpen(false);
     setProcessingModalOpen(true);
+
+    let id = `flow-${Date.now()}`;
+    showToast("QASM request for model " + id + " submitted.", "info");
 
     try {
       const validMetadata = {
         ...metadata,
-        id: `flow-${Date.now()}`,
+        containsPlaceholder: containsPlaceholder,
+        id: id,
         timestamp: new Date().toISOString(),
       };
 
       console.log(validMetadata);
       console.log(metadata);
 
-      const flow = reactFlowInstance.toObject();
-
       const response = await startCompile(
         lowcodeBackendEndpoint,
-        metadata,
+        validMetadata,
         reactFlowInstance.getNodes(),
         reactFlowInstance.getEdges(),
         compilationTarget
       );
+      console.log(response)
 
       const jsonData = await response.json();
       const uuid = jsonData["uuid"];
       let location = jsonData["result"];
-      const statusUrl = `${tempLowcodeBackendEndpoint}/status/${uuid}`;
+      const statusUrl = `${lowcodeBackendEndpoint}/status/${uuid}`;
 
       console.log("Initial compile response:", jsonData);
 
@@ -340,6 +428,7 @@ function App() {
               location = statusData["result"];
 
               if (statusData.status === "completed") {
+                //showToast("Result for model " + id + " is available.", "success");
                 console.log("Operation completed successfully.");
                 return resolve();
               }
@@ -349,6 +438,7 @@ function App() {
                 setTimeout(check, delay);
               } else {
                 console.error("Max polling attempts reached. Operation did not complete.");
+                showToast("Max polling attempts for model " + id + " reached.", "error");
                 reject("Max polling attempts reached");
               }
             } catch (error) {
@@ -378,13 +468,52 @@ function App() {
       console.log("Received OpenQASM code:", openqasmCode);
 
       setOpenQASMCode(openqasmCode);
+      setTimeout(() => {
+        setStatus("completed");
+        setLoading(false);
+        showToast("Result for model " + id + " is available.", "success");
+      }, 3000);
       setStatus("completed");
       setLoading(false);
 
+
     } catch (error) {
       console.error("Error sending data:", error);
+      showToast("Error during result generation for model " + id + ".", "error");
       setLoading(false);
     }
+  };
+
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [isHistoryOpen, setHistoryOpen] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(false);
+
+  const fetchHistory = async () => {
+    setHistoryLoading(true);
+    try {
+      const response = await fetch(`${lowcodeBackendEndpoint}/results`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (!response.ok) {
+        console.error("Failed to fetch history:", response.statusText);
+        return;
+      }
+
+      const data: HistoryItem[] = await response.json();
+      console.log(data)
+      setHistory(data);
+    } catch (err) {
+      console.error("Error fetching history:", err);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  const openHistoryModal = async () => {
+    await fetchHistory();
+    setHistoryOpen(true);
   };
 
   const startTour2 = () => {
@@ -395,16 +524,370 @@ function App() {
     console.log("load toturial")
   }
 
+  interface ValidationItem {
+    nodeId: string;
+    nodeType: string;
+    description: string;
+  }
+
+  interface ValidationResult {
+    warnings: ValidationItem[];
+    errors: ValidationItem[];
+  }
+
+  function validateFlow(flow): ValidationResult {
+    const warnings: ValidationItem[] = [];
+    const errors: ValidationItem[] = [];
+
+    const outputIds = new Map<string, string>();
+    const nodesById: any = new Map(flow.nodes?.map((n) => [n.id, n]));
+
+    // Map targetNodeId => sourceNodeIds[]
+    const nodeConnections = new Map<string, string[]>();
+    flow.edges?.forEach((edge) => {
+      if (!nodeConnections.has(edge.target)) nodeConnections.set(edge.target, []);
+      nodeConnections.get(edge.target)?.push(edge.source);
+    });
+
+    // Map sourceNodeId => targetNodeIds[] for output checks
+    const outgoingConnections = new Map<string, string[]>();
+    flow.edges?.forEach((edge) => {
+      if (!outgoingConnections.has(edge.source)) outgoingConnections.set(edge.source, []);
+      outgoingConnections.get(edge.source)?.push(edge.target);
+    });
+
+    // Existing node validation 
+    flow.nodes?.forEach((node) => {
+      const { outputIdentifier, label, inputs, outputSize, condition, operator } =
+        node.data || {};
+      const connectedSources = nodeConnections.get(node.id) || [];
+      const inputCount = connectedSources.length;
+
+      const hasQuantumOutput = connectedSources.some((srcId) => {
+        const sourceNode: any = nodesById.get(srcId);
+        return sourceNode !== undefined;
+      });
+
+      // Output Identifier Checks 
+      if (outputIdentifier && /^[0-9]/.test(outputIdentifier)) {
+        errors.push({
+          nodeId: node.id,
+          nodeType: node.type,
+          description: `Invalid outputIdentifier "${outputIdentifier}" (cannot start with a number).`,
+        });
+      }
+
+      if (outputIdentifier) {
+        if (outputIds.has(outputIdentifier)) {
+          const firstNodeId = outputIds.get(outputIdentifier);
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Duplicate outputIdentifier "${outputIdentifier}" already used by node "${firstNodeId}".`,
+          });
+        } else {
+          outputIds.set(outputIdentifier, node.id);
+        }
+      }
+
+      // Gate / Operator Validation 
+      const twoQubitGates = [
+        "CNOT",
+        "SWAP",
+        "CZ",
+        "CY",
+        "CH",
+        "CP(λ)",
+        "CRX(θ)",
+        "CRY(θ)",
+        "CRZ(θ)",
+        "CU(θ,φ,λ,γ)",
+      ];
+      const threeQubitGates = ["Toffoli", "CSWAP"];
+      const minMaxOperators = ["Min", "Max"];
+
+      if (
+        twoQubitGates.includes(label) ||
+        ((node.type === "quantumOperatorNode" || node.type === "classicalOperatorNode") &&
+          !minMaxOperators.includes(operator))
+      ) {
+        if (inputCount !== 2) {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Node "${node.id}" with label "${label}" requires exactly 2 inputs, but got ${inputCount}.`,
+          });
+        }
+        if(node.data.label === "Quantum Comparison Operator" || node.data.label === "Quantum Min & Max Operator"){
+          warnings.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Node "${node.id}" (${node.data.label}) produces a classical output but its output is not used.`,
+          });
+        }else if (!twoQubitGates.includes(label) && !hasQuantumOutput) {
+          warnings.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Node "${node.id}" (${node.data.label}) produces a quantum state but its output is not used.`,
+          });
+        }
+        
+      }
+
+      if (threeQubitGates.includes(label)) {
+        if (inputCount !== 3) {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Gate "${label}" requires exactly 3 inputs, but got ${inputCount}.`,
+          });
+        }
+      }
+
+      if (
+        minMaxOperators.includes(label) ||
+        (node.type === "gateNode" &&
+          label !== "Qubit Circuit" &&
+          !threeQubitGates.includes(label) &&
+          !twoQubitGates.includes(label))
+      ) {
+        if (inputCount < 1) {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Operator "${label}" requires at least 1 input.`,
+          });
+        }
+
+        // Warn if Min/Max operator has no output connection 
+        const outgoing = outgoingConnections.get(node.id) || [];
+        if (outgoing.length === 0) {
+          warnings.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Operator "${label}" has no output connection (unused result).`,
+          });
+        }
+      }
+
+      // State Preparation Node 
+      if (node.type === "statePreparationNode") {
+        if (
+          ["Encode Value", "Basis Encoding", "Angle Encoding", "Amplitude Encoding"].includes(
+            node.data.label
+          )
+        ) {
+          const hasClassical = connectedSources.some((srcId) => {
+            const sourceNode: any = nodesById.get(srcId);
+            return sourceNode?.type === "dataTypeNode";
+          });
+          if (!hasClassical) {
+            errors.push({
+              nodeId: node.id,
+              nodeType: node.type,
+              description: `Node "${node.id}" has no classical data input connected.`,
+            });
+          }
+          if (node.data.encodingType === "Custom Encoding" && !node.data.implementation) {
+            errors.push({
+              nodeId: node.id,
+              nodeType: node.type,
+              description: `Node "${node.id}" is missing an implementation for custom encoding.`,
+            });
+          }
+        }
+
+        if (node.data.label === "Prepare State") {
+          if (!node.data.size) {
+            errors.push({
+              nodeId: node.id,
+              nodeType: node.type,
+              description: `Node "${node.id}" has no quantum register size specified.`,
+            });
+          }
+          if (node.data.quantumStateName === "Custom State" && !node.data.implementation) {
+            errors.push({
+              nodeId: node.id,
+              nodeType: node.type,
+              description: `Node "${node.id}" is missing implementation for custom state.`,
+            });
+          }
+        }
+
+        if (!hasQuantumOutput) {
+          warnings.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Node "${node.id}" is missing an output connection.`,
+          });
+        }
+      }
+
+      // DataTypeNode: warn if no output connection 
+      if (node.type === "dataTypeNode") {
+        const outgoing = outgoingConnections.get(node.id) || [];
+        if (outgoing.length === 0) {
+          warnings.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Classical data node "${node.id}" has no output connection (unused variable).`,
+          });
+        }
+      }
+
+      // Measurement Node 
+      if (node.type === "measurementNode") {
+        const missingRegister = connectedSources.every((srcId) => {
+          const sourceNode: any = nodesById.get(srcId);
+          return sourceNode?.type !== "qubitNode" && sourceNode?.type !== "gateNode";
+        });
+        if (missingRegister) {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Node "${node.id}" requires a quantum register.`,
+          });
+        }
+
+        if (!node?.data?.indices) {
+          warnings.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Node "${node.id}" has no specified indices.`,
+          });
+        } else if (!/^\d+(,\d+)*$/.test(node.data.indices)) {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Indices of measurement node "${node.id}" can only contain numbers separated by commas.`,
+          });
+        }
+      }
+
+      // Control / If Nodes 
+      if (node.type === "ifElseNode") {
+        const hasClassical = connectedSources.some((srcId) => {
+          const sourceNode: any = nodesById.get(srcId);
+          return sourceNode?.type === "dataTypeNode";
+        });
+        if (!hasClassical) {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Node "${label}" requires at least one classical data input.`,
+          });
+        }
+        if (!condition) {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Node "${label}" requires a condition.`,
+          });
+        }
+      }
+
+      if (node.type === "controlStructureNode" && !condition) {
+        errors.push({
+          nodeId: node.id,
+          nodeType: node.type,
+          description: `Node "${label}" requires a condition.`,
+        });
+      }
+
+      // Algorithm / Custom Nodes 
+      if (node.type === "algorithmNode" || node.type === "classicalAlgorithmNode") {
+        const expectedInputs = node.data?.numberInputs || 0;
+        const actualInputs = connectedSources.length;
+        if (actualInputs < expectedInputs) {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Node "${label}" requires ${expectedInputs} input(s), but only ${actualInputs} connected.`,
+          });
+        }
+
+
+        // Quantum outputs check based on numberQuantumOutputs 
+        const numberQuantumOutputs = node.data?.numberQuantumOutputs || 0;
+        if (numberQuantumOutputs > 0) {
+          const outgoing = outgoingConnections.get(node.id) || [];
+          if (outgoing.length < numberQuantumOutputs) {
+            warnings.push({
+              nodeId: node.id,
+              nodeType: node.type,
+              description: `Node "${node.id}" produces ${numberQuantumOutputs} quantum outputs but only ${outgoing.length} are connected (some quantum outputs are unused).`,
+            });
+          }
+        }
+      }
+
+    });
+
+    // Gate node connection to measurement 
+    const gateNodes = flow.nodes?.filter((n) => n.type === "gateNode") || [];
+    const measurementNodes = new Set(
+      flow.nodes?.filter((n) => n.type === "measurementNode").map((n) => n.id)
+    );
+
+    const visited = new Set<string>();
+    function reachesMeasurement(nodeId: string): boolean {
+      if (visited.has(nodeId)) return false;
+      visited.add(nodeId);
+
+      if (measurementNodes.has(nodeId)) return true;
+
+      const outputs =
+        flow.edges?.filter((e) => e.source === nodeId).map((e) => e.target) || [];
+      return outputs.some((outId) => reachesMeasurement(outId));
+    }
+
+    const meaningfulGateExists = gateNodes.some((gate) => {
+      visited.clear();
+      return reachesMeasurement(gate.id);
+    });
+
+    if (!meaningfulGateExists && gateNodes.length > 0) {
+      warnings.push({
+        nodeId: null,
+        nodeType: "flow",
+        description:
+          "No gate node in the model has a path to a measurement node. " +
+          "Executing this flow will not produce meaningful results.",
+      });
+    }
+
+
+    return { warnings, errors };
+  }
+
+
+
+  const handleOpenValidation = () => {
+    if (!reactFlowInstance) return;
+
+    const flow = reactFlowInstance.toObject();
+    const result = validateFlow(flow);
+    console.log(flow)
+
+    setValidationResult(result);
+    setIsValidationOpen(true);
+  };
+
+
+  const startTour3 = () => {
+    loadFlow(modeledDiagram);
+  }
+
   const startTour = () => {
     setRunTour(true);
     setAncillaMode(false);
     console.log("load tutorial")
     console.log("load toturial")
   }
-  const sendToQunicorn = async () => {
-    setModalStep(1);
+  const handleDeploy = async () => {
+    setIsQunicornOpen(true);
     setLoading(true);
-
+    console.log(qunicornEndpoint)
 
     try {
       let program = {
@@ -413,16 +896,30 @@ function App() {
             //"quantumCircuit": "OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[2];\ncreg meas[2];\nh q[0];\ncx q[0],q[1];\nbarrier q[0],q[1];\nmeasure q[0] -> meas[0];\nmeasure q[1] -> meas[1];",
             "quantumCircuit": openqasmCode,
             //"quantumCircuit": "OPENQASM 2.0;include 'qelib1.inc';qreg q[6];creg c[6];gate oracle(q0, q1, q2, q3, q4, q5) {    x q0;    x q1;    x q2;    x q3;    x q4;    x q5;        h q5;    ccx q3, q4, q5;    cx q2, q3;    cx q1, q2;    cx q0, q1;    h q5;    x q0;    x q1;    x q2;    x q3;    x q4;    x q5;}gate diffusion(q0, q1, q2, q3, q4, q5) {    h q0;    h q1;    h q2;    h q3;    h q4;    h q5;        x q0;    x q1;    x q2;    x q3;    x q4;    x q5;        h q5;    ccx q3, q4, q5;    cx q2, q3;    cx q1, q2;    cx q0, q1;    h q5;        x q0;    x q1;    x q2;    x q3;    x q4;    x q5;        h q0;    h q1;    h q2;    h q3;    h q4;    h q5;}h q[0];h q[1];h q[2];h q[3];h q[4];h q[5];oracle(q[0], q[1], q[2], q[3], q[4], q[5]);diffusion(q[0], q[1], q[2], q[3], q[4], q[5]);oracle(q[0], q[1], q[2], q[3], q[4], q[5]);diffusion(q[0], q[1], q[2], q[3], q[4], q[5]);oracle(q[0], q[1], q[2], q[3], q[4], q[5]);diffusion(q[0], q[1], q[2], q[3], q[4], q[5]);oracle(q[0], q[1], q[2], q[3], q[4], q[5]);diffusion(q[0], q[1], q[2], q[3], q[4], q[5]);oracle(q[0], q[1], q[2], q[3], q[4], q[5]);diffusion(q[0], q[1], q[2], q[3], q[4], q[5]);oracle(q[0], q[1], q[2], q[3], q[4], q[5]);diffusion(q[0], q[1], q[2], q[3], q[4], q[5]);measure q[0] -> c[0];measure q[1] -> c[1];measure q[2] -> c[2];measure q[3] -> c[3];measure q[4] -> c[4];measure q[5] -> c[5];",
-
-            "assemblerLanguage": "QASM2",
+            "assemblerLanguage": "QASM3",
             "pythonFilePath": "",
             "pythonFileMetadata": ""
           }
         ],
         "name": "DeploymentName"
       };
+      console.log(openqasmCode)
+      const regex = /^qubit\[\d+\]\s+\w+;$/gm;
+      const qubitMatches = openqasmCode.match(regex);
+      console.log(qubitMatches)
 
-      let response = await fetch("http://localhost:8080/deployments/", {
+      if (qubitMatches) {
+        const qubitIndices = qubitMatches.map(m => parseInt(m.match(/\d+/)[0], 10));
+        console.log(qubitIndices)
+        const maxQubitIndex = Math.max(...qubitIndices);
+
+        // Example: trigger warning if any qubit index >= 30
+        if (maxQubitIndex >= 30) {
+          setWarningExecution(true);
+          console.warn(`⚠️ Warning: High qubit index detected (${maxQubitIndex})`);
+        }
+      }
+      let response = await fetch(qunicornEndpoint + "/deployments/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(program),
@@ -431,6 +928,7 @@ function App() {
       let data = await response.json();
       console.log(data["id"]);
       setDeploymentId(data["id"]);
+      setModalStep(2);
       //pollStatus(response["Location"]);
     } catch (error) {
       console.error("Error sending data:", error);
@@ -439,8 +937,7 @@ function App() {
   };
 
 
-  const sendToQunicorn2 = async () => {
-    setModalStep(2);
+  const handleCreateJob = async () => {
     setLoading(true);
 
     try {
@@ -456,7 +953,7 @@ function App() {
         "deploymentId": deploymentId
       }
 
-      let response = await fetch("http://localhost:8080/jobs/", {
+      let response = await fetch(qunicornEndpoint + "/jobs/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(program),
@@ -468,16 +965,15 @@ function App() {
         setErrorJobMessage(data["message"]);
       } else {
         setJobId(data["self"]);
+        setModalStep(3);
       }
-      //handleClose();
-      //pollStatus(response["Location"]);
     } catch (error) {
       console.error("Error sending data:", error);
       setLoading(false);
     }
   };
 
-  const sendToQunicorn3 = async () => {
+  const handleJobExecute = async () => {
     setModalStep(3);
     setLoading(true);
     setProgress(0);
@@ -485,7 +981,7 @@ function App() {
 
     try {
 
-      const url = `http://localhost:8080/${jobId.startsWith('/') ? jobId.slice(1) : jobId}`;
+      const url = `${qunicornEndpoint}/${jobId.startsWith('/') ? jobId.slice(1) : jobId}`;
 
       let getdata = null;
 
@@ -544,16 +1040,21 @@ function App() {
         setProgress(0);
         return;
       }
-
-      setProgress(100);
-      console.log(getdata.results[1])
-      let counts = getdata.results[1].data;
-      console.log(counts)
-      const chartData = Object.entries(counts || {}).map(([key, value]) => ({
-        register: key,
-        value: Number(value) * 100,
-      }));
-      setChartData(chartData);
+      setTimeout(() => {
+        setProgress(50);
+      }, 1000);
+      setTimeout(() => {
+        setProgress(100);
+        setAlreadyExecuted(true);
+        console.log(getdata.results[1])
+        let counts = getdata.results[1].data;
+        console.log(counts)
+        const chartData = Object.entries(counts || {}).map(([key, value]) => ({
+          register: parseInt(key, 16),
+          value: Number(value) * 100,
+        }));
+        setChartData(chartData);
+      }, 2000);
       //pollStatus(response["Location"]);
     } catch (error) {
       console.error("Error sending data:", error);
@@ -582,8 +1083,6 @@ function App() {
 
 
   const onNodeDragStop = useCallback(
-
-
     /**
      * 
      * @param evt {
@@ -691,32 +1190,43 @@ function App() {
         }
       });
       //setNodes(nodeT);
-    }, [nodes]);
+      if (node.id == contextMenu.nodeId) {
+        console.log("moving context menu for node", node.id)
+        setContextMenu((prev) => ({ ...prev, left: evt.clientX, top: evt.clientY }));
+      }
+    }, [nodes, setContextMenu]);
 
   const onDrop = React.useCallback(
     (event: any) => {
       console.log("dropped")
-      console.log(reactFlowInstance.screenToFlowPosition({
+      const position = reactFlowInstance.screenToFlowPosition({
         x: event.clientX,
         y: event.clientY,
-      }));
+      })
+      console.log(position);
 
       handleOnDrop(event, reactFlowWrapper, reactFlowInstance, setNodes);
 
+      //setContextMenu((prev) => ({ ...prev, left: event.clientX, top: event.clientY,}));
     },
     [reactFlowInstance, setNodes],
   );
 
+  const onNodesDelete = useCallback(() => {
+    setContextMenu((prev) => ({ ...prev, visible: false })); // contextMenu disappears when node is deleted
+  }, [setContextMenu]);
+
+
   const flowKey = "example-flow";
 
-  async function uploadToGitHub(filename, fileContent) {
-    const repoOwner = tempGithubRepositoryOwner;
-    const repo = tempGithubRepositoryName;
-    const branch = tempGithubBranch;
-    const token = tempGithubToken;
+  async function uploadToGitHub() {
+    let flowId = `model-${Date.now()}`;
+    const repoOwner = githubRepositoryOwner;
+    const repo = githubRepositoryName;
+    const branch = githubBranch;
+    const token = githubToken;
 
-    const apiUrl = `https://api.github.com/repos/${repoOwner}/${repo}/contents/${filename}`;
-
+    const apiUrl = `https://api.github.com/repos/${repoOwner}/${repo}/contents/${flowId}`;
     let sha = null;
 
     try {
@@ -736,15 +1246,28 @@ function App() {
       } else {
         const errorData = await getResponse.json();
         console.error("Failed to check file existence:", errorData);
-        return;
+        return { success: false };
       }
     } catch (error) {
       console.error("Error checking file existence:", error);
-      return;
+      showToast("Upload failed. Credentials or repository fields incorrect.", "error");
+      return { success: false };
     }
 
+    console.log(containsPlaceholder)
+
+    let fileContent = JSON.stringify({
+      metadata: {
+        ...metadata,
+        containsPlaceholder: containsPlaceholder,
+        id: flowId,
+        timestamp: new Date().toISOString(),
+      },
+      flow: reactFlowInstance.toObject(),
+    }, null, 2);
+
     const payload: any = {
-      message: `Upload ${filename} from quantum low-code modeler`,
+      message: `Upload ${flowId} from quantum low-code modeler`,
       content: btoa(fileContent),
       branch: branch,
     };
@@ -753,7 +1276,6 @@ function App() {
       payload.sha = sha;
     }
 
-    // Upload the file
     try {
       const uploadResponse = await fetch(`${apiUrl}?ref=${branch}`, {
         method: "PUT",
@@ -766,18 +1288,22 @@ function App() {
       });
 
       if (uploadResponse.ok) {
-        console.log(`File ${filename} uploaded to GitHub successfully.`);
+        console.log(`File ${flowId} uploaded to GitHub successfully.`);
+        showToast("Model with id " + flowId + " uploaded successfully!", "success");
+        return { success: true };
       } else {
         const errorData = await uploadResponse.json();
+        showToast("Upload failed. Check console.", "error");
         console.error("GitHub upload failed:", errorData);
+        return { success: false };
       }
     } catch (error) {
       console.error("Error uploading to GitHub:", error);
+      return { success: false };
     }
   }
 
-
-  async function handleSaveClick(upload) {
+  async function handleSaveClick() {
     if (!reactFlowInstance) {
       console.error("React Flow instance is not initialized.");
       return;
@@ -787,6 +1313,7 @@ function App() {
     console.log(flow);
     const validMetadata = {
       ...metadata,
+      containsPlaceholder: containsPlaceholder,
       id: `flow-${Date.now()}`,
       timestamp: new Date().toISOString(),
     };
@@ -796,13 +1323,15 @@ function App() {
 
     const flowWithMetadata = { metadata: validMetadata, ...flow };
 
-    // Dispatch save event for QHAna integration
-    const saveEvent = new CustomEvent('lcm-save', {
+    // Dispatch save event for QHAna integration (cancelable)
+    const event = new CustomEvent("lcm-save", {
+      cancelable: true,
       detail: flowWithMetadata,
-      bubbles: true,
-      cancelable: true
     });
-    document.dispatchEvent(saveEvent);
+    const defaultAction = document.dispatchEvent(event);
+    console.log(`defaultAction: ${defaultAction}`);
+    if (!defaultAction)
+      return;
 
     // Save to backend and show solution ID
     try {
@@ -835,16 +1364,7 @@ function App() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(downloadUrl);
-    if (upload) {
-      await uploadToGitHub(
-        `${validMetadata.name.replace(/\s+/g, "_")}_${validMetadata.id}.json`,
-        jsonString
-      );
-    }
-  }
-
-  function handleMetadataUpdate(updatedMetadata: any) {
-    setMetadata(updatedMetadata);
+    console.log("Flow saved:", flowWithMetadata);
   }
 
   function handleRestoreClick() {
@@ -852,6 +1372,45 @@ function App() {
       console.error("React Flow instance is not initialized.");
       return;
     }
+
+    function restoreFlow(flow) {
+      console.log("Restoring flow:", flow);
+      if (flow.nodes) {
+        reactFlowInstance.setNodes(
+          flow.nodes.map((node: Node) => ({
+            ...node,
+            data: {
+              ...node.data,
+            },
+          }))
+        );
+        console.log("Nodes restored.");
+      }
+      if (flow.edges) {
+        reactFlowInstance.setEdges(flow.edges || []);
+        console.log("Edges restored.");
+      }
+
+
+      const { x = 0, y = 0, zoom = 1 } = flow.viewport || {};
+      reactFlowInstance.setViewport({ x, y, zoom });
+
+      if (flow.metadata) {
+        setMetadata(flow.metadata);
+        console.log("Metadata restored:", flow.metadata);
+      }
+    }
+
+    const event = new CustomEvent("lcm-open", {
+      cancelable: true,
+      detail: {
+        restoreFlow
+      },
+    });
+    const defaultAction = document.dispatchEvent(event);
+    console.log(`defaultAction: ${defaultAction}`);
+    if (!defaultAction)
+      return;
 
     const fileInput = document.createElement("input");
     fileInput.type = "file";
@@ -869,31 +1428,7 @@ function App() {
         try {
           const flow = JSON.parse(e.target?.result as string);
 
-          console.log("Restoring flow:", flow);
-          if (flow.nodes) {
-            reactFlowInstance.setNodes(
-              flow.nodes.map((node: Node) => ({
-                ...node,
-                data: {
-                  ...node.data,
-                },
-              }))
-            );
-            console.log("Nodes restored.");
-          }
-          if (flow.edges) {
-            reactFlowInstance.setEdges(flow.edges || []);
-            console.log("Edges restored.");
-          }
-
-
-          const { x = 0, y = 0, zoom = 1 } = flow.viewport || {};
-          reactFlowInstance.setViewport({ x, y, zoom });
-
-          if (flow.metadata) {
-            setMetadata(flow.metadata);
-            console.log("Metadata restored:", flow.metadata);
-          }
+          restoreFlow(flow);
         } catch (error) {
           console.error("Error parsing JSON file:", error);
           alert("Invalid JSON file. Please ensure it is a valid flow file.");
@@ -926,7 +1461,9 @@ function App() {
   );
 
   const [isModalOpen, setIsModalOpen] = useState(true);
- 
+  const [modeledDiagram, setModeledDiagram] = useState(null);
+
+  // Function to load the flow
   const loadFlow = (flow: any) => {
     if (!reactFlowInstance) {
       console.error("React Flow instance is not initialized.");
@@ -951,7 +1488,7 @@ function App() {
         }))
       );
     }
-    console.log(nodes);
+    console.log("load flow nodes", nodes);
 
     // Reset the viewport 
     const { x = 0, y = 0, zoom = 1 } = flow.viewport || {};
@@ -1107,24 +1644,37 @@ function App() {
         }
       }
     })
+    // move contextmenu with dragged node if it belongs to that node
+    // if other node is dragged: make context menu invisible
+    if (node.id == contextMenu.nodeId) {
+      console.log("drag contextmenu to nodeid: ", node.id)
+      setContextMenu((prev) => ({ ...prev, top: event.clientY, left: event.clientX }))
+    } else {
+      setContextMenu((prev) => ({ ...prev, visible: false }))
+    }
   }
-    , [reactFlowInstance, helperLines, nodes]);
+    , [reactFlowInstance, helperLines, nodes, setContextMenu]);
 
   const onPaneClick = useCallback(() => {
     setMenu(null);
+    setContextMenu((prev) => ({ ...prev, visible: false })); // contextMenu disappears when clicking on pane
     setSelectedNode(null);
     console.log("reset");
-  }, [setMenu, setSelectedNode]);
+  }, [setMenu, setContextMenu, setSelectedNode]);
+
+  const onClick = useCallback(() => {
+    setContextMenu((prev) => ({ ...prev, visible: false })); // contextMenu disappears when clicking anywhere in canvas (but not other panels)
+  }, [setContextMenu]);
 
   const handleOpenConfig = () => setIsConfigOpen(true);
 
-  const handleCloseConfig = () => setIsConfigOpen(false);
-  const handleSaveConfig = (config: {
-    patternRepo: string;
-    solutionRepo: string;
-    backendURL: string;
-  }) => {
-    console.log("Configuration Saved:", config);
+  const onExperienceLevelChange = (event) => {
+    setExperienceLevel(event);
+    setExperienceLevelOn(event);
+    const bool_value = (experienceLevel === "pioneer") ? false : true; // if previous experience level was pioneer...
+    setCompactVisualization(bool_value)
+    setAncillaMode(bool_value)
+    setAncillaModelingOn(bool_value)
   };
 
   const handleSaveAsSVG = () => {
@@ -1134,9 +1684,15 @@ function App() {
     }
 
     toSvg(ref.current, {
-      filter: (node) =>
-        !node?.classList?.contains("react-flow__minimap") &&
-        !node?.classList?.contains("react-flow__controls"),
+      filter: (node) => {
+        if (!node) return false;
+        if (node.classList?.contains("react-flow__minimap")) return false;
+        if (node.classList?.contains("react-flow__controls")) return false;
+        if (node.classList?.contains("react-flow__panel")) return false;
+        if (typeof node.className === "string" && node.className.includes("react-flow__panel")) return false;
+
+        return true;
+      }
     })
       .then((dataUrl) => {
         const a = document.createElement("a");
@@ -1146,6 +1702,155 @@ function App() {
       })
       .catch((err) => console.error("Error exporting SVG:", err));
   };
+
+
+  /**
+   * Uploads a QRMS ZIP file to GitHub, updating files if they already exist.
+   */
+  async function uploadQRMS(qrmsUrl: string, modelId: string): Promise<void> {
+    const token = githubToken;
+    if (!token) throw new Error("Missing GitHub token");
+    const owner = githubRepositoryOwner;
+    const repo = githubRepositoryName;
+    const basePath = `qrms_uploads/${modelId}`;
+
+    const res = await fetch(qrmsUrl);
+    if (!res.ok) throw new Error("Failed to fetch QRMS zip");
+    const baseUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${basePath}`;
+
+    const folderCheck = await fetch(baseUrl, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (folderCheck.ok) {
+      console.log(`Folder ${basePath} already exists — skipping upload.`);
+      return; // exit early — skip re-upload
+    }
+    const buf = await res.arrayBuffer();
+    const zip = await JSZip.loadAsync(buf);
+
+    for (const [relative, file] of Object.entries(zip.files)) {
+      if (file.dir) continue;
+      const content = await file.async("string");
+      const encoded = btoa(unescape(encodeURIComponent(content)));
+      const githubPath = `${basePath}/${relative}`;
+      const url = `https://api.github.com/repos/${owner}/${repo}/contents/${githubPath}`;
+
+      // look up sha if file already exists
+      let sha: string | undefined;
+      const head = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (head.ok) {
+        const data = await head.json();
+        sha = data.sha;
+      }
+
+      // create or update file
+      const put = await fetch(url, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          message: sha
+            ? `Update existing QRMS file: ${relative}`
+            : `Upload new QRMS file: ${relative}`,
+          content: encoded,
+          sha,
+        }),
+      });
+
+      if (!put.ok) {
+        const txt = await put.text();
+        throw new Error(`Failed to upload ${relative}: ${txt}`);
+      }
+      console.log("QRMs uploaded", githubPath);
+    }
+  }
+
+  async function createServiceTemplates(serviceDeploymentModelsUrl: string, namespace: string): Promise<void> {
+    const res = await fetch(serviceDeploymentModelsUrl);
+    if (!res.ok) throw new Error(`Failed to fetch service deployment models: ${res.statusText}`);
+
+    // Load ZIP into JSZip
+    const arrayBuffer = await res.arrayBuffer();
+    const zip = await JSZip.loadAsync(arrayBuffer);
+
+    // Extract folder names
+    const folderNames = new Set<string>();
+
+    for (const [path, entry] of Object.entries(zip.files)) {
+      const match = path.match(/^(Activity_[^/]+)/);
+      if (match) {
+        folderNames.add(match[1]);
+      }
+    }
+
+    console.log(`Found service deployment folders:`, Array.from(folderNames));
+
+
+    const masterZip = await JSZip.loadAsync(arrayBuffer);
+    // Process each folder 
+     for (const [path, entry] of Object.entries(masterZip.files)) {
+    if (entry.dir) continue;
+    if (!path.endsWith(".zip")) continue;
+
+    // Extract activity name
+    const activityName = path.replace(".zip", "");
+    console.log(`Processing activity ZIP: ${activityName}`);
+
+    // Load the activity ZIP in memory
+    const activityArrayBuffer = await entry.async("arraybuffer");
+    const activityZip = await JSZip.loadAsync(activityArrayBuffer);
+
+    // Find service.zip inside activity ZIP
+    const serviceEntry = Object.values(activityZip.files).find(
+      (f) => !f.dir && f.name.endsWith("service.zip")
+    );
+
+    if (!serviceEntry) {
+      console.warn(`No service.zip found in ${activityName}`);
+      continue;
+    }
+
+    // Extract service.zip as Blob
+    const serviceArrayBuffer = await serviceEntry.async("arraybuffer");
+    const serviceBlob = new Blob([serviceArrayBuffer], { type: "application/zip" });
+
+    // Create deployment model
+    const versionUrl = `http://localhost:8093/winery/servicetemplates/${activityName}`;
+    await createDeploymentModel(
+      serviceBlob, 
+      "http://localhost:8093/winery",
+      `${activityName}_DA`,
+      "http://opentosca.org/artifacttemplates",
+      "{http://opentosca.org/artifacttypes}DockerContainerArtifact",
+      "service.zip",
+      versionUrl
+    );
+    const OPENTOSCA_NAMESPACE_NODETYPE = "http://opentosca.org/nodetypes";
+    const QUANTME_NAMESPACE_PULL = "http://quantil.org/quantme/pull";
+
+    // Create service template
+    let serviceTemplate = await createServiceTemplate(activityName, namespace);
+     await createNodeType(
+        activityName + "Container",
+        OPENTOSCA_NAMESPACE_NODETYPE
+      );
+      await updateNodeType(
+        activityName + "Container",
+        OPENTOSCA_NAMESPACE_NODETYPE
+      );
+      serviceTemplate = await updateServiceTemplate(
+        activityName,
+        QUANTME_NAMESPACE_PULL
+      );
+    console.log(`Service template created for: ${activityName}`);
+  }
+
+  }
 
   return (
     <ReactFlowProvider>
@@ -1163,454 +1868,178 @@ function App() {
         }}
         callback={(data) => {
           const { status, index, type } = data;
-          console.log(index)
+          console.log("HELP");
+          console.log(index);
+          console.log(type);
+          if (type === 'step:before' && index === 0) {
+            // open both side panels if they're not opened
+            setIsPaletteOpen(true);
+            setIsPanelOpen(true);
+            //setExpanded(true);
+          }
+          if (type === 'step:before' && index === 1) {
+            let fileContent = JSON.stringify(reactFlowInstance.toObject());
+            setModeledDiagram(fileContent);
+          }
           if (type === 'step:before' && index === 3) {
             startTour2();
-
+            setExpanded(true);
+          }
+          if (type === 'step:before' && index === 4) {
+            const id = "e2a719bf-516c-4601-84d1-de643b05ea02";
+            const node = nodes.find(n => n.id === id);
+            setSelectedNode(node);
+            console.log("NODES", nodes);
+            console.log("SELECTED NODE", node);
+          }
+          if (type === 'step:before' && index === 5) {
+            setExpanded(false);
           }
           if (type === 'step:after' && index === 5) {
-            loadFlow(initialDiagram);
+            startTour3();
           }
-
-
           if (['finished', 'skipped'].includes(data.status)) {
             setRunTour(false);
-            //loadFlow(initialDiagram);
+            setExpanded(false);
+            loadFlow(JSON.parse(modeledDiagram));
           }
         }}
       />
 
       <div className="toolbar-container">
         <Toolbar
-          onSave={() => handleSaveClick(false)}
+          onSave={handleSaveClick}
           onRestore={handleRestoreClick}
           onSaveAsSVG={handleSaveAsSVG}
           onOpenConfig={handleOpenConfig}
-          uploadDiagram={() => handleSaveClick(true)}
+          uploadDiagram={() => uploadToGitHub()}
           onLoadJson={handleLoadJson}
-          sendToBackend={prepareBackendRequest}
-          sendToQunicorn={sendToQunicorn}
+          sendToBackend={handleOpenValidation}
+          //sendToQunicorn={() => setIsQunicornOpen(true)}
+          openHistory={openHistoryModal}
           startTour={() => { startTour(); }}
         />
       </div>
-      {nodes.length > 0 && <Modal title={"New Diagram"} open={isLoadJsonModalOpen} onClose={cancelLoadJson} footer={
-        <div className="flex justify-end space-x-2">
-          <button className="btn btn-primary" onClick={confirmNewDiagram}>Yes</button>
-          <button className="btn btn-secondary" onClick={cancelLoadJson}>Cancel</button>
-        </div>
-      }>
-        <div>
-          <p>Are you sure you want to create a new model? This will overwrite the current flow.</p>
-        </div>
-      </Modal>}
-      <Modal
-        title={"Send Request"}
+      {<NewDiagramModal open={isLoadJsonModalOpen} onClose={cancelLoadJson} onConfirm={confirmNewDiagram} />}
+
+      <ValidationModal
+        open={isValidationOpen}
+        onClose={() => setIsValidationOpen(false)}
+        onConfirm={() => {
+          setIsValidationOpen(false);
+          setModalOpen(true);
+        }}
+        validationResult={validationResult}
+      />
+      <SendRequestModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        footer={
-          <div className="flex justify-end space-x-2">
-            <button
-              className={`btn ${compilationTarget === "workflow" ? "btn-disabled opacity-50 cursor-not-allowed" : "btn-primary"}`}
-              onClick={sendToBackend}
-              disabled={compilationTarget === "workflow"}
-            >
-              Send
-            </button>
-          </div>
-        }
-      >
-        <div className="space-y-4">
-          <div>
-            <label className="block mb-1 font-semibold">Compilation Target</label>
-            <select
-              className="select select-bordered w-full"
-              value={compilationTarget}
-              onChange={(e) => setCompilationTarget(e.target.value)}
-            >
-              <option value="qasm">QASM</option>
-              <option value="workflow">Workflow</option>
-            </select>
-          </div>
+        compilationTarget={compilationTarget}
+        containsPlaceholder={containsPlaceholder}
+        setCompilationTarget={setCompilationTarget}
+        sendToBackend={sendToBackend}
+      />
 
-          {compilationTarget === "workflow" && (
-            <p className="text-sm text-gray-500">Workflow compilation is not supported yet. Will come in the future.</p>
-          )}
-        </div>
-
-      </Modal>
-      <Modal
-        title={"Processing"}
-        open={isProcessingModalOpen}
-        onClose={() => setProcessingModalOpen(false)}
-      >
-        <div>
-          <h2>Processing</h2>
-          {loading ? <p>Loading...</p> : <p>Status: {status || "Unknown"}</p>}
-        </div>
-      </Modal>
-
-      <Modal
-        title={"Configuration"}
+      <ConfigModal
         open={isConfigOpen}
-        onClose={() => {
-          handleCancel();
-        }}
-        footer={
-          <div className="flex justify-end space-x-2">
-            <button className="btn btn-primary" onClick={() => handleSave()}>
-              Save
-            </button>
-            <button className="btn btn-secondary" onClick={() => handleCancel()}>
-              Cancel
-            </button>
-          </div>
-        }
-      >
-        <div>
-          {/* Subtabs */}
-          <div className="flex border-b mb-4">
-            <button
-              className={`px-4 py-2 ${activeTab === "lowCodeEndpoints" ? "border-b-2 border-blue-500 font-semibold" : "text-gray-600"
-                }`}
-              onClick={() => setActiveTab("lowCodeEndpoints")}
-            >
-              Low-Code Endpoints
-            </button>
-            <button
-              className={`px-4 py-2 ${activeTab === "patternEndpoints" ? "border-b-2 border-blue-500 font-semibold" : "text-gray-600"
-                }`}
-              onClick={() => setActiveTab("patternEndpoints")}
-            >
-              Pattern Endpoints
-            </button>
-            <button
-              className={`px-4 py-2 ${activeTab === "github" ? "border-b-2 border-blue-500 font-semibold" : "text-gray-600"
-                }`}
-              onClick={() => setActiveTab("github")}
-            >
-              GitHub
-            </button>
-          </div>
+        onClose={() => setIsConfigOpen(false)}
+        onSave={handleSave}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        ancillaMode={ancillaModelingOn}
+        compactVisualization={compactVisualization}
+        completionGuaranteed={completionGuaranteed}
+        experienceLevel={experienceLevel}
+        tempNisqAnalyzerEndpoint={nisqAnalyzerEndpoint}
+        tempQunicornEndpoint={qunicornEndpoint}
+        tempLowcodeBackendEndpoint={lowcodeBackendEndpoint}
+        tempPatternAtlasUiEndpoint={patternAtlasUiEndpoint}
+        tempPatternAtlasApiEndpoint={patternAtlasApiEndpoint}
+        tempQcAtlasEndpoint={qcAtlasEndpoint}
+        tempGithubRepositoryOwner={githubRepositoryOwner}
+        tempGithubRepositoryName={githubRepositoryName}
+        tempGithubBranch={githubBranch}
+        tempGithubToken={githubToken}
+      />
 
-          {/* Endpoints Tab */}
-          {activeTab === "lowCodeEndpoints" && (
-            <div>
-              <h3 className="labels">NISQ Analyzer</h3>
-              <table className="config-table">
-                <tbody>
-                  <tr>
-                    <td align="right">NISQ Analyzer Endpoint:</td>
-                    <td align="left">
-                      <input
-                        className="qwm-input"
-                        type="text"
-                        value={tempNisqAnalyzerEndpoint}
-                        onChange={(event) => setTempNisqAnalyzerEndpoint(event.target.value)}
-                      />
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-
-              <h3 className="labels">Qunicorn</h3>
-              <table className="config-table">
-                <tbody>
-                  <tr>
-                    <td align="right">Qunicorn Endpoint:</td>
-                    <td align="left">
-                      <input
-                        className="qwm-input"
-                        type="text"
-                        value={tempQunicornEndpoint}
-                        onChange={(event) => setTempQunicornEndpoint(event.target.value)}
-                      />
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-
-              <h3 className="labels">Low-Code Backend:</h3>
-              <table className="config-table">
-                <tbody>
-                  <tr>
-                    <td align="right">Low-Code Backend Endpoint:</td>
-                    <td align="left">
-                      <input
-                        className="qwm-input"
-                        type="text"
-                        value={tempLowcodeBackendEndpoint}
-                        onChange={(event) => setTempLowcodeBackendEndpoint(event.target.value)}
-                      />
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {activeTab === "patternEndpoints" && (
-            <div>
-              <h3 className="labels">Pattern Atlas UI</h3>
-              <table className="config-table">
-                <tbody>
-                  <tr>
-                    <td align="right">Pattern Atlas UI Endpoint:</td>
-                    <td align="left">
-                      <input
-                        className="qwm-input"
-                        type="text"
-                        value={tempPatternAtlasUiEndpoint}
-                        onChange={(event) => setTempPatternAtlasUiEndpoint(event.target.value)}
-                      />
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-
-              <h3 className="labels">Pattern Atlas API</h3>
-              <table className="config-table">
-                <tbody>
-                  <tr>
-                    <td align="right">Pattern Atlas API Endpoint:</td>
-                    <td align="left">
-                      <input
-                        className="qwm-input"
-                        type="text"
-                        value={tempPatternAtlasApiEndpoint}
-                        onChange={(event) => setTempPatternAtlasApiEndpoint(event.target.value)}
-                      />
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-
-              <h3 className="labels">QC Atlas:</h3>
-              <table className="config-table">
-                <tbody>
-                  <tr>
-                    <td align="right">QC Atlas Endpoint:</td>
-                    <td align="left">
-                      <input
-                        className="qwm-input"
-                        type="text"
-                        value={tempQcAtlasEndpoint}
-                        onChange={(event) => setTempQcAtlasEndpoint(event.target.value)}
-                      />
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {activeTab === "github" && (
-            <div>
-              <h3 className="labels">GitHub Settings</h3>
-              <table className="config-table">
-                <tbody>
-                  <tr>
-                    <td align="right">GitHub Repository Owner:</td>
-                    <td align="left">
-                      <input
-                        className="qwm-input"
-                        type="text"
-                        value={tempGithubRepositoryOwner}
-                        onChange={(e) => setTempGithubRepositoryOwner(e.target.value)}
-                      />
-                    </td>
-                  </tr>
-                  <tr>
-                    <td align="right">GitHub Repository Name:</td>
-                    <td align="left">
-                      <input
-                        className="qwm-input"
-                        type="text"
-                        value={tempGithubRepositoryName}
-                        onChange={(e) => setTempGithubRepositoryName(e.target.value)}
-                      />
-                    </td>
-                  </tr>
-                  <tr>
-                    <td align="right">GitHub Branch:</td>
-                    <td align="left">
-                      <input
-                        className="qwm-input"
-                        type="text"
-                        value={tempGithubBranch}
-                        onChange={(e) => setTempGithubBranch(e.target.value)}
-                      />
-                    </td>
-                  </tr>
-                  <tr>
-                    <td align="right">GitHub Token:</td>
-                    <td align="left">
-                      <input
-                        className="qwm-input"
-                        type="password"
-                        value={tempGithubToken}
-                        onChange={(e) => setTempGithubToken(e.target.value)}
-                      />
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </Modal>
-      <Modal
-        title={"Qunicorn Deployment (1/2)"}
-        open={modalStep === 1}
+      <QunicornModal
+        open={isQunicornOpen}
+        step={modalStep}
+        executed={executed}
         onClose={handleClose}
-        footer={
-          <div className="flex justify-end space-x-2">
-            <button className="btn btn-primary" onClick={() => { handleClose() }}>Deploy</button>
-            <button className="btn btn-secondary" onClick={() => { setModalStep(0) }}>Cancel</button>
-          </div>
-        }
-      >
-        <div>
-          In the first step, the QASM of the model is deployed to Qunicorn.
-          Qunicorn serves as a unification layer to allow the unified execution across hetegerogeneous quantum cloud offerings such as IBM and AWS.
-        </div>
-      </Modal>
+        simulatorWarning={warningExecution}
+        onStep1Deploy={handleDeploy}
+        onStep2CreateJob={handleCreateJob}
+        onStep3Execute={handleJobExecute}
+        selectedDevice={selectedDevice}
+        setSelectedDevice={setSelectedDevice}
+        provider={provider}
+        setProvider={setProvider}
+        numShots={numShots}
+        setNumShots={setNumShots}
+        accessToken={accessToken}
+        setAccessToken={setAccessToken}
+        errorMessage={errorMessage}
+        progress={progress}
+        chartData={chartData}
+      />
 
-      <Modal
-        title={"Qunicorn Deployment (2/2)"}
-        open={modalStep === 2}
-        onClose={() => { handleClose(); setModalStep(0) }}
-        footer={
-          <div className="flex justify-end space-x-2">
-            <button
-              className={`btn ${selectedDevice.trim() && ['IBM', 'AWS', 'RIGETTI', 'QMWARE'].includes(provider)
-                ? 'btn-primary'
-                : 'btn-secondary'
-                }`}
-              onClick={() => {
-                if (
-                  selectedDevice.trim() &&
-                  ['IBM', 'AWS', 'RIGETTI', 'QMWARE'].includes(provider)
-                ) {
-                  sendToQunicorn2();
-                  handleClose();
+      <HistoryModal
+        open={isHistoryOpen}
+        onClose={() => setHistoryOpen(false)}
+        history={history}
+        onExecute={async (item) => {
+          console.log(item);
+          setHistoryOpen(false);
+
+          try {
+            // Fetch the model JSON from the request link to check compilation_target
+            const requestResponse = await fetch(item.links.request);
+            if (!requestResponse.ok) throw new Error("Failed to fetch model file");
+            const modelData = await requestResponse.json();
+
+            const compilationTarget = modelData?.compilation_target;
+
+            // If the model is a workflow
+            if (compilationTarget === "workflow") {
+              //store the workflow data in your state
+              setWorkflow(modelData);
+
+              // Upload the QRMS file to GitHub if available
+              if (item.links?.qrms) {
+                try {
+                  await uploadQRMS(item.links.qrms, item.uuid);
+                } catch (err) {
+                  console.error("QRMS upload failed:", err);
                 }
-              }}
-            >
-              Create
-            </button>
-            <button
-              className="btn btn-secondary"
-              onClick={() => { handleClose(); setModalStep(0); }}
-            >
-              Cancel
-            </button>
-          </div>
-        }
-      >
-        <div className="space-y-4">
-          <p>
-            In the next step, a job is created which can be executed on a quantum device.
-            Specify here your quantum device, the provider, and the number of shots.
-            Furthermore, add here your access token.
-          </p>
+              }
 
-          <div>
-            <label className="block font-medium mb-1">Quantum Device</label>
-            <input
-              type="text"
-              className="w-full border rounded px-3 py-2"
-              value={selectedDevice}
-              onChange={(e) => setSelectedDevice(e.target.value)}
-              placeholder="aer_simulator"
-            />
-          </div>
+              if (item.links?.serviceDeploymentModels) {
+                try {
+                  const QUANTME_NAMESPACE_PULL = "http://quantil.org/quantme/pull";
+                  await createServiceTemplates(item.links.serviceDeploymentModels, QUANTME_NAMESPACE_PULL);
 
-          <div>
-            <label className="block font-medium mb-1">Provider</label>
-            <select
-              className="w-full border rounded px-3 py-2"
-              value={provider}
-              onChange={(e) => setProvider(e.target.value)}
-            >
-              <option value="">Select a provider</option>
-              <option value="IBM">IBM</option>
-              <option value="AWS">AWS</option>
-              <option value="RIGETTI">RIGETTI</option>
-              <option value="QMWARE">QMWARE</option>
-            </select>
-          </div>
+                } catch (err) {
+                  console.error("QRMS upload failed:", err);
+                }
+              }
 
-          <div>
-            <label className="block font-medium mb-1">Number of Shots</label>
-            <input
-              type="number"
-              className="w-full border rounded px-3 py-2"
-              value={numShots}
-              onChange={(e) => setNumShots(parseInt(e.target.value))}
-              placeholder="1024"
-            />
-          </div>
+              return;
+            }
 
-          <div>
-            <label className="block font-medium mb-1">Access Token</label>
-            <input
-              type="text"
-              className="w-full border rounded px-3 py-2"
-              value={accessToken}
-              onChange={(e) => setAccessToken(e.target.value)}
-              placeholder="Your quantum provider token"
-            />
-          </div>
-        </div>
-      </Modal>
+            setIsQunicornOpen(true);
+            const resultResponse = await fetch(item.links.result);
+            if (!resultResponse.ok) throw new Error("Failed to fetch QASM result");
 
+            const qasmText = await resultResponse.text();
+            setOpenQASMCode(qasmText);
 
-      <Modal
-        title={"Qunicorn Result"}
-        open={modalStep === 3}
-        onClose={() => { handleClose(); setModalStep(0) }}
-        footer={
-          <div className="flex justify-end space-x-2">
-            <button className="btn btn-primary" onClick={() => { sendToQunicorn3() }}>Execute</button>
-            <button className="btn btn-secondary" onClick={() => { handleClose(); setModalStep(0); }}>Cancel</button>
-          </div>
-        }
-      >
+          } catch (error) {
+            console.error("Error handling execution:", error);
+          }
+        }}
+      />
 
-        <div>
-          {errorMessage || errorJobMessage ? (
-            <p className="text-red-600 font-semibold">{errorMessage || errorJobMessage}</p>
-          ) : (
-            <p>
-              The job is executed on the <strong>{selectedDevice || "unknown device"}</strong> with <strong>{numShots || "N/A"}</strong> shots.
-            </p>
-          )}
-
-          {chartData && progress === 100 && <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="register" label={{ value: "Register", position: "insideBottom", offset: 5 }} />
-              <YAxis
-                domain={[0, 100]}
-                label={{
-                  value: "Probabilities",
-                  angle: -90,
-                  dx: 0,
-                  dy: 30,
-                  position: 'insideLeft'
-                }}
-              />
-              <Tooltip />
-              <Bar dataKey="value" fill="#8884d8" />
-            </BarChart>
-          </ResponsiveContainer>}
-          <div style={{ marginTop: "20px" }}>
-            <progress value={progress} max={100} style={{ width: "100%" }} />
-            <p>{progress}%</p>
-          </div>
-        </div>
-
-      </Modal>
 
       <main className="flex flex-col lg:flex-row h-[calc(100vh_-_60px)]">
         <div className="relative flex h-[calc(100vh_-_60px)]  border-gray-200 border">
@@ -1621,18 +2050,31 @@ function App() {
           </div>
           <button
             onClick={togglePalette}
-            className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white p-2 rounded-l-lg shadow-md hover:bg-gray-600 z-50 ${isPaletteOpen ? "right-0" : "hidden"}`}
+            style={{
+              width: "24px"
+            }}
+            className={`
+    absolute top-1/2 transform -translate-y-1/2 
+    bg-gray-400 text-white p-2 rounded-l-lg shadow-md hover:bg-gray-600 z-50 
+    ${isPaletteOpen ? "right-0" : "hidden"} 
+    ${isValidationOpen ? "hidden" : ""}
+  `}
+          >
+            {isPaletteOpen ? "←" : "→"}
+          </button>
+
+          <button
+            onClick={togglePalette}
+            style={{
+              width: "24px",
+              paddingLeft: "4px"
+            }}
+            className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white p-2 rounded-r-lg shadow-md hover:bg-gray-600 z-50 ${isPaletteOpen ? "hidden" : "-left-0"} ${isValidationOpen ? "hidden" : ""}`}
           >
             {isPaletteOpen ? "←" : "→"}
           </button>
 
         </div>
-        <button
-          onClick={togglePalette}
-          className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white p-2 rounded-l-lg shadow-md hover:bg-gray-600 z-50 ${isPaletteOpen ? "hidden" : "-left-0"}`}
-        >
-          {isPaletteOpen ? "←" : "→"}
-        </button>
 
         <div
           className="h-[calc(100vh_-_60px)] flex-grow"
@@ -1644,16 +2086,19 @@ function App() {
             edges={edges}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
+            onNodeContextMenu={onNodeContextMenu}
             onNodeClick={(event: React.MouseEvent, node: Node) => {
               handleClick(event, node);
             }}
             onConnectEnd={onConnectEnd}
             onConnect={onConnect}
             onPaneClick={onPaneClick}
+            onClick={onClick}
             onDragOver={onDragOver}
             onNodeDrag={onNodeDrag}
             onNodeDragStop={onNodeDragStop}
             onDrop={onDrop}
+            onNodesDelete={onNodesDelete}
 
             fitView
             fitViewOptions={{ maxZoom: 1 }}
@@ -1692,16 +2137,27 @@ function App() {
             </>
           )}
             <Controls />
+            {toast && (
+              <Toast
+                message={toast.message}
+                type={toast.type}
+                onClose={() => setToast(null)}
+              />
+            )}
 
-            <Panel position="top-left" className="p-2">
-              <button
-                onClick={() => { setAncillaModelingOn((prev) => !prev); setAncillaMode(!ancillaModelingOn) }}
-                className={`ancilla-button px-3 py-1 rounded text-white ${ancillaModelingOn ? "bg-blue-600" : "bg-gray-400"
-                  }`}
-              >
-                Ancilla Modeling: {ancillaModelingOn ? "On" : "Off"}
-              </button>
-            </Panel>
+            <ExperienceModePanel
+              expanded={expanded}
+              onToggleExpanded={() => setExpanded(!expanded)}
+              ancillaModelingOn={ancillaModelingOn}
+              onToggleAncilla={() => { setAncillaModelingOn(!ancillaModelingOn); setAncillaMode(!ancillaModelingOn) }}
+              experienceLevel={experienceLevel}
+              onExperienceLevelChange={onExperienceLevelChange}
+              //onExperienceLevelChange={(event) => { setExperienceLevel(event); setExperienceLevelOn(event); }}
+              compactVisualization={compactVisualization}
+              onCompactVisualizationChange={() => { setCompactVisualization(!compact); setCompact(!compact) }}
+              completionGuaranteed={completionGuaranteed}
+              onCompletionGuaranteedChange={setCompletionGuaranteed}
+            />
 
             <MiniMap
               nodeClassName={(node) => {
@@ -1751,8 +2207,15 @@ function App() {
 
             <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
 
-
           </ReactFlow>
+          {contextMenu.visible && contextMenu.nodeId && (
+            <ContextMenu
+              id={contextMenu.nodeId}
+              top={contextMenu.top}
+              left={contextMenu.left}
+              onAction={handleAction}
+            />
+          )}
         </div>
 
         <div className="relative flex bg-gray-100 h-[calc(100vh_-_60px)]  border-gray-200 border">
@@ -1762,7 +2225,21 @@ function App() {
 
             <button
               onClick={togglePanel}
-              className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white p-2 rounded-l-lg shadow-md hover:bg-gray-600 z-50 ${isPanelOpen ? "left-0" : "hidden"}`}
+              style={{
+                width: "24px",
+                paddingLeft: "4px",
+              }}
+              className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white text-center p-2 rounded-r-lg shadow-md hover:bg-gray-600 z-50 ${isPanelOpen ? "-left-0" : "hidden"} ${isValidationOpen ? "hidden" : ""}`}
+            >
+
+              {isPanelOpen ? "→" : "←"}
+            </button>
+            <button
+              onClick={togglePanel}
+              style={{
+                width: "24px"
+              }}
+              className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white p-2 rounded-l-lg shadow-md hover:bg-gray-600 z-50 ${isPanelOpen ? "hidden" : "right-0"} ${isValidationOpen ? "hidden" : ""}`}
             >
               {isPanelOpen ? "→" : "←"}
             </button>
@@ -1772,12 +2249,7 @@ function App() {
           </div>
         </div>
 
-        <button
-          onClick={togglePanel}
-          className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white p-2 rounded-l-lg shadow-md hover:bg-gray-600 z-50 ${isPanelOpen ? "hidden" : "right-0"}`}
-        >
-          {isPanelOpen ? "→" : "←"}
-        </button>
+
       </main>
     </ReactFlowProvider>
   );

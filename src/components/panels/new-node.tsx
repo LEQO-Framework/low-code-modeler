@@ -498,6 +498,21 @@ export const AddNodePanel = () => {
     })
   : [];
 
+  const filterNodeGroup = (nodeGroup: any): Node[] => {
+    if (Array.isArray(nodeGroup)) {
+      return nodeGroup.filter(
+        (node: Node) =>
+          !(!ancillaMode && node.type === "ancillaNode") &&
+          (completionGuaranteed ? node.completionGuaranteed : true) &&
+          node.compactOptions.includes(compact)
+      );
+    } else {
+      return Object.values(nodeGroup).flatMap((group: any) =>
+        filterNodeGroup(group)
+      );
+    }
+  };
+
   const renderNodes = (nodeGroup: any): React.ReactNode => {
     if (Array.isArray(nodeGroup)) {
       return (
@@ -595,29 +610,38 @@ export const AddNodePanel = () => {
               Loading plugins...
             </div>
           )}
-          {Object.entries(dynamicCategories).map(([category, { content, description }]) => (
+          {Object.entries(dynamicCategories).map(
+            ([category, { content, description }]) => {
+              const visibleNodes = filterNodeGroup(content);
+              const shownDescription = (category === consts.dataTypes || category === consts.operator)?
+                              description[completionGuaranteed?1:0] : description;
+              if (visibleNodes.length === 0) return null;
 
-            <div key={category}>
-              <button
-                className={`w-full text-left py-2 px-4 font-semibold text-black-700 border-b ${activeCategory === category ? "bg-gray-100 text-primary" : "hover:bg-gray-300"
-                  }`}
-                onClick={() => toggleCategory(category)}
-
-              >
-                <div className="flex items-center gap-2">
-                  {categoryIcons[category] && (
-                    <img
-                      src={categoryIcons[category]}
-                      alt={`${category} icon`}
-                      className="w-9 h-9"
-                    />
-                  )}
-                  <span>{category}</span>
-                </div>
-                {description && (
-                  <div className="text-sm text-gray-600 mt-1 ml-11">{description}</div>
-                )}
-              </button>
+              return (
+                <div key={category}>
+                  <button
+                    className={`w-full text-left py-2 px-4 font-semibold text-black-700 border-b ${activeCategory === category
+                      ? "bg-gray-100 text-primary"
+                      : "hover:bg-gray-300"
+                      }`}
+                    onClick={() => toggleCategory(category)}
+                  >
+                    <div className="flex items-center gap-2">
+                      {categoryIcons[category] && (
+                        <img
+                          src={categoryIcons[category]}
+                          alt={`${category} icon`}
+                          className="w-9 h-9"
+                        />
+                      )}
+                      <span>{category}</span>
+                    </div>
+                    {description && (
+                      <div className="text-sm text-gray-600 mt-1 ml-11">
+                        {shownDescription}
+                      </div>
+                    )}
+                  </button>
 
               {activeCategory === category && (
                 <div className="pl-4 mt-2 space-y-4">
@@ -646,7 +670,9 @@ export const AddNodePanel = () => {
                 </div>
               )}
             </div>
-          ))}
+          );
+        }
+          )}
         </nav>
       </aside>
     </div>

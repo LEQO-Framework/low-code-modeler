@@ -17,6 +17,7 @@ const selector = (state: {
   edges: Edge[];
   nodes: Node[];
   ancillaMode: boolean;
+  completionGuaranteed: boolean;
   updateNodeValue: (nodeId: string, field: string, nodeVal: any) => void;
   setNodes: (node: Node) => void;
   setSelectedNode: (node: Node) => void;
@@ -25,6 +26,7 @@ const selector = (state: {
   edges: state.edges,
   nodes: state.nodes,
   ancillaMode: state.ancillaMode,
+  completionGuaranteed: state.completionGuaranteed,
   setNodes: state.setNodes,
   updateNodeValue: state.updateNodeValue,
   setSelectedNode: state.setSelectedNode,
@@ -32,7 +34,7 @@ const selector = (state: {
 
 export const OperationNode = memo((node: Node) => {
   const { data, selected } = node;
-  const { edges, nodes, updateNodeValue, setSelectedNode, ancillaMode } = useStore(selector, shallow);
+  const { edges, nodes, updateNodeValue, setSelectedNode, ancillaMode, completionGuaranteed } = useStore(selector, shallow);
   const alledges = getConnectedEdges([node], edges);
 
   const [inputs, setInputs] = useState(data.inputs || []);
@@ -230,10 +232,10 @@ export const OperationNode = memo((node: Node) => {
               {(node.data.label === consts.quantumLabel + "Arithmetic Operator") && (
                 <>
                   <option value="+">+</option>
-                  <option value="-">-</option>
-                  <option value="/">/</option>
-                  <option value="*">*</option>
-                  <option value="**">**</option>
+                  {!completionGuaranteed &&(<option value="-">-</option>)}
+                  {!completionGuaranteed &&( <option value="/">/</option>)}
+                  {!completionGuaranteed &&(<option value="*">*</option>)}
+                  {!completionGuaranteed &&(<option value="**">**</option>)}
                 </>
               )}
 

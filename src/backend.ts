@@ -54,6 +54,28 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                             bounds: (node.data.encodingType === "Basis Encoding") ? 0 : parseFloat(node.data.bound)
                         }
 
+                    case "Basis Encoding":
+                        return {
+                            id: node.id,
+                            type: "encode",
+                            encoding: "basis",
+                            bounds: 0
+                        }
+                    case "Angle Encoding":
+                        return {
+                            id: node.id,
+                            type: "encode",
+                            encoding: "angle",
+                            bounds: 0
+                        }
+                    case "Amplitude Encoding":
+                        return {
+                            id: node.id,
+                            type: "encode",
+                            encoding: "amplitude",
+                            bounds: parseFloat(node.data.bound)
+                        }
+
                     case "Prepare State":
                         return {
                             id: node.id,
@@ -94,7 +116,7 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
 
             // Circuit Blocks
             case consts.GateNode:
-                if (node.data.label === "Qubit") {
+                if (node.data.label === "Qubit" || node.data.label === "Qubit Circuit") {
                     return {
                         id: node.id,
                         type: "qubit"
@@ -133,14 +155,14 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                         return {
                             id: node.id,
                             type: "int",
-                            value: parseInt(node.data.value, 10)
+                            value: node.data.value
                         }
 
-                    case "float":
+                    case "Number":
                         return {
                             id: node.id,
                             type: "float",
-                            value: parseFloat(node.data.value)
+                            value: node.data.value
                         }
 
                     case "boolean":
@@ -171,12 +193,13 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                             value: node.data.value
                         }
 
-                    // Currently no Backend support
-                    case "array":
+                    case "Array":
                         return {
                             id: node.id,
-                            type: "bit",
-                            value: node.data.value
+                            type: "array",
+                            value: Array.isArray(node.data.value)
+                                ? node.data.value.map(Number)
+                                : String(node.data.value).split(",").map(Number)
                         }
                 }
                 break;

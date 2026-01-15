@@ -37,19 +37,27 @@ type RFState = {
   nodes: any;
   edges: Edge[];
   ancillaMode: boolean;
+  experienceLevel: string;
+  compact: boolean;
+  completionGuaranteed: boolean;
+  containsPlaceholder: boolean;
   selectedNode: Node | null;
   history: HistoryItem[];
   historyIndex: number;
   setNodes: (node: Node) => void;
   setEdges: (edge: Edge) => void;
   setAncillaMode: (ancillaMode: boolean) => void
+  setCompletionGuaranteed: (completionGuaranteed: boolean) => void
+  setContainsPlaceholder: (containsPlaceholder: boolean) => void
+  setCompact: (compact: boolean) => void
+  setExperienceLevel: (experienceLevel: string) => void
   setNewEdges: (newEdges: Edge[]) => void;
   onNodesChange: OnNodesChange;
   onEdgesChange: OnEdgesChange;
   onConnect: OnConnect;
   onConnectEnd: OnConnectEnd;
   updateNodeLabel: (nodeId: string, nodeVal: string) => void;
-  updateNodeValue: (nodeId: string, identifier, nodeVal: string) => void;
+  updateNodeValue: (nodeId: string, identifier, nodeVal: any) => void;
   setSelectedNode: (node: Node | null) => void;
   updateParent: (nodeId: string, parentId: string, position: any) => void;
   updateChildren: (nodeId: string, childIds: string[]) => void;
@@ -62,10 +70,13 @@ export const useStore = create<RFState>((set, get) => ({
   nodes: nodesConfig.initialNodes,
   edges: nodesConfig.initialEdges,
   ancillaMode: false,
+  compact: false,
+  completionGuaranteed: true,
+  experienceLevel: "explorer",
   selectedNode: null,
   history: [],
   historyIndex: -1,
-
+  containsPlaceholder: false,
   setSelectedNode: (node: Node | null) => {
     set({
       selectedNode: node,
@@ -199,6 +210,88 @@ export const useStore = create<RFState>((set, get) => ({
       edges: currentEdges,
     });
   },
+  setExperienceLevel: (experienceLevel: string) => {
+    set({
+      experienceLevel
+    });
+  },
+  setContainsPlaceholder: (containsPlaceholder: boolean) => {
+    set({
+      containsPlaceholder
+    });
+  },
+  setCompact: (compact: boolean) => {
+    const currentNodes = get().nodes.map(node => {
+      let newNode = { ...node };
+
+      // handle compact change
+      if (compact && (node.data.label === "Basis Encoding" || node.data.label === "Angle Encoding" || node.data.label === "Amplitude Encoding")) {
+        newNode = {
+          ...newNode,
+          data: { ...newNode.data, label: "Encode Value" },
+          hidden: false
+        };
+      } else if (!compact && node.data.label === "Encode Value") {
+        // Restore original encoding type when leaving compact mode
+        const originalLabel = node.data.encodingType || "Encode Value";
+        newNode = {
+          ...newNode,
+          data: { ...newNode.data, label: originalLabel },
+          hidden: false
+        };
+      } else {
+
+        const hideNode = !node.data.compactOptions?.includes(compact);
+        newNode = { ...newNode, hidden: hideNode };
+      }
+
+      return newNode;
+    });
+
+    const hiddenNodeIds = new Set(
+      currentNodes.filter(n => n.hidden).map(n => n.id)
+    );
+
+    const currentEdges = get().edges.map(edge => {
+      if (hiddenNodeIds.has(edge.source) || hiddenNodeIds.has(edge.target)) {
+        return { ...edge, hidden: true };
+      }
+      return { ...edge, hidden: false };
+    });
+
+    set({
+      compact,
+      nodes: currentNodes,
+      edges: currentEdges
+    });
+  },
+  setCompletionGuaranteed: (completionGuaranteed: boolean) => {
+
+    const currentNodes = get().nodes.map(node => {
+      if (!node.data.completionGuaranteed) {
+        return { ...node, hidden: completionGuaranteed };
+      }
+      return { ...node, hidden: false };
+    });
+    const hiddenNodeIds = new Set(
+      currentNodes.filter(n => n.hidden).map(n => n.id)
+    );
+    const currentEdges = get().edges.map(edge => {
+      if (
+        hiddenNodeIds.has(edge.source) ||
+        hiddenNodeIds.has(edge.target)
+      ) {
+        return { ...edge, hidden: true };
+      }
+      return { ...edge, hidden: false };
+    });
+
+    set({
+      completionGuaranteed,
+      edges: currentEdges,
+      nodes: currentNodes
+    });
+  },
 
   setNewEdges: (newEdges: Edge[]) => {
     const currentNodes = get().nodes;
@@ -258,15 +351,30 @@ export const useStore = create<RFState>((set, get) => ({
     console.log("Current Edges:", currentEdges);
     console.log("New History Item:", newHistoryItem);
 
-    set({
-      nodes: currentNodes,
-      edges: currentEdges,
-      history: [
-        ...get().history.slice(0, get().historyIndex + 1),
-        newHistoryItem,
-      ],
-      historyIndex: get().historyIndex + 1,
-    });
+    if (get().nodes.length < currentNodes) {
+      set({
+        selectedNode: null,
+        nodes: currentNodes,
+        edges: currentEdges,
+        history: [
+          ...get().history.slice(0, get().historyIndex + 1),
+          newHistoryItem,
+        ],
+        historyIndex: get().historyIndex + 1,
+      });
+    } else {
+
+      set({
+        selectedNode: null,
+        nodes: currentNodes,
+        edges: currentEdges,
+        history: [
+          ...get().history.slice(0, get().historyIndex + 1),
+          newHistoryItem,
+        ],
+        historyIndex: get().historyIndex + 1,
+      });
+    }
     console.log("History after update:", get().history);
     console.log("Current historyIndex:", get().historyIndex);
   },
@@ -664,7 +772,7 @@ export const useStore = create<RFState>((set, get) => ({
     console.log("Current historyIndex:", get().historyIndex);
   },
 
-  updateNodeValue: (nodeId: string, identifier: string, nodeVal: string) => {
+  updateNodeValue: (nodeId: string, identifier: string, nodeVal: any) => {
     console.log("Updating node value for:", nodeId);
     console.log("Identifier:", identifier, "New Value:", nodeVal);
 

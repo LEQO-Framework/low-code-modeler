@@ -24,11 +24,11 @@ export const MergerNode = memo((node: Node) => {
   let { edges, setEdges, setNewEdges } = useStore(selector, shallow);
   const [edgesGraph, setEdgesGraph] = useState(edges);
 
-  const numberInputs = data.numberInputs||1;
+  const numberInputs = data.numberInputs||2;
   const numberOutputs = data.numberOutputs || 1;
 
-  const handleCount = Math.max(numberInputs, 1);
-  console.log(handleCount)
+  const handleCount = Math.max(numberInputs, 2);
+  console.log("handle count", handleCount)
 
   const handleGap = 40;
   const handleOffset = 85;
@@ -50,7 +50,7 @@ export const MergerNode = memo((node: Node) => {
       isConnectableStart={false}
     />
   ));
-
+  console.log("input handles", inputHandles)
   const outputHandles = Array.from({ length: numberOutputs }, (_, i) => (
     <Handle
       key={`output-${i}`}
@@ -72,6 +72,7 @@ export const MergerNode = memo((node: Node) => {
 
   useEffect(() => {
     updateNodeInternals(node.id);
+    console.log("useEffect inputHandles", inputHandles)
 
     const edgesToRemove = edges.filter((edge) => {
       const match = edge.targetHandle?.match(

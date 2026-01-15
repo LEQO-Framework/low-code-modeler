@@ -110,6 +110,24 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        ArrayLiteralNode: {
+            /** Id */
+            id: string;
+            /** Label */
+            label?: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "array";
+            /**
+             * Bitsize
+             * @default 32
+             */
+            bitSize?: number;
+            /** Value */
+            value: any[];
+        };
         /** AncillaNode */
         AncillaNode: {
             /** Id */
@@ -165,7 +183,7 @@ export interface components {
         CompileRequest: {
             metadata: components["schemas"]["MetaData"];
             /** Nodes */
-            nodes: (components["schemas"]["ImplementationNode"] | components["schemas"]["QubitNode"] | components["schemas"]["EncodeValueNode"] | components["schemas"]["PrepareStateNode"] | components["schemas"]["SplitterNode"] | components["schemas"]["MergerNode"] | components["schemas"]["MeasurementNode"] | components["schemas"]["GateNode"] | components["schemas"]["ParameterizedGateNode"] | components["schemas"]["BitLiteralNode"] | components["schemas"]["BoolLiteralNode"] | components["schemas"]["IntLiteralNode"] | components["schemas"]["FloatLiteralNode"] | components["schemas"]["AncillaNode"] | components["schemas"]["IfThenElseNode"] | components["schemas"]["RepeatNode"] | components["schemas"]["OperatorNode"] | components["schemas"]["PluginNode"])[];
+            nodes: (components["schemas"]["ImplementationNode"] | components["schemas"]["ArrayLiteralNode"] | components["schemas"]["QubitNode"] | components["schemas"]["EncodeValueNode"] | components["schemas"]["PrepareStateNode"] | components["schemas"]["SplitterNode"] | components["schemas"]["MergerNode"] | components["schemas"]["MeasurementNode"] | components["schemas"]["GateNode"] | components["schemas"]["ParameterizedGateNode"] | components["schemas"]["BitLiteralNode"] | components["schemas"]["BoolLiteralNode"] | components["schemas"]["IntLiteralNode"] | components["schemas"]["FloatLiteralNode"] | components["schemas"]["AncillaNode"] | components["schemas"]["IfThenElseNode"] | components["schemas"]["RepeatNode"] | components["schemas"]["OperatorNode"] | components["schemas"]["PluginNode"])[];
             /** Edges */
             edges: components["schemas"]["Edge"][];
             compilation_target: string;
@@ -301,7 +319,7 @@ export interface components {
              */
             bitSize?: number;
             /** Value */
-            value: number;
+            value: number | string;
         };
         /** MeasurementNode */
         MeasurementNode: {
@@ -352,7 +370,7 @@ export interface components {
         /** NestedBlock */
         NestedBlock: {
             /** Nodes */
-            nodes: (components["schemas"]["ImplementationNode"] | components["schemas"]["QubitNode"] | components["schemas"]["EncodeValueNode"] | components["schemas"]["PrepareStateNode"] | components["schemas"]["SplitterNode"] | components["schemas"]["MergerNode"] | components["schemas"]["MeasurementNode"] | components["schemas"]["GateNode"] | components["schemas"]["ParameterizedGateNode"] | components["schemas"]["BitLiteralNode"] | components["schemas"]["BoolLiteralNode"] | components["schemas"]["IntLiteralNode"] | components["schemas"]["FloatLiteralNode"] | components["schemas"]["AncillaNode"] | components["schemas"]["IfThenElseNode"] | components["schemas"]["RepeatNode"] | components["schemas"]["OperatorNode"])[];
+            nodes: (components["schemas"]["ImplementationNode"] | components["schemas"]["QubitNode"] | components["schemas"]["ArrayLiteralNode"] | components["schemas"]["EncodeValueNode"] | components["schemas"]["PrepareStateNode"] | components["schemas"]["SplitterNode"] | components["schemas"]["MergerNode"] | components["schemas"]["MeasurementNode"] | components["schemas"]["GateNode"] | components["schemas"]["ParameterizedGateNode"] | components["schemas"]["BitLiteralNode"] | components["schemas"]["BoolLiteralNode"] | components["schemas"]["IntLiteralNode"] | components["schemas"]["FloatLiteralNode"] | components["schemas"]["AncillaNode"] | components["schemas"]["IfThenElseNode"] | components["schemas"]["RepeatNode"] | components["schemas"]["OperatorNode"])[];
             /** Edges */
             edges: components["schemas"]["Edge"][];
         };
