@@ -846,9 +846,20 @@ export const useStore = create<RFState>((set, get) => ({
     console.log("Updating node value for:", nodeId);
     console.log("Identifier:", identifier, "New Value:", nodeVal);
     const getOutputIndex = (sourceHandle: String, nodeDataSource: Node) => {
+
       const tmpHandle = sourceHandle.split(nodeDataSource.id)[0];
-      const outputIndex = tmpHandle.match(/\d+$/)[0];
-      return parseInt(outputIndex, 10);
+
+      if (!tmpHandle) {
+        return null;
+      }
+
+      const match = tmpHandle.match(/\d+$/);
+
+      if (!match) {
+        return null;
+      }
+
+      return parseInt(match[0], 10);
     };
 
 

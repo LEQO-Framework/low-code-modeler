@@ -251,7 +251,7 @@ export const AlgorithmNode = memo((node: Node) => {
                 />
               ) : (
                 <span
-                  className="truncate font-semibold leading-none cursor-pointer"
+                  className="font-semibold leading-none cursor-pointer"
                   style={{ paddingLeft: "25px" }}
                   onClick={() => setIsEditingLabel(true)}
                 >
