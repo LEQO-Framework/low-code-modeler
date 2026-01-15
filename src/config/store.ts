@@ -564,7 +564,12 @@ export const useStore = create<RFState>((set, get) => ({
       console.log("sourceHandle", connection.sourceHandle)
       console.log("index", outputIndex)
       console.log(nodeDataSource.data.outputs?.[outputIndex]?.identifier)
-      const sourceOutputIdentifier = nodeDataSource.data.outputs?.[outputIndex]?.identifier || nodeDataSource.data.outputIdentifier
+      var sourceOutputIdentifier = "";
+      if(nodeDataSource.type === "algorithmNode" || nodeDataSource.type === "classicalAlgorithmNode" || nodeDataSource.type === "measurementNode") {
+        sourceOutputIdentifier = nodeDataSource.data.outputs?.[outputIndex]?.identifier 
+      } else {
+        sourceOutputIdentifier = nodeDataSource.data.outputs?.[outputIndex]?.identifier ?? nodeDataSource.data?.outputIdentifier
+      }
       if (existingInput) {
         
         // Update the existing entry
@@ -639,7 +644,12 @@ export const useStore = create<RFState>((set, get) => ({
             console.log("index", outputIndex)
             const sourceNode = currentNodes.find(n => n.id === edge.source)
             console.log(sourceNode.data.outputs?.[outputIndex]?.identifier)
-            const sourceOutputIdentifier = nodeDataSource.data.outputs?.[outputIndex]?.identifier || nodeDataSource.data.outputIdentifier
+            var sourceOutputIdentifier = "";
+            if(nodeDataSource.type === "algorithmNode" || nodeDataSource.type === "classicalAlgorithmNode" || nodeDataSource.type === "measurementNode") {
+              sourceOutputIdentifier = nodeDataSource.data.outputs?.[outputIndex]?.identifier 
+            } else {
+              sourceOutputIdentifier = nodeDataSource.data.outputs?.[outputIndex]?.identifier ?? nodeDataSource.data?.outputIdentifier
+            }
             nodeDataTarget.data.inputs.push({
               id: nodeDataSource.id,
               outputIdentifier: sourceOutputIdentifier, 
@@ -683,8 +693,13 @@ export const useStore = create<RFState>((set, get) => ({
             const outputIndex = getOutputIndex(sourceHandle, sourceNode);
             console.log("sourceHandle", sourceHandle)
             console.log("index", outputIndex)
-            console.log()
-            const sourceOutputIdentifier = sourceNode.data.outputs?.[outputIndex]?.identifier || sourceNode?.data?.outputIdentifier
+            var sourceOutputIdentifier = "";
+            if(sourceNode.type === "algorithmNode" || sourceNode.type === "classicalAlgorithmNode" || sourceNode.type === "measurementNode") {
+              sourceOutputIdentifier = sourceNode.data.outputs?.[outputIndex]?.identifier 
+            } else {
+              sourceOutputIdentifier = sourceNode.data.outputs?.[outputIndex]?.identifier ?? sourceNode?.data?.outputIdentifier
+            }
+            console.log("sourceNode", sourceNode)
 
             console.log(sourceIdentifier)
 
@@ -830,16 +845,21 @@ export const useStore = create<RFState>((set, get) => ({
             console.log(sourceIdentifier)
             const sourceHandle = edge.sourceHandle;
             const outputIndex = getOutputIndex(sourceHandle, sourceNode);
-            const sourceOutputIdentifier = sourceNode.data.outputs?.[outputIndex]?.identifier || nodeVal ;
-            console.log("sourceHandle", sourceHandle)
-            console.log("index", outputIndex)
-            console.log("source Output Identifier", sourceOutputIdentifier)
-            console.log("source node", sourceNode)
+            var sourceOutputIdentifier = "";
+            if(sourceNode.type === "algorithmNode" || sourceNode.type === "classicalAlgorithmNode" || sourceNode.type === "measurementNode") {
+              sourceOutputIdentifier = sourceNode.data.outputs?.[outputIndex]?.identifier;
+            } else {
+              sourceOutputIdentifier = sourceNode.data.outputs?.[outputIndex]?.identifier ?? nodeVal;
+            }
+            console.log("sourceHandle", sourceHandle);
+            console.log("index", outputIndex);
+            console.log("source Output Identifier", sourceOutputIdentifier);
+            console.log("source node", sourceNode);
 
             if (!targetData.inputs) targetData.inputs = [];
 
             const inputIndex = targetData.inputs.findIndex((input) => (input.id === nodeId && edge.targetHandle === input.targetHandle));
-            console.log("inputIndex", inputIndex)
+            console.log("inputIndex", inputIndex);
 
             if (identifier === "outputIdentifier") {
               console.log("erstes if")
