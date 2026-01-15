@@ -76,29 +76,52 @@ export const ClassicalOperationNode = memo((node: Node) => {
         ? `classicalHandleOperationInput0${node.id}`
         : `classicalHandleOperationInput1${node.id}`;
 
+    // Check if this input is connected
     const edge = edges.find(
       (e) => e.target === node.id && e.targetHandle === handleId
     );
-    if (node.data.label === consts.classicalLabel + consts.minMaxOperatorLabel) {
-      return "array";
-    }
 
-    // 1. Infer from connection
     if (edge) {
       const sourceNode = nodes.find((n) => n.id === edge.source);
       if (sourceNode) {
         if (sourceNode.type === "dataTypeNode") {
           return sourceNode.data?.dataType ?? "any";
         }
+        // Optionally infer type from source node outputs
+        if (sourceNode.data?.outputs?.[0]?.value) {
+          return typeof sourceNode.data.outputs[0].value;
+        }
       }
     }
 
-    // 2. Operator-based fallback
+    // If not connected, check the **other input**
+    const otherIndex = inputIndex === 0 ? 1 : 0;
+    const otherHandleId = `classicalHandleOperationInput${otherIndex}${node.id}`;
+    const otherEdge = edges.find(
+      (e) => e.target === node.id && e.targetHandle === otherHandleId
+    );
+
+    if (otherEdge) {
+      const otherSourceNode = nodes.find((n) => n.id === otherEdge.source);
+      if (otherSourceNode) {
+        if (otherSourceNode.type === "dataTypeNode") {
+          return otherSourceNode.data?.dataType ?? "any";
+        }
+        if (otherSourceNode.data?.outputs?.[0]?.value) {
+          return typeof otherSourceNode.data.outputs[0].value;
+        }
+      }
+    }
+
+    // Operator-based fallback
     if (node.data.label === consts.classicalLabel + consts.bitwiseOperatorLabel) {
       return "bit";
     }
+    if (node.data.label === consts.classicalLabel + consts.minMaxOperatorLabel) {
+      return "array";
+    }
 
-    return "any"; // arithmetic, comparison, min/max
+    return "any"; // Default
   };
 
 

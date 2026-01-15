@@ -77,6 +77,7 @@ export const useStore = create<RFState>((set, get) => ({
   history: [],
   historyIndex: -1,
   containsPlaceholder: false,
+
   setSelectedNode: (node: Node | null) => {
     set({
       selectedNode: node,
@@ -407,6 +408,68 @@ export const useStore = create<RFState>((set, get) => ({
   },
 
   onConnect: (connection: Connection) => {
+    const getNodeLockedType = (nodeId: string): string => {
+      const node = get().nodes.find(n => n.id === nodeId);
+      if (!node || !node.data.inputs) return "any";
+      if(node.type === consts.AlgorithmNode || node.type === consts.ClassicalAlgorithmNode){
+        return "any"
+      }
+
+      // Find the first input that has a type other than "any"
+      for (const input of node.data.inputs) {
+        const sourceNode = get().nodes.find(n => n.id === input.id);
+        if (!sourceNode) continue;
+
+        let type = "any";
+        if (sourceNode.type === "dataTypeNode") type = sourceNode.data?.dataType ?? "any";
+        else if (sourceNode.type === "ClassicalOperationNode") {
+          type = getNodeLockedType(sourceNode.id);
+        }
+
+        if (type !== "any") return type;
+      }
+
+      return "any"; // no locked type yet
+    };
+
+    const getNodeOutputType = (nodeId: string, handleId: string) => {
+      const sourceNode = get().nodes.find(n => n.id === nodeId);
+      if (!sourceNode) return "any";
+
+      // If it's a dataTypeNode, return its type
+      if (sourceNode.type === "dataTypeNode") return sourceNode.data?.dataType ?? "any";
+
+      // Otherwise, infer from operator type
+      if (sourceNode.type === "classicalAlgorithmNode" || sourceNode.type === "ClassicalAlgorithmNode") {
+        if (sourceNode.data.label === "Classical Arithmetic Operator") return "number";
+        if (sourceNode.data.label === "Classical Bitwise Operator") return "bit";
+        if (sourceNode.data.label === "Classical Min & Max Operator") return "array";
+        if (sourceNode.data.label === "Classical Comparison Operator") return "number";
+      }
+
+      if (sourceNode.type === consts.ClassicalOperatorNode || sourceNode.type === "ClassicalAlgorithmNode") {
+        if (sourceNode.data.label === "Classical Arithmetic Operator") return "number";
+        if (sourceNode.data.label === "Classical Bitwise Operator") return "bit";
+        if (sourceNode.data.label === "Classical Min & Max Operator") return "array";
+        if (sourceNode.data.label === "Classical Comparison Operator") return "number";
+      }
+
+
+      // fallback
+      return "any";
+    };
+
+    const getNodeInputType = (nodeId: string, handleId: string) => {
+      const targetNode = get().nodes.find(n => n.id === nodeId);
+      if (!targetNode) return "any";
+
+      // Find input corresponding to this handle
+      const input = targetNode.data.inputs?.find((i: any) => i.id === handleId);
+      if (!input) return "any";
+
+      return input.dataType ?? "any"; // fallback to any
+    };
+
     const currentNodes = get().nodes;
     const ancillaMode = get().ancillaMode;
     console.log(connection)
@@ -536,7 +599,8 @@ export const useStore = create<RFState>((set, get) => ({
         insertEdge = true;
       }
     }
-    // Überprüfung: Existiert bereits eine Edge zur connection.targetHandle?
+
+
     const edgeExists = currentEdges.some(edge =>
       edge.targetHandle === connection.targetHandle && nodeDataTarget.type !== "mergerNode"
     );
@@ -563,6 +627,36 @@ export const useStore = create<RFState>((set, get) => ({
     console.log("Current Nodes:", currentNodes);
     console.log("Current Edges:", get().edges);
     console.log("New History Item:", newHistoryItem);
+    // TYPE CHECK
+    let sourceType = getNodeOutputType(connection.source, connection.sourceHandle);
+    const targetType = getNodeInputType(connection.target, connection.targetHandle);
+
+    // If types are incompatible, reject connection
+    if (targetType !== "any" && sourceType !== "any" && sourceType !== targetType) {
+      console.log(`Type mismatch: ${sourceType} -> ${targetType}, connection rejected`);
+      return false; // reject edge
+    }
+    const targetNode = get().nodes.find(n => n.id === connection.target);
+    if (!targetNode) return false;
+
+    const lockedType = getNodeLockedType(targetNode.id);
+
+    const sourceNode = get().nodes.find(n => n.id === connection.source);
+
+    if (sourceNode) {
+      if (sourceNode.type === "dataTypeNode") sourceType = sourceNode.data?.dataType ?? "any";
+      else if (sourceNode.type === "ClassicalOperationNode") sourceType = getNodeLockedType(sourceNode.id);
+    }
+
+    // If the target node already has a locked type, new input must match
+    if (lockedType !== "any" && sourceType !== "any" && sourceType !== lockedType) {
+      console.warn(`Cannot connect: type "${sourceType}" does not match locked type "${lockedType}"`);
+      return false;
+    }
+
+
+
+
 
     if (insertEdge && !edgeExists) {
 
@@ -1042,3 +1136,5 @@ export const useStore = create<RFState>((set, get) => ({
     console.log("Updated state after redo:", get());
   },
 }));
+
+
