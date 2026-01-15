@@ -90,7 +90,7 @@ export const OperationNode = memo((node: Node) => {
     updateNodeValue(node.id, field, value);
     //setSelectedNode(node);
   };
-  
+
 
   // 1. Validate output identifier on change
   const [operatorInitialized, setOperatorInitialized] = useState(false);
@@ -99,9 +99,9 @@ export const OperationNode = memo((node: Node) => {
   useEffect(() => {
     if (!operatorInitialized && node.data.operator === undefined) {
       let defaultOperator = "+";
-      if (node.data.label === consts.quantumLabel +consts.bitwiseOperatorLabel) defaultOperator = "OR";
-      else if (node.data.label === consts.quantumLabel +consts.comparisonOperatorLabel) defaultOperator = "<";
-      else if (node.data.label !== consts.quantumLabel +consts.arithmeticOperatorLabel) defaultOperator = "min";
+      if (node.data.label === consts.quantumLabel + consts.bitwiseOperatorLabel) defaultOperator = "OR";
+      else if (node.data.label === consts.quantumLabel + consts.comparisonOperatorLabel) defaultOperator = "<";
+      else if (node.data.label !== consts.quantumLabel + consts.arithmeticOperatorLabel) defaultOperator = "min";
 
       updateNodeValue(node.id, "operator", defaultOperator);
       setOperatorInitialized(true);
@@ -121,14 +121,14 @@ export const OperationNode = memo((node: Node) => {
     const startsWithDigit = /^\d/.test(identifier);
     if (startsWithDigit) {
       setStartsWithDigitError(true);
-    }else{
+    } else {
       setStartsWithDigitError(false);
     }
 
   }, [nodes, node.data.outputIdentifier, node.id, ancillaMode]);
 
-  const baseHeight = 550;
-  const dynamicHeight = baseHeight ;
+  const baseHeight = 650;
+  const dynamicHeight = baseHeight;
 
   const iconMap = {
     "Quantum Arithmetic Operator": 'arithmeticIcon.png',
@@ -136,7 +136,7 @@ export const OperationNode = memo((node: Node) => {
     "Quantum Min & Max Operator": 'minMaxIcon.png',
     "Quantum Comparison Operator": 'comparisonIcon.png',
   };
-  
+
   const label = data.label;
   const iconSrc = iconMap[label];
   const iconSizeMap = {
@@ -147,55 +147,50 @@ export const OperationNode = memo((node: Node) => {
   };
 
   return (
-    <motion.div
-      className="grand-parent"
-      initial={false}
-      animate={{ width: showingChildren ? 360 : 320, height: showingChildren ? 400 : 373 }}
-      transition={{ duration: 0.3, ease: "easeInOut" }}
-    >
+
       <div className="grand-parent">
         {outputIdentifierError && (
-            <div className="absolute top-2 right-[-40px] group z-20">
-              <AlertCircle className="text-red-600 w-5 h-5" />
-              <div className="absolute top-5 left-[25px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
-                Identifier is not unique.
-              </div>
+          <div className="absolute top-2 right-[-40px] group z-20">
+            <AlertCircle className="text-red-600 w-5 h-5" />
+            <div className="absolute top-5 left-[25px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
+              Identifier is not unique.
             </div>
-          )}
+          </div>
+        )}
 
-          {startsWithDigitError && (
-            <div className="absolute top-2 right-[-40px] group z-20">
-              <AlertCircle className="text-red-600 w-5 h-5" />
-              <div
-                className="absolute left-[25px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap"
-                style={{
-                  top: !outputIdentifierError ? '35px' : '50px',
-                }}
-              >
-                Identifier starts with a number.
-              </div>
+        {startsWithDigitError && (
+          <div className="absolute top-2 right-[-40px] group z-20">
+            <AlertCircle className="text-red-600 w-5 h-5" />
+            <div
+              className="absolute left-[25px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap"
+              style={{
+                top: !outputIdentifierError ? '35px' : '50px',
+              }}
+            >
+              Identifier starts with a number.
             </div>
-          )}
+          </div>
+        )}
 
-          {sizeError && (
-            <div className="absolute top-2 right-[-40px] group z-20">
-              <AlertCircle className="text-red-600 w-5 h-5" />
-              <div
-                className="absolute left-[25px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap"
-                style={{
-                  top: !(outputIdentifierError || startsWithDigitError) ? '35px' : '80px',
-                }}
-              >
-                Size is not an integer.
-              </div>
+        {sizeError && (
+          <div className="absolute top-2 right-[-40px] group z-20">
+            <AlertCircle className="text-red-600 w-5 h-5" />
+            <div
+              className="absolute left-[25px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap"
+              style={{
+                top: !(outputIdentifierError || startsWithDigitError) ? '35px' : '80px',
+              }}
+            >
+              Size is not an integer.
             </div>
-          )}
+          </div>
+        )}
         <div
           className={cn(
             "w-[320px] bg-white border border-solid border-gray-700 shadow-md",
             selected && "border-blue-500"
           )}
-          style={{ height: !ancillaMode ? '355px' : `${dynamicHeight}px` }}
+          style={{ height: !ancillaMode ? '375px' : `${dynamicHeight}px` }}
         >
           <div className="w-full flex items-center" style={{ height: '52px' }}>
             {node.data.implementation && (
@@ -206,7 +201,7 @@ export const OperationNode = memo((node: Node) => {
               />
             )}
             <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
-               {(() => {
+              {(() => {
                 const { width, height } = iconSizeMap[node.data.label];
                 return (
                   <img
@@ -232,14 +227,14 @@ export const OperationNode = memo((node: Node) => {
               {(node.data.label === consts.quantumLabel + "Arithmetic Operator") && (
                 <>
                   <option value="+">+</option>
-                  {!completionGuaranteed &&(<option value="-">-</option>)}
-                  {!completionGuaranteed &&( <option value="/">/</option>)}
-                  {!completionGuaranteed &&(<option value="*">*</option>)}
-                  {!completionGuaranteed &&(<option value="**">**</option>)}
+                  {!completionGuaranteed && (<option value="-">-</option>)}
+                  {!completionGuaranteed && (<option value="/">/</option>)}
+                  {!completionGuaranteed && (<option value="*">*</option>)}
+                  {!completionGuaranteed && (<option value="**">**</option>)}
                 </>
               )}
 
-              {(node.data.label === consts.quantumLabel +"Bitwise Operator") && (
+              {(node.data.label === consts.quantumLabel + "Bitwise Operator") && (
                 <>
                   <option value="|">OR</option>
                   <option value="&">AND</option>
@@ -248,7 +243,7 @@ export const OperationNode = memo((node: Node) => {
                 </>
               )}
 
-              {(node.data.label === consts.quantumLabel +"Comparison Operator") && (
+              {(node.data.label === consts.quantumLabel + "Comparison Operator") && (
                 <>
                   <option value="<">&lt;</option>
                   <option value=">">&gt;</option>
@@ -259,7 +254,7 @@ export const OperationNode = memo((node: Node) => {
                 </>
               )}
 
-              {(node.data.label === consts.quantumLabel +"Min & Max Operator") && (
+              {(node.data.label === consts.quantumLabel + "Min & Max Operator") && (
                 <>
                   <option value="min">Min</option>
                   <option value="max">Max</option>
@@ -287,28 +282,43 @@ export const OperationNode = memo((node: Node) => {
                   className="z-10 circle-port-op !bg-blue-300 !border-black -left-[8px]"
                   style={{ top: '50%', transform: 'translateY(-50%)' }}
                 />
-                <span className="text-black text-sm text-center w-full">{node.data.inputs[0]?.outputIdentifier || "Input 1"}</span>
+                <div className="flex flex-col w-full text-center leading-tight">
+                  <span className="text-black text-sm">
+                    {node.data.inputs[0]?.outputIdentifier || "Input 1"}
+                  </span>
+                  <span className="text-[10px] text-gray-600">
+                    type: quantum register
+                  </span>
+                </div>
+
               </div>
               {node.data.label !== consts.quantumLabel + consts.minMaxOperatorLabel && (
-              <div
-                className="relative p-2 mb-1"
-                style={{
-                  backgroundColor: consts.quantumConstructColor,
-                  width: '120px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'flex-start',
-                }}
-              >
-                <Handle
-                  type="target"
-                  id={`quantumHandleOperationInput1${node.id}`}
-                  position={Position.Left}
-                  className="z-10 circle-port-op !bg-blue-300 !border-black -left-[8px]"
-                  style={{ top: '50%', transform: 'translateY(-50%)' }}
-                />
-                <span className="text-black text-sm text-center w-full">{node.data.inputs[1]?.outputIdentifier || "Input 2"}</span>
-              </div>
+                <div
+                  className="relative p-2 mb-1"
+                  style={{
+                    backgroundColor: consts.quantumConstructColor,
+                    width: '120px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'flex-start',
+                  }}
+                >
+                  <Handle
+                    type="target"
+                    id={`quantumHandleOperationInput1${node.id}`}
+                    position={Position.Left}
+                    className="z-10 circle-port-op !bg-blue-300 !border-black -left-[8px]"
+                    style={{ top: '50%', transform: 'translateY(-50%)' }}
+                  />
+                  <div className="flex flex-col w-full text-center leading-tight">
+                    <span className="text-black text-sm">
+                      {node.data.inputs[1]?.outputIdentifier || "Input 2"}
+                    </span>
+                    <span className="text-[10px] text-gray-600">
+                      type: quantum register
+                    </span>
+                  </div>
+                </div>
               )}
               {ancillaMode && (<div>
                 <div
@@ -376,7 +386,7 @@ export const OperationNode = memo((node: Node) => {
           </div>
 
           <div className="custom-node-port-out">
-            {(node.data.label === consts.quantumLabel +"Arithmetic Operator" || node.data.label === consts.quantumLabel + "Bitwise Operator") && (
+            {(node.data.label === consts.quantumLabel + "Arithmetic Operator" || node.data.label === consts.quantumLabel + "Bitwise Operator") && (
               <>
                 <OutputPort
                   node={node}
@@ -396,7 +406,7 @@ export const OperationNode = memo((node: Node) => {
                 />
               </>
             )}
-            {(node.data.label === consts.quantumLabel +"Comparison Operator" || node.data.label === consts.quantumLabel + "Min & Max Operator") && (
+            {(node.data.label === consts.quantumLabel + "Comparison Operator" || node.data.label === consts.quantumLabel + "Min & Max Operator") && (
               <>
                 <OutputPort
                   node={node}
@@ -439,6 +449,5 @@ export const OperationNode = memo((node: Node) => {
           </div>)}
         </div>
       </div>
-    </motion.div>
   );
 });
