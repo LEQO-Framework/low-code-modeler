@@ -88,6 +88,21 @@ export const AlgorithmNode = memo((node: Node) => {
   const isDirtyAncillaConnected = edges.some(
     edge => edge.target === node.id && edge.targetHandle === `${dirtyAncillaHandle}OperationInput3${node.id}`
   );
+    const getInputType = (inputIndex: number) => {
+    const handleId = `quantumHandleOperationInput${inputIndex}${node.id}`;
+
+    const edge = edges.find(e => e.targetHandle === handleId);
+    if (!edge) return "any";
+
+    const sourceNode = nodes.find(n => n.id === edge.source);
+    if (!sourceNode) return "any";
+
+    if (sourceNode.type === "dataTypeNode") {
+      return sourceNode.data?.dataType ?? "any";
+    }
+
+    return "any";
+  };
 
 
   useEffect(() => {
@@ -273,9 +288,14 @@ export const AlgorithmNode = memo((node: Node) => {
                         className="z-10 classical-circle-port-hex-out !bg-orange-300 !border-black -left-[8px]"
                         style={{ top: "50%", transform: "translateY(-50%)" }}
                       />
-                      <span className="text-black text-sm text-center w-full">
-                        {node.data.inputs?.[index]?.outputIdentifier || `Input ${index + 1}`}
-                      </span>
+                      <div className="flex flex-col text-center w-full leading-tight">
+                <span className="text-black text-sm">
+                  {node.data.inputs?.[index]?.outputIdentifier || `Input ${index + 1}`}
+                </span>
+                <span className="text-[10px] text-gray-600">
+                  type: {getInputType(index)}
+                </span>
+              </div>
                     </div>
                   ))}
                   {Array.from({ length: numberQuantumInputs }).map((_, index) => (

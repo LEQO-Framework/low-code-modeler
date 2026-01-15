@@ -50,9 +50,6 @@ export const ClassicalOperationNode = memo((node: Node) => {
     setOutputs([...outputs, { id: newOutputId, label: `Output ${outputs.length + 1}`, value: "" }]);
   };
 
-  const handleOutputChange = (id, newValue) => {
-    setOutputs(outputs.map((output) => (output.id === id ? { ...output, value: newValue } : output)));
-  };
   const handleYChange = (e, field) => {
     const value = e.target.value;
     node.data[field] = value;
@@ -60,20 +57,7 @@ export const ClassicalOperationNode = memo((node: Node) => {
     setSelectedNode(node);
     setY(value);
   };
-  const handleOutputIdentifierChange = (e, field) => {
-    const value = e.target.value;
 
-    // Check if the first character is a number
-    if (/^\d/.test(value)) {
-      setOutputIdentifierError(true);
-    } else {
-      setOutputIdentifierError(false);
-    }
-
-    node.data[field] = value;
-    updateNodeValue(node.id, field, value);
-    //setSelectedNode(node);
-  };
   const inputTypesMatch = (): boolean => {
     if (node.data.label === consts.classicalLabel + consts.bitwiseOperatorLabel) {
       return true; // fixed type: bit
@@ -95,6 +79,9 @@ export const ClassicalOperationNode = memo((node: Node) => {
     const edge = edges.find(
       (e) => e.target === node.id && e.targetHandle === handleId
     );
+    if (node.data.label === consts.classicalLabel + consts.minMaxOperatorLabel) {
+      return "array";
+    }
 
     // 1. Infer from connection
     if (edge) {
@@ -135,7 +122,7 @@ export const ClassicalOperationNode = memo((node: Node) => {
 
   const baseHeight = 400;
   const extraHeightPerVariable = 20;
-  const dynamicHeight = baseHeight ;
+  const dynamicHeight = baseHeight;
 
   const iconMap = {
     "Classical Arithmetic Operator": 'classicalArithmeticIcon.png',
