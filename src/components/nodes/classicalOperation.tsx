@@ -74,6 +74,46 @@ export const ClassicalOperationNode = memo((node: Node) => {
     updateNodeValue(node.id, field, value);
     //setSelectedNode(node);
   };
+  const inputTypesMatch = (): boolean => {
+    if (node.data.label === consts.classicalLabel + consts.bitwiseOperatorLabel) {
+      return true; // fixed type: bit
+    }
+
+    const t0 = getInputType(0);
+    const t1 = getInputType(1);
+
+    if (t0 === "any" || t1 === "any") return true;
+    return t0 === t1;
+  };
+
+  const getInputType = (inputIndex: number): string => {
+    const handleId =
+      inputIndex === 0
+        ? `classicalHandleOperationInput0${node.id}`
+        : `classicalHandleOperationInput1${node.id}`;
+
+    const edge = edges.find(
+      (e) => e.target === node.id && e.targetHandle === handleId
+    );
+
+    // 1. Infer from connection
+    if (edge) {
+      const sourceNode = nodes.find((n) => n.id === edge.source);
+      if (sourceNode) {
+        if (sourceNode.type === "dataTypeNode") {
+          return sourceNode.data?.dataType ?? "any";
+        }
+      }
+    }
+
+    // 2. Operator-based fallback
+    if (node.data.label === consts.classicalLabel + consts.bitwiseOperatorLabel) {
+      return "bit";
+    }
+
+    return "any"; // arithmetic, comparison, min/max
+  };
+
 
   useEffect(() => {
     updateNodeInternals(node.id);
@@ -93,9 +133,9 @@ export const ClassicalOperationNode = memo((node: Node) => {
     }
   }, []);
 
-  const baseHeight = 350;
+  const baseHeight = 400;
   const extraHeightPerVariable = 20;
-  const dynamicHeight = baseHeight + (inputs.length + outputs.length) * extraHeightPerVariable;
+  const dynamicHeight = baseHeight ;
 
   const iconMap = {
     "Classical Arithmetic Operator": 'classicalArithmeticIcon.png',
@@ -105,7 +145,7 @@ export const ClassicalOperationNode = memo((node: Node) => {
   };
   const label = data.label;
   const iconSrc = iconMap[label];
-    const iconSizeMap = {
+  const iconSizeMap = {
     "Classical Arithmetic Operator": { width: 45, height: 45 },
     "Classical Bitwise Operator": { width: 45, height: 45 },
     "Classical Min & Max Operator": { width: 45, height: 45 },
@@ -128,9 +168,9 @@ export const ClassicalOperationNode = memo((node: Node) => {
           style={{ height: `${dynamicHeight}px`, borderRadius: "40px" }}
         >
           <div className="w-full flex items-center" style={{ height: '52px' }}>
-            <div className="w-full bg-orange-300 py-1 px-2 flex items-center" style={{ height: "inherit", borderTopLeftRadius: "28px", borderTopRightRadius: "28px", overflow: "hidden", paddingLeft: '25px',}}
+            <div className="w-full bg-orange-300 py-1 px-2 flex items-center" style={{ height: "inherit", borderTopLeftRadius: "28px", borderTopRightRadius: "28px", overflow: "hidden", paddingLeft: '25px', }}
             >
-             {(() => {
+              {(() => {
                 const { width, height } = iconSizeMap[node.data.label];
                 return (
                   <img
@@ -203,7 +243,7 @@ export const ClassicalOperationNode = memo((node: Node) => {
                   alignItems: 'center',
                   justifyContent: 'flex-start',
                   borderTopRightRadius: '20px',
-                    borderBottomRightRadius: '20px',
+                  borderBottomRightRadius: '20px',
                 }}
               >
                 <Handle
@@ -213,30 +253,51 @@ export const ClassicalOperationNode = memo((node: Node) => {
                   className="z-10 classical-circle-port-operation !bg-orange-300 !border-black -left-[8px]"
                   style={{ top: '50%', transform: 'translateY(-50%)' }}
                 />
-                <span className="text-black text-sm text-center w-full">{node.data.inputs[0]?.outputIdentifier || "Input 1"}</span>
+                <div className="flex flex-col items-center w-full leading-tight">
+                  <span className="text-black text-sm">
+                    {node.data.inputs[0]?.outputIdentifier || "Input 1"}
+                  </span>
+                  <span className="text-[10px] text-gray-600">
+                    type: {getInputType(0)}
+                  </span>
+                </div>
+
               </div>
-               {node.data.label !== consts.classicalLabel + consts.minMaxOperatorLabel && (
-              <div
-                className="relative p-2 mb-1"
-                style={{
-                  backgroundColor: consts.classicalConstructColor,
-                  width: '120px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'flex-start',
-                  borderTopRightRadius: '20px',
-                  borderBottomRightRadius: '20px',
-                }}
-              >
-                <Handle
-                  type="target"
-                  id={`ancillaHandleOperationInput1${node.id}`}
-                  position={Position.Left}
-                  className="z-10 classical-circle-port-operation !bg-orange-300 !border-black -left-[8px]"
-                  style={{ top: '50%', transform: 'translateY(-50%)' }}
-                />
-                <span className="text-black text-sm text-center w-full">{node.data.inputs[1]?.outputIdentifier || "Input 2"}</span>
-              </div>)}
+              {node.data.label !== consts.classicalLabel + consts.minMaxOperatorLabel && (
+                <div
+                  className="relative p-2 mb-1"
+                  style={{
+                    backgroundColor: consts.classicalConstructColor,
+                    width: '120px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'flex-start',
+                    borderTopRightRadius: '20px',
+                    borderBottomRightRadius: '20px',
+                  }}
+                >
+                  <Handle
+                    type="target"
+                    id={`classicalHandleOperationInput1${node.id}`}
+                    position={Position.Left}
+                    className="z-10 classical-circle-port-operation !bg-orange-300 !border-black -left-[8px]"
+                    style={{ top: '50%', transform: 'translateY(-50%)' }}
+                  />
+                  <div className="flex flex-col items-center w-full leading-tight">
+                    <span className="text-black text-sm">
+                      {node.data.inputs[1]?.outputIdentifier || "Input 2"}
+                    </span>
+                    <span
+                      className={cn(
+                        "text-[10px]",
+                        inputTypesMatch() ? "text-gray-600" : "text-red-500"
+                      )}
+                    >
+                      type: {getInputType(1)}
+                    </span>
+                  </div>
+
+                </div>)}
               <div
                 className="relative p-2 mb-1 overflow-visible"
                 style={{
