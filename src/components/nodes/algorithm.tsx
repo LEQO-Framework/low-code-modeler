@@ -81,6 +81,11 @@ export const AlgorithmNode = memo((node: Node) => {
     setSelectedNode(node);
   }, [ancillaMode]);
 
+  useEffect(() => {
+    updateNodeInternals(node.id);
+    setSelectedNode(node);
+  }, [node.data.numberQuantumInputs, node.data.numberClassicalInputs, node.data.numberQuantumOutputs, node.data.numberClassicalOutputs]);
+
 
   const isAncillaConnected = edges.some(
     edge => edge.target === node.id && edge.targetHandle === `ancillaHandleOperationInput2${node.id}`
@@ -246,7 +251,7 @@ export const AlgorithmNode = memo((node: Node) => {
                 />
               ) : (
                 <span
-                  className="truncate font-semibold leading-none cursor-pointer"
+                  className="font-semibold leading-none cursor-pointer"
                   style={{ paddingLeft: "25px" }}
                   onClick={() => setIsEditingLabel(true)}
                 >
@@ -394,8 +399,8 @@ export const AlgorithmNode = memo((node: Node) => {
                 outputs={outputs}
                 setOutputs={setOutputs}
                 edges={edges}
-                sizeError={sizeErrors[index]}
-                outputIdentifierError={outputIdentifierErrors[index]}//(outputIdentifierError || startsWithDigitError)}
+                sizeError={classicalSizeErrors[index]}
+                outputIdentifierError={outputIdentifierErrors[index]}
                 updateNodeValue={updateNodeValue}
                 setOutputIdentifierError={(error) =>
                   setOutputIdentifierErrors(prev => ({ ...prev, [index]: error }))}

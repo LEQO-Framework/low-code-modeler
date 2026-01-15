@@ -25,7 +25,7 @@ import { NewDiagramModal } from "./Modal";
 import './index.css';
 import { Placement } from 'react-joyride';
 import { startCompile } from "./backend";
-import { ancillaConstructColor, classicalConstructColor, ClassicalOperatorNode, controlFlowConstructColor, quantum_types, quantumConstructColor } from "./constants";
+import { ancillaConstructColor, classicalConstructColor, ClassicalOperatorNode, controlFlowConstructColor, grover, hadamard_test_imaginary_part, hadamard_test_real_part, qaoa, quantum_types, quantumConstructColor, swap_test } from "./constants";
 import Joyride from 'react-joyride';
 import { ConfigModal } from "./components/modals/configModal";
 import { QunicornModal } from "./components/modals/qunicornModal";
@@ -34,6 +34,7 @@ import { Toast } from "./components/modals/toast";
 import ExperienceModePanel from "./components/modals/experienceLevelModal";
 import { HistoryItem, HistoryModal } from "./components/modals/historyModal";
 import { ValidationModal } from "./components/modals/validationModal";
+import { grover_algorithm, hadamard_test_imaginary_part_algorithm, hadamard_test_real_part_algorithm, qaoa_algorithm, swap_test_algorithm } from "./constants/templates";
 import JSZip, { JSZipObject } from "jszip";
 import { createDeploymentModel, createNodeType, createServiceTemplate, updateNodeType, updateServiceTemplate } from "./winery";
 
@@ -639,20 +640,20 @@ function App() {
             description: `Node "${node.id}" with label "${label}" requires exactly 2 inputs, but got ${inputCount}.`,
           });
         }
-        if(node.data.label === "Quantum Comparison Operator" || node.data.label === "Quantum Min & Max Operator"){
+        if (node.data.label === "Quantum Comparison Operator" || node.data.label === "Quantum Min & Max Operator") {
           warnings.push({
             nodeId: node.id,
             nodeType: node.type,
             description: `Node "${node.id}" (${node.data.label}) produces a classical output but its output is not used.`,
           });
-        }else if (!twoQubitGates.includes(label) && !hasQuantumOutput) {
+        } else if (!twoQubitGates.includes(label) && !hasQuantumOutput) {
           warnings.push({
             nodeId: node.id,
             nodeType: node.type,
             description: `Node "${node.id}" (${node.data.label}) produces a quantum state but its output is not used.`,
           });
         }
-        
+
       }
 
       if (threeQubitGates.includes(label)) {
@@ -1229,9 +1230,25 @@ function App() {
         x: event.clientX,
         y: event.clientY,
       })
+      const label = event.dataTransfer.getData("application/reactflow/label");
       console.log(position);
-
-      handleOnDrop(event, reactFlowWrapper, reactFlowInstance, setNodes);
+      if (label == qaoa) {
+        loadFlow(qaoa_algorithm)
+      } else if (label == swap_test) {
+        loadFlow(swap_test_algorithm);
+      }
+      else if (label == hadamard_test_imaginary_part) {
+        loadFlow(hadamard_test_imaginary_part_algorithm);
+      }
+      else if (label == hadamard_test_real_part) {
+        loadFlow(hadamard_test_real_part_algorithm);
+      }
+      else if (label == grover) {
+        loadFlow(grover_algorithm);
+      }
+      else {
+        handleOnDrop(event, reactFlowWrapper, reactFlowInstance, setNodes);
+      }
 
       //setContextMenu((prev) => ({ ...prev, left: event.clientX, top: event.clientY,}));
     },
