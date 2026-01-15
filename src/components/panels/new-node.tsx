@@ -6,8 +6,14 @@ import * as consts from "../../constants";
 
 const selector = (state: {
   ancillaMode: boolean;
+  compact: boolean;
+  experienceLevel: string;
+  completionGuaranteed: boolean;
 }) => ({
   ancillaMode: state.ancillaMode,
+  experienceLevel: state.experienceLevel,
+  compact: state.compact,
+  completionGuaranteed: state.completionGuaranteed,
 });
 
 const categoryIcons: Record<string, string> = {
@@ -23,7 +29,10 @@ export const AddNodePanel = () => {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [activeSubcategories, setActiveSubcategories] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const { ancillaMode } = useStore(selector, shallow);
+  const { ancillaMode, completionGuaranteed, compact, experienceLevel } = useStore(
+    selector,
+    shallow
+  );
 
   // Plugin loading state
   const [mlPlugins, setMlPlugins] = useState<any[]>([]);
@@ -418,6 +427,8 @@ export const AddNodePanel = () => {
           type: consts.PluginNode,
           description: plugin.description,
           icon: getPluginIcon(plugin), // Pattern Atlas icon
+          completionGuaranteed: false,
+          compactOptions: [true, false],
           pluginData: {
             ...plugin,
             // Add mock metadata to pluginData so it's available in the drag handler
@@ -504,7 +515,7 @@ export const AddNodePanel = () => {
         (node: Node) =>
           !(!ancillaMode && node.type === "ancillaNode") &&
           (completionGuaranteed ? node.completionGuaranteed : true) &&
-          node.compactOptions.includes(compact)
+          node.compactOptions?.includes(compact)
       );
     } else {
       return Object.values(nodeGroup).flatMap((group: any) =>

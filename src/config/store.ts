@@ -71,7 +71,7 @@ export const useStore = create<RFState>((set, get) => ({
   edges: nodesConfig.initialEdges,
   ancillaMode: false,
   compact: false,
-  completionGuaranteed: true,
+  completionGuaranteed: false,
   experienceLevel: "explorer",
   selectedNode: null,
   history: [],
