@@ -570,8 +570,16 @@ export const useStore = create<RFState>((set, get) => ({
     console.log("New History Item:", newHistoryItem);
     const getOutputIndex = (sourceHandle: String, nodeDataSource: Node) => {
       const tmpHandle = sourceHandle.split(nodeDataSource.id)[0];
-      const outputIndex = tmpHandle.match(/\d+$/)[0];
-      return parseInt(outputIndex, 10);
+      if (!tmpHandle) {
+        return null;
+      }
+      const match = tmpHandle.match(/\d+$/);
+
+      if (!match) {
+        return null;
+      }
+
+      return parseInt(match[0], 10);
     };
 
     if (insertEdge && !edgeExists) {
@@ -589,13 +597,13 @@ export const useStore = create<RFState>((set, get) => ({
       console.log("index", outputIndex)
       console.log(nodeDataSource.data.outputs?.[outputIndex]?.identifier)
       var sourceOutputIdentifier = "";
-      if(nodeDataSource.type === "algorithmNode" || nodeDataSource.type === "classicalAlgorithmNode" || nodeDataSource.type === "measurementNode") {
-        sourceOutputIdentifier = nodeDataSource.data.outputs?.[outputIndex]?.identifier 
+      if (nodeDataSource.type === "algorithmNode" || nodeDataSource.type === "classicalAlgorithmNode" || nodeDataSource.type === "measurementNode") {
+        sourceOutputIdentifier = nodeDataSource.data.outputs?.[outputIndex]?.identifier
       } else {
         sourceOutputIdentifier = nodeDataSource.data.outputs?.[outputIndex]?.identifier ?? nodeDataSource.data?.outputIdentifier
       }
       if (existingInput) {
-        
+
         // Update the existing entry
         existingInput.outputIdentifier = sourceOutputIdentifier;
       } else {
@@ -669,14 +677,14 @@ export const useStore = create<RFState>((set, get) => ({
             const sourceNode = currentNodes.find(n => n.id === edge.source)
             console.log(sourceNode.data.outputs?.[outputIndex]?.identifier)
             var sourceOutputIdentifier = "";
-            if(nodeDataSource.type === "algorithmNode" || nodeDataSource.type === "classicalAlgorithmNode" || nodeDataSource.type === "measurementNode") {
-              sourceOutputIdentifier = nodeDataSource.data.outputs?.[outputIndex]?.identifier 
+            if (nodeDataSource.type === "algorithmNode" || nodeDataSource.type === "classicalAlgorithmNode" || nodeDataSource.type === "measurementNode") {
+              sourceOutputIdentifier = nodeDataSource.data.outputs?.[outputIndex]?.identifier
             } else {
               sourceOutputIdentifier = nodeDataSource.data.outputs?.[outputIndex]?.identifier ?? nodeDataSource.data?.outputIdentifier
             }
             nodeDataTarget.data.inputs.push({
               id: nodeDataSource.id,
-              outputIdentifier: sourceOutputIdentifier, 
+              outputIdentifier: sourceOutputIdentifier,
               identifiers: nodeDataSource.data.identifiers,
               targetHandle: edge.targetHandle
             });
@@ -718,8 +726,8 @@ export const useStore = create<RFState>((set, get) => ({
             console.log("sourceHandle", sourceHandle)
             console.log("index", outputIndex)
             var sourceOutputIdentifier = "";
-            if(sourceNode.type === "algorithmNode" || sourceNode.type === "classicalAlgorithmNode" || sourceNode.type === "measurementNode") {
-              sourceOutputIdentifier = sourceNode.data.outputs?.[outputIndex]?.identifier 
+            if (sourceNode.type === "algorithmNode" || sourceNode.type === "classicalAlgorithmNode" || sourceNode.type === "measurementNode") {
+              sourceOutputIdentifier = sourceNode.data.outputs?.[outputIndex]?.identifier
             } else {
               sourceOutputIdentifier = sourceNode.data.outputs?.[outputIndex]?.identifier ?? sourceNode?.data?.outputIdentifier
             }
@@ -870,7 +878,7 @@ export const useStore = create<RFState>((set, get) => ({
             const sourceHandle = edge.sourceHandle;
             const outputIndex = getOutputIndex(sourceHandle, sourceNode);
             var sourceOutputIdentifier = "";
-            if(sourceNode.type === "algorithmNode" || sourceNode.type === "classicalAlgorithmNode" || sourceNode.type === "measurementNode") {
+            if (sourceNode.type === "algorithmNode" || sourceNode.type === "classicalAlgorithmNode" || sourceNode.type === "measurementNode") {
               sourceOutputIdentifier = sourceNode.data.outputs?.[outputIndex]?.identifier;
             } else {
               sourceOutputIdentifier = sourceNode.data.outputs?.[outputIndex]?.identifier ?? nodeVal;
