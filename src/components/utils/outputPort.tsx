@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import { findDuplicateOutputIdentifiersInsideNode, isUniqueIdentifier } from "../utils/utils";
 import { Node } from "reactflow";
 import { useEffect, useRef } from 'react';
-import { ClassicalAlgorithmNode, classicalConstructColor } from '@/constants';
+import { AlgorithmNode, ClassicalAlgorithmNode, classicalConstructColor } from '@/constants';
 
 interface OutputPortProps {
   node: Node;
@@ -79,7 +79,7 @@ export default function OutputPort({
     if (node.type === "dataTypeNode") {
       return node.data?.dataType ?? "unknown";
     }
-     if (node.data.label?.includes("Comparison Operator")) {
+    if (node.data.label?.includes("Comparison Operator")) {
       return "boolean";
     }
 
@@ -89,10 +89,9 @@ export default function OutputPort({
     if (type === "classical" && node.data.label?.includes("Bitwise Operator")) {
       return "bit";
     }
-    if (type === "classical" && node.type === ClassicalAlgorithmNode) {
+    if (type === "classical" && (node.type === ClassicalAlgorithmNode || node.type === AlgorithmNode)) {
       return "any";
     }
-
 
     // Quantum vs classical outputs
     if (type === "quantum") {
