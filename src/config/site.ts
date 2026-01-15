@@ -115,3 +115,86 @@ export const tutorial = {
   }
 
 }
+
+export const testDiagram = {
+  nodes: [{
+      "id": "e89a752d-b8c5-45c1-95d2-6f39f4d7a155",
+      "type": "gateNode",
+      "position": {
+        "x": 240,
+        "y": 405
+      },
+      "data": {
+        "label": "Qubit",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q529979"
+        ],
+        "parameter": "0"
+      },
+      "width": 100,
+      "height": 100,
+      "positionAbsolute": {
+        "x": 240,
+        "y": 405
+      }
+    },
+    {
+      "id": "94e6368f-c688-4ee5-806b-d1486c181887",
+      "type": "gateNode",
+      "position": {
+        "x": 420,
+        "y": 405
+      },
+      "data": {
+        "label": "H",
+        "inputs": [
+          {
+            "id": "e89a752d-b8c5-45c1-95d2-6f39f4d7a155",
+            "identifiers": [
+              "q529979"
+            ]
+          }
+        ],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q226232"
+        ],
+        "parameter": "0"
+      },
+      "width": 100,
+      "height": 100,
+      "positionAbsolute": {
+        "x": 420,
+        "y": 405
+      },
+      "dragging": true
+    }
+  ],
+  initialEdges: [
+    {
+      "source": "e89a752d-b8c5-45c1-95d2-6f39f4d7a155",
+      "sourceHandle": "quantumHandleGateOutput0e89a752d-b8c5-45c1-95d2-6f39f4d7a155",
+      "target": "94e6368f-c688-4ee5-806b-d1486c181887",
+      "targetHandle": "quantumHandleGateInput094e6368f-c688-4ee5-806b-d1486c181887",
+      "type": "quantumEdge",
+      "id": "42ab941f-13b2-4c21-a375-5785b64b60ad",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD",
+        "hidden": true
+      }
+    }
+  ],
+}

@@ -15,6 +15,7 @@ interface ConfigModalProps {
     completionGuaranteed: boolean;
     tempNisqAnalyzerEndpoint: string;
     tempQunicornEndpoint: string;
+    tempOpenAIToken: string;
     tempLowcodeBackendEndpoint: string;
     tempPatternAtlasUiEndpoint: string;
     tempPatternAtlasApiEndpoint: string;
@@ -31,6 +32,7 @@ interface ConfigModalProps {
   tempNisqAnalyzerEndpoint: string;
   tempQunicornEndpoint: string;
   tempLowcodeBackendEndpoint: string;
+  tempOpenAIToken: string;
   tempPatternAtlasUiEndpoint: string;
   tempPatternAtlasApiEndpoint: string;
   tempQcAtlasEndpoint: string;
@@ -53,6 +55,7 @@ export const ConfigModal = ({
   tempNisqAnalyzerEndpoint,
   tempQunicornEndpoint,
   tempLowcodeBackendEndpoint,
+  tempOpenAIToken,
   tempPatternAtlasUiEndpoint,
   tempPatternAtlasApiEndpoint,
   tempQcAtlasEndpoint,
@@ -72,6 +75,7 @@ export const ConfigModal = ({
   const [localNisq, setLocalNisq] = useState(tempNisqAnalyzerEndpoint);
   const [localQunicorn, setLocalQunicorn] = useState(tempQunicornEndpoint);
   const [localLowcode, setLocalLowcode] = useState(tempLowcodeBackendEndpoint);
+  const [localOpenAIToken, setLocalOpenAIToken] = useState(tempOpenAIToken);
   const [localPatternUI, setLocalPatternUI] = useState(tempPatternAtlasUiEndpoint);
   const [localPatternAPI, setLocalPatternAPI] = useState(tempPatternAtlasApiEndpoint);
   const [localQcAtlas, setLocalQcAtlas] = useState(tempQcAtlasEndpoint);
@@ -87,6 +91,7 @@ export const ConfigModal = ({
       setLocalExperienceLevel(experienceLevel);
       setLocalCompletionGuaranteed(completionGuaranteed);
       setLocalCompactVisualization(compactVisualization);
+      setLocalOpenAIToken(tempOpenAIToken);
 
       setLocalNisq(tempNisqAnalyzerEndpoint);
       setLocalQunicorn(tempQunicornEndpoint);
@@ -110,6 +115,7 @@ export const ConfigModal = ({
       tempNisqAnalyzerEndpoint: localNisq,
       tempQunicornEndpoint: localQunicorn,
       tempLowcodeBackendEndpoint: localLowcode,
+      tempOpenAIToken: localOpenAIToken,
       tempPatternAtlasUiEndpoint: localPatternUI,
       tempPatternAtlasApiEndpoint: localPatternAPI,
       tempQcAtlasEndpoint: localQcAtlas,
@@ -295,7 +301,24 @@ export const ConfigModal = ({
                 </tr>
               </tbody>
             </table>
-          </div>
+          
+          <h3 className="labels">OpenAI:</h3>
+              <table className="config-table">
+                <tbody>
+                  <tr>
+                    <td align="right">OpenAI Token:</td>
+                    <td align="left">
+                      <input
+                        className="qwm-input"
+                        type="password"
+                        value={localOpenAIToken}
+                        onChange={(event) => setLocalOpenAIToken(event.target.value)}
+                      />
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              </div>
         )}
 
         {activeTab === "patternEndpoints" && (

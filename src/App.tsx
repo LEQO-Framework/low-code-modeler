@@ -21,7 +21,7 @@ import { handleDragOver, handleOnDrop } from "./lib/utils";
 import useKeyBindings from "./hooks/useKeyBindings";
 import { toSvg } from "html-to-image";
 import { initialDiagram } from "./config/site";
-import { NewDiagramModal } from "./Modal";
+import Modal, { NewDiagramModal } from "./Modal";
 import './index.css';
 import { Placement } from 'react-joyride';
 import { startCompile } from "./backend";
@@ -34,6 +34,8 @@ import { Toast } from "./components/modals/toast";
 import ExperienceModePanel from "./components/modals/experienceLevelModal";
 import { HistoryItem, HistoryModal } from "./components/modals/historyModal";
 import { ValidationModal } from "./components/modals/validationModal";
+import AiModal from "./components/modals/aiModal";
+import OpenAI from "openai";
 import { grover_algorithm, hadamard_test_imaginary_part_algorithm, hadamard_test_real_part_algorithm, qaoa_algorithm, swap_test_algorithm } from "./constants/templates";
 import JSZip, { JSZipObject } from "jszip";
 import { createDeploymentModel, createNodeType, createServiceTemplate, updateNodeType, updateServiceTemplate } from "./winery";
@@ -126,6 +128,10 @@ function App() {
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [nisqAnalyzerEndpoint, setNisqAnalyzerEndpoint] = useState(
     import.meta.env.VITE_NISQ_ANALYZER || "http://localhost:8098/nisq-analyzer"
+  );
+
+  const [openAIToken, setOpenAIToken] = useState(
+    import.meta.env.VITE_OPENAI_TOKEN
   );
   const [qunicornEndpoint, setQunicornEndpoint] = useState(
     import.meta.env.VITE_QUNICORN || "http://localhost:8080"
@@ -220,6 +226,121 @@ function App() {
   const [progress, setProgress] = useState(0);
   const [executed, setAlreadyExecuted] = useState(false);
   const [jobId, setJobId] = useState(null);
+  const [quantumAlgorithmModalStep, setQuantumAlgorithmModalStep] = useState(0);
+  const [quantumAlgorithms, setQuantumAlgorithms] = useState([
+    { name: "Quantum Approximate Optimization Algorithm (QAOA)", configCount: 0, patternGraphPng: "patterns/qaoa.png" },
+    { name: "Variational Quantum Eigensolver (VQE)", configCount: 0, patternGraphPng: "patterns/qaoa.png" },
+    { name: "Grover's Algorithm", configCount: 0, patternGraphPng: "patterns/qaoa.png" },
+  ]);
+
+  const [patternGraph, setPatternGraph] = useState(null);
+  const [isDetectingAlgorithms, setIsDetectingAlgorithms] = useState(false);
+
+  const client = new OpenAI({
+    apiKey: openAIToken, dangerouslyAllowBrowser: true
+  });
+
+
+  const detectQuantumAlgorithms = async (userInput: string) => {
+    try {
+      setIsDetectingAlgorithms(true);
+      const algorithms = [
+        "Quantum Approximate Optimization Algorithm (QAOA)",
+        "Variational Quantum Eigensolver (VQE)",
+        "Grover's Algorithm",
+        "Quantum Phase Estimation (QPE)",
+        "Quantum Fourier Transform (QFT)",
+        "SWAP Test",
+        "Hadamard Test",
+        "Quantum Classification",
+        "Quantum Clustering",
+        "Basis Encoding",
+        "Matrix Encoding",
+        "Amplitude Encoding",
+        "Angle Encoding",
+        "Initialization",
+        "Dynamic Circuits"
+      ];
+      setQuantumAlgorithms(quantumAlgorithms);
+
+      let response;
+      try {
+        response = await client.responses.create({
+          model: "gpt-5-nano",
+          input: [
+            {
+              role: "system",
+              content: `
+You are a quantum computing expert.
+Given a problem description, identify applicable quantum algorithms.
+
+Check first if some algorithms from this list match:
+${algorithms.join(", ")}
+
+Add then the other matches. The first algorithm should be the most suitable one.
+
+Return JSON ONLY in this exact format:
+{
+  "algorithms": ["<algorithm name>", "..."]
+}
+If none apply, return { "algorithms": [] }.
+            `,
+            },
+            {
+              role: "user",
+              content: userInput,
+            },
+          ],
+        });
+        if (!response?.output_text) {
+          setQuantumAlgorithms(quantumAlgorithms);
+        }
+
+
+        console.log(response.output_text);
+
+        let parsed;
+        try {
+          parsed = JSON.parse(response.output_text);
+        } catch (parseError) {
+          console.error("Invalid JSON from OpenAI:", response.output_text);
+          throw new Error("Failed to parse OpenAI response");
+        }
+
+        if (!Array.isArray(parsed.algorithms)) {
+          throw new Error("Invalid response format");
+        }
+
+        setQuantumAlgorithms(
+          parsed.algorithms.map((name: string) => ({
+            name
+          }))
+        );
+      } catch (sendError) {
+        console.error("OpenAI request failed:", sendError);
+        console.log("set quantum algorithms for offline processing");
+        setQuantumAlgorithms(quantumAlgorithms);
+        return;
+      }
+
+    } finally {
+      setIsDetectingAlgorithms(false);
+    }
+  };
+
+  function viewPatternGraph(algo) {
+    setPatternGraph(algo.patternGraphPng);
+  }
+
+
+  const handleQuantumAlgorithmModalClose = () => {
+    if (quantumAlgorithmModalStep <= 1) {
+      setQuantumAlgorithmModalStep(quantumAlgorithmModalStep + 1)
+    } else {
+      setQuantumAlgorithmModalStep(0);
+    }
+  }
+
 
   globalThis.setNisqAnalyzerEndpoint = setNisqAnalyzerEndpoint;
   globalThis.setQunicornEndpoint = setQunicornEndpoint;
@@ -255,6 +376,7 @@ function App() {
   const handleSave = (newValues) => {
     console.log(newValues)
     setNisqAnalyzerEndpoint(newValues.tempNisqAnalyzerEndpoint);
+    setOpenAIToken(newValues.tempOpenAIToken);
     setQunicornEndpoint(newValues.tempQunicornEndpoint);
     setLowcodeBackendEndpoint(newValues.tempLowcodeBackendEndpoint);
     setPatternAtlasUiEndpoint(newValues.tempPatternAtlasUiEndpoint);
@@ -883,6 +1005,9 @@ function App() {
   }
 
 
+  const startQuantumAlgorithmSelection = () => {
+    setQuantumAlgorithmModalStep(1);
+  }
 
   const handleOpenValidation = () => {
     if (!reactFlowInstance) return;
@@ -1905,6 +2030,7 @@ function App() {
           uploadDiagram={() => uploadToGitHub()}
           onLoadJson={handleLoadJson}
           sendToBackend={handleOpenValidation}
+          startQuantumAlgorithmSelection={startQuantumAlgorithmSelection}
           //sendToQunicorn={() => setIsQunicornOpen(true)}
           openHistory={openHistoryModal}
           startTour={() => { startTour(); }}
@@ -1941,6 +2067,7 @@ function App() {
         completionGuaranteed={completionGuaranteed}
         experienceLevel={experienceLevel}
         tempNisqAnalyzerEndpoint={nisqAnalyzerEndpoint}
+        tempOpenAIToken={openAIToken}
         tempQunicornEndpoint={qunicornEndpoint}
         tempLowcodeBackendEndpoint={lowcodeBackendEndpoint}
         tempPatternAtlasUiEndpoint={patternAtlasUiEndpoint}
@@ -1972,6 +2099,27 @@ function App() {
         errorMessage={errorMessage}
         progress={progress}
         chartData={chartData}
+      />
+
+      {patternGraph && (
+        <Modal
+          title="Pattern Graph"
+          open={true}
+          onClose={() => setPatternGraph(null)}
+        >
+          <img src={patternGraph} alt="Pattern graph" className="w-full rounded" />
+        </Modal>
+      )}
+
+
+      <AiModal
+        quantumAlgorithmModalStep={quantumAlgorithmModalStep}
+        quantumAlgorithms={quantumAlgorithms}
+        isDetectingAlgorithms={isDetectingAlgorithms}
+        detectQuantumAlgorithms={detectQuantumAlgorithms}
+        handleQuantumAlgorithmModalClose={handleQuantumAlgorithmModalClose}
+        setQuantumAlgorithmModalStep={setQuantumAlgorithmModalStep}
+        loadFlow={loadFlow}
       />
 
       <HistoryModal
