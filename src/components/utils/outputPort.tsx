@@ -2,7 +2,7 @@ import { Handle, Position } from 'reactflow';
 import { cn } from "@/lib/utils";
 import { findDuplicateOutputIdentifiersInsideNode, isUniqueIdentifier } from "../utils/utils";
 import { Node } from "reactflow";
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { AlgorithmNode, ClassicalAlgorithmNode, classicalConstructColor } from '@/constants';
 
 interface OutputPortProps {
@@ -85,7 +85,7 @@ export default function OutputPort({
   };
 
   // Determine displayed output type dynamically
-  const getDisplayedOutputType = () => {
+  const displayedOutputType = useMemo(() => {
     let outputType = "unknown";
 
     // Classical Arithmetic Operator: infer from inputs
@@ -99,13 +99,13 @@ export default function OutputPort({
       else outputType = "any";
     }
     // Other classical operators
-    else if (type === "classical" && node.data.label?.includes("Bitwise Operator")) {
+    else if (type === "classical" && (node.data.label?.includes("Bitwise Operator") || node.data.label?.includes("bit"))) {
       outputType = "bit";
     }
-    else if (node.data.label?.includes("Comparison Operator")) {
+    else if (node.data.label?.includes("Comparison Operator") || node.data.label?.includes("boolean")) {
       outputType = "boolean";
     }
-    else if (node.data.label?.includes("Min & Max Operator")) {
+    else if (node.data.label?.includes("Min & Max Operator") || node.data.label?.includes("Number")) {
       outputType = "number";
     }
     // Quantum or fallback
@@ -116,12 +116,18 @@ export default function OutputPort({
       outputType = "array";
     }
 
-    // Update the node's outputType in the store
-    updateNodeValue(node.id, "outputType", outputType);
+    console.log("OUTPUT PORT displayedOutputType", node.id, outputType)
 
     return outputType;
-  };
+  }, [node.id, node.data.label, type, edges, nodes]);
 
+  // update outputType if it changes
+  useEffect(() => {
+    if (node.data.outputType !== displayedOutputType) {
+      updateNodeValue(node.id, "outputType", displayedOutputType);
+      console.log("Updated node outputType in store:", node.id, displayedOutputType);
+    }
+  }, [displayedOutputType, node.id, node.data.outputType, updateNodeValue]);
 
   useEffect(() => {
     const isNowBellState = node.data.quantumStateName?.includes("Bell State");
@@ -164,7 +170,7 @@ export default function OutputPort({
         <div className="w-full flex justify-between items-center">
           <span className="text-left text-sm text-black font-semibold">Output:</span>
           <span className="text-[10px] text-gray-600">
-            type: {getDisplayedOutputType().toLowerCase()}
+            type: {displayedOutputType.toLowerCase()}
           </span>
         </div>
 
