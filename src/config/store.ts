@@ -13,6 +13,7 @@ import {
   applyEdgeChanges,
   applyNodeChanges,
   getOutgoers,
+  useUpdateNodeInternals,
 } from "reactflow";
 import { create } from "zustand";
 import { nodesConfig } from "./site";
@@ -20,6 +21,7 @@ import { v4 as uuid } from "uuid";
 import * as consts from "../constants";
 import TabPane from "antd/es/tabs/TabPane";
 import { IPortData } from "@/components/nodes/model";
+import { Regex } from "lucide-react";
 
 export type NodeData = {
   label: string;
@@ -542,6 +544,11 @@ export const useStore = create<RFState>((set, get) => ({
     console.log("Current Nodes:", currentNodes);
     console.log("Current Edges:", get().edges);
     console.log("New History Item:", newHistoryItem);
+    const getOutputIndex = (sourceHandle: String, nodeDataSource: Node) => {
+      const tmpHandle = sourceHandle.split(nodeDataSource.id)[0];
+      const outputIndex = tmpHandle.match(/\d+$/)[0];
+      return parseInt(outputIndex, 10);
+    };
 
     if (insertEdge && !edgeExists) {
       console.log("ONCONNECT")
@@ -553,11 +560,11 @@ export const useStore = create<RFState>((set, get) => ({
         (input) => (input.id === nodeDataSource.id && input.targetHandle === connection.targetHandle)
       );
       console.log("existing input", existingInput)
-      const outputIndex = Number(connection.sourceHandle.split("Output")[1].split("-")[0])
+      const outputIndex = getOutputIndex(connection.sourceHandle, nodeDataSource);
       console.log("sourceHandle", connection.sourceHandle)
       console.log("index", outputIndex)
-      console.log(nodeDataSource.data.outputs[outputIndex]?.identifier)
-      const sourceOutputIdentifier = nodeDataSource.data.outputs[outputIndex]?.identifier
+      console.log(nodeDataSource.data.outputs?.[outputIndex]?.identifier)
+      const sourceOutputIdentifier = nodeDataSource.data.outputs?.[outputIndex]?.identifier || nodeDataSource.data.outputIdentifier
       if (existingInput) {
         
         // Update the existing entry
@@ -565,6 +572,7 @@ export const useStore = create<RFState>((set, get) => ({
       } else {
         if (nodeDataTarget.type === "statePreparationNode") {
           // Push a new entry
+          console.log("VNSOIVNOIDNO")
           nodeDataTarget.data.inputs.push({
             id: nodeDataSource.id,
             outputIdentifier: sourceOutputIdentifier,
@@ -626,12 +634,12 @@ export const useStore = create<RFState>((set, get) => ({
             console.log(connection)
             console.log(nodeDataSource)
             console.log(nodeDataTarget)
-            const outputIndex = Number(connection.sourceHandle.split("Output")[1].split("-")[0])
+            const outputIndex = getOutputIndex(connection.sourceHandle, nodeDataSource);
             console.log("sourceHandle", connection.sourceHandle)
             console.log("index", outputIndex)
             const sourceNode = currentNodes.find(n => n.id === edge.source)
-            console.log(sourceNode.data.outputs[outputIndex]?.identifier)
-            const sourceOutputIdentifier = nodeDataSource.data.outputs[outputIndex]?.identifier
+            console.log(sourceNode.data.outputs?.[outputIndex]?.identifier)
+            const sourceOutputIdentifier = nodeDataSource.data.outputs?.[outputIndex]?.identifier || nodeDataSource.data.outputIdentifier
             nodeDataTarget.data.inputs.push({
               id: nodeDataSource.id,
               outputIdentifier: sourceOutputIdentifier, 
@@ -672,10 +680,11 @@ export const useStore = create<RFState>((set, get) => ({
             console.log("sourceIdentifier");
             console.log(sourceIdentifier)
             //let sourceOutputIdentifier = sourceNode?.data?.outputIdentifier;
-            const outputIndex = Number(sourceHandle.split("Output")[1].split("-")[0])
+            const outputIndex = getOutputIndex(sourceHandle, sourceNode);
             console.log("sourceHandle", sourceHandle)
             console.log("index", outputIndex)
-            console.log(sourceNode.data.outputs[outputIndex]?.identifier)
+            console.log()
+            const sourceOutputIdentifier = sourceNode.data.outputs?.[outputIndex]?.identifier || sourceNode?.data?.outputIdentifier
 
             console.log(sourceIdentifier)
 
@@ -686,14 +695,14 @@ export const useStore = create<RFState>((set, get) => ({
             console.log("target inputs", targetData.inputs)
 
             if (inputIndex !== -1) {
-              if (targetData.inputs[inputIndex].outputIdentifier === sourceNode.data.outputs[outputIndex]?.identifier) {
-                targetData.inputs[inputIndex].outputIdentifier = sourceNode.data.outputs[outputIndex]?.identifier;
+              if (targetData.inputs[inputIndex].outputIdentifier === sourceOutputIdentifier) {
+                targetData.inputs[inputIndex].outputIdentifier = sourceOutputIdentifier;
                 targetData.inputs[inputIndex]["identifiers"] = sourceIdentifier;
                 targetData["identifiers"] = sourceIdentifier
                 reuseQubit = true;
                 console.log(targetData["identifier"])
               } else {
-                targetData.inputs[inputIndex].outputIdentifier = sourceNode.data.outputs[outputIndex]?.identifier;
+                targetData.inputs[inputIndex].outputIdentifier = sourceOutputIdentifier;
                 targetData.inputs[inputIndex]["identifiers"] = sourceIdentifier;
                 targetData["identifiers"] = sourceIdentifier
                 console.log(targetData["identifiers"])
@@ -702,7 +711,7 @@ export const useStore = create<RFState>((set, get) => ({
             } else {
               targetData.inputs.push({
                 id: connection.source,
-                outputIdentifier: sourceNode.data.outputs[outputIndex]?.identifier,
+                outputIdentifier: sourceOutputIdentifier,
                 "identifiers": sourceIdentifier,
                 targetHandle: connection.targetHandle
               });
@@ -789,6 +798,12 @@ export const useStore = create<RFState>((set, get) => ({
   updateNodeValue: (nodeId: string, identifier: string, nodeVal: any) => {
     console.log("Updating node value for:", nodeId);
     console.log("Identifier:", identifier, "New Value:", nodeVal);
+    const getOutputIndex = (sourceHandle: String, nodeDataSource: Node) => {
+      const tmpHandle = sourceHandle.split(nodeDataSource.id)[0];
+      const outputIndex = tmpHandle.match(/\d+$/)[0];
+      return parseInt(outputIndex, 10);
+    };
+
 
     set((state) => {
       const { nodes, edges } = state;
@@ -814,11 +829,12 @@ export const useStore = create<RFState>((set, get) => ({
             console.log("sourceIdentifier");
             console.log(sourceIdentifier)
             const sourceHandle = edge.sourceHandle;
-            const outputIndex = Number(sourceHandle.split("Output")[1].split("-")[0]);
-            const sourceOutputIdentifier = sourceNode.data.outputs[outputIndex]?.identifier;
+            const outputIndex = getOutputIndex(sourceHandle, sourceNode);
+            const sourceOutputIdentifier = sourceNode.data.outputs?.[outputIndex]?.identifier || nodeVal ;
             console.log("sourceHandle", sourceHandle)
             console.log("index", outputIndex)
-            console.log(sourceOutputIdentifier)
+            console.log("source Output Identifier", sourceOutputIdentifier)
+            console.log("source node", sourceNode)
 
             if (!targetData.inputs) targetData.inputs = [];
 
@@ -928,6 +944,8 @@ export const useStore = create<RFState>((set, get) => ({
         historyIndex: state.historyIndex + 1,
       };
     });
+    console.log("History after update:", get().history);
+    console.log("Current historyIndex:", get().historyIndex);
 
     console.log("History updated successfully.");
   },

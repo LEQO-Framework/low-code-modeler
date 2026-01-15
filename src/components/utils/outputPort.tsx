@@ -43,10 +43,10 @@ export default function OutputPort({
   const isClassical = type === "classical";
   const isAncilla = type === "ancilla";
   const handleId = isClassical
-    ? `classicalHandle${node.type}Output${index}-${node.id}`
+    ? `classicalHandle${node.type}Output${index}${node.id}`
     : isAncilla
-      ? `ancillaHandleOutput${index}-${node.id}`
-      : `quantumHandle${node.type}Output${index}-${node.id}`;
+      ? `ancillaHandleOutput${index}${node.id}`
+      : `quantumHandle${node.type}Output${index}${node.id}`;
 
   const handleClass = isClassical
     ? "classical-circle-port-out"
