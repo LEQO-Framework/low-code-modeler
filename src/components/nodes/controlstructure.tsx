@@ -27,7 +27,7 @@ export const ControlStructureNode = memo((node: Node) => {
   const [showingChildren, setShowingChildren] = useState(false);
   const { setNodes, updateNodeValue, setSelectedNode, edges } = useStore(selector, shallow);
   const updateNodeInternals = useUpdateNodeInternals();
-  const numberQuantumInputs = 0;
+  const numberQuantumInputs = data.numberQuantumInputs || 1;
   const numberClassicalInputs = data.numberClassicalInputs || 1;
   const quantumHandles = Array.from({ length: numberQuantumInputs }, (_, index) => index);
   const classicalHandles = Array.from({ length: numberClassicalInputs }, (_, index) => index);
