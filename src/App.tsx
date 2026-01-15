@@ -128,8 +128,6 @@ function App() {
     left: 0,
   });
 
-  //const [contextMenu, setContextMenu] = useState(null);
-
   const onNodeContextMenu = useCallback(
     (event: React.MouseEvent, node: Node) => {
       event.preventDefault();
@@ -305,6 +303,8 @@ function App() {
   const [experienceLevelOn, setExperienceLevelOn] = useState("explorer");
   const [compactVisualization, setCompactVisualization] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
+
+  const updateNodeInternals = useUpdateNodeInternals();
 
   const showToast = (message: string, type: "success" | "error" | "info") => {
     setToast({ message, type });
@@ -533,7 +533,6 @@ function App() {
     setAncillaMode(false);
     setAncillaModelingOn(false);
     //updateNodeInternals since ancilla mode changes number of handles
-    const updateNodeInternals = useUpdateNodeInternals();
     nodes.forEach((node) => {
       updateNodeInternals(node.id);
     })
@@ -795,7 +794,6 @@ function App() {
     setAncillaMode(false);
     setAncillaModelingOn(false);
     //updateNodeInternals since ancilla mode changes number of handles
-    const updateNodeInternals = useUpdateNodeInternals();
     nodes.forEach((node) => {
       updateNodeInternals(node.id);
     })
@@ -1522,7 +1520,6 @@ function App() {
     setAncillaMode(bool_value)
     setAncillaModelingOn(bool_value)  
     //updateNodeInternals since ancilla mode changes number of handles
-    const updateNodeInternals = useUpdateNodeInternals();
     nodes.forEach((node) => {
       updateNodeInternals(node.id);
     })
@@ -1534,7 +1531,6 @@ function App() {
     setAncillaModelingOn(!ancillaModelingOn); 
     setAncillaMode(!ancillaModelingOn); 
     //updateNodeInternals since ancilla mode changes number of handles
-    const updateNodeInternals = useUpdateNodeInternals();
     nodes.forEach((node) => {
       updateNodeInternals(node.id);
     })
@@ -1567,7 +1563,7 @@ function App() {
   };
 
   return (
-    <ReactFlowProvider>
+    <>
       <Joyride
         steps={joyrideSteps}
         run={runTour}
@@ -1930,8 +1926,9 @@ function App() {
 
 
       </main>
-    </ReactFlowProvider>
+      </>
   );
 }
+
 
 export default App;
