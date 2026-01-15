@@ -102,7 +102,7 @@ export const TextPanel = () => {
       console.log(field)
       if (field === "gamma" || field === "lambda"|| field === "theta"|| field === "phi" ||field === "parameterType" || field === "outputIdentifier" || field === "quantumStateName" || field === "encodingType" || field === "implementationType" || field === "size"
         || field === "operator" || field === "minMaxOperator" || field === "uncomputeImplementationType" || field === "implementation" || field === "fileName" ||
-        field === "uncomputeImplementation" || field === "parameter" || field === "nodeType" || field === "basis") {
+        field === "uncomputeImplementation" || field === "parameter" || field === "nodeType" || field === "basis" || field === "clusteringAlgorithm") {
         selectedNode.data[field] = value;
         updateNodeValue(selectedNode.id, field, value);
       }

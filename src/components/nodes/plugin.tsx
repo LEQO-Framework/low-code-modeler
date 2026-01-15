@@ -133,6 +133,24 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
         </div>
       )}
 
+      {/* Clustering Algorithm Dropdown for k-means nodes */}
+      {(data.pluginName === 'classical-k-means' || data.pluginName === 'quantum-k-means') && (
+        <div className="mb-3 px-2">
+          <label className="text-xs text-gray-700 font-medium">Algorithm:</label>
+          <select
+            className="w-full p-1 mt-1 bg-white text-xs text-gray-800 border border-gray-300 rounded"
+            value={data.clusteringAlgorithm || 'k-means'}
+            onChange={(e) => {
+              node.data.clusteringAlgorithm = e.target.value;
+              updateNodeValue(node.id, 'clusteringAlgorithm', e.target.value);
+            }}
+          >
+            <option value="k-means">K-Means (Default)</option>
+            <option value="k-medoids">K-Medoids</option>
+          </select>
+        </div>
+      )}
+
       {/* Input Handles */}
       {dataInputs.map((input, index) => (
         <div key={`input-${index}`}>

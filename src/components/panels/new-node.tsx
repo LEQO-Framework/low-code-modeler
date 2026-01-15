@@ -168,6 +168,12 @@ export const AddNodePanel = () => {
               required: true,
             },
             {
+              parameter: 'tolerance',
+              data_type: 'float',
+              content_type: ['text/plain'],
+              required: false,
+            },
+            {
               parameter: 'maxIterations',
               data_type: 'int',
               content_type: ['text/plain'],
@@ -398,9 +404,17 @@ export const AddNodePanel = () => {
         const name = plugin.name.toLowerCase();
         const isQuantum = name.startsWith('quantum') || name === 'qnn' || name.includes('quantum-');
 
+        // Custom display names for clustering nodes
+        let displayName = plugin.name;
+        if (plugin.name === 'classical-k-means') {
+          displayName = 'Classical Clustering';
+        } else if (plugin.name === 'quantum-k-means') {
+          displayName = 'Quantum Clustering';
+        }
+
         const mockMetadata = getMockPluginMetadata(plugin.name);
         const pluginNode = {
-          label: plugin.name,
+          label: displayName,
           type: consts.PluginNode,
           description: plugin.description,
           icon: getPluginIcon(plugin), // Pattern Atlas icon

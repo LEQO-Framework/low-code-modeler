@@ -39,11 +39,6 @@ export async function handleOnDrop(
     const label = event.dataTransfer.getData("application/reactflow/label");
     const pluginDataStr = event.dataTransfer.getData("application/reactflow/pluginData");
 
-    console.log('[handleOnDrop] type:', type);
-    console.log('[handleOnDrop] dataType:', dataType);
-    console.log('[handleOnDrop] label:', label);
-    console.log('[handleOnDrop] pluginDataStr:', pluginDataStr);
-
     // check if the dropped element is valid
     if (typeof type === "undefined" || !type) {
       return;
@@ -58,7 +53,14 @@ export async function handleOnDrop(
     if (type === "pluginNode" && pluginDataStr) {
       try {
         const pluginData = JSON.parse(pluginDataStr);
-        console.log('[handleOnDrop] Parsed plugin data:', pluginData);
+
+        // Determine display name
+        let displayName = pluginData.name;
+        if (pluginData.name === 'classical-k-means') {
+          displayName = 'Classical Clustering';
+        } else if (pluginData.name === 'quantum-k-means') {
+          displayName = 'Quantum Clustering';
+        }
 
         // Try to fetch full plugin metadata from API, but fallback to mock data if it fails
         let dataInputs: any[] = pluginData.mockDataInputs || [];
@@ -68,25 +70,19 @@ export async function handleOnDrop(
           const metadataResponse = await fetch(pluginData.apiRoot);
           if (metadataResponse.ok) {
             const fullMetadata = await metadataResponse.json();
-            console.log('[handleOnDrop] Full plugin metadata from API:', fullMetadata);
             dataInputs = fullMetadata.entry_point?.data_input || dataInputs;
             dataOutputs = fullMetadata.entry_point?.data_output || dataOutputs;
-          } else {
-            console.warn('[handleOnDrop] Plugin metadata endpoint not available, using mock data');
           }
         } catch (fetchError) {
-          console.warn('[handleOnDrop] Failed to fetch detailed metadata, using mock data:', fetchError);
+          // Fallback to mock data if API fetch fails
         }
-
-        console.log('[handleOnDrop] Using inputs:', dataInputs);
-        console.log('[handleOnDrop] Using outputs:', dataOutputs);
 
         const newNode = {
           id: getId(),
           type,
           position,
           data: {
-            label: pluginData.name,
+            label: displayName,
             pluginIdentifier: pluginData.identifier,
             pluginName: pluginData.name,
             pluginDescription: pluginData.description,
@@ -99,14 +95,15 @@ export async function handleOnDrop(
             implementation: "",
             implementationType: "",
             uncomputeImplementationType: "",
-            uncomputeImplementation: ""
+            uncomputeImplementation: "",
+            // Set default clustering algorithm for k-means nodes
+            clusteringAlgorithm: (pluginData.name === 'classical-k-means' || pluginData.name === 'quantum-k-means') ? 'k-means' : undefined
           }
         };
 
-        console.log('[handleOnDrop] Created plugin node:', newNode);
         setNodes(newNode);
       } catch (error) {
-        console.error('[handleOnDrop] Error creating plugin node:', error);
+        console.error('Error creating plugin node:', error);
       }
     } else {
       // Standard node creation for non-plugin nodes
