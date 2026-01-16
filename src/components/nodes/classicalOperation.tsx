@@ -276,7 +276,7 @@ export const ClassicalOperationNode = memo((node: Node) => {
                     {node.data.inputs[0]?.outputIdentifier || "Input 1"}
                   </span>
                   <span className="text-[10px] text-gray-600">
-                    type: {node.data.inputTypes[0] ?? "unknown"}
+                    type: {getInputType(0) ?? "unknown"}
                   </span>
                 </div>
 
@@ -311,7 +311,7 @@ export const ClassicalOperationNode = memo((node: Node) => {
                         inputTypesMatch() ? "text-gray-600" : "text-red-500"
                       )}
                     >
-                      type: {node.data.inputTypes[1] ?? "unknown"}
+                      type: {getInputType(1) ?? "unknown"}
                     </span>
                   </div>
 

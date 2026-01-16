@@ -84,7 +84,7 @@ export default function OutputPort({
     return "any";
   };
 
-/*   // Determine displayed output type dynamically
+  // Determine displayed output type dynamically
   const displayedOutputType = useMemo(() => {
     let outputType = "unknown";
 
@@ -116,9 +116,13 @@ export default function OutputPort({
     else if (type === "quantum" || type === "ancilla") {
       outputType = "quantum register";
     }
+    else if (type === "classical" && (node.type === "algorithmNode" || node.type === "classicalAlgorithmNode")) {
+      outputType = node.data.outputTypes[index] ?? "any";
+    }
     else if (type === "classical") {
       outputType = "array";
     }
+
 
     console.log("OUTPUT PORT displayedOutputType", node.id, outputType)
 
@@ -127,12 +131,13 @@ export default function OutputPort({
 
   // update outputType if it changes
   useEffect(() => {
-    if (node.data.outputType !== displayedOutputType) {
-      //const updatedOutputTypes = [... node.]
-      updateNodeValue(node.id, "outputType", displayedOutputType);
+    if (node.data.outputTypes[index] !== displayedOutputType) {
+      const updatedOutputTypes = {... node.data.outputTypes}
+      updatedOutputTypes[index] = displayedOutputType
+      updateNodeValue(node.id, "outputTypes", updatedOutputTypes);
       console.log("Updated node outputType in store:", node.id, displayedOutputType);
     }
-  }, [displayedOutputType, node.id, node.data.outputType, updateNodeValue]); */
+  }, [displayedOutputType, node.id, node.data.outputTypes, updateNodeValue]);
 
   useEffect(() => {
     const isNowBellState = node.data.quantumStateName?.includes("Bell State");
@@ -175,7 +180,7 @@ export default function OutputPort({
         <div className="w-full flex justify-between items-center">
           <span className="text-left text-sm text-black font-semibold">Output:</span>
           <span className="text-[10px] text-gray-600">
-            type: {(node.data.outputTypes[index] ?? (type === "classical"?"any":"quantum register")).toLowerCase()}
+            type: {displayedOutputType.toLowerCase()}
           </span>
         </div>
 

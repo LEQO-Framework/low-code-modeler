@@ -557,7 +557,6 @@ export const useStore = create<RFState>((set, get) => ({
       }
 
       // Find the first input that has a type other than "any"
-      // löschen?
       if(node.data.inputs){
         for (const input of node.data.inputs) {
           const sourceNode = get().nodes.find(n => n.id === input.id);
@@ -575,11 +574,11 @@ export const useStore = create<RFState>((set, get) => ({
         }
       }
       // Find entry in inputTypes != any
-      if(node.data.inputTypes){
+/*       if(node.data.inputTypes){
         for(const type of node.data.inputTypes) {
           if(type.toLowerCase() !== "any") return type;
         }
-      }
+      } */
       return "any"; // no locked type yet
     };
 
@@ -999,7 +998,8 @@ export const useStore = create<RFState>((set, get) => ({
               console.log("updating input output types")
               targetData.inputTypes = [lockedType, lockedType];
               if(targetNode.data.label.includes("Arithmetic")){
-                targetData.outputTypes = [lockedType];
+                targetData.outputTypes = [lockedType]; 
+				//TODO if outputType is changed inputType of any connected Edge should be changed too
               }
               console.log(targetData)
               console.log(updatedNodes[targetNodeIndex])
