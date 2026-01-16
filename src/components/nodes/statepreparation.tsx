@@ -531,7 +531,7 @@ export const StatePreparationNode = memo((node: Node) => {
                       {node.data.inputs[0]?.outputIdentifier || "Value"}
                     </span>
                     <span className="text-[10px] text-gray-600">
-                      type: {getValueTypeLabel()}
+                      type: {node.data.inputTypes[0] ?? "number"}
                     </span>
                   </div>
 
