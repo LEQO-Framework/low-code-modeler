@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import ReactFlow, {
   Background,
   BackgroundVariant,
@@ -48,6 +48,8 @@ const selector = (state: {
   onEdgesChange: any;
   onConnect: any;
   onConnectEnd: any;
+  typeError: string | null;
+  setTypeError: (message: string | null) => void;
   setSelectedNode: (node: Node | null) => void;
   updateNodeValue: (nodeId: string, field: string, nodeVal: string) => void;
   updateParent: (nodeId: string, parentId: string, position: any) => void;
@@ -72,6 +74,8 @@ const selector = (state: {
   onEdgesChange: state.onEdgesChange,
   onConnect: state.onConnect,
   onConnectEnd: state.onConnectEnd,
+  typeError: state.typeError,
+  setTypeError: state.setTypeError,
   setSelectedNode: state.setSelectedNode,
   updateNodeValue: state.updateNodeValue,
   updateParent: state.updateParent,
@@ -101,6 +105,8 @@ function App() {
     onEdgesChange,
     onConnect,
     onConnectEnd,
+    typeError,
+    setTypeError,
     setCompact,
     setExperienceLevel,
     setAncillaMode,
@@ -113,6 +119,8 @@ function App() {
     updateChildren,
     setEdges,
   } = useStore(useShallow(selector));
+
+  
 
   const [metadata, setMetadata] = React.useState<any>({
     version: "1.0.0",
@@ -142,7 +150,7 @@ function App() {
     import.meta.env.VITE_QC_ATLAS || "http://localhost:6626"
   );
 
-
+  
   const [activeTab, setActiveTab] = useState("editor");
   const [warningExecution, setWarningExecution] = useState(false);
   const [contextMenu, setContextMenu] = useState<{
@@ -302,6 +310,12 @@ function App() {
   const showToast = (message: string, type: "success" | "error" | "info") => {
     setToast({ message, type });
   };
+
+  useEffect(() => {
+    if (typeError) {
+      showToast(typeError, "error");
+    }
+  }, [typeError, showToast, setTypeError]);
 
   const [runTour, setRunTour] = useState(false);
   const [joyrideStepId, setJoyRideStepId] = useState(0);
@@ -1476,6 +1490,7 @@ function App() {
       console.log("Metadata loaded:", flow.metadata);
     }
   };
+
 
   const onNodeDrag = React.useCallback((event: React.MouseEvent, node: Node, nodes: Node[]) => {
     console.log(reactFlowInstance.getNodes())

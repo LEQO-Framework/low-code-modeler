@@ -19,6 +19,7 @@ import { nodesConfig } from "./site";
 import { v4 as uuid } from "uuid";
 import * as consts from "../constants";
 import TabPane from "antd/es/tabs/TabPane";
+import { insertTopNodeTag } from "@/winery";
 
 export type NodeData = {
   label: string;
@@ -44,6 +45,8 @@ type RFState = {
   selectedNode: Node | null;
   history: HistoryItem[];
   historyIndex: number;
+  typeError: string | null;
+  setTypeError: (message: string | null) => void;
   setNodes: (node: Node) => void;
   setEdges: (edge: Edge) => void;
   setAncillaMode: (ancillaMode: boolean) => void
@@ -64,6 +67,7 @@ type RFState = {
   undo: () => void;
   redo: () => void;
 };
+let typeErrorTimer: ReturnType<typeof setTimeout> | null = null;
 
 // Zustand store with undo/redo logic
 export const useStore = create<RFState>((set, get) => ({
@@ -77,6 +81,23 @@ export const useStore = create<RFState>((set, get) => ({
   history: [],
   historyIndex: -1,
   containsPlaceholder: false,
+  typeError: null,
+
+  setTypeError: (message: string | null) => {
+    set({ typeError: message });
+    // clear any existing timer to prevent premature clearing
+    if (typeErrorTimer) {
+      clearTimeout(typeErrorTimer);
+    }
+    // Start timer to clear typeError message automatically after 5 seconds
+    if (message) {
+      typeErrorTimer = setTimeout(() => {
+        set({ typeError: null });
+        typeErrorTimer = null;
+      }, 3000); 
+    }
+  },
+  
 
   setSelectedNode: (node: Node | null) => {
     set({
@@ -97,6 +118,8 @@ export const useStore = create<RFState>((set, get) => ({
     }
   },
 
+
+
   setNodes: (node: Node) => {
     const currentNodes = get().nodes;
     const currentEdges = get().edges;
@@ -104,6 +127,7 @@ export const useStore = create<RFState>((set, get) => ({
       nodes: [...currentNodes], // Copy the nodes array to avoid mutation
       edges: [...currentEdges], // Copy the edges array to avoid mutation
     };
+
 
     console.log("Updating history (setNodes):");
     console.log("Current Nodes:", currentNodes);
@@ -154,6 +178,56 @@ export const useStore = create<RFState>((set, get) => ({
       node.data.operator = "";
       node.data.outputIdentifier = "";
     }
+    // Helper to get default types based on node type and label
+    const getInitialInputTypes = (node: Node): string[] => {
+      const type = node.type;
+      const label = node.data.label ?? "";
+
+      if (type === "classicalOperatorNode") {
+        if (label.includes("Bitwise")) return ["bit", "bit"];
+        if (label.includes("Arithmetic")) return ["any", "any"];
+        if (label.includes("Comparison")) return ["any", "any"];
+        if (label.includes("Min & Max")) return ["array"];
+      }
+      else if (type === "measurementNode") return ["quantum register"];
+      else if (type === "quantumOperatorNode") {
+        if(label.includes("Min & Max")) return ["quantum register"];
+        else return ["quantum register", "quantum register"];
+      }
+      else if (type === "statePreparationNode") {
+        const encodingType = node.data.encodingType?? "";
+        console.log("encodingType", encodingType)
+        if(encodingType.includes("Matrix") || encodingType.includes("Amplitude") || encodingType.includes("Angle") || encodingType.includes("Schmidt")) return ["array"];
+        if(encodingType.includes("Basis") || encodingType.includes("Custom")) return ["any"];
+      }
+
+      return []; // Default empty
+    }
+    const getInitialOutputTypes = (node: Node): string[] => {
+      const type = node.type;
+      const label = node.data.label ?? "";
+
+      if (type.includes("OperatorNode")) {
+        if (label.includes("Comparison")) return ["boolean"];
+        else if (label.includes("Min & Max")) return ["number"];
+        else if (type.includes("quantum")) {
+          if (label.includes("Bit")) return ["quantum register"];
+          else if (label.includes("Arithmetic")) return ["quantum register"];
+        } else if (type.includes("classical")) {
+          if (label.includes("Bit")) return ["bit"];
+          else if (label.includes("Arithmetic")) return ["any"];
+        }
+      }
+      else if (type === "measurementNode") return ["array", "quantum register"];
+      else if (type === "qubitNode" || type === "ancillaNode" || type === "statePreparationNode") return ["quantum register"];
+      else if (type === "dataTypeNode") return [node.data.dataType ?? "any"];
+      return []; // Default empty
+    }
+    const inputTypes = getInitialInputTypes(node);
+    const outputTypes = getInitialOutputTypes(node);
+    node.data.inputTypes = inputTypes;
+    node.data.outputTypes = outputTypes;
+
     set({
       nodes: [...currentNodes, node],
       edges: currentEdges,
@@ -408,14 +482,26 @@ export const useStore = create<RFState>((set, get) => ({
   },
 
   onConnect: (connection: Connection) => {
+    const getHandleIndex = (nodeId: string, handleId: string) => {
+      const tmpHandle = handleId.split(nodeId)[0];
+      if (!tmpHandle) {
+        return null;
+      }
+      const match = tmpHandle.match(/\d+$/);
+
+      if (!match) {
+        return null;
+      }
+
+      return parseInt(match[0], 10);
+    };
+
     const getNodeLockedType = (nodeId: string): string => {
       const node = get().nodes.find(n => n.id === nodeId);
       if (!node || !node.data.inputs) return "any";
       if (node.type === consts.AlgorithmNode || node.type === consts.ClassicalAlgorithmNode) {
         return "any"
       }
-
-      
 
       // Find the first input that has a type other than "any"
       for (const input of node.data.inputs) {
@@ -437,6 +523,8 @@ export const useStore = create<RFState>((set, get) => ({
     const getNodeOutputType = (nodeId: string, handleId?: string): string => {
       const node = get().nodes.find(n => n.id === nodeId);
       if (!node) return "any";
+      const index = getHandleIndex(nodeId, handleId);
+      if (node.data.outputTypes[index]) return node.data.outputTypes[index];
 
       // Measurement Node
       if (node.type === "measurementNode") {
@@ -489,9 +577,11 @@ export const useStore = create<RFState>((set, get) => ({
 
       // Find input corresponding to this handle
       const input = targetNode.data.inputs?.find((i: any) => i.id === handleId);
-      if (!input) return "any";
-
-      return input.dataType ?? "any"; // fallback to any
+      //if (!input) return "any";
+      const inputIndex = getHandleIndex(nodeId, handleId);
+      console.log("InputIndex", inputIndex);
+      //return input.dataType ?? "any"; // fallback to any
+      return targetNode.data.inputTypes[inputIndex] ?? "any";
     };
 
     const currentNodes = get().nodes;
@@ -651,17 +741,27 @@ export const useStore = create<RFState>((set, get) => ({
     console.log("Current Nodes:", currentNodes);
     console.log("Current Edges:", get().edges);
     console.log("New History Item:", newHistoryItem);
+
+
     // TYPE CHECK
     let sourceType = getNodeOutputType(connection.source, connection.sourceHandle);
     const targetType = getNodeInputType(connection.target, connection.targetHandle);
+    const setTypeError = get().setTypeError;
+    console.log("Types", sourceType, targetType);
 
     // If types are incompatible, reject connection
     if (targetType !== "any" && sourceType !== "any" && sourceType !== targetType) {
-      console.log(`Type mismatch: ${sourceType} -> ${targetType}, connection rejected`);
+      const errorMsg = `Type mismatch: ${sourceType} -> ${targetType}, connection rejected`
+      console.log(errorMsg);
+      setTypeError(errorMsg); 
+      insertEdge = false;
       return false; // reject edge
     }
     const targetNode = get().nodes.find(n => n.id === connection.target);
-    if (!targetNode) return false;
+    if (!targetNode) {
+      insertEdge = false;
+      return false;
+    }
 
     const lockedType = getNodeLockedType(targetNode.id);
 
@@ -674,59 +774,34 @@ export const useStore = create<RFState>((set, get) => ({
 
     // If the target node already has a locked type, new input must match
     if (lockedType !== "any" && sourceType !== "any" && sourceType !== lockedType) {
-      console.warn(`Cannot connect: type "${sourceType}" does not match locked type "${lockedType}"`);
+      const errorMsg = `Cannot connect: type "${sourceType}" does not match locked type "${lockedType}"`
+      console.warn(errorMsg);
+      setTypeError(errorMsg);
+      insertEdge = false;
       return false;
     }
 
+    if (!targetNode) return false;
 
-
-
-
-    if (insertEdge && !edgeExists) {
-      // Determine source type
-      let sourceType = getNodeOutputType(connection.source, connection.sourceHandle);
-
-      // Determine target type
-      let targetNode = get().nodes.find(n => n.id === connection.target);
-      if (!targetNode) return false;
-
-      // Special handling for state preparation nodes
-      const encodingNodes = [
+    // Special handling for state preparation nodes
+    const encodingNodes = [
         "Angle Encoding",
         "Amplitude Encoding",
         "Matrix Encoding",
         "Schmidt Decomposition",
-      ];
+    ];
 
-      if (
-        encodingNodes.includes(targetNode.data.label) &&
-        sourceType.toLowerCase() !== "array"
-      ) {
-        console.warn(
-          `Cannot connect: ${sourceType} is incompatible with ${targetNode.type}, expected "array".`
-        );
-        return false; // reject edge
-      }
+    if (
+      encodingNodes.includes(targetNode.data.label) &&
+      sourceType.toLowerCase() !== "array"
+    ) {
+      const errorMsg = `Cannot connect: ${sourceType} is incompatible with ${targetNode.type}, expected "array".`;
+      console.warn(errorMsg);
+      insertEdge = false;
+      return false; // reject edge
+    }
 
-      let outputType = sourceNode.data.outputType;
-
-      // Normal type check (locked types, etc.)
-      const targetType = getNodeInputType(connection.target, connection.targetHandle);
-      const lockedType = getNodeLockedType(targetNode.id);
-
-      if (targetType !== "any" && sourceType !== "any" && sourceType !== targetType) {
-        console.log(`Type mismatch: ${sourceType} -> ${targetType}, connection rejected`);
-        return false;
-      }
-
-      if (lockedType !== "any" && sourceType !== "any" && sourceType !== lockedType) {
-        console.warn(`Cannot connect: type "${sourceType}" does not match locked type "${lockedType}"`);
-        return false;
-      }
-
-    
-
-
+    if (insertEdge && !edgeExists) {
       console.log(connection.source);
       console.log(nodeDataSource);
       const existingInput = nodeDataTarget.data.inputs.find(
@@ -1036,6 +1111,19 @@ export const useStore = create<RFState>((set, get) => ({
               data: {
                 ...node.data,
                 [identifier]: nodeVal,
+
+              },
+            };
+          }
+          if (identifier === "encodingType") {
+            let inputTypes = ["array"]
+            if(nodeVal.includes("Basis") || nodeVal.includes("Custom")) inputTypes = ["any"];
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                [identifier]: nodeVal,
+                "inputTypes": inputTypes,
 
               },
             };

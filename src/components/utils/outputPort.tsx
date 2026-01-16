@@ -84,12 +84,16 @@ export default function OutputPort({
     return "any";
   };
 
-  // Determine displayed output type dynamically
+/*   // Determine displayed output type dynamically
   const displayedOutputType = useMemo(() => {
     let outputType = "unknown";
 
+    // Classical Data Type
+    if(type === "classical" && node.type === "dataTypeNode") {
+      outputType = node.data?.dataType ?? "array";
+    }
     // Classical Arithmetic Operator: infer from inputs
-    if (type === "classical" && node.data.label?.includes("Arithmetic Operator")) {
+    else if (type === "classical" && node.data.label?.includes("Arithmetic Operator")) {
       const t0 = getInputType(0);
       const t1 = getInputType(1);
 
@@ -99,17 +103,17 @@ export default function OutputPort({
       else outputType = "any";
     }
     // Other classical operators
-    else if (type === "classical" && (node.data.label?.includes("Bitwise Operator") || node.data.label?.includes("bit"))) {
+    else if (type === "classical" && node.data.label?.includes("Bitwise Operator")) {
       outputType = "bit";
     }
-    else if (node.data.label?.includes("Comparison Operator") || node.data.label?.includes("boolean")) {
+    else if (node.data.label?.includes("Comparison Operator")) {
       outputType = "boolean";
     }
-    else if (node.data.label?.includes("Min & Max Operator") || node.data.label?.includes("Number")) {
+    else if (node.data.label?.includes("Min & Max Operator")) {
       outputType = "number";
     }
     // Quantum or fallback
-    else if (type === "quantum") {
+    else if (type === "quantum" || type === "ancilla") {
       outputType = "quantum register";
     }
     else if (type === "classical") {
@@ -124,10 +128,11 @@ export default function OutputPort({
   // update outputType if it changes
   useEffect(() => {
     if (node.data.outputType !== displayedOutputType) {
+      //const updatedOutputTypes = [... node.]
       updateNodeValue(node.id, "outputType", displayedOutputType);
       console.log("Updated node outputType in store:", node.id, displayedOutputType);
     }
-  }, [displayedOutputType, node.id, node.data.outputType, updateNodeValue]);
+  }, [displayedOutputType, node.id, node.data.outputType, updateNodeValue]); */
 
   useEffect(() => {
     const isNowBellState = node.data.quantumStateName?.includes("Bell State");
@@ -170,7 +175,7 @@ export default function OutputPort({
         <div className="w-full flex justify-between items-center">
           <span className="text-left text-sm text-black font-semibold">Output:</span>
           <span className="text-[10px] text-gray-600">
-            type: {displayedOutputType.toLowerCase()}
+            type: {(node.data.outputTypes[index] ?? (type === "classical"?"any":"quantum register")).toLowerCase()}
           </span>
         </div>
 
