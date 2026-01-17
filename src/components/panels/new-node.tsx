@@ -350,41 +350,52 @@ export const AddNodePanel = () => {
     }
   };
 
-  // Get icon for plugin based on name/tags - using Pattern Atlas icons (local copies)
+  // Get icon for plugin based on name/tags - using Palette icons (same style as other nodes)
   const getPluginIcon = (plugin: any) => {
     const name = plugin.name.toLowerCase();
     const tags = plugin.tags || [];
 
-    // Specific plugin icons (most specific first)
-
-    // K-Means (classical and quantum) - specific icon
-    if (name.includes('k-means') || name === 'classical-k-means' || name === 'quantum-k-means') {
-      return '/plugin-icons/kmeans_icon.png';
+    // Clustering nodes - use PaletteIcon style (like other nodes)
+    if (name === 'quantum-k-means') {
+      return 'PaletteIcon_QuantumClustering.png';
+    }
+    if (name === 'classical-k-means') {
+      return 'PaletteIcon_ClassicalClustering.png';
     }
 
-    // Neural Networks (QNN, CNN) - specific icon
-    if (name.includes('qnn') || name.includes('neural') || name.includes('-cnn')) {
-      return '/plugin-icons/quantum_neural_network-thin.svg';
+    // QNN - specific PaletteIcon
+    if (name === 'qnn') {
+      return 'PaletteIcon_qnn.png';
     }
 
-    // Parzen Window / Kernel methods - SVM-like icon
-    if (name.includes('parzen') || name.includes('kernel')) {
-      return '/plugin-icons/qsvm_icon.png';
+    // Quantum CNN
+    if (name === 'quantum-cnn') {
+      return 'PaletteIcon_quantum-cnn.png';
     }
 
-    // K-Medoids - clustering icon
-    if (name.includes('medoid')) {
-      return '/plugin-icons/quantum_clustering-thin.svg';
+    // Quantum K-Nearest Neighbours
+    if (name === 'quantum-k-nearest-neighbours') {
+      return 'PaletteIcon_quantum-k-nearest-neighbours.png';
     }
 
-    // OPTICS - clustering icon
-    if (name.includes('optics')) {
-      return '/plugin-icons/quantum_clustering-thin.svg';
+    // Quantum Parzen Window
+    if (name === 'quantum-parzen-window') {
+      return 'PaletteIcon_quantum-parzen-window.png';
     }
 
-    // K-Nearest Neighbours - clustering icon
-    if (name.includes('k-nearest') || name.includes('knn')) {
-      return '/plugin-icons/quantum_clustering-thin.svg';
+    // Classical K-Medoids
+    if (name === 'classical-k-medoids') {
+      return 'PaletteIcon_classical-k-medoids.png';
+    }
+
+    // Hybrid Autoencoder
+    if (name === 'hybrid-autoencoder') {
+      return 'PaletteIcon_hybrid-autoencoder.png';
+    }
+
+    // OPTICS
+    if (name === 'optics') {
+      return 'PaletteIcon_optics.png';
     }
 
     // Generic fallback based on tags
