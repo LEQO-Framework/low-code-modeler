@@ -147,13 +147,24 @@ export const categories: Record<string, CategoryEntry> = {
   },
 
   [consts.machineLearningNodes]: {
-    description: "Machine learning and quantum machine learning plugins from the QHAna Plugin Runner.",
+    description: "Machine learning and quantum machine learning plugins.",
     content: {
       "Quantum ML Nodes": [
-        // Quantum machine learning nodes will be populated here
+        { label: "Quantum Clustering", type: consts.PluginNode, icon: "PaletteIcon_QuantumClustering.png", description: "Clusters data with quantum k-means algorithm.", completionGuaranteed: false, compactOptions: [true, false] },
+        { label: "qnn", type: consts.PluginNode, icon: "PaletteIcon_qnn.png", description: "Classifies data with a quantum neural network.", completionGuaranteed: false, compactOptions: [true, false] },
+        { label: "quantum-cnn", type: consts.PluginNode, icon: "PaletteIcon_quantum-cnn.png", description: "Labels data with a quantum convolutional neural network.", completionGuaranteed: false, compactOptions: [true, false] },
+        { label: "quantum-k-nearest-neighbours", type: consts.PluginNode, icon: "PaletteIcon_quantum-k-nearest-neighbours.png", description: "Quantum k-nearest neighbours classification.", completionGuaranteed: false, compactOptions: [true, false] },
+        { label: "quantum-parzen-window", type: consts.PluginNode, icon: "PaletteIcon_quantum-parzen-window.png", description: "Quantum parzen window classification.", completionGuaranteed: false, compactOptions: [true, false] },
+        { label: "quantum-kernel-estimation", type: consts.PluginNode, icon: "PaletteIcon_quantum-kernel-estimation.png", description: "Produces a kernel matrix from a quantum kernel.", completionGuaranteed: false, compactOptions: [true, false] },
+        { label: "vqc", type: consts.PluginNode, icon: "PaletteIcon_vqc.png", description: "Variational Quantum Classifier.", completionGuaranteed: false, compactOptions: [true, false] },
+        { label: "hybrid-autoencoder", type: consts.PluginNode, icon: "PaletteIcon_hybrid-autoencoder.png", description: "Reduces dimensionality with classical and quantum neural networks.", completionGuaranteed: false, compactOptions: [true, false] },
       ],
       "Classical ML Nodes": [
-        // Classical machine learning nodes will be populated here
+        { label: "Classical Clustering", type: consts.PluginNode, icon: "PaletteIcon_ClassicalClustering.png", description: "Clusters data with classical k-means algorithm.", completionGuaranteed: false, compactOptions: [true, false] },
+        { label: "classical-k-medoids", type: consts.PluginNode, icon: "PaletteIcon_classical-k-medoids.png", description: "Clusters data with classical k-medoids algorithm.", completionGuaranteed: false, compactOptions: [true, false] },
+        { label: "optics", type: consts.PluginNode, icon: "PaletteIcon_optics.png", description: "Clusters data with the OPTICS algorithm.", completionGuaranteed: false, compactOptions: [true, false] },
+        { label: "svm", type: consts.PluginNode, icon: "PaletteIcon_svm.png", description: "Classifies data with a support vector machine.", completionGuaranteed: false, compactOptions: [true, false] },
+        { label: "neural-network", type: consts.PluginNode, icon: "PaletteIcon_neural-network.png", description: "Neural network objective-function plugin.", completionGuaranteed: false, compactOptions: [true, false] },
       ],
     },
   },

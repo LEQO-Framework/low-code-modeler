@@ -34,40 +34,8 @@ export const AddNodePanel = () => {
     shallow
   );
 
-  // Plugin loading state
-  const [mlPlugins, setMlPlugins] = useState<any[]>([]);
-  const [pluginsLoading, setPluginsLoading] = useState(true);
-
-  // Load ML plugins from Plugin Runner
-  useEffect(() => {
-    const pluginRunnerUrl = import.meta.env.VITE_LOW_CODE_BACKEND?.replace(/\/plugins\/.*$/, '') || "http://localhost:5005";
-
-    const fetchPlugins = async () => {
-      try {
-        setPluginsLoading(true);
-        const response = await fetch(`${pluginRunnerUrl}/plugins/`);
-        if (!response.ok) throw new Error('Failed to fetch plugins');
-
-        const data = await response.json();
-        const allPlugins = data.plugins || [];
-
-        // Filter for ML plugins by tags (ML, QML, clustering, classification, supervised-learning)
-        const mlTags = ["ML", "QML", "clustering", "classification", "supervised-learning"];
-        const filtered = allPlugins.filter((plugin: any) =>
-          plugin.tags?.some((tag: string) => mlTags.includes(tag))
-        );
-
-        setMlPlugins(filtered);
-      } catch (error) {
-        console.error("Error loading plugins:", error);
-        setMlPlugins([]);
-      } finally {
-        setPluginsLoading(false);
-      }
-    };
-
-    fetchPlugins();
-  }, []);
+  // ML nodes are now statically defined in categories.tsx
+  const pluginsLoading = false;
 
   // Define mock inputs/outputs for ML plugins (until Plugin Runner metadata is available)
   const getMockPluginMetadata = (pluginName: string) => {
@@ -345,6 +313,148 @@ export const AddNodePanel = () => {
           ],
         };
 
+      case 'vqc':
+        return {
+          dataInputs: [
+            {
+              parameter: 'trainingDataUrl',
+              data_type: 'entity/vector',
+              content_type: ['application/json', 'text/csv'],
+              required: true,
+            },
+            {
+              parameter: 'trainingLabelsUrl',
+              data_type: 'entity/label',
+              content_type: ['application/json', 'text/csv'],
+              required: true,
+            },
+            {
+              parameter: 'testDataUrl',
+              data_type: 'entity/vector',
+              content_type: ['application/json', 'text/csv'],
+              required: true,
+            },
+          ],
+          dataOutputs: [
+            {
+              name: 'Predicted Labels',
+              data_type: 'entity/label',
+              content_type: ['application/json'],
+              required: true,
+            },
+          ],
+        };
+
+      case 'svm':
+        return {
+          dataInputs: [
+            {
+              parameter: 'trainingDataUrl',
+              data_type: 'entity/vector',
+              content_type: ['application/json', 'text/csv'],
+              required: true,
+            },
+            {
+              parameter: 'trainingLabelsUrl',
+              data_type: 'entity/label',
+              content_type: ['application/json', 'text/csv'],
+              required: true,
+            },
+            {
+              parameter: 'testDataUrl',
+              data_type: 'entity/vector',
+              content_type: ['application/json', 'text/csv'],
+              required: true,
+            },
+          ],
+          dataOutputs: [
+            {
+              name: 'Predicted Labels',
+              data_type: 'entity/label',
+              content_type: ['application/json'],
+              required: true,
+            },
+          ],
+        };
+
+      case 'neural-network':
+        return {
+          dataInputs: [
+            {
+              parameter: 'trainingDataUrl',
+              data_type: 'entity/vector',
+              content_type: ['application/json', 'text/csv'],
+              required: true,
+            },
+            {
+              parameter: 'trainingLabelsUrl',
+              data_type: 'entity/label',
+              content_type: ['application/json', 'text/csv'],
+              required: true,
+            },
+          ],
+          dataOutputs: [
+            {
+              name: 'Model',
+              data_type: 'model',
+              content_type: ['application/json'],
+              required: true,
+            },
+          ],
+        };
+
+      case 'hybrid-autoencoder':
+        return {
+          dataInputs: [
+            {
+              parameter: 'entityPointsUrl',
+              data_type: 'entity/vector',
+              content_type: ['application/json', 'text/csv'],
+              required: true,
+            },
+            {
+              parameter: 'targetDimensions',
+              data_type: 'int',
+              content_type: ['text/plain'],
+              required: true,
+            },
+          ],
+          dataOutputs: [
+            {
+              name: 'Reduced Data',
+              data_type: 'entity/vector',
+              content_type: ['application/json'],
+              required: true,
+            },
+          ],
+        };
+
+      case 'quantum-kernel-estimation':
+        return {
+          dataInputs: [
+            {
+              parameter: 'entityPointsUrl',
+              data_type: 'entity/vector',
+              content_type: ['application/json', 'text/csv'],
+              required: true,
+            },
+            {
+              parameter: 'featureMap',
+              data_type: 'string',
+              content_type: ['text/plain'],
+              required: false,
+            },
+          ],
+          dataOutputs: [
+            {
+              name: 'Kernel Matrix',
+              data_type: 'entity/matrix',
+              content_type: ['application/json'],
+              required: true,
+            },
+          ],
+        };
+
       default:
         return { dataInputs: [], dataOutputs: [] };
     }
@@ -430,62 +540,25 @@ export const AddNodePanel = () => {
     return undefined;
   };
 
-  // Create dynamic categories with ML plugins
-  const dynamicCategories = useMemo(() => {
-    const cats = { ...categories };
+  // Use static categories (ML nodes are defined in categories.tsx)
+  const dynamicCategories = categories;
 
-    // Populate Machine Learning Nodes category with ML plugins split into quantum and classical
-    if (mlPlugins.length > 0) {
-      // Separate quantum and classical ML plugins
-      const quantumPlugins: any[] = [];
-      const classicalPlugins: any[] = [];
-
-      mlPlugins.forEach(plugin => {
-        const name = plugin.name.toLowerCase();
-        const isQuantum = name.startsWith('quantum') || name === 'qnn' || name.includes('quantum-');
-
-        // Custom display names for clustering nodes
-        let displayName = plugin.name;
-        if (plugin.name === 'classical-k-means') {
-          displayName = 'Classical Clustering';
-        } else if (plugin.name === 'quantum-k-means') {
-          displayName = 'Quantum Clustering';
-        }
-
-        const mockMetadata = getMockPluginMetadata(plugin.name);
-        const pluginNode = {
-          label: displayName,
-          type: consts.PluginNode,
-          description: plugin.description,
-          icon: getPluginIcon(plugin), // Pattern Atlas icon
-          completionGuaranteed: false,
-          compactOptions: [true, false],
-          pluginData: {
-            ...plugin,
-            // Add mock metadata to pluginData so it's available in the drag handler
-            mockDataInputs: mockMetadata.dataInputs,
-            mockDataOutputs: mockMetadata.dataOutputs,
-          },
-        };
-
-        if (isQuantum) {
-          quantumPlugins.push(pluginNode);
-        } else {
-          classicalPlugins.push(pluginNode);
-        }
-      });
-
-      cats[consts.machineLearningNodes] = {
-        description: "Machine learning and quantum machine learning plugins from the QHAna Plugin Runner.",
-        content: {
-          "Quantum ML Nodes": quantumPlugins,
-          "Classical ML Nodes": classicalPlugins,
-        }
-      };
-    }
-
-    return cats;
-  }, [mlPlugins]);
+  // Map display labels to plugin names for metadata lookup
+  const labelToPluginName: Record<string, string> = {
+    "Quantum Clustering": "quantum-k-means",
+    "Classical Clustering": "classical-k-means",
+    "qnn": "qnn",
+    "quantum-cnn": "quantum-cnn",
+    "quantum-k-nearest-neighbours": "quantum-k-nearest-neighbours",
+    "quantum-parzen-window": "quantum-parzen-window",
+    "quantum-kernel-estimation": "quantum-kernel-estimation",
+    "vqc": "vqc",
+    "hybrid-autoencoder": "hybrid-autoencoder",
+    "classical-k-medoids": "classical-k-medoids",
+    "optics": "optics",
+    "svm": "svm",
+    "neural-network": "neural-network",
+  };
 
   const onDragStart = (event: React.DragEvent<HTMLDivElement>, node: any) => {
     event.dataTransfer.setData("application/reactflow", node.type);
@@ -493,8 +566,16 @@ export const AddNodePanel = () => {
     event.dataTransfer.setData("application/reactflow/label", node.label);
 
     // For plugin nodes, store additional metadata
-    if (node.type === consts.PluginNode && node.pluginData) {
-      event.dataTransfer.setData("application/reactflow/pluginData", JSON.stringify(node.pluginData));
+    if (node.type === consts.PluginNode) {
+      const pluginName = labelToPluginName[node.label] || node.label;
+      const mockMetadata = getMockPluginMetadata(pluginName);
+      const pluginData = {
+        name: pluginName,
+        mockDataInputs: mockMetadata.dataInputs,
+        mockDataOutputs: mockMetadata.dataOutputs,
+        ...node.pluginData,
+      };
+      event.dataTransfer.setData("application/reactflow/pluginData", JSON.stringify(pluginData));
     }
 
     event.dataTransfer.effectAllowed = "move";
