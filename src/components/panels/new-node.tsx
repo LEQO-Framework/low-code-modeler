@@ -398,6 +398,26 @@ export const AddNodePanel = () => {
       return 'PaletteIcon_optics.png';
     }
 
+    // Neural Network
+    if (name === 'neural-network') {
+      return 'PaletteIcon_neural-network.png';
+    }
+
+    // SVM
+    if (name === 'svm') {
+      return 'PaletteIcon_svm.png';
+    }
+
+    // VQC
+    if (name === 'vqc') {
+      return 'PaletteIcon_vqc.png';
+    }
+
+    // Quantum Kernel Estimation
+    if (name === 'quantum-kernel-estimation' || name === 'qiskit-quantum-kernel-estimation') {
+      return 'PaletteIcon_quantum-kernel-estimation.png';
+    }
+
     // Generic fallback based on tags
     if (tags.includes('clustering')) {
       return '/plugin-icons/quantum_clustering-thin.svg';
