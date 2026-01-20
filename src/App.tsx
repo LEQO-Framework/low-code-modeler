@@ -237,11 +237,11 @@ function App() {
   const [quantumAlgorithmModalStep, setQuantumAlgorithmModalStep] = useState(0);
   const [quantumAlgorithms, setQuantumAlgorithms] = useState([
     { name: "Quantum Approximate Optimization Algorithm (QAOA)", configCount: 0, patternGraphPng: "patterns/qaoa_patterngraph.png" },
-    { name: "SWAP Test", configCount: 0, patternGraphPng: null},
-    { name: "Hadamard Test", configCount: 0, patternGraphPng: null},
-    { name: "Grover's Algorithm", configCount: 0, patternGraphPng: "patterns/grover_patterngraph.png"},
-    { name: "Uniform Superposition", configCount: 0, patternGraphPng: null},
-    { name: "Initialization", configCount: 0, patternGraphPng: "patterns/initialization_patterngraph.png"},
+    { name: "SWAP Test", configCount: 0, patternGraphPng: null },
+    { name: "Hadamard Test", configCount: 0, patternGraphPng: null },
+    { name: "Grover's Algorithm", configCount: 0, patternGraphPng: "patterns/grover_patterngraph.png" },
+    { name: "Uniform Superposition", configCount: 0, patternGraphPng: null },
+    { name: "Initialization", configCount: 0, patternGraphPng: "patterns/initialization_patterngraph.png" },
   ]);
 
   const [patternGraph, setPatternGraph] = useState(null);
@@ -460,7 +460,7 @@ If none apply, return { "algorithms": [] }.
       },
       {
         target: '.backend-button',
-        content: 'This transforms the model into QASM code, which can be executed on quantum devices.',
+        content: 'This transforms the model into QASM code or workflows, which can then be executed on quantum devices or on a workflow engine.',
       },
       {
         target: '.palette-container',
@@ -478,13 +478,18 @@ If none apply, return { "algorithms": [] }.
         placement: "right"
       },
       {
+        target: '.classical-node',
+        content: 'This is a classical node that requires a value.',
+
+      },
+      {
         target: '.grand-parent',
-        content: 'This is a state preparation block which requires one classical value and outputs a quantum state.',
+        content: 'This value is then encoded via the state preparation block into a quantum state.',
 
       },
       {
         target: '.currentPanel-container',
-        content: 'This is the properties panel where you can configure properties of blocks.',
+        content: 'This is the properties panel, where you can configure the properties of blocks or the model.',
         placement: "left"
       }
     ];
@@ -1621,10 +1626,6 @@ If none apply, return { "algorithms": [] }.
       return;
     }
     console.log(flow.initialEdges)
-    if (flow.initialEdges) {
-      reactFlowInstance.setEdges(flow.initialEdges);
-      console.log("Edges loaded.");
-    }
     console.log(flow.nodes)
     if (flow.nodes) {
       reactFlowInstance.setNodes(
@@ -1636,7 +1637,12 @@ If none apply, return { "algorithms": [] }.
         }))
       );
     }
+    if (flow.initialEdges) {
+      reactFlowInstance.setEdges(flow.initialEdges);
+      console.log("Edges loaded.");
+    }
     console.log("load flow nodes", nodes);
+    console.log(edges);
 
     // Reset the viewport (optional based on your use case)
     const { x = 0, y = 0, zoom = 1 } = flow.viewport || {};
@@ -2010,7 +2016,8 @@ If none apply, return { "algorithms": [] }.
             setExpanded(true);
           }
           if (type === 'step:before' && index === 4) {
-            const id = "e2a719bf-516c-4601-84d1-de643b05ea02";
+
+            const id = "086a4f77-2562-44d3-b0df-7cfe83ae369a";
             const node = nodes.find(n => n.id === id);
             setSelectedNode(node);
             console.log("NODES", nodes);
@@ -2018,9 +2025,19 @@ If none apply, return { "algorithms": [] }.
           }
           if (type === 'step:before' && index === 5) {
             setExpanded(false);
+            const id = "e2a719bf-516c-4601-84d1-de643b05ea02";
+            const node = nodes.find(n => n.id === id);
+            setSelectedNode(node);
+            console.log("NODES", nodes);
+            console.log("SELECTED NODE", node);
           }
-          if (type === 'step:after' && index === 5) {
+          if (type === 'step:before' && index === 6) {
+            setExpanded(false);
+            setSelectedNode(null);
+          }
+          if (type === 'step:after' && index === 7) {
             startTour3();
+
           }
           if (['finished', 'skipped'].includes(data.status)) {
             setRunTour(false);
@@ -2354,7 +2371,7 @@ If none apply, return { "algorithms": [] }.
             />
 
 
-
+            <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
           </ReactFlow>
           {contextMenu.visible && contextMenu.nodeId && (
             <ContextMenu
