@@ -236,9 +236,12 @@ function App() {
   const [jobId, setJobId] = useState(null);
   const [quantumAlgorithmModalStep, setQuantumAlgorithmModalStep] = useState(0);
   const [quantumAlgorithms, setQuantumAlgorithms] = useState([
-    { name: "Quantum Approximate Optimization Algorithm (QAOA)", configCount: 0, patternGraphPng: "patterns/qaoa.png" },
-    { name: "Variational Quantum Eigensolver (VQE)", configCount: 0, patternGraphPng: "patterns/qaoa.png" },
-    { name: "Grover's Algorithm", configCount: 0, patternGraphPng: "patterns/qaoa.png" },
+    { name: "Quantum Approximate Optimization Algorithm (QAOA)", configCount: 0, patternGraphPng: "patterns/qaoa_patterngraph.png" },
+    { name: "SWAP Test", configCount: 0, patternGraphPng: null},
+    { name: "Hadamard Test", configCount: 0, patternGraphPng: null},
+    { name: "Grover's Algorithm", configCount: 0, patternGraphPng: "patterns/grover_patterngraph.png"},
+    { name: "Uniform Superposition", configCount: 0, patternGraphPng: null},
+    { name: "Initialization", configCount: 0, patternGraphPng: "patterns/initialization_patterngraph.png"},
   ]);
 
   const [patternGraph, setPatternGraph] = useState(null);
@@ -249,9 +252,10 @@ function App() {
   });
 
 
-  const detectQuantumAlgorithms = async (userInput: string) => {
+  const detectQuantumAlgorithms = async (userInput: string): Promise<string | null> => {
     try {
       setIsDetectingAlgorithms(true);
+
       const algorithms = [
         "Quantum Approximate Optimization Algorithm (QAOA)",
         "Variational Quantum Eigensolver (VQE)",
@@ -269,6 +273,7 @@ function App() {
         "Initialization",
         "Dynamic Circuits"
       ];
+
       setQuantumAlgorithms(quantumAlgorithms);
 
       let response;
@@ -294,47 +299,32 @@ Return JSON ONLY in this exact format:
 If none apply, return { "algorithms": [] }.
             `,
             },
-            {
-              role: "user",
-              content: userInput,
-            },
+            { role: "user", content: userInput },
           ],
         });
+
         if (!response?.output_text) {
           setQuantumAlgorithms(quantumAlgorithms);
+          return null;
         }
 
+        const parsed = JSON.parse(response.output_text);
 
-        console.log(response.output_text);
+        if (!Array.isArray(parsed.algorithms)) throw new Error("Invalid response format");
 
-        let parsed;
-        try {
-          parsed = JSON.parse(response.output_text);
-        } catch (parseError) {
-          console.error("Invalid JSON from OpenAI:", response.output_text);
-          throw new Error("Failed to parse OpenAI response");
-        }
+        setQuantumAlgorithms(parsed.algorithms.map((name: string) => ({ name })));
 
-        if (!Array.isArray(parsed.algorithms)) {
-          throw new Error("Invalid response format");
-        }
-
-        setQuantumAlgorithms(
-          parsed.algorithms.map((name: string) => ({
-            name
-          }))
-        );
-      } catch (sendError) {
+        return null;
+      } catch (sendError: any) {
         console.error("OpenAI request failed:", sendError);
-        console.log("set quantum algorithms for offline processing");
         setQuantumAlgorithms(quantumAlgorithms);
-        return;
+        return sendError.message || "Unknown error";
       }
-
     } finally {
       setIsDetectingAlgorithms(false);
     }
   };
+
 
   function viewPatternGraph(algo) {
     setPatternGraph(algo.patternGraphPng);
@@ -2363,7 +2353,7 @@ If none apply, return { "algorithms": [] }.
               pannable={true}
             />
 
-         
+
 
           </ReactFlow>
           {contextMenu.visible && contextMenu.nodeId && (
