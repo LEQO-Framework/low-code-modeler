@@ -857,8 +857,8 @@ export const useStore = create<RFState>((set, get) => ({
 
 
     // TYPE CHECK
-    let sourceType = getNodeOutputType(connection.source, connection.sourceHandle);
-    const targetType = getNodeInputType(connection.target, connection.targetHandle);
+    let sourceType = getNodeOutputType(connection.source, connection.sourceHandle).toLowerCase();
+    const targetType = getNodeInputType(connection.target, connection.targetHandle).toLowerCase();
     const inputIndex = getHandleIndex(connection.target, connection.targetHandle);
 
     

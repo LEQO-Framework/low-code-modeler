@@ -2215,7 +2215,7 @@ function App() {
               pannable={true}
             />
 
-            <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
+         
 
           </ReactFlow>
           {contextMenu.visible && contextMenu.nodeId && (

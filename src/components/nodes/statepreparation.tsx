@@ -239,6 +239,9 @@ export const StatePreparationNode = memo((node: Node) => {
     if (!node.data.encodingType && node.data.label === "Basis Encoding") {
       updateNodeValue(node.id, "encodingType", node.data.label);
     }
+    if (!node.data.encodingType && node.data.label === "Custom Encoding") {
+      updateNodeValue(node.id, "encodingType", node.data.label);
+    }
     if (!node.data.encodingType && node.data.label === "Angle Encoding") {
       updateNodeValue(node.id, "encodingType", node.data.label);
     }
@@ -330,7 +333,7 @@ export const StatePreparationNode = memo((node: Node) => {
           )}
           style={{
             height:
-              ["Basis Encoding", "Angle Encoding", "Amplitude Encoding"].includes(data.label)
+              ["Custom Encoding", "Basis Encoding", "Angle Encoding", "Amplitude Encoding"].includes(data.label)
                 ? !ancillaMode
                   ? "300px"
                   : `${Math.max(dynamicHeight - 70, 200)}px`
@@ -419,6 +422,7 @@ export const StatePreparationNode = memo((node: Node) => {
                 "Prepare State",
                 "Encode Value",
                 "Basis Encoding",
+                "Custom Encoding",
                 "Angle Encoding",
                 "Amplitude Encoding",
               ].includes(data.label) && (
@@ -432,7 +436,9 @@ export const StatePreparationNode = memo((node: Node) => {
                             ? "basisEncodingIcon.png"
                             : data.label === "Angle Encoding"
                               ? "angleEncodingIcon.png"
-                              : "amplitudeEncodingIcon.png"
+                              : data.label === "Custom Encoding"
+                                ? "encodeValueIcon.png"
+                                : "amplitudeEncodingIcon.png"
                     }
                     alt={`${data.label} icon`}
                     className={
@@ -492,7 +498,7 @@ export const StatePreparationNode = memo((node: Node) => {
 
                 </>
               )}
-              {node.data.label === "Amplitude Encoding" && (
+              {(node.data.label === "Amplitude Encoding" ||node.data.label === "Custom Encoding") && (
                 <>
 
                   {node.data.encodingType !== "Basis Encoding" && node.data.encodingType !== "Angle Encoding" && (
@@ -544,7 +550,7 @@ export const StatePreparationNode = memo((node: Node) => {
           )}
           <div className="custom-node-port-in mb-3 mt-2">
             <div className="relative flex flex-col overflow-visible">
-              {(node.data.label === "Encode Value" || node.data.label === "Basis Encoding" || node.data.label === "Angle Encoding" || node.data.label === "Amplitude Encoding") && (
+              {(node.data.label === "Encode Value" || node.data.label === "Basis Encoding" ||  node.data.label === "Custom Encoding"|| node.data.label === "Angle Encoding" || node.data.label === "Amplitude Encoding") && (
                 <div
                   className="relative p-2 mb-1"
                   style={{
@@ -666,7 +672,7 @@ export const StatePreparationNode = memo((node: Node) => {
                   setSelectedNode={setSelectedNode}
                   active={true}
                 />)}
-              {(node.data.label === "Encode Value" || node.data.label === "Basis Encoding" || node.data.label === "Amplitude Encoding" || node.data.label === "Angle Encoding") && (
+              {(node.data.label === "Encode Value" || node.data.label === "Custom Encoding" ||node.data.label === "Basis Encoding" || node.data.label === "Amplitude Encoding" || node.data.label === "Angle Encoding") && (
                 <OutputPort
                   node={node}
                   index={0}
