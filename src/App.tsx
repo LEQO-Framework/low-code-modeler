@@ -8,7 +8,8 @@ import ReactFlow, {
   ReactFlowProvider,
   MiniMap,
   getNodesBounds,
-  Panel
+  Panel,
+  useUpdateNodeInternals
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { ContextMenu, CustomPanel, Palette } from "./components";
@@ -24,7 +25,7 @@ import { NewDiagramModal } from "./Modal";
 import './index.css';
 import { Placement } from 'react-joyride';
 import { startCompile } from "./backend";
-import { ancillaConstructColor, classicalConstructColor, ClassicalOperatorNode, controlFlowConstructColor, quantum_types, quantumConstructColor } from "./constants";
+import { ancillaConstructColor, classicalConstructColor, ClassicalOperatorNode, controlFlowConstructColor, grover, hadamard_test_imaginary_part, hadamard_test_real_part, qaoa, quantum_types, quantumConstructColor, swap_test } from "./constants";
 import Joyride from 'react-joyride';
 import { ConfigModal } from "./components/modals/configModal";
 import { QunicornModal } from "./components/modals/qunicornModal";
@@ -33,6 +34,7 @@ import { Toast } from "./components/modals/toast";
 import ExperienceModePanel from "./components/modals/experienceLevelModal";
 import { HistoryItem, HistoryModal } from "./components/modals/historyModal";
 import { ValidationModal } from "./components/modals/validationModal";
+import { grover_algorithm, hadamard_test_imaginary_part_algorithm, hadamard_test_real_part_algorithm, qaoa_algorithm, swap_test_algorithm } from "./constants/templates";
 import JSZip, { JSZipObject } from "jszip";
 import { createDeploymentModel, createNodeType, createServiceTemplate, updateNodeType, updateServiceTemplate } from "./winery";
 
@@ -165,8 +167,6 @@ function App() {
     left: 0,
   });
 
-  //const [contextMenu, setContextMenu] = useState(null);
-
   const onNodeContextMenu = useCallback(
     (event: React.MouseEvent, node: Node) => {
       event.preventDefault();
@@ -181,6 +181,21 @@ function App() {
     },
     []
   );
+
+  const onEdgesDelete = (edges: Edge[]) => {
+    edges.forEach((edge) => {
+      console.log("ON EDGES DELETE")
+      console.log("EDGE", edge)
+      const targetNodeId = edge.target
+      const targetHandle = edge.targetHandle
+      const targetNode = nodes.find(n => n.id === targetNodeId);
+      const newInputs = targetNode.data.inputs.filter(i => i.targetHandle !== targetHandle)
+      updateNodeValue(targetNodeId, "inputs", newInputs)
+      console.log(targetHandle)
+      console.log("update new inputs", newInputs)
+      console.log("NEW INPUTS", targetNode.data.inputs)
+    })
+  };
 
 
 
@@ -306,6 +321,8 @@ function App() {
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
   const [workflow, setWorkflow] = useState("");
 
+
+  const updateNodeInternals = useUpdateNodeInternals();
 
   const showToast = (message: string, type: "success" | "error" | "info") => {
     setToast({ message, type });
@@ -533,6 +550,11 @@ function App() {
   const startTour2 = () => {
     setRunTour(true);
     setAncillaMode(false);
+    setAncillaModelingOn(false);
+    //updateNodeInternals since ancilla mode changes number of handles
+    nodes.forEach((node) => {
+      updateNodeInternals(node.id);
+    })
     console.log("load tutorial")
     loadFlow(tutorial);
     console.log("load toturial")
@@ -632,20 +654,20 @@ function App() {
             description: `Node "${node.id}" with label "${label}" requires exactly 2 inputs, but got ${inputCount}.`,
           });
         }
-        if(node.data.label === "Quantum Comparison Operator" || node.data.label === "Quantum Min & Max Operator"){
+        if (node.data.label === "Quantum Comparison Operator" || node.data.label === "Quantum Min & Max Operator") {
           warnings.push({
             nodeId: node.id,
             nodeType: node.type,
             description: `Node "${node.id}" (${node.data.label}) produces a classical output but its output is not used.`,
           });
-        }else if (!twoQubitGates.includes(label) && !hasQuantumOutput) {
+        } else if (!twoQubitGates.includes(label) && !hasQuantumOutput) {
           warnings.push({
             nodeId: node.id,
             nodeType: node.type,
             description: `Node "${node.id}" (${node.data.label}) produces a quantum state but its output is not used.`,
           });
         }
-        
+
       }
 
       if (threeQubitGates.includes(label)) {
@@ -895,6 +917,11 @@ function App() {
   const startTour = () => {
     setRunTour(true);
     setAncillaMode(false);
+    setAncillaModelingOn(false);
+    //updateNodeInternals since ancilla mode changes number of handles
+    nodes.forEach((node) => {
+      updateNodeInternals(node.id);
+    })
     console.log("load tutorial")
     console.log("load toturial")
   }
@@ -1217,9 +1244,25 @@ function App() {
         x: event.clientX,
         y: event.clientY,
       })
+      const label = event.dataTransfer.getData("application/reactflow/label");
       console.log(position);
-
-      handleOnDrop(event, reactFlowWrapper, reactFlowInstance, setNodes);
+      if (label == qaoa) {
+        loadFlow(qaoa_algorithm)
+      } else if (label == swap_test) {
+        loadFlow(swap_test_algorithm);
+      }
+      else if (label == hadamard_test_imaginary_part) {
+        loadFlow(hadamard_test_imaginary_part_algorithm);
+      }
+      else if (label == hadamard_test_real_part) {
+        loadFlow(hadamard_test_real_part_algorithm);
+      }
+      else if (label == grover) {
+        loadFlow(grover_algorithm);
+      }
+      else {
+        handleOnDrop(event, reactFlowWrapper, reactFlowInstance, setNodes);
+      }
 
       //setContextMenu((prev) => ({ ...prev, left: event.clientX, top: event.clientY,}));
     },
@@ -1621,8 +1664,23 @@ function App() {
     const bool_value = (experienceLevel === "pioneer") ? false : true; // if previous experience level was pioneer...
     setCompactVisualization(bool_value)
     setAncillaMode(bool_value)
-    setAncillaModelingOn(bool_value)
+    setAncillaModelingOn(bool_value)  
+    //updateNodeInternals since ancilla mode changes number of handles
+    nodes.forEach((node) => {
+      updateNodeInternals(node.id);
+    })
   };
+
+  
+
+  const onToggleAncilla = () => { 
+    setAncillaModelingOn(!ancillaModelingOn); 
+    setAncillaMode(!ancillaModelingOn); 
+    //updateNodeInternals since ancilla mode changes number of handles
+    nodes.forEach((node) => {
+      updateNodeInternals(node.id);
+    })
+  }
 
   const handleSaveAsSVG = () => {
     if (ref.current === null) {
@@ -1800,7 +1858,7 @@ function App() {
   }
 
   return (
-    <ReactFlowProvider>
+    <>
       <Joyride
         steps={joyrideSteps}
         run={runTour}
@@ -2046,6 +2104,7 @@ function App() {
             onNodeDragStop={onNodeDragStop}
             onDrop={onDrop}
             onNodesDelete={onNodesDelete}
+            onEdgesDelete={onEdgesDelete}
 
             fitView
             fitViewOptions={{ maxZoom: 1 }}
@@ -2096,7 +2155,7 @@ function App() {
               expanded={expanded}
               onToggleExpanded={() => setExpanded(!expanded)}
               ancillaModelingOn={ancillaModelingOn}
-              onToggleAncilla={() => { setAncillaModelingOn(!ancillaModelingOn); setAncillaMode(!ancillaModelingOn) }}
+              onToggleAncilla={onToggleAncilla}
               experienceLevel={experienceLevel}
               onExperienceLevelChange={onExperienceLevelChange}
               //onExperienceLevelChange={(event) => { setExperienceLevel(event); setExperienceLevelOn(event); }}
@@ -2198,8 +2257,9 @@ function App() {
 
 
       </main>
-    </ReactFlowProvider>
+      </>
   );
 }
+
 
 export default App;

@@ -4,6 +4,7 @@ import { FaTrash, FaCopy, FaPlus, FaMinus, FaReact, FaCaretRight } from "react-i
 import { FaGear } from "react-icons/fa6";
 import { v4 as uuid } from "uuid";
 import { Button } from "./ui";
+import { IPortData } from "@/components/nodes/model";
 
 interface ContextMenuProps {
   id: string;
@@ -19,6 +20,8 @@ const generateRandomId = () => {
   return `${Math.random().toString(36).substr(2, 9)}-${Date.now()}`;
 };
 
+
+
 export const ContextMenu: React.FC<ContextMenuProps> = ({
   id,
   top,
@@ -31,7 +34,8 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   const { getNode, setNodes, addNodes, setEdges } = useReactFlow();
   const type = getNode(id).type
   console.log("type", type)
-
+  const [inputs, setInputs] = useState(getNode(id).data.inputs || []);
+  const updateNodeInternals = useUpdateNodeInternals();
   const duplicateNode = useCallback(() => { // duplicate node at slighlty shifted position
     const node = getNode(id);
 
@@ -62,7 +66,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   const incrementNodeDataField = useCallback((field: string, min_value: number) => { //TODO: richtiges Feld verwenden (bei merger: numberInputs) --> Feld als Argument übergeben?
     const node = getNode(id);
     //const field = "numberQuantumInputs";
-    console.log("[INCREMENT] field value", node.data[field], "field value type", typeof node.data[field])
+    console.log("[INCREMENT] field value", field, "field value type", typeof node.data[field])
     setNodes((nodes) =>
       nodes.map((n) =>
         n.id === id
@@ -70,7 +74,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
           : n
       )
     );
-     
+    updateNodeInternals(id);
   }, [id, getNode, setNodes, onAction]);
 
    const updateNodeInternals = useUpdateNodeInternals();
@@ -86,7 +90,9 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
           : n
       )
     );
+    updateNodeInternals(id);
   }, [id, getNode, setNodes, onAction]);
+  
   const [submenuInputAddOpen, setSubmenuInputAddOpen] = useState(false);
   const [submenuInputRemoveOpen, setSubmenuInputRemoveOpen] = useState(false);
   const [submenuOutputAddOpen, setSubmenuOutputAddOpen] = useState(false);
