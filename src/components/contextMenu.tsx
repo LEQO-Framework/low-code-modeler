@@ -77,8 +77,6 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
     updateNodeInternals(id);
   }, [id, getNode, setNodes, onAction]);
 
-   const updateNodeInternals = useUpdateNodeInternals();
-
 
   const decrementNodeDataField = useCallback((field: string, min_value: number) => {
     const node = getNode(id);
