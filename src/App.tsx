@@ -39,6 +39,7 @@ import OpenAI from "openai";
 import { grover_algorithm, hadamard_test_imaginary_part_algorithm, hadamard_test_real_part_algorithm, qaoa_algorithm, swap_test_algorithm } from "./constants/templates";
 import JSZip, { JSZipObject } from "jszip";
 import { createDeploymentModel, createNodeType, createServiceTemplate, updateNodeType, updateServiceTemplate } from "./winery";
+import DomainProfileModal from "./components/modals/domainProfileModal";
 
 const selector = (state: {
   nodes: Node[];
@@ -235,13 +236,14 @@ function App() {
   const [executed, setAlreadyExecuted] = useState(false);
   const [jobId, setJobId] = useState(null);
   const [quantumAlgorithmModalStep, setQuantumAlgorithmModalStep] = useState(0);
+  const [domainProfileOpen, setDomainProfileOpen] = useState(false);
   const [quantumAlgorithms, setQuantumAlgorithms] = useState([
     { name: "Quantum Approximate Optimization Algorithm (QAOA)", configCount: 0, patternGraphPng: "patterns/qaoa_patterngraph.png" },
-    { name: "SWAP Test", configCount: 0, patternGraphPng: null},
-    { name: "Hadamard Test", configCount: 0, patternGraphPng: null},
-    { name: "Grover's Algorithm", configCount: 0, patternGraphPng: "patterns/grover_patterngraph.png"},
-    { name: "Uniform Superposition", configCount: 0, patternGraphPng: null},
-    { name: "Initialization", configCount: 0, patternGraphPng: "patterns/initialization_patterngraph.png"},
+    { name: "SWAP Test", configCount: 0, patternGraphPng: null },
+    { name: "Hadamard Test", configCount: 0, patternGraphPng: null },
+    { name: "Grover's Algorithm", configCount: 0, patternGraphPng: "patterns/grover_patterngraph.png" },
+    { name: "Uniform Superposition", configCount: 0, patternGraphPng: null },
+    { name: "Initialization", configCount: 0, patternGraphPng: "patterns/initialization_patterngraph.png" },
   ]);
 
   const [patternGraph, setPatternGraph] = useState(null);
@@ -2039,6 +2041,7 @@ If none apply, return { "algorithms": [] }.
           uploadDiagram={() => uploadToGitHub()}
           onLoadJson={handleLoadJson}
           sendToBackend={handleOpenValidation}
+          createDomainProfile={() => setDomainProfileOpen(true)}
           startQuantumAlgorithmSelection={startQuantumAlgorithmSelection}
           //sendToQunicorn={() => setIsQunicornOpen(true)}
           openHistory={openHistoryModal}
@@ -2120,6 +2123,14 @@ If none apply, return { "algorithms": [] }.
         </Modal>
       )}
 
+      <DomainProfileModal
+        open={domainProfileOpen}
+        onClose={() => setDomainProfileOpen(false)}
+        onSave={(profile) => {
+          console.log("Saved profile:", profile);
+          setDomainProfileOpen(false);
+        }}
+      />
 
       <AiModal
         quantumAlgorithmModalStep={quantumAlgorithmModalStep}

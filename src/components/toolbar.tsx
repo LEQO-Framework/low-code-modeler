@@ -19,6 +19,7 @@ interface ToolbarProps {
   onOpenConfig: () => void;
   uploadDiagram: () => void;
   onLoadJson: () => void;
+  createDomainProfile: ()=>void;
   sendToBackend: () => void;
   startQuantumAlgorithmSelection: ()=> void;
   //sendToQunicorn: () => void;
@@ -33,6 +34,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
   uploadDiagram,
   onOpenConfig,
   onLoadJson,
+  createDomainProfile,
   sendToBackend,
   startQuantumAlgorithmSelection,
   //sendToQunicorn,
@@ -54,14 +56,14 @@ const Toolbar: React.FC<ToolbarProps> = ({
           <Button size="sm" onClick={onSave} title="Save the current diagram">
             <Save className="w-4 h-4 mr-2" /> Save
           </Button>
-          <Button size="sm" onClick={onSaveAsSVG} title="Save the current diagram as SVG">
-            <Download className="w-4 h-4 mr-2" /> Save as SVG
-          </Button>
           <Button size="sm" onClick={uploadDiagram} title="Upload the current diagram to GitHub">
             <UploadCloud className="w-4 h-4 mr-2" /> Upload
           </Button>
           <Button size="sm" onClick={onOpenConfig} title="Configure the editor and the endpoints">
             <Settings className="w-4 h-4 mr-2" /> Configuration
+          </Button>
+          <Button size="sm" onClick={createDomainProfile} title="Configure the editor and the endpoints">
+            <Settings className="w-4 h-4 mr-2" /> Create Domain Profile
           </Button>
           <Button className="backend-button" size="sm" onClick={sendToBackend} title="Send the diagram to the backend">
             <Send className="w-4 h-4 mr-2" /> Send to Backend
