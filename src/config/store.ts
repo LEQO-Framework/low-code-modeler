@@ -792,6 +792,35 @@ export const useStore = create<RFState>((set, get) => ({
 
     console.log(connection)
     console.log(insertEdge);
+    let setTypeError = get().setTypeError;
+
+
+    if (!insertEdge) {
+      const getHandleDomain = (handleId?: string): "classical" | "quantum" | "ancilla" | "dirtyAncilla" | "unknown" => {
+        if (!handleId) return "unknown";
+        if (handleId.includes(consts.classicalHandle)) return "classical";
+        if (handleId.includes(consts.dirtyAncillaHandle)) return "dirtyAncilla";
+        if (handleId.includes(consts.ancillaHandle)) return "ancilla";
+        if (handleId.includes(consts.quantumHandle) || handleId.includes("sideQuantumHandle")) return "quantum";
+        return "unknown";
+      };
+      const sourceDomain = getHandleDomain(connection.sourceHandle);
+      const targetDomain = getHandleDomain(connection.targetHandle);
+
+      const handles = (d: string) => {
+        switch (d) {
+          case "classical": return "classical";
+          case "quantum": return "quantum";
+          case "ancilla": return "ancilla";
+          case "dirtyAncilla": return "dirty ancilla";
+          default: return "unknown";
+        }
+      };
+
+      setTypeError(
+        `Cannot connect ${handles(sourceDomain)} output to ${handles(targetDomain)} input`
+      );
+    }
     console.log(!edgeExists)
 
     const edge = {
@@ -831,7 +860,7 @@ export const useStore = create<RFState>((set, get) => ({
     let sourceType = getNodeOutputType(connection.source, connection.sourceHandle);
     const targetType = getNodeInputType(connection.target, connection.targetHandle);
     const inputIndex = getHandleIndex(connection.target, connection.targetHandle);
-    const setTypeError = get().setTypeError;
+
     console.log("Types", sourceType, targetType);
 
     // If types are incompatible, reject connection
