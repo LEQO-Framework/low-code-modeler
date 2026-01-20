@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useReactFlow, Node, useStore, useUpdateNodeInternals } from "reactflow";
 import { FaTrash, FaCopy, FaPlus, FaMinus, FaReact, FaCaretRight } from "react-icons/fa";
 import { FaGear } from "react-icons/fa6";
@@ -77,6 +77,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
     updateNodeInternals(id);
   }, [id, getNode, setNodes, onAction]);
 
+
   const decrementNodeDataField = useCallback((field: string, min_value: number) => {
     const node = getNode(id);
     console.log("[DECREMENT] field value", node.data[field], "field value type", typeof node.data[field])
@@ -107,6 +108,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
     useCallback((state) => state.nodeInternals.get(id), [id])
   );
 
+  
   const quantumInputs =
     Number(node.data["numberQuantumInputs"] ?? 0);
   const hasQuantumInputs = quantumInputs > minInput // what happens if node has no filed numQuantumInputs?
@@ -121,6 +123,11 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   console.log(getNode(id).data["numberQuantumInputs"])
   console.log(hasQuantumInputs)
   console.log(hasClassicalInputs)
+   useEffect(() => {
+    updateNodeInternals(node.id);
+    console.log("update handles")
+   
+  }, [node.data["numberClassicalInputs"] ]);
 
 
   const toggleSubmenuInputAdd = useCallback((e: React.MouseEvent) => {

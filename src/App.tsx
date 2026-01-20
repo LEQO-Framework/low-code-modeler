@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import ReactFlow, {
   Background,
   BackgroundVariant,
@@ -52,6 +52,8 @@ const selector = (state: {
   onEdgesChange: any;
   onConnect: any;
   onConnectEnd: any;
+  typeError: string | null;
+  setTypeError: (message: string | null) => void;
   setSelectedNode: (node: Node | null) => void;
   updateNodeValue: (nodeId: string, field: string, nodeVal: string) => void;
   updateParent: (nodeId: string, parentId: string, position: any) => void;
@@ -76,6 +78,8 @@ const selector = (state: {
   onEdgesChange: state.onEdgesChange,
   onConnect: state.onConnect,
   onConnectEnd: state.onConnectEnd,
+  typeError: state.typeError,
+  setTypeError: state.setTypeError,
   setSelectedNode: state.setSelectedNode,
   updateNodeValue: state.updateNodeValue,
   updateParent: state.updateParent,
@@ -94,7 +98,7 @@ const selector = (state: {
 function App() {
   const reactFlowWrapper = React.useRef<any>(null);
   const [reactFlowInstance, setReactFlowInstance] = React.useState<any>(null);
-   const {
+  const {
     nodes,
     edges,
     experienceLevel,
@@ -105,6 +109,8 @@ function App() {
     onEdgesChange,
     onConnect,
     onConnectEnd,
+    typeError,
+    setTypeError,
     setCompact,
     setExperienceLevel,
     setAncillaMode,
@@ -117,6 +123,8 @@ function App() {
     updateChildren,
     setEdges,
   } = useStore(useShallow(selector));
+
+
 
   const [metadata, setMetadata] = React.useState<any>({
     version: "1.0.0",
@@ -441,6 +449,12 @@ If none apply, return { "algorithms": [] }.
   const showToast = (message: string, type: "success" | "error" | "info") => {
     setToast({ message, type });
   };
+
+  useEffect(() => {
+    if (typeError) {
+      showToast(typeError, "error");
+    }
+  }, [typeError, showToast, setTypeError]);
 
   const [runTour, setRunTour] = useState(false);
   const [joyrideStepId, setJoyRideStepId] = useState(0);
@@ -1638,12 +1652,17 @@ If none apply, return { "algorithms": [] }.
     const { x = 0, y = 0, zoom = 1 } = flow.viewport || {};
     reactFlowInstance.setViewport({ x, y, zoom });
 
+    console.log(flow.metadata)
     // Set the metadata (if any) - assuming initialDiagram has metadata
     if (flow.metadata) {
-      setMetadata(flow.metadata);
-      console.log("Metadata loaded:", flow.metadata);
+      // If metadata is an array, unpack it
+      const dataToSet = Array.isArray(flow.metadata) ? flow.metadata[0] : flow.metadata;
+      setMetadata(dataToSet);
+      console.log("Metadata loaded:", dataToSet);
     }
+
   };
+
 
   const onNodeDrag = React.useCallback((event: React.MouseEvent, node: Node, nodes: Node[]) => {
     console.log(reactFlowInstance.getNodes())
@@ -1774,18 +1793,18 @@ If none apply, return { "algorithms": [] }.
     const bool_value = (experienceLevel === "pioneer") ? false : true; // if previous experience level was pioneer...
     setCompactVisualization(bool_value)
     setAncillaMode(bool_value)
-    setAncillaModelingOn(bool_value)  
+    setAncillaModelingOn(bool_value)
     //updateNodeInternals since ancilla mode changes number of handles
     nodes.forEach((node) => {
       updateNodeInternals(node.id);
     })
   };
 
-  
 
-  const onToggleAncilla = () => { 
-    setAncillaModelingOn(!ancillaModelingOn); 
-    setAncillaMode(!ancillaModelingOn); 
+
+  const onToggleAncilla = () => {
+    setAncillaModelingOn(!ancillaModelingOn);
+    setAncillaMode(!ancillaModelingOn);
     //updateNodeInternals since ancilla mode changes number of handles
     nodes.forEach((node) => {
       updateNodeInternals(node.id);
@@ -1908,49 +1927,49 @@ If none apply, return { "algorithms": [] }.
 
     const masterZip = await JSZip.loadAsync(arrayBuffer);
     // Process each folder 
-     for (const [path, entry] of Object.entries(masterZip.files)) {
-    if (entry.dir) continue;
-    if (!path.endsWith(".zip")) continue;
+    for (const [path, entry] of Object.entries(masterZip.files)) {
+      if (entry.dir) continue;
+      if (!path.endsWith(".zip")) continue;
 
-    // Extract activity name
-    const activityName = path.replace(".zip", "");
-    console.log(`Processing activity ZIP: ${activityName}`);
+      // Extract activity name
+      const activityName = path.replace(".zip", "");
+      console.log(`Processing activity ZIP: ${activityName}`);
 
-    // Load the activity ZIP in memory
-    const activityArrayBuffer = await entry.async("arraybuffer");
-    const activityZip = await JSZip.loadAsync(activityArrayBuffer);
+      // Load the activity ZIP in memory
+      const activityArrayBuffer = await entry.async("arraybuffer");
+      const activityZip = await JSZip.loadAsync(activityArrayBuffer);
 
-    // Find service.zip inside activity ZIP
-    const serviceEntry = Object.values(activityZip.files).find(
-      (f) => !f.dir && f.name.endsWith("service.zip")
-    );
+      // Find service.zip inside activity ZIP
+      const serviceEntry = Object.values(activityZip.files).find(
+        (f) => !f.dir && f.name.endsWith("service.zip")
+      );
 
-    if (!serviceEntry) {
-      console.warn(`No service.zip found in ${activityName}`);
-      continue;
-    }
+      if (!serviceEntry) {
+        console.warn(`No service.zip found in ${activityName}`);
+        continue;
+      }
 
-    // Extract service.zip as Blob
-    const serviceArrayBuffer = await serviceEntry.async("arraybuffer");
-    const serviceBlob = new Blob([serviceArrayBuffer], { type: "application/zip" });
+      // Extract service.zip as Blob
+      const serviceArrayBuffer = await serviceEntry.async("arraybuffer");
+      const serviceBlob = new Blob([serviceArrayBuffer], { type: "application/zip" });
 
-    // Create deployment model
-    const versionUrl = `http://localhost:8093/winery/servicetemplates/${activityName}`;
-    await createDeploymentModel(
-      serviceBlob, 
-      "http://localhost:8093/winery",
-      `${activityName}_DA`,
-      "http://opentosca.org/artifacttemplates",
-      "{http://opentosca.org/artifacttypes}DockerContainerArtifact",
-      "service.zip",
-      versionUrl
-    );
-    const OPENTOSCA_NAMESPACE_NODETYPE = "http://opentosca.org/nodetypes";
-    const QUANTME_NAMESPACE_PULL = "http://quantil.org/quantme/pull";
+      // Create deployment model
+      const versionUrl = `http://localhost:8093/winery/servicetemplates/${activityName}`;
+      await createDeploymentModel(
+        serviceBlob,
+        "http://localhost:8093/winery",
+        `${activityName}_DA`,
+        "http://opentosca.org/artifacttemplates",
+        "{http://opentosca.org/artifacttypes}DockerContainerArtifact",
+        "service.zip",
+        versionUrl
+      );
+      const OPENTOSCA_NAMESPACE_NODETYPE = "http://opentosca.org/nodetypes";
+      const QUANTME_NAMESPACE_PULL = "http://quantil.org/quantme/pull";
 
-    // Create service template
-    let serviceTemplate = await createServiceTemplate(activityName, namespace);
-     await createNodeType(
+      // Create service template
+      let serviceTemplate = await createServiceTemplate(activityName, namespace);
+      await createNodeType(
         activityName + "Container",
         OPENTOSCA_NAMESPACE_NODETYPE
       );
@@ -1962,8 +1981,8 @@ If none apply, return { "algorithms": [] }.
         activityName,
         QUANTME_NAMESPACE_PULL
       );
-    console.log(`Service template created for: ${activityName}`);
-  }
+      console.log(`Service template created for: ${activityName}`);
+    }
 
   }
 
@@ -2344,7 +2363,7 @@ If none apply, return { "algorithms": [] }.
               pannable={true}
             />
 
-            <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
+         
 
           </ReactFlow>
           {contextMenu.visible && contextMenu.nodeId && (
@@ -2390,7 +2409,7 @@ If none apply, return { "algorithms": [] }.
 
 
       </main>
-      </>
+    </>
   );
 }
 

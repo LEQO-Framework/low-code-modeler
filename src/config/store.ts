@@ -20,6 +20,8 @@ import { nodesConfig } from "./site";
 import { v4 as uuid } from "uuid";
 import * as consts from "../constants";
 import TabPane from "antd/es/tabs/TabPane";
+import { insertTopNodeTag } from "@/winery";
+import { remove } from "jszip";
 import { IPortData } from "@/components/nodes/model";
 import { Regex } from "lucide-react";
 
@@ -47,6 +49,8 @@ type RFState = {
   selectedNode: Node | null;
   history: HistoryItem[];
   historyIndex: number;
+  typeError: string | null;
+  setTypeError: (message: string | null) => void;
   setNodes: (node: Node) => void;
   setEdges: (edge: Edge) => void;
   setAncillaMode: (ancillaMode: boolean) => void
@@ -67,6 +71,20 @@ type RFState = {
   undo: () => void;
   redo: () => void;
 };
+let typeErrorTimer: ReturnType<typeof setTimeout> | null = null;
+const getHandleIndex = (nodeId: string, handleId: string) => {
+  const tmpHandle = handleId.split(nodeId)[0];
+  if (!tmpHandle) {
+    return null;
+  }
+  const match = tmpHandle.match(/\d+$/);
+
+  if (!match) {
+    return 0; //no match --> only one handle --> index is 0
+  }
+
+  return parseInt(match[0], 10);
+};
 
 // Zustand store with undo/redo logic
 export const useStore = create<RFState>((set, get) => ({
@@ -80,6 +98,24 @@ export const useStore = create<RFState>((set, get) => ({
   history: [],
   historyIndex: -1,
   containsPlaceholder: false,
+  typeError: null,
+
+  setTypeError: (message: string | null) => {
+    set({ typeError: message });
+    // clear any existing timer to prevent premature clearing
+    if (typeErrorTimer) {
+      clearTimeout(typeErrorTimer);
+    }
+    // Start timer to clear typeError message automatically after 5 seconds
+    if (message) {
+      typeErrorTimer = setTimeout(() => {
+        set({ typeError: null });
+        typeErrorTimer = null;
+      }, 3000);
+    }
+  },
+
+
   setSelectedNode: (node: Node | null) => {
     set({
       selectedNode: node,
@@ -99,6 +135,8 @@ export const useStore = create<RFState>((set, get) => ({
     }
   },
 
+
+
   setNodes: (node: Node) => {
     const currentNodes = get().nodes;
     const currentEdges = get().edges;
@@ -106,6 +144,7 @@ export const useStore = create<RFState>((set, get) => ({
       nodes: [...currentNodes], // Copy the nodes array to avoid mutation
       edges: [...currentEdges], // Copy the edges array to avoid mutation
     };
+
 
     console.log("Updating history (setNodes):");
     console.log("Current Nodes:", currentNodes);
@@ -156,6 +195,56 @@ export const useStore = create<RFState>((set, get) => ({
       node.data.operator = "";
       node.data.outputIdentifier = "";
     }
+    // Helper to get default types based on node type and label
+    const getInitialInputTypes = (node: Node): string[] => {
+      const type = node.type;
+      const label = node.data.label ?? "";
+
+      if (type === "classicalOperatorNode") {
+        if (label.includes("Bitwise")) return ["bit", "bit"];
+        if (label.includes("Arithmetic")) return ["any", "any"];
+        if (label.includes("Comparison")) return ["any", "any"];
+        if (label.includes("Min & Max")) return ["array"];
+      }
+      else if (type === "measurementNode") return ["quantum register"];
+      else if (type === "quantumOperatorNode") {
+        if (label.includes("Min & Max")) return ["quantum register"];
+        else return ["quantum register", "quantum register"];
+      }
+      else if (type === "statePreparationNode") {
+        const encodingType = node.data.encodingType ?? "";
+        console.log("encodingType", encodingType)
+        if (encodingType.includes("Matrix") || encodingType.includes("Amplitude") || encodingType.includes("Angle") || encodingType.includes("Schmidt")) return ["array"];
+        if (encodingType.includes("Basis") || encodingType.includes("Custom")) return ["any"];
+      }
+
+      return []; // Default empty
+    }
+    const getInitialOutputTypes = (node: Node): string[] => {
+      const type = node.type;
+      const label = node.data.label ?? "";
+
+      if (type.includes("OperatorNode")) {
+        if (label.includes("Comparison")) return ["boolean"];
+        else if (label.includes("Min & Max")) return ["number"];
+        else if (type.includes("quantum")) {
+          if (label.includes("Bit")) return ["quantum register"];
+          else if (label.includes("Arithmetic")) return ["quantum register"];
+        } else if (type.includes("classical")) {
+          if (label.includes("Bit")) return ["bit"];
+          else if (label.includes("Arithmetic")) return ["any"];
+        }
+      }
+      else if (type === "measurementNode") return ["array", "quantum register"];
+      else if (type === "qubitNode" || type === "ancillaNode" || type === "statePreparationNode") return ["quantum register"];
+      else if (type === "dataTypeNode") return [(node.data.dataType ?? "any").toLowerCase()];
+      return []; // Default empty
+    }
+    const inputTypes = getInitialInputTypes(node);
+    const outputTypes = getInitialOutputTypes(node);
+    node.data.inputTypes = inputTypes;
+    node.data.outputTypes = outputTypes;
+
     set({
       nodes: [...currentNodes, node],
       edges: currentEdges,
@@ -385,10 +474,63 @@ export const useStore = create<RFState>((set, get) => ({
 
   onEdgesChange: (changes: EdgeChange[]) => {
     const currentNodes = get().nodes;
-    const currentEdges = applyEdgeChanges(changes, get().edges);
+    const currentEdges = get().edges;
+
+    let updatedNodes = [...currentNodes];
+    changes.forEach((change) => {
+      // make changes to source and target of removed edges
+      if (change.type === "remove") {
+        const removedEdge = get().edges.find((e) => e.id === change.id)
+        console.log("removed edge", removedEdge);
+        const targetNode = currentNodes.find((n) => n.id === removedEdge.target);
+        const sourceNode = currentNodes.find((n) => n.id === removedEdge.source);
+        console.log(targetNode);
+
+        const targetNodeIndex = currentNodes.findIndex((n) => n.id === targetNode.id);
+
+        let targetData = {
+          ...targetNode.data,
+          inputs: [... (targetNode.data.inputs || [])]
+        };
+        // remove targetNode.data.inputs entry corresponding to removed edge
+        const inputIndex = targetData.inputs.findIndex((i) => (i.edgeId ?? -1) === removedEdge.id);
+        const updatedInputs = targetData.inputs.filter((i) => (i.edgeId ?? -1) !== removedEdge.id);
+        console.log("updatedInputs", updatedInputs)
+        targetData.inputs = updatedInputs;
+
+
+        // revert inputTypes in targetNode.data.inputTypes to "any", if applicable for targetNode
+        if ((targetNode.type === consts.AlgorithmNode || targetNode.type === consts.ClassicalAlgorithmNode || (targetNode.type === consts.StatePreparationNode)) || targetNode.type === consts.ClassicalOperatorNode && (targetNode.data.label.includes("Arithmetic") || targetNode.data.label.includes("Comparison"))) {
+          const sourceHandle = removedEdge.sourceHandle;
+          const targetHandle = removedEdge.targetHandle;
+
+          const handleIndex = getHandleIndex(targetNode.id, targetHandle);
+          const otherHandleIndex = handleIndex === 0 ? 1 : 0;
+          // find other edge connected to targetNode
+          const otherEdge = get().edges.find((e) => e.target === targetNode.id && e.id !== removedEdge.id);
+
+          const hasNoFixedType = (targetNode.data.encodingType === "Basis Encoding" || targetNode.data.encodingType === "Custom Encoding")
+          // if no other edge exists: revert input & output type
+          if (!otherEdge && hasNoFixedType) {
+            targetData.inputTypes = ["any", "any"];
+            if (targetNode.data.label.includes("Arithmetic")) {
+              targetData.outputTypes = ["any"];
+            }
+          }
+        }
+
+        updatedNodes[targetNodeIndex] = {
+          ...targetNode,
+          data: targetData,
+        };
+      }
+    });
+
+
+    const updatedEdges = applyEdgeChanges(changes, get().edges);
     const newHistoryItem: HistoryItem = {
-      nodes: [...currentNodes], // Copy the nodes array to avoid mutation
-      edges: [...currentEdges], // Copy the edges array to avoid mutation
+      nodes: updatedNodes, // Copy the nodes array to avoid mutation
+      edges: updatedEdges, // Copy the edges array to avoid mutation
     };
 
     console.log(changes);
@@ -397,9 +539,10 @@ export const useStore = create<RFState>((set, get) => ({
     console.log("Current Edges:", currentEdges);
     console.log("New History Item:", newHistoryItem);
 
+
     set({
-      nodes: currentNodes,
-      edges: currentEdges,
+      nodes: updatedNodes,
+      edges: updatedEdges,
       history: [
         ...get().history.slice(0, get().historyIndex + 1),
         newHistoryItem,
@@ -410,8 +553,108 @@ export const useStore = create<RFState>((set, get) => ({
     console.log("Current historyIndex:", get().historyIndex);
   },
 
+
   onConnect: (connection: Connection) => {
-    console.log("ON CONNECT")
+    const getNodeLockedType = (nodeId: string): string => {
+      const node = get().nodes.find(n => n.id === nodeId);
+      if (!node) return "any";
+      if (node.type === consts.AlgorithmNode || node.type === consts.ClassicalAlgorithmNode) {
+        return "any"
+      }
+
+      // Find the first input that has a type other than "any"
+      if (node.data.inputs) {
+        for (const input of node.data.inputs) {
+          const sourceNode = get().nodes.find(n => n.id === input.id);
+          if (!sourceNode) continue;
+
+          let type = "any";
+          if (sourceNode.type === "dataTypeNode") type = sourceNode.data?.dataType ?? "any";
+          else if (sourceNode.type === "ClassicalOperationNode") {
+            type = getNodeLockedType(sourceNode.id);
+          } else if (sourceNode.data.outputTypes[0]) {
+            type = sourceNode.data.outputTypes[0]; // TODO:  eigentlich sollte man da den richtigen outputType aussuchen. Geht mittlerweile, weil edgeId mitgespeichert wird. 
+          }
+
+          if (type !== "any") return type;
+        }
+      }
+      // Find entry in inputTypes != any
+      /*       if(node.data.inputTypes){
+              for(const type of node.data.inputTypes) {
+                if(type.toLowerCase() !== "any") return type;
+              }
+            } */
+      return "any"; // no locked type yet
+    };
+
+    const getNodeOutputType = (nodeId: string, handleId?: string): string => {
+      const node = get().nodes.find(n => n.id === nodeId);
+      if (!node) return "any";
+      const index = getHandleIndex(nodeId, handleId);
+      console.log("GETNODEOUTPUTTYPES", node.data.outputTypes)
+      console.log(handleId)
+      console.log("INDEX", index)
+      if (node.data.outputTypes[index]) return node.data.outputTypes[index];
+
+      // Measurement Node
+      if (node.type === "measurementNode") {
+        // If handleId is specified, pick the correct output
+        if (handleId === node.data.outputs?.[0]?.id) return "array";
+        if (handleId === node.data.outputs?.[1]?.id) return "quantum register";
+        // Default fallback
+        return "any";
+      }
+
+      // Data type node
+      if (node.type === "dataTypeNode") return node.data?.dataType.toLowerCase() ?? "any";
+
+      // Classical Operators
+      if (
+        node.type === consts.ClassicalOperatorNode ||
+        node.type === "ClassicalAlgorithmNode"
+      ) {
+        switch (node.data.label) {
+          case "Classical Arithmetic Operator":
+            // Arithmetic operator: output type comes from first input type (assuming input types match)
+            const firstInputEdge = get().edges.find(
+              (e) => e.target === node.id && e.targetHandle === `classicalHandleOperationInput0${node.id}`
+            );
+            if (firstInputEdge) return getNodeOutputType(firstInputEdge.source, firstInputEdge.sourceHandle);
+            return "any"; // fallback if no input
+          case "Classical Bitwise Operator":
+            return "bit";
+          case "Classical Min & Max Operator":
+            return "number";
+          case "Classical Comparison Operator":
+            return "boolean";
+          default:
+            return "any";
+        }
+      }
+
+      // Algorithm nodes or unknown node types
+      if (node.type === consts.AlgorithmNode || node.type === consts.ClassicalAlgorithmNode) {
+        return "any";
+      }
+
+      return "any"; // fallback
+    };
+
+
+    const getNodeInputType = (nodeId: string, handleId: string) => {
+      const targetNode = get().nodes.find(n => n.id === nodeId);
+      if (!targetNode) return "any";
+
+      // Find input corresponding to this handle
+      const input = targetNode.data.inputs?.find((i: any) => i.id === handleId);
+      //if (!input) return "any";
+      const inputIndex = getHandleIndex(nodeId, handleId);
+      console.log("InputIndex", inputIndex);
+      //return input.dataType ?? "any"; // fallback to any
+      return targetNode.data.inputTypes[inputIndex] ?? "any";
+    };
+
     const currentNodes = get().nodes;
     const ancillaMode = get().ancillaMode;
     console.log(connection)
@@ -541,13 +784,43 @@ export const useStore = create<RFState>((set, get) => ({
         insertEdge = true;
       }
     }
-    // Überprüfung: Existiert bereits eine Edge zur connection.targetHandle?
+
+
     const edgeExists = currentEdges.some(edge =>
       edge.targetHandle === connection.targetHandle && nodeDataTarget.type !== "mergerNode"
     );
 
     console.log(connection)
     console.log(insertEdge);
+    let setTypeError = get().setTypeError;
+
+
+    if (!insertEdge) {
+      const getHandleDomain = (handleId?: string): "classical" | "quantum" | "ancilla" | "dirtyAncilla" | "unknown" => {
+        if (!handleId) return "unknown";
+        if (handleId.includes(consts.classicalHandle)) return "classical";
+        if (handleId.includes(consts.dirtyAncillaHandle)) return "dirtyAncilla";
+        if (handleId.includes(consts.ancillaHandle)) return "ancilla";
+        if (handleId.includes(consts.quantumHandle) || handleId.includes("sideQuantumHandle")) return "quantum";
+        return "unknown";
+      };
+      const sourceDomain = getHandleDomain(connection.sourceHandle);
+      const targetDomain = getHandleDomain(connection.targetHandle);
+
+      const handles = (d: string) => {
+        switch (d) {
+          case "classical": return "classical";
+          case "quantum": return "quantum";
+          case "ancilla": return "ancilla";
+          case "dirtyAncilla": return "dirty ancilla";
+          default: return "unknown";
+        }
+      };
+
+      setTypeError(
+        `Cannot connect ${handles(sourceDomain)} output to ${handles(targetDomain)} input`
+      );
+    }
     console.log(!edgeExists)
 
     const edge = {
@@ -582,26 +855,78 @@ export const useStore = create<RFState>((set, get) => ({
       return parseInt(match[0], 10);
     };
 
+
+    // TYPE CHECK
+    let sourceType = getNodeOutputType(connection.source, connection.sourceHandle).toLowerCase();
+    const targetType = getNodeInputType(connection.target, connection.targetHandle).toLowerCase();
+    const inputIndex = getHandleIndex(connection.target, connection.targetHandle);
+
+    
+    const sourceNode = get().nodes.find(n => n.id === connection.source);
+    const targetNode = get().nodes.find(n => n.id === connection.target);
+    if (!targetNode) {
+      insertEdge = false;
+      return false;
+    }
+
+    console.log("Types", sourceType, targetType);
+
+    // If types are incompatible, reject connection
+    if (targetNode.type !== "controlStructureNode" && targetType !== "any" && sourceType !== "any" && sourceType !== targetType) {
+      const errorMsg = `Type mismatch: ${sourceType} -> ${targetType}, connection rejected`
+      console.log(errorMsg);
+      setTypeError(errorMsg);
+      insertEdge = false;
+      return false; // reject edge
+    }
+    
+
+    const lockedType = getNodeLockedType(targetNode.id);
+
+    if (sourceNode) {
+      if (sourceNode.type === "dataTypeNode") sourceType = sourceNode.data?.dataType ?? "any";
+      else if (sourceNode.type === "ClassicalOperationNode") sourceType = getNodeLockedType(sourceNode.id);
+    }
+
+    // If the target node already has a locked type, new input must match
+    if (targetNode.type !== "controlStructureNode" && lockedType !== "any" && sourceType !== "any" && sourceType !== lockedType) {
+      const errorMsg = `Cannot connect: type "${sourceType}" does not match locked type "${lockedType}"`
+      console.warn(errorMsg);
+      setTypeError(errorMsg);
+      insertEdge = false;
+      return false;
+    }
+
+    if (!targetNode) return false;
+
+    // Special handling for state preparation nodes
+    const encodingNodes = [
+      "Angle Encoding",
+      "Amplitude Encoding",
+      "Matrix Encoding",
+      "Schmidt Decomposition",
+    ];
+
+    if (
+      encodingNodes.includes(targetNode.data.label) &&
+      sourceType.toLowerCase() !== "array"
+    ) {
+      const errorMsg = `Cannot connect: ${sourceType} is incompatible with ${targetNode.type}, expected "array".`;
+      console.warn(errorMsg);
+      insertEdge = false;
+      return false; // reject edge
+    }
+
     if (insertEdge && !edgeExists) {
-      console.log("ONCONNECT")
-      console.log(connection)
+      console.log("INSERT EDGE")
       console.log(connection.source);
 
       console.log(nodeDataSource);
       const existingInput = nodeDataTarget.data.inputs.find(
         (input) => (input.id === nodeDataSource.id && input.targetHandle === connection.targetHandle)
       );
-      console.log("existing input", existingInput)
-      const outputIndex = getOutputIndex(connection.sourceHandle, nodeDataSource);
-      console.log("sourceHandle", connection.sourceHandle)
-      console.log("index", outputIndex)
-      console.log(nodeDataSource.data.outputs?.[outputIndex]?.identifier)
-      var sourceOutputIdentifier = "";
-      if (nodeDataSource.type === "algorithmNode" || nodeDataSource.type === "classicalAlgorithmNode" || nodeDataSource.type === "measurementNode") {
-        sourceOutputIdentifier = nodeDataSource.data.outputs?.[outputIndex]?.identifier
-      } else {
-        sourceOutputIdentifier = nodeDataSource.data.outputs?.[outputIndex]?.identifier ?? nodeDataSource.data?.outputIdentifier
-      }
+
+
       if (existingInput) {
 
         // Update the existing entry
@@ -612,6 +937,7 @@ export const useStore = create<RFState>((set, get) => ({
           console.log("VNSOIVNOIDNO")
           nodeDataTarget.data.inputs.push({
             id: nodeDataSource.id,
+            edgeId: edge.id,
             outputIdentifier: sourceOutputIdentifier,
             targetHandle: connection.targetHandle
           });
@@ -622,6 +948,7 @@ export const useStore = create<RFState>((set, get) => ({
           if (nodeDataTarget.data.label === "CNOT" && connection.sourceHandle.includes("Output1")) {
             nodeDataTarget.data.inputs.push({
               id: nodeDataSource.id,
+              edgeId: edge.id,
               identifiers: [nodeDataSource.data.identifiers[0]],
               targetHandle: connection.targetHandle
             });
@@ -629,12 +956,14 @@ export const useStore = create<RFState>((set, get) => ({
           else if (nodeDataTarget.label === "CNOT" && connection.sourceHandle.endsWith("Output2")) {
             nodeDataTarget.data.inputs.push({
               id: nodeDataSource.id,
+              edgeId: edge.id,
               identifiers: [nodeDataSource.data.identifiers[1]],
               targetHandle: connection.targetHandle
             });
           } else if (nodeDataTarget.data.label === "Toffoli" && connection.sourceHandle.includes("Output1")) {
             nodeDataTarget.data.inputs.push({
               id: nodeDataSource.id,
+              edgeId: edge.id,
               identifiers: [nodeDataSource.data.identifiers[0]],
               targetHandle: connection.targetHandle
             });
@@ -642,6 +971,7 @@ export const useStore = create<RFState>((set, get) => ({
           else if (nodeDataTarget.label === "Toffoli" && connection.sourceHandle.endsWith("Output2")) {
             nodeDataTarget.data.inputs.push({
               id: nodeDataSource.id,
+              edgeId: edge.id,
               identifiers: [nodeDataSource.data.identifiers[1]],
               targetHandle: connection.targetHandle
             });
@@ -649,6 +979,7 @@ export const useStore = create<RFState>((set, get) => ({
           else if (nodeDataTarget.label === "Toffoli" && connection.sourceHandle.endsWith("Output3")) {
             nodeDataTarget.data.inputs.push({
               id: nodeDataSource.id,
+              edgeId: edge.id,
               identifiers: [nodeDataSource.data.identifiers[2]],
               targetHandle: connection.targetHandle
             });
@@ -658,6 +989,7 @@ export const useStore = create<RFState>((set, get) => ({
               console.log("push entry")
               nodeDataTarget.data.inputs.push({
                 id: nodeDataSource.id,
+                edgeId: edge.id,
                 identifiers: nodeDataSource.data.identifiers,
                 targetHandle: edge.targetHandle
               });
@@ -684,6 +1016,7 @@ export const useStore = create<RFState>((set, get) => ({
             }
             nodeDataTarget.data.inputs.push({
               id: nodeDataSource.id,
+              edgeId: edge.id,
               outputIdentifier: sourceOutputIdentifier,
               identifiers: nodeDataSource.data.identifiers,
               targetHandle: edge.targetHandle
@@ -707,9 +1040,9 @@ export const useStore = create<RFState>((set, get) => ({
         console.log(sourceIdentifier);
         console.log("set state")
 
+
+
         // Update the target nodes that receive inputs from this node
-
-
         if (edge.source === connection.source) {
           const targetNodeIndex = updatedNodes.findIndex((n) => n.id === edge.target);
           const sourceHandle = connection.sourceHandle;
@@ -719,6 +1052,13 @@ export const useStore = create<RFState>((set, get) => ({
             const targetData = { ...targetNode.data };
             const sourceNode = updatedNodes.find((n) => n.id === edge.source);
             sourceIdentifier = sourceNode?.data?.identifiers;
+            const sourceType = getNodeOutputType(sourceNode.id, connection.sourceHandle);
+            const targetType = getNodeInputType(targetNode.id, connection.targetHandle);
+            const lockedType = getNodeLockedType(targetNode.id);
+            console.log("SOURCE TYPE", sourceType)
+            console.log("TARGET TYPE", targetType)
+            console.log("LOCKED TYPE", lockedType)
+
             console.log("sourceIdentifier");
             console.log(sourceIdentifier)
             //let sourceOutputIdentifier = sourceNode?.data?.outputIdentifier;
@@ -737,9 +1077,23 @@ export const useStore = create<RFState>((set, get) => ({
 
             if (!targetData.inputs) targetData.inputs = [];
 
-            const inputIndex = targetData.inputs.findIndex((input) => (input.id === connection.source && connection.targetHandle === input.targetHandle));
-            console.log("input index", inputIndex)
-            console.log("target inputs", targetData.inputs)
+            const inputIndex = targetData.inputs.findIndex((input) => input.id === connection.source);
+            const handleIndex = getHandleIndex(targetNode.id, connection.targetHandle);
+            // Update target node inputType if it was "any"
+            if (targetType === "any") {
+              targetData.inputTypes[handleIndex] = sourceType;
+            }
+            // Update target node input and output types if classical operation node and both inputs are set
+            if (targetNode.type === consts.ClassicalOperatorNode && (targetNode.data.label.includes("Arithmetic") || targetNode.data.label.includes("Comparison")) && lockedType !== "any") {
+              console.log("updating input output types")
+              targetData.inputTypes = [lockedType, lockedType];
+              if (targetNode.data.label.includes("Arithmetic")) {
+                targetData.outputTypes = [lockedType];
+                //TODO if outputType is changed inputType of any connected Edge should be changed too
+              }
+              console.log(targetData)
+              console.log(updatedNodes[targetNodeIndex])
+            }
 
             if (inputIndex !== -1) {
               if (targetData.inputs[inputIndex].outputIdentifier === sourceOutputIdentifier) {
@@ -758,7 +1112,8 @@ export const useStore = create<RFState>((set, get) => ({
             } else {
               targetData.inputs.push({
                 id: connection.source,
-                outputIdentifier: sourceOutputIdentifier,
+                edgeId: edge.id,
+                outputIdentifier: sourceNode.data.outputIdentifier,
                 "identifiers": sourceIdentifier,
                 targetHandle: connection.targetHandle
               });
@@ -767,12 +1122,14 @@ export const useStore = create<RFState>((set, get) => ({
 
             }
 
+            targetNode.data = targetData;
+            updatedNodes[targetNodeIndex] = targetNode;
 
           }
         }
 
 
-        console.log(edge);
+        console.log("Set edge", edge);
         console.log(updatedNodes)
 
         return ({
@@ -927,7 +1284,8 @@ export const useStore = create<RFState>((set, get) => ({
               } else {
                 targetData.inputs.push({
                   id: nodeId,
-                  outputIdentifier: sourceOutputIdentifier,
+                  edgeId: edge.id,
+                  outputIdentifier: nodeVal,
                   "identifiers": sourceIdentifier,
                   //targetHandle: connection.targetHandle
                 });
@@ -979,6 +1337,29 @@ export const useStore = create<RFState>((set, get) => ({
               data: {
                 ...node.data,
                 [identifier]: nodeVal,
+
+              },
+            };
+          }
+          if (identifier === "encodingType") {
+            let inputTypes = ["array"]
+            console.log("update node data type")
+            console.log(node.data.inputTypes);
+            const existingInputTypes = node.data.inputTypes;
+
+            const resolvedInputTypes =
+              Array.isArray(existingInputTypes) &&
+                existingInputTypes.length > 0 &&
+                existingInputTypes.some((t) => t !== "any" && t != "array")
+                ? existingInputTypes
+                : ["any"];
+            if (nodeVal.includes("Basis") || nodeVal.includes("Custom")) inputTypes = resolvedInputTypes;
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                [identifier]: nodeVal,
+                "inputTypes": inputTypes,
 
               },
             };
@@ -1148,3 +1529,5 @@ export const useStore = create<RFState>((set, get) => ({
     console.log("Updated state after redo:", get());
   },
 }));
+
+
