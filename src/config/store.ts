@@ -500,7 +500,7 @@ export const useStore = create<RFState>((set, get) => ({
         
 
         // revert inputTypes in targetNode.data.inputTypes to "any", if applicable for targetNode
-        if(targetNode.type === consts.ClassicalOperatorNode && (targetNode.data.label.includes("Arithmetic") || targetNode.data.label.includes("Comparison"))){
+        if((targetNode.type === consts.AlgorithmNode || targetNode.type === consts.ClassicalAlgorithmNode|| (targetNode.type ===consts.StatePreparationNode)) ||targetNode.type === consts.ClassicalOperatorNode && (targetNode.data.label.includes("Arithmetic") || targetNode.data.label.includes("Comparison"))){
           const sourceHandle = removedEdge.sourceHandle;
           const targetHandle = removedEdge.targetHandle;
 
@@ -508,8 +508,10 @@ export const useStore = create<RFState>((set, get) => ({
           const otherHandleIndex = handleIndex===0?1:0;
           // find other edge connected to targetNode
           const otherEdge = get().edges.find((e) => e.target === targetNode.id && e.id !== removedEdge.id);
+
+          const hasNoFixedType = (targetNode.data.encodingType === "Basis Encoding" || targetNode.data.encodingType === "Custom Encoding")
           // if no other edge exists: revert input & output type
-          if(!otherEdge) {
+          if(!otherEdge && hasNoFixedType) {
             targetData.inputTypes = ["any", "any"];
             if(targetNode.data.label.includes("Arithmetic")) {
               targetData.outputTypes = ["any"];
@@ -605,7 +607,7 @@ export const useStore = create<RFState>((set, get) => ({
       }
 
       // Data type node
-      if (node.type === "dataTypeNode") return node.data?.dataType ?? "any";
+      if (node.type === "dataTypeNode") return node.data?.dataType.toLowerCase() ?? "any";
 
       // Classical Operators
       if (

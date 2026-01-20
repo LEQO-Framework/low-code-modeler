@@ -103,7 +103,7 @@ export const AlgorithmNode = memo((node: Node) => {
     if (!sourceNode) return "any";
 
     if (sourceNode.type === "dataTypeNode") {
-      return sourceNode.data?.dataType ?? "any";
+      return sourceNode.data?.dataType?.toLowerCase() ?? "any";
     }
 
     return "any";

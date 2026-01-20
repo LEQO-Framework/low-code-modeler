@@ -198,7 +198,7 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
                   {node.data.inputs?.[index]?.outputIdentifier || `Input ${index + 1}`}
                 </span>
                 <span className="text-[10px] text-gray-600">
-                  type: {getInputType(index)}
+                  type: {getInputType(index)?.toLowerCase()}
                 </span>
               </div>
 
