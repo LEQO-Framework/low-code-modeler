@@ -89,7 +89,7 @@ export default function OutputPort({
     let outputType = "unknown";
 
     // Classical Data Type
-    if(type === "classical" && node.type === "dataTypeNode") {
+    if (type === "classical" && node.type === "dataTypeNode") {
       outputType = node.data?.dataType ?? "array";
     }
     // Classical Arithmetic Operator: infer from inputs
@@ -117,7 +117,12 @@ export default function OutputPort({
       outputType = "quantum register";
     }
     else if (type === "classical" && (node.type === "algorithmNode" || node.type === "classicalAlgorithmNode")) {
-      outputType = node.data.outputTypes[index] ?? "any";
+      outputType = "any"; // default value
+
+      if (node?.data?.outputTypes && node.data.outputTypes[index] != null) {
+        outputType = node.data.outputTypes[index];
+      }
+
     }
     else if (type === "classical") {
       outputType = "array";
@@ -132,7 +137,7 @@ export default function OutputPort({
   // update outputType if it changes
   useEffect(() => {
     if (node.data.outputTypes[index] !== displayedOutputType) {
-      const updatedOutputTypes = {... node.data.outputTypes}
+      const updatedOutputTypes = { ...node.data.outputTypes }
       updatedOutputTypes[index] = displayedOutputType
       updateNodeValue(node.id, "outputTypes", updatedOutputTypes);
       console.log("Updated node outputType in store:", node.id, displayedOutputType);
@@ -189,12 +194,12 @@ export default function OutputPort({
           <input
             type="text"
             className={`p-1 text-sm text-black opacity-75 w-20 text-center rounded-full border ${outputIdentifierError
-                ? 'bg-red-500 border-red-500'
-                : isClassical
-                  ? 'bg-white border-orange-500'
-                  : isAncilla
-                    ? 'bg-white border-green-500'
-                    : 'bg-white border-blue-500'
+              ? 'bg-red-500 border-red-500'
+              : isClassical
+                ? 'bg-white border-orange-500'
+                : isAncilla
+                  ? 'bg-white border-green-500'
+                  : 'bg-white border-blue-500'
               }`}
             value={outputIdentifier}
             onChange={(e) => {
@@ -233,12 +238,12 @@ export default function OutputPort({
           <input
             type="text"
             className={`p-1 text-sm text-black opacity-75 w-20 text-center rounded-full border ${sizeError
-                ? 'bg-red-500 border-red-500'
-                : isClassical
-                  ? `bg-white border-orange-500 ${sizeRequired ? '' : 'border-dashed'}`
-                  : isAncilla
-                    ? `bg-white border-green-500 ${sizeRequired ? '' : 'border-dashed'}`
-                    : `bg-white border-blue-500 ${sizeRequired ? '' : 'border-dashed'}`
+              ? 'bg-red-500 border-red-500'
+              : isClassical
+                ? `bg-white border-orange-500 ${sizeRequired ? '' : 'border-dashed'}`
+                : isAncilla
+                  ? `bg-white border-green-500 ${sizeRequired ? '' : 'border-dashed'}`
+                  : `bg-white border-blue-500 ${sizeRequired ? '' : 'border-dashed'}`
               }`}
             value={node.data.quantumStateName?.includes("Bell State") ? "2" : outputSize}
             readOnly={node.data.quantumStateName?.includes("Bell State")}

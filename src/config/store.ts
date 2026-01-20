@@ -861,25 +861,27 @@ export const useStore = create<RFState>((set, get) => ({
     const targetType = getNodeInputType(connection.target, connection.targetHandle);
     const inputIndex = getHandleIndex(connection.target, connection.targetHandle);
 
-    console.log("Types", sourceType, targetType);
-
-    // If types are incompatible, reject connection
-    if (targetType !== "any" && sourceType !== "any" && sourceType !== targetType) {
-      const errorMsg = `Type mismatch: ${sourceType} -> ${targetType}, connection rejected`
-      console.log(errorMsg);
-      setTypeError(errorMsg);
-      insertEdge = false;
-      return false; // reject edge
-    }
+    
+    const sourceNode = get().nodes.find(n => n.id === connection.source);
     const targetNode = get().nodes.find(n => n.id === connection.target);
     if (!targetNode) {
       insertEdge = false;
       return false;
     }
 
-    const lockedType = getNodeLockedType(targetNode.id);
+    console.log("Types", sourceType, targetType);
 
-    const sourceNode = get().nodes.find(n => n.id === connection.source);
+    // If types are incompatible, reject connection
+    if (targetNode.type !== "controlStructureNode" && targetType !== "any" && sourceType !== "any" && sourceType !== targetType) {
+      const errorMsg = `Type mismatch: ${sourceType} -> ${targetType}, connection rejected`
+      console.log(errorMsg);
+      setTypeError(errorMsg);
+      insertEdge = false;
+      return false; // reject edge
+    }
+    
+
+    const lockedType = getNodeLockedType(targetNode.id);
 
     if (sourceNode) {
       if (sourceNode.type === "dataTypeNode") sourceType = sourceNode.data?.dataType ?? "any";
@@ -887,7 +889,7 @@ export const useStore = create<RFState>((set, get) => ({
     }
 
     // If the target node already has a locked type, new input must match
-    if (lockedType !== "any" && sourceType !== "any" && sourceType !== lockedType) {
+    if (targetNode.type !== "controlStructureNode" && lockedType !== "any" && sourceType !== "any" && sourceType !== lockedType) {
       const errorMsg = `Cannot connect: type "${sourceType}" does not match locked type "${lockedType}"`
       console.warn(errorMsg);
       setTypeError(errorMsg);
