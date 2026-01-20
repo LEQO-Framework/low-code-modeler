@@ -96,7 +96,7 @@ const selector = (state: {
 function App() {
   const reactFlowWrapper = React.useRef<any>(null);
   const [reactFlowInstance, setReactFlowInstance] = React.useState<any>(null);
-   const {
+  const {
     nodes,
     edges,
     experienceLevel,
@@ -122,7 +122,7 @@ function App() {
     setEdges,
   } = useStore(useShallow(selector));
 
-  
+
 
   const [metadata, setMetadata] = React.useState<any>({
     version: "1.0.0",
@@ -152,7 +152,7 @@ function App() {
     import.meta.env.VITE_QC_ATLAS || "http://localhost:6626"
   );
 
-  
+
   const [activeTab, setActiveTab] = useState("editor");
   const [warningExecution, setWarningExecution] = useState(false);
   const [contextMenu, setContextMenu] = useState<{
@@ -1527,11 +1527,15 @@ function App() {
     const { x = 0, y = 0, zoom = 1 } = flow.viewport || {};
     reactFlowInstance.setViewport({ x, y, zoom });
 
+    console.log(flow.metadata)
     // Set the metadata (if any) - assuming initialDiagram has metadata
     if (flow.metadata) {
-      setMetadata(flow.metadata);
-      console.log("Metadata loaded:", flow.metadata);
+      // If metadata is an array, unpack it
+      const dataToSet = Array.isArray(flow.metadata) ? flow.metadata[0] : flow.metadata;
+      setMetadata(dataToSet);
+      console.log("Metadata loaded:", dataToSet);
     }
+
   };
 
 
@@ -1664,18 +1668,18 @@ function App() {
     const bool_value = (experienceLevel === "pioneer") ? false : true; // if previous experience level was pioneer...
     setCompactVisualization(bool_value)
     setAncillaMode(bool_value)
-    setAncillaModelingOn(bool_value)  
+    setAncillaModelingOn(bool_value)
     //updateNodeInternals since ancilla mode changes number of handles
     nodes.forEach((node) => {
       updateNodeInternals(node.id);
     })
   };
 
-  
 
-  const onToggleAncilla = () => { 
-    setAncillaModelingOn(!ancillaModelingOn); 
-    setAncillaMode(!ancillaModelingOn); 
+
+  const onToggleAncilla = () => {
+    setAncillaModelingOn(!ancillaModelingOn);
+    setAncillaMode(!ancillaModelingOn);
     //updateNodeInternals since ancilla mode changes number of handles
     nodes.forEach((node) => {
       updateNodeInternals(node.id);
@@ -1798,49 +1802,49 @@ function App() {
 
     const masterZip = await JSZip.loadAsync(arrayBuffer);
     // Process each folder 
-     for (const [path, entry] of Object.entries(masterZip.files)) {
-    if (entry.dir) continue;
-    if (!path.endsWith(".zip")) continue;
+    for (const [path, entry] of Object.entries(masterZip.files)) {
+      if (entry.dir) continue;
+      if (!path.endsWith(".zip")) continue;
 
-    // Extract activity name
-    const activityName = path.replace(".zip", "");
-    console.log(`Processing activity ZIP: ${activityName}`);
+      // Extract activity name
+      const activityName = path.replace(".zip", "");
+      console.log(`Processing activity ZIP: ${activityName}`);
 
-    // Load the activity ZIP in memory
-    const activityArrayBuffer = await entry.async("arraybuffer");
-    const activityZip = await JSZip.loadAsync(activityArrayBuffer);
+      // Load the activity ZIP in memory
+      const activityArrayBuffer = await entry.async("arraybuffer");
+      const activityZip = await JSZip.loadAsync(activityArrayBuffer);
 
-    // Find service.zip inside activity ZIP
-    const serviceEntry = Object.values(activityZip.files).find(
-      (f) => !f.dir && f.name.endsWith("service.zip")
-    );
+      // Find service.zip inside activity ZIP
+      const serviceEntry = Object.values(activityZip.files).find(
+        (f) => !f.dir && f.name.endsWith("service.zip")
+      );
 
-    if (!serviceEntry) {
-      console.warn(`No service.zip found in ${activityName}`);
-      continue;
-    }
+      if (!serviceEntry) {
+        console.warn(`No service.zip found in ${activityName}`);
+        continue;
+      }
 
-    // Extract service.zip as Blob
-    const serviceArrayBuffer = await serviceEntry.async("arraybuffer");
-    const serviceBlob = new Blob([serviceArrayBuffer], { type: "application/zip" });
+      // Extract service.zip as Blob
+      const serviceArrayBuffer = await serviceEntry.async("arraybuffer");
+      const serviceBlob = new Blob([serviceArrayBuffer], { type: "application/zip" });
 
-    // Create deployment model
-    const versionUrl = `http://localhost:8093/winery/servicetemplates/${activityName}`;
-    await createDeploymentModel(
-      serviceBlob, 
-      "http://localhost:8093/winery",
-      `${activityName}_DA`,
-      "http://opentosca.org/artifacttemplates",
-      "{http://opentosca.org/artifacttypes}DockerContainerArtifact",
-      "service.zip",
-      versionUrl
-    );
-    const OPENTOSCA_NAMESPACE_NODETYPE = "http://opentosca.org/nodetypes";
-    const QUANTME_NAMESPACE_PULL = "http://quantil.org/quantme/pull";
+      // Create deployment model
+      const versionUrl = `http://localhost:8093/winery/servicetemplates/${activityName}`;
+      await createDeploymentModel(
+        serviceBlob,
+        "http://localhost:8093/winery",
+        `${activityName}_DA`,
+        "http://opentosca.org/artifacttemplates",
+        "{http://opentosca.org/artifacttypes}DockerContainerArtifact",
+        "service.zip",
+        versionUrl
+      );
+      const OPENTOSCA_NAMESPACE_NODETYPE = "http://opentosca.org/nodetypes";
+      const QUANTME_NAMESPACE_PULL = "http://quantil.org/quantme/pull";
 
-    // Create service template
-    let serviceTemplate = await createServiceTemplate(activityName, namespace);
-     await createNodeType(
+      // Create service template
+      let serviceTemplate = await createServiceTemplate(activityName, namespace);
+      await createNodeType(
         activityName + "Container",
         OPENTOSCA_NAMESPACE_NODETYPE
       );
@@ -1852,8 +1856,8 @@ function App() {
         activityName,
         QUANTME_NAMESPACE_PULL
       );
-    console.log(`Service template created for: ${activityName}`);
-  }
+      console.log(`Service template created for: ${activityName}`);
+    }
 
   }
 
@@ -2257,7 +2261,7 @@ function App() {
 
 
       </main>
-      </>
+    </>
   );
 }
 
