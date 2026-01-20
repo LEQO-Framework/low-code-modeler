@@ -21,6 +21,7 @@ const selector = (state: {
   updateNodeValue: (nodeId: string, field: string, nodeVal: any) => void;
   setNodes: (node: Node) => void;
   setSelectedNode: (node: Node) => void;
+  setTypeError: (message: string) => void;
 }) => ({
   selectedNode: state.selectedNode,
   edges: state.edges,
@@ -31,6 +32,7 @@ const selector = (state: {
   setNodes: state.setNodes,
   updateNodeValue: state.updateNodeValue,
   setSelectedNode: state.setSelectedNode,
+  setTypeError: state.setTypeError
 });
 
 export const StatePreparationNode = memo((node: Node) => {
@@ -51,7 +53,7 @@ export const StatePreparationNode = memo((node: Node) => {
 
 
 
-  const { updateNodeValue, setSelectedNode, setNodes, edges, nodes, ancillaMode, completionGuaranteed, compact } = useStore(selector, shallow);
+  const { updateNodeValue, setSelectedNode, setNodes, setTypeError, edges, nodes, ancillaMode, completionGuaranteed, compact } = useStore(selector, shallow);
   const isConnected = edges.some(
     edge => edge.target === node.id && edge.targetHandle === `ancillaHandlePrepareState0${node.id}`
   );
@@ -176,6 +178,45 @@ export const StatePreparationNode = memo((node: Node) => {
     }
   }, [quantumStateName, node.data.size]);
 
+
+  useEffect(() => {
+    const encoding = node.data.encodingType;
+
+    // Only array-only encodings enforce compatibility
+    const isArrayOnly =
+      encoding !== "Basis Encoding" &&
+      encoding !== "Custom Encoding";
+
+    if (!isArrayOnly) return;
+
+    const edge = edges.find(
+      (e) =>
+        e.target === node.id &&
+        e.targetHandle === `classicalHandleStatePreparationInput0${node.id}`
+    );
+
+    if (!edge) return;
+
+    const sourceNode = nodes.find((n) => n.id === edge.source);
+    if (!sourceNode) return;
+
+    const outputIndex =
+      sourceNode.data.outputs?.findIndex(
+        (o) => o.id === edge.sourceHandle
+      ) ?? 0;
+
+    const sourceType =
+      sourceNode.data.outputTypes?.[outputIndex];
+
+    // Enforce array-only constraint
+    if (sourceType !== "array") {
+      console.log("remove edge")
+      useStore.getState().onEdgesChange([{ id: edge.id, type: "remove" }]);
+      const errorMsg = `Type mismatch: ${sourceType} -> array, connection removed`
+      console.log(errorMsg);
+      setTypeError(errorMsg);
+    }
+  }, [node.data.encodingType]);
 
 
 

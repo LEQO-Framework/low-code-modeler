@@ -111,10 +111,10 @@ export const useStore = create<RFState>((set, get) => ({
       typeErrorTimer = setTimeout(() => {
         set({ typeError: null });
         typeErrorTimer = null;
-      }, 3000); 
+      }, 3000);
     }
   },
-  
+
 
   setSelectedNode: (node: Node | null) => {
     set({
@@ -208,14 +208,14 @@ export const useStore = create<RFState>((set, get) => ({
       }
       else if (type === "measurementNode") return ["quantum register"];
       else if (type === "quantumOperatorNode") {
-        if(label.includes("Min & Max")) return ["quantum register"];
+        if (label.includes("Min & Max")) return ["quantum register"];
         else return ["quantum register", "quantum register"];
       }
       else if (type === "statePreparationNode") {
-        const encodingType = node.data.encodingType?? "";
+        const encodingType = node.data.encodingType ?? "";
         console.log("encodingType", encodingType)
-        if(encodingType.includes("Matrix") || encodingType.includes("Amplitude") || encodingType.includes("Angle") || encodingType.includes("Schmidt")) return ["array"];
-        if(encodingType.includes("Basis") || encodingType.includes("Custom")) return ["any"];
+        if (encodingType.includes("Matrix") || encodingType.includes("Amplitude") || encodingType.includes("Angle") || encodingType.includes("Schmidt")) return ["array"];
+        if (encodingType.includes("Basis") || encodingType.includes("Custom")) return ["any"];
       }
 
       return []; // Default empty
@@ -476,7 +476,7 @@ export const useStore = create<RFState>((set, get) => ({
     const currentNodes = get().nodes;
     const currentEdges = get().edges;
 
-    let updatedNodes = [... currentNodes];
+    let updatedNodes = [...currentNodes];
     changes.forEach((change) => {
       // make changes to source and target of removed edges
       if (change.type === "remove") {
@@ -487,9 +487,9 @@ export const useStore = create<RFState>((set, get) => ({
         console.log(targetNode);
 
         const targetNodeIndex = currentNodes.findIndex((n) => n.id === targetNode.id);
-        
+
         let targetData = {
-          ... targetNode.data,
+          ...targetNode.data,
           inputs: [... (targetNode.data.inputs || [])]
         };
         // remove targetNode.data.inputs entry corresponding to removed edge
@@ -497,23 +497,23 @@ export const useStore = create<RFState>((set, get) => ({
         const updatedInputs = targetData.inputs.filter((i) => (i.edgeId ?? -1) !== removedEdge.id);
         console.log("updatedInputs", updatedInputs)
         targetData.inputs = updatedInputs;
-        
+
 
         // revert inputTypes in targetNode.data.inputTypes to "any", if applicable for targetNode
-        if((targetNode.type === consts.AlgorithmNode || targetNode.type === consts.ClassicalAlgorithmNode|| (targetNode.type ===consts.StatePreparationNode)) ||targetNode.type === consts.ClassicalOperatorNode && (targetNode.data.label.includes("Arithmetic") || targetNode.data.label.includes("Comparison"))){
+        if ((targetNode.type === consts.AlgorithmNode || targetNode.type === consts.ClassicalAlgorithmNode || (targetNode.type === consts.StatePreparationNode)) || targetNode.type === consts.ClassicalOperatorNode && (targetNode.data.label.includes("Arithmetic") || targetNode.data.label.includes("Comparison"))) {
           const sourceHandle = removedEdge.sourceHandle;
           const targetHandle = removedEdge.targetHandle;
 
           const handleIndex = getHandleIndex(targetNode.id, targetHandle);
-          const otherHandleIndex = handleIndex===0?1:0;
+          const otherHandleIndex = handleIndex === 0 ? 1 : 0;
           // find other edge connected to targetNode
           const otherEdge = get().edges.find((e) => e.target === targetNode.id && e.id !== removedEdge.id);
 
           const hasNoFixedType = (targetNode.data.encodingType === "Basis Encoding" || targetNode.data.encodingType === "Custom Encoding")
           // if no other edge exists: revert input & output type
-          if(!otherEdge && hasNoFixedType) {
+          if (!otherEdge && hasNoFixedType) {
             targetData.inputTypes = ["any", "any"];
-            if(targetNode.data.label.includes("Arithmetic")) {
+            if (targetNode.data.label.includes("Arithmetic")) {
               targetData.outputTypes = ["any"];
             }
           }
@@ -563,7 +563,7 @@ export const useStore = create<RFState>((set, get) => ({
       }
 
       // Find the first input that has a type other than "any"
-      if(node.data.inputs){
+      if (node.data.inputs) {
         for (const input of node.data.inputs) {
           const sourceNode = get().nodes.find(n => n.id === input.id);
           if (!sourceNode) continue;
@@ -572,7 +572,7 @@ export const useStore = create<RFState>((set, get) => ({
           if (sourceNode.type === "dataTypeNode") type = sourceNode.data?.dataType ?? "any";
           else if (sourceNode.type === "ClassicalOperationNode") {
             type = getNodeLockedType(sourceNode.id);
-          } else if(sourceNode.data.outputTypes[0]) {
+          } else if (sourceNode.data.outputTypes[0]) {
             type = sourceNode.data.outputTypes[0]; // TODO:  eigentlich sollte man da den richtigen outputType aussuchen. Geht mittlerweile, weil edgeId mitgespeichert wird. 
           }
 
@@ -580,11 +580,11 @@ export const useStore = create<RFState>((set, get) => ({
         }
       }
       // Find entry in inputTypes != any
-/*       if(node.data.inputTypes){
-        for(const type of node.data.inputTypes) {
-          if(type.toLowerCase() !== "any") return type;
-        }
-      } */
+      /*       if(node.data.inputTypes){
+              for(const type of node.data.inputTypes) {
+                if(type.toLowerCase() !== "any") return type;
+              }
+            } */
       return "any"; // no locked type yet
     };
 
@@ -838,7 +838,7 @@ export const useStore = create<RFState>((set, get) => ({
     if (targetType !== "any" && sourceType !== "any" && sourceType !== targetType) {
       const errorMsg = `Type mismatch: ${sourceType} -> ${targetType}, connection rejected`
       console.log(errorMsg);
-      setTypeError(errorMsg); 
+      setTypeError(errorMsg);
       insertEdge = false;
       return false; // reject edge
     }
@@ -870,10 +870,10 @@ export const useStore = create<RFState>((set, get) => ({
 
     // Special handling for state preparation nodes
     const encodingNodes = [
-        "Angle Encoding",
-        "Amplitude Encoding",
-        "Matrix Encoding",
-        "Schmidt Decomposition",
+      "Angle Encoding",
+      "Amplitude Encoding",
+      "Matrix Encoding",
+      "Schmidt Decomposition",
     ];
 
     if (
@@ -1053,12 +1053,12 @@ export const useStore = create<RFState>((set, get) => ({
               targetData.inputTypes[handleIndex] = sourceType;
             }
             // Update target node input and output types if classical operation node and both inputs are set
-            if(targetNode.type === consts.ClassicalOperatorNode && (targetNode.data.label.includes("Arithmetic") || targetNode.data.label.includes("Comparison")) && lockedType !== "any"){
+            if (targetNode.type === consts.ClassicalOperatorNode && (targetNode.data.label.includes("Arithmetic") || targetNode.data.label.includes("Comparison")) && lockedType !== "any") {
               console.log("updating input output types")
               targetData.inputTypes = [lockedType, lockedType];
-              if(targetNode.data.label.includes("Arithmetic")){
-                targetData.outputTypes = [lockedType]; 
-				//TODO if outputType is changed inputType of any connected Edge should be changed too
+              if (targetNode.data.label.includes("Arithmetic")) {
+                targetData.outputTypes = [lockedType];
+                //TODO if outputType is changed inputType of any connected Edge should be changed too
               }
               console.log(targetData)
               console.log(updatedNodes[targetNodeIndex])
@@ -1312,7 +1312,17 @@ export const useStore = create<RFState>((set, get) => ({
           }
           if (identifier === "encodingType") {
             let inputTypes = ["array"]
-            if(nodeVal.includes("Basis") || nodeVal.includes("Custom")) inputTypes = ["any"];
+            console.log("update node data type")
+            console.log(node.data.inputTypes);
+            const existingInputTypes = node.data.inputTypes;
+
+            const resolvedInputTypes =
+              Array.isArray(existingInputTypes) &&
+                existingInputTypes.length > 0 &&
+                existingInputTypes.some((t) => t !== "any" && t != "array")
+                ? existingInputTypes
+                : ["any"];
+            if (nodeVal.includes("Basis") || nodeVal.includes("Custom")) inputTypes = resolvedInputTypes;
             return {
               ...node,
               data: {
