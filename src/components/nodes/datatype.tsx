@@ -195,7 +195,7 @@ export const DataTypeNode = memo((node: Node) => {
   };
 
   return (
-    <div className="relative w-[450px] h-[270px]">
+    <div className="relative w-[450px] h-[270px] classical-node">
       {outputIdentifierError && (
         <div className="absolute top-2 right-2 group z-20">
           <AlertCircle className="text-red-600 w-5 h-5" />
