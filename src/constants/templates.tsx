@@ -1,3 +1,5 @@
+import { initialEdges } from "."
+
 export const swap_test_algorithm =
 {
   metadata: [
@@ -446,8 +448,8 @@ export const swap_test_algorithm =
 
 export const hadamard_test_real_part_algorithm =
 {
-  metadata:[{
-  "version": "1.0.0",
+  metadata: [{
+    "version": "1.0.0",
     "name": "My Model",
     "description": "The Hadamard Test is a quantum algorithm used to determine the real part (or, using a different variant, the imaginary part) of the expectation value of a unitary operator. The circuit begins with a single ancilla qubit, initialized to zero. A Hadamard gate is applied to the ancilla to create an equal superposition of zero and one. Then a controlled unitary operation is applied, with the ancilla as the control qubit—here, a CNOT gate can be used as an example. After this, another Hadamard gate is applied to the ancilla, which is then measured. The depicted version of the circuit gives the real part of the expectation value; if you want to determine the imaginary part, you need to use the other template with a slightly different arrangement.",
     "author": "",
@@ -1265,7 +1267,7 @@ export const qaoa_algorithm =
     "timestamp": "2026-01-20T13:27:12.962Z"
   }],
   nodes: [
-   {
+    {
       "id": "0faacff4-754c-426f-8f9b-8a454897a741",
       "type": "dataTypeNode",
       "position": {
@@ -1730,7 +1732,7 @@ export const qaoa_algorithm =
       "parentNode": "9c1b0b6b-b354-4c17-8856-de7f9544bd7c",
       "extent": "parent"
     }
-  
+
   ],
   initialEdges: [
     {
@@ -1923,7 +1925,7 @@ export const qaoa_algorithm =
 
 export const grover_algorithm =
 {
- metadata: [{
+  metadata: [{
     "version": "1.0.0",
     "name": "My Model",
     "description": "Grover’s Algorithm is a quantum search algorithm designed to find a marked item in an unsorted database with quadratic speedup over classical search. It starts by putting all qubits into an equal superposition, then repeatedly applies a combination of an oracle (which marks the desired state) and a diffusion operator (which amplifies the probability of the marked state). After a few iterations, measuring the qubits yields the target state with high probability.",
@@ -2431,5 +2433,209 @@ export const grover_algorithm =
     "x": -7.5,
     "y": 62.5,
     "zoom": 0.5
+  }]
+}
+
+
+export const uniform_superposition =
+{
+  metadata: [{
+    "version": "1.0.0",
+    "name": "My Model",
+    "description": "This is a model.",
+    "author": "",
+    "containsPlaceholder": false,
+    "id": "flow-1768927045944",
+    "timestamp": "2026-01-20T16:37:25.944Z"
+  }],
+  nodes: [
+    {
+      "id": "8eca430d-7321-4390-90ba-8689d366229f",
+      "type": "statePreparationNode",
+      "position": {
+        "x": 345,
+        "y": 255
+      },
+      "data": {
+        "label": "Prepare State",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "completionGuaranteed": true,
+        "compactOptions": [
+          true,
+          false
+        ],
+        "identifiers": [
+          "q555714"
+        ],
+        "quantumStateName": "Uniform Superposition",
+        "size": "",
+        "outputIdentifier": "",
+        "inputTypes": [],
+        "outputTypes": [
+          "quantum register"
+        ],
+        "outputs": [
+          {
+            "identifier": "",
+            "size": ""
+          }
+        ]
+      },
+      "width": 320,
+      "height": 373,
+      "positionAbsolute": {
+        "x": 345,
+        "y": 255
+      }
+    }
+  ],
+  initialEdges: [],
+  viewport: [{
+    "x": -92.5,
+    "y": -57.5,
+    "zoom": 1
+  }]
+}
+
+
+
+export const initialization =
+{
+  metadata: [{
+    "version": "1.0.0",
+    "name": "My Model",
+    "description": "This is a model.",
+    "author": "",
+    "containsPlaceholder": false,
+    "id": "flow-1768927071652",
+    "timestamp": "2026-01-20T16:37:51.652Z"
+  }],
+  nodes: [
+    {
+      "id": "fcf5d048-5744-4662-9130-85a40d0daa2f",
+      "type": "statePreparationNode",
+      "position": {
+        "x": 555,
+        "y": 240
+      },
+      "data": {
+        "label": "Encode Value",
+        "inputs": [
+          {
+            "id": "54e5f6d3-0a29-4df8-9c5b-ce6bc43f9819",
+            "edgeId": "024a86ef-03e4-4239-8564-be98a18fdc3d",
+            "outputIdentifier": "",
+            "targetHandle": "classicalHandleStatePreparationInput0fcf5d048-5744-4662-9130-85a40d0daa2f",
+            "identifiers": [
+              "q148064"
+            ]
+          },
+          {
+            "id": "54e5f6d3-0a29-4df8-9c5b-ce6bc43f9819",
+            "edgeId": "024a86ef-03e4-4239-8564-be98a18fdc3d",
+            "outputIdentifier": "",
+            "identifiers": [
+              "q148064"
+            ],
+            "targetHandle": "classicalHandleStatePreparationInput0fcf5d048-5744-4662-9130-85a40d0daa2f"
+          }
+        ],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "completionGuaranteed": true,
+        "compactOptions": [
+          true
+        ],
+        "identifiers": [
+          "q148064"
+        ],
+        "encodingType": "Basis Encoding",
+        "bound": 0,
+        "size": "",
+        "outputIdentifier": "",
+        "inputTypes": [
+          "Number"
+        ],
+        "outputTypes": [
+          "quantum register"
+        ]
+      },
+      "width": 320,
+      "height": 373,
+      "positionAbsolute": {
+        "x": 555,
+        "y": 240
+      },
+      "dragging": true
+    },
+    {
+      "id": "54e5f6d3-0a29-4df8-9c5b-ce6bc43f9819",
+      "type": "dataTypeNode",
+      "position": {
+        "x": 0,
+        "y": 255
+      },
+      "data": {
+        "label": "Number",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "completionGuaranteed": true,
+        "compactOptions": [
+          true,
+          false
+        ],
+        "identifiers": [
+          "q148064"
+        ],
+        "dataType": "Number",
+        "value": "",
+        "outputIdentifier": "",
+        "inputTypes": [],
+        "outputTypes": {
+          "0": "Number"
+        }
+      },
+      "width": 450,
+      "height": 270,
+      "positionAbsolute": {
+        "x": 0,
+        "y": 255
+      },
+      "dragging": true
+    }
+  ],
+  initialEdges: [
+    {
+      "source": "54e5f6d3-0a29-4df8-9c5b-ce6bc43f9819",
+      "sourceHandle": "classicalHandleDataTypeOutput054e5f6d3-0a29-4df8-9c5b-ce6bc43f9819",
+      "target": "fcf5d048-5744-4662-9130-85a40d0daa2f",
+      "targetHandle": "classicalHandleStatePreparationInput0fcf5d048-5744-4662-9130-85a40d0daa2f",
+      "type": "classicalEdge",
+      "id": "024a86ef-03e4-4239-8564-be98a18fdc3d",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#F5A843",
+        "hidden": false
+      }
+    }
+  ],
+  viewport: [{
+    "x": -92.5,
+    "y": -57.5,
+    "zoom": 1
   }]
 }
