@@ -1,5 +1,5 @@
 import { memo, useEffect, useState } from "react";
-import { Handle, Position, Node, Edge, getConnectedEdges, useUpdateNodeInternals } from "reactflow";
+import { Handle, Position, Node, useUpdateNodeInternals } from "reactflow";
 import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
 import OutputPort from "../utils/outputPort";
@@ -38,7 +38,7 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
   const inputHeight = 30;
   const inputsTotalHeight = numberInputs * inputHeight;
   const outputHeight = 120;
-  const outputsStartTop = headerHeight + inputsTotalHeight  + 10;
+  const outputsStartTop = headerHeight + inputsTotalHeight + 10;
 
 
 
@@ -52,12 +52,25 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
   useEffect(() => {
     updateNodeInternals(node.id);
     setSelectedNode(node);
+    console.log("update classical algorithm handles")
   }, [ancillaMode]);
 
-    useEffect(() => {
-    updateNodeInternals(node.id);
-    setSelectedNode(node);
-  }, [node.data.numberClassicalInputs, node.data.numberClassicalOutputs]);
+
+  const getInputType = (inputIndex: number) => {
+    const handleId = `classicalHandleOperationInput${inputIndex}${node.id}`;
+
+    const edge = edges.find(e => e.targetHandle === handleId);
+    if (!edge) return "any";
+
+    const sourceNode = nodes.find(n => n.id === edge.source);
+    if (!sourceNode) return "any";
+
+    if (sourceNode.type === "dataTypeNode") {
+      return sourceNode.data?.dataType ?? "any";
+    }
+
+    return "any";
+  };
 
 
   useEffect(() => {
@@ -180,10 +193,15 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
                 className="z-10 classical-circle-port-operation !bg-orange-300 !border-black -left-[8px]"
                 style={{ top: "50%", transform: "translateY(-50%)" }}
               />
-              <span className="text-black text-sm text-center w-full">
-                {node.data.inputs.find(
-                        (input) => input.targetHandle === `classicalHandleOperationInput${index}${node.id}`)?.outputIdentifier || `Input ${index + 1}`}
-              </span>
+              <div className="flex flex-col text-center w-full leading-tight">
+                <span className="text-black text-sm">
+                  {node.data.inputs?.[index]?.outputIdentifier || `Input ${index + 1}`}
+                </span>
+                <span className="text-[10px] text-gray-600">
+                  type: {getInputType(index)?.toLowerCase()}
+                </span>
+              </div>
+
             </div>
           ))}
         </div>
