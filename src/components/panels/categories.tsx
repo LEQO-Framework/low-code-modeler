@@ -186,9 +186,7 @@ export const categories: Record<string, CategoryEntry> = {
       {
         label: consts.qaoa,
         type: consts.templates,
-        icon: [
-          "QAOA.png",
-        ],
+        icon: "QAOA.png",
         description: "Solves optimization problems by combining a quantum process with a classical optimizer.",
         completionGuaranteed: false,
         compactOptions: [true, false],
