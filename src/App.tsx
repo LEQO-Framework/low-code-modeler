@@ -2042,7 +2042,9 @@ If none apply, return { "algorithms": [] }.
           if (['finished', 'skipped'].includes(data.status)) {
             setRunTour(false);
             setExpanded(false);
-            loadFlow(JSON.parse(modeledDiagram));
+            if(modeledDiagram) {
+              loadFlow(JSON.parse(modeledDiagram));
+            }
           }
         }}
       />
