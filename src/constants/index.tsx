@@ -140,3 +140,8 @@ export const grover = "Grover's Algorithm";
 export const hadamard_test_real_part = "Hadamard Test (Real Part)";
 export const hadamard_test_imaginary_part = "Hadamard Test (Imaginary Part)";
 export const swap_test = "SWAP Test";
+export const custom_template = "Custom Template";
+
+
+// localStorage keys
+export  const TEMPLATE_STORAGE_KEY = "custom-flow-templates";

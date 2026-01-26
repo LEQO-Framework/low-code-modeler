@@ -25,7 +25,7 @@ import Modal, { NewDiagramModal } from "./Modal";
 import './index.css';
 import { Placement } from 'react-joyride';
 import { startCompile } from "./backend";
-import { ancillaConstructColor, classicalConstructColor, ClassicalOperatorNode, controlFlowConstructColor, grover, hadamard_test_imaginary_part, hadamard_test_real_part, qaoa, quantum_types, quantumConstructColor, swap_test } from "./constants";
+import { ancillaConstructColor, classicalConstructColor, ClassicalOperatorNode, controlFlowConstructColor, grover, hadamard_test_imaginary_part, hadamard_test_real_part, qaoa, quantum_types, quantumConstructColor, swap_test, custom_template, TEMPLATE_STORAGE_KEY, templates } from "./constants";
 import Joyride from 'react-joyride';
 import { ConfigModal } from "./components/modals/configModal";
 import { QunicornModal } from "./components/modals/qunicornModal";
@@ -39,6 +39,7 @@ import OpenAI from "openai";
 import { grover_algorithm, hadamard_test_imaginary_part_algorithm, hadamard_test_real_part_algorithm, qaoa_algorithm, swap_test_algorithm } from "./constants/templates";
 import JSZip, { JSZipObject } from "jszip";
 import { createDeploymentModel, createNodeType, createServiceTemplate, updateNodeType, updateServiceTemplate } from "./winery";
+import custom from "./components/nodes/custom";
 
 const selector = (state: {
   nodes: Node[];
@@ -1357,6 +1358,7 @@ If none apply, return { "algorithms": [] }.
       }
     }, [nodes, setContextMenu]);
 
+  
   const onDrop = React.useCallback(
     (event: any) => {
       console.log("dropped")
@@ -1379,6 +1381,10 @@ If none apply, return { "algorithms": [] }.
       }
       else if (label == grover) {
         loadFlow(grover_algorithm);
+      }
+      else if (label.startsWith(custom_template)) {
+        const userTemplate = event.dataTransfer.getData("application/reactflow/template");
+        loadFlow(userTemplate);
       }
       else {
         handleOnDrop(event, reactFlowWrapper, reactFlowInstance, setNodes);
@@ -1524,6 +1530,38 @@ If none apply, return { "algorithms": [] }.
     URL.revokeObjectURL(downloadUrl);
     console.log("Flow saved:", flowWithMetadata);
   }
+
+ 
+
+  
+	const handleSaveAsTemplate = () => {
+		if (!reactFlowInstance) {
+      		console.error("React Flow instance is not initialized.");
+    		return;
+			// TODO: toast error message
+		}
+		let templateFlow = reactFlowInstance.toObject();
+    console.log(templateFlow)
+    const date = Date.now();
+    const timestamp = new Date().toISOString();
+    const newTemplate = {
+      label: `${custom_template}-${date}`,
+      type: templates,
+      icon: "QAOA.png",
+      description: metadata.description,
+      completionGuaranteed: true,
+      compactOptions:[true, false],
+      id: `flow-${date}`,
+      timestamp: timestamp,
+      name: metadata.name, // get name from meta data
+      flowData: JSON.stringify(templateFlow)
+    }
+    // save newTemplate to storage
+    const existingTemplates = JSON.parse(localStorage.getItem(TEMPLATE_STORAGE_KEY) || '[]');
+    const updatedTemplates = [...existingTemplates, newTemplate];
+    localStorage.setItem(TEMPLATE_STORAGE_KEY, JSON.stringify(updatedTemplates));
+  	};
+
 
   function handleRestoreClick() {
     if (!reactFlowInstance) {
@@ -1826,13 +1864,12 @@ If none apply, return { "algorithms": [] }.
     })
       .then((dataUrl) => {
         const a = document.createElement("a");
-        a.setAttribute("download", "reactflow-diagram.svg");
+        a.setAttribute("download", "reactflow-diagram.svg"); // TODO: Dateiname ändern?
         a.setAttribute("href", dataUrl);
         a.click();
       })
       .catch((err) => console.error("Error exporting SVG:", err));
   };
-
 
   /**
    * Uploads a QRMS ZIP file to GitHub, updating files if they already exist.

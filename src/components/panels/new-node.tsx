@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { categories, Node } from "./categories";
+import React, { useEffect, useMemo, useState } from "react";
+import { categories as staticCategories, Node } from "./categories";
 import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
 import * as consts from "../../constants";
@@ -33,12 +33,39 @@ export const AddNodePanel = () => {
     selector,
     shallow
   );
+  const [userTemplates, setUserTemplates] = useState<any[]>([]);
+  
+  // Load user templates
+  useEffect(() => {
+    const savedTemplates = localStorage.getItem(consts.TEMPLATE_STORAGE_KEY);
+    if (savedTemplates) setUserTemplates(JSON.parse(savedTemplates));
+  }, []);
+
+  // merge static categories with user templates
+  const categories = useMemo(() => {
+    let mergedCategories = {... staticCategories };
+    console.log("MERGED CATEGORIES", mergedCategories)
+    if (userTemplates.length > 0) {
+      let existingTemplatesContent = mergedCategories[consts.templates].content as Node[];
+      const updatedContent = [... existingTemplatesContent, ... userTemplates];
+      mergedCategories[consts.templates] = {
+        ... mergedCategories[consts.templates],
+        content: updatedContent
+      }
+    }
+    console.log("MERGED CATEGORIES", mergedCategories)
+    return mergedCategories;
+  }, [userTemplates])
 
   const onDragStart = (event: React.DragEvent<HTMLDivElement>, node: any) => {
     event.dataTransfer.setData("application/reactflow", node.type);
     event.dataTransfer.setData("application/reactflow/dataType", node.dataType);
     event.dataTransfer.setData("application/reactflow/label", node.label);
     event.dataTransfer.effectAllowed = "move";
+    // if node is a custom user template: also pass flow data
+    if(node.flowData) {
+      event.dataTransfer.setData("application/reactflow/template", node.flowData);
+    }
     console.log("drag start", node);
   };
 
