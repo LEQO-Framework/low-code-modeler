@@ -1843,6 +1843,7 @@ If none apply, return { "algorithms": [] }.
   }, [setContextMenu]);
 
   const handleOpenConfig = () => setIsConfigOpen(true);
+  const handleManageTemplates = () => setIsManageTemplatesOpen(true);
 
   const onExperienceLevelChange = (event) => {
     setExperienceLevel(event);
@@ -2120,6 +2121,8 @@ If none apply, return { "algorithms": [] }.
           //sendToQunicorn={() => setIsQunicornOpen(true)}
           openHistory={openHistoryModal}
           startTour={() => { startTour(); }}
+          onSaveAsTemplate={handleSaveAsTemplate}
+          onManageTemplates={handleManageTemplates}
         />
       </div>
       {<NewDiagramModal open={isLoadJsonModalOpen} onClose={cancelLoadJson} onConfirm={confirmNewDiagram} />}
