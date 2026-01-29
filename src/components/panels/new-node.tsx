@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { categories as staticCategories, Node } from "./categories";
+import { categories as staticCategories, Node, Template } from "./categories";
 import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
 import * as consts from "../../constants";
@@ -9,11 +9,13 @@ const selector = (state: {
   compact: boolean;
   experienceLevel: string;
   completionGuaranteed: boolean;
+  userTemplates: Template[];
 }) => ({
   ancillaMode: state.ancillaMode,
   experienceLevel: state.experienceLevel,
   compact: state.compact,
   completionGuaranteed: state.completionGuaranteed,
+  userTemplates: state.userTemplates,
 });
 
 const categoryIcons: Record<string, string> = {
@@ -29,33 +31,29 @@ const categoryIcons: Record<string, string> = {
 export const AddNodePanel = () => {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const { ancillaMode, completionGuaranteed, compact, experienceLevel } = useStore(
+  const { ancillaMode, completionGuaranteed, compact, experienceLevel, userTemplates } = useStore(
     selector,
     shallow
   );
-  const [userTemplates, setUserTemplates] = useState<any[]>([]);
   
-  // Load user templates
-  useEffect(() => {
-    const savedTemplates = localStorage.getItem(consts.TEMPLATE_STORAGE_KEY);
-    if (savedTemplates) setUserTemplates(JSON.parse(savedTemplates));
-  }, []);
 
   // merge static categories with user templates
-  const categories = useMemo(() => {
-    let mergedCategories = {... staticCategories };
-    console.log("MERGED CATEGORIES", mergedCategories)
-    if (userTemplates.length > 0) {
-      let existingTemplatesContent = mergedCategories[consts.templates].content as Node[];
-      const updatedContent = [... existingTemplatesContent, ... userTemplates];
-      mergedCategories[consts.templates] = {
-        ... mergedCategories[consts.templates],
-        content: updatedContent
+const categories = useMemo(() => {
+  // no user templates: only return standard templates (staticCategories)
+  if (userTemplates.length === 0) return staticCategories;
+
+  // else: deep copy of staticCategories + user templates as Subcategory 
+  return {
+    ...staticCategories,
+    [consts.templates]: {
+      ...staticCategories[consts.templates],
+      content: {
+        "Standard Templates": staticCategories[consts.templates].content,
+        "Custom User Templates": userTemplates,
       }
     }
-    console.log("MERGED CATEGORIES", mergedCategories)
-    return mergedCategories;
-  }, [userTemplates])
+  };
+}, [userTemplates]);
 
   const onDragStart = (event: React.DragEvent<HTMLDivElement>, node: any) => {
     event.dataTransfer.setData("application/reactflow", node.type);
@@ -64,7 +62,7 @@ export const AddNodePanel = () => {
     event.dataTransfer.effectAllowed = "move";
     // if node is a custom user template: also pass flow data
     if(node.flowData) {
-      event.dataTransfer.setData("application/reactflow/template", node.flowData);
+      event.dataTransfer.setData("application/reactflow/templateFlowData", JSON.stringify(node.flowData));
     }
     console.log("drag start", node);
   };

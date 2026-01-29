@@ -16,6 +16,7 @@ import {
   useUpdateNodeInternals,
 } from "reactflow";
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 import { nodesConfig } from "./site";
 import { v4 as uuid } from "uuid";
 import * as consts from "../constants";
@@ -24,6 +25,7 @@ import { insertTopNodeTag } from "@/winery";
 import { remove } from "jszip";
 import { IPortData } from "@/components/nodes/model";
 import { Regex } from "lucide-react";
+import { Template } from "@/components/panels/categories";
 
 export type NodeData = {
   label: string;
@@ -50,6 +52,7 @@ type RFState = {
   history: HistoryItem[];
   historyIndex: number;
   typeError: string | null;
+  userTemplates: Template[];
   setTypeError: (message: string | null) => void;
   setNodes: (node: Node) => void;
   setEdges: (edge: Edge) => void;
@@ -59,6 +62,8 @@ type RFState = {
   setCompact: (compact: boolean) => void
   setExperienceLevel: (experienceLevel: string) => void
   setNewEdges: (newEdges: Edge[]) => void;
+  addUserTemplate: (template: Template) => void;
+  removeUserTemplate: (id: String) => void;
   onNodesChange: OnNodesChange;
   onEdgesChange: OnEdgesChange;
   onConnect: OnConnect;
@@ -87,7 +92,7 @@ const getHandleIndex = (nodeId: string, handleId: string) => {
 };
 
 // Zustand store with undo/redo logic
-export const useStore = create<RFState>((set, get) => ({
+export const useStore = create<RFState>()(persist((set, get) => ({
   nodes: nodesConfig.initialNodes,
   edges: nodesConfig.initialEdges,
   ancillaMode: false,
@@ -99,6 +104,7 @@ export const useStore = create<RFState>((set, get) => ({
   historyIndex: -1,
   containsPlaceholder: false,
   typeError: null,
+  userTemplates: [],
 
   setTypeError: (message: string | null) => {
     set({ typeError: message });
@@ -411,6 +417,18 @@ export const useStore = create<RFState>((set, get) => ({
     console.log("History after update:", get().history);
     console.log("Current historyIndex:", get().historyIndex);
     console.log(get().edges)
+  },
+
+  addUserTemplate: (template: Template) => {
+    set({
+      userTemplates: [... get().userTemplates, template]
+    })
+  },
+
+  removeUserTemplate: (id: string) => {
+    set({
+      userTemplates: get().userTemplates.filter(t => t.id !== id)
+    })
   },
 
   onNodesChange: (changes: NodeChange[]) => {
@@ -1528,6 +1546,13 @@ export const useStore = create<RFState>((set, get) => ({
 
     console.log("Updated state after redo:", get());
   },
+}),
+{
+  name: "user-templates-storage",
+
+  partialize: (state) => ({
+    userTemplates: state.userTemplates,
+  }),
 }));
 
 

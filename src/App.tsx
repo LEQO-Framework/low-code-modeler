@@ -40,6 +40,7 @@ import { grover_algorithm, hadamard_test_imaginary_part_algorithm, hadamard_test
 import JSZip, { JSZipObject } from "jszip";
 import { createDeploymentModel, createNodeType, createServiceTemplate, updateNodeType, updateServiceTemplate } from "./winery";
 import custom from "./components/nodes/custom";
+import { Template } from "./components/panels/categories";
 
 const selector = (state: {
   nodes: Node[];
@@ -54,6 +55,7 @@ const selector = (state: {
   onConnect: any;
   onConnectEnd: any;
   typeError: string | null;
+  userTemplates: Template[];
   setTypeError: (message: string | null) => void;
   setSelectedNode: (node: Node | null) => void;
   updateNodeValue: (nodeId: string, field: string, nodeVal: string) => void;
@@ -65,6 +67,8 @@ const selector = (state: {
   setCompact: (compact: boolean) => void;
   setCompletionGuaranteed: (completionGuaranteed: boolean) => void;
   setExperienceLevel: (experienceLevel: string) => void;
+  addUserTemplate: (template: Template) => void;
+	removeUserTemplate: (id: String) => void;
   setContainsPlaceholder: (containsPlaceholder: boolean) => void;
   undo: () => void;
   redo: () => void;
@@ -80,6 +84,7 @@ const selector = (state: {
   onConnect: state.onConnect,
   onConnectEnd: state.onConnectEnd,
   typeError: state.typeError,
+  userTemplates: state.userTemplates,
   setTypeError: state.setTypeError,
   setSelectedNode: state.setSelectedNode,
   updateNodeValue: state.updateNodeValue,
@@ -92,6 +97,8 @@ const selector = (state: {
   setCompletionGuaranteed: state.setCompletionGuaranteed,
   setContainsPlaceholder: state.setContainsPlaceholder,
   setExperienceLevel: state.setExperienceLevel,
+  addUserTemplate: state.addUserTemplate,
+  removeUserTemplate: state.removeUserTemplate,
   undo: state.undo,
   redo: state.redo,
 });
@@ -111,6 +118,9 @@ function App() {
     onConnect,
     onConnectEnd,
     typeError,
+    userTemplates,
+    addUserTemplate,
+    removeUserTemplate,
     setTypeError,
     setCompact,
     setExperienceLevel,
@@ -135,6 +145,7 @@ function App() {
   });
   const [menu, setMenu] = useState(null);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
+  const [isManageTemplatesOpen, setIsManageTemplatesOpen] = useState(false);
   const [nisqAnalyzerEndpoint, setNisqAnalyzerEndpoint] = useState(
     import.meta.env.VITE_NISQ_ANALYZER || "http://localhost:8098/nisq-analyzer"
   );
@@ -1383,8 +1394,15 @@ If none apply, return { "algorithms": [] }.
         loadFlow(grover_algorithm);
       }
       else if (label.startsWith(custom_template)) {
-        const userTemplate = event.dataTransfer.getData("application/reactflow/template");
-        loadFlow(userTemplate);
+        const userTemplateFlowData = JSON.parse(event.dataTransfer.getData("application/reactflow/templateFlowData"));
+        console.log("USER TEMPLATE")
+        console.log(userTemplateFlowData)
+        if(userTemplateFlowData) {
+          loadFlow(userTemplateFlowData);
+        }
+        else {
+          console.error(`User Template ${label} not found.`)
+        }
       }
       else {
         handleOnDrop(event, reactFlowWrapper, reactFlowInstance, setNodes);
@@ -1535,6 +1553,7 @@ If none apply, return { "algorithms": [] }.
 
   
 	const handleSaveAsTemplate = () => {
+    console.log("Saving User Template")
 		if (!reactFlowInstance) {
       		console.error("React Flow instance is not initialized.");
     		return;
@@ -1542,24 +1561,28 @@ If none apply, return { "algorithms": [] }.
 		}
 		let templateFlow = reactFlowInstance.toObject();
     console.log(templateFlow)
+    // add metadata to templateFlow
+    templateFlow = {
+      ...templateFlow,
+      metadata: metadata,
+    }
     const date = Date.now();
     const timestamp = new Date().toISOString();
-    const newTemplate = {
+    const newTemplate: Template = {
       label: `${custom_template}-${date}`,
       type: templates,
-      icon: "QAOA.png",
+      icon: "QAOA.png", //TODO
       description: metadata.description,
       completionGuaranteed: true,
       compactOptions:[true, false],
       id: `flow-${date}`,
       timestamp: timestamp,
       name: metadata.name, // get name from meta data
-      flowData: JSON.stringify(templateFlow)
+      flowData: templateFlow
     }
-    // save newTemplate to storage
-    const existingTemplates = JSON.parse(localStorage.getItem(TEMPLATE_STORAGE_KEY) || '[]');
-    const updatedTemplates = [...existingTemplates, newTemplate];
-    localStorage.setItem(TEMPLATE_STORAGE_KEY, JSON.stringify(updatedTemplates));
+    console.log(newTemplate)
+    // save metadata to userTemplates
+    addUserTemplate(newTemplate);
   	};
 
 
