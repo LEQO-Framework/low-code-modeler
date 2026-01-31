@@ -67,7 +67,7 @@ export const dataTypes = "Data Types";
 export const controlStructureNodes = "Control Structure Elements";
 export const operator = "Operators";
 export const customOperators = "Custom Operators";
-export const machineLearningNodes = "Machine Learning Nodes";
+export const machineLearningNodes = "ML Elements";
 
 // handle prefix ensures correctness of edges
 export const classicalHandle: string = "classicalHandle";

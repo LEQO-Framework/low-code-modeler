@@ -4,8 +4,13 @@ import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { classicalConstructColor } from "@/constants";
+import { classicalConstructColor, quantumConstructColor } from "@/constants";
 import OutputPort from "../utils/outputPort";
+import {
+  Atom, BrainCircuit, Layers, Activity, Share2,
+  Grid, CircuitBoard, Combine, Boxes, BoxSelect,
+  Focus, Split, Network, Cpu
+} from "lucide-react";
 
 // Plugin metadata types
 interface PluginInputMetadata {
@@ -79,6 +84,11 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
   // Check if this is a clustering node (k-means)
   const isClusteringNode = data.pluginName === 'classical-k-means' || data.pluginName === 'quantum-k-means';
 
+  // Check if this is a quantum plugin (for styling: blue + angular)
+  const isQuantumPlugin = data.pluginName?.toLowerCase().includes('quantum') ||
+                          data.label?.toLowerCase().includes('quantum') ||
+                          ['qnn', 'vqc', 'hybrid-autoencoder'].includes(data.pluginName?.toLowerCase() || '');
+
   // Calculate dynamic height
   const baseHeight = 200;
   const inputHeight = 40;
@@ -86,12 +96,56 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
   const dropdownHeight = isClusteringNode ? 60 : 0;
   const dynamicHeight = baseHeight + (dataInputs.length * inputHeight) + (dataOutputs.length > 0 ? outputHeight : 0) + dropdownHeight;
 
-  // Get icon based on plugin name
-  const getIcon = () => {
-    if (data.pluginName?.includes('k-means')) {
-      return '/plugin-icons/kmeans_icon.png';
+  // Render lucide icon based on plugin name
+  const renderIcon = () => {
+    const iconProps = { size: 32, className: "flex-shrink-0 text-gray-700" };
+    const name = data.pluginName?.toLowerCase() || data.label?.toLowerCase() || '';
+
+    // Quantum ML nodes
+    if (name.includes('quantum') && name.includes('clustering') || name === 'quantum clustering') {
+      return <Atom {...iconProps} />;
     }
-    return '/plugin-icons/quantum_clustering-thin.svg';
+    if (name === 'qnn') {
+      return <BrainCircuit {...iconProps} />;
+    }
+    if (name === 'quantum-cnn' || name.includes('quantum-cnn')) {
+      return <Layers {...iconProps} />;
+    }
+    if (name === 'vqc') {
+      return <Activity {...iconProps} />;
+    }
+    if (name.includes('quantum-k-nearest') || name.includes('k-nearest-neighbour')) {
+      return <Share2 {...iconProps} />;
+    }
+    if (name.includes('quantum-parzen') || name.includes('parzen-window')) {
+      return <Grid {...iconProps} />;
+    }
+    if (name.includes('quantum-kernel') || name.includes('kernel-estimation')) {
+      return <CircuitBoard {...iconProps} />;
+    }
+    if (name.includes('hybrid-autoencoder') || name.includes('autoencoder')) {
+      return <Combine {...iconProps} />;
+    }
+
+    // Classical ML nodes
+    if (name.includes('classical') && name.includes('clustering') || name === 'classical clustering') {
+      return <Boxes {...iconProps} />;
+    }
+    if (name.includes('k-medoids') || name.includes('classical-k-medoids')) {
+      return <BoxSelect {...iconProps} />;
+    }
+    if (name === 'optics') {
+      return <Focus {...iconProps} />;
+    }
+    if (name === 'svm') {
+      return <Split {...iconProps} />;
+    }
+    if (name === 'neural-network' || name.includes('neural-network')) {
+      return <Network {...iconProps} />;
+    }
+
+    // Fallback
+    return isQuantumPlugin ? <Atom {...iconProps} /> : <Cpu {...iconProps} />;
   };
 
   return (
@@ -106,26 +160,24 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
           "w-[320px] bg-white border border-solid border-gray-700 shadow-md overflow-hidden",
           selected && "border-blue-500"
         )}
-        style={{ height: `${dynamicHeight}px`, borderRadius: "40px" }}
+        style={{ height: `${dynamicHeight}px`, borderRadius: isQuantumPlugin ? "0px" : "40px" }}
       >
         {/* Header */}
         <div className="w-full flex items-center" style={{ height: '52px' }}>
           <div
-            className="w-full bg-orange-300 py-1 px-2 flex items-center"
+            className={cn(
+              "w-full py-1 px-2 flex items-center",
+              isQuantumPlugin ? "bg-blue-300" : "bg-orange-300"
+            )}
             style={{
               height: "inherit",
-              borderTopLeftRadius: "28px",
-              borderTopRightRadius: "28px",
+              borderTopLeftRadius: isQuantumPlugin ? "0px" : "28px",
+              borderTopRightRadius: isQuantumPlugin ? "0px" : "28px",
               overflow: "hidden",
               paddingLeft: '25px',
             }}
           >
-            <img
-              src={getIcon()}
-              alt="icon"
-              style={{ width: '45px', height: '45px' }}
-              className="object-contain flex-shrink-0"
-            />
+            {renderIcon()}
             <div className="h-full w-[1px] bg-black mx-2" />
             {isEditingLabel ? (
               <input
@@ -155,7 +207,10 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
           <div className="px-3 py-1 mb-1">
             <label className="text-sm text-black">Algorithm:</label>
             <select
-              className="w-full p-1 mt-1 bg-white text-center text-lg text-black border-2 border-orange-300 rounded-full"
+              className={cn(
+                "w-full p-1 mt-1 bg-white text-center text-lg text-black border-2",
+                isQuantumPlugin ? "border-blue-300 rounded-none" : "border-orange-300 rounded-full"
+              )}
               value={data.clusteringAlgorithm || 'k-means'}
               onChange={(e) => {
                 const newAlgorithm = e.target.value;
@@ -204,20 +259,25 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
                 key={`input-${index}`}
                 className="relative p-2 mb-1"
                 style={{
-                  backgroundColor: classicalConstructColor,
+                  backgroundColor: isQuantumPlugin ? quantumConstructColor : classicalConstructColor,
                   width: '140px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'flex-start',
-                  borderTopRightRadius: '20px',
-                  borderBottomRightRadius: '20px',
+                  borderTopRightRadius: isQuantumPlugin ? '0px' : '20px',
+                  borderBottomRightRadius: isQuantumPlugin ? '0px' : '20px',
                 }}
               >
                 <Handle
                   type="target"
                   id={`classicalHandlePluginInput${index}${node.id}`}
                   position={Position.Left}
-                  className="z-10 classical-circle-port-operation !bg-orange-300 !border-black -left-[8px]"
+                  className={cn(
+                    "z-10 -left-[8px]",
+                    isQuantumPlugin
+                      ? "circle-port-op !bg-blue-300 !border-black"
+                      : "classical-circle-port-operation !bg-orange-300 !border-black"
+                  )}
                   style={{ top: '50%', transform: 'translateY(-50%)' }}
                 />
                 <span className="text-black text-sm text-center w-full">
@@ -242,7 +302,7 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
                 <OutputPort
                   node={node}
                   index={0}
-                  type={"classical"}
+                  type={isQuantumPlugin ? "quantum" : "classical"}
                   nodes={nodes}
                   outputs={outputs}
                   setOutputs={setOutputs}

@@ -23,6 +23,7 @@ const categoryIcons: Record<string, string> = {
   [consts.customOperators]: "CustomOperators.png",
   [consts.operator]: "Operators.png",
   [consts.dataTypes]: "DataTypes.png",
+  [consts.machineLearningNodes]: "MLElements.svg",
 };
 
 export const AddNodePanel = () => {
