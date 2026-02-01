@@ -63,7 +63,7 @@ type RFState = {
   setExperienceLevel: (experienceLevel: string) => void
   setNewEdges: (newEdges: Edge[]) => void;
   addUserTemplate: (template: Template) => void;
-  removeUserTemplate: (id: String) => void;
+  setUserTemplates: (newTemplates: Template[]) => void;
   onNodesChange: OnNodesChange;
   onEdgesChange: OnEdgesChange;
   onConnect: OnConnect;
@@ -425,10 +425,11 @@ export const useStore = create<RFState>()(persist((set, get) => ({
     })
   },
 
-  removeUserTemplate: (id: string) => {
+  setUserTemplates: (newTemplates: Template[]) => {
     set({
-      userTemplates: get().userTemplates.filter(t => t.id !== id)
+      userTemplates: newTemplates
     })
+    console.log("after setting templates", get().userTemplates)
   },
 
   onNodesChange: (changes: NodeChange[]) => {

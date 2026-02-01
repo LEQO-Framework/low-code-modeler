@@ -41,6 +41,7 @@ import JSZip, { JSZipObject } from "jszip";
 import { createDeploymentModel, createNodeType, createServiceTemplate, updateNodeType, updateServiceTemplate } from "./winery";
 import custom from "./components/nodes/custom";
 import { Template } from "./components/panels/categories";
+import { ManageTemplateModal } from "./components/modals/templateModal";
 
 const selector = (state: {
   nodes: Node[];
@@ -68,7 +69,7 @@ const selector = (state: {
   setCompletionGuaranteed: (completionGuaranteed: boolean) => void;
   setExperienceLevel: (experienceLevel: string) => void;
   addUserTemplate: (template: Template) => void;
-	removeUserTemplate: (id: String) => void;
+	setUserTemplates: (newTemplates: Template[]) => void;
   setContainsPlaceholder: (containsPlaceholder: boolean) => void;
   undo: () => void;
   redo: () => void;
@@ -98,7 +99,7 @@ const selector = (state: {
   setContainsPlaceholder: state.setContainsPlaceholder,
   setExperienceLevel: state.setExperienceLevel,
   addUserTemplate: state.addUserTemplate,
-  removeUserTemplate: state.removeUserTemplate,
+  setUserTemplates: state.setUserTemplates,
   undo: state.undo,
   redo: state.redo,
 });
@@ -120,7 +121,7 @@ function App() {
     typeError,
     userTemplates,
     addUserTemplate,
-    removeUserTemplate,
+    setUserTemplates,
     setTypeError,
     setCompact,
     setExperienceLevel,
@@ -406,6 +407,15 @@ If none apply, return { "algorithms": [] }.
 
     setIsConfigOpen(false);
   };
+
+  const handleManageTemplatesSave = (updatedTemplates) => {
+    console.log("saving user template changes.");
+    console.log(updatedTemplates);
+    setUserTemplates(updatedTemplates);
+    setIsManageTemplatesOpen(false);
+  };
+
+  
 
   const cancelLoadJson = () => {
     setIsLoadJsonModalOpen(false);
@@ -2166,6 +2176,13 @@ If none apply, return { "algorithms": [] }.
         tempGithubRepositoryName={githubRepositoryName}
         tempGithubBranch={githubBranch}
         tempGithubToken={githubToken}
+      />
+
+      <ManageTemplateModal 
+        open={isManageTemplatesOpen} 
+        onClose={() => setIsManageTemplatesOpen(false)} 
+        templates={userTemplates} 
+        onSave={handleManageTemplatesSave}      
       />
 
       <QunicornModal
