@@ -13,6 +13,16 @@ interface ManageTemplateModalProps {
 export const ManageTemplateModal = ({ open, onClose, templates, onSave }: ManageTemplateModalProps) => {
   const [localTemplates, setLocalTemplates] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  // Inside ManageTemplateModal
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  // Auto-hide toast after 5 seconds
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
 
   const filteredTemplates = localTemplates.filter(t => 
     t.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -45,58 +55,125 @@ export const ManageTemplateModal = ({ open, onClose, templates, onSave }: Manage
     setLocalTemplates(prev => prev.filter(t => t.id !== id));
   };
 
-  // TODO: test
-  // TODO: auslagern zu App.tsx?
-  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
-    Array.from(files).forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        try {
-          const json = JSON.parse(event.target?.result as string);
-          const imported = Array.isArray(json) ? json : [json];
-          // Check if one of the imported templates are already part of userTemplates 
-          const existingIds = new Set(localTemplates.map((t) => t.id));
-          const newTemplates: any[] = [];
-          const duplicateNames: string[] = [];
+  const isValidTemplate = (json: any): boolean => {
+    // Check basic root properties
+    console.log("json", json)
+    const hasRootFields = 
+      json &&
+      typeof json === 'object' &&
+      typeof json.id === 'string' &&
+      typeof json.name === 'string' &&
+      typeof json.description === 'string' &&
+      typeof json.completionGuaranteed === 'boolean' &&
+      typeof json.icon === 'string' &&
+      json.compactOptions &&
+      json.type === "Templates" &&
+      typeof json.label === 'string' && json.label.startsWith("Custom Template") && 
+      json.flowData && typeof json.flowData === 'object';
+    console.log("has root fields", hasRootFields)
+    if (!hasRootFields) return false;
 
-          imported.forEach((temp) => {
-            if (existingIds.has(temp.id)) {
-              duplicateNames.push(temp.name || temp.id);
-            } else {
-              newTemplates.push(temp);
-            }
-          });
+    // Check flowData internals
+    const hasFlowDataFields = 
+      Array.isArray(json.flowData.nodes) && 
+      Array.isArray(json.flowData.edges);
 
-          // only import non-duplicate templates
-          if (newTemplates.length > 0) {
-            setLocalTemplates((prev) => [...prev, ...newTemplates]);
-          }
-
-          // alert user about duplated
-          if (duplicateNames.length > 0) {
-            alert(
-              `Imported ${newTemplates.length} templates. Skipped ${duplicateNames.length} duplicate templates: (${duplicateNames.join(", ")}).`
-            );
-          }
-          } catch (err) { alert("Invalid JSON"); }
-        };
-        reader.readAsText(file);
-    });
-        
-      // Reset input
-      e.target.value = "";
+    return hasFlowDataFields;
   };
 
-  // TODO: test
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log("importing templates")
+    const files = e.target.files;
+    if (!files) return;
+
+    const fileList = Array.from(files);
+    const results = { 
+      added: 0, 
+      duplicateFiles: [] as string[], 
+      invalidFiles: [] as string[] 
+    };
+
+    // 1. Process all files
+    const allFileData = await Promise.all(
+      fileList.map(async (file) => {
+        try {
+          console.log("try")
+          const text = await file.text();
+          const json = JSON.parse(text);
+          const templates = Array.isArray(json) ? json : [json];
+          
+          // check if valid json format
+          const valid = templates.filter(item => isValidTemplate(item)
+          );
+          console.log(templates)
+          console.log("valid", valid)
+
+          if (valid.length === 0) {
+            results.invalidFiles.push(file.name);
+            return { fileName: file.name, data: [] };
+          }
+          return { fileName: file.name, data: valid };
+        } catch (err) {
+          results.invalidFiles.push(file.name);
+          return { fileName: file.name, data: [] };
+        }
+      })
+    );
+
+    // Check for duplicates
+    const existingIds = new Set(localTemplates.map(t => t.id));
+    const uniqueFromBatch = new Map();
+
+    allFileData.forEach(fileObj => {
+      if (fileObj.data.length === 0) return;
+
+      let fileHasNewContent = false;
+
+      fileObj.data.forEach(item => {
+        if (!existingIds.has(item.id) && !uniqueFromBatch.has(item.id)) {
+          uniqueFromBatch.set(item.id, item);
+          fileHasNewContent = true;
+          results.added++;
+        }
+      });
+
+      if (!fileHasNewContent) {
+        console.log(fileHasNewContent)
+        results.duplicateFiles.push(fileObj.fileName);
+      }
+    });
+    setLocalTemplates((prev) => {
+      return [...prev, ...Array.from(uniqueFromBatch.values())];
+    });
+    console.log("results", results)
+    console.log(results.duplicateFiles.length)
+
+    // Toast message
+    let msg = `Imported ${results.added} template(s).`;
+    
+    if (results.duplicateFiles.length > 0) {
+      console.log("has duplicates")
+      msg += `\nSkipped duplicate files: ${results.duplicateFiles.join(', ')}`;
+    }
+    
+    if (results.invalidFiles.length > 0) {
+      msg += `\nSkipped invalid files: ${results.invalidFiles.join(', ')}`;
+    }
+    
+    const statusType = (results.invalidFiles.length > 0 || results.duplicateFiles.length > 0) ? 'error' : 'success';
+    setToast({ message: msg, type: statusType });
+    console.log(msg)
+    e.target.value = ""; 
+  };
+
   // Auslagern zu App.tsx?
   const handleExport = (template: any) => {
     const blob = new Blob([JSON.stringify(template, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `${template.flowData.metadata.name || 'template'}.json`;
+    link.download = `template_${template.id}.json`;
     link.click();
   };
 
@@ -132,6 +209,19 @@ export const ManageTemplateModal = ({ open, onClose, templates, onSave }: Manage
       className="max-w-4xl"
     >
       <div className="pt-4 px-4 pb-0 w-full">
+        {/* Toast Notification */}
+          {toast && (
+            <div className={`fixed top-10 right-10 z-[100] px-4 py-3 rounded-lg shadow-2xl border flex items-start gap-3 transition-all animate-in fade-in slide-in-from-top-4 max-w-md ${
+              toast.type === 'success' ? 'bg-green-50 border-green-200 text-green-800' : 'bg-red-50 border-red-200 text-red-800'
+            }`}>
+              <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'}`} />
+              <div className="flex-1 text-left">
+                <p className="text-xs font-medium whitespace-pre-line leading-relaxed">
+                  {toast.message}
+                </p>
+              </div>
+            </div>
+          )}
         <div className="flex items-center gap-2 mb-4 w-full pr-2">
           {/* Search Bar */}
           <div className="relative flex-1">
