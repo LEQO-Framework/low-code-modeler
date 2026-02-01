@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Modal from "./Modal";
-import { Download, Upload, Trash2, FileEdit, User, Type, AlignLeft } from "lucide-react";
+import { Download, Upload, Trash2, FileEdit, User, Type, AlignLeft, ImageIcon } from "lucide-react";
 import { Button } from "../ui";
 
 interface ManageTemplateModalProps {
@@ -12,6 +12,12 @@ interface ManageTemplateModalProps {
 
 export const ManageTemplateModal = ({ open, onClose, templates, onSave }: ManageTemplateModalProps) => {
   const [localTemplates, setLocalTemplates] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredTemplates = localTemplates.filter(t => 
+    t.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    t.description?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   useEffect(() => {
     if (open) {
@@ -94,127 +100,146 @@ export const ManageTemplateModal = ({ open, onClose, templates, onSave }: Manage
     link.click();
   };
 
+  const handleIconUpload = (e: React.ChangeEvent<HTMLInputElement>, templateId: string) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        updateLocal(templateId, "icon", reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+    // Reset the input
+    e.target.value = "";
+  };
+
   // TODO: Update UI
   return (
     <Modal
       title="Manage User Templates"
       open={open}
-      onClose={onClose}
+      onClose={() => {setSearchQuery(""); onClose();}}
       footer={
-        <div className="flex justify-end space-x-2">
-          <button className="btn btn-primary" onClick={() => { onSave(localTemplates); onClose(); }}>
+        <div className="flex justify-end space-x-2 pr-6">
+          <button className="btn btn-primary" onClick={() => { setSearchQuery(""); onSave(localTemplates); onClose(); }}>
             Save
           </button>
-          <button className="btn btn-secondary" onClick={onClose}>
+          <button className="btn btn-secondary" onClick={() => {setSearchQuery(""); onClose();}}>
             Cancel
           </button>
         </div>
       }
+      className="max-w-4xl"
     >
-      <div className="p-4 w-[600px]">
-        <div className="flex justify-between items-center mb-6">
+      <div className="pt-4 px-4 pb-0 w-full">
+        <div className="flex items-center gap-2 mb-4 w-full pr-2">
+          {/* Search Bar */}
+          <div className="relative flex-1">
+            <input
+              type="text"
+              placeholder="Search user templates..."
+              className="w-full h-9 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+
+          {/* Import Button */}
           <label className="cursor-pointer">
             <input 
               type="file" 
               multiple
               className="hidden" 
               accept=".json" 
-              onChange={handleImport} />
-            <Button variant="outline" size="sm" asChild>
-              <span className="flex items-center gap-2"><Upload className="w-4 h-4" /> Import</span>
+              onChange={handleImport} 
+            />
+            <Button variant="outline" size="sm" asChild className="h-9">
+              <span className="flex items-center gap-2">
+                <Upload className="w-4 h-4" /> Import
+              </span>
             </Button>
           </label>
         </div>
 
-        <div className="space-y-6 max-h-[50vh] overflow-y-auto pr-2">
-          {localTemplates.map((template) => (
-            <div key={template.id} className="p-4 border border-gray-200 rounded-lg bg-gray-50 relative group">
-              <div className="absolute top-2 right-2 flex gap-1">
-                <Button variant="ghost" size="sm" onClick={() => handleExport(template)}>
-                  <Download className="w-4 h-4 text-blue-600" />
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => removeLocal(template.id)}>
-                  <Trash2 className="w-4 h-4 text-red-500" />
-                </Button>
-              </div>
-            {/* Upload Icon */}
-            <div className="flex flex-col items-center gap-2">
-              <label className="text-[10px] uppercase text-gray-400 font-bold">Icon</label>
-              <div className="relative group cursor-pointer">
-                <input
-                  type="file"
-                  className="hidden"
-                  accept="image/*"
-                  id={`icon-upload-${template.id}`}
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      const reader = new FileReader();
-                      reader.onloadend = () => {
-                        updateLocal(template.id, "icon", reader.result as string);
-                      };
-                      reader.readAsDataURL(file); // Converts to Base64
-                    }
-                  }}
-                />
-                <label htmlFor={`icon-upload-${template.id}`} className="cursor-pointer">
-                  <div className="w-16 h-16 border-2 border-dashed border-gray-300 rounded-md flex items-center justify-center overflow-hidden bg-white group-hover:border-blue-400 transition-colors">
-                    {template.icon ? (
-                      <img 
-                        src={template.icon.startsWith('data:') ? template.icon : `/icons/${template.icon}`} 
-                        className="w-full h-full object-contain" 
-                        alt="Template Icon" 
-                      />
-                    ) : (
-                      <Upload className="w-6 h-6 text-gray-300 group-hover:text-blue-400" />
-                    )}
+        {/* Filtered Template List */}
+        <div className="space-y-2 max-h-[50vh] overflow-y-auto pr-2">
+          {filteredTemplates.map((template) => (
+            <div key={template.id} className="p-4 border border-gray-200 rounded-lg bg-gray-50 flex flex-col gap-3">
+              <div className="flex gap-4 items-start">
+                
+                {/* column 1: Icon */}
+                <div className="relative group w-48 h-48 bg-white border rounded shrink-0 overflow-hidden">
+                  <img 
+                    src={template.icon?.startsWith('data:') ? template.icon : `/public/${template.icon}`} 
+                    className="w-full h-full object-contain p-1" 
+                    alt="icon"
+                  />
+                  <label className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity">
+                    <input type="file" className="hidden" accept="image/*" onChange={e => handleIconUpload(e, template.id)} />
+                    <ImageIcon className="w-5 h-5 text-white" />
+                  </label>
+                </div>
+
+                {/* column 2*/}
+                <div className="flex flex-col justify-between h-48 flex-1 min-w-0">
+                <div className="flex gap-4 w-full">
+                  {/* Name */}
+                  <div className="flex flex-col gap-1 flex-1">
+                    <label className="text-[10px] font-small text-gray-700 flex items-center gap-0.5">Name</label>
+                    <input 
+                      className="qwm-input w-0.5full h-8 text-sm gap-1" 
+                      value={template.name || ""} 
+                      onChange={e => updateLocal(template.id, "name", e.target.value)} 
+                    />
                   </div>
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center rounded-md transition-opacity">
-                    <span className="text-[10px] text-white font-medium">Change</span>
+                  {/* Author */}
+                  <div className="flex flex-col gap-1 flex-1">
+                    <label className="text-[10px] font-small text-gray-700 flex items-center gap-0.5">Author</label>
+                    <input 
+                      className="qwm-input w-full h-8 text-sm gap-1" 
+                      value={template.author || template.flowData?.metadata?.author || ""} 
+                      onChange={e => updateLocal(template.id, "author", e.target.value)} 
+                    />
                   </div>
-                </label>
-              </div>
-            </div>
-
-              <div className="grid grid-cols-2 gap-4 mt-2">
-                {/* Name field */}
-                <div className="flex flex-col gap-1">
-                  <label className="text-[10px] uppercase text-gray-400 font-bold flex items-center gap-1">
-                    <Type className="w-3 h-3" /> Name
-                  </label>
-                  <input
-                    className="qwm-input w-full"
-                    value={template.flowData.metadata.name || ""}
-                    onChange={(e) => updateLocal(template.id, "name", e.target.value)}
-                  />
                 </div>
-
-                {/* Author field */}
-                <div className="flex flex-col gap-1">
-                  <label className="text-[10px] uppercase text-gray-400 font-bold flex items-center gap-1">
-                    <User className="w-3 h-3" /> Author
+                {/* Description */}
+                <div className="flex flex-col h-32 gap-1 pt-0">
+                  <label className="text-[10px] font-small text-gray-700 flex items-center gap-1">
+                    Description
                   </label>
-                  <input
-                    className="qwm-input w-full"
-                    value={template.flowData.metadata.author || ""}
-                    onChange={(e) => updateLocal(template.id, "author", e.target.value)}
-                  />
-                </div>
-
-                {/* Description field */}
-                <div className="flex flex-col gap-1 col-span-2">
-                  <label className="text-[10px] uppercase text-gray-400 font-bold flex items-center gap-1">
-                    <AlignLeft className="w-3 h-3" /> Description
-                  </label>
-                  <textarea
-                    className="qwm-input w-full resize-none"
-                    rows={2}
-                    value={template.flowData.metadata.description || ""}
-                    onChange={(e) => updateLocal(template.id, "description", e.target.value)}
+                  <textarea 
+                    rows={2} 
+                    className="qwm-input h-28 resize-none w-full text-sm" 
+                    value={template.description || ""} 
+                    onChange={e => updateLocal(template.id, "description", e.target.value)} 
                   />
                 </div>
               </div>
-              <div className="mt-2 text-[9px] text-gray-400">ID: {template.id} • Created: {new Date(template.timestamp).toLocaleDateString()}</div>
+              </div>
+
+              
+              <div className="flex justify-end gap-2 pt-1">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-8 px-3 hover:bg-gray-200" 
+                  onClick={() => handleExport(template)}
+                >
+                  <span className="flex items-center gap-2">
+                    <Download className="w-4 h-4"/> Export
+                  </span>
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-8 px-3 hover:bg-gray-200" 
+                  onClick={() => removeLocal(template.id)}
+                >
+                  <span className="flex items-center gap-2">
+                    <Trash2 className="w-4 h-4"/> Delete
+                  </span>
+                </Button>
+              </div>
             </div>
           ))}
         </div>

@@ -20,6 +20,9 @@ import {
   FileJson,
   ImageIcon,
   LayoutTemplate,
+  PuzzleIcon,
+  LucidePuzzle,
+  Puzzle,
 } from "lucide-react";
 
 interface ToolbarProps {
