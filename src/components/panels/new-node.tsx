@@ -49,7 +49,7 @@ const categories = useMemo(() => {
       ...staticCategories[consts.templates],
       content: {
         "Standard Templates": staticCategories[consts.templates].content,
-        "Custom User Templates": userTemplates,
+        "User Templates": userTemplates,
       }
     }
   };

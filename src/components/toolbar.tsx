@@ -18,7 +18,8 @@ import {
   Clock,
   ChevronDown,
   FileJson,
-  ImageIcon
+  ImageIcon,
+  LayoutTemplate,
 } from "lucide-react";
 
 interface ToolbarProps {
@@ -68,29 +69,30 @@ const Toolbar: React.FC<ToolbarProps> = ({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button size="sm" variant="default" className="focus:ring-0 focus-visible:ring-0 outline-none">
-                <Download className="w-4 h-4 mr-2" />
-                Download
+                <Save className="w-4 h-4 mr-2" />
+                Save
                 <ChevronDown className="w-4 h-4 ml-2" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" onCloseAutoFocus={(e) => e.preventDefault()}>
-              <DropdownMenuItem onClick={onSave}>
+              <DropdownMenuItem onClick={onSave} title="Download the current diagram as JSON">
                 <FileJson className="w-4 h-4 mr-2" />
                 <span>as JSON</span>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={onSaveAsSVG}>
+              <DropdownMenuItem onClick={onSaveAsSVG} title="Download the current diagram as SVG">
                 <ImageIcon className="w-4 h-4 mr-2" />
                 <span>as SVG</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onSaveAsTemplate} title="Save the current diagram as a custom user template">
+                <LayoutTemplate className="w-4 h-4 mr-2" />
+                <span>as User Template</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           <Button size="sm" onClick={uploadDiagram} title="Upload the current diagram to GitHub">
             <UploadCloud className="w-4 h-4 mr-2" /> Upload
           </Button>
-          <Button size="sm" onClick={onSaveAsTemplate} title="Save the current diagram as a custom template">
-            <Save className="w-4 h-4 mr-2" /> Save as Template
-          </Button>
-          <Button size="sm" onClick={onManageTemplates} title="Manage all custom templates">
+          <Button size="sm" onClick={onManageTemplates} title="Manage all custom user templates">
             <Settings className="w-4 h-4 mr-2" /> Manage Templates
           </Button>
           <Button size="sm" onClick={onOpenConfig} title="Configure the editor and the endpoints">
