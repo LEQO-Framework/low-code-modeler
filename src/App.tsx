@@ -1711,6 +1711,9 @@ If none apply, return { "algorithms": [] }.
     if (flow.initialEdges) {
       reactFlowInstance.setEdges(flow.initialEdges);
       console.log("Edges loaded.");
+    } else if (flow.edges){
+      reactFlowInstance.setEdges(flow.edges);
+      console.log("Edges loaded.");
     }
     console.log("load flow nodes", nodes);
     console.log(edges);
