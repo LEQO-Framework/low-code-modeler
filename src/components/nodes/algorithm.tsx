@@ -1,6 +1,6 @@
 import { memo, useEffect, useState } from "react";
 import { Handle, Position, Node, Edge, getConnectedEdges, useUpdateNodeInternals } from "reactflow";
-import {useStore} from "@/config/store";
+import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
 import AncillaPort from "../utils/ancillaPort";
 import UncomputePort from "../utils/uncomputePort";
@@ -41,7 +41,7 @@ export const AlgorithmNode = memo((node: Node) => {
   const numberClassicalOutputs = data.numberClassicalOutputs || 0;
 
   const inputHandleCount = numberQuantumInputs + numberClassicalInputs;
-  const outputHandleCount = numberQuantumOutputs+numberClassicalOutputs;
+  const outputHandleCount = numberQuantumOutputs + numberClassicalOutputs;
   //console.log(handleCount)
 
   const handleGap = 40;
@@ -56,6 +56,7 @@ export const AlgorithmNode = memo((node: Node) => {
 
   const [inputs, setInputs] = useState(data.inputs || []);
   const [outputs, setOutputs] = useState(data.outputs || []);
+  const [classicalOutputs, setClassicalOutputs] = useState(data.classicalOutputs || []);
   const [yError, setYError] = useState(false);
   const [y, setY] = useState("");
   const [outputIdentifierError, setOutputIdentifierError] = useState(false);
@@ -80,6 +81,11 @@ export const AlgorithmNode = memo((node: Node) => {
     setSelectedNode(node);
   }, [ancillaMode]);
 
+  useEffect(() => {
+    updateNodeInternals(node.id);
+    setSelectedNode(node);
+  }, [node.data.numberQuantumInputs, node.data.numberClassicalInputs, node.data.numberQuantumOutputs, node.data.numberClassicalOutputs]);
+
 
   const isAncillaConnected = edges.some(
     edge => edge.target === node.id && edge.targetHandle === `ancillaHandleOperationInput2${node.id}`
@@ -88,16 +94,36 @@ export const AlgorithmNode = memo((node: Node) => {
   const isDirtyAncillaConnected = edges.some(
     edge => edge.target === node.id && edge.targetHandle === `${dirtyAncillaHandle}OperationInput3${node.id}`
   );
+  const getInputType = (handleId:any) => {
+   
+    const edge = edges.find(e => e.targetHandle === handleId);
+    if (!edge) return "any";
+
+    const sourceNode = nodes.find(n => n.id === edge.source);
+    if (!sourceNode) return "any";
+
+    if (sourceNode.type === "dataTypeNode") {
+      return sourceNode.data?.dataType?.toLowerCase() ?? "any";
+    }
+
+    return "any";
+  };
 
 
   useEffect(() => {
     const identifier = node.data.outputIdentifier;
-    console.log(nodes)
+    console.log("nodes", nodes)
+    console.log("edges", edges)
     //let selectedNode = nodes.find(n => n.id === node.id);
     let selectedNode = node;
-    const newErrors = {};
+    let newErrors = {};
     console.log("ALGORITHM", outputs)
+    //const classicalOutputs = outputs.find(o => {o.type === "classical"})
+    //const quantumOutputs = outputs.find(o => {o.type === "quantum"})
+    //console.log("classical outputs", classicalOutputs)
+    //console.log("quantum outputs", quantumOutputs)
 
+    // quantum outputs
     outputs.forEach((output, index) => {
       const outputIdentifier = output?.identifier?.trim();
       console.log("Outputidentifier", outputIdentifier)
@@ -125,6 +151,7 @@ export const AlgorithmNode = memo((node: Node) => {
       console.log(outputIdentifier)
       // Flag error if identifier is invalid or duplicated
       newErrors[index] = startsWithDigit || isDuplicate;
+      console.log(newErrors)
       console.log(newErrors[index])
       if (!size) return;
       const startsWithDigitSize = !/^\d/.test(size);
@@ -173,7 +200,7 @@ export const AlgorithmNode = memo((node: Node) => {
     data.identifiers = data.identifiers.slice(0, outputHandleCount);
   }
 
-  console.log(nodeHeight)
+  //console.log(nodeHeight)
 
   return (
     <motion.div
@@ -186,7 +213,7 @@ export const AlgorithmNode = memo((node: Node) => {
       transition={{ duration: 0.3, ease: "easeInOut" }}
     >
       <div className="grand-parent">
-          
+
         <div
           className={cn(
             "w-[320px] bg-white border border-solid border-gray-700 shadow-md",
@@ -238,7 +265,7 @@ export const AlgorithmNode = memo((node: Node) => {
                 />
               ) : (
                 <span
-                  className="truncate font-semibold leading-none cursor-pointer"
+                  className="font-semibold leading-none cursor-pointer"
                   style={{ paddingLeft: "25px" }}
                   onClick={() => setIsEditingLabel(true)}
                 >
@@ -248,20 +275,18 @@ export const AlgorithmNode = memo((node: Node) => {
             </div>
           </div>
 
-          <div className="custom-node-port-in mb-3 mt-[5px]">
-            <div className="relative flex flex-col overflow-visible">
-              <div className="custom-node-port-in">
+{/*           <div className="custom-node-port-in mb-3 mt-[5px]">
+            <div className="relative flex flex-col overflow-visible"> */}
+              {/* <div className="custom-node-port-in"> */}
+              <div className="custom-node-port-in mb-3 mt-2">
                 <div className="relative flex flex-col overflow-visible">
                   {Array.from({ length: numberClassicalInputs }).map((_, index) => (
                     <div
-                      key={`quantum-input-${index}`}
-                      className="relative p-2 mb-1"
+                      key={`classical-input-${index}`}
+                      className="relative p-2 mb-1 flex items-center"
                       style={{
                         backgroundColor: classicalConstructColor,
                         width: "120px",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "flex-start",
                         borderTopRightRadius: '20px',
                         borderBottomRightRadius: '20px',
                       }}
@@ -270,12 +295,17 @@ export const AlgorithmNode = memo((node: Node) => {
                         type="target"
                         id={`classicalHandleOperationInput${index}${node.id}`}
                         position={Position.Left}
-                        className="z-10 classical-circle-port-hex-out !bg-orange-300 !border-black -left-[8px]"
+                        className="z-10 classical-circle-port-operation !bg-orange-300 !border-black -left-[8px]"
                         style={{ top: "50%", transform: "translateY(-50%)" }}
                       />
-                      <span className="text-black text-sm text-center w-full">
-                        {node.data.inputs?.[index]?.outputIdentifier || `Input ${index + 1}`}
-                      </span>
+                      <div className="flex flex-col text-center w-full leading-tight">
+                        <span className="text-black text-sm">
+                          {node.data.inputs?.[index]?.outputIdentifier || `Input ${index + 1}`}
+                        </span>
+                        <span className="text-[10px] text-gray-600">
+                          type: {getInputType(`classicalHandleOperationInput${index}${node.id}`)}
+                        </span>
+                      </div>
                     </div>
                   ))}
                   {Array.from({ length: numberQuantumInputs }).map((_, index) => (
@@ -283,7 +313,7 @@ export const AlgorithmNode = memo((node: Node) => {
                       key={`quantum-input-${index}`}
                       className="relative p-2 mb-1"
                       style={{
-                        backgroundColor: quantumConstructColor, // TODO
+                        backgroundColor: quantumConstructColor, 
                         width: "120px",
                         display: "flex",
                         alignItems: "center",
@@ -292,19 +322,25 @@ export const AlgorithmNode = memo((node: Node) => {
                     >
                       <Handle
                         type="target"
-                        id={`quantumHandleOperationInput${index}${node.id}`} 
+                        id={`quantumHandleOperationInput${index}${node.id}`}
                         position={Position.Left}
                         className="z-10 circle-port-op !bg-blue-300 !border-black -left-[8px]"
-                        style={{ top: "50%", transform: "translateY(-50%)" }} //TODO
+                        style={{ top: "50%", transform: "translateY(-50%)" }} 
                       />
-                      <span className="text-black text-sm text-center w-full">
-                        {node.data.inputs?.[index]?.outputIdentifier || `Input ${index + 1}`}
-                      </span>
+                      <div className="flex flex-col text-center w-full leading-tight">
+                        <span className="text-black text-sm">
+                          {node.data.inputs?.[index]?.outputIdentifier || `Input ${index + 1}`}
+                        </span>
+                        <span className="text-[10px] text-gray-600">
+                          type: quantum register
+                        </span>
+                      </div>
                     </div>
                   ))}
-                </div>
-              </div>
-              {ancillaMode && (<div>
+
+              
+              {ancillaMode && (
+                <div>
                 <div
                   className="relative p-2 mb-1"
                   style={{
@@ -375,7 +411,7 @@ export const AlgorithmNode = memo((node: Node) => {
 
 
           <div className="custom-node-port-out">
-            {Array.from({length: numberClassicalOutputs}).map((_, index) => (
+            {Array.from({ length: numberClassicalOutputs }).map((_, index) => (
               <OutputPort
                 key={`output-port-${index}`} // Wie benennen? classical-output-port-? Oder output ports durchzählen?
                 node={node}
@@ -386,36 +422,38 @@ export const AlgorithmNode = memo((node: Node) => {
                 setOutputs={setOutputs}
                 edges={edges}
                 sizeError={classicalSizeErrors[index]}
-                outputIdentifierError={outputIdentifierErrors[index]}//(outputIdentifierError || startsWithDigitError)}
+                outputIdentifierError={outputIdentifierErrors[index]}
                 updateNodeValue={updateNodeValue}
                 setOutputIdentifierError={(error) =>
                   setOutputIdentifierErrors(prev => ({ ...prev, [index]: error }))}
                 setSizeError={(error) =>
-                  setClassicalSizeErrors((prev) => ({ ...prev, [index]: error }))}
+                  setSizeErrors((prev) => ({ ...prev, [index]: error }))}
                 setSelectedNode={setSelectedNode}
                 active={true}
               />
             ))
 
             }
+{/*           </div>
+          <div className="custom-node-port-out"> */}
             {Array.from({ length: numberQuantumOutputs }).map((_, index) => (
               <OutputPort
-                key={`output-port-${numberClassicalOutputs+index}`}
+                key={`output-port-${numberClassicalOutputs + index}`}
                 node={node}
-                index={numberClassicalOutputs+index}
+                index={numberClassicalOutputs + index}
                 type={"quantum"}
                 nodes={nodes}
                 outputs={outputs}
                 setOutputs={setOutputs}
                 edges={edges}
-                outputIdentifierError={outputIdentifierErrors[numberClassicalOutputs+index]}
+                outputIdentifierError={outputIdentifierErrors[numberClassicalOutputs + index]}
                 updateNodeValue={updateNodeValue}
                 setOutputIdentifierError={(error) =>
-                  setOutputIdentifierErrors(prev => ({ ...prev, [numberClassicalOutputs+index]: error }))
+                  setOutputIdentifierErrors(prev => ({ ...prev, [numberClassicalOutputs + index]: error }))
                 }
-                sizeError={sizeErrors[numberClassicalOutputs+index]}
+                sizeError={sizeErrors[numberClassicalOutputs + index]}
                 setSizeError={(error) =>
-                  setSizeErrors((prev) => ({ ...prev, [numberClassicalOutputs+index]: error }))
+                  setSizeErrors((prev) => ({ ...prev, [numberClassicalOutputs + index]: error }))
                 }
                 setSelectedNode={setSelectedNode}
                 active={true}

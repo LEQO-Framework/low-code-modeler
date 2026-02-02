@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState, useEffect } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import ReactFlow, {
   Background,
   BackgroundVariant,
@@ -8,7 +8,8 @@ import ReactFlow, {
   ReactFlowProvider,
   MiniMap,
   getNodesBounds,
-  Panel
+  Panel,
+  useUpdateNodeInternals
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { ContextMenu, CustomPanel, Palette } from "./components";
@@ -20,11 +21,11 @@ import { handleDragOver, handleOnDrop } from "./lib/utils";
 import useKeyBindings from "./hooks/useKeyBindings";
 import { toSvg } from "html-to-image";
 import { initialDiagram } from "./config/site";
-import { NewDiagramModal } from "./Modal";
+import Modal, { NewDiagramModal } from "./Modal";
 import './index.css';
 import { Placement } from 'react-joyride';
 import { startCompile } from "./backend";
-import { ancillaConstructColor, classicalConstructColor, ClassicalOperatorNode, controlFlowConstructColor, quantum_types, quantumConstructColor } from "./constants";
+import { ancillaConstructColor, classicalConstructColor, ClassicalOperatorNode, controlFlowConstructColor, grover, hadamard_test_imaginary_part, hadamard_test_real_part, qaoa, quantum_types, quantumConstructColor, swap_test } from "./constants";
 import Joyride from 'react-joyride';
 import { ConfigModal } from "./components/modals/configModal";
 import { QunicornModal } from "./components/modals/qunicornModal";
@@ -33,6 +34,9 @@ import { Toast } from "./components/modals/toast";
 import ExperienceModePanel from "./components/modals/experienceLevelModal";
 import { HistoryItem, HistoryModal } from "./components/modals/historyModal";
 import { ValidationModal } from "./components/modals/validationModal";
+import AiModal from "./components/modals/aiModal";
+import OpenAI from "openai";
+import { grover_algorithm, hadamard_test_imaginary_part_algorithm, hadamard_test_real_part_algorithm, qaoa_algorithm, swap_test_algorithm } from "./constants/templates";
 import JSZip, { JSZipObject } from "jszip";
 import { createDeploymentModel, createNodeType, createServiceTemplate, updateNodeType, updateServiceTemplate } from "./winery";
 
@@ -48,6 +52,8 @@ const selector = (state: {
   onEdgesChange: any;
   onConnect: any;
   onConnectEnd: any;
+  typeError: string | null;
+  setTypeError: (message: string | null) => void;
   setSelectedNode: (node: Node | null) => void;
   updateNodeValue: (nodeId: string, field: string, nodeVal: string) => void;
   updateParent: (nodeId: string, parentId: string, position: any) => void;
@@ -72,6 +78,8 @@ const selector = (state: {
   onEdgesChange: state.onEdgesChange,
   onConnect: state.onConnect,
   onConnectEnd: state.onConnectEnd,
+  typeError: state.typeError,
+  setTypeError: state.setTypeError,
   setSelectedNode: state.setSelectedNode,
   updateNodeValue: state.updateNodeValue,
   updateParent: state.updateParent,
@@ -90,7 +98,7 @@ const selector = (state: {
 function App() {
   const reactFlowWrapper = React.useRef<any>(null);
   const [reactFlowInstance, setReactFlowInstance] = React.useState<any>(null);
-   const {
+  const {
     nodes,
     edges,
     experienceLevel,
@@ -101,6 +109,8 @@ function App() {
     onEdgesChange,
     onConnect,
     onConnectEnd,
+    typeError,
+    setTypeError,
     setCompact,
     setExperienceLevel,
     setAncillaMode,
@@ -114,6 +124,8 @@ function App() {
     setEdges,
   } = useStore(useShallow(selector));
 
+
+
   const [metadata, setMetadata] = React.useState<any>({
     version: "1.0.0",
     name: "My Model",
@@ -124,6 +136,10 @@ function App() {
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [nisqAnalyzerEndpoint, setNisqAnalyzerEndpoint] = useState(
     import.meta.env.VITE_NISQ_ANALYZER || "http://localhost:8098/nisq-analyzer"
+  );
+
+  const [openAIToken, setOpenAIToken] = useState(
+    import.meta.env.VITE_OPENAI_TOKEN
   );
   const [qunicornEndpoint, setQunicornEndpoint] = useState(
     import.meta.env.VITE_QUNICORN || "http://localhost:8080"
@@ -157,8 +173,6 @@ function App() {
     left: 0,
   });
 
-  //const [contextMenu, setContextMenu] = useState(null);
-
   const onNodeContextMenu = useCallback(
     (event: React.MouseEvent, node: Node) => {
       event.preventDefault();
@@ -173,6 +187,21 @@ function App() {
     },
     []
   );
+
+  const onEdgesDelete = (edges: Edge[]) => {
+    edges.forEach((edge) => {
+      console.log("ON EDGES DELETE")
+      console.log("EDGE", edge)
+      const targetNodeId = edge.target
+      const targetHandle = edge.targetHandle
+      const targetNode = nodes.find(n => n.id === targetNodeId);
+      const newInputs = targetNode.data.inputs.filter(i => i.targetHandle !== targetHandle)
+      updateNodeValue(targetNodeId, "inputs", newInputs)
+      console.log(targetHandle)
+      console.log("update new inputs", newInputs)
+      console.log("NEW INPUTS", targetNode.data.inputs)
+    })
+  };
 
 
 
@@ -205,6 +234,111 @@ function App() {
   const [progress, setProgress] = useState(0);
   const [executed, setAlreadyExecuted] = useState(false);
   const [jobId, setJobId] = useState(null);
+  const [quantumAlgorithmModalStep, setQuantumAlgorithmModalStep] = useState(0);
+  const [quantumAlgorithms, setQuantumAlgorithms] = useState([
+    { name: "Quantum Approximate Optimization Algorithm (QAOA)", configCount: 0, patternGraphPng: "patterns/qaoa_patterngraph.png" },
+    { name: "SWAP Test", configCount: 0, patternGraphPng: null },
+    { name: "Hadamard Test", configCount: 0, patternGraphPng: null },
+    { name: "Grover's Algorithm", configCount: 0, patternGraphPng: "patterns/grover_patterngraph.png" },
+    { name: "Uniform Superposition", configCount: 0, patternGraphPng: null },
+    { name: "Initialization", configCount: 0, patternGraphPng: "patterns/initialization_patterngraph.png" },
+  ]);
+
+  const [patternGraph, setPatternGraph] = useState(null);
+  const [isDetectingAlgorithms, setIsDetectingAlgorithms] = useState(false);
+
+  const client = new OpenAI({
+    apiKey: openAIToken, dangerouslyAllowBrowser: true
+  });
+
+
+  const detectQuantumAlgorithms = async (userInput: string): Promise<string | null> => {
+    try {
+      setIsDetectingAlgorithms(true);
+
+      const algorithms = [
+        "Quantum Approximate Optimization Algorithm (QAOA)",
+        "Variational Quantum Eigensolver (VQE)",
+        "Grover's Algorithm",
+        "Quantum Phase Estimation (QPE)",
+        "Quantum Fourier Transform (QFT)",
+        "SWAP Test",
+        "Hadamard Test",
+        "Quantum Classification",
+        "Quantum Clustering",
+        "Basis Encoding",
+        "Matrix Encoding",
+        "Amplitude Encoding",
+        "Angle Encoding",
+        "Initialization",
+        "Dynamic Circuits"
+      ];
+
+      setQuantumAlgorithms(quantumAlgorithms);
+
+      let response;
+      try {
+        response = await client.responses.create({
+          model: "gpt-5-nano",
+          input: [
+            {
+              role: "system",
+              content: `
+You are a quantum computing expert.
+Given a problem description, identify applicable quantum algorithms.
+
+Check first if some algorithms from this list match:
+${algorithms.join(", ")}
+
+Add then the other matches. The first algorithm should be the most suitable one.
+
+Return JSON ONLY in this exact format:
+{
+  "algorithms": ["<algorithm name>", "..."]
+}
+If none apply, return { "algorithms": [] }.
+            `,
+            },
+            { role: "user", content: userInput },
+          ],
+        });
+
+        if (!response?.output_text) {
+          setQuantumAlgorithms(quantumAlgorithms);
+          return null;
+        }
+
+        const parsed = JSON.parse(response.output_text);
+
+        if (!Array.isArray(parsed.algorithms)) throw new Error("Invalid response format");
+
+        setQuantumAlgorithms(parsed.algorithms.map((name: string) => ({ name })));
+
+        return null;
+      } catch (sendError: any) {
+        console.error("OpenAI request failed:", sendError);
+        setQuantumAlgorithms(quantumAlgorithms);
+        return sendError.message || "Unknown error";
+      }
+    } finally {
+      setIsDetectingAlgorithms(false);
+    }
+  };
+
+
+  function viewPatternGraph(algo) {
+    setPatternGraph(algo.patternGraphPng);
+  }
+
+
+  const handleQuantumAlgorithmModalClose = () => {
+    if (quantumAlgorithmModalStep <= 1) {
+      setQuantumAlgorithmModalStep(quantumAlgorithmModalStep + 1)
+    } else {
+      setQuantumAlgorithmModalStep(0);
+    }
+  }
+
 
   globalThis.setNisqAnalyzerEndpoint = setNisqAnalyzerEndpoint;
   globalThis.setQunicornEndpoint = setQunicornEndpoint;
@@ -240,6 +374,7 @@ function App() {
   const handleSave = (newValues) => {
     console.log(newValues)
     setNisqAnalyzerEndpoint(newValues.tempNisqAnalyzerEndpoint);
+    setOpenAIToken(newValues.tempOpenAIToken);
     setQunicornEndpoint(newValues.tempQunicornEndpoint);
     setLowcodeBackendEndpoint(newValues.tempLowcodeBackendEndpoint);
     setPatternAtlasUiEndpoint(newValues.tempPatternAtlasUiEndpoint);
@@ -299,9 +434,17 @@ function App() {
   const [workflow, setWorkflow] = useState("");
 
 
+  const updateNodeInternals = useUpdateNodeInternals();
+
   const showToast = (message: string, type: "success" | "error" | "info") => {
     setToast({ message, type });
   };
+
+  useEffect(() => {
+    if (typeError) {
+      showToast(typeError, "error");
+    }
+  }, [typeError, showToast, setTypeError]);
 
   const [runTour, setRunTour] = useState(false);
   const [joyrideStepId, setJoyRideStepId] = useState(0);
@@ -317,7 +460,7 @@ function App() {
       },
       {
         target: '.backend-button',
-        content: 'This transforms the model into QASM code, which can be executed on quantum devices.',
+        content: 'This transforms the model into QASM code or workflows, which can then be executed on quantum devices or on a workflow engine.',
       },
       {
         target: '.palette-container',
@@ -335,13 +478,18 @@ function App() {
         placement: "right"
       },
       {
+        target: '.classical-node',
+        content: 'This is a classical node that requires a value.',
+
+      },
+      {
         target: '.grand-parent',
-        content: 'This is a state preparation block which requires one classical value and outputs a quantum state.',
+        content: 'This value is then encoded via the state preparation block into a quantum state.',
 
       },
       {
         target: '.currentPanel-container',
-        content: 'This is the properties panel where you can configure properties of blocks.',
+        content: 'This is the properties panel, where you can configure the properties of blocks or the model.',
         placement: "left"
       }
     ];
@@ -519,6 +667,11 @@ function App() {
   const startTour2 = () => {
     setRunTour(true);
     setAncillaMode(false);
+    setAncillaModelingOn(false);
+    //updateNodeInternals since ancilla mode changes number of handles
+    nodes.forEach((node) => {
+      updateNodeInternals(node.id);
+    })
     console.log("load tutorial")
     loadFlow(tutorial);
     console.log("load toturial")
@@ -618,20 +771,20 @@ function App() {
             description: `Node "${node.id}" with label "${label}" requires exactly 2 inputs, but got ${inputCount}.`,
           });
         }
-        if(node.data.label === "Quantum Comparison Operator" || node.data.label === "Quantum Min & Max Operator"){
+        if (node.data.label === "Quantum Comparison Operator" || node.data.label === "Quantum Min & Max Operator") {
           warnings.push({
             nodeId: node.id,
             nodeType: node.type,
             description: `Node "${node.id}" (${node.data.label}) produces a classical output but its output is not used.`,
           });
-        }else if (!twoQubitGates.includes(label) && !hasQuantumOutput) {
+        } else if (!twoQubitGates.includes(label) && !hasQuantumOutput) {
           warnings.push({
             nodeId: node.id,
             nodeType: node.type,
             description: `Node "${node.id}" (${node.data.label}) produces a quantum state but its output is not used.`,
           });
         }
-        
+
       }
 
       if (threeQubitGates.includes(label)) {
@@ -861,6 +1014,9 @@ function App() {
   }
 
 
+  const startQuantumAlgorithmSelection = () => {
+    setQuantumAlgorithmModalStep(1);
+  }
 
   const handleOpenValidation = () => {
     if (!reactFlowInstance) return;
@@ -881,6 +1037,11 @@ function App() {
   const startTour = () => {
     setRunTour(true);
     setAncillaMode(false);
+    setAncillaModelingOn(false);
+    //updateNodeInternals since ancilla mode changes number of handles
+    nodes.forEach((node) => {
+      updateNodeInternals(node.id);
+    })
     console.log("load tutorial")
     console.log("load toturial")
   }
@@ -1203,9 +1364,25 @@ function App() {
         x: event.clientX,
         y: event.clientY,
       })
+      const label = event.dataTransfer.getData("application/reactflow/label");
       console.log(position);
-
-      handleOnDrop(event, reactFlowWrapper, reactFlowInstance, setNodes);
+      if (label == qaoa) {
+        loadFlow(qaoa_algorithm)
+      } else if (label == swap_test) {
+        loadFlow(swap_test_algorithm);
+      }
+      else if (label == hadamard_test_imaginary_part) {
+        loadFlow(hadamard_test_imaginary_part_algorithm);
+      }
+      else if (label == hadamard_test_real_part) {
+        loadFlow(hadamard_test_real_part_algorithm);
+      }
+      else if (label == grover) {
+        loadFlow(grover_algorithm);
+      }
+      else {
+        handleOnDrop(event, reactFlowWrapper, reactFlowInstance, setNodes);
+      }
 
       //setContextMenu((prev) => ({ ...prev, left: event.clientX, top: event.clientY,}));
     },
@@ -1474,8 +1651,8 @@ function App() {
     if (edgesToLoad) {
       reactFlowInstance.setEdges(edgesToLoad);
     }
-
-    // Add default inputs/outputs 
+    console.log(flow.initialEdges)
+    console.log(flow.nodes)
     if (flow.nodes) {
       reactFlowInstance.setNodes(
         flow.nodes?.map((node: Node) => ({
@@ -1488,17 +1665,26 @@ function App() {
         }))
       );
     }
+    if (flow.initialEdges) {
+      reactFlowInstance.setEdges(flow.initialEdges);
+      console.log("Edges loaded.");
+    }
     console.log("load flow nodes", nodes);
+    console.log(edges);
 
     // Reset the viewport 
     const { x = 0, y = 0, zoom = 1 } = flow.viewport || {};
     reactFlowInstance.setViewport({ x, y, zoom });
 
-    // Set the metadata 
+    console.log(flow.metadata)
+    // Set the metadata (if any) - assuming initialDiagram has metadata
     if (flow.metadata) {
-      setMetadata(flow.metadata);
-      console.log("Metadata loaded:", flow.metadata);
+      // If metadata is an array, unpack it
+      const dataToSet = Array.isArray(flow.metadata) ? flow.metadata[0] : flow.metadata;
+      setMetadata(dataToSet);
+      console.log("Metadata loaded:", dataToSet);
     }
+
   };
 
   // Get model from backend
@@ -1675,7 +1861,22 @@ function App() {
     setCompactVisualization(bool_value)
     setAncillaMode(bool_value)
     setAncillaModelingOn(bool_value)
+    //updateNodeInternals since ancilla mode changes number of handles
+    nodes.forEach((node) => {
+      updateNodeInternals(node.id);
+    })
   };
+
+
+
+  const onToggleAncilla = () => {
+    setAncillaModelingOn(!ancillaModelingOn);
+    setAncillaMode(!ancillaModelingOn);
+    //updateNodeInternals since ancilla mode changes number of handles
+    nodes.forEach((node) => {
+      updateNodeInternals(node.id);
+    })
+  }
 
   const handleSaveAsSVG = () => {
     if (ref.current === null) {
@@ -1793,49 +1994,49 @@ function App() {
 
     const masterZip = await JSZip.loadAsync(arrayBuffer);
     // Process each folder 
-     for (const [path, entry] of Object.entries(masterZip.files)) {
-    if (entry.dir) continue;
-    if (!path.endsWith(".zip")) continue;
+    for (const [path, entry] of Object.entries(masterZip.files)) {
+      if (entry.dir) continue;
+      if (!path.endsWith(".zip")) continue;
 
-    // Extract activity name
-    const activityName = path.replace(".zip", "");
-    console.log(`Processing activity ZIP: ${activityName}`);
+      // Extract activity name
+      const activityName = path.replace(".zip", "");
+      console.log(`Processing activity ZIP: ${activityName}`);
 
-    // Load the activity ZIP in memory
-    const activityArrayBuffer = await entry.async("arraybuffer");
-    const activityZip = await JSZip.loadAsync(activityArrayBuffer);
+      // Load the activity ZIP in memory
+      const activityArrayBuffer = await entry.async("arraybuffer");
+      const activityZip = await JSZip.loadAsync(activityArrayBuffer);
 
-    // Find service.zip inside activity ZIP
-    const serviceEntry = Object.values(activityZip.files).find(
-      (f) => !f.dir && f.name.endsWith("service.zip")
-    );
+      // Find service.zip inside activity ZIP
+      const serviceEntry = Object.values(activityZip.files).find(
+        (f) => !f.dir && f.name.endsWith("service.zip")
+      );
 
-    if (!serviceEntry) {
-      console.warn(`No service.zip found in ${activityName}`);
-      continue;
-    }
+      if (!serviceEntry) {
+        console.warn(`No service.zip found in ${activityName}`);
+        continue;
+      }
 
-    // Extract service.zip as Blob
-    const serviceArrayBuffer = await serviceEntry.async("arraybuffer");
-    const serviceBlob = new Blob([serviceArrayBuffer], { type: "application/zip" });
+      // Extract service.zip as Blob
+      const serviceArrayBuffer = await serviceEntry.async("arraybuffer");
+      const serviceBlob = new Blob([serviceArrayBuffer], { type: "application/zip" });
 
-    // Create deployment model
-    const versionUrl = `http://localhost:8093/winery/servicetemplates/${activityName}`;
-    await createDeploymentModel(
-      serviceBlob, 
-      "http://localhost:8093/winery",
-      `${activityName}_DA`,
-      "http://opentosca.org/artifacttemplates",
-      "{http://opentosca.org/artifacttypes}DockerContainerArtifact",
-      "service.zip",
-      versionUrl
-    );
-    const OPENTOSCA_NAMESPACE_NODETYPE = "http://opentosca.org/nodetypes";
-    const QUANTME_NAMESPACE_PULL = "http://quantil.org/quantme/pull";
+      // Create deployment model
+      const versionUrl = `http://localhost:8093/winery/servicetemplates/${activityName}`;
+      await createDeploymentModel(
+        serviceBlob,
+        "http://localhost:8093/winery",
+        `${activityName}_DA`,
+        "http://opentosca.org/artifacttemplates",
+        "{http://opentosca.org/artifacttypes}DockerContainerArtifact",
+        "service.zip",
+        versionUrl
+      );
+      const OPENTOSCA_NAMESPACE_NODETYPE = "http://opentosca.org/nodetypes";
+      const QUANTME_NAMESPACE_PULL = "http://quantil.org/quantme/pull";
 
-    // Create service template
-    let serviceTemplate = await createServiceTemplate(activityName, namespace);
-     await createNodeType(
+      // Create service template
+      let serviceTemplate = await createServiceTemplate(activityName, namespace);
+      await createNodeType(
         activityName + "Container",
         OPENTOSCA_NAMESPACE_NODETYPE
       );
@@ -1847,13 +2048,13 @@ function App() {
         activityName,
         QUANTME_NAMESPACE_PULL
       );
-    console.log(`Service template created for: ${activityName}`);
-  }
+      console.log(`Service template created for: ${activityName}`);
+    }
 
   }
 
   return (
-    <ReactFlowProvider>
+    <>
       <Joyride
         steps={joyrideSteps}
         run={runTour}
@@ -1886,7 +2087,8 @@ function App() {
             setExpanded(true);
           }
           if (type === 'step:before' && index === 4) {
-            const id = "e2a719bf-516c-4601-84d1-de643b05ea02";
+
+            const id = "086a4f77-2562-44d3-b0df-7cfe83ae369a";
             const node = nodes.find(n => n.id === id);
             setSelectedNode(node);
             console.log("NODES", nodes);
@@ -1894,14 +2096,26 @@ function App() {
           }
           if (type === 'step:before' && index === 5) {
             setExpanded(false);
+            const id = "e2a719bf-516c-4601-84d1-de643b05ea02";
+            const node = nodes.find(n => n.id === id);
+            setSelectedNode(node);
+            console.log("NODES", nodes);
+            console.log("SELECTED NODE", node);
           }
-          if (type === 'step:after' && index === 5) {
+          if (type === 'step:before' && index === 6) {
+            setExpanded(false);
+            setSelectedNode(null);
+          }
+          if (type === 'step:after' && index === 7) {
             startTour3();
+
           }
           if (['finished', 'skipped'].includes(data.status)) {
             setRunTour(false);
             setExpanded(false);
-            loadFlow(JSON.parse(modeledDiagram));
+            if(modeledDiagram) {
+              loadFlow(JSON.parse(modeledDiagram));
+            }
           }
         }}
       />
@@ -1915,6 +2129,7 @@ function App() {
           uploadDiagram={() => uploadToGitHub()}
           onLoadJson={handleLoadJson}
           sendToBackend={handleOpenValidation}
+          startQuantumAlgorithmSelection={startQuantumAlgorithmSelection}
           //sendToQunicorn={() => setIsQunicornOpen(true)}
           openHistory={openHistoryModal}
           startTour={() => { startTour(); }}
@@ -1951,6 +2166,7 @@ function App() {
         completionGuaranteed={completionGuaranteed}
         experienceLevel={experienceLevel}
         tempNisqAnalyzerEndpoint={nisqAnalyzerEndpoint}
+        tempOpenAIToken={openAIToken}
         tempQunicornEndpoint={qunicornEndpoint}
         tempLowcodeBackendEndpoint={lowcodeBackendEndpoint}
         tempPatternAtlasUiEndpoint={patternAtlasUiEndpoint}
@@ -1982,6 +2198,27 @@ function App() {
         errorMessage={errorMessage}
         progress={progress}
         chartData={chartData}
+      />
+
+      {patternGraph && (
+        <Modal
+          title="Pattern Graph"
+          open={true}
+          onClose={() => setPatternGraph(null)}
+        >
+          <img src={patternGraph} alt="Pattern graph" className="w-full rounded" />
+        </Modal>
+      )}
+
+
+      <AiModal
+        quantumAlgorithmModalStep={quantumAlgorithmModalStep}
+        quantumAlgorithms={quantumAlgorithms}
+        isDetectingAlgorithms={isDetectingAlgorithms}
+        detectQuantumAlgorithms={detectQuantumAlgorithms}
+        handleQuantumAlgorithmModalClose={handleQuantumAlgorithmModalClose}
+        setQuantumAlgorithmModalStep={setQuantumAlgorithmModalStep}
+        loadFlow={loadFlow}
       />
 
       <HistoryModal
@@ -2099,6 +2336,7 @@ function App() {
             onNodeDragStop={onNodeDragStop}
             onDrop={onDrop}
             onNodesDelete={onNodesDelete}
+            onEdgesDelete={onEdgesDelete}
 
             fitView
             fitViewOptions={{ maxZoom: 1 }}
@@ -2149,7 +2387,7 @@ function App() {
               expanded={expanded}
               onToggleExpanded={() => setExpanded(!expanded)}
               ancillaModelingOn={ancillaModelingOn}
-              onToggleAncilla={() => { setAncillaModelingOn(!ancillaModelingOn); setAncillaMode(!ancillaModelingOn) }}
+              onToggleAncilla={onToggleAncilla}
               experienceLevel={experienceLevel}
               onExperienceLevelChange={onExperienceLevelChange}
               //onExperienceLevelChange={(event) => { setExperienceLevel(event); setExperienceLevelOn(event); }}
@@ -2205,8 +2443,8 @@ function App() {
               pannable={true}
             />
 
-            <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
 
+            <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
           </ReactFlow>
           {contextMenu.visible && contextMenu.nodeId && (
             <ContextMenu
@@ -2251,8 +2489,9 @@ function App() {
 
 
       </main>
-    </ReactFlowProvider>
+    </>
   );
 }
+
 
 export default App;

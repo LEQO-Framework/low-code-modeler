@@ -35,6 +35,9 @@ export const categories: Record<string, CategoryEntry> = {
         {
           label: "Basis Encoding", type: consts.StatePreparationNode, icon: ["PaletteIcon_BasisEncoding.png", "PaletteIcon_Ancilla_BasisEncoding.png"], description: "Encodes classical bits into computational basis quantum states.", completionGuaranteed: true, compactOptions: [false],
         },
+         {
+          label: "Custom Encoding", type: consts.StatePreparationNode, icon: ["PaletteIcon_CustomEncoding.png", "PaletteIcon_Ancilla_CustomEncoding.png"], description: "Encodes classical bits into quantum states using a custom encoding.", completionGuaranteed: true, compactOptions: [false],
+        },
         {
           label: "Angle Encoding", type: consts.StatePreparationNode, icon: ["PaletteIcon_AngleEncoding.png", "PaletteIcon_Ancilla_AngleEncoding.png"], description: "Encodes classical data into qubit rotation angles.", completionGuaranteed: false, compactOptions: [false],
         },
@@ -167,5 +170,55 @@ export const categories: Record<string, CategoryEntry> = {
         { label: "neural-network", type: consts.PluginNode, icon: "PaletteIcon_neural-network.png", description: "Neural network objective-function plugin.", completionGuaranteed: false, compactOptions: [true, false] },
       ],
     },
+  },
+
+  [consts.templates]: {
+    description: "Configurable quantum algorithms directly to use.",
+    content: [
+      {
+        label: consts.grover,
+        type: consts.templates,
+        icon: "Grover.png",
+        description: "Searches for the correct answer in a large set of possibilities faster than a normal search.",
+        completionGuaranteed: false,
+        compactOptions: [true, false],
+      },
+      {
+        label: consts.hadamard_test_real_part,
+        type: consts.templates,
+        icon: "HadamardTestRealPart.png",
+        description: "Measures the real (non-imaginary) part of a result produced by a quantum operation.",
+        completionGuaranteed: true,
+        compactOptions: [true, false],
+      },
+      {
+        label: consts.hadamard_test_imaginary_part,
+        type: consts.templates,
+        icon: "HadamardTestImaginaryPart.png",
+        description: "Measures the imaginary part of a result produced by a quantum operation.",
+        completionGuaranteed: true,
+        compactOptions: [true, false],
+      },
+      {
+        label: consts.swap_test,
+        type: consts.templates,
+        icon: "SWAPTest.png",
+        description: "Compares two quantum states and tells how similar they are.",
+        completionGuaranteed: true,
+        compactOptions: [true, false],
+      },
+      {
+        label: consts.qaoa,
+        type: consts.templates,
+        icon: [
+          "QAOA.png",
+        ],
+        description: "Solves optimization problems by combining a quantum process with a classical optimizer.",
+        completionGuaranteed: false,
+        compactOptions: [true, false],
+      },
+    ]
+    ,
+
   },
 };
