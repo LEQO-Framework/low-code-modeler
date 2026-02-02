@@ -42,6 +42,7 @@ import { createDeploymentModel, createNodeType, createServiceTemplate, updateNod
 import custom from "./components/nodes/custom";
 import { Template } from "./components/panels/categories";
 import { ManageTemplateModal } from "./components/modals/templateModal";
+import { v4 as uuid } from "uuid";
 
 const selector = (state: {
   nodes: Node[];
@@ -381,7 +382,7 @@ If none apply, return { "algorithms": [] }.
 
   const confirmNewDiagram = () => {
     setIsLoadJsonModalOpen(false);
-    loadFlow(initialDiagram);
+    overwriteFlow(initialDiagram);
   };
 
   const handleSave = (newValues) => {
@@ -695,7 +696,7 @@ If none apply, return { "algorithms": [] }.
       updateNodeInternals(node.id);
     })
     console.log("load tutorial")
-    loadFlow(tutorial);
+    overwriteFlow(tutorial);
     console.log("load toturial")
   }
 
@@ -1053,7 +1054,7 @@ If none apply, return { "algorithms": [] }.
 
 
   const startTour3 = () => {
-    loadFlow(modeledDiagram);
+    overwriteFlow(modeledDiagram);
   }
 
   const startTour = () => {
@@ -1690,8 +1691,9 @@ If none apply, return { "algorithms": [] }.
   );
 
   const [modeledDiagram, setModeledDiagram] = useState(null);
+  
   // Function to load the flow
-  const loadFlow = (flow: any) => {
+  const overwriteFlow = (flow: any) => {
     if (!reactFlowInstance) {
       console.error("React Flow instance is not initialized.");
       return;
@@ -1733,6 +1735,132 @@ If none apply, return { "algorithms": [] }.
 
   };
 
+  // Function to load the flow in addition to all nodes and edges already on the canvas
+  const loadFlow = (flow: any) => {
+    if (!reactFlowInstance) {
+      console.error("React Flow instance is not initialized.");
+      return;
+    }
+    const existingNodes = reactFlowInstance.getNodes();
+    const existingEdges = reactFlowInstance.getEdges();
+    console.log("LOAD FLOW")
+    console.log("current nodes", existingNodes)
+    console.log("current edges", existingEdges)
+    // regenerate all node and edge ids (that are incoming), to ensure no duplicate ids
+    const nodeIdMap: Record<string, string> = {};
+    const edgeIdMap: Record<string, string> = {};
+    //const identifierMap: Record<string, string> = {};
+
+    const incomingNodes = flow.nodes || [];
+    const incomingEdges = flow.initialEdges || flow.edges || [];
+    incomingNodes.forEach((node) => {
+      nodeIdMap[node.id] = uuid();
+    })
+    incomingEdges.forEach((edge) => {
+      edgeIdMap[edge.id] = uuid();
+    })
+    // auch unique identifier neu generieren?
+
+    // compute node position offset, so loaded nodes and edges are visible and don't cover anything, 
+    // even if same flow is loaded multiple times
+    const iterationCount = Math.floor(existingNodes.length / (flow.nodes?.length || 1));
+    const offset = 50;
+    const offsetX = (iterationCount + 1) * offset;
+    const offsetY = (iterationCount + 1) * offset;
+
+    // process nodes
+    const processedNodes = incomingNodes.map((node: any) => {
+      const newNodeId = nodeIdMap[node.id];
+      return {
+        ...node,
+        id: newNodeId,
+        // Adjust position slightly, incase exact same node is already on canvas
+        position: { 
+          x: (node.position?.x || 0) + offsetX, 
+          y: (node.position?.y || 0) + offsetY 
+        },
+        data: {
+          ...node.data,
+          // update children
+          children: node.data.children?.map((child: string) => nodeIdMap[child]),
+          // update node and edge Ids in inputs for each node
+          inputs: node.data.inputs?.map((input: any) => {
+            let updatedInput = { ...input };
+                       
+            if (input.targetHandle && typeof input.targetHandle === 'string') {
+              Object.keys(nodeIdMap).forEach(oldId => {
+                updatedInput.targetHandle = updatedInput.targetHandle.replace(oldId, nodeIdMap[oldId]);
+              });
+            }
+            
+            if (nodeIdMap[input.id]) updatedInput.id = nodeIdMap[input.id];
+            if (edgeIdMap[input.edgeId]) updatedInput.id = edgeIdMap[input.id];
+
+            return updatedInput;
+          }),
+        },
+      };
+    });
+    nodes.forEach((node) => (console.log(node.position)))
+    processedNodes.forEach((node) => (console.log(node.position)))
+
+    // process edges
+    const processedEdges = incomingEdges.map((edge: any) => {
+      // update source and tagret nodes
+      let newSource = nodeIdMap[edge.source] || edge.source;
+      let newTarget = nodeIdMap[edge.target] || edge.target;
+      
+      // update source and target handles
+      let newSourceHandle = edge.sourceHandle;
+      let newTargetHandle = edge.targetHandle;
+      
+      Object.keys(nodeIdMap).forEach(oldId => {
+        newSourceHandle = newSourceHandle?.replace(oldId, nodeIdMap[oldId]);
+        newTargetHandle = newTargetHandle?.replace(oldId, nodeIdMap[oldId]);
+      });
+
+      return {
+        ...edge,
+        id: edgeIdMap[edge.id],
+        source: newSource,
+        target: newTarget,
+        sourceHandle: newSourceHandle,
+        targetHandle: newTargetHandle,
+      };
+    });
+
+    // append processed nodes and edges to existing reactFlowInstance
+    if(processedNodes.length > 0) {
+      const allNodes = [...existingNodes, ...processedNodes];
+      console.log("new nodes", allNodes)
+      // reactFlowInstance.addNodes(processedNodes);
+      reactFlowInstance.setNodes(
+        allNodes.map((node: Node) => ({
+          ...node,
+          data: {
+            ...node.data,
+          },
+        }))
+      );
+    };
+
+    if(processedEdges.length > 0) {
+      const allEdges = [...existingEdges, ...processedEdges];
+      console.log("new edges", allEdges)
+      // reactFlowInstance.addEdges(processedEdges);
+      reactFlowInstance.setEdges(allEdges);
+    }
+
+    // don't set metadata!!
+    // // set Metadata
+    // if (flow.metadata) {
+    //   const dataToSet = Array.isArray(flow.metadata) ? flow.metadata[0] : flow.metadata;
+    //   setMetadata(dataToSet);
+    //   console.log("Metadata loaded:", dataToSet);
+    // }
+
+    console.log("Templates successfully loaded onto canvas.");
+  };
 
   const onNodeDrag = React.useCallback((event: React.MouseEvent, node: Node, nodes: Node[]) => {
     console.log(reactFlowInstance.getNodes())
@@ -2116,7 +2244,7 @@ If none apply, return { "algorithms": [] }.
           if (['finished', 'skipped'].includes(data.status)) {
             setRunTour(false);
             setExpanded(false);
-            loadFlow(JSON.parse(modeledDiagram));
+            overwriteFlow(JSON.parse(modeledDiagram));
           }
         }}
       />
@@ -2228,7 +2356,7 @@ If none apply, return { "algorithms": [] }.
         detectQuantumAlgorithms={detectQuantumAlgorithms}
         handleQuantumAlgorithmModalClose={handleQuantumAlgorithmModalClose}
         setQuantumAlgorithmModalStep={setQuantumAlgorithmModalStep}
-        loadFlow={loadFlow}
+        loadFlow={overwriteFlow}
       />
 
       <HistoryModal
