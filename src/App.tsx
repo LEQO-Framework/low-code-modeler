@@ -2244,7 +2244,9 @@ If none apply, return { "algorithms": [] }.
           if (['finished', 'skipped'].includes(data.status)) {
             setRunTour(false);
             setExpanded(false);
-            overwriteFlow(JSON.parse(modeledDiagram));
+            if(modeledDiagram) {
+              overwriteFlow(JSON.parse(modeledDiagram));
+            }
           }
         }}
       />
