@@ -1,5 +1,5 @@
 import { memo, useEffect, useState } from "react";
-import { Handle, Position, Node, Edge, getConnectedEdges, useUpdateNodeInternals } from "reactflow";
+import { Handle, Position, Node, useUpdateNodeInternals } from "reactflow";
 import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
 import OutputPort from "../utils/outputPort";
@@ -22,8 +22,8 @@ const selector = (state: any) => ({
 
 export const ClassicalAlgorithmNode = memo((node: Node) => {
   const { data, selected } = node;
-  const numberInputs = data.numberInputs || 0;
-  const numberOutputs = data.numberOutputs || 0;
+  const numberInputs = data.numberClassicalInputs || 0;
+  const numberOutputs = data.numberClassicalOutputs || 0;
 
   const { edges, nodes, updateNodeValue, setSelectedNode, setNewEdges, ancillaMode } = useStore(selector, shallow);
   const updateNodeInternals = useUpdateNodeInternals();
@@ -38,7 +38,7 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
   const inputHeight = 30;
   const inputsTotalHeight = numberInputs * inputHeight;
   const outputHeight = 120;
-  const outputsStartTop = headerHeight + inputsTotalHeight  + 10;
+  const outputsStartTop = headerHeight + inputsTotalHeight + 10;
 
 
 
@@ -52,10 +52,30 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
   useEffect(() => {
     updateNodeInternals(node.id);
     setSelectedNode(node);
+    console.log("update classical algorithm handles")
   }, [ancillaMode]);
 
+
+  const getInputType = (inputIndex: number) => {
+    const handleId = `classicalHandleOperationInput${inputIndex}${node.id}`;
+
+    const edge = edges.find(e => e.targetHandle === handleId);
+    if (!edge) return "any";
+
+    const sourceNode = nodes.find(n => n.id === edge.source);
+    if (!sourceNode) return "any";
+
+    if (sourceNode.type === "dataTypeNode") {
+      return sourceNode.data?.dataType ?? "any";
+    }
+
+    return "any";
+  };
+
+
   useEffect(() => {
-    const selectedNode = nodes.find(n => n.id === node.id);
+    //const selectedNode = nodes.find(n => n.id === node.id);
+    let selectedNode = node;
     const newErrors: { [key: number]: boolean } = {};
     const newSizeErrors: { [key: number]: boolean } = {};
 
@@ -144,7 +164,7 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
               />
             ) : (
               <span
-                className="truncate font-semibold leading-none cursor-pointer"
+                className="font-semibold leading-none cursor-pointer"
                 style={{ paddingLeft: "25px" }}
                 onClick={() => setIsEditingLabel(true)}
               >
@@ -152,22 +172,6 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
               </span>
             )}
           </div>
-
-          {Array.from({ length: numberInputs }).map((_, index) => (
-            <Handle
-              key={`input-handle-${index}`}
-              type="target"
-              id={`classicalHandleOperationInput${index}${node.id}`}
-              position={Position.Left}
-              className="!bg-orange-300 !border-black"
-              style={{
-                top: `${52 + index * 50}px`, // adjust vertical position below header
-                left: "-8px",
-                position: "absolute",
-                zIndex: 10,
-              }}
-            />
-          ))}
         </div>
 
         <div className="mt-[5px] flex flex-col relative z-0">
@@ -189,13 +193,19 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
                 className="z-10 classical-circle-port-operation !bg-orange-300 !border-black -left-[8px]"
                 style={{ top: "50%", transform: "translateY(-50%)" }}
               />
-              <span className="text-black text-sm text-center w-full">
-                {node.data.inputs?.[index]?.outputIdentifier || `Input ${index + 1}`}
-              </span>
+              <div className="flex flex-col text-center w-full leading-tight">
+                <span className="text-black text-sm">
+                  {node.data.inputs?.[index]?.outputIdentifier || `Input ${index + 1}`}
+                </span>
+                <span className="text-[10px] text-gray-600">
+                  type: {getInputType(index)?.toLowerCase()}
+                </span>
+              </div>
+
             </div>
           ))}
         </div>
-
+        <div className="custom-node-port-out">
         {Array.from({ length: numberOutputs }).map((_, index) => (
           <div
             key={`output-wrapper-${index}`}
@@ -203,6 +213,7 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
             style={{ top: `${outputsStartTop + index * outputHeight}px` }}
           >
             <OutputPort
+              key={`output-port-${index}`}
               node={node}
               index={index}
               type={"classical"}
@@ -224,6 +235,7 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
             />
           </div>
         ))}
+        </div>
 
       </div>
     </motion.div>

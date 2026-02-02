@@ -4,6 +4,7 @@ import ReactDOM from "react-dom/client";
 import App from "./App";
 import "./styles/globals.css";
 import { registerSW } from "virtual:pwa-register";
+import { ReactFlowProvider } from "reactflow";
 
 const updateSW = registerSW({
   onNeedRefresh() {

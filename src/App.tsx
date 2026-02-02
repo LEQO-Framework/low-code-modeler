@@ -1,4 +1,4 @@
-import React, { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import ReactFlow, {
   Background,
   BackgroundVariant,
@@ -12,7 +12,8 @@ import ReactFlow, {
   Connection,
   MarkerType,
   NodeChange,
-  applyNodeChanges
+  applyNodeChanges,
+  useUpdateNodeInternals
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { ContextMenu, CustomPanel, Palette } from "./components";
@@ -24,11 +25,11 @@ import { findNodeDefinition, handleDragOver, handleOnDrop } from "./lib/utils";
 import useKeyBindings from "./hooks/useKeyBindings";
 import { toSvg } from "html-to-image";
 import { initialDiagram } from "./config/site";
-import { NewDiagramModal } from "./Modal";
+import Modal, { NewDiagramModal } from "./Modal";
 import './index.css';
 import { Placement } from 'react-joyride';
 import { startCompile } from "./backend";
-import { ancillaConstructColor, classicalConstructColor, ClassicalOperatorNode, controlFlowConstructColor, quantum_types, quantumConstructColor } from "./constants";
+import { ancillaConstructColor, classicalConstructColor, ClassicalOperatorNode, controlFlowConstructColor, grover, hadamard_test_imaginary_part, hadamard_test_real_part, qaoa, quantum_types, quantumConstructColor, swap_test } from "./constants";
 import Joyride from 'react-joyride';
 import { ConfigModal } from "./components/modals/configModal";
 import { QunicornModal } from "./components/modals/qunicornModal";
@@ -41,6 +42,11 @@ import UserCountPanel from "./components/modals/userAwareness";
 import { v4 as uuid } from "uuid";
 import VersioningPanel from "./components/modals/versioningModal";
 import { nodesMap, edgesMap, ydoc, awareness, yProvider } from "@/yjs";
+import AiModal from "./components/modals/aiModal";
+import OpenAI from "openai";
+import { grover_algorithm, hadamard_test_imaginary_part_algorithm, hadamard_test_real_part_algorithm, qaoa_algorithm, swap_test_algorithm } from "./constants/templates";
+import JSZip, { JSZipObject } from "jszip";
+import { createDeploymentModel, createNodeType, createServiceTemplate, updateNodeType, updateServiceTemplate } from "./winery";
 
 const selector = (state: {
   nodes: Node[];
@@ -49,10 +55,13 @@ const selector = (state: {
   experienceLevel: string;
   compact: boolean;
   completionGuaranteed: boolean;
+  containsPlaceholder: boolean;
   onNodesChange: any;
   onEdgesChange: any;
   onConnect: any;
   onConnectEnd: any;
+  typeError: string | null;
+  setTypeError: (message: string | null) => void;
   setSelectedNode: (node: Node | null) => void;
   updateNodeValue: (nodeId: string, field: string, nodeVal: string) => void;
   updateParent: (nodeId: string, parentId: string, position: any) => void;
@@ -63,6 +72,7 @@ const selector = (state: {
   setCompact: (compact: boolean) => void;
   setCompletionGuaranteed: (completionGuaranteed: boolean) => void;
   setExperienceLevel: (experienceLevel: string) => void;
+  setContainsPlaceholder: (containsPlaceholder: boolean) => void;
   undo: () => void;
   redo: () => void;
 }) => ({
@@ -71,10 +81,13 @@ const selector = (state: {
   experienceLevel: state.experienceLevel,
   compact: state.compact,
   completionGuaranteed: state.completionGuaranteed,
+  containsPlaceholder: state.containsPlaceholder,
   onNodesChange: state.onNodesChange,
   onEdgesChange: state.onEdgesChange,
   onConnect: state.onConnect,
   onConnectEnd: state.onConnectEnd,
+  typeError: state.typeError,
+  setTypeError: state.setTypeError,
   setSelectedNode: state.setSelectedNode,
   updateNodeValue: state.updateNodeValue,
   updateParent: state.updateParent,
@@ -84,6 +97,7 @@ const selector = (state: {
   setAncillaMode: state.setAncillaMode,
   setCompact: state.setCompact,
   setCompletionGuaranteed: state.setCompletionGuaranteed,
+  setContainsPlaceholder: state.setContainsPlaceholder,
   setExperienceLevel: state.setExperienceLevel,
   undo: state.undo,
   redo: state.redo,
@@ -92,17 +106,24 @@ const selector = (state: {
 function App() {
   const reactFlowWrapper = React.useRef<any>(null);
   const [reactFlowInstance, setReactFlowInstance] = React.useState<any>(null);
-  
+
+
+
   const [metadata, setMetadata] = React.useState<any>({
     version: "1.0.0",
     name: "My Model",
     description: "This is a model.",
-    author: "",
+    author: ""
   });
+  const [containsPlaceholder, setContainsPlaceholder] = useState(false);
   const [menu, setMenu] = useState(null);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [nisqAnalyzerEndpoint, setNisqAnalyzerEndpoint] = useState(
     import.meta.env.VITE_NISQ_ANALYZER || "http://localhost:8098/nisq-analyzer"
+  );
+
+  const [openAIToken, setOpenAIToken] = useState(
+    import.meta.env.VITE_OPENAI_TOKEN
   );
   const [qunicornEndpoint, setQunicornEndpoint] = useState(
     import.meta.env.VITE_QUNICORN || "http://localhost:8080"
@@ -130,6 +151,8 @@ function App() {
     onEdgesChange,
     onConnect,
     onConnectEnd,
+    typeError,
+    setTypeError,
     setCompact,
     setExperienceLevel,
     setAncillaMode,
@@ -235,8 +258,6 @@ function App() {
     left: 0,
   });
 
-  //const [contextMenu, setContextMenu] = useState(null);
-
   const onNodeContextMenu = useCallback(
     (event: React.MouseEvent, node: Node) => {
       event.preventDefault();
@@ -251,6 +272,21 @@ function App() {
     },
     []
   );
+
+  const onEdgesDelete = (edges: Edge[]) => {
+    edges.forEach((edge) => {
+      console.log("ON EDGES DELETE")
+      console.log("EDGE", edge)
+      const targetNodeId = edge.target
+      const targetHandle = edge.targetHandle
+      const targetNode = nodes.find(n => n.id === targetNodeId);
+      const newInputs = targetNode.data.inputs.filter(i => i.targetHandle !== targetHandle)
+      updateNodeValue(targetNodeId, "inputs", newInputs)
+      console.log(targetHandle)
+      console.log("update new inputs", newInputs)
+      console.log("NEW INPUTS", targetNode.data.inputs)
+    })
+  };
 
 
 
@@ -283,6 +319,15 @@ function App() {
   const [progress, setProgress] = useState(0);
   const [executed, setAlreadyExecuted] = useState(false);
   const [jobId, setJobId] = useState(null);
+  const [quantumAlgorithmModalStep, setQuantumAlgorithmModalStep] = useState(0);
+  const [quantumAlgorithms, setQuantumAlgorithms] = useState([
+    { name: "Quantum Approximate Optimization Algorithm (QAOA)", configCount: 0, patternGraphPng: "patterns/qaoa_patterngraph.png" },
+    { name: "SWAP Test", configCount: 0, patternGraphPng: null },
+    { name: "Hadamard Test", configCount: 0, patternGraphPng: null },
+    { name: "Grover's Algorithm", configCount: 0, patternGraphPng: "patterns/grover_patterngraph.png" },
+    { name: "Uniform Superposition", configCount: 0, patternGraphPng: null },
+    { name: "Initialization", configCount: 0, patternGraphPng: "patterns/initialization_patterngraph.png" },
+  ]);
 
   const [cursors, setCursors] = useState<{
     [clientId: number]: {
@@ -360,6 +405,7 @@ function App() {
   const handleSave = (newValues) => {
     console.log(newValues)
     setNisqAnalyzerEndpoint(newValues.tempNisqAnalyzerEndpoint);
+    setOpenAIToken(newValues.tempOpenAIToken);
     setQunicornEndpoint(newValues.tempQunicornEndpoint);
     setLowcodeBackendEndpoint(newValues.tempLowcodeBackendEndpoint);
     setPatternAtlasUiEndpoint(newValues.tempPatternAtlasUiEndpoint);
@@ -422,10 +468,20 @@ function App() {
   const [experienceLevelOn, setExperienceLevelOn] = useState("explorer");
   const [compactVisualization, setCompactVisualization] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
+  const [workflow, setWorkflow] = useState("");
+
+
+  const updateNodeInternals = useUpdateNodeInternals();
 
   const showToast = (message: string, type: "success" | "error" | "info") => {
     setToast({ message, type });
   };
+
+  useEffect(() => {
+    if (typeError) {
+      showToast(typeError, "error");
+    }
+  }, [typeError, showToast, setTypeError]);
 
   const [runTour, setRunTour] = useState(false);
   const [joyrideStepId, setJoyRideStepId] = useState(0);
@@ -438,6 +494,10 @@ function App() {
       {
         target: '.toolbar-container',
         content: 'This is the toolbar where you can save, restore, or send your diagrams.',
+      },
+      {
+        target: '.backend-button',
+        content: 'This transforms the model into QASM code or workflows, which can then be executed on quantum devices or on a workflow engine.',
       },
       {
         target: '.palette-container',
@@ -455,8 +515,18 @@ function App() {
         placement: "right"
       },
       {
+        target: '.classical-node',
+        content: 'This is a classical node that requires a value.',
+
+      },
+      {
+        target: '.grand-parent',
+        content: 'This value is then encoded via the state preparation block into a quantum state.',
+
+      },
+      {
         target: '.currentPanel-container',
-        content: 'This is the properties provider where you can configure properties of blocks.',
+        content: 'This is the properties panel, where you can configure the properties of blocks or the model.',
         placement: "left"
       }
     ];
@@ -483,10 +553,6 @@ function App() {
     setAlreadyExecuted(false);
   };
 
-
-  const prepareBackendRequest = () => {
-    setModalOpen(true);
-  }
   const sendToBackend = async () => {
     //setLoading(true);
     setModalOpen(false);
@@ -498,6 +564,7 @@ function App() {
     try {
       const validMetadata = {
         ...metadata,
+        containsPlaceholder: containsPlaceholder,
         id: id,
         timestamp: new Date().toISOString(),
       };
@@ -505,11 +572,9 @@ function App() {
       console.log(validMetadata);
       console.log(metadata);
 
-      const flow = reactFlowInstance.toObject();
-
       const response = await startCompile(
         lowcodeBackendEndpoint,
-        metadata,
+        validMetadata,
         reactFlowInstance.getNodes(),
         reactFlowInstance.getEdges(),
         compilationTarget
@@ -639,6 +704,11 @@ function App() {
   const startTour2 = () => {
     setRunTour(true);
     setAncillaMode(false);
+    setAncillaModelingOn(false);
+    //updateNodeInternals since ancilla mode changes number of handles
+    nodes.forEach((node) => {
+      updateNodeInternals(node.id);
+    })
     console.log("load tutorial")
     loadFlow(tutorial);
     console.log("load toturial")
@@ -646,6 +716,7 @@ function App() {
 
   interface ValidationItem {
     nodeId: string;
+    nodeType: string;
     description: string;
   }
 
@@ -659,13 +730,330 @@ function App() {
     const errors: ValidationItem[] = [];
 
     const outputIds = new Map<string, string>();
-    const nodesById = new Map(flow.nodes?.map((n) => [n.id, n]));
+    const nodesById: any = new Map(flow.nodes?.map((n) => [n.id, n]));
+
+    // Map targetNodeId => sourceNodeIds[]
+    const nodeConnections = new Map<string, string[]>();
+    flow.edges?.forEach((edge) => {
+      if (!nodeConnections.has(edge.target)) nodeConnections.set(edge.target, []);
+      nodeConnections.get(edge.target)?.push(edge.source);
+    });
+
+    // Map sourceNodeId => targetNodeIds[] for output checks
+    const outgoingConnections = new Map<string, string[]>();
+    flow.edges?.forEach((edge) => {
+      if (!outgoingConnections.has(edge.source)) outgoingConnections.set(edge.source, []);
+      outgoingConnections.get(edge.source)?.push(edge.target);
+    });
+
+    // Existing node validation 
+    flow.nodes?.forEach((node) => {
+      const { outputIdentifier, label, inputs, outputSize, condition, operator } =
+        node.data || {};
+      const connectedSources = nodeConnections.get(node.id) || [];
+      const inputCount = connectedSources.length;
+
+      const hasQuantumOutput = connectedSources.some((srcId) => {
+        const sourceNode: any = nodesById.get(srcId);
+        return sourceNode !== undefined;
+      });
+
+      // Output Identifier Checks 
+      if (outputIdentifier && /^[0-9]/.test(outputIdentifier)) {
+        errors.push({
+          nodeId: node.id,
+          nodeType: node.type,
+          description: `Invalid outputIdentifier "${outputIdentifier}" (cannot start with a number).`,
+        });
+      }
+
+      if (outputIdentifier) {
+        if (outputIds.has(outputIdentifier)) {
+          const firstNodeId = outputIds.get(outputIdentifier);
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Duplicate outputIdentifier "${outputIdentifier}" already used by node "${firstNodeId}".`,
+          });
+        } else {
+          outputIds.set(outputIdentifier, node.id);
+        }
+      }
+
+      // Gate / Operator Validation 
+      const twoQubitGates = [
+        "CNOT",
+        "SWAP",
+        "CZ",
+        "CY",
+        "CH",
+        "CP(λ)",
+        "CRX(θ)",
+        "CRY(θ)",
+        "CRZ(θ)",
+        "CU(θ,φ,λ,γ)",
+      ];
+      const threeQubitGates = ["Toffoli", "CSWAP"];
+      const minMaxOperators = ["Min", "Max"];
+
+      if (
+        twoQubitGates.includes(label) ||
+        ((node.type === "quantumOperatorNode" || node.type === "classicalOperatorNode") &&
+          !minMaxOperators.includes(operator))
+      ) {
+        if (inputCount !== 2) {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Node "${node.id}" with label "${label}" requires exactly 2 inputs, but got ${inputCount}.`,
+          });
+        }
+        if (node.data.label === "Quantum Comparison Operator" || node.data.label === "Quantum Min & Max Operator") {
+          warnings.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Node "${node.id}" (${node.data.label}) produces a classical output but its output is not used.`,
+          });
+        } else if (!twoQubitGates.includes(label) && !hasQuantumOutput) {
+          warnings.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Node "${node.id}" (${node.data.label}) produces a quantum state but its output is not used.`,
+          });
+        }
+
+      }
+
+      if (threeQubitGates.includes(label)) {
+        if (inputCount !== 3) {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Gate "${label}" requires exactly 3 inputs, but got ${inputCount}.`,
+          });
+        }
+      }
+
+      if (
+        minMaxOperators.includes(label) ||
+        (node.type === "gateNode" &&
+          label !== "Qubit Circuit" &&
+          !threeQubitGates.includes(label) &&
+          !twoQubitGates.includes(label))
+      ) {
+        if (inputCount < 1) {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Operator "${label}" requires at least 1 input.`,
+          });
+        }
+
+        // Warn if Min/Max operator has no output connection 
+        const outgoing = outgoingConnections.get(node.id) || [];
+        if (outgoing.length === 0) {
+          warnings.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Operator "${label}" has no output connection (unused result).`,
+          });
+        }
+      }
+
+      // State Preparation Node 
+      if (node.type === "statePreparationNode") {
+        if (
+          ["Encode Value", "Basis Encoding", "Angle Encoding", "Amplitude Encoding"].includes(
+            node.data.label
+          )
+        ) {
+          const hasClassical = connectedSources.some((srcId) => {
+            const sourceNode: any = nodesById.get(srcId);
+            return sourceNode?.type === "dataTypeNode";
+          });
+          if (!hasClassical) {
+            errors.push({
+              nodeId: node.id,
+              nodeType: node.type,
+              description: `Node "${node.id}" has no classical data input connected.`,
+            });
+          }
+          if (node.data.encodingType === "Custom Encoding" && !node.data.implementation) {
+            errors.push({
+              nodeId: node.id,
+              nodeType: node.type,
+              description: `Node "${node.id}" is missing an implementation for custom encoding.`,
+            });
+          }
+        }
+
+        if (node.data.label === "Prepare State") {
+          if (!node.data.size) {
+            errors.push({
+              nodeId: node.id,
+              nodeType: node.type,
+              description: `Node "${node.id}" has no quantum register size specified.`,
+            });
+          }
+          if (node.data.quantumStateName === "Custom State" && !node.data.implementation) {
+            errors.push({
+              nodeId: node.id,
+              nodeType: node.type,
+              description: `Node "${node.id}" is missing implementation for custom state.`,
+            });
+          }
+        }
+
+        if (!hasQuantumOutput) {
+          warnings.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Node "${node.id}" is missing an output connection.`,
+          });
+        }
+      }
+
+      // DataTypeNode: warn if no output connection 
+      if (node.type === "dataTypeNode") {
+        const outgoing = outgoingConnections.get(node.id) || [];
+        if (outgoing.length === 0) {
+          warnings.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Classical data node "${node.id}" has no output connection (unused variable).`,
+          });
+        }
+      }
+
+      // Measurement Node 
+      if (node.type === "measurementNode") {
+        const missingRegister = connectedSources.every((srcId) => {
+          const sourceNode: any = nodesById.get(srcId);
+          return sourceNode?.type !== "qubitNode" && sourceNode?.type !== "gateNode";
+        });
+        if (missingRegister) {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Node "${node.id}" requires a quantum register.`,
+          });
+        }
+
+        if (!node?.data?.indices) {
+          warnings.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Node "${node.id}" has no specified indices.`,
+          });
+        } else if (!/^\d+(,\d+)*$/.test(node.data.indices)) {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Indices of measurement node "${node.id}" can only contain numbers separated by commas.`,
+          });
+        }
+      }
+
+      // Control / If Nodes 
+      if (node.type === "ifElseNode") {
+        const hasClassical = connectedSources.some((srcId) => {
+          const sourceNode: any = nodesById.get(srcId);
+          return sourceNode?.type === "dataTypeNode";
+        });
+        if (!hasClassical) {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Node "${label}" requires at least one classical data input.`,
+          });
+        }
+        if (!condition) {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Node "${label}" requires a condition.`,
+          });
+        }
+      }
+
+      if (node.type === "controlStructureNode" && !condition) {
+        errors.push({
+          nodeId: node.id,
+          nodeType: node.type,
+          description: `Node "${label}" requires a condition.`,
+        });
+      }
+
+      // Algorithm / Custom Nodes 
+      if (node.type === "algorithmNode" || node.type === "classicalAlgorithmNode") {
+        const expectedInputs = node.data?.numberInputs || 0;
+        const actualInputs = connectedSources.length;
+        if (actualInputs < expectedInputs) {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Node "${label}" requires ${expectedInputs} input(s), but only ${actualInputs} connected.`,
+          });
+        }
+
+
+        // Quantum outputs check based on numberQuantumOutputs 
+        const numberQuantumOutputs = node.data?.numberQuantumOutputs || 0;
+        if (numberQuantumOutputs > 0) {
+          const outgoing = outgoingConnections.get(node.id) || [];
+          if (outgoing.length < numberQuantumOutputs) {
+            warnings.push({
+              nodeId: node.id,
+              nodeType: node.type,
+              description: `Node "${node.id}" produces ${numberQuantumOutputs} quantum outputs but only ${outgoing.length} are connected (some quantum outputs are unused).`,
+            });
+          }
+        }
+      }
+
+    });
+
+    // Gate node connection to measurement 
+    const gateNodes = flow.nodes?.filter((n) => n.type === "gateNode") || [];
+    const measurementNodes = new Set(
+      flow.nodes?.filter((n) => n.type === "measurementNode").map((n) => n.id)
+    );
+
+    const visited = new Set<string>();
+    function reachesMeasurement(nodeId: string): boolean {
+      if (visited.has(nodeId)) return false;
+      visited.add(nodeId);
+
+      if (measurementNodes.has(nodeId)) return true;
+
+      const outputs =
+        flow.edges?.filter((e) => e.source === nodeId).map((e) => e.target) || [];
+      return outputs.some((outId) => reachesMeasurement(outId));
+    }
+
+    const meaningfulGateExists = gateNodes.some((gate) => {
+      visited.clear();
+      return reachesMeasurement(gate.id);
+    });
+
+    if (!meaningfulGateExists && gateNodes.length > 0) {
+      warnings.push({
+        nodeId: null,
+        nodeType: "flow",
+        description:
+          "No gate node in the model has a path to a measurement node. " +
+          "Executing this flow will not produce meaningful results.",
+      });
+    }
 
 
     return { warnings, errors };
   }
 
 
+  const startQuantumAlgorithmSelection = () => {
+    setQuantumAlgorithmModalStep(1);
+  }
 
   const handleOpenValidation = () => {
     if (!reactFlowInstance) return;
@@ -686,6 +1074,11 @@ function App() {
   const startTour = () => {
     setRunTour(true);
     setAncillaMode(false);
+    setAncillaModelingOn(false);
+    //updateNodeInternals since ancilla mode changes number of handles
+    nodes.forEach((node) => {
+      updateNodeInternals(node.id);
+    })
     console.log("load tutorial")
     console.log("load toturial")
   }
@@ -1009,82 +1402,25 @@ function App() {
         x: event.clientX,
         y: event.clientY,
       })
+      const label = event.dataTransfer.getData("application/reactflow/label");
       console.log(position);
-
-
-      //handleOnDrop(event, reactFlowWrapper, reactFlowInstance, setNodes, nodesMap);
-      event.preventDefault();
-      if (reactFlowWrapper) {
-        const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
-        const type = event.dataTransfer.getData("application/reactflow");
-        const dataType = event.dataTransfer.getData("application/reactflow/dataType");
-        const label = event.dataTransfer.getData("application/reactflow/label");
-        console.log(type)
-        console.log(dataType)
-
-        //let position2 = reactFlowInstance.screenToFlowPosition();
-
-        //console.log(position2)
-
-
-        // check if the dropped element is valid
-        if (typeof type === "undefined" || !type) {
-          return;
-        }
-        const def = findNodeDefinition(type, label);
-        console.log(def)
-
-        const getId = () => crypto.randomUUID();
-        const compactOptions = def.compactOptions;
-
-        const position = reactFlowInstance.project({
-          x: event.clientX - reactFlowBounds.left,
-          y: event.clientY - reactFlowBounds.top,
-        });
-        const newNode = {
-          id: getId(),
-          type,
-          position,
-          data: { label: label, inputs: [], children: [], implementation: "", implementationType: "", uncomputeImplementationType: "", uncomputeImplementation: "", completionGuaranteed: def?.completionGuaranteed ?? false, compactOptions: compactOptions }
-        };
-
-        setNodes(newNode);
-        nodesMap.set(newNode.id, newNode);
-        console.log(awareness.getLocalState())
-        Object.entries(cursors).map(([clientId, cursor]) => {
-    const displayName = Number(clientId) === myClientId ? "Me" : cursor.name;
-
-    // Store name in a variable for history usage
-    const userName = cursor.name;
-
-    // Check if this node ID already exists in historyArray
-const historyList = historyArray.toArray();
-
-// Check if current user already logged this node
-const alreadyLoggedByUser = historyList.some(
-  entry => entry.nodeId === newNode.id && entry.user === (myClientId === Number(entry.user) ? entry.user : entry.user)
-);
-
-if (!alreadyLoggedByUser) {
-  // Push a new history entry for this user
-  historyArray.push([
-    {
-      type: "node-added",
-      nodeId: newNode.id,
-      label: newNode.data?.label,
-      user:  userName, // or displayName if using cursors
-      timestamp: Date.now(),
-    }
-  ]);
-}
-
-});
-
-
+      if (label == qaoa) {
+        loadFlow(qaoa_algorithm)
+      } else if (label == swap_test) {
+        loadFlow(swap_test_algorithm);
       }
-
-
-
+      else if (label == hadamard_test_imaginary_part) {
+        loadFlow(hadamard_test_imaginary_part_algorithm);
+      }
+      else if (label == hadamard_test_real_part) {
+        loadFlow(hadamard_test_real_part_algorithm);
+      }
+      else if (label == grover) {
+        loadFlow(grover_algorithm);
+      }
+      else {
+        //handleOnDrop(event, reactFlowWrapper, reactFlowInstance, setNodes);
+      }
 
       //setContextMenu((prev) => ({ ...prev, left: event.clientX, top: event.clientY,}));
     },
@@ -1206,9 +1542,12 @@ if (!alreadyLoggedByUser) {
       return { success: false };
     }
 
+    console.log(containsPlaceholder)
+
     let fileContent = JSON.stringify({
       metadata: {
         ...metadata,
+        containsPlaceholder: containsPlaceholder,
         id: flowId,
         timestamp: new Date().toISOString(),
       },
@@ -1252,7 +1591,7 @@ if (!alreadyLoggedByUser) {
     }
   }
 
-  async function handleSaveClick(upload) {
+  async function handleSaveClick() {
     if (!reactFlowInstance) {
       console.error("React Flow instance is not initialized.");
       return;
@@ -1262,6 +1601,7 @@ if (!alreadyLoggedByUser) {
     console.log(flow);
     const validMetadata = {
       ...metadata,
+      containsPlaceholder: containsPlaceholder,
       id: `flow-${Date.now()}`,
       timestamp: new Date().toISOString(),
     };
@@ -1271,8 +1611,15 @@ if (!alreadyLoggedByUser) {
 
     const flowWithMetadata = { metadata: validMetadata, ...flow };
 
-    localStorage.setItem(flowKey, JSON.stringify(flowWithMetadata));
-    console.log("Flow saved:", flowWithMetadata);
+    const event = new CustomEvent("lcm-save", {
+      cancelable: true,
+      detail: flowWithMetadata,
+    });
+    const defaultAction = document.dispatchEvent(event);
+    console.log(`defaultAction: ${defaultAction}`);
+    if (!defaultAction)
+      return;
+
     // Create a downloadable JSON file
     const jsonBlob = new Blob([JSON.stringify(flowWithMetadata, null, 2)], {
       type: "application/json",
@@ -1286,9 +1633,7 @@ if (!alreadyLoggedByUser) {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(downloadUrl);
-    if (upload) {
-      await uploadToGitHub();
-    }
+    console.log("Flow saved:", flowWithMetadata);
   }
 
   function handleRestoreClick() {
@@ -1296,6 +1641,45 @@ if (!alreadyLoggedByUser) {
       console.error("React Flow instance is not initialized.");
       return;
     }
+
+    function restoreFlow(flow) {
+      console.log("Restoring flow:", flow);
+      if (flow.nodes) {
+        reactFlowInstance.setNodes(
+          flow.nodes.map((node: Node) => ({
+            ...node,
+            data: {
+              ...node.data,
+            },
+          }))
+        );
+        console.log("Nodes restored.");
+      }
+      if (flow.edges) {
+        reactFlowInstance.setEdges(flow.edges || []);
+        console.log("Edges restored.");
+      }
+
+
+      const { x = 0, y = 0, zoom = 1 } = flow.viewport || {};
+      reactFlowInstance.setViewport({ x, y, zoom });
+
+      if (flow.metadata) {
+        setMetadata(flow.metadata);
+        console.log("Metadata restored:", flow.metadata);
+      }
+    }
+
+    const event = new CustomEvent("lcm-open", {
+      cancelable: true,
+      detail: {
+        restoreFlow
+      },
+    });
+    const defaultAction = document.dispatchEvent(event);
+    console.log(`defaultAction: ${defaultAction}`);
+    if (!defaultAction)
+      return;
 
     const fileInput = document.createElement("input");
     fileInput.type = "file";
@@ -1313,31 +1697,7 @@ if (!alreadyLoggedByUser) {
         try {
           const flow = JSON.parse(e.target?.result as string);
 
-          console.log("Restoring flow:", flow);
-          if (flow.nodes) {
-            reactFlowInstance.setNodes(
-              flow.nodes.map((node: Node) => ({
-                ...node,
-                data: {
-                  ...node.data,
-                },
-              }))
-            );
-            console.log("Nodes restored.");
-          }
-          if (flow.edges) {
-            reactFlowInstance.setEdges(flow.edges || []);
-            console.log("Edges restored.");
-          }
-
-
-          const { x = 0, y = 0, zoom = 1 } = flow.viewport || {};
-          reactFlowInstance.setViewport({ x, y, zoom });
-
-          if (flow.metadata) {
-            setMetadata(flow.metadata);
-            console.log("Metadata restored:", flow.metadata);
-          }
+          restoreFlow(flow);
         } catch (error) {
           console.error("Error parsing JSON file:", error);
           alert("Invalid JSON file. Please ensure it is a valid flow file.");
@@ -1377,10 +1737,6 @@ if (!alreadyLoggedByUser) {
       return;
     }
     console.log(flow.initialEdges)
-    if (flow.initialEdges) {
-      reactFlowInstance.setEdges(flow.initialEdges);
-      console.log("Edges loaded.");
-    }
     console.log(flow.nodes)
     if (flow.nodes) {
       reactFlowInstance.setNodes(
@@ -1392,18 +1748,28 @@ if (!alreadyLoggedByUser) {
         }))
       );
     }
-    console.log(nodes);
+    if (flow.initialEdges) {
+      reactFlowInstance.setEdges(flow.initialEdges);
+      console.log("Edges loaded.");
+    }
+    console.log("load flow nodes", nodes);
+    console.log(edges);
 
     // Reset the viewport (optional based on your use case)
     const { x = 0, y = 0, zoom = 1 } = flow.viewport || {};
     reactFlowInstance.setViewport({ x, y, zoom });
 
+    console.log(flow.metadata)
     // Set the metadata (if any) - assuming initialDiagram has metadata
     if (flow.metadata) {
-      setMetadata(flow.metadata);
-      console.log("Metadata loaded:", flow.metadata);
+      // If metadata is an array, unpack it
+      const dataToSet = Array.isArray(flow.metadata) ? flow.metadata[0] : flow.metadata;
+      setMetadata(dataToSet);
+      console.log("Metadata loaded:", dataToSet);
     }
+
   };
+
 
   const onNodeDrag = React.useCallback((event: React.MouseEvent, node: Node, nodes: Node[]) => {
     console.log(reactFlowInstance.getNodes())
@@ -1528,6 +1894,30 @@ if (!alreadyLoggedByUser) {
 
   const handleOpenConfig = () => setIsConfigOpen(true);
 
+  const onExperienceLevelChange = (event) => {
+    setExperienceLevel(event);
+    setExperienceLevelOn(event);
+    const bool_value = (experienceLevel === "pioneer") ? false : true; // if previous experience level was pioneer...
+    setCompactVisualization(bool_value)
+    setAncillaMode(bool_value)
+    setAncillaModelingOn(bool_value)
+    //updateNodeInternals since ancilla mode changes number of handles
+    nodes.forEach((node) => {
+      updateNodeInternals(node.id);
+    })
+  };
+
+
+
+  const onToggleAncilla = () => {
+    setAncillaModelingOn(!ancillaModelingOn);
+    setAncillaMode(!ancillaModelingOn);
+    //updateNodeInternals since ancilla mode changes number of handles
+    nodes.forEach((node) => {
+      updateNodeInternals(node.id);
+    })
+  }
+
   const handleSaveAsSVG = () => {
     if (ref.current === null) {
       console.error("React Flow container reference is null.");
@@ -1554,8 +1944,157 @@ if (!alreadyLoggedByUser) {
       .catch((err) => console.error("Error exporting SVG:", err));
   };
 
+
+  /**
+   * Uploads a QRMS ZIP file to GitHub, updating files if they already exist.
+   */
+  async function uploadQRMS(qrmsUrl: string, modelId: string): Promise<void> {
+    const token = githubToken;
+    if (!token) throw new Error("Missing GitHub token");
+    const owner = githubRepositoryOwner;
+    const repo = githubRepositoryName;
+    const basePath = `qrms_uploads/${modelId}`;
+
+    const res = await fetch(qrmsUrl);
+    if (!res.ok) throw new Error("Failed to fetch QRMS zip");
+    const baseUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${basePath}`;
+
+    const folderCheck = await fetch(baseUrl, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (folderCheck.ok) {
+      console.log(`Folder ${basePath} already exists — skipping upload.`);
+      return; // exit early — skip re-upload
+    }
+    const buf = await res.arrayBuffer();
+    const zip = await JSZip.loadAsync(buf);
+
+    for (const [relative, file] of Object.entries(zip.files)) {
+      if (file.dir) continue;
+      const content = await file.async("string");
+      const encoded = btoa(unescape(encodeURIComponent(content)));
+      const githubPath = `${basePath}/${relative}`;
+      const url = `https://api.github.com/repos/${owner}/${repo}/contents/${githubPath}`;
+
+      // look up sha if file already exists
+      let sha: string | undefined;
+      const head = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (head.ok) {
+        const data = await head.json();
+        sha = data.sha;
+      }
+
+      // create or update file
+      const put = await fetch(url, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          message: sha
+            ? `Update existing QRMS file: ${relative}`
+            : `Upload new QRMS file: ${relative}`,
+          content: encoded,
+          sha,
+        }),
+      });
+
+      if (!put.ok) {
+        const txt = await put.text();
+        throw new Error(`Failed to upload ${relative}: ${txt}`);
+      }
+      console.log("QRMs uploaded", githubPath);
+    }
+  }
+
+  async function createServiceTemplates(serviceDeploymentModelsUrl: string, namespace: string): Promise<void> {
+    const res = await fetch(serviceDeploymentModelsUrl);
+    if (!res.ok) throw new Error(`Failed to fetch service deployment models: ${res.statusText}`);
+
+    // Load ZIP into JSZip
+    const arrayBuffer = await res.arrayBuffer();
+    const zip = await JSZip.loadAsync(arrayBuffer);
+
+    // Extract folder names
+    const folderNames = new Set<string>();
+
+    for (const [path, entry] of Object.entries(zip.files)) {
+      const match = path.match(/^(Activity_[^/]+)/);
+      if (match) {
+        folderNames.add(match[1]);
+      }
+    }
+
+    console.log(`Found service deployment folders:`, Array.from(folderNames));
+
+
+    const masterZip = await JSZip.loadAsync(arrayBuffer);
+    // Process each folder 
+    for (const [path, entry] of Object.entries(masterZip.files)) {
+      if (entry.dir) continue;
+      if (!path.endsWith(".zip")) continue;
+
+      // Extract activity name
+      const activityName = path.replace(".zip", "");
+      console.log(`Processing activity ZIP: ${activityName}`);
+
+      // Load the activity ZIP in memory
+      const activityArrayBuffer = await entry.async("arraybuffer");
+      const activityZip = await JSZip.loadAsync(activityArrayBuffer);
+
+      // Find service.zip inside activity ZIP
+      const serviceEntry = Object.values(activityZip.files).find(
+        (f) => !f.dir && f.name.endsWith("service.zip")
+      );
+
+      if (!serviceEntry) {
+        console.warn(`No service.zip found in ${activityName}`);
+        continue;
+      }
+
+      // Extract service.zip as Blob
+      const serviceArrayBuffer = await serviceEntry.async("arraybuffer");
+      const serviceBlob = new Blob([serviceArrayBuffer], { type: "application/zip" });
+
+      // Create deployment model
+      const versionUrl = `http://localhost:8093/winery/servicetemplates/${activityName}`;
+      await createDeploymentModel(
+        serviceBlob,
+        "http://localhost:8093/winery",
+        `${activityName}_DA`,
+        "http://opentosca.org/artifacttemplates",
+        "{http://opentosca.org/artifacttypes}DockerContainerArtifact",
+        "service.zip",
+        versionUrl
+      );
+      const OPENTOSCA_NAMESPACE_NODETYPE = "http://opentosca.org/nodetypes";
+      const QUANTME_NAMESPACE_PULL = "http://quantil.org/quantme/pull";
+
+      // Create service template
+      let serviceTemplate = await createServiceTemplate(activityName, namespace);
+      await createNodeType(
+        activityName + "Container",
+        OPENTOSCA_NAMESPACE_NODETYPE
+      );
+      await updateNodeType(
+        activityName + "Container",
+        OPENTOSCA_NAMESPACE_NODETYPE
+      );
+      serviceTemplate = await updateServiceTemplate(
+        activityName,
+        QUANTME_NAMESPACE_PULL
+      );
+      console.log(`Service template created for: ${activityName}`);
+    }
+
+  }
+
   return (
-    <ReactFlowProvider>
+    <>
       <Joyride
         steps={joyrideSteps}
         run={runTour}
@@ -1570,36 +2109,67 @@ if (!alreadyLoggedByUser) {
         }}
         callback={(data) => {
           const { status, index, type } = data;
-          console.log(index)
-
+          console.log("HELP");
+          console.log(index);
+          console.log(type);
+          if (type === 'step:before' && index === 0) {
+            // open both side panels if they're not opened
+            setIsPaletteOpen(true);
+            setIsPanelOpen(true);
+            //setExpanded(true);
+          }
           if (type === 'step:before' && index === 1) {
             let fileContent = JSON.stringify(reactFlowInstance.toObject());
-            setExpanded(true);
-            setModeledDiagram(fileContent)
+            setModeledDiagram(fileContent);
           }
           if (type === 'step:before' && index === 3) {
             startTour2();
+            setExpanded(true);
           }
-          if (type === 'step:after' && index === 5) {
+          if (type === 'step:before' && index === 4) {
+
+            const id = "086a4f77-2562-44d3-b0df-7cfe83ae369a";
+            const node = nodes.find(n => n.id === id);
+            setSelectedNode(node);
+            console.log("NODES", nodes);
+            console.log("SELECTED NODE", node);
+          }
+          if (type === 'step:before' && index === 5) {
+            setExpanded(false);
+            const id = "e2a719bf-516c-4601-84d1-de643b05ea02";
+            const node = nodes.find(n => n.id === id);
+            setSelectedNode(node);
+            console.log("NODES", nodes);
+            console.log("SELECTED NODE", node);
+          }
+          if (type === 'step:before' && index === 6) {
+            setExpanded(false);
+            setSelectedNode(null);
+          }
+          if (type === 'step:after' && index === 7) {
             startTour3();
+
           }
           if (['finished', 'skipped'].includes(data.status)) {
             setRunTour(false);
             setExpanded(false);
-            loadFlow(JSON.parse(modeledDiagram));
+            if(modeledDiagram) {
+              loadFlow(JSON.parse(modeledDiagram));
+            }
           }
         }}
       />
 
       <div className="toolbar-container">
         <Toolbar
-          onSave={() => handleSaveClick(false)}
+          onSave={handleSaveClick}
           onRestore={handleRestoreClick}
           onSaveAsSVG={addNode}
           onOpenConfig={handleOpenConfig}
           uploadDiagram={() => uploadToGitHub()}
           onLoadJson={handleLoadJson}
           sendToBackend={handleOpenValidation}
+          startQuantumAlgorithmSelection={startQuantumAlgorithmSelection}
           //sendToQunicorn={() => setIsQunicornOpen(true)}
           openHistory={openHistoryModal}
           startTour={() => { startTour(); }}
@@ -1620,6 +2190,7 @@ if (!alreadyLoggedByUser) {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         compilationTarget={compilationTarget}
+        containsPlaceholder={containsPlaceholder}
         setCompilationTarget={setCompilationTarget}
         sendToBackend={sendToBackend}
       />
@@ -1635,6 +2206,7 @@ if (!alreadyLoggedByUser) {
         completionGuaranteed={completionGuaranteed}
         experienceLevel={experienceLevel}
         tempNisqAnalyzerEndpoint={nisqAnalyzerEndpoint}
+        tempOpenAIToken={openAIToken}
         tempQunicornEndpoint={qunicornEndpoint}
         tempLowcodeBackendEndpoint={lowcodeBackendEndpoint}
         tempPatternAtlasUiEndpoint={patternAtlasUiEndpoint}
@@ -1668,24 +2240,79 @@ if (!alreadyLoggedByUser) {
         chartData={chartData}
       />
 
+      {patternGraph && (
+        <Modal
+          title="Pattern Graph"
+          open={true}
+          onClose={() => setPatternGraph(null)}
+        >
+          <img src={patternGraph} alt="Pattern graph" className="w-full rounded" />
+        </Modal>
+      )}
+
+
+      <AiModal
+        quantumAlgorithmModalStep={quantumAlgorithmModalStep}
+        quantumAlgorithms={quantumAlgorithms}
+        isDetectingAlgorithms={isDetectingAlgorithms}
+        detectQuantumAlgorithms={detectQuantumAlgorithms}
+        handleQuantumAlgorithmModalClose={handleQuantumAlgorithmModalClose}
+        setQuantumAlgorithmModalStep={setQuantumAlgorithmModalStep}
+        loadFlow={loadFlow}
+      />
+
       <HistoryModal
         open={isHistoryOpen}
         onClose={() => setHistoryOpen(false)}
         history={history}
         onExecute={async (item) => {
-          console.log(item)
+          console.log(item);
           setHistoryOpen(false);
-          setIsQunicornOpen(true);
-          try {
-            // Fetch the QASM content from the result link
-            const response = await fetch(item.links.result);
-            if (!response.ok) throw new Error("Failed to fetch QASM result");
-            const qasmText = await response.text(); // assuming result is plain text QASM
 
-            // Set it in your state
+          try {
+            // Fetch the model JSON from the request link to check compilation_target
+            const requestResponse = await fetch(item.links.request);
+            if (!requestResponse.ok) throw new Error("Failed to fetch model file");
+            const modelData = await requestResponse.json();
+
+            const compilationTarget = modelData?.compilation_target;
+
+            // If the model is a workflow
+            if (compilationTarget === "workflow") {
+              //store the workflow data in your state
+              setWorkflow(modelData);
+
+              // Upload the QRMS file to GitHub if available
+              if (item.links?.qrms) {
+                try {
+                  await uploadQRMS(item.links.qrms, item.uuid);
+                } catch (err) {
+                  console.error("QRMS upload failed:", err);
+                }
+              }
+
+              if (item.links?.serviceDeploymentModels) {
+                try {
+                  const QUANTME_NAMESPACE_PULL = "http://quantil.org/quantme/pull";
+                  await createServiceTemplates(item.links.serviceDeploymentModels, QUANTME_NAMESPACE_PULL);
+
+                } catch (err) {
+                  console.error("QRMS upload failed:", err);
+                }
+              }
+
+              return;
+            }
+
+            setIsQunicornOpen(true);
+            const resultResponse = await fetch(item.links.result);
+            if (!resultResponse.ok) throw new Error("Failed to fetch QASM result");
+
+            const qasmText = await resultResponse.text();
             setOpenQASMCode(qasmText);
+
           } catch (error) {
-            console.error("Error fetching QASM result:", error);
+            console.error("Error handling execution:", error);
           }
         }}
       />
@@ -1727,6 +2354,7 @@ if (!alreadyLoggedByUser) {
             onNodeDragStop={onNodeDragStop}
             onDrop={onDrop}
             onNodesDelete={onNodesDelete}
+            onEdgesDelete={onEdgesDelete}
 
             fitView
             fitViewOptions={{ maxZoom: 1 }}
@@ -1823,9 +2451,10 @@ if (!alreadyLoggedByUser) {
               expanded={expanded}
               onToggleExpanded={() => setExpanded(!expanded)}
               ancillaModelingOn={ancillaModelingOn}
-              onToggleAncilla={() => { setAncillaModelingOn(!ancillaModelingOn); setAncillaMode(!ancillaModelingOn) }}
+              onToggleAncilla={onToggleAncilla}
               experienceLevel={experienceLevel}
-              onExperienceLevelChange={(event) => { setExperienceLevel(event); setExperienceLevelOn(event); }}
+              onExperienceLevelChange={onExperienceLevelChange}
+              //onExperienceLevelChange={(event) => { setExperienceLevel(event); setExperienceLevelOn(event); }}
               compactVisualization={compactVisualization}
               onCompactVisualizationChange={() => { setCompactVisualization(!compact); setCompact(!compact) }}
               completionGuaranteed={completionGuaranteed}
@@ -1877,8 +2506,8 @@ if (!alreadyLoggedByUser) {
               pannable={true}
             />
 
-            <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
 
+            <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
           </ReactFlow>
           {contextMenu.visible && contextMenu.nodeId && (
             <ContextMenu
@@ -1905,8 +2534,9 @@ if (!alreadyLoggedByUser) {
 
 
       </main>
-    </ReactFlowProvider>
+    </>
   );
 }
+
 
 export default App;

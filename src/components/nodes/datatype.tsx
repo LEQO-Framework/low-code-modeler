@@ -13,12 +13,14 @@ const selector = (state: {
   edges: Edge[];
   updateNodeValue: (nodeId: string, field: string, nodeVal: string) => void;
   setSelectedNode: (node: Node | null) => void;
+  setContainsPlaceholder: (containsPlaceholder) => void;
 }) => ({
   selectedNode: state.selectedNode,
   nodes: state.nodes,
   edges: state.edges,
   updateNodeValue: state.updateNodeValue,
   setSelectedNode: state.setSelectedNode,
+  setContainsPlaceholder: state.setContainsPlaceholder
 });
 
 export const DataTypeNode = memo((node: Node) => {
@@ -30,7 +32,7 @@ export const DataTypeNode = memo((node: Node) => {
   const [outputIdentifierError, setOutputIdentifierError] = useState(false);
   const [sizeError, setSizeError] = useState(false);
 
-  const { nodes, edges, updateNodeValue, setSelectedNode } = useStore(selector, shallow);
+  const { nodes, edges, updateNodeValue, setSelectedNode, setContainsPlaceholder } = useStore(selector, shallow);
   const [durationUnit, setDurationUnit] = useState(node.data.durationUnit || "s");
   const { data } = node;
 
@@ -42,6 +44,15 @@ export const DataTypeNode = memo((node: Node) => {
 
     // Clear error by default
     setValueError("");
+    if (value.trim() === "") {
+      setContainsPlaceholder(false);
+    }
+
+    if (isPlaceholder(value)) {
+      updateNodeValue(node.id, "value", value);
+      setContainsPlaceholder(true);
+      return;
+    }
 
     // Array validation
     if (data.dataType === "Array") {
@@ -112,6 +123,12 @@ export const DataTypeNode = memo((node: Node) => {
     return fullComplex.test(trimmed) || imaginaryOnly.test(trimmed) || realOnly.test(trimmed);
   }
 
+  function isPlaceholder(value) {
+    const t = value.trim();
+    return /^[a-zA-Z]+$/.test(t);
+  }
+
+
   function parseToNormalizedAngle(angle) {
     const trimmed = angle.trim().toLowerCase();
     const piMatch = /^([0-9]*\.?[0-9]*)\s*\*?\s*pi$/.exec(trimmed);
@@ -156,12 +173,13 @@ export const DataTypeNode = memo((node: Node) => {
   const iconMap = {
     "Number": 'intIcon.png',
     "int": 'intIcon.png',
-    "float": 'floatIcon.png',
+    "Number": 'floatIcon.png',
     "bit": 'bitIcon.png',
     "duration": 'durationIcon.png',
     "boolean": 'booleanIcon.png',
     "angle": 'angleIcon.png',
     "complex": 'complexIcon.png',
+    "File": 'complexIcon.png',
     "Array": 'arrayIcon.png',
   };
   const label = data.label;
@@ -169,17 +187,18 @@ export const DataTypeNode = memo((node: Node) => {
   const iconSizeMap = {
     "Number": { width: 60, height: 60 },
     "int": { width: 60, height: 60 },
-    "float": { width: 55, height: 55 },
+    "Number": { width: 55, height: 55 },
     "bit": { width: 50, height: 50 },
     "duration": { width: 45, height: 45 },
     "boolean": { width: 45, height: 45 },
     "angle": { width: 45, height: 45 },
     "complex": { width: 55, height: 55 },
+    "File": { width: 55, height: 55 },
     "Array": { width: 60, height: 60 },
   };
 
   return (
-    <div className="relative w-[450px] h-[270px]">
+    <div className="relative w-[450px] h-[270px] classical-node">
       {outputIdentifierError && (
         <div className="absolute top-2 right-2 group z-20">
           <AlertCircle className="text-red-600 w-5 h-5" />
@@ -192,7 +211,7 @@ export const DataTypeNode = memo((node: Node) => {
         <div className="absolute top-2 right-2 group z-20">
           <AlertCircle className="text-red-600 w-5 h-5" />
           <div className="absolute top-12 left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
-          {valueError}
+            {valueError}
           </div>
         </div>
       )}
@@ -204,7 +223,7 @@ export const DataTypeNode = memo((node: Node) => {
           </div>
         </div>
       )}
-      <div className="w-full h-full rounded-full bg-white overflow-hidden border border-solid border-gray-700 shadow-md">
+      <div className="w-full h-full rounded-full bg-white  overflow-hidden border border-solid border-gray-700 shadow-md">
         <div className="w-full bg-orange-300 text-black text-center font-semibold py-1 truncate relative">
 
           <div className="w-full flex items-center" style={{ height: '52px', paddingLeft: '100px' }}>
@@ -315,15 +334,15 @@ export const DataTypeNode = memo((node: Node) => {
                   <option value="h">h</option>
                 </select>
               </div>
-            ) : (
-              <input
-                id="value"
-                type="text"
-                className={`input-classical-focus p-1 text-black opacity-75 text-sm rounded-full w-20 text-center border-2 ${valueError ? 'bg-red-500 border-red-500' : 'bg-white border-orange-300'}`}
-                value={node.data.value || value}
-                placeholder="0"
-                onChange={changeValue}
-              />
+            )  : (
+            <input
+              id="value"
+              type="text"
+              className={`input-classical-focus p-1 text-black opacity-75 text-sm rounded-full w-20 text-center border-2 ${valueError ? 'bg-red-500 border-red-500' : 'bg-white border-orange-300'}`}
+              value={node.data.value || value}
+              placeholder="0"
+              onChange={changeValue}
+            />
             )}
           </div>
         </div>

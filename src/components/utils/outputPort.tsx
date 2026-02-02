@@ -2,8 +2,8 @@ import { Handle, Position } from 'reactflow';
 import { cn } from "@/lib/utils";
 import { findDuplicateOutputIdentifiersInsideNode, isUniqueIdentifier } from "../utils/utils";
 import { Node } from "reactflow";
-import { useEffect, useRef } from 'react';
-import { classicalConstructColor } from '@/constants';
+import { useEffect, useMemo, useRef } from 'react';
+import { AlgorithmNode, ClassicalAlgorithmNode, classicalConstructColor } from '@/constants';
 
 interface OutputPortProps {
   node: Node;
@@ -43,7 +43,7 @@ export default function OutputPort({
   const isClassical = type === "classical";
   const isAncilla = type === "ancilla";
   const handleId = isClassical
-    ? `classicalHandle${node.id}`
+    ? `classicalHandle${node.type}Output${index}${node.id}`
     : isAncilla
       ? `ancillaHandleOutput${index}${node.id}`
       : `quantumHandle${node.type}Output${index}${node.id}`;
@@ -57,57 +57,113 @@ export default function OutputPort({
   const outputSize = outputs[index]?.size || "";
   const isConnected = edges.some(edge => edge.sourceHandle === handleId);
 
+  // Handle numeric size change and validation
   const handleYChange = (value: string, field: string) => {
     const num = Number(value);
-    let hasError = false;
-
-    // Only validate if user entered something
-    if (value !== "" && (!/^\d+$/.test(value) || num <= 0)) {
-      hasError = true;
-    }
-
+    const hasError = value !== "" && (!/^\d+$/.test(value) || num <= 0);
     setSizeError(hasError);
 
-    // Update node data
     node.data[field] = value;
     updateNodeValue(node.id, field, num);
     setSelectedNode(node);
   };
 
-  useEffect(() => {
-    const isNowBellState = node.data.quantumStateName?.includes("Bell State");
+  // Get input type for classical arithmetic operator
+  const getInputType = (inputIndex: number) => {
+    const handleId = `classicalHandleOperationInput${inputIndex}${node.id}`;
+    const edge = edges.find(e => e.target === node.id && e.targetHandle === handleId);
+    if (!edge) return "any";
 
-    const updatedOutputs = [...outputs];
-    if (!updatedOutputs[index]) {
-      updatedOutputs[index] = { identifier: "", size: "" };
+    const sourceNode = nodes.find(n => n.id === edge.source);
+    if (!sourceNode) return "any";
+
+    if (sourceNode.type === "measurementNode") return "array";
+    if (sourceNode.data?.outputs?.[0]?.value !== undefined) return typeof sourceNode.data.outputs[0].value;
+    if (sourceNode.type === "dataTypeNode") return sourceNode.data?.dataType ?? "any";
+
+    return "any";
+  };
+
+  // Determine displayed output type dynamically
+  const displayedOutputType = useMemo(() => {
+    let outputType = "unknown";
+
+    // Classical Data Type
+    if (type === "classical" && node.type === "dataTypeNode") {
+      outputType = node.data?.dataType ?? "array";
+    }
+    // Classical Arithmetic Operator: infer from inputs
+    else if (type === "classical" && node.data.label?.includes("Arithmetic Operator")) {
+      const t0 = getInputType(0);
+      const t1 = getInputType(1);
+
+      if (t0 !== "any" && t1 !== "any" && t0 === t1) outputType = t0;
+      else if (t0 !== "any") outputType = t0;
+      else if (t1 !== "any") outputType = t1;
+      else outputType = "any";
+    }
+    // Other classical operators
+    else if (type === "classical" && node.data.label?.includes("Bitwise Operator")) {
+      outputType = "bit";
+    }
+    else if (node.data.label?.includes("Comparison Operator")) {
+      outputType = "boolean";
+    }
+    else if (node.data.label?.includes("Min & Max Operator")) {
+      outputType = "number";
+    }
+    // Quantum or fallback
+    else if (type === "quantum" || type === "ancilla") {
+      outputType = "quantum register";
+    }
+    else if (type === "classical" && (node.type === "algorithmNode" || node.type === "classicalAlgorithmNode")) {
+      outputType = "any"; // default value
+
+      if (node?.data?.outputTypes && node.data.outputTypes[index] != null) {
+        outputType = node.data.outputTypes[index];
+      }
+
+    }
+    else if (type === "classical") {
+      outputType = "array";
     }
 
-    if (isNowBellState) {
-      updatedOutputs[index] = {
-        ...updatedOutputs[index],
-        size: "2",
-      };
 
+    console.log("OUTPUT PORT displayedOutputType", node.id, outputType)
+
+    return outputType;
+  }, [node.id, node.data.label, type, edges, nodes]);
+
+  // update outputType if it changes
+  useEffect(() => {
+    if (node.data.outputTypes[index] !== displayedOutputType) {
+      const updatedOutputTypes = { ...node.data.outputTypes }
+      updatedOutputTypes[index] = displayedOutputType
+      updateNodeValue(node.id, "outputTypes", updatedOutputTypes);
+      console.log("Updated node outputType in store:", node.id, displayedOutputType);
+    }
+  }, [displayedOutputType, node.id, node.data.outputTypes, updateNodeValue]);
+
+  useEffect(() => {
+    const isNowBellState = node.data.quantumStateName?.includes("Bell State");
+    const updatedOutputs = [...outputs];
+    if (!updatedOutputs[index]) updatedOutputs[index] = { identifier: "", size: "" };
+
+    if (isNowBellState) {
+      updatedOutputs[index] = { ...updatedOutputs[index], size: "2" };
       setOutputs(updatedOutputs);
       node.data.outputs = updatedOutputs;
       updateNodeValue(node.id, "size", "2");
       updateNodeValue(node.id, "outputs", updatedOutputs);
       setSelectedNode(node);
-
       wasBellState.current = true;
     } else if (wasBellState.current && node.data.label === "Prepare State") {
-      // Only reset when transitioning from Bell State
-      updatedOutputs[index] = {
-        ...updatedOutputs[index],
-        size: "",
-      };
-
+      updatedOutputs[index] = { ...updatedOutputs[index], size: "" };
       setOutputs(updatedOutputs);
       node.data.outputs = updatedOutputs;
       updateNodeValue(node.id, "size", "");
       updateNodeValue(node.id, "outputs", updatedOutputs);
       setSelectedNode(node);
-
       wasBellState.current = false;
     }
   }, [node.data.quantumStateName]);
@@ -122,12 +178,16 @@ export default function OutputPort({
             : isAncilla
               ? 'rgba(137, 218, 131, 0.2)'
               : 'rgba(105, 145, 210, 0.2)',
-
           width: "180px",
           borderRadius: isClassical ? '16px' : '0px',
         }}
       >
-        <div className="w-full text-left text-sm text-black font-semibold">Output:</div>
+        <div className="w-full flex justify-between items-center">
+          <span className="text-left text-sm text-black font-semibold">Output:</span>
+          <span className="text-[10px] text-gray-600">
+            type: {displayedOutputType.toLowerCase()}
+          </span>
+        </div>
 
         <div className="flex items-center justify-between w-full space-x-2">
           <label className="text-sm text-black" style={{ paddingLeft: '15px' }}>Identifier</label>
@@ -144,15 +204,18 @@ export default function OutputPort({
             value={outputIdentifier}
             onChange={(e) => {
               const updatedOutputs = [...outputs];
-              if (!updatedOutputs[index]) {
-                updatedOutputs[index] = { identifier: "", size: "" };
-              }
+              if (!updatedOutputs[index]) updatedOutputs[index] = { identifier: "", size: "" };
               updatedOutputs[index] = {
                 ...updatedOutputs[index],
                 identifier: e.target.value,
                 type: isClassical ? "classical" : "quantum",
               };
 
+              // Ensure immutability by creating a new array
+              setOutputs(updatedOutputs);
+              node.data.outputs = updatedOutputs;
+              updateNodeValue(node.id, "outputs", updatedOutputs);
+              setSelectedNode(node);
               handleOutputIdentifierChange({
                 e,
                 node,
@@ -162,7 +225,6 @@ export default function OutputPort({
                 setOutputIdentifierError,
               });
 
-              // Ensure immutability by creating a new array
               setOutputs(updatedOutputs);
               node.data.outputs = updatedOutputs;
               updateNodeValue(node.id, "outputs", updatedOutputs);
@@ -176,29 +238,22 @@ export default function OutputPort({
           <input
             type="text"
             className={`p-1 text-sm text-black opacity-75 w-20 text-center rounded-full border ${sizeError
-                ? 'bg-red-500 border-red-500'
-                : isClassical
-                  ? `bg-white border-orange-500 ${sizeRequired ? '' : 'border-dashed'}`
-                  : isAncilla
-                    ? `bg-white border-green-500 ${sizeRequired ? '' : 'border-dashed'}`
-                    : `bg-white border-blue-500 ${sizeRequired ? '' : 'border-dashed'}`
+              ? 'bg-red-500 border-red-500'
+              : isClassical
+                ? `bg-white border-orange-500 ${sizeRequired ? '' : 'border-dashed'}`
+                : isAncilla
+                  ? `bg-white border-green-500 ${sizeRequired ? '' : 'border-dashed'}`
+                  : `bg-white border-blue-500 ${sizeRequired ? '' : 'border-dashed'}`
               }`}
             value={node.data.quantumStateName?.includes("Bell State") ? "2" : outputSize}
             readOnly={node.data.quantumStateName?.includes("Bell State")}
             onChange={(e) => {
               const updatedOutputs = [...outputs];
-              if (!updatedOutputs[index]) {
-                updatedOutputs[index] = { identifier: "", size: "" };
-              }
-              updatedOutputs[index] = {
-                ...updatedOutputs[index],
-                size: e.target.value,
-              };
+              if (!updatedOutputs[index]) updatedOutputs[index] = { identifier: "", size: "" };
+              updatedOutputs[index] = { ...updatedOutputs[index], size: e.target.value };
 
-              // Call handleYChange for size validation and state update
               handleYChange(e.target.value, "size");
 
-              // Again, create a new array to maintain immutability
               setOutputs(updatedOutputs);
               node.data.outputs = updatedOutputs;
               updateNodeValue(node.id, "outputs", updatedOutputs);
@@ -206,8 +261,6 @@ export default function OutputPort({
             }}
           />
         </div>
-
-
       </div>
 
       {node.type !== "dataTypeNode" && (
@@ -229,15 +282,13 @@ export default function OutputPort({
                 ? "!bg-orange-300 !border-black"
                 : isAncilla
                   ? "!bg-green-100 !border-black rotate-45"
-                  : "!bg-blue-300 !border-black"
-              }`
+                  : "!bg-blue-300 !border-black"}`
               : "!bg-gray-200 !border-dashed !border-gray-500"
           )}
           isConnectable={edges.filter(edge => edge.sourceHandle === handleId).length < 1}
           isConnectableEnd={false}
         />
       )}
-
     </div>
   );
 }

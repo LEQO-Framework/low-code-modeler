@@ -60,12 +60,13 @@ export const comparisonOperatorLabel = "Comparison Operator";
 export const algorithmicPrimitives = "Algorithm Primitives"
 
 // categories of modeling constructs
-export const boundaryNodes = "Boundary Nodes";
-export const circuitLevelNodes = "Circuit-level Nodes";
+export const boundaryNodes = "Boundary Elements";
+export const circuitLevelNodes = "Circuit Primitives";
 export const dataTypes = "Data Types";
-export const controlStructureNodes = "Control Structure Nodes";
+export const controlStructureNodes = "Control Structure Elements";
 export const operator = "Operators";
 export const customOperators = "Custom Operators";
+export const templates = "Templates";
 
 // handle prefix ensures correctness of edges
 export const classicalHandle: string = "classicalHandle";
@@ -133,3 +134,10 @@ export const quantum_types = [
   SplitterNode,
   MergerNode
 ]
+
+// templates
+export const qaoa = "QAOA";
+export const grover = "Grover's Algorithm";
+export const hadamard_test_real_part = "Hadamard Test (Real Part)";
+export const hadamard_test_imaginary_part = "Hadamard Test (Imaginary Part)";
+export const swap_test = "SWAP Test";

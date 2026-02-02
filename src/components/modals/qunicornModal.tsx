@@ -47,11 +47,11 @@ export const QunicornModal = ({
   chartData,
 }: QunicornModalProps) => {
 
-  console.log(simulatorWarning)
-console.log(selectedDevice.trim().toLowerCase() === "aer_simulator")
+  //console.log(simulatorWarning)
+  //console.log(selectedDevice.trim().toLowerCase() === "aer_simulator")
   const [warningExecution, setWarningExecution] = useState(simulatorWarning && selectedDevice.trim().toLowerCase() === "aer_simulator");
-  console.log(warningExecution)
-  console.log(selectedDevice.trim().toLowerCase() === "aer_simulator")
+  //console.log(warningExecution)
+  //console.log(selectedDevice.trim().toLowerCase() === "aer_simulator")
 
   const handleCreateJob = () => {
     if (!selectedDevice.trim() || !["IBM", "AWS", "RIGETTI", "QMWARE"].includes(provider)) return;
