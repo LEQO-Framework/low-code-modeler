@@ -561,6 +561,9 @@ export const useStore = create<RFState>((set, get) => ({
       if (node.type === consts.AlgorithmNode || node.type === consts.ClassicalAlgorithmNode) {
         return "any"
       }
+      // TODO: figure out a better way to opt out of locked input types
+      if (node.type === consts.PluginNode)
+        return "any"
 
       // Find the first input that has a type other than "any"
       if (node.data.inputs) {
