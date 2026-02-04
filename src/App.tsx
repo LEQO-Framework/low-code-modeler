@@ -917,14 +917,6 @@ If none apply, return { "algorithms": [] }.
           const sourceNode: any = nodesById.get(srcId);
           return sourceNode?.type !== "qubitNode" && sourceNode?.type !== "gateNode";
         });
-        if (missingRegister) {
-          errors.push({
-            nodeId: node.id,
-            nodeType: node.type,
-            description: `Node "${node.id}" requires a quantum register.`,
-          });
-        }
-
         if (!node?.data?.indices) {
           warnings.push({
             nodeId: node.id,

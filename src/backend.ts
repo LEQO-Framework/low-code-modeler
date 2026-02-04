@@ -161,7 +161,7 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                     case "Number":
                         return {
                             id: node.id,
-                            type: "float",
+                            type: "int",
                             value: node.data.value
                         }
 
