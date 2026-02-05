@@ -254,38 +254,46 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
         {/* Input Handles */}
         <div className="custom-node-port-in mb-3 mt-2">
           <div className="absolute flex flex-col overflow-visible">
-            {dataInputs.map((input, index) => (
-              <div
-                key={`input-${index}`}
-                className="relative p-2 mb-1"
-                style={{
-                  backgroundColor: isQuantumPlugin ? quantumConstructColor : classicalConstructColor,
-                  width: '140px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'flex-start',
-                  borderTopRightRadius: isQuantumPlugin ? '0px' : '20px',
-                  borderBottomRightRadius: isQuantumPlugin ? '0px' : '20px',
-                }}
-              >
-                <Handle
-                  type="target"
-                  id={`classicalHandlePluginInput${index}${node.id}`}
-                  position={Position.Left}
-                  className={cn(
-                    "z-10 -left-[8px]",
-                    isQuantumPlugin
-                      ? "circle-port-op !bg-blue-300 !border-black"
-                      : "classical-circle-port-operation !bg-orange-300 !border-black"
-                  )}
-                  style={{ top: '50%', transform: 'translateY(-50%)' }}
-                />
-                <span className="text-black text-sm text-center w-full">
-                  {node.data.inputs?.[index]?.outputIdentifier || input.parameter}
-                  {input.required && <span className="text-red-500">*</span>}
-                </span>
-              </div>
-            ))}
+            {dataInputs.map((input, index) => {
+              const inputHandleId = `classicalHandlePluginInput${index}${node.id}`;
+              const isInputConnected = edges.some(edge => edge.targetHandle === inputHandleId);
+
+              return (
+                <div
+                  key={`input-${index}`}
+                  className="relative p-2 mb-1"
+                  style={{
+                    backgroundColor: isQuantumPlugin ? quantumConstructColor : classicalConstructColor,
+                    width: '140px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'flex-start',
+                    borderTopRightRadius: isQuantumPlugin ? '0px' : '20px',
+                    borderBottomRightRadius: isQuantumPlugin ? '0px' : '20px',
+                  }}
+                >
+                  <Handle
+                    type="target"
+                    id={inputHandleId}
+                    position={Position.Left}
+                    className={cn(
+                      "z-10 -left-[8px]",
+                      input.required || isInputConnected
+                        ? isQuantumPlugin
+                          ? "circle-port-op !bg-blue-300 !border-black"
+                          : "classical-circle-port-operation !bg-orange-300 !border-black"
+                        : isQuantumPlugin
+                          ? "circle-port-op !bg-gray-200 !border-dashed !border-gray-500"
+                          : "classical-circle-port-operation !bg-gray-200 !border-dashed !border-gray-500"
+                    )}
+                    style={{ top: '50%', transform: 'translateY(-50%)' }}
+                  />
+                  <span className="text-black text-sm text-center w-full">
+                    {node.data.inputs?.[index]?.outputIdentifier || input.parameter}
+                  </span>
+                </div>
+              );
+            })}
 
             {/* Output Port */}
             {dataOutputs.length > 0 && (
