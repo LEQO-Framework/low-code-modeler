@@ -106,7 +106,7 @@ export const categories: Record<string, CategoryEntry> = {
         //{ label: "int", dataType: "int", type: consts.DataTypeNode, icon: "PaletteIcon_Int.png", description: "Integer value (whole number).", completionGuaranteed: true, compactOptions: [true, false] },
         { label: "Number", dataType: "float", type: consts.DataTypeNode, icon: "PaletteIcon_Number.png", description: "Integer value (whole number) or floating-point number (decimal).", completionGuaranteed: true, compactOptions: [true, false] },
         { label: "Array", dataType: "Array", type: consts.DataTypeNode, icon: "PaletteIcon_Array.png", description: "A list of values, possibly of varying length.", completionGuaranteed: true, compactOptions: [true, false] },
-        { label: "file", dataType: "file", type: consts.DataTypeNode, icon: "matrix_encoding_icon.png", description: "URL or file path to data (for ML plugin inputs).", completionGuaranteed: true, compactOptions: [true, false] },
+        { label: "file", dataType: "file", type: consts.DataTypeNode, icon: "fileInputIcon.png", description: "URL or file path to data (for ML plugin inputs).", completionGuaranteed: true, compactOptions: [true, false] },
       ],
       "Quantum Datatypes": [
         { label: "Ancilla", dataType: consts.AncillaNode, type: consts.AncillaNode, icon: "PaletteIcon_Ancilla.png", description: "Helper qubit used temporarily in a computation.", completionGuaranteed: false, compactOptions: [true, false] },
