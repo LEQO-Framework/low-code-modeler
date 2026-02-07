@@ -948,7 +948,7 @@ If none apply, return { "algorithms": [] }.
         });
       }
 
-      // Algorithm / Custom Nodes 
+      // Algorithm / Custom Nodes
       if (node.type === "algorithmNode" || node.type === "classicalAlgorithmNode") {
         const expectedInputs = node.data?.numberInputs || 0;
         const actualInputs = connectedSources.length;
@@ -961,7 +961,7 @@ If none apply, return { "algorithms": [] }.
         }
 
 
-        // Quantum outputs check based on numberQuantumOutputs 
+        // Quantum outputs check based on numberQuantumOutputs
         const numberQuantumOutputs = node.data?.numberQuantumOutputs || 0;
         if (numberQuantumOutputs > 0) {
           const outgoing = outgoingConnections.get(node.id) || [];
@@ -973,6 +973,41 @@ If none apply, return { "algorithms": [] }.
             });
           }
         }
+      }
+
+      // Plugin Node Validation
+      if (node.type === "pluginNode") {
+        const dataInputs = node.data?.dataInputs || [];
+        const pluginEdges = flow.edges?.filter((e) => e.target === node.id) || [];
+
+        dataInputs.forEach((input: any, index: number) => {
+          const handleId = `classicalHandlePluginInput${index}${node.id}`;
+          const connectedEdge = pluginEdges.find((e) => e.targetHandle === handleId);
+
+          if (input.required && !connectedEdge) {
+            errors.push({
+              nodeId: node.id,
+              nodeType: node.type,
+              description: `Required input "${input.parameter}" is not connected.`,
+            });
+          }
+
+          if (connectedEdge) {
+            const sourceNode: any = nodesById.get(connectedEdge.source);
+            if (sourceNode) {
+              const sourceOutputType = (sourceNode.data?.outputTypes?.[0] ?? "any").toLowerCase();
+              const expectedType = (node.data?.inputTypes?.[index] ?? "any").toLowerCase();
+
+              if (expectedType !== "any" && sourceOutputType !== "any" && sourceOutputType !== expectedType) {
+                errors.push({
+                  nodeId: node.id,
+                  nodeType: node.type,
+                  description: `Input "${input.parameter}" expects type "${expectedType}" but is connected to "${sourceOutputType}".`,
+                });
+              }
+            }
+          }
+        });
       }
 
     });

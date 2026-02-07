@@ -195,13 +195,12 @@ export const useStore = create<RFState>((set, get) => ({
       node.data.operator = "";
       node.data.outputIdentifier = "";
     }
-    // Map plugin data_type values to the modeler's internal type system
-    // Plugin types (from QHana metadata) use a different nomenclature than the modeler
+    // Map plugin data_type to internal type system
     const mapPluginTypeToInternal = (dataType: string): string => {
       const t = dataType.toLowerCase();
-      if (t.startsWith("entity/")) return "file";  // entity data is referenced via URLs
-      if (t === "int") return "float";              // Number node covers both int and float
-      if (t === "float") return "float";
+      if (t.startsWith("entity/")) return "file";
+      if (t === "int") return "number";
+      if (t === "float") return "number";
       if (t === "string") return "any";
       if (t === "plot") return "any";
       if (t === "model") return "file";
