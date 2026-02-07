@@ -195,6 +195,19 @@ export const useStore = create<RFState>((set, get) => ({
       node.data.operator = "";
       node.data.outputIdentifier = "";
     }
+    // Map plugin data_type values to the modeler's internal type system
+    // Plugin types (from QHana metadata) use a different nomenclature than the modeler
+    const mapPluginTypeToInternal = (dataType: string): string => {
+      const t = dataType.toLowerCase();
+      if (t.startsWith("entity/")) return "file";  // entity data is referenced via URLs
+      if (t === "int") return "float";              // Number node covers both int and float
+      if (t === "float") return "float";
+      if (t === "string") return "any";
+      if (t === "plot") return "any";
+      if (t === "model") return "file";
+      return "any";
+    };
+
     // Helper to get default types based on node type and label
     const getInitialInputTypes = (node: Node): string[] => {
       const type = node.type;
@@ -217,6 +230,9 @@ export const useStore = create<RFState>((set, get) => ({
         if (encodingType.includes("Matrix") || encodingType.includes("Amplitude") || encodingType.includes("Angle") || encodingType.includes("Schmidt")) return ["array"];
         if (encodingType.includes("Basis") || encodingType.includes("Custom")) return ["any"];
       }
+      else if (type === consts.PluginNode && node.data.dataInputs) {
+        return node.data.dataInputs.map((input: any) => mapPluginTypeToInternal(input.data_type ?? "any"));
+      }
 
       return []; // Default empty
     }
@@ -238,6 +254,9 @@ export const useStore = create<RFState>((set, get) => ({
       else if (type === "measurementNode") return ["array", "quantum register"];
       else if (type === "qubitNode" || type === "ancillaNode" || type === "statePreparationNode") return ["quantum register"];
       else if (type === "dataTypeNode") return [(node.data.dataType ?? "any").toLowerCase()];
+      else if (type === consts.PluginNode && node.data.dataOutputs) {
+        return node.data.dataOutputs.map((output: any) => mapPluginTypeToInternal(output.data_type ?? "any"));
+      }
       return []; // Default empty
     }
     const inputTypes = getInitialInputTypes(node);
