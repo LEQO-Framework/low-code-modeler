@@ -88,6 +88,18 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
   const isQuantumPlugin = data.pluginName?.toLowerCase().includes('quantum') ||
                           data.label?.toLowerCase().includes('quantum') ||
                           ['qnn', 'vqc', 'hybrid-autoencoder'].includes(data.pluginName?.toLowerCase() || '');
+  
+  // Determine if an input is quantum or classical based on its parameter name                        
+  const isQuantumIO = (param?: string) => {
+    const p = (param ?? "").toLowerCase().trim();
+    return p.startsWith("quantum");
+  };
+
+  const getIOKindForInput = (input: PluginInputMetadata) => {
+    if (!isQuantumPlugin) return "classical";
+    return isQuantumIO(input.parameter) ? "quantum" : "classical";
+  };
+
 
   // Calculate dynamic height
   const baseHeight = 200;
@@ -257,19 +269,21 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
             {dataInputs.map((input, index) => {
               const inputHandleId = `classicalHandlePluginInput${index}${node.id}`;
               const isInputConnected = edges.some(edge => edge.targetHandle === inputHandleId);
+              const ioKind = getIOKindForInput(input);
+              const ioIsClassical = ioKind === "classical";
 
               return (
                 <div
                   key={`input-${index}`}
                   className="relative p-2 mb-1"
                   style={{
-                    backgroundColor: isQuantumPlugin ? quantumConstructColor : classicalConstructColor,
+                    backgroundColor: ioIsClassical ? classicalConstructColor : quantumConstructColor,
                     width: '140px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'flex-start',
-                    borderTopRightRadius: isQuantumPlugin ? '0px' : '20px',
-                    borderBottomRightRadius: isQuantumPlugin ? '0px' : '20px',
+                    borderTopRightRadius: ioIsClassical ? '20px' : '0px',
+                    borderBottomRightRadius: ioIsClassical ? '20px' : '0px',
                   }}
                 >
                   <Handle
@@ -279,18 +293,23 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
                     className={cn(
                       "z-10 -left-[8px]",
                       input.required || isInputConnected
-                        ? isQuantumPlugin
-                          ? "circle-port-op !bg-blue-300 !border-black"
-                          : "classical-circle-port-operation !bg-orange-300 !border-black"
-                        : isQuantumPlugin
-                          ? "circle-port-op !bg-gray-200 !border-dashed !border-gray-500"
-                          : "classical-circle-port-operation !bg-gray-200 !border-dashed !border-gray-500"
+                        ? ioIsClassical
+                          ? "classical-circle-port-operation !bg-orange-300 !border-black"
+                          : "circle-port-op !bg-blue-300 !border-black"            
+                        : ioIsClassical
+                          ? "classical-circle-port-operation !bg-gray-200 !border-dashed !border-gray-500"
+                          : "circle-port-op !bg-gray-200 !border-dashed !border-gray-500"                          
                     )}
                     style={{ top: '50%', transform: 'translateY(-50%)' }}
                   />
-                  <span className="text-black text-sm text-center w-full">
-                    {node.data.inputs?.[index]?.outputIdentifier || input.parameter}
-                  </span>
+                  <div className="w-full flex flex-col items-center leading-tight">
+                    <span className="text-black text-sm text-center w-full">
+                      {node.data.inputs?.[index]?.outputIdentifier || input.parameter}
+                    </span>
+                    <span className="text-black text-xs opacity-80 text-center w-full">
+                      type: {input.data_type}
+                    </span>
+                  </div>
                 </div>
               );
             })}
@@ -310,7 +329,7 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
                 <OutputPort
                   node={node}
                   index={0}
-                  type={isQuantumPlugin ? "quantum" : "classical"}
+                  type={"classical"}
                   nodes={nodes}
                   outputs={outputs}
                   setOutputs={setOutputs}
