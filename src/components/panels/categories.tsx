@@ -1,3 +1,4 @@
+import { Edge } from "reactflow";
 import * as consts from "../../constants";
 
 export type NodeType = (typeof consts.NodeTypes)[number];
@@ -11,6 +12,23 @@ export interface Node {
   completionGuaranteed?: boolean;
   aliases?: string[];
   compactOptions: boolean[];
+}
+
+export interface Template {
+  id: string;
+  timestamp?: string;
+  icon: string;
+  label: string;
+  type: string;
+  name: string;
+  description: string;
+  completionGuaranteed: boolean;
+  compactOptions: boolean[];
+  flowData: {
+    metadata?: any | any[], 
+    nodes: Node[], edges: Edge[], 
+    viewport?: {x: number, y: number, zoom: number}
+  };
 }
 
 interface CategoryEntry {
@@ -186,9 +204,7 @@ export const categories: Record<string, CategoryEntry> = {
       {
         label: consts.qaoa,
         type: consts.templates,
-        icon: [
-          "QAOA.png",
-        ],
+        icon: "QAOA.png",
         description: "Solves optimization problems by combining a quantum process with a classical optimizer.",
         completionGuaranteed: false,
         compactOptions: [true, false],

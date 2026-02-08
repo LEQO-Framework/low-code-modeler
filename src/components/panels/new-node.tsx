@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { categories, Node } from "./categories";
+import React, { useEffect, useMemo, useState } from "react";
+import { categories as staticCategories, Node, Template } from "./categories";
 import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
 import * as consts from "../../constants";
@@ -9,11 +9,13 @@ const selector = (state: {
   compact: boolean;
   experienceLevel: string;
   completionGuaranteed: boolean;
+  userTemplates: Template[];
 }) => ({
   ancillaMode: state.ancillaMode,
   experienceLevel: state.experienceLevel,
   compact: state.compact,
   completionGuaranteed: state.completionGuaranteed,
+  userTemplates: state.userTemplates,
 });
 
 const categoryIcons: Record<string, string> = {
@@ -29,16 +31,39 @@ const categoryIcons: Record<string, string> = {
 export const AddNodePanel = () => {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const { ancillaMode, completionGuaranteed, compact, experienceLevel } = useStore(
+  const { ancillaMode, completionGuaranteed, compact, experienceLevel, userTemplates } = useStore(
     selector,
     shallow
   );
+  
+
+  // merge static categories with user templates
+const categories = useMemo(() => {
+  // no user templates: only return standard templates (staticCategories)
+  if (userTemplates.length === 0) return staticCategories;
+
+  // else: deep copy of staticCategories + user templates as Subcategory 
+  return {
+    ...staticCategories,
+    [consts.templates]: {
+      ...staticCategories[consts.templates],
+      content: {
+        "Standard Templates": staticCategories[consts.templates].content,
+        "User Templates": userTemplates,
+      }
+    }
+  };
+}, [userTemplates]);
 
   const onDragStart = (event: React.DragEvent<HTMLDivElement>, node: any) => {
     event.dataTransfer.setData("application/reactflow", node.type);
     event.dataTransfer.setData("application/reactflow/dataType", node.dataType);
     event.dataTransfer.setData("application/reactflow/label", node.label);
     event.dataTransfer.effectAllowed = "move";
+    // if node is a custom user template: also pass flow data
+    if(node.flowData) {
+      event.dataTransfer.setData("application/reactflow/templateFlowData", JSON.stringify(node.flowData));
+    }
     console.log("drag start", node);
   };
 
