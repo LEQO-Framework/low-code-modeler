@@ -247,9 +247,21 @@ function App() {
   const [patternGraph, setPatternGraph] = useState(null);
   const [isDetectingAlgorithms, setIsDetectingAlgorithms] = useState(false);
 
+  let client: OpenAI | null = null;
+  try {
+    if (openAIToken) {
+      client = new OpenAI({ apiKey: openAIToken, dangerouslyAllowBrowser: true });
+    }
+  } catch (e) {
+    console.warn("OpenAI init failed, continuing without it:", e);
+    client = null;
+  }
+
+/*
   const client = new OpenAI({
     apiKey: openAIToken, dangerouslyAllowBrowser: true
   });
+*/
 
 
   const detectQuantumAlgorithms = async (userInput: string): Promise<string | null> => {
