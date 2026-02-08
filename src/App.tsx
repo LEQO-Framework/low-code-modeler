@@ -25,7 +25,7 @@ import Modal, { NewDiagramModal } from "./Modal";
 import './index.css';
 import { Placement } from 'react-joyride';
 import { startCompile } from "./backend";
-import { ancillaConstructColor, classicalConstructColor, ClassicalOperatorNode, controlFlowConstructColor, grover, hadamard_test_imaginary_part, hadamard_test_real_part, qaoa, quantum_types, quantumConstructColor, swap_test } from "./constants";
+import { ancillaConstructColor, classicalConstructColor, ClassicalOperatorNode, controlFlowConstructColor, grover, hadamard_test_imaginary_part, hadamard_test_real_part, qaoa, quantum_types, quantumConstructColor, swap_test, custom_template, TEMPLATE_STORAGE_KEY, templates } from "./constants";
 import Joyride from 'react-joyride';
 import { ConfigModal } from "./components/modals/configModal";
 import { QunicornModal } from "./components/modals/qunicornModal";
@@ -39,6 +39,10 @@ import OpenAI from "openai";
 import { grover_algorithm, hadamard_test_imaginary_part_algorithm, hadamard_test_real_part_algorithm, qaoa_algorithm, swap_test_algorithm } from "./constants/templates";
 import JSZip, { JSZipObject } from "jszip";
 import { createDeploymentModel, createNodeType, createServiceTemplate, updateNodeType, updateServiceTemplate } from "./winery";
+import custom from "./components/nodes/custom";
+import { Template } from "./components/panels/categories";
+import { ManageTemplateModal } from "./components/modals/templateModal";
+import { v4 as uuid } from "uuid";
 
 const selector = (state: {
   nodes: Node[];
@@ -53,6 +57,7 @@ const selector = (state: {
   onConnect: any;
   onConnectEnd: any;
   typeError: string | null;
+  userTemplates: Template[];
   setTypeError: (message: string | null) => void;
   setSelectedNode: (node: Node | null) => void;
   updateNodeValue: (nodeId: string, field: string, nodeVal: string) => void;
@@ -64,6 +69,8 @@ const selector = (state: {
   setCompact: (compact: boolean) => void;
   setCompletionGuaranteed: (completionGuaranteed: boolean) => void;
   setExperienceLevel: (experienceLevel: string) => void;
+  addUserTemplate: (template: Template) => void;
+	setUserTemplates: (newTemplates: Template[]) => void;
   setContainsPlaceholder: (containsPlaceholder: boolean) => void;
   undo: () => void;
   redo: () => void;
@@ -79,6 +86,7 @@ const selector = (state: {
   onConnect: state.onConnect,
   onConnectEnd: state.onConnectEnd,
   typeError: state.typeError,
+  userTemplates: state.userTemplates,
   setTypeError: state.setTypeError,
   setSelectedNode: state.setSelectedNode,
   updateNodeValue: state.updateNodeValue,
@@ -91,6 +99,8 @@ const selector = (state: {
   setCompletionGuaranteed: state.setCompletionGuaranteed,
   setContainsPlaceholder: state.setContainsPlaceholder,
   setExperienceLevel: state.setExperienceLevel,
+  addUserTemplate: state.addUserTemplate,
+  setUserTemplates: state.setUserTemplates,
   undo: state.undo,
   redo: state.redo,
 });
@@ -110,6 +120,9 @@ function App() {
     onConnect,
     onConnectEnd,
     typeError,
+    userTemplates,
+    addUserTemplate,
+    setUserTemplates,
     setTypeError,
     setCompact,
     setExperienceLevel,
@@ -134,6 +147,7 @@ function App() {
   });
   const [menu, setMenu] = useState(null);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
+  const [isManageTemplatesOpen, setIsManageTemplatesOpen] = useState(false);
   const [nisqAnalyzerEndpoint, setNisqAnalyzerEndpoint] = useState(
     import.meta.env.VITE_NISQ_ANALYZER || "http://localhost:8098/nisq-analyzer"
   );
@@ -368,7 +382,7 @@ If none apply, return { "algorithms": [] }.
 
   const confirmNewDiagram = () => {
     setIsLoadJsonModalOpen(false);
-    loadFlow(initialDiagram);
+    overwriteFlow(initialDiagram);
   };
 
   const handleSave = (newValues) => {
@@ -394,6 +408,15 @@ If none apply, return { "algorithms": [] }.
 
     setIsConfigOpen(false);
   };
+
+  const handleManageTemplatesSave = (updatedTemplates) => {
+    console.log("saving user template changes.");
+    console.log(updatedTemplates);
+    setUserTemplates(updatedTemplates);
+    setIsManageTemplatesOpen(false);
+  };
+
+  
 
   const cancelLoadJson = () => {
     setIsLoadJsonModalOpen(false);
@@ -674,7 +697,7 @@ If none apply, return { "algorithms": [] }.
       updateNodeInternals(node.id);
     })
     console.log("load tutorial")
-    loadFlow(tutorial);
+    overwriteFlow(tutorial);
     console.log("load toturial")
   }
 
@@ -895,14 +918,6 @@ If none apply, return { "algorithms": [] }.
           const sourceNode: any = nodesById.get(srcId);
           return sourceNode?.type !== "qubitNode" && sourceNode?.type !== "gateNode";
         });
-        if (missingRegister) {
-          errors.push({
-            nodeId: node.id,
-            nodeType: node.type,
-            description: `Node "${node.id}" requires a quantum register.`,
-          });
-        }
-
         if (!node?.data?.indices) {
           warnings.push({
             nodeId: node.id,
@@ -1067,7 +1082,7 @@ If none apply, return { "algorithms": [] }.
 
 
   const startTour3 = () => {
-    loadFlow(modeledDiagram);
+    overwriteFlow(modeledDiagram);
   }
 
   const startTour = () => {
@@ -1393,6 +1408,7 @@ If none apply, return { "algorithms": [] }.
       }
     }, [nodes, setContextMenu]);
 
+  
   const onDrop = React.useCallback(
     (event: any) => {
       console.log("dropped")
@@ -1415,6 +1431,17 @@ If none apply, return { "algorithms": [] }.
       }
       else if (label == grover) {
         loadFlow(grover_algorithm);
+      }
+      else if (label.startsWith(custom_template)) {
+        const userTemplateFlowData = JSON.parse(event.dataTransfer.getData("application/reactflow/templateFlowData"));
+        console.log("USER TEMPLATE")
+        console.log(userTemplateFlowData)
+        if(userTemplateFlowData) {
+          loadFlow(userTemplateFlowData);
+        }
+        else {
+          console.error(`User Template ${label} not found.`)
+        }
       }
       else {
         handleOnDrop(event, reactFlowWrapper, reactFlowInstance, setNodes);
@@ -1580,6 +1607,43 @@ If none apply, return { "algorithms": [] }.
     console.log("Flow saved:", flowWithMetadata);
   }
 
+ 
+
+  
+	const handleSaveAsTemplate = () => {
+    console.log("Saving User Template")
+		if (!reactFlowInstance) {
+      		console.error("React Flow instance is not initialized.");
+    		return;
+			// TODO: toast error message
+		}
+		let templateFlow = reactFlowInstance.toObject();
+    console.log(templateFlow)
+    // add metadata to templateFlow
+    templateFlow = {
+      ...templateFlow,
+      metadata: metadata,
+    }
+    const date = Date.now();
+    const timestamp = new Date().toISOString();
+    const newTemplate: Template = {
+      label: `${custom_template}-${date}`,
+      type: templates,
+      icon: "QAOA.png", //TODO
+      description: metadata.description,
+      completionGuaranteed: true,
+      compactOptions:[true, false],
+      id: `flow-${date}`,
+      timestamp: timestamp,
+      name: metadata.name, // get name from meta data
+      flowData: templateFlow
+    }
+    console.log(newTemplate)
+    // save metadata to userTemplates
+    addUserTemplate(newTemplate);
+  	};
+
+
   function handleRestoreClick() {
     if (!reactFlowInstance) {
       console.error("React Flow instance is not initialized.");
@@ -1697,7 +1761,7 @@ If none apply, return { "algorithms": [] }.
           ...modelData,
           initialEdges: modelData.edges || modelData.initialEdges
         };
-        loadFlow(flowData);
+        overwriteFlow(flowData);
         showToast("Model loaded successfully from URL", "success");
       })
       .catch((error) => {
@@ -1706,7 +1770,8 @@ If none apply, return { "algorithms": [] }.
       });
   }, [reactFlowInstance]);
 
-  const loadFlow = (flow: any) => {
+  // Function to load the flow
+  const overwriteFlow = (flow: any) => {
     if (!reactFlowInstance) {
       console.error("React Flow instance is not initialized.");
       return;
@@ -1732,6 +1797,9 @@ If none apply, return { "algorithms": [] }.
     }
     if (flow.initialEdges) {
       reactFlowInstance.setEdges(flow.initialEdges);
+      console.log("Edges loaded.");
+    } else if (flow.edges){
+      reactFlowInstance.setEdges(flow.edges);
       console.log("Edges loaded.");
     }
     console.log("load flow nodes", nodes);
@@ -1771,7 +1839,7 @@ If none apply, return { "algorithms": [] }.
   const loadSolutionFromUrl = async (solutionId: string) => {
     try {
       const modelData = await fetchModelData(solutionId);
-      loadFlow(modelData);
+      overwriteFlow(modelData);
 
       // Clear URL parameter to prevent reload on refresh
       const url = new URL(window.location.href);
@@ -1796,6 +1864,133 @@ If none apply, return { "algorithms": [] }.
   }, [reactFlowInstance]);
 
   const overlappingNodeRef = useRef<Node | null>(null);
+
+  // Function to load the flow in addition to all nodes and edges already on the canvas
+  const loadFlow = (flow: any) => {
+    if (!reactFlowInstance) {
+      console.error("React Flow instance is not initialized.");
+      return;
+    }
+    const existingNodes = reactFlowInstance.getNodes();
+    const existingEdges = reactFlowInstance.getEdges();
+    console.log("LOAD FLOW")
+    console.log("current nodes", existingNodes)
+    console.log("current edges", existingEdges)
+    // regenerate all node and edge ids (that are incoming), to ensure no duplicate ids
+    const nodeIdMap: Record<string, string> = {};
+    const edgeIdMap: Record<string, string> = {};
+    //const identifierMap: Record<string, string> = {};
+
+    const incomingNodes = flow.nodes || [];
+    const incomingEdges = flow.initialEdges || flow.edges || [];
+    incomingNodes.forEach((node) => {
+      nodeIdMap[node.id] = uuid();
+    })
+    incomingEdges.forEach((edge) => {
+      edgeIdMap[edge.id] = uuid();
+    })
+    // auch unique identifier neu generieren?
+
+    // compute node position offset, so loaded nodes and edges are visible and don't cover anything, 
+    // even if same flow is loaded multiple times
+    const iterationCount = Math.floor(existingNodes.length / (flow.nodes?.length || 1));
+    const offset = 50;
+    const offsetX = (iterationCount + 1) * offset;
+    const offsetY = (iterationCount + 1) * offset;
+
+    // process nodes
+    const processedNodes = incomingNodes.map((node: any) => {
+      const newNodeId = nodeIdMap[node.id];
+      return {
+        ...node,
+        id: newNodeId,
+        // Adjust position slightly, incase exact same node is already on canvas
+        position: { 
+          x: (node.position?.x || 0) + offsetX, 
+          y: (node.position?.y || 0) + offsetY 
+        },
+        data: {
+          ...node.data,
+          // update children
+          children: node.data.children?.map((child: string) => nodeIdMap[child]),
+          // update node and edge Ids in inputs for each node
+          inputs: node.data.inputs?.map((input: any) => {
+            let updatedInput = { ...input };
+                       
+            if (input.targetHandle && typeof input.targetHandle === 'string') {
+              Object.keys(nodeIdMap).forEach(oldId => {
+                updatedInput.targetHandle = updatedInput.targetHandle.replace(oldId, nodeIdMap[oldId]);
+              });
+            }
+            
+            if (nodeIdMap[input.id]) updatedInput.id = nodeIdMap[input.id];
+            if (edgeIdMap[input.edgeId]) updatedInput.id = edgeIdMap[input.id];
+
+            return updatedInput;
+          }),
+        },
+      };
+    });
+    nodes.forEach((node) => (console.log(node.position)))
+    processedNodes.forEach((node) => (console.log(node.position)))
+
+    // process edges
+    const processedEdges = incomingEdges.map((edge: any) => {
+      // update source and tagret nodes
+      let newSource = nodeIdMap[edge.source] || edge.source;
+      let newTarget = nodeIdMap[edge.target] || edge.target;
+      
+      // update source and target handles
+      let newSourceHandle = edge.sourceHandle;
+      let newTargetHandle = edge.targetHandle;
+      
+      Object.keys(nodeIdMap).forEach(oldId => {
+        newSourceHandle = newSourceHandle?.replace(oldId, nodeIdMap[oldId]);
+        newTargetHandle = newTargetHandle?.replace(oldId, nodeIdMap[oldId]);
+      });
+
+      return {
+        ...edge,
+        id: edgeIdMap[edge.id],
+        source: newSource,
+        target: newTarget,
+        sourceHandle: newSourceHandle,
+        targetHandle: newTargetHandle,
+      };
+    });
+
+    // append processed nodes and edges to existing reactFlowInstance
+    if(processedNodes.length > 0) {
+      const allNodes = [...existingNodes, ...processedNodes];
+      console.log("new nodes", allNodes)
+      // reactFlowInstance.addNodes(processedNodes);
+      reactFlowInstance.setNodes(
+        allNodes.map((node: Node) => ({
+          ...node,
+          data: {
+            ...node.data,
+          },
+        }))
+      );
+    };
+
+    if(processedEdges.length > 0) {
+      const allEdges = [...existingEdges, ...processedEdges];
+      console.log("new edges", allEdges)
+      // reactFlowInstance.addEdges(processedEdges);
+      reactFlowInstance.setEdges(allEdges);
+    }
+
+    // don't set metadata!!
+    // // set Metadata
+    // if (flow.metadata) {
+    //   const dataToSet = Array.isArray(flow.metadata) ? flow.metadata[0] : flow.metadata;
+    //   setMetadata(dataToSet);
+    //   console.log("Metadata loaded:", dataToSet);
+    // }
+
+    console.log("Templates successfully loaded onto canvas.");
+  };
 
   const onNodeDrag = React.useCallback((event: React.MouseEvent, node: Node, nodes: Node[]) => {
     console.log(reactFlowInstance.getNodes())
@@ -1918,6 +2113,7 @@ If none apply, return { "algorithms": [] }.
   }, [setContextMenu]);
 
   const handleOpenConfig = () => setIsConfigOpen(true);
+  const handleManageTemplates = () => setIsManageTemplatesOpen(true);
 
   const onExperienceLevelChange = (event) => {
     setExperienceLevel(event);
@@ -1962,13 +2158,12 @@ If none apply, return { "algorithms": [] }.
     })
       .then((dataUrl) => {
         const a = document.createElement("a");
-        a.setAttribute("download", "reactflow-diagram.svg");
+        a.setAttribute("download", "reactflow-diagram.svg"); // TODO: Dateiname ändern?
         a.setAttribute("href", dataUrl);
         a.click();
       })
       .catch((err) => console.error("Error exporting SVG:", err));
   };
-
 
   /**
    * Uploads a QRMS ZIP file to GitHub, updating files if they already exist.
@@ -2179,7 +2374,7 @@ If none apply, return { "algorithms": [] }.
             setRunTour(false);
             setExpanded(false);
             if(modeledDiagram) {
-              loadFlow(JSON.parse(modeledDiagram));
+              overwriteFlow(JSON.parse(modeledDiagram));
             }
           }
         }}
@@ -2198,6 +2393,8 @@ If none apply, return { "algorithms": [] }.
           //sendToQunicorn={() => setIsQunicornOpen(true)}
           openHistory={openHistoryModal}
           startTour={() => { startTour(); }}
+          onSaveAsTemplate={handleSaveAsTemplate}
+          onManageTemplates={handleManageTemplates}
         />
       </div>
       {<NewDiagramModal open={isLoadJsonModalOpen} onClose={cancelLoadJson} onConfirm={confirmNewDiagram} />}
@@ -2243,6 +2440,13 @@ If none apply, return { "algorithms": [] }.
         tempGithubToken={githubToken}
       />
 
+      <ManageTemplateModal 
+        open={isManageTemplatesOpen} 
+        onClose={() => setIsManageTemplatesOpen(false)} 
+        templates={userTemplates} 
+        onSave={handleManageTemplatesSave}      
+      />
+
       <QunicornModal
         open={isQunicornOpen}
         step={modalStep}
@@ -2283,7 +2487,7 @@ If none apply, return { "algorithms": [] }.
         detectQuantumAlgorithms={detectQuantumAlgorithms}
         handleQuantumAlgorithmModalClose={handleQuantumAlgorithmModalClose}
         setQuantumAlgorithmModalStep={setQuantumAlgorithmModalStep}
-        loadFlow={loadFlow}
+        loadFlow={overwriteFlow}
       />
 
       <HistoryModal
