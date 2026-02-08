@@ -307,7 +307,7 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
                       {node.data.inputs?.[index]?.outputIdentifier || input.parameter}
                     </span>
                     <span className="text-black text-xs opacity-80 text-center w-full">
-                      {input.data_type}
+                      type: {input.data_type}
                     </span>
                   </div>
                 </div>
