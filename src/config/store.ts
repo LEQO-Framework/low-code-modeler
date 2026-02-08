@@ -53,14 +53,16 @@ type RFState = {
   historyIndex: number;
   typeError: string | null;
   userTemplates: Template[];
+  domainProfile: string;
+  setDomainProfile: (domainProfile: string) => void;
   setTypeError: (message: string | null) => void;
   setNodes: (node: Node) => void;
   setEdges: (edge: Edge) => void;
-  setAncillaMode: (ancillaMode: boolean) => void
-  setCompletionGuaranteed: (completionGuaranteed: boolean) => void
-  setContainsPlaceholder: (containsPlaceholder: boolean) => void
-  setCompact: (compact: boolean) => void
-  setExperienceLevel: (experienceLevel: string) => void
+  setAncillaMode: (ancillaMode: boolean) => void;
+  setCompletionGuaranteed: (completionGuaranteed: boolean) => void;
+  setContainsPlaceholder: (containsPlaceholder: boolean) => void;
+  setCompact: (compact: boolean) => void;
+  setExperienceLevel: (experienceLevel: string) => void;
   setNewEdges: (newEdges: Edge[]) => void;
   addUserTemplate: (template: Template) => void;
   setUserTemplates: (newTemplates: Template[]) => void;
@@ -105,6 +107,13 @@ export const useStore = create<RFState>()(persist((set, get) => ({
   containsPlaceholder: false,
   typeError: null,
   userTemplates: [],
+  domainProfile: "standard",
+  
+  setDomainProfile: (domainProfile: string) => {
+    set({
+      domainProfile
+    });
+  },
 
   setTypeError: (message: string | null) => {
     set({ typeError: message });

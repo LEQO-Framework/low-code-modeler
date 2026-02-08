@@ -11,6 +11,8 @@ interface ExperienceModePanelProps {
   onCompactVisualizationChange: () => void;
   completionGuaranteed: boolean;
   onCompletionGuaranteedChange: (value: boolean) => void;
+  domainProfile: string;
+  onDomainProfileChange: (profile: string) => void;
 }
 
 export default function ExperienceModePanel({
@@ -24,6 +26,8 @@ export default function ExperienceModePanel({
   onCompactVisualizationChange,
   completionGuaranteed,
   onCompletionGuaranteedChange,
+  domainProfile,
+  onDomainProfileChange,
 }: ExperienceModePanelProps) {
   return (
     <Panel position="top-left" className="p-2 z-50">
@@ -50,6 +54,27 @@ export default function ExperienceModePanel({
         >
           <table className="config-table w-full">
             <tbody>
+              <tr>
+                <td align="right">
+                  <span title="Choose your domain profile.">
+                    Domain Profile
+                  </span>
+                </td>
+                <td align="left">
+                  <select
+                    value={domainProfile}
+                    onChange={(e) => onDomainProfileChange(e.target.value)}
+                    className="mt-1 px-2 py-1 border rounded"
+                  > {/*TODO: domain profile optionen anpassen*/}
+                    <option value="explorer" title="New to quantum computing, curious and starting the journey.">
+                      Explorer
+                    </option>
+                    <option value="pioneer" title="Advanced understanding, pushing the frontier of quantum computing.">
+                      Pioneer
+                    </option>
+                  </select>
+                </td>
+              </tr>
               <tr>
                 <td align="right">
                   <span title="Choose your quantum computing experience.">

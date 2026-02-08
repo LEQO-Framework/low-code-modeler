@@ -59,6 +59,8 @@ const selector = (state: {
   onConnectEnd: any;
   typeError: string | null;
   userTemplates: Template[];
+  domainProfile: string;
+  setDomainProfile: (domainProfile: string) => void;
   setTypeError: (message: string | null) => void;
   setSelectedNode: (node: Node | null) => void;
   updateNodeValue: (nodeId: string, field: string, nodeVal: string) => void;
@@ -88,6 +90,8 @@ const selector = (state: {
   onConnectEnd: state.onConnectEnd,
   typeError: state.typeError,
   userTemplates: state.userTemplates,
+  domainProfile: state.domainProfile,
+  setDomainProfile: state.setDomainProfile,
   setTypeError: state.setTypeError,
   setSelectedNode: state.setSelectedNode,
   updateNodeValue: state.updateNodeValue,
@@ -122,6 +126,8 @@ function App() {
     onConnectEnd,
     typeError,
     userTemplates,
+    domainProfile,
+    setDomainProfile,
     addUserTemplate,
     setUserTemplates,
     setTypeError,
@@ -2538,6 +2544,8 @@ If none apply, return { "algorithms": [] }.
               onCompactVisualizationChange={() => { setCompactVisualization(!compact); setCompact(!compact) }}
               completionGuaranteed={completionGuaranteed}
               onCompletionGuaranteedChange={setCompletionGuaranteed}
+              domainProfile={domainProfile}
+              onDomainProfileChange={() => {setDomainProfile(domainProfile)}} //TODO: reicht das?
             />
 
             <MiniMap
