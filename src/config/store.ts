@@ -324,7 +324,7 @@ export const useStore = create<RFState>()(persist((set, get) => ({
       let newNode = { ...node };
 
       // handle compact change
-      if (compact && (node.data.label === "Basis Encoding" || node.data.label === "Angle Encoding" || node.data.label === "Amplitude Encoding")) {
+      if (compact && (node.data.label === "Basis Encoding" || node.data.label === "Angle Encoding" || node.data.label === "Amplitude Encoding" || node.data.label === "Custom Encoding" || node.data.label === "Schmidt Decomposition" || node.data.label === "Matrix Encoding")) {
         newNode = {
           ...newNode,
           data: { ...newNode.data, label: "Encode Value" },
@@ -929,6 +929,7 @@ export const useStore = create<RFState>()(persist((set, get) => ({
       "Amplitude Encoding",
       "Matrix Encoding",
       "Schmidt Decomposition",
+      "Matrix Encoding"
     ];
 
     if (
