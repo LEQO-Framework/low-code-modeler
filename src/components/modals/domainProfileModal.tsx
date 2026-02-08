@@ -13,7 +13,7 @@ export interface EditableNodeProfile {
   category: string;
   properties: NodeProfileProperty[]; 
   constraints: NodeProfileConstraint[]; 
-  mapping: string[] | string[][]; // geht das?
+  mapping: string[][];
 
   originalLabel: string;
   originalDescription: string;
@@ -51,7 +51,7 @@ function extractNodes(content: any): EditableNodeProfile[] {
             category: n.type || "", 
             properties: [],
             constraints: [],
-            mapping: [],
+            mapping: [[]],
 
             originalLabel: n.label,
             originalDescription: n.description,
@@ -655,9 +655,7 @@ export default function DomainProfileTableModal({
                       {/* Mappings  */}
                       <td className="p-2 border text-center">
                         <MappingEditor 
-                          mappings={Array.isArray(node.mapping[0]) 
-                            ? (node.mapping as string[][]) 
-                            : (node.mapping.length > 0 ? [node.mapping as string[]] : [])} 
+                          mappings={node.mapping} 
                           onChange={(newMappings) => 
                             updateNode(idx, "mapping", newMappings)
                           }
