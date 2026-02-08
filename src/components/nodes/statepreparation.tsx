@@ -206,7 +206,7 @@ export const StatePreparationNode = memo((node: Node) => {
       ) ?? 0;
 
     const sourceType =
-      sourceNode.data.outputTypes?.[outputIndex];
+      sourceNode.data.outputTypes?.[outputIndex].toLowerCase();
 
     // Enforce array-only constraint
     if (sourceType !== "array") {
