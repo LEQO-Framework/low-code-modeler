@@ -62,21 +62,24 @@ function extractNodes(content: any): EditableNodeProfile[] {
   walk(content);
   return nodes;
 }
+function extractNodeLabels(content: any): Record<string, string> {
+  const labels: Record<string, string> = {};
 
-const createEmptyNode = (): EditableNodeProfile => ({
-  label: "",
-  description: "",
-  icon: "",
-  visible: true,
-  outputType: "",
-  category: "Uncategorized",
-  properties: [],
-  constraints: [],
-  mapping: [[]],
-  originalLabel: "",
-  originalDescription: "",
-  originalIcon: "",
-});
+  const walk = (value: any) => {
+    if (Array.isArray(value)) {
+      value.forEach((n) => {
+        if (n?.label && n?.description) {
+          labels[n.label] = n.description;
+        }
+      });
+    } else if (typeof value === "object" && value !== null) {
+      Object.values(value).forEach(walk);
+    }
+  };
+
+  walk(content);
+  return labels;
+}
 
 function PropertyEditor({ 
   properties, 
@@ -248,9 +251,12 @@ function ConstraintEditor({
   );
 }
 
-// TODO: richtige mappingOptions aus low code blocks 
-const staticMappingOptions ={"QUBO": "Quadratic Unconstrained Binary Optimization", "QAE": "Quantum Amplitude Estimation", "VQE": "Variational Quantum Eigensolver"} // with explanations
-const mappingOptions = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K"];
+const staticMappingOptions ={"QUBO": "Quadratic Unconstrained Binary Optimization", "QAE": "Quantum Amplitude Estimation", "VQE": "Variational Quantum Eigensolver"} // with descriptions
+const dynamicMappingOptions = extractNodeLabels(categories);
+const mappingOptions: Record<string, string> = { 
+  ...staticMappingOptions, 
+  ...dynamicMappingOptions 
+};
 
 function MappingGroup({ 
   selected, 
@@ -292,11 +298,12 @@ function MappingGroup({
         {/* Dropdown Menu */}
         {isOpen && (
           <div className="absolute z-[100] mt-1 w-full bg-white border rounded-md shadow-lg max-h-48 overflow-y-auto">
-            {mappingOptions.map((option) => {
+            {Object.entries(mappingOptions).map(([option, desc]) => {
               const isChecked = selected.includes(option);
               return (
                 <div
                   key={option}
+                  title={desc}
                   onClick={() => onToggle(option)}
                   className="flex items-center gap-2 px-3 py-2 hover:bg-blue-50 cursor-pointer text-xs"
                 >
