@@ -13,6 +13,7 @@ interface ExperienceModePanelProps {
   onCompletionGuaranteedChange: (value: boolean) => void;
   domainProfile: string;
   onDomainProfileChange: (profile: string) => void;
+  domainProfileNames: string[];
 }
 
 export default function ExperienceModePanel({
@@ -28,6 +29,7 @@ export default function ExperienceModePanel({
   onCompletionGuaranteedChange,
   domainProfile,
   onDomainProfileChange,
+  domainProfileNames,
 }: ExperienceModePanelProps) {
   return (
     <Panel position="top-left" className="p-2 z-50">
@@ -66,12 +68,10 @@ export default function ExperienceModePanel({
                     onChange={(e) => onDomainProfileChange(e.target.value)}
                     className="mt-1 px-2 py-1 border rounded"
                   > {/*TODO: domain profile optionen anpassen*/}
-                    <option value="explorer" title="New to quantum computing, curious and starting the journey.">
-                      Explorer
+                    <option value="none">
+                      None
                     </option>
-                    <option value="pioneer" title="Advanced understanding, pushing the frontier of quantum computing.">
-                      Pioneer
-                    </option>
+                    {domainProfileNames.map((name) => (<option key = {name} value={name}>name</option>))}
                   </select>
                 </td>
               </tr>

@@ -2552,7 +2552,8 @@ If none apply, return { "algorithms": [] }.
               completionGuaranteed={completionGuaranteed}
               onCompletionGuaranteedChange={setCompletionGuaranteed}
               domainProfile={domainProfile}
-              onDomainProfileChange={() => {setDomainProfile(domainProfile)}} //TODO: reicht das?
+              onDomainProfileChange={() => {setDomainProfile(domainProfile)}}
+              domainProfileNames={allDomainProfiles.map((p) => p.name)}
             />
 
             <MiniMap
