@@ -43,7 +43,7 @@ import custom from "./components/nodes/custom";
 import { Template } from "./components/panels/categories";
 import { ManageTemplateModal } from "./components/modals/templateModal";
 import { v4 as uuid } from "uuid";
-import DomainProfileModal from "./components/modals/domainProfileModal";
+import DomainProfileModal, { DomainProfile } from "./components/modals/domainProfileModal";
 
 const selector = (state: {
   nodes: Node[];
@@ -60,6 +60,7 @@ const selector = (state: {
   typeError: string | null;
   userTemplates: Template[];
   domainProfile: string;
+  allDomainProfiles: DomainProfile[];
   setDomainProfile: (domainProfile: string) => void;
   setTypeError: (message: string | null) => void;
   setSelectedNode: (node: Node | null) => void;
@@ -74,6 +75,7 @@ const selector = (state: {
   setExperienceLevel: (experienceLevel: string) => void;
   addUserTemplate: (template: Template) => void;
 	setUserTemplates: (newTemplates: Template[]) => void;
+  setAllDomainProfiles: (newProfiles: DomainProfile[]) => void;
   setContainsPlaceholder: (containsPlaceholder: boolean) => void;
   undo: () => void;
   redo: () => void;
@@ -91,6 +93,7 @@ const selector = (state: {
   typeError: state.typeError,
   userTemplates: state.userTemplates,
   domainProfile: state.domainProfile,
+  allDomainProfiles: state.allDomainProfiles,
   setDomainProfile: state.setDomainProfile,
   setTypeError: state.setTypeError,
   setSelectedNode: state.setSelectedNode,
@@ -106,6 +109,7 @@ const selector = (state: {
   setExperienceLevel: state.setExperienceLevel,
   addUserTemplate: state.addUserTemplate,
   setUserTemplates: state.setUserTemplates,
+  setAllDomainProfiles: state.setAllDomainProfiles,
   undo: state.undo,
   redo: state.redo,
 });
@@ -127,6 +131,8 @@ function App() {
     typeError,
     userTemplates,
     domainProfile,
+    allDomainProfiles,
+    setAllDomainProfiles,
     setDomainProfile,
     addUserTemplate,
     setUserTemplates,
@@ -1560,7 +1566,11 @@ If none apply, return { "algorithms": [] }.
     console.log("Flow saved:", flowWithMetadata);
   }
 
- 
+  const handleSaveDomainProfile = (newProfile: DomainProfile) => {
+    const updatedProfiles = [...allDomainProfiles, newProfile]
+    setAllDomainProfiles(updatedProfiles);
+    console.log("Profile saved and appended:", newProfile);
+  };
 
   
 	const handleSaveAsTemplate = () => {
@@ -2354,10 +2364,7 @@ If none apply, return { "algorithms": [] }.
       <DomainProfileModal
         open={domainProfileOpen}
         onClose={() => setDomainProfileOpen(false)}
-        onSave={(profile) => {
-          console.log("Saved profile:", profile);
-          setDomainProfileOpen(false);
-        }}
+        onSave={handleSaveDomainProfile}
       />
 
       <AiModal

@@ -31,7 +31,7 @@ export interface Template {
   };
 }
 
-interface CategoryEntry {
+export interface CategoryEntry {
   description?: string | string[];
   content: CategoryContent;
 }

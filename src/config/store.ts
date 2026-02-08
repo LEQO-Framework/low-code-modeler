@@ -26,12 +26,15 @@ import { remove } from "jszip";
 import { IPortData } from "@/components/nodes/model";
 import { Regex } from "lucide-react";
 import { Template } from "@/components/panels/categories";
+import { DomainProfile } from "@/components/modals/domainProfileModal";
 
 export type NodeData = {
   label: string;
   dataType: string;
   isInitial?: boolean;
 };
+
+
 
 export type NodeTypes = "customNodeComponent";
 
@@ -54,6 +57,7 @@ type RFState = {
   typeError: string | null;
   userTemplates: Template[];
   domainProfile: string;
+  allDomainProfiles: DomainProfile[];
   setDomainProfile: (domainProfile: string) => void;
   setTypeError: (message: string | null) => void;
   setNodes: (node: Node) => void;
@@ -66,6 +70,7 @@ type RFState = {
   setNewEdges: (newEdges: Edge[]) => void;
   addUserTemplate: (template: Template) => void;
   setUserTemplates: (newTemplates: Template[]) => void;
+  setAllDomainProfiles: (newProfiles: DomainProfile[]) => void;
   onNodesChange: OnNodesChange;
   onEdgesChange: OnEdgesChange;
   onConnect: OnConnect;
@@ -108,7 +113,8 @@ export const useStore = create<RFState>()(persist((set, get) => ({
   typeError: null,
   userTemplates: [],
   domainProfile: "standard",
-  
+  allDomainProfiles: [],
+
   setDomainProfile: (domainProfile: string) => {
     set({
       domainProfile
@@ -437,6 +443,13 @@ export const useStore = create<RFState>()(persist((set, get) => ({
   setUserTemplates: (newTemplates: Template[]) => {
     set({
       userTemplates: newTemplates
+    })
+    console.log("after setting templates", get().userTemplates)
+  },
+
+  setAllDomainProfiles(newProfiles) {
+    set({
+      allDomainProfiles: newProfiles
     })
     console.log("after setting templates", get().userTemplates)
   },
@@ -1560,10 +1573,11 @@ export const useStore = create<RFState>()(persist((set, get) => ({
   },
 }),
 {
-  name: "user-templates-storage",
+  name: "user-app-storage",
 
   partialize: (state) => ({
     userTemplates: state.userTemplates,
+    allDomainProfiles: state.allDomainProfiles,
   }),
 }));
 

@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import Modal from "./Modal";
-import { categories } from "../panels/categories";
+import { categories, CategoryEntry } from "../panels/categories";
 import { ImageIcon, Plus, Trash2, CheckCircle2, Circle, ChevronDown, Check } from "lucide-react";
 import { boundaryNodes, dataTypes, circuitLevelNodes, controlStructureNodes, templates, operator, customOperators, OperatorNode } from "@/constants";
 
-interface EditableNodeProfile {
+export interface EditableNodeProfile {
   label: string;
   description: string;
   icon: string | string[];
@@ -18,6 +18,11 @@ interface EditableNodeProfile {
   originalLabel: string;
   originalDescription: string;
   originalIcon: string | string[];
+}
+
+export type DomainProfile = {
+  name: string;
+  domainBlocks: Record<string, CategoryEntry>;
 }
 
 interface NodeProfileProperty {
@@ -289,7 +294,7 @@ function MappingGroup({
           onClick={() => setIsOpen(!isOpen)}
           className="w-full flex items-center justify-between bg-white border rounded px-2 py-1.5 text-xs hover:border-blue-400 transition-colors"
         >
-          <span className="truncate font-mono">
+          <span>
             {selected.length > 0 ? selected.join(" + ") : "Select mapping..."}
           </span>
           <ChevronDown size={14} className={`transition-transform ${isOpen ? "rotate-180" : ""}`} />
@@ -402,6 +407,47 @@ export default function DomainProfileTableModal({
     return result;
   });
 
+  const saveProfile = () => {
+  // 1. Group nodes by category into the CategoryEntry format
+  const domainBlocks = localNodes.reduce((acc, node) => {
+    const cat = node.category || "Uncategorized";
+    
+    // Initialize category entry if it doesn't exist
+    if (!acc[cat]) {
+      acc[cat] = {
+        description: "", // You can map a category description here if needed
+        content: []      // This matches the Node[] branch of CategoryContent
+      };
+    }
+
+    // Convert EditableNodeProfile back to the shape expected by CategoryContent
+    const nodeData = {
+      label: node.label,
+      description: node.description,
+      icon: node.icon,
+      type: node.category, // Or your specific node type identifier
+      outputType: node.outputType,
+      properties: node.properties,
+      constraints: node.constraints,
+      mapping: node.mapping,
+    };
+
+    // Push into the content array (matching Node[])
+    (acc[cat].content as any[]).push(nodeData); 
+    
+    return acc;
+  }, {} as Record<string, CategoryEntry>);
+
+  // 2. Create the final DomainProfile object
+  const newProfile: DomainProfile = {
+    name: profileName || "Untitled Profile",
+    domainBlocks: domainBlocks,
+  };
+
+  onSave(newProfile);
+  onClose();
+};
+
   const updateNode = (
     index: number,
     field: keyof EditableNodeProfile,
@@ -437,7 +483,7 @@ export default function DomainProfileTableModal({
       icon: "",
       visible: true,
       outputType: "",
-      category: "Uncategorized", // Default
+      category: "",
       properties: [],
       constraints: [],
       mapping: [[]],
@@ -447,8 +493,6 @@ export default function DomainProfileTableModal({
     };
     setLocalNodes([...localNodes, newNode]);
   };
-
-
 
   const handleIconUpload = (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -475,19 +519,7 @@ export default function DomainProfileTableModal({
           <div className="space-x-2">
             <button
               className="btn btn-primary"
-              onClick={() => {
-              // Transform flat list to categorized record
-              const categorizedProfile = localNodes.reduce((acc, node) => {
-                const cat = node.category || "Uncategorized";
-                if (!acc[cat]) acc[cat] = [];
-                acc[cat].push(node);
-                return acc;
-              }, {} as Record<string, EditableNodeProfile[]>);
-              onSave({
-                name: profileName,
-                categories: categorizedProfile,
-              });
-            }}
+              onClick={saveProfile}
             >
               Save Profile
             </button>
