@@ -110,7 +110,15 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
 
   // Render lucide icon based on plugin name
   const renderIcon = () => {
-    const iconProps = { size: 32, className: "flex-shrink-0 text-gray-700" };
+    const iconProps = {
+      size: 32,
+      className: "flex-shrink-0 text-gray-700",
+      style: {
+	background: "white",
+	border: "1px solid black",
+	"border-radius": "25%",
+      },
+    };
     const name = data.pluginName?.toLowerCase() || data.label?.toLowerCase() || '';
 
     // Quantum ML nodes
