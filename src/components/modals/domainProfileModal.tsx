@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import Modal from "./Modal";
 import { categories, CategoryEntry } from "../panels/categories";
 import { ImageIcon, Plus, Trash2, CheckCircle2, Circle, ChevronDown, Check } from "lucide-react";
-import { boundaryNodes, dataTypes, circuitLevelNodes, controlStructureNodes, templates, operator, customOperators, OperatorNode } from "@/constants";
+import { boundaryNodes, dataTypes, circuitLevelNodes, controlStructureNodes, templates, operator, customOperators, OperatorNode, EditableDataTypeNode } from "@/constants";
 
 export interface EditableNodeProfile {
   label: string;
@@ -417,14 +417,12 @@ export default function DomainProfileTableModal({
           content: []
         };
       }
-
-      // Convert EditableNodeProfile back to the shape expected by CategoryContent
-      // TODO: rausnehmen?
+      const type = EditableDataTypeNode; //TODO: different types for different categories?
       const nodeData = {
         label: node.label,
         description: node.description,
         icon: node.icon,
-        type: "editableNode", 
+        type: type, 
         category: node.category,
         outputType: node.outputType,
         properties: node.properties,

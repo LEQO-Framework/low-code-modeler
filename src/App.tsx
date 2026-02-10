@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactFlow, {
   Background,
   BackgroundVariant,
@@ -40,7 +40,7 @@ import { grover_algorithm, hadamard_test_imaginary_part_algorithm, hadamard_test
 import JSZip, { JSZipObject } from "jszip";
 import { createDeploymentModel, createNodeType, createServiceTemplate, updateNodeType, updateServiceTemplate } from "./winery";
 import custom from "./components/nodes/custom";
-import { Template } from "./components/panels/categories";
+import { categories, CategoryEntry, Template } from "./components/panels/categories";
 import { ManageTemplateModal } from "./components/modals/templateModal";
 import { v4 as uuid } from "uuid";
 import DomainProfileModal, { DomainProfile } from "./components/modals/domainProfileModal";
@@ -1385,7 +1385,18 @@ If none apply, return { "algorithms": [] }.
         setContextMenu((prev) => ({ ...prev, left: evt.clientX, top: evt.clientY }));
       }
     }, [nodes, setContextMenu]);
-
+  
+  const currentCategories: Record<string, CategoryEntry> = useMemo(() => {
+      const domainProfileNames = allDomainProfiles.map((p) => p.name);
+      const index = domainProfileNames.indexOf(domainProfile);
+      console.log("domainProfile", domainProfile)
+      console.log("index", index)
+      if (index > -1) {
+          return allDomainProfiles[index].domainBlocks;
+      } else {
+          return categories;
+      }
+    }, [domainProfile, allDomainProfiles]);
   
   const onDrop = React.useCallback(
     (event: any) => {
@@ -1396,6 +1407,8 @@ If none apply, return { "algorithms": [] }.
       })
       const label = event.dataTransfer.getData("application/reactflow/label");
       console.log(position);
+
+
       if (label == qaoa) {
         loadFlow(qaoa_algorithm)
       } else if (label == swap_test) {
@@ -1422,12 +1435,13 @@ If none apply, return { "algorithms": [] }.
         }
       }
       else {
-        handleOnDrop(event, reactFlowWrapper, reactFlowInstance, setNodes);
+        console.log("current categories", currentCategories)
+        handleOnDrop(event, reactFlowWrapper, reactFlowInstance, setNodes, currentCategories);
       }
 
       //setContextMenu((prev) => ({ ...prev, left: event.clientX, top: event.clientY,}));
     },
-    [reactFlowInstance, setNodes],
+    [reactFlowInstance, setNodes, currentCategories],
   );
 
   const onNodesDelete = useCallback(() => {

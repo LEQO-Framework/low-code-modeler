@@ -44,7 +44,7 @@ export const AddNodePanel = () => {
 
   // select correct categories (based on domainProfile)
   const categories = useMemo(() => {
-    // no user templates: only return standard templates (staticCategories)
+   
     const domainProfileNames = allDomainProfiles.map((p) => p.name);
     const index = domainProfileNames.indexOf(domainProfile);
     let baseCategories: Record<string, CategoryEntry>;
@@ -54,6 +54,7 @@ export const AddNodePanel = () => {
       baseCategories = staticCategories;
     }
     console.log(baseCategories);
+    // no user templates: only return standard templates (baseCategories)
     if (userTemplates.length === 0) return baseCategories;
 
     // else: deep copy of staticCategories + user templates as Subcategory 

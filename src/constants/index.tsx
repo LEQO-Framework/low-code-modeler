@@ -29,6 +29,7 @@ export const MergerNode: string = "mergerNode";
 export const OperatorNode: string = "quantumOperatorNode";
 export const ClassicalOperatorNode: string = "classicalOperatorNode";
 export const GroupNode: string = "groupNode";
+export const EditableDataTypeNode: string = "editableDataTypeNode";
 
 
 export const NodeTypes = [
@@ -47,7 +48,8 @@ export const NodeTypes = [
   MergerNode,
   OperatorNode,
   ClassicalOperatorNode,
-  GroupNode
+  GroupNode,
+  EditableDataTypeNode
 ]
 
 export const quantumLabel = "Quantum ";
