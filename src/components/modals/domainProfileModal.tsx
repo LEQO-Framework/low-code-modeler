@@ -408,45 +408,46 @@ export default function DomainProfileTableModal({
   });
 
   const saveProfile = () => {
-  // 1. Group nodes by category into the CategoryEntry format
-  const domainBlocks = localNodes.reduce((acc, node) => {
-    const cat = node.category || "Uncategorized";
-    
-    // Initialize category entry if it doesn't exist
-    if (!acc[cat]) {
-      acc[cat] = {
-        description: "", // You can map a category description here if needed
-        content: []      // This matches the Node[] branch of CategoryContent
-      };
-    }
+    // group nodes by category into the CategoryEntry format
+    const domainBlocks = localNodes.reduce((acc, node) => {
+      const cat = node.category || "Uncategorized";
+      if (!acc[cat]) {
+        acc[cat] = {
+          description: "", 
+          content: []
+        };
+      }
 
-    // Convert EditableNodeProfile back to the shape expected by CategoryContent
-    const nodeData = {
-      label: node.label,
-      description: node.description,
-      icon: node.icon,
-      type: node.category, // Or your specific node type identifier
-      outputType: node.outputType,
-      properties: node.properties,
-      constraints: node.constraints,
-      mapping: node.mapping,
+      // Convert EditableNodeProfile back to the shape expected by CategoryContent
+      // TODO: rausnehmen?
+      const nodeData = {
+        label: node.label,
+        description: node.description,
+        icon: node.icon,
+        type: "editableNode", 
+        category: node.category,
+        outputType: node.outputType,
+        properties: node.properties,
+        constraints: node.constraints,
+        mapping: node.mapping,
+        completionGuaranteed: true, 
+        compactOptions: [true, false]
+
+      };
+
+      (acc[cat].content as any[]).push(nodeData); 
+      
+      return acc;
+    }, {} as Record<string, CategoryEntry>);
+
+    const newProfile: DomainProfile = {
+      name: profileName || "Untitled Profile",
+      domainBlocks: domainBlocks,
     };
 
-    // Push into the content array (matching Node[])
-    (acc[cat].content as any[]).push(nodeData); 
-    
-    return acc;
-  }, {} as Record<string, CategoryEntry>);
-
-  // 2. Create the final DomainProfile object
-  const newProfile: DomainProfile = {
-    name: profileName || "Untitled Profile",
-    domainBlocks: domainBlocks,
+    onSave(newProfile);
+    onClose();
   };
-
-  onSave(newProfile);
-  onClose();
-};
 
   const updateNode = (
     index: number,
@@ -480,7 +481,7 @@ export default function DomainProfileTableModal({
     const newNode: EditableNodeProfile = {
       label: "",
       description: "",
-      icon: "",
+      icon: "QAOA.png", //TODO: default Icon definieren
       visible: true,
       outputType: "",
       category: "",
