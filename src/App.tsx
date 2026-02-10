@@ -2552,7 +2552,7 @@ If none apply, return { "algorithms": [] }.
               completionGuaranteed={completionGuaranteed}
               onCompletionGuaranteedChange={setCompletionGuaranteed}
               domainProfile={domainProfile}
-              onDomainProfileChange={() => {setDomainProfile(domainProfile)}}
+              onDomainProfileChange={(event) => {setDomainProfile(event)}}
               domainProfileNames={allDomainProfiles.map((p) => p.name)}
             />
 

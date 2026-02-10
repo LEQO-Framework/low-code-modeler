@@ -67,11 +67,11 @@ export default function ExperienceModePanel({
                     value={domainProfile}
                     onChange={(e) => onDomainProfileChange(e.target.value)}
                     className="mt-1 px-2 py-1 border rounded"
-                  > {/*TODO: domain profile optionen anpassen*/}
+                  >
                     <option value="none">
                       None
                     </option>
-                    {domainProfileNames.map((name) => (<option key = {name} value={name}>name</option>))}
+                    {domainProfileNames.map((name) => (<option key = {name} value={name}>{name}</option>))}
                   </select>
                 </td>
               </tr>
