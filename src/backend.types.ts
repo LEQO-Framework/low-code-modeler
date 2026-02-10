@@ -429,7 +429,7 @@ export interface components {
             /** Outputs */
             outputs?: any[];
             /** Clustering Algorithm */
-            clusteringAlgorithm?: string | none;
+            clusteringAlgorithm?: string | null;
         };
         /** ParameterizedGateNode */
         ParameterizedGateNode: {
