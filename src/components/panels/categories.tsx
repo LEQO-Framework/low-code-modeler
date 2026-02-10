@@ -125,6 +125,7 @@ export const categories: Record<string, CategoryEntry> = {
         { label: "Number", dataType: "float", type: consts.DataTypeNode, icon: "PaletteIcon_Number.png", description: "Integer value (whole number) or floating-point number (decimal).", completionGuaranteed: true, compactOptions: [true, false] },
         { label: "Array", dataType: "Array", type: consts.DataTypeNode, icon: "PaletteIcon_Array.png", description: "A list of values, possibly of varying length.", completionGuaranteed: true, compactOptions: [true, false] },
         { label: "file", dataType: "file", type: consts.DataTypeNode, icon: "fileInputIcon.png", description: "URL or file path to data (for ML plugin inputs).", completionGuaranteed: true, compactOptions: [true, false] },
+        { label: "string", dataType: "string", type: consts.DataTypeNode, icon: "PaletteIcon_String.png", description: "Text value (for ML plugin parameters).", completionGuaranteed: true, compactOptions: [true, false] },
       ],
       "Quantum Datatypes": [
         { label: "Ancilla", dataType: consts.AncillaNode, type: consts.AncillaNode, icon: "PaletteIcon_Ancilla.png", description: "Helper qubit used temporarily in a computation.", completionGuaranteed: false, compactOptions: [true, false] },

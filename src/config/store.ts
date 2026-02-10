@@ -207,7 +207,7 @@ export const useStore = create<RFState>()(persist((set, get) => ({
       if (t.startsWith("entity/")) return "file";
       if (t === "int") return "number";
       if (t === "float") return "number";
-      if (t === "string") return "any";
+      if (t === "string") return "string";
       if (t === "plot") return "any";
       if (t === "model") return "file";
       return "any";
