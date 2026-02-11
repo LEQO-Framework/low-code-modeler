@@ -1,3 +1,4 @@
+import { Edge } from "reactflow";
 import * as consts from "../../constants";
 
 export type NodeType = (typeof consts.NodeTypes)[number];
@@ -11,6 +12,23 @@ export interface Node {
   completionGuaranteed?: boolean;
   aliases?: string[];
   compactOptions: boolean[];
+}
+
+export interface Template {
+  id: string;
+  timestamp?: string;
+  icon: string;
+  label: string;
+  type: string;
+  name: string;
+  description: string;
+  completionGuaranteed: boolean;
+  compactOptions: boolean[];
+  flowData: {
+    metadata?: any | any[], 
+    nodes: Node[], edges: Edge[], 
+    viewport?: {x: number, y: number, zoom: number}
+  };
 }
 
 interface CategoryEntry {
@@ -107,6 +125,7 @@ export const categories: Record<string, CategoryEntry> = {
         { label: "Number", dataType: "float", type: consts.DataTypeNode, icon: "PaletteIcon_Number.png", description: "Integer value (whole number) or floating-point number (decimal).", completionGuaranteed: true, compactOptions: [true, false] },
         { label: "Array", dataType: "Array", type: consts.DataTypeNode, icon: "PaletteIcon_Array.png", description: "A list of values, possibly of varying length.", completionGuaranteed: true, compactOptions: [true, false] },
         { label: "file", dataType: "file", type: consts.DataTypeNode, icon: "fileInputIcon.png", description: "URL or file path to data (for ML plugin inputs).", completionGuaranteed: true, compactOptions: [true, false] },
+        { label: "string", dataType: "string", type: consts.DataTypeNode, icon: "PaletteIcon_String.png", description: "Text value (for ML plugin parameters).", completionGuaranteed: true, compactOptions: [true, false] },
       ],
       "Quantum Datatypes": [
         { label: "Ancilla", dataType: consts.AncillaNode, type: consts.AncillaNode, icon: "PaletteIcon_Ancilla.png", description: "Helper qubit used temporarily in a computation.", completionGuaranteed: false, compactOptions: [true, false] },
@@ -210,9 +229,7 @@ export const categories: Record<string, CategoryEntry> = {
       {
         label: consts.qaoa,
         type: consts.templates,
-        icon: [
-          "QAOA.png",
-        ],
+        icon: "QAOA.png",
         description: "Solves optimization problems by combining a quantum process with a classical optimizer.",
         completionGuaranteed: false,
         compactOptions: [true, false],

@@ -161,7 +161,7 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                     case "Number":
                         return {
                             id: node.id,
-                            type: "float",
+                            type: "int",
                             value: node.data.value
                         }
 
@@ -271,6 +271,7 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                     pluginIdentifier: node.data.pluginIdentifier,
                     pluginName: node.data.pluginName,
                     pluginApiRoot: node.data.pluginApiRoot,
+                    clusteringAlgorithm: node.data.clusteringAlgorithm || null,
                     inputs: node.data.dataInputs?.map((input: any) => ({
                         parameter: input.parameter,
                         dataType: input.data_type,

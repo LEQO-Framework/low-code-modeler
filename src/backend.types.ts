@@ -428,6 +428,8 @@ export interface components {
             inputs?: any[];
             /** Outputs */
             outputs?: any[];
+            /** Clustering Algorithm */
+            clusteringAlgorithm?: string | null;
         };
         /** ParameterizedGateNode */
         ParameterizedGateNode: {

@@ -1,5 +1,11 @@
-import React from "react";
-import { Button } from "./ui";
+import React, { useState } from "react";
+import { 
+  Button, 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger } from "./ui";
+
 import {
   FilePlus,
   FolderOpen,
@@ -9,11 +15,18 @@ import {
   Settings,
   Send,
   HelpCircle,
-  Clock
+  Clock,
+  ChevronDown,
+  FileJson,
+  ImageIcon,
+  LayoutTemplate,
+  PuzzleIcon,
+  LucidePuzzle,
+  Puzzle,
 } from "lucide-react";
 
 interface ToolbarProps {
-  onSave: (upload) => void;
+  onSave: () => void;
   onRestore: () => void;
   onSaveAsSVG: () => void;
   onOpenConfig: () => void;
@@ -23,7 +36,9 @@ interface ToolbarProps {
   startQuantumAlgorithmSelection: ()=> void;
   //sendToQunicorn: () => void;
   openHistory: () => void;
-  startTour: (tour) => void;
+  startTour: () => void;
+  onSaveAsTemplate: () => void;
+  onManageTemplates: () => void;
 }
 
 const Toolbar: React.FC<ToolbarProps> = ({
@@ -37,8 +52,11 @@ const Toolbar: React.FC<ToolbarProps> = ({
   startQuantumAlgorithmSelection,
   //sendToQunicorn,
   openHistory,
-  startTour
+  startTour,
+  onSaveAsTemplate,
+  onManageTemplates
 }) => {
+  const [saveIsOpen, setSaveIsOpen] = useState(false);
   return (
     <div className="flex items-center justify-between bg-gray-100 p-4 border-b border-gray-300 h-[56px]">
       <div className="flex items-center">
@@ -51,14 +69,34 @@ const Toolbar: React.FC<ToolbarProps> = ({
           <Button size="sm" onClick={onRestore} title="Open a diagram">
             <FolderOpen className="w-4 h-4 mr-2" /> Open
           </Button>
-          <Button size="sm" onClick={onSave} title="Save the current diagram">
-            <Save className="w-4 h-4 mr-2" /> Save
-          </Button>
-          <Button size="sm" onClick={onSaveAsSVG} title="Save the current diagram as SVG">
-            <Download className="w-4 h-4 mr-2" /> Save as SVG
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="default" className="focus:ring-0 focus-visible:ring-0 outline-none">
+                <Save className="w-4 h-4 mr-2" />
+                Save
+                <ChevronDown className="w-4 h-4 ml-2" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" onCloseAutoFocus={(e) => e.preventDefault()}>
+              <DropdownMenuItem onClick={onSave} title="Download the current diagram as JSON">
+                <FileJson className="w-4 h-4 mr-2" />
+                <span>as JSON</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onSaveAsSVG} title="Download the current diagram as SVG">
+                <ImageIcon className="w-4 h-4 mr-2" />
+                <span>as SVG</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onSaveAsTemplate} title="Save the current diagram as a custom user template">
+                <LayoutTemplate className="w-4 h-4 mr-2" />
+                <span>as User Template</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button size="sm" onClick={uploadDiagram} title="Upload the current diagram to GitHub">
             <UploadCloud className="w-4 h-4 mr-2" /> Upload
+          </Button>
+          <Button size="sm" onClick={onManageTemplates} title="Manage all custom user templates">
+            <Settings className="w-4 h-4 mr-2" /> Manage Templates
           </Button>
           <Button size="sm" onClick={onOpenConfig} title="Configure the editor and the endpoints">
             <Settings className="w-4 h-4 mr-2" /> Configuration

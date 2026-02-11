@@ -16,6 +16,7 @@ import {
   useUpdateNodeInternals,
 } from "reactflow";
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 import { nodesConfig } from "./site";
 import { v4 as uuid } from "uuid";
 import * as consts from "../constants";
@@ -24,6 +25,7 @@ import { insertTopNodeTag } from "@/winery";
 import { remove } from "jszip";
 import { IPortData } from "@/components/nodes/model";
 import { Regex } from "lucide-react";
+import { Template } from "@/components/panels/categories";
 
 export type NodeData = {
   label: string;
@@ -50,6 +52,7 @@ type RFState = {
   history: HistoryItem[];
   historyIndex: number;
   typeError: string | null;
+  userTemplates: Template[];
   setTypeError: (message: string | null) => void;
   setNodes: (node: Node) => void;
   setEdges: (edge: Edge) => void;
@@ -59,6 +62,8 @@ type RFState = {
   setCompact: (compact: boolean) => void
   setExperienceLevel: (experienceLevel: string) => void
   setNewEdges: (newEdges: Edge[]) => void;
+  addUserTemplate: (template: Template) => void;
+  setUserTemplates: (newTemplates: Template[]) => void;
   onNodesChange: OnNodesChange;
   onEdgesChange: OnEdgesChange;
   onConnect: OnConnect;
@@ -87,7 +92,7 @@ const getHandleIndex = (nodeId: string, handleId: string) => {
 };
 
 // Zustand store with undo/redo logic
-export const useStore = create<RFState>((set, get) => ({
+export const useStore = create<RFState>()(persist((set, get) => ({
   nodes: nodesConfig.initialNodes,
   edges: nodesConfig.initialEdges,
   ancillaMode: false,
@@ -99,6 +104,7 @@ export const useStore = create<RFState>((set, get) => ({
   historyIndex: -1,
   containsPlaceholder: false,
   typeError: null,
+  userTemplates: [],
 
   setTypeError: (message: string | null) => {
     set({ typeError: message });
@@ -201,7 +207,7 @@ export const useStore = create<RFState>((set, get) => ({
       if (t.startsWith("entity/")) return "file";
       if (t === "int") return "number";
       if (t === "float") return "number";
-      if (t === "string") return "any";
+      if (t === "string") return "string";
       if (t === "plot") return "any";
       if (t === "model") return "file";
       return "any";
@@ -431,6 +437,19 @@ export const useStore = create<RFState>((set, get) => ({
     console.log(get().edges)
   },
 
+  addUserTemplate: (template: Template) => {
+    set({
+      userTemplates: [... get().userTemplates, template]
+    })
+  },
+
+  setUserTemplates: (newTemplates: Template[]) => {
+    set({
+      userTemplates: newTemplates
+    })
+    console.log("after setting templates", get().userTemplates)
+  },
+
   onNodesChange: (changes: NodeChange[]) => {
     const currentNodes = applyNodeChanges(changes, get().nodes);
     const currentEdges = get().edges;
@@ -502,45 +521,47 @@ export const useStore = create<RFState>((set, get) => ({
         console.log("removed edge", removedEdge);
         const targetNode = currentNodes.find((n) => n.id === removedEdge.target);
         const sourceNode = currentNodes.find((n) => n.id === removedEdge.source);
-        console.log(targetNode);
+        console.log("target Node", targetNode);
 
-        const targetNodeIndex = currentNodes.findIndex((n) => n.id === targetNode.id);
+        if(targetNode){
+          const targetNodeIndex = currentNodes.findIndex((n) => n.id === targetNode.id);
 
-        let targetData = {
-          ...targetNode.data,
-          inputs: [... (targetNode.data.inputs || [])]
-        };
-        // remove targetNode.data.inputs entry corresponding to removed edge
-        const inputIndex = targetData.inputs.findIndex((i) => (i.edgeId ?? -1) === removedEdge.id);
-        const updatedInputs = targetData.inputs.filter((i) => (i.edgeId ?? -1) !== removedEdge.id);
-        console.log("updatedInputs", updatedInputs)
-        targetData.inputs = updatedInputs;
+          let targetData = {
+            ...targetNode.data,
+            inputs: [... (targetNode.data.inputs || [])]
+          };
+          // remove targetNode.data.inputs entry corresponding to removed edge
+          const inputIndex = targetData.inputs.findIndex((i) => (i.edgeId ?? -1) === removedEdge.id);
+          const updatedInputs = targetData.inputs.filter((i) => (i.edgeId ?? -1) !== removedEdge.id);
+          console.log("updatedInputs", updatedInputs)
+          targetData.inputs = updatedInputs;
 
 
-        // revert inputTypes in targetNode.data.inputTypes to "any", if applicable for targetNode
-        if ((targetNode.type === consts.AlgorithmNode || targetNode.type === consts.ClassicalAlgorithmNode || (targetNode.type === consts.StatePreparationNode)) || targetNode.type === consts.ClassicalOperatorNode && (targetNode.data.label.includes("Arithmetic") || targetNode.data.label.includes("Comparison"))) {
-          const sourceHandle = removedEdge.sourceHandle;
-          const targetHandle = removedEdge.targetHandle;
+          // revert inputTypes in targetNode.data.inputTypes to "any", if applicable for targetNode
+          if ((targetNode.type === consts.AlgorithmNode || targetNode.type === consts.ClassicalAlgorithmNode || (targetNode.type === consts.StatePreparationNode)) || targetNode.type === consts.ClassicalOperatorNode && (targetNode.data.label.includes("Arithmetic") || targetNode.data.label.includes("Comparison"))) {
+            const sourceHandle = removedEdge.sourceHandle;
+            const targetHandle = removedEdge.targetHandle;
 
-          const handleIndex = getHandleIndex(targetNode.id, targetHandle);
-          const otherHandleIndex = handleIndex === 0 ? 1 : 0;
-          // find other edge connected to targetNode
-          const otherEdge = get().edges.find((e) => e.target === targetNode.id && e.id !== removedEdge.id);
+            const handleIndex = getHandleIndex(targetNode.id, targetHandle);
+            const otherHandleIndex = handleIndex === 0 ? 1 : 0;
+            // find other edge connected to targetNode
+            const otherEdge = get().edges.find((e) => e.target === targetNode.id && e.id !== removedEdge.id);
 
-          const hasNoFixedType = (targetNode.data.encodingType === "Basis Encoding" || targetNode.data.encodingType === "Custom Encoding")
-          // if no other edge exists: revert input & output type
-          if (!otherEdge && hasNoFixedType) {
-            targetData.inputTypes = ["any", "any"];
-            if (targetNode.data.label.includes("Arithmetic")) {
-              targetData.outputTypes = ["any"];
+            const hasNoFixedType = (targetNode.data.encodingType === "Basis Encoding" || targetNode.data.encodingType === "Custom Encoding")
+            // if no other edge exists: revert input & output type
+            if (!otherEdge && hasNoFixedType) {
+              targetData.inputTypes = ["any", "any"];
+              if (targetNode.data.label.includes("Arithmetic")) {
+                targetData.outputTypes = ["any"];
+              }
             }
           }
-        }
 
-        updatedNodes[targetNodeIndex] = {
-          ...targetNode,
-          data: targetData,
-        };
+          updatedNodes[targetNodeIndex] = {
+            ...targetNode,
+            data: targetData,
+          };
+        }
       }
     });
 
@@ -1550,6 +1571,13 @@ export const useStore = create<RFState>((set, get) => ({
 
     console.log("Updated state after redo:", get());
   },
+}),
+{
+  name: "user-templates-storage",
+
+  partialize: (state) => ({
+    userTemplates: state.userTemplates,
+  }),
 }));
 
 
