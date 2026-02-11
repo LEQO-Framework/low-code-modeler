@@ -6,6 +6,7 @@ interface SendRequestModalProps {
   onClose: () => void;
   compilationTarget: string;
   containsPlaceholder: boolean;
+  containsWorkflowNodes: boolean;
   setCompilationTarget: (target: string) => void;
   sendToBackend: () => void;
 }
@@ -15,6 +16,7 @@ export const SendRequestModal = ({
   onClose,
   compilationTarget,
   containsPlaceholder,
+  containsWorkflowNodes,
   setCompilationTarget,
   sendToBackend,
 }: SendRequestModalProps) => {
@@ -50,10 +52,10 @@ export const SendRequestModal = ({
             value={compilationTarget}
             onChange={(e) => setCompilationTarget(e.target.value)}
           >
-            <option value="qasm" disabled={containsPlaceholder}>
+            <option value="workflow">Workflow</option>
+            <option value="qasm" disabled={containsPlaceholder||containsWorkflowNodes}>
               OpenQASM3 {containsPlaceholder ? "(not available, placeholder present)" : ""}
             </option>
-            <option value="workflow">Workflow</option>
           </select>
         </div>
       </div>

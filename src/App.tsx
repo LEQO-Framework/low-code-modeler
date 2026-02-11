@@ -1076,6 +1076,11 @@ If none apply, return { "algorithms": [] }.
     return { warnings, errors };
   }
 
+  // Checks if there are any Nodes conflicting with QASM
+  const [containsWorkflowNodes, setContainsWorkflowNodes] = useState(false);
+  function checkContainsWorkflowNodes(flow): boolean {
+    return flow.nodes?.some((node) => node.type == "plugin"||"file"||"string");
+  };
 
   const startQuantumAlgorithmSelection = () => {
     setQuantumAlgorithmModalStep(1);
@@ -1087,6 +1092,7 @@ If none apply, return { "algorithms": [] }.
     const flow = reactFlowInstance.toObject();
     const result = validateFlow(flow);
     console.log(flow)
+    setContainsWorkflowNodes(checkContainsWorkflowNodes(flow));
 
     setValidationResult(result);
     setIsValidationOpen(true);
@@ -2425,6 +2431,7 @@ If none apply, return { "algorithms": [] }.
         onClose={() => setModalOpen(false)}
         compilationTarget={compilationTarget}
         containsPlaceholder={containsPlaceholder}
+        containsWorkflowNodes={containsWorkflowNodes}
         setCompilationTarget={setCompilationTarget}
         sendToBackend={sendToBackend}
       />
