@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import Modal from "./Modal";
 import { categories, CategoryEntry } from "../panels/categories";
 import { ImageIcon, Plus, Trash2, CheckCircle2, Circle, ChevronDown, Check } from "lucide-react";
-import { boundaryNodes, dataTypes, circuitLevelNodes, controlStructureNodes, templates, operator, customOperators, OperatorNode, EditableDataTypeNode } from "@/constants";
+import { boundaryNodes, dataTypes, circuitLevelNodes, controlStructureNodes, templates, operator, customOperators, OperatorNode, EditableNode } from "@/constants";
 
 export interface EditableNodeProfile {
   label: string;
@@ -417,7 +417,7 @@ export default function DomainProfileTableModal({
           content: []
         };
       }
-      const type = EditableDataTypeNode; //TODO: different types for different categories?
+      const type = EditableNode; //TODO: different types for different categories?
       const nodeData = {
         label: node.label,
         description: node.description,
@@ -429,8 +429,8 @@ export default function DomainProfileTableModal({
         constraints: node.constraints,
         mapping: node.mapping,
         completionGuaranteed: true, 
-        compactOptions: [true, false]
-
+        compactOptions: [true, false],
+        isDataType: node.category.includes("Data"),
       };
 
       (acc[cat].content as any[]).push(nodeData); 

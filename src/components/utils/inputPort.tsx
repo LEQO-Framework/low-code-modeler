@@ -22,6 +22,7 @@ interface inputPortProps {
   setSelectedNode: (node: Node) => void;
   setInputIdentifierError: (error: boolean) => void;
   active: boolean;
+  hasInputHandles: boolean;
 }
 
 export default function InputPort({
@@ -39,6 +40,7 @@ export default function InputPort({
   active,
   propertyName,
   propertyType,
+  hasInputHandles,
 }: inputPortProps) {
   const isClassical = type === "classical";
   const isAncilla = type === "ancilla";
@@ -160,6 +162,34 @@ export default function InputPort({
 
   return (
     <div className="relative flex items-center justify-start space-x-0 mt-1">
+      {hasInputHandles && (
+        <div style={{ position: "absolute", left: "-4px", overflow: "visible" }}> 
+        <Handle
+          type="target"
+          id={handleId}
+          position={Position.Left}
+          className={cn(
+            "z-10",
+            handleClass,
+            "top-1/2 -translate-y-1/2",
+            isClassical
+              ? "!bg-orange-300 !border-black"
+              : isAncilla
+                ? "!bg-green-100 !border-black rotate-45"
+                : "!bg-blue-300 !border-black",
+            (active || isConnected)
+              ? `border-solid ${isClassical
+                ? "!bg-orange-300 !border-black"
+                : isAncilla
+                  ? "!bg-green-100 !border-black rotate-45"
+                  : "!bg-blue-300 !border-black"}`
+              : "!bg-gray-200 !border-dashed !border-gray-500"
+          )}
+          isConnectable={true}
+          isConnectableStart={false}
+        />
+        </div>
+      )}
       <div
         className="flex flex-col items-start space-y-1 relative p-2"
         style={{
@@ -195,33 +225,6 @@ export default function InputPort({
           />
         </div>
       </div>
-
-      {node.type !== "editableDataTypeNode" && (
-        <Handle
-          type="source"
-          id={handleId}
-          position={Position.Left}
-          className={cn(
-            "z-10",
-            handleClass,
-            "top-1/2 -translate-y-1/2",
-            isClassical
-              ? "!bg-orange-300 !border-black"
-              : isAncilla
-                ? "!bg-green-100 !border-black rotate-45"
-                : "!bg-blue-300 !border-black",
-            (active || isConnected)
-              ? `border-solid ${isClassical
-                ? "!bg-orange-300 !border-black"
-                : isAncilla
-                  ? "!bg-green-100 !border-black rotate-45"
-                  : "!bg-blue-300 !border-black"}`
-              : "!bg-gray-200 !border-dashed !border-gray-500"
-          )}
-          isConnectable={edges.filter(edge => edge.sourceHandle === handleId).length < 1}
-          isConnectableEnd={false}
-        />
-      )}
     </div>
   );
 }

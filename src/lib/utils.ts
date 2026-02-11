@@ -74,6 +74,7 @@ export function handleOnDrop(
         ...(def.description && { description: def.description }),
         ...(def.outputType && { outputType: def.outputType }),
         ...(def.icon && { icon: def.icon }),
+        ...(def.isDataType && {isDataType: def.isDataType}),
        }
     };
 

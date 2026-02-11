@@ -21,7 +21,7 @@ const selector = (state: any) => ({
   setNewEdges: state.setNewEdges
 });
 
-export const EditableDataTypeNode = memo((node: Node) => {
+export const EditableNode = memo((node: Node) => {
   const { data, selected } = node;
 
   const { edges, nodes, updateNodeValue, setSelectedNode, setNewEdges, ancillaMode } = useStore(selector, shallow);
@@ -31,6 +31,7 @@ export const EditableDataTypeNode = memo((node: Node) => {
   const outputType = data.outputType;
   const numberInputs = properties.length;
   const numberOutputs = 1;
+  const hasInputHandles = !data.isDataType; //if data.isDataType is undefined, hasInputHandles is true
   const label = data.label || "Editable Node";
 
   const [outputs, setOutputs] = useState(data.outputs || []);
@@ -38,7 +39,7 @@ export const EditableDataTypeNode = memo((node: Node) => {
   const [outputIdentifierErrors, setOutputIdentifierErrors] = useState<{ [key: number]: boolean }>({});
 
   const headerHeight = 52;
-  const inputHeight = 30;
+  const inputHeight = 80;
   const inputsTotalHeight = numberInputs * inputHeight;
   const outputHeight = 120;
   const outputsStartTop = headerHeight + inputsTotalHeight + 10;
@@ -147,25 +148,26 @@ export const EditableDataTypeNode = memo((node: Node) => {
 
         <div className="mt-[5px] flex flex-col relative z-0">
           {properties.map((prop, index) => (
-            <div
+          <div
             key={`classical-input-${index}`}
             className="absolute left-0 w-full z-10"
-            //style={{ top: `${outputsStartTop + index * outputHeight}px` }}
+            style={{ top: `${index * inputHeight}px` }}
           >
             <InputPort
-                key={`classicalHandleOperationInput${index}${node.id}`} //TODO: anderer key?
+                key={`classicalHandleInput${index}${node.id}`} //TODO: anderer key?
                 node={node}
                 index={index}
                 type={"classical"}
                 nodes={nodes}
                 edges={edges}
-                inputIdentifierError={outputIdentifierErrors[index]}
+                inputIdentifierError={outputIdentifierErrors[index]} //TODO
                 updateNodeValue={updateNodeValue}
-                setInputIdentifierError={(error) => setOutputIdentifierErrors(prev => ({ ...prev, [index]: error }))}
+                setInputIdentifierError={(error) => setOutputIdentifierErrors(prev => ({ ...prev, [index]: error }))} //TODO
                 setSelectedNode={setSelectedNode}
                 active={true} 
                 propertyName={prop.name} 
-                propertyType={prop.type}            
+                propertyType={prop.type}  
+                hasInputHandles={hasInputHandles}          
             />
           </div>
           ))}

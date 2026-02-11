@@ -17,6 +17,7 @@ export interface Node {
   mapping?: string[][];
   category?: string,
   outputType?: string,
+  isDataType?: boolean,
 }
 
 export interface Template {
