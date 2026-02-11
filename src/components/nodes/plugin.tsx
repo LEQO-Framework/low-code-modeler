@@ -100,6 +100,20 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
     return isQuantumIO(input.parameter) ? "quantum" : "classical";
   };
 
+  //display data_type
+  const displayType = (dataType?: string) => {
+    const dt = (dataType ?? "").toLowerCase().trim();
+    if (dt === "int" || dt === "float") {
+      return "number";
+    } else if (dt === "string") {
+      return "String";
+    } else if (dt === "file" || dt.startsWith("entity/")) {
+      return "File";
+    } else {
+      return dataType?.trim() ? dataType.trim() : "undefined";
+    }
+  }
+
 
   // Calculate dynamic height
   const baseHeight = 200;
@@ -315,7 +329,7 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
                       {node.data.inputs?.[index]?.outputIdentifier || input.parameter}
                     </span>
                     <span className="text-black text-xs opacity-80 text-center w-full">
-                      type: {input.data_type}
+                      type: {displayType(input.data_type)}
                     </span>
                   </div>
                 </div>
