@@ -110,7 +110,7 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
     } else if (dt === "file") {
       return "File";
     } else {
-      return dt ?? "undefined";
+      return dataType?.trim() ? dataType.trim() : "undefined";
     }
   }
 
