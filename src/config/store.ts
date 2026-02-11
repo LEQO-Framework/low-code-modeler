@@ -238,6 +238,10 @@ export const useStore = create<RFState>()(persist((set, get) => ({
         if (encodingType.includes("Matrix") || encodingType.includes("Amplitude") || encodingType.includes("Angle") || encodingType.includes("Schmidt")) return ["array"];
         if (encodingType.includes("Basis") || encodingType.includes("Custom")) return ["any"];
       }
+      else if (type.includes("editable")) {
+        const inputTypes = node.data.properties.map((p) => p.type);
+        return inputTypes;
+      }
 
       return []; // Default empty
     }
@@ -259,6 +263,7 @@ export const useStore = create<RFState>()(persist((set, get) => ({
       else if (type === "measurementNode") return ["array", "quantum register"];
       else if (type === "qubitNode" || type === "ancillaNode" || type === "statePreparationNode") return ["quantum register"];
       else if (type === "dataTypeNode") return [(node.data.dataType ?? "any").toLowerCase()];
+      else if (type.includes("editable")) return [node.data.outputType];
       return []; // Default empty
     }
     const inputTypes = getInitialInputTypes(node);
