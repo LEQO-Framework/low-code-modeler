@@ -107,7 +107,7 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
       return "number";
     } else if (dt === "string") {
       return "String";
-    } else if (dt === "file") {
+    } else if (dt === "file" || dt.startsWith("entity/")) {
       return "File";
     } else {
       return dataType?.trim() ? dataType.trim() : "undefined";
