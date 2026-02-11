@@ -261,9 +261,21 @@ function App() {
   const [patternGraph, setPatternGraph] = useState(null);
   const [isDetectingAlgorithms, setIsDetectingAlgorithms] = useState(false);
 
+  let client: OpenAI | null = null;
+  try {
+    if (openAIToken) {
+      client = new OpenAI({ apiKey: openAIToken, dangerouslyAllowBrowser: true });
+    }
+  } catch (e) {
+    console.warn("OpenAI init failed, continuing without it:", e);
+    client = null;
+  }
+
+/*
   const client = new OpenAI({
     apiKey: openAIToken, dangerouslyAllowBrowser: true
   });
+*/
 
 
   const detectQuantumAlgorithms = async (userInput: string): Promise<string | null> => {
@@ -436,6 +448,7 @@ If none apply, return { "algorithms": [] }.
   }));
 
   const ref = useRef(null);
+  const hasLoadedFromUrl = useRef(false);
 
   const onDragOver = React.useCallback(
     (event: React.DragEvent<HTMLDivElement>) => {
@@ -962,7 +975,7 @@ If none apply, return { "algorithms": [] }.
         });
       }
 
-      // Algorithm / Custom Nodes 
+      // Algorithm / Custom Nodes
       if (node.type === "algorithmNode" || node.type === "classicalAlgorithmNode") {
         const expectedInputs = node.data?.numberInputs || 0;
         const actualInputs = connectedSources.length;
@@ -975,7 +988,7 @@ If none apply, return { "algorithms": [] }.
         }
 
 
-        // Quantum outputs check based on numberQuantumOutputs 
+        // Quantum outputs check based on numberQuantumOutputs
         const numberQuantumOutputs = node.data?.numberQuantumOutputs || 0;
         if (numberQuantumOutputs > 0) {
           const outgoing = outgoingConnections.get(node.id) || [];
@@ -987,6 +1000,41 @@ If none apply, return { "algorithms": [] }.
             });
           }
         }
+      }
+
+      // Plugin Node Validation
+      if (node.type === "pluginNode") {
+        const dataInputs = node.data?.dataInputs || [];
+        const pluginEdges = flow.edges?.filter((e) => e.target === node.id) || [];
+
+        dataInputs.forEach((input: any, index: number) => {
+          const handleId = `classicalHandlePluginInput${index}${node.id}`;
+          const connectedEdge = pluginEdges.find((e) => e.targetHandle === handleId);
+
+          if (input.required && !connectedEdge) {
+            errors.push({
+              nodeId: node.id,
+              nodeType: node.type,
+              description: `Required input "${input.parameter}" is not connected.`,
+            });
+          }
+
+          if (connectedEdge) {
+            const sourceNode: any = nodesById.get(connectedEdge.source);
+            if (sourceNode) {
+              const sourceOutputType = (sourceNode.data?.outputTypes?.[0] ?? "any").toLowerCase();
+              const expectedType = (node.data?.inputTypes?.[index] ?? "any").toLowerCase();
+
+              if (expectedType !== "any" && sourceOutputType !== "any" && sourceOutputType !== expectedType) {
+                errors.push({
+                  nodeId: node.id,
+                  nodeType: node.type,
+                  description: `Input "${input.parameter}" expects type "${expectedType}" but is connected to "${sourceOutputType}".`,
+                });
+              }
+            }
+          }
+        });
       }
 
     });
@@ -1028,6 +1076,11 @@ If none apply, return { "algorithms": [] }.
     return { warnings, errors };
   }
 
+  // Checks if there are any Nodes conflicting with QASM
+  const [containsWorkflowNodes, setContainsWorkflowNodes] = useState(false);
+  function checkContainsWorkflowNodes(flow): boolean {
+    return flow.nodes?.some((node) => node.type == "plugin"||"file"||"string");
+  };
 
   const startQuantumAlgorithmSelection = () => {
     setQuantumAlgorithmModalStep(1);
@@ -1039,6 +1092,7 @@ If none apply, return { "algorithms": [] }.
     const flow = reactFlowInstance.toObject();
     const result = validateFlow(flow);
     console.log(flow)
+    setContainsWorkflowNodes(checkContainsWorkflowNodes(flow));
 
     setValidationResult(result);
     setIsValidationOpen(true);
@@ -1527,6 +1581,7 @@ If none apply, return { "algorithms": [] }.
 
     const flowWithMetadata = { metadata: validMetadata, ...flow };
 
+    // Dispatch save event for QHAna integration (cancelable)
     const event = new CustomEvent("lcm-save", {
       cancelable: true,
       detail: flowWithMetadata,
@@ -1536,6 +1591,24 @@ If none apply, return { "algorithms": [] }.
     if (!defaultAction)
       return;
 
+    // Save to backend and show solution ID
+    try {
+      const response = await fetch(`${lowcodeBackendEndpoint}/models/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(flowWithMetadata)
+      });
+
+      if (response.ok) {
+        const solutionId = validMetadata.id;
+        alert(`Model "${validMetadata.name}" saved successfully!\n\nSolution ID: ${solutionId}\n\nTest URL: ${window.location.origin}/?solutionId=${solutionId}`);
+      }
+    } catch (error) {
+      console.error('Error saving to backend:', error);
+    }
+
+    localStorage.setItem(flowKey, JSON.stringify(flowWithMetadata));
+    console.log("Flow saved:", flowWithMetadata);
     // Create a downloadable JSON file
     const jsonBlob = new Blob([JSON.stringify(flowWithMetadata, null, 2)], {
       type: "application/json",
@@ -1683,13 +1756,49 @@ If none apply, return { "algorithms": [] }.
     [setSelectedNode],
   );
 
+  const [isModalOpen, setIsModalOpen] = useState(true);
   const [modeledDiagram, setModeledDiagram] = useState(null);
-  
+
+  useEffect(() => {
+    if (!reactFlowInstance || hasLoadedFromUrl.current) return;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const loadUrl = urlParams.get("load-url");
+    if (!loadUrl) return;
+
+    hasLoadedFromUrl.current = true;
+
+    fetch(loadUrl)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Failed to fetch model: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then((modelData) => {
+        const flowData = {
+          ...modelData,
+          initialEdges: modelData.edges || modelData.initialEdges
+        };
+        overwriteFlow(flowData);
+        showToast("Model loaded successfully from URL", "success");
+      })
+      .catch((error) => {
+        showToast(`Error loading model from URL: ${error.message}`, "error");
+        hasLoadedFromUrl.current = false;
+      });
+  }, [reactFlowInstance]);
+
   // Function to load the flow
   const overwriteFlow = (flow: any) => {
     if (!reactFlowInstance) {
       console.error("React Flow instance is not initialized.");
       return;
+    }
+    // For backward compatibility
+    const edgesToLoad = flow.edges || flow.initialEdges;
+    if (edgesToLoad) {
+      reactFlowInstance.setEdges(edgesToLoad);
     }
     console.log(flow.initialEdges)
     console.log(flow.nodes)
@@ -1699,6 +1808,8 @@ If none apply, return { "algorithms": [] }.
           ...node,
           data: {
             ...node.data,
+            inputs: node.data?.inputs || [],
+            outputs: node.data?.outputs || [],
           },
         }))
       );
@@ -1713,7 +1824,7 @@ If none apply, return { "algorithms": [] }.
     console.log("load flow nodes", nodes);
     console.log(edges);
 
-    // Reset the viewport (optional based on your use case)
+    // Reset the viewport 
     const { x = 0, y = 0, zoom = 1 } = flow.viewport || {};
     reactFlowInstance.setViewport({ x, y, zoom });
 
@@ -1727,6 +1838,51 @@ If none apply, return { "algorithms": [] }.
     }
 
   };
+
+  // Get model from backend
+  const fetchModelData = async (modelId: string) => {
+    const url = `${lowcodeBackendEndpoint}/models/${modelId}/`;
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch model: ${response.status} ${response.statusText}`);
+    }
+
+    return await response.json();
+  };
+
+  // Load model from URL parameter
+  const loadSolutionFromUrl = async (solutionId: string) => {
+    try {
+      const modelData = await fetchModelData(solutionId);
+      overwriteFlow(modelData);
+
+      // Clear URL parameter to prevent reload on refresh
+      const url = new URL(window.location.href);
+      url.searchParams.delete('solutionId');
+      window.history.replaceState({}, '', url.toString());
+    } catch (error) {
+      console.error("Error loading solution from URL:", error);
+      alert(`Failed to load solution: ${error?.message || error}`);
+    }
+  };
+
+  // Check for solutionId URL parameter on mount
+  useEffect(() => {
+    if (!reactFlowInstance) return;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const solutionId = urlParams.get('solutionId');
+
+    if (solutionId) {
+      loadSolutionFromUrl(solutionId);
+    }
+  }, [reactFlowInstance]);
+
+  const overlappingNodeRef = useRef<Node | null>(null);
 
   // Function to load the flow in addition to all nodes and edges already on the canvas
   const loadFlow = (flow: any) => {
@@ -1838,11 +1994,10 @@ If none apply, return { "algorithms": [] }.
     console.log(node.position.x)
 
 
-    //findGuidelines(node);
     console.log(reactFlowInstance)
     const intersections = reactFlowInstance.getIntersectingNodes(node).map((n) => n.id);
     console.log(intersections)
-    //updateNodeValue(node.id, "parentNode", intersections)
+    //updateNodeValue
     console.log("trest")
     console.log(intersections)
     console.log(nodes);
@@ -1862,7 +2017,7 @@ If none apply, return { "algorithms": [] }.
 
         if (isForbidden) {
           const maxY = relativeY > nd.height / 2;
-          //node.position.y = relativeY ;
+        
 
           console.warn("Cannot drop node in the right half due to 'if' constraint.");
           return;
@@ -2193,6 +2348,7 @@ If none apply, return { "algorithms": [] }.
         onClose={() => setModalOpen(false)}
         compilationTarget={compilationTarget}
         containsPlaceholder={containsPlaceholder}
+        containsWorkflowNodes={containsWorkflowNodes}
         setCompilationTarget={setCompilationTarget}
         sendToBackend={sendToBackend}
       />
