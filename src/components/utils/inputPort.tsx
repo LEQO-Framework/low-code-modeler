@@ -23,6 +23,12 @@ interface inputPortProps {
   setInputIdentifierError: (error: boolean) => void;
   active: boolean;
   hasInputHandles: boolean;
+  propertyValues: any[];
+  setPropertyValues: (propertyValues: any[]) => void;
+  value: string;
+  setValue: (value: string) => void;
+  propertyValueError: string;
+  setPropertyValueError: (error: string) => void;
 }
 
 export default function InputPort({
@@ -41,6 +47,12 @@ export default function InputPort({
   propertyName,
   propertyType,
   hasInputHandles,
+  propertyValues,
+  setPropertyValues,
+  value,
+  setValue,
+  propertyValueError,
+  setPropertyValueError,
 }: inputPortProps) {
   const isClassical = type === "classical";
   const isAncilla = type === "ancilla";
@@ -57,8 +69,100 @@ export default function InputPort({
   const wasBellState = useRef(false);
   const inputIdentifier = propertyName;
   const isConnected = edges.some(edge => edge.sourceHandle === handleId);
-  const [propertyValue, setPropertyValue] = useState(""); // TODO: sollte übergeben werden, wie inputs/outputs
+  const [valueError, setValueError] = useState("");
 
+  const changeValue = (e) => {
+    let value = e.target.value.trim();
+    const updatedPropertyValues = propertyValues.slice();
+    updatedPropertyValues[index] = value;
+    const updatedValue = updatedPropertyValues.join(",");
+    setPropertyValues(updatedPropertyValues);
+    setValue(updatedValue);
+    updateNodeValue(node.id, "propertyValues", updatedPropertyValues);
+    updateNodeValue(node.id, "value", updatedValue);
+
+    // Clear error by default
+    setPropertyValueError("");
+    //TODO: auskommentieren + setContainsPlaceholder 
+/*     if (value.trim() === "") {
+      setContainsPlaceholder(false);
+    }
+
+    if (isPlaceholder(value)) {
+      updateNodeValue(node.id, "value", value);
+      setContainsPlaceholder(true);
+      return;
+    } */
+
+    // Array validation
+    if (propertyType.toLowerCase() === "array") {
+      const trimmedValue = value.trim();
+      if (trimmedValue === "") return; // optional empty
+      const arrayRegex = /^-?\d+(?:,-?\d+)*$/;
+      if (!arrayRegex.test(trimmedValue)) {
+        setPropertyValueError(`${propertyName} must be comma-separated integers (e.g., 1,2,3)`);
+        return;
+      }
+    }
+
+    // Integer validation
+    if (propertyType.toLowerCase() === "int") {
+      if (!/^-?\d+$/.test(value) && value !== "") {
+        setPropertyValueError(`${propertyName} must be an integer`);
+        return;
+      }
+    }
+
+    // Float and number validation
+    if (propertyType.toLowerCase() === "float" || propertyType.toLowerCase() === "number") {
+      if (!/^-?\d+(\.\d+)?$/.test(value) && value !== "") {
+        const fillerWord = propertyType.toLowerCase() === "float"? "float" : "";
+        setPropertyValueError(`${propertyName} must be a ${fillerWord} number`);
+        return;
+      }
+    }
+
+    // Angle validation
+    if (propertyType === "angle") {
+      if (parseToNormalizedAngle(value) === null && value !== "") {
+        setPropertyValueError(`${propertyName} must be a valid angle (number or multiple of pi)`);
+        return;
+      }
+    }
+  };
+
+
+  function isPlaceholder(value) {
+    const t = value.trim();
+    return /^[a-zA-Z]+$/.test(t);
+  }
+
+
+  function parseToNormalizedAngle(angle) {
+    const trimmed = angle.trim().toLowerCase();
+    const piMatch = /^([0-9]*\.?[0-9]*)\s*\*?\s*pi$/.exec(trimmed);
+
+    if (piMatch) {
+      const multiplier = piMatch[1] === "" ? 1 : parseFloat(piMatch[1]);
+      return (multiplier * Math.PI) % (2 * Math.PI);
+    }
+
+    if (/^[+-]?[0-9]*\.?[0-9]+$/.test(trimmed)) {
+      const num = parseFloat(trimmed);
+      return ((num % (2 * Math.PI)) + (2 * Math.PI)) % (2 * Math.PI);
+    }
+    return null;
+  }
+
+  function isPositiveValue(value) {
+    const trimmed = value.trim().toLowerCase();
+
+    if (/^[+]?[0-9]*\.?[0-9]+$/.test(trimmed)) {
+      const num = parseFloat(trimmed);
+      return true;
+    }
+    return false;
+  }
 
 /*   // Get input type for classical arithmetic operator
   const getInputType = (inputIndex: number) => {
@@ -212,7 +316,7 @@ export default function InputPort({
         <div className="flex items-center justify-between w-full space-x-2">
           <input
             type="text"
-            className={`p-1 text-sm text-black opacity-75 w-20 text-center rounded-full border ${inputIdentifierError
+            className={`p-1 text-sm text-black opacity-75 w-20 text-center rounded-full border ${propertyValueError
               ? 'bg-red-500 border-red-500'
               : isClassical
                 ? 'bg-white border-orange-500'
@@ -220,8 +324,8 @@ export default function InputPort({
                   ? 'bg-white border-green-500'
                   : 'bg-white border-blue-500'
               }`}
-            value={propertyValue}
-            onChange={(e) => {let value = e.target.value.trim(); setPropertyValue(value);}}
+            value={propertyValues[index]}
+            onChange={changeValue}
           />
         </div>
       </div>

@@ -34,10 +34,14 @@ export const EditableNode = memo((node: Node) => {
   const numberOutputs = 1;
   const isDataType = data.isDataType;
   const label = data.label || "Editable Node";
-  const [values, setValues] = useState([])
+
+  const [values, setValues] = useState([]);
+  const [propertyValues, setPropertyValues] = useState([])
   const [outputs, setOutputs] = useState(data.outputs || []);
   const [sizeErrors, setSizeErrors] = useState<{ [key: number]: boolean }>({});
   const [outputIdentifierErrors, setOutputIdentifierErrors] = useState<{ [key: number]: boolean }>({});
+  const [propertyValueErrors, setPropertyValueErrors] = useState<{ [key: number]: string }>({});
+  const [value, setValue] = useState(data.value || "");
 
   const headerHeight = 52;
   const inputHeight = 80;
@@ -45,6 +49,8 @@ export const EditableNode = memo((node: Node) => {
   const outputHeight = 120;
   const outputsStartTop = headerHeight + inputsTotalHeight + 10;
 
+
+  //TODO if propertyValues is updated: change values to a string containing all propertyValues (delimiter: ",")
 
   useEffect(() => {
     updateNodeInternals(node.id);
@@ -116,16 +122,31 @@ export const EditableNode = memo((node: Node) => {
           borderRadius: "28px",
         }}
       >
-
         {(Object.values(outputIdentifierErrors).some(Boolean) ||
           Object.values(sizeErrors).some(Boolean)) && (
-            <div className="absolute top-2 right-[-40px] group z-20">
+            <div className="absolute top-2 left-full ml-4 group z-20">
               <AlertCircle className="text-red-600 w-5 h-5" />
               <div className="absolute top-5 left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
                 One or more outputs have errors (duplicate ID or size is not a number).
               </div>
             </div>
           )}
+        <div className="absolute top-2 left-full ml-4 flex flex-col gap-2 z-20 pointer-events-none">
+          {Object.values(propertyValueErrors).some(String) && <AlertCircle className="text-red-600 w-5 h-5" />}
+          {Object.entries(propertyValueErrors).map(([key, error]) => 
+            error ? (
+              <div 
+                key={key} 
+                className="group pointer-events-auto flex gap-2 bg-white text-xs text-red-600 border border-red-400 px-3 py-2 rounded shadow min-w-[150px]"
+              >
+              
+                <div className="whitespace-nowrap">
+                  {error}
+                </div>
+              </div>
+            ) : null
+          )}
+        </div>
 
         <div
           className="relative w-full h-[52px] overflow-hidden rounded-t-[28px]"
@@ -169,7 +190,14 @@ export const EditableNode = memo((node: Node) => {
                 active={true} 
                 propertyName={prop.name} 
                 propertyType={prop.type}  
-                hasInputHandles={!isDataType}          
+                hasInputHandles={!isDataType} 
+                propertyValues={propertyValues}
+                setPropertyValues={setPropertyValues} 
+                value={value}
+                setValue={setValue}
+                propertyValueError={propertyValueErrors[index]}
+                setPropertyValueError={(error) => setPropertyValueErrors(prev => ({ ...prev, [index]: error }))}
+
             />
           </div>) : (
           <div
