@@ -10,6 +10,7 @@ import { findDuplicateOutputIdentifier, findDuplicateOutputIdentifiersInsideNode
 import { AlertCircle } from "lucide-react";
 import InputPort from "../utils/inputPort";
 
+
 const selector = (state: any) => ({
   selectedNode: state.selectedNode,
   nodes: state.nodes,
@@ -31,9 +32,9 @@ export const EditableNode = memo((node: Node) => {
   const outputType = data.outputType;
   const numberInputs = properties.length;
   const numberOutputs = 1;
-  const hasInputHandles = !data.isDataType; //if data.isDataType is undefined, hasInputHandles is true
+  const isDataType = data.isDataType;
   const label = data.label || "Editable Node";
-
+  const [values, setValues] = useState([])
   const [outputs, setOutputs] = useState(data.outputs || []);
   const [sizeErrors, setSizeErrors] = useState<{ [key: number]: boolean }>({});
   const [outputIdentifierErrors, setOutputIdentifierErrors] = useState<{ [key: number]: boolean }>({});
@@ -148,6 +149,7 @@ export const EditableNode = memo((node: Node) => {
 
         <div className="mt-[5px] flex flex-col relative z-0">
           {properties.map((prop, index) => (
+          isDataType? (
           <div
             key={`classical-input-${index}`}
             className="absolute left-0 w-full z-10"
@@ -167,9 +169,43 @@ export const EditableNode = memo((node: Node) => {
                 active={true} 
                 propertyName={prop.name} 
                 propertyType={prop.type}  
-                hasInputHandles={hasInputHandles}          
+                hasInputHandles={!isDataType}          
             />
+          </div>) : (
+          <div
+            className="relative p-2 mb-1"
+            style={{
+              backgroundColor: classicalConstructColor,
+              width: '120px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'flex-start',
+              borderTopRightRadius: '20px',
+              borderBottomRightRadius: '20px',
+            }}
+            >
+            <Handle
+              type="target"
+              id={`classicalHandle${node.type}Input${index}${node.id}`}
+              position={Position.Left}
+              className="z-10 classical-circle-port-operation !bg-orange-300 !border-black -left-[8px]"
+              style={{ top: '50%', transform: 'translateY(-50%)' }}
+            />
+            <div className="flex flex-col items-center w-full leading-tight">
+              <span className="text-black text-sm">
+              {prop.name || `Input ${index + 1}`}
+              </span>
+              <span
+                className={cn(
+                  "text-[10px]", "text-gray-600"
+                )}
+              >
+              type: {prop.type || "undefined"}
+              </span>
+            </div>
+
           </div>
+          )
           ))}
         </div>
         <div className="custom-node-port-out">
