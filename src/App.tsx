@@ -70,7 +70,7 @@ const selector = (state: {
   setCompletionGuaranteed: (completionGuaranteed: boolean) => void;
   setExperienceLevel: (experienceLevel: string) => void;
   addUserTemplate: (template: Template) => void;
-	setUserTemplates: (newTemplates: Template[]) => void;
+  setUserTemplates: (newTemplates: Template[]) => void;
   setContainsPlaceholder: (containsPlaceholder: boolean) => void;
   undo: () => void;
   redo: () => void;
@@ -346,11 +346,7 @@ If none apply, return { "algorithms": [] }.
 
 
   const handleQuantumAlgorithmModalClose = () => {
-    if (quantumAlgorithmModalStep <= 1) {
-      setQuantumAlgorithmModalStep(quantumAlgorithmModalStep + 1)
-    } else {
-      setQuantumAlgorithmModalStep(0);
-    }
+    setQuantumAlgorithmModalStep(0);
   }
 
 
@@ -416,7 +412,7 @@ If none apply, return { "algorithms": [] }.
     setIsManageTemplatesOpen(false);
   };
 
-  
+
 
   const cancelLoadJson = () => {
     setIsLoadJsonModalOpen(false);
@@ -545,7 +541,13 @@ If none apply, return { "algorithms": [] }.
     setProcessingModalOpen(true);
 
     let id = `flow-${Date.now()}`;
-    showToast("QASM request for model " + id + " submitted.", "info");
+    if (compilationTarget === "qasm") {
+      showToast("QASM request for model " + id + " submitted.", "info");
+    } else {
+      showToast("Workflow request for model " + id + " submitted.", "info");
+    }
+
+
 
     try {
       const validMetadata = {
@@ -725,6 +727,8 @@ If none apply, return { "algorithms": [] }.
       nodeConnections.get(edge.target)?.push(edge.source);
     });
 
+    console.log(flow.edges)
+
     // Map sourceNodeId => targetNodeIds[] for output checks
     const outgoingConnections = new Map<string, string[]>();
     flow.edges?.forEach((edge) => {
@@ -890,11 +894,13 @@ If none apply, return { "algorithms": [] }.
           }
         }
 
-        if (!hasQuantumOutput) {
+
+        const outgoing = outgoingConnections.get(node.id) || [];
+        if (outgoing.length === 0) {
           warnings.push({
             nodeId: node.id,
             nodeType: node.type,
-            description: `Node "${node.id}" is missing an output connection.`,
+            description: `Node "${node.id}" has no output connection (unused quantum register).`,
           });
         }
       }
@@ -1372,7 +1378,7 @@ If none apply, return { "algorithms": [] }.
       }
     }, [nodes, setContextMenu]);
 
-  
+
   const onDrop = React.useCallback(
     (event: any) => {
       console.log("dropped")
@@ -1400,7 +1406,7 @@ If none apply, return { "algorithms": [] }.
         const userTemplateFlowData = JSON.parse(event.dataTransfer.getData("application/reactflow/templateFlowData"));
         console.log("USER TEMPLATE")
         console.log(userTemplateFlowData)
-        if(userTemplateFlowData) {
+        if (userTemplateFlowData) {
           loadFlow(userTemplateFlowData);
         }
         else {
@@ -1553,17 +1559,17 @@ If none apply, return { "algorithms": [] }.
     console.log("Flow saved:", flowWithMetadata);
   }
 
- 
 
-  
-	const handleSaveAsTemplate = () => {
+
+
+  const handleSaveAsTemplate = () => {
     console.log("Saving User Template")
-		if (!reactFlowInstance) {
-      		console.error("React Flow instance is not initialized.");
-    		return;
-			// TODO: toast error message
-		}
-		let templateFlow = reactFlowInstance.toObject();
+    if (!reactFlowInstance) {
+      console.error("React Flow instance is not initialized.");
+      return;
+      // TODO: toast error message
+    }
+    let templateFlow = reactFlowInstance.toObject();
     console.log(templateFlow)
     // add metadata to templateFlow
     templateFlow = {
@@ -1578,7 +1584,7 @@ If none apply, return { "algorithms": [] }.
       icon: "QAOA.png", //TODO
       description: metadata.description,
       completionGuaranteed: true,
-      compactOptions:[true, false],
+      compactOptions: [true, false],
       id: `flow-${date}`,
       timestamp: timestamp,
       name: metadata.name, // get name from meta data
@@ -1587,7 +1593,7 @@ If none apply, return { "algorithms": [] }.
     console.log(newTemplate)
     // save metadata to userTemplates
     addUserTemplate(newTemplate);
-  	};
+  };
 
 
   function handleRestoreClick() {
@@ -1684,7 +1690,7 @@ If none apply, return { "algorithms": [] }.
   );
 
   const [modeledDiagram, setModeledDiagram] = useState(null);
-  
+
   // Function to load the flow
   const overwriteFlow = (flow: any) => {
     if (!reactFlowInstance) {
@@ -1706,7 +1712,7 @@ If none apply, return { "algorithms": [] }.
     if (flow.initialEdges) {
       reactFlowInstance.setEdges(flow.initialEdges);
       console.log("Edges loaded.");
-    } else if (flow.edges){
+    } else if (flow.edges) {
       reactFlowInstance.setEdges(flow.edges);
       console.log("Edges loaded.");
     }
@@ -1749,7 +1755,7 @@ If none apply, return { "algorithms": [] }.
     if (flow.initialEdges) {
       reactFlowInstance.setEdges(flow.initialEdges);
       console.log("Edges loaded.");
-    } else if (flow.edges){
+    } else if (flow.edges) {
       reactFlowInstance.setEdges(flow.edges);
       console.log("Edges loaded.");
     }
@@ -2153,7 +2159,7 @@ If none apply, return { "algorithms": [] }.
           if (['finished', 'skipped'].includes(data.status)) {
             setRunTour(false);
             setExpanded(false);
-            if(modeledDiagram) {
+            if (modeledDiagram) {
               overwriteFlow(JSON.parse(modeledDiagram));
             }
           }
@@ -2220,11 +2226,11 @@ If none apply, return { "algorithms": [] }.
         tempGithubToken={githubToken}
       />
 
-      <ManageTemplateModal 
-        open={isManageTemplatesOpen} 
-        onClose={() => setIsManageTemplatesOpen(false)} 
-        templates={userTemplates} 
-        onSave={handleManageTemplatesSave}      
+      <ManageTemplateModal
+        open={isManageTemplatesOpen}
+        onClose={() => setIsManageTemplatesOpen(false)}
+        templates={userTemplates}
+        onSave={handleManageTemplatesSave}
       />
 
       <QunicornModal
