@@ -3,7 +3,7 @@ import { Handle, Position, Node, Edge } from "reactflow";
 import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
 import { findDuplicateOutputIdentifiers, isUniqueIdentifier } from "../utils/utils";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, File } from "lucide-react";
 import OutputPort from "../utils/outputPort";
 
 const selector = (state: {
@@ -231,6 +231,25 @@ export const DataTypeNode = memo((node: Node) => {
             <div className="w-full bg-orange-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
               {(() => {
                 const { width, height } = iconSizeMap[node.data.label];
+                if (node.data.label === "File" || node.data.label === "file") {
+                  return (
+                    <div
+                      className="flex-shrink-0 flex items-center justify-center"
+                      style={{
+                        width: `${width}px`,
+                        height: `${height}px`,
+                        backgroundColor: "white",
+                        borderRadius: "12px",
+                      }}
+                    >
+                      <File
+                        size={Math.min(width, height) * 0.65}
+                        strokeWidth={1.5}
+                        color="#333"
+                      />
+                    </div>
+                  );
+                }
                 return (
                   <img
                     src={iconSrc}
@@ -264,7 +283,7 @@ export const DataTypeNode = memo((node: Node) => {
                 }}
               >
 
-                {data.label}
+                {data.label === "file" ? "File" : data.label}
               </span>
             </div>
           </div>

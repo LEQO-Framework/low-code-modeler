@@ -2732,7 +2732,7 @@ If none apply, return { "algorithms": [] }.
             />
 
 
-            <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
+            {/* <Background variant={BackgroundVariant.Dots} gap={12} size={1} /> */}
           </ReactFlow>
           {contextMenu.visible && contextMenu.nodeId && (
             <ContextMenu

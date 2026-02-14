@@ -9,7 +9,7 @@ import OutputPort from "../utils/outputPort";
 import {
   Atom, BrainCircuit, Layers, Activity, Share2,
   Grid, CircuitBoard, Combine, Boxes, BoxSelect,
-  Focus, Split, Network, Cpu
+  Focus, Split, Network, Cpu, File
 } from "lucide-react";
 
 // Plugin metadata types
@@ -33,12 +33,14 @@ const selector = (state: {
   edges: any[];
   updateNodeValue: (nodeId: string, field: string, nodeVal: any) => void;
   setSelectedNode: (node: Node | null) => void;
+  setNewEdges: (newEdges: any[]) => void;
 }) => ({
   selectedNode: state.selectedNode,
   nodes: state.nodes,
   edges: state.edges,
   updateNodeValue: state.updateNodeValue,
   setSelectedNode: state.setSelectedNode,
+  setNewEdges: state.setNewEdges,
 });
 
 interface PluginNodeData {
@@ -58,7 +60,7 @@ interface PluginNodeData {
 
 export const PluginNode = memo((node: Node<PluginNodeData>) => {
   const { data, selected } = node;
-  const { nodes, edges, updateNodeValue, setSelectedNode } = useStore(selector, shallow);
+  const { nodes, edges, updateNodeValue, setSelectedNode, setNewEdges } = useStore(selector, shallow);
   const updateNodeInternals = useUpdateNodeInternals();
 
   const [isEditingLabel, setIsEditingLabel] = useState(false);
@@ -248,39 +250,115 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
               value={data.clusteringAlgorithm || 'k-means'}
               onChange={(e) => {
                 const newAlgorithm = e.target.value;
-                node.data.clusteringAlgorithm = newAlgorithm;
-                updateNodeValue(node.id, 'clusteringAlgorithm', newAlgorithm);
 
-                // Update dataInputs based on selected algorithm
-                const currentInputs = node.data.dataInputs || [];
-                let newInputs;
+                // Full input/output specs per algorithm
+                const isQuantum = data.pluginName === 'quantum-k-means';
+                const algorithmInputs: Record<string, PluginInputMetadata[]> = {
+                  'k-means': [
+                    { parameter: 'entityPointsUrl', data_type: 'entity/vector', content_type: ['application/json', 'text/csv'], required: true },
+                    { parameter: 'numberOfClusters', data_type: 'int', content_type: ['text/plain'], required: true },
+                    { parameter: 'variant', data_type: 'string', content_type: ['text/plain'], required: isQuantum },
+                    { parameter: 'tolerance', data_type: 'float', content_type: ['text/plain'], required: false },
+                    { parameter: 'maxIterations', data_type: 'int', content_type: ['text/plain'], required: false },
+                  ],
+                  'k-median': [
+                    { parameter: 'entityPointsUrl', data_type: 'entity/vector', content_type: ['application/json', 'text/csv'], required: true },
+                    { parameter: 'numberOfClusters', data_type: 'int', content_type: ['text/plain'], required: true },
+                    { parameter: 'tolerance', data_type: 'float', content_type: ['text/plain'], required: false },
+                    { parameter: 'maxIterations', data_type: 'int', content_type: ['text/plain'], required: false },
+                  ],
+                  'k-medoids': [
+                    { parameter: 'entityPointsUrl', data_type: 'entity/vector', content_type: ['application/json', 'text/csv'], required: true },
+                    { parameter: 'numberOfClusters', data_type: 'int', content_type: ['text/plain'], required: true },
+                    { parameter: 'tolerance', data_type: 'float', content_type: ['text/plain'], required: false },
+                    { parameter: 'maxIterations', data_type: 'int', content_type: ['text/plain'], required: false },
+                  ],
+                };
+                const algorithmOutputs: Record<string, PluginOutputMetadata[]> = {
+                  'k-means': [
+                    { name: 'Cluster Labels', data_type: 'entity/label', content_type: ['application/json'], required: true },
+                    { name: 'Visualization', data_type: 'plot', content_type: ['text/html'], required: false },
+                  ],
+                  'k-median': [
+                    { name: 'Cluster Labels', data_type: 'entity/label', content_type: ['application/json'], required: true },
+                  ],
+                  'k-medoids': [
+                    { name: 'Cluster Labels', data_type: 'entity/label', content_type: ['application/json'], required: true },
+                  ],
+                };
 
-                if (newAlgorithm === 'k-median') {
-                  newInputs = currentInputs.filter((input: PluginInputMetadata) => input.parameter !== 'variant');
-                } else {
-                  const hasVariant = currentInputs.some((input: PluginInputMetadata) => input.parameter === 'variant');
-                  if (!hasVariant) {
-                    const variantInput = {
-                      parameter: 'variant',
-                      data_type: 'string',
-                      content_type: ['text/plain'],
-                      required: data.pluginName === 'quantum-k-means',
-                    };
-                    const clusterIdx = currentInputs.findIndex((input: PluginInputMetadata) => input.parameter === 'numberOfClusters');
-                    newInputs = [...currentInputs];
-                    newInputs.splice(clusterIdx + 1, 0, variantInput);
-                  } else {
-                    newInputs = currentInputs;
+                const oldInputs: PluginInputMetadata[] = node.data.dataInputs || [];
+                const oldOutputs: PluginOutputMetadata[] = node.data.dataOutputs || [];
+                const newInputs = algorithmInputs[newAlgorithm] || oldInputs;
+                const newOutputs = algorithmOutputs[newAlgorithm] || oldOutputs;
+
+                // Build parameter-name to old/new index maps
+                const oldParamToIndex: Record<string, number> = {};
+                oldInputs.forEach((inp, i) => { oldParamToIndex[inp.parameter] = i; });
+                const newParamToIndex: Record<string, number> = {};
+                newInputs.forEach((inp, i) => { newParamToIndex[inp.parameter] = i; });
+
+                // Helper: extract handle index from handle id
+                const extractIndex = (handleId: string): number | null => {
+                  const prefix = handleId.split(node.id)[0];
+                  if (!prefix) return null;
+                  const m = prefix.match(/\d+$/);
+                  return m ? parseInt(m[0], 10) : 0;
+                };
+
+                // Remap edges
+                const removedEdgeIds = new Set<string>();
+                const updatedEdges = edges.map(edge => {
+                  // Remap input edges (edges targeting this node)
+                  if (edge.target === node.id && edge.targetHandle) {
+                    const oldIdx = extractIndex(edge.targetHandle);
+                    if (oldIdx === null) return edge;
+                    const oldParam = oldInputs[oldIdx]?.parameter;
+                    if (oldParam && newParamToIndex[oldParam] !== undefined) {
+                      const newIdx = newParamToIndex[oldParam];
+                      return { ...edge, targetHandle: `classicalHandlePluginInput${newIdx}${node.id}` };
+                    } else {
+                      removedEdgeIds.add(edge.id);
+                      return edge;
+                    }
                   }
-                }
+                  // Remap output edges (edges originating from this node)
+                  if (edge.source === node.id && edge.sourceHandle) {
+                    const oldIdx = extractIndex(edge.sourceHandle);
+                    if (oldIdx === null) return edge;
+                    if (oldIdx >= newOutputs.length) {
+                      removedEdgeIds.add(edge.id);
+                      return edge;
+                    }
+                    return edge;
+                  }
+                  return edge;
+                }).filter(edge => !removedEdgeIds.has(edge.id));
 
+                // Clean node.data.inputs: remove entries for deleted edges
+                const cleanedInputs = (node.data.inputs || []).filter(
+                  (inp: any) => !removedEdgeIds.has(inp.edgeId)
+                );
+
+                // Apply all updates
+                node.data.clusteringAlgorithm = newAlgorithm;
                 node.data.dataInputs = newInputs;
+                node.data.dataOutputs = newOutputs;
+                node.data.inputs = cleanedInputs;
+
+                updateNodeValue(node.id, 'clusteringAlgorithm', newAlgorithm);
                 updateNodeValue(node.id, 'dataInputs', newInputs);
+                updateNodeValue(node.id, 'dataOutputs', newOutputs);
+                updateNodeValue(node.id, 'inputs', cleanedInputs);
+                setNewEdges(updatedEdges);
                 updateNodeInternals(node.id);
               }}
             >
               <option value="k-means">K-Means</option>
               <option value="k-median">K-Median</option>
+              {data.pluginName === 'classical-k-means' && (
+                <option value="k-medoids">K-Medoids</option>
+              )}
             </select>
           </div>
         )}
@@ -328,7 +406,8 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
                     <span className="text-black text-sm text-center w-full">
                       {node.data.inputs?.[index]?.outputIdentifier || input.parameter}
                     </span>
-                    <span className="text-black text-xs opacity-80 text-center w-full">
+                    <span className="text-black text-xs opacity-80 text-center w-full flex items-center justify-center gap-1">
+                      {displayType(input.data_type) === "File" && <File size={12} />}
                       type: {displayType(input.data_type)}
                     </span>
                   </div>
