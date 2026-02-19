@@ -70,7 +70,7 @@ const selector = (state: {
   setCompletionGuaranteed: (completionGuaranteed: boolean) => void;
   setExperienceLevel: (experienceLevel: string) => void;
   addUserTemplate: (template: Template) => void;
-	setUserTemplates: (newTemplates: Template[]) => void;
+  setUserTemplates: (newTemplates: Template[]) => void;
   setContainsPlaceholder: (containsPlaceholder: boolean) => void;
   undo: () => void;
   redo: () => void;
@@ -358,11 +358,7 @@ If none apply, return { "algorithms": [] }.
 
 
   const handleQuantumAlgorithmModalClose = () => {
-    if (quantumAlgorithmModalStep <= 1) {
-      setQuantumAlgorithmModalStep(quantumAlgorithmModalStep + 1)
-    } else {
-      setQuantumAlgorithmModalStep(0);
-    }
+    setQuantumAlgorithmModalStep(0);
   }
 
 
@@ -428,7 +424,7 @@ If none apply, return { "algorithms": [] }.
     setIsManageTemplatesOpen(false);
   };
 
-  
+
 
   const cancelLoadJson = () => {
     setIsLoadJsonModalOpen(false);
@@ -558,7 +554,13 @@ If none apply, return { "algorithms": [] }.
     setProcessingModalOpen(true);
 
     let id = `flow-${Date.now()}`;
-    showToast("QASM request for model " + id + " submitted.", "info");
+    if (compilationTarget === "qasm") {
+      showToast("QASM request for model " + id + " submitted.", "info");
+    } else {
+      showToast("Workflow request for model " + id + " submitted.", "info");
+    }
+
+
 
     try {
       const validMetadata = {
@@ -738,6 +740,8 @@ If none apply, return { "algorithms": [] }.
       nodeConnections.get(edge.target)?.push(edge.source);
     });
 
+    console.log(flow.edges)
+
     // Map sourceNodeId => targetNodeIds[] for output checks
     const outgoingConnections = new Map<string, string[]>();
     flow.edges?.forEach((edge) => {
@@ -903,11 +907,13 @@ If none apply, return { "algorithms": [] }.
           }
         }
 
-        if (!hasQuantumOutput) {
+
+        const outgoing = outgoingConnections.get(node.id) || [];
+        if (outgoing.length === 0) {
           warnings.push({
             nodeId: node.id,
             nodeType: node.type,
-            description: `Node "${node.id}" is missing an output connection.`,
+            description: `Node "${node.id}" has no output connection (unused quantum register).`,
           });
         }
       }
@@ -1426,7 +1432,7 @@ If none apply, return { "algorithms": [] }.
       }
     }, [nodes, setContextMenu]);
 
-  
+
   const onDrop = React.useCallback(
     (event: any) => {
       console.log("dropped")
@@ -1454,7 +1460,7 @@ If none apply, return { "algorithms": [] }.
         const userTemplateFlowData = JSON.parse(event.dataTransfer.getData("application/reactflow/templateFlowData"));
         console.log("USER TEMPLATE")
         console.log(userTemplateFlowData)
-        if(userTemplateFlowData) {
+        if (userTemplateFlowData) {
           loadFlow(userTemplateFlowData);
         }
         else {
@@ -1617,7 +1623,8 @@ If none apply, return { "algorithms": [] }.
     const downloadUrl = URL.createObjectURL(jsonBlob);
     const link = document.createElement("a");
     link.href = downloadUrl;
-    link.download = `${validMetadata.name.replace(/\s+/g, "_")}_${validMetadata.id}.json`; // Use metadata for file name
+    link.download = `${(validMetadata?.name ?? "metadata").replace(/\s+/g, "_")}_${validMetadata?.id ?? "unknown"}.json`;
+
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -1625,17 +1632,17 @@ If none apply, return { "algorithms": [] }.
     console.log("Flow saved:", flowWithMetadata);
   }
 
- 
 
-  
-	const handleSaveAsTemplate = () => {
+
+
+  const handleSaveAsTemplate = () => {
     console.log("Saving User Template")
-		if (!reactFlowInstance) {
-      		console.error("React Flow instance is not initialized.");
-    		return;
-			// TODO: toast error message
-		}
-		let templateFlow = reactFlowInstance.toObject();
+    if (!reactFlowInstance) {
+      console.error("React Flow instance is not initialized.");
+      return;
+      // TODO: toast error message
+    }
+    let templateFlow = reactFlowInstance.toObject();
     console.log(templateFlow)
     // add metadata to templateFlow
     templateFlow = {
@@ -1650,7 +1657,7 @@ If none apply, return { "algorithms": [] }.
       icon: "QAOA.png", //TODO
       description: metadata.description,
       completionGuaranteed: true,
-      compactOptions:[true, false],
+      compactOptions: [true, false],
       id: `flow-${date}`,
       timestamp: timestamp,
       name: metadata.name, // get name from meta data
@@ -1659,7 +1666,7 @@ If none apply, return { "algorithms": [] }.
     console.log(newTemplate)
     // save metadata to userTemplates
     addUserTemplate(newTemplate);
-  	};
+  };
 
 
   function handleRestoreClick() {
@@ -1816,7 +1823,7 @@ If none apply, return { "algorithms": [] }.
     if (flow.initialEdges) {
       reactFlowInstance.setEdges(flow.initialEdges);
       console.log("Edges loaded.");
-    } else if (flow.edges){
+    } else if (flow.edges) {
       reactFlowInstance.setEdges(flow.edges);
       console.log("Edges loaded.");
     }
@@ -1889,125 +1896,41 @@ If none apply, return { "algorithms": [] }.
       console.error("React Flow instance is not initialized.");
       return;
     }
-    const existingNodes = reactFlowInstance.getNodes();
-    const existingEdges = reactFlowInstance.getEdges();
-    console.log("LOAD FLOW")
-    console.log("current nodes", existingNodes)
-    console.log("current edges", existingEdges)
-    // regenerate all node and edge ids (that are incoming), to ensure no duplicate ids
-    const nodeIdMap: Record<string, string> = {};
-    const edgeIdMap: Record<string, string> = {};
-    //const identifierMap: Record<string, string> = {};
-
-    const incomingNodes = flow.nodes || [];
-    const incomingEdges = flow.initialEdges || flow.edges || [];
-    incomingNodes.forEach((node) => {
-      nodeIdMap[node.id] = uuid();
-    })
-    incomingEdges.forEach((edge) => {
-      edgeIdMap[edge.id] = uuid();
-    })
-    // auch unique identifier neu generieren?
-
-    // compute node position offset, so loaded nodes and edges are visible and don't cover anything, 
-    // even if same flow is loaded multiple times
-    const iterationCount = Math.floor(existingNodes.length / (flow.nodes?.length || 1));
-    const offset = 50;
-    const offsetX = (iterationCount + 1) * offset;
-    const offsetY = (iterationCount + 1) * offset;
-
-    // process nodes
-    const processedNodes = incomingNodes.map((node: any) => {
-      const newNodeId = nodeIdMap[node.id];
-      return {
-        ...node,
-        id: newNodeId,
-        // Adjust position slightly, incase exact same node is already on canvas
-        position: { 
-          x: (node.position?.x || 0) + offsetX, 
-          y: (node.position?.y || 0) + offsetY 
-        },
-        data: {
-          ...node.data,
-          // update children
-          children: node.data.children?.map((child: string) => nodeIdMap[child]),
-          // update node and edge Ids in inputs for each node
-          inputs: node.data.inputs?.map((input: any) => {
-            let updatedInput = { ...input };
-                       
-            if (input.targetHandle && typeof input.targetHandle === 'string') {
-              Object.keys(nodeIdMap).forEach(oldId => {
-                updatedInput.targetHandle = updatedInput.targetHandle.replace(oldId, nodeIdMap[oldId]);
-              });
-            }
-            
-            if (nodeIdMap[input.id]) updatedInput.id = nodeIdMap[input.id];
-            if (edgeIdMap[input.edgeId]) updatedInput.id = edgeIdMap[input.id];
-
-            return updatedInput;
-          }),
-        },
-      };
-    });
-    nodes.forEach((node) => (console.log(node.position)))
-    processedNodes.forEach((node) => (console.log(node.position)))
-
-    // process edges
-    const processedEdges = incomingEdges.map((edge: any) => {
-      // update source and tagret nodes
-      let newSource = nodeIdMap[edge.source] || edge.source;
-      let newTarget = nodeIdMap[edge.target] || edge.target;
-      
-      // update source and target handles
-      let newSourceHandle = edge.sourceHandle;
-      let newTargetHandle = edge.targetHandle;
-      
-      Object.keys(nodeIdMap).forEach(oldId => {
-        newSourceHandle = newSourceHandle?.replace(oldId, nodeIdMap[oldId]);
-        newTargetHandle = newTargetHandle?.replace(oldId, nodeIdMap[oldId]);
-      });
-
-      return {
-        ...edge,
-        id: edgeIdMap[edge.id],
-        source: newSource,
-        target: newTarget,
-        sourceHandle: newSourceHandle,
-        targetHandle: newTargetHandle,
-      };
-    });
-
-    // append processed nodes and edges to existing reactFlowInstance
-    if(processedNodes.length > 0) {
-      const allNodes = [...existingNodes, ...processedNodes];
-      console.log("new nodes", allNodes)
-      // reactFlowInstance.addNodes(processedNodes);
+    console.log(flow.initialEdges)
+    console.log(flow.nodes)
+    if (flow.nodes) {
       reactFlowInstance.setNodes(
-        allNodes.map((node: Node) => ({
+        flow.nodes?.map((node: Node) => ({
           ...node,
           data: {
             ...node.data,
           },
         }))
       );
-    };
+    }
+    if (flow.initialEdges) {
+      reactFlowInstance.setEdges(flow.initialEdges);
+      console.log("Edges loaded.");
+    } else if (flow.edges) {
+      reactFlowInstance.setEdges(flow.edges);
+      console.log("Edges loaded.");
+    }
+    console.log("load flow nodes", nodes);
+    console.log(edges);
 
-    if(processedEdges.length > 0) {
-      const allEdges = [...existingEdges, ...processedEdges];
-      console.log("new edges", allEdges)
-      // reactFlowInstance.addEdges(processedEdges);
-      reactFlowInstance.setEdges(allEdges);
+    // Reset the viewport (optional based on your use case)
+    const { x = 0, y = 0, zoom = 1 } = flow.viewport || {};
+    reactFlowInstance.setViewport({ x, y, zoom });
+
+    console.log(flow.metadata)
+    // Set the metadata (if any) - assuming initialDiagram has metadata
+    if (flow.metadata) {
+      // If metadata is an array, unpack it
+      const dataToSet = Array.isArray(flow.metadata) ? flow.metadata[0] : flow.metadata;
+      setMetadata(dataToSet);
+      console.log("Metadata loaded:", dataToSet);
     }
 
-    // don't set metadata!!
-    // // set Metadata
-    // if (flow.metadata) {
-    //   const dataToSet = Array.isArray(flow.metadata) ? flow.metadata[0] : flow.metadata;
-    //   setMetadata(dataToSet);
-    //   console.log("Metadata loaded:", dataToSet);
-    // }
-
-    console.log("Templates successfully loaded onto canvas.");
   };
 
   const onNodeDrag = React.useCallback((event: React.MouseEvent, node: Node, nodes: Node[]) => {
@@ -2391,7 +2314,7 @@ If none apply, return { "algorithms": [] }.
           if (['finished', 'skipped'].includes(data.status)) {
             setRunTour(false);
             setExpanded(false);
-            if(modeledDiagram) {
+            if (modeledDiagram) {
               overwriteFlow(JSON.parse(modeledDiagram));
             }
           }
@@ -2459,11 +2382,11 @@ If none apply, return { "algorithms": [] }.
         tempGithubToken={githubToken}
       />
 
-      <ManageTemplateModal 
-        open={isManageTemplatesOpen} 
-        onClose={() => setIsManageTemplatesOpen(false)} 
-        templates={userTemplates} 
-        onSave={handleManageTemplatesSave}      
+      <ManageTemplateModal
+        open={isManageTemplatesOpen}
+        onClose={() => setIsManageTemplatesOpen(false)}
+        templates={userTemplates}
+        onSave={handleManageTemplatesSave}
       />
 
       <QunicornModal

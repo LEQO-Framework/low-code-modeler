@@ -50,6 +50,16 @@ export const StatePreparationNode = memo((node: Node) => {
   const [mounted, setMounted] = useState(false);
   const [startsWithDigitError, setStartsWithDigitError] = useState(false);
   const [boundError, setBoundError] = useState(false);
+  const iconMap = {
+    "Prepare State": "prepareStateIcon.png",
+    "Encode Value": "encodeValueIcon.png",
+    "Basis Encoding": "basisEncodingIcon.png",
+    "Angle Encoding": "angleEncodingIcon.png",
+    "Custom Encoding": "encodeValueIcon.png",
+    "Matrix Encoding": "matrixEncodingIcon.png",
+    "Schmidt Decomposition": "schmidtDecompositionIcon.png",
+    "Amplitude Encoding": "amplitudeEncodingIcon.png",
+  };
 
 
 
@@ -82,28 +92,6 @@ export const StatePreparationNode = memo((node: Node) => {
     updateNodeInternals(node.id);
   };
 
-
-  const getValueTypeLabel = () => {
-    const enc = node.data.encodingType || encodingType;
-
-    switch (enc) {
-      case "Basis Encoding":
-        return "any";
-      case "Angle Encoding":
-        return "array";
-      case "Amplitude Encoding":
-        return "array";
-      case "Matrix Encoding":
-        return "array";
-      case "Schmidt Decomposition":
-        return "array";
-      case "Custom Encoding":
-        return "any"
-      default:
-        return "number";
-    }
-  };
-
   console.log(node)
   useEffect(() => {
     if (node.data.label === "Encode Value") {
@@ -119,6 +107,14 @@ export const StatePreparationNode = memo((node: Node) => {
           updateNodeValue(node.id, "encodingType", node.data.label);
         }
         else if (node.data.label === "Amplitude Encoding") {
+          updateNodeValue(node.id, "encodingType", node.data.label);
+        }
+        else if (node.data.label === "Custom Encoding") {
+          updateNodeValue(node.id, "encodingType", node.data.label);
+        }
+        else if (node.data.label === "Schmidt Decomposition") {
+          updateNodeValue(node.id, "encodingType", node.data.label);
+        } else if (node.data.label === "Matrix Encoding") {
           updateNodeValue(node.id, "encodingType", node.data.label);
         } else {
           updateNodeValue(node.id, "encodingType", encodingType);
@@ -206,7 +202,7 @@ export const StatePreparationNode = memo((node: Node) => {
       ) ?? 0;
 
     const sourceType =
-      sourceNode.data.outputTypes?.[outputIndex];
+      sourceNode.data.outputTypes?.[outputIndex].toLowerCase();
 
     // Enforce array-only constraint
     if (sourceType !== "array") {
@@ -246,6 +242,12 @@ export const StatePreparationNode = memo((node: Node) => {
       updateNodeValue(node.id, "encodingType", node.data.label);
     }
     if (!node.data.encodingType && node.data.label === "Amplitude Encoding") {
+      updateNodeValue(node.id, "encodingType", node.data.label);
+    }
+    if (!node.data.encodingType && node.data.label === "Matrix Encoding") {
+      updateNodeValue(node.id, "encodingType", node.data.label);
+    }
+    if (!node.data.encodingType && node.data.label === "Schmidt Decomposition") {
       updateNodeValue(node.id, "encodingType", node.data.label);
     }
     if (!node.data.encodingType && node.data.label === "Encode Value") {
@@ -333,7 +335,7 @@ export const StatePreparationNode = memo((node: Node) => {
           )}
           style={{
             height:
-              ["Custom Encoding", "Basis Encoding", "Angle Encoding", "Amplitude Encoding"].includes(data.label)
+              ["Custom Encoding", "Basis Encoding", "Angle Encoding", "Amplitude Encoding", "Matrix Encoding", "Schmidt Decomposition"].includes(data.label)
                 ? !ancillaMode
                   ? "300px"
                   : `${Math.max(dynamicHeight - 70, 200)}px`
@@ -425,21 +427,11 @@ export const StatePreparationNode = memo((node: Node) => {
                 "Custom Encoding",
                 "Angle Encoding",
                 "Amplitude Encoding",
+                "Matrix Encoding",
+                "Schmidt Decomposition"
               ].includes(data.label) && (
                   <img
-                    src={
-                      data.label === "Prepare State"
-                        ? "prepareStateIcon.png"
-                        : data.label === "Encode Value"
-                          ? "encodeValueIcon.png"
-                          : data.label === "Basis Encoding"
-                            ? "basisEncodingIcon.png"
-                            : data.label === "Angle Encoding"
-                              ? "angleEncodingIcon.png"
-                              : data.label === "Custom Encoding"
-                                ? "encodeValueIcon.png"
-                                : "amplitudeEncodingIcon.png"
-                    }
+                    src={iconMap[data.label] ?? "amplitudeEncodingIcon.png"}
                     alt={`${data.label} icon`}
                     className={
                       data.label === "Prepare State"
@@ -498,7 +490,7 @@ export const StatePreparationNode = memo((node: Node) => {
 
                 </>
               )}
-              {(node.data.label === "Amplitude Encoding" ||node.data.label === "Custom Encoding") && (
+              {(node.data.label === "Amplitude Encoding" || node.data.label === "Custom Encoding" || node.data.label === "Matrix Encoding" || node.data.label === "Schmidt Decomposition") && (
                 <>
 
                   {node.data.encodingType !== "Basis Encoding" && node.data.encodingType !== "Angle Encoding" && (
@@ -550,7 +542,7 @@ export const StatePreparationNode = memo((node: Node) => {
           )}
           <div className="custom-node-port-in mb-3 mt-2">
             <div className="relative flex flex-col overflow-visible">
-              {(node.data.label === "Encode Value" || node.data.label === "Basis Encoding" ||  node.data.label === "Custom Encoding"|| node.data.label === "Angle Encoding" || node.data.label === "Amplitude Encoding") && (
+              {(node.data.label === "Encode Value" || node.data.label === "Basis Encoding" || node.data.label === "Custom Encoding" || node.data.label === "Angle Encoding" || node.data.label === "Amplitude Encoding" || node.data.label === "Matrix Encoding" || node.data.label === "Schmidt Decomposition") && (
                 <div
                   className="relative p-2 mb-1"
                   style={{
@@ -672,7 +664,7 @@ export const StatePreparationNode = memo((node: Node) => {
                   setSelectedNode={setSelectedNode}
                   active={true}
                 />)}
-              {(node.data.label === "Encode Value" || node.data.label === "Custom Encoding" ||node.data.label === "Basis Encoding" || node.data.label === "Amplitude Encoding" || node.data.label === "Angle Encoding") && (
+              {(node.data.label === "Encode Value" || node.data.label === "Custom Encoding" || node.data.label === "Basis Encoding" || node.data.label === "Amplitude Encoding" || node.data.label === "Angle Encoding" || node.data.label ==="Matrix Encoding" ||node.data.label ==="Schmidt Decomposition") && (
                 <OutputPort
                   node={node}
                   index={0}

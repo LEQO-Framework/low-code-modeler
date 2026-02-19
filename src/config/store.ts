@@ -342,7 +342,7 @@ export const useStore = create<RFState>()(persist((set, get) => ({
       let newNode = { ...node };
 
       // handle compact change
-      if (compact && (node.data.label === "Basis Encoding" || node.data.label === "Angle Encoding" || node.data.label === "Amplitude Encoding")) {
+      if (compact && (node.data.label === "Basis Encoding" || node.data.label === "Angle Encoding" || node.data.label === "Amplitude Encoding" || node.data.label === "Custom Encoding" || node.data.label === "Schmidt Decomposition" || node.data.label === "Matrix Encoding")) {
         newNode = {
           ...newNode,
           data: { ...newNode.data, label: "Encode Value" },
@@ -439,7 +439,7 @@ export const useStore = create<RFState>()(persist((set, get) => ({
 
   addUserTemplate: (template: Template) => {
     set({
-      userTemplates: [... get().userTemplates, template]
+      userTemplates: [...get().userTemplates, template]
     })
   },
 
@@ -518,49 +518,51 @@ export const useStore = create<RFState>()(persist((set, get) => ({
       // make changes to source and target of removed edges
       if (change.type === "remove") {
         const removedEdge = get().edges.find((e) => e.id === change.id)
-        console.log("removed edge", removedEdge);
-        const targetNode = currentNodes.find((n) => n.id === removedEdge.target);
-        const sourceNode = currentNodes.find((n) => n.id === removedEdge.source);
-        console.log("target Node", targetNode);
+        if (removedEdge) {
+          console.log("removed edge", removedEdge);
+          const targetNode = currentNodes.find((n) => n.id === removedEdge.target);
+          const sourceNode = currentNodes.find((n) => n.id === removedEdge.source);
+          console.log("target Node", targetNode);
 
-        if(targetNode){
-          const targetNodeIndex = currentNodes.findIndex((n) => n.id === targetNode.id);
+          if (targetNode) {
+            const targetNodeIndex = currentNodes.findIndex((n) => n.id === targetNode.id);
 
-          let targetData = {
-            ...targetNode.data,
-            inputs: [... (targetNode.data.inputs || [])]
-          };
-          // remove targetNode.data.inputs entry corresponding to removed edge
-          const inputIndex = targetData.inputs.findIndex((i) => (i.edgeId ?? -1) === removedEdge.id);
-          const updatedInputs = targetData.inputs.filter((i) => (i.edgeId ?? -1) !== removedEdge.id);
-          console.log("updatedInputs", updatedInputs)
-          targetData.inputs = updatedInputs;
+            let targetData = {
+              ...targetNode.data,
+              inputs: [... (targetNode.data.inputs || [])]
+            };
+            // remove targetNode.data.inputs entry corresponding to removed edge
+            const inputIndex = targetData.inputs.findIndex((i) => (i.edgeId ?? -1) === removedEdge.id);
+            const updatedInputs = targetData.inputs.filter((i) => (i.edgeId ?? -1) !== removedEdge.id);
+            console.log("updatedInputs", updatedInputs)
+            targetData.inputs = updatedInputs;
 
 
-          // revert inputTypes in targetNode.data.inputTypes to "any", if applicable for targetNode
-          if ((targetNode.type === consts.AlgorithmNode || targetNode.type === consts.ClassicalAlgorithmNode || (targetNode.type === consts.StatePreparationNode)) || targetNode.type === consts.ClassicalOperatorNode && (targetNode.data.label.includes("Arithmetic") || targetNode.data.label.includes("Comparison"))) {
-            const sourceHandle = removedEdge.sourceHandle;
-            const targetHandle = removedEdge.targetHandle;
+            // revert inputTypes in targetNode.data.inputTypes to "any", if applicable for targetNode
+            if ((targetNode.type === consts.AlgorithmNode || targetNode.type === consts.ClassicalAlgorithmNode || (targetNode.type === consts.StatePreparationNode)) || targetNode.type === consts.ClassicalOperatorNode && (targetNode.data.label.includes("Arithmetic") || targetNode.data.label.includes("Comparison"))) {
+              const sourceHandle = removedEdge.sourceHandle;
+              const targetHandle = removedEdge.targetHandle;
 
-            const handleIndex = getHandleIndex(targetNode.id, targetHandle);
-            const otherHandleIndex = handleIndex === 0 ? 1 : 0;
-            // find other edge connected to targetNode
-            const otherEdge = get().edges.find((e) => e.target === targetNode.id && e.id !== removedEdge.id);
+              const handleIndex = getHandleIndex(targetNode.id, targetHandle);
+              const otherHandleIndex = handleIndex === 0 ? 1 : 0;
+              // find other edge connected to targetNode
+              const otherEdge = get().edges.find((e) => e.target === targetNode.id && e.id !== removedEdge.id);
 
-            const hasNoFixedType = (targetNode.data.encodingType === "Basis Encoding" || targetNode.data.encodingType === "Custom Encoding")
-            // if no other edge exists: revert input & output type
-            if (!otherEdge && hasNoFixedType) {
-              targetData.inputTypes = ["any", "any"];
-              if (targetNode.data.label.includes("Arithmetic")) {
-                targetData.outputTypes = ["any"];
+              const hasNoFixedType = (targetNode.data.encodingType === "Basis Encoding" || targetNode.data.encodingType === "Custom Encoding")
+              // if no other edge exists: revert input & output type
+              if (!otherEdge && hasNoFixedType) {
+                targetData.inputTypes = ["any", "any"];
+                if (targetNode.data.label.includes("Arithmetic")) {
+                  targetData.outputTypes = ["any"];
+                }
               }
             }
-          }
 
-          updatedNodes[targetNodeIndex] = {
-            ...targetNode,
-            data: targetData,
-          };
+            updatedNodes[targetNodeIndex] = {
+              ...targetNode,
+              data: targetData,
+            };
+          }
         }
       }
     });
@@ -903,7 +905,7 @@ export const useStore = create<RFState>()(persist((set, get) => ({
     const targetType = getNodeInputType(connection.target, connection.targetHandle).toLowerCase();
     const inputIndex = getHandleIndex(connection.target, connection.targetHandle);
 
-    
+
     const sourceNode = get().nodes.find(n => n.id === connection.source);
     const targetNode = get().nodes.find(n => n.id === connection.target);
     if (!targetNode) {
@@ -912,6 +914,7 @@ export const useStore = create<RFState>()(persist((set, get) => ({
     }
 
     console.log("Types", sourceType, targetType);
+    console.log("------------------------------")
 
     // If types are incompatible, reject connection
     if (targetNode.type !== "controlStructureNode" && targetType !== "any" && sourceType !== "any" && sourceType !== targetType) {
@@ -921,7 +924,7 @@ export const useStore = create<RFState>()(persist((set, get) => ({
       insertEdge = false;
       return false; // reject edge
     }
-    
+
 
     const lockedType = getNodeLockedType(targetNode.id);
 
@@ -948,6 +951,7 @@ export const useStore = create<RFState>()(persist((set, get) => ({
       "Amplitude Encoding",
       "Matrix Encoding",
       "Schmidt Decomposition",
+      "Matrix Encoding"
     ];
 
     if (
@@ -1572,12 +1576,12 @@ export const useStore = create<RFState>()(persist((set, get) => ({
     console.log("Updated state after redo:", get());
   },
 }),
-{
-  name: "user-templates-storage",
+  {
+    name: "user-templates-storage",
 
-  partialize: (state) => ({
-    userTemplates: state.userTemplates,
-  }),
-}));
+    partialize: (state) => ({
+      userTemplates: state.userTemplates,
+    }),
+  }));
 
 
