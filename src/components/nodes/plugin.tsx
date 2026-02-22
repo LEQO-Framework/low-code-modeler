@@ -406,8 +406,7 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
                     <span className="text-black text-sm text-center w-full">
                       {node.data.inputs?.[index]?.outputIdentifier || input.parameter}
                     </span>
-                    <span className="text-black text-xs opacity-80 text-center w-full flex items-center justify-center gap-1">
-                      {displayType(input.data_type) === "File" && <File size={12} />}
+                    <span className="text-black text-xs opacity-80 text-center w-full">
                       type: {displayType(input.data_type)}
                     </span>
                   </div>
