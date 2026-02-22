@@ -3,7 +3,7 @@ import { Handle, Position, Node, Edge } from "reactflow";
 import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
 import { findDuplicateOutputIdentifiers, isUniqueIdentifier } from "../utils/utils";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, File } from "lucide-react";
 import OutputPort from "../utils/outputPort";
 
 const selector = (state: {
@@ -177,8 +177,10 @@ export const DataTypeNode = memo((node: Node) => {
     "boolean": 'booleanIcon.png',
     "angle": 'angleIcon.png',
     "complex": 'complexIcon.png',
+    "string": 'basis_encoding_icon.png',
     "File": 'complexIcon.png',
     "Array": 'arrayIcon.png',
+    "file": 'matrix_encoding_icon.png',
   };
   const label = data.label;
   const iconSrc = iconMap[label];
@@ -190,8 +192,10 @@ export const DataTypeNode = memo((node: Node) => {
     "boolean": { width: 45, height: 45 },
     "angle": { width: 45, height: 45 },
     "complex": { width: 55, height: 55 },
+    "string": { width: 50, height: 50 },
     "File": { width: 55, height: 55 },
     "Array": { width: 60, height: 60 },
+    "file": { width: 55, height: 55 },
   };
 
   return (
@@ -227,6 +231,26 @@ export const DataTypeNode = memo((node: Node) => {
             <div className="w-full bg-orange-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
               {(() => {
                 const { width, height } = iconSizeMap[node.data.label];
+                if (node.data.label === "File" || node.data.label === "file") {
+                  return (
+                    <div
+                      className="flex-shrink-0 flex items-center justify-center"
+                      style={{
+                        width: `${width}px`,
+                        height: `${height}px`,
+                        background: "white",
+			borderRadius: "25%",
+			border: "1px solid black",
+                      }}
+                    >
+                      <File
+                        size={Math.min(width, height) * 0.65}
+                        strokeWidth={1.5}
+                        color="#333"
+                      />
+                    </div>
+                  );
+                }
                 return (
                   <img
                     src={iconSrc}
@@ -252,11 +276,15 @@ export const DataTypeNode = memo((node: Node) => {
                             ? "23px"
                             : data.label === "angle"
                               ? "29px"
-                              : "10px",
+                              : data.label === "file"
+                                ? "30px"
+                                : data.label === "string"
+                                  ? "22px"
+                                  : "10px",
                 }}
               >
 
-                {data.label}
+                {data.label === "file" ? "File" : data.label}
               </span>
             </div>
           </div>
@@ -331,15 +359,34 @@ export const DataTypeNode = memo((node: Node) => {
                   <option value="h">h</option>
                 </select>
               </div>
-            )  : (
-            <input
-              id="value"
-              type="text"
-              className={`input-classical-focus p-1 text-black opacity-75 text-sm rounded-full w-20 text-center border-2 ${valueError ? 'bg-red-500 border-red-500' : 'bg-white border-orange-300'}`}
-              value={node.data.value || value}
-              placeholder="0"
-              onChange={changeValue}
-            />
+            ) : data.label === "file" ? (
+              <input
+                id="value"
+                type="text"
+                className={`input-classical-focus p-1 text-black opacity-75 text-sm rounded-lg w-full text-center border-2 ${valueError ? 'bg-red-500 border-red-500' : 'bg-white border-orange-300'}`}
+                value={node.data.value || value}
+                placeholder="http://example.com/data.json"
+                onChange={changeValue}
+                style={{ minWidth: '200px' }}
+              />
+            ) : data.label === "string" ? (
+              <input
+                id="value"
+                type="text"
+                className={`input-classical-focus p-1 text-black opacity-75 text-sm rounded-lg w-32 text-center border-2 ${valueError ? 'bg-red-500 border-red-500' : 'bg-white border-orange-300'}`}
+                value={node.data.value || value}
+                placeholder="text"
+                onChange={changeValue}
+              />
+            ) : (
+              <input
+                id="value"
+                type="text"
+                className={`input-classical-focus p-1 text-black opacity-75 text-sm rounded-full w-20 text-center border-2 ${valueError ? 'bg-red-500 border-red-500' : 'bg-white border-orange-300'}`}
+                value={node.data.value || value}
+                placeholder="0"
+                onChange={changeValue}
+              />
             )}
           </div>
         </div>
