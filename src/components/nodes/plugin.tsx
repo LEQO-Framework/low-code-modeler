@@ -132,7 +132,7 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
       style: {
 	background: "white",
 	border: "1px solid black",
-	borderRadius: "25%",
+	borderRadius: isQuantumPlugin ? "0" : "25%",
       },
     };
     const name = data.pluginName?.toLowerCase() || data.label?.toLowerCase() || '';
