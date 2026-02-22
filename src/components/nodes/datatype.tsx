@@ -238,8 +238,9 @@ export const DataTypeNode = memo((node: Node) => {
                       style={{
                         width: `${width}px`,
                         height: `${height}px`,
-                        backgroundColor: "white",
-                        borderRadius: "12px",
+                        background: "white",
+			borderRadius: "25%",
+			border: "1px solid black",
                       }}
                     >
                       <File
