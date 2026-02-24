@@ -60,9 +60,6 @@ const categories = useMemo(() => {
   };
 }, [userTemplates]);
 
-  // ML nodes are now statically defined in categories.tsx
-  const pluginsLoading = false;
-
   // Define mock inputs/outputs for ML plugins (until Plugin Runner metadata is available)
   const getMockPluginMetadata = (pluginName: string) => {
     switch (pluginName) {
@@ -566,9 +563,6 @@ const categories = useMemo(() => {
     return undefined;
   };
 
-  // Use static categories (ML nodes are defined in categories.tsx)
-  const dynamicCategories = categories;
-
   // Map display labels to plugin names for metadata lookup
   const labelToPluginName: Record<string, string> = {
     "Quantum Clustering": "quantum-k-means",
@@ -630,7 +624,7 @@ const categories = useMemo(() => {
     });
   };
 
-  const allNodes = Object.values(dynamicCategories).flatMap(({ content }) => {
+  const allNodes = Object.values(categories).flatMap(({ content }) => {
     if (Array.isArray(content)) {
       return content;
     } else {
@@ -642,14 +636,34 @@ const categories = useMemo(() => {
     }
   });
 
-
   const filteredNodes = searchQuery
-  ? allNodes.filter((node: Node) => {
-      console.log(node);
-      return node.label.toLowerCase().includes(searchQuery.toLowerCase()) &&
-        !(!ancillaMode && node.type === "ancillaNode")
-    })
-  : [];
+    ? (() => {
+      const query = searchQuery.toLowerCase();
+
+      const prefixMatches: Node[] = [];
+      const partialMatches: Node[] = [];
+
+      for (const node of allNodes) {
+        const labels = [node.label, ...(node.aliases ?? [])].map((l) =>
+          l.toLowerCase()
+        );
+        const allowedInMode = !(!ancillaMode && node.type === "ancillaNode");
+
+        if (!allowedInMode) continue;
+        if (completionGuaranteed && !node.completionGuaranteed) continue;
+        if (!node.compactOptions.includes(compact)) continue;
+
+        const startsWithMatch = labels.some((l) => l.startsWith(query));
+        const includesMatch =
+          !startsWithMatch && labels.some((l) => l.includes(query));
+
+        if (startsWithMatch) prefixMatches.push(node);
+        else if (includesMatch) partialMatches.push(node);
+      }
+
+      return [...prefixMatches, ...partialMatches];
+    })()
+    : [];
 
   const filterNodeGroup = (nodeGroup: any): Node[] => {
     if (Array.isArray(nodeGroup)) {
@@ -668,47 +682,65 @@ const categories = useMemo(() => {
 
   const renderNodes = (nodeGroup: any): React.ReactNode => {
     if (Array.isArray(nodeGroup)) {
+      const visibleNodes = nodeGroup
+        .filter((node: Node) => !(!ancillaMode && node.type === "ancillaNode"))
+        .filter((node: Node) =>
+          completionGuaranteed ? node.completionGuaranteed : true
+        )
+        .filter((node: Node) => node.compactOptions.includes(compact));
+
+      if (visibleNodes.length === 0) return null;
+
       return (
         <div className="space-y-2 mt-2">
-          {nodeGroup
-            .filter((node: Node) => !(!ancillaMode && node.type === "ancillaNode"))
-            .map((node: Node) => (
-              <div
-                key={node.label}
-                className="group bg-gray-50 text-black-700 hover:border-gray-400 hover:bg-gray-100 py-2 px-3 rounded-md cursor-pointer flex flex-col items-center gap-2 transition-colors"
-                onDragStart={(event) => onDragStart(event, node)}
-                draggable
-                title={node.description || node.label}
-              >
-                {node.icon ? (
-                  <img
-                    src={
-                      Array.isArray(node.icon)
-                        ? node.icon[ancillaMode ? 1 : 0]
-                        : node.icon
-                    }
-                    alt={typeof node.label === "string" ? node.label : ""}
-                    className={`object-contain ${node.type === consts.GateNode
-                      ? "w-[120px] h-[140px]"
-                      : node.type === consts.SplitterNode || node.type === consts.MergerNode
-                        ? "w-[190px] h-[190px]"
-                        : "w-70 h-70"
-                      }`}
-                  />
-                ) : (
-                  <span className="font-semibold">{node.label}</span>
-                )}
-              </div>
-            ))}
+          {visibleNodes.map((node: Node) => (
+            <div
+              key={node.label}
+              className="group bg-gray-50 text-black-700 hover:border-gray-400 hover:bg-gray-100 py-2 px-3 rounded-md cursor-pointer flex flex-col items-center gap-2 transition-colors"
+              onDragStart={(event) => onDragStart(event, node)}
+              draggable
+              title={node.description || node.label}
+            >
+              {node.icon ? (
+                <img
+                  src={
+                    Array.isArray(node.icon)
+                      ? node.type === consts.GateNode
+                        ? node.icon[experienceLevel === "explorer" ? 1 : 0]
+                        : node.icon[ancillaMode ? 1 : 0] // Use ancillaMode for others
+                      : node.icon
+                  }
+                  alt={typeof node.label === "string" ? node.label : ""}
+                  className={`object-contain ${node.type === consts.GateNode
+                    ? "w-[120px] h-[140px]"
+                    : node.type === consts.SplitterNode || node.type === consts.MergerNode
+                      ? "w-[190px] h-[190px]"
+                      : "w-70 h-70"
+                    }`}
+                />
+              ) : (
+                <span className="font-semibold">{node.label}</span>
+              )}
+
+            </div>
+          ))}
         </div>
       );
     }
 
+    const entries = Object.entries(nodeGroup).filter(
+      ([, subGroup]) => filterNodeGroup(subGroup).length > 0
+    );
+
+    if (entries.length === 0) return null;
+
     return (
       <div className="pl-4 space-y-4">
-        {Object.entries(nodeGroup).map(([subSubCategory, subSubGroup]) => (
+        {entries.map(([subSubCategory, subSubGroup]) => (
           <div key={subSubCategory}>
-            <div className="text-sm font-semibold text-gray-700 mt-2">{subSubCategory}</div>
+            <div className="text-sm font-semibold text-gray-700 mt-2">
+              {subSubCategory}
+            </div>
             {renderNodes(subSubGroup)}
           </div>
         ))}
@@ -741,29 +773,29 @@ const categories = useMemo(() => {
                   <img
                     src={
                       Array.isArray(node.icon)
-                        ? node.icon[ancillaMode ? 1 : 0]
+                        ? node.type === consts.GateNode
+                          ? node.icon[experienceLevel === "explorer" ? 1 : 0]
+                          : node.icon[ancillaMode ? 1 : 0] // Use ancillaMode for others
                         : node.icon
                     }
-                    alt={node.label}
-                    className="w-70 h-70 object-contain"
-                    
+                    alt={typeof node.label === "string" ? node.label : ""}
+                    className={`object-contain ${node.type === consts.GateNode
+                      ? "w-[120px] h-[140px]"
+                      : node.type === consts.SplitterNode || node.type === consts.MergerNode
+                        ? "w-[190px] h-[190px]"
+                        : "w-70 h-70"
+                      }`}
                   />
                 ) : (
                   <span className="font-semibold">{node.label}</span>
                 )}
               </div>
             ))}
-
           </div>
         )}
 
         <nav className="space-y-4">
-          {pluginsLoading && (
-            <div className="text-sm text-gray-500 px-4 py-2">
-              Loading plugins...
-            </div>
-          )}
-          {Object.entries(dynamicCategories).map(
+          {Object.entries(categories).map(
             ([category, { content, description }]) => {
               const visibleNodes = filterNodeGroup(content);
               const shownDescription = (category === consts.dataTypes || category === consts.operator)?
@@ -796,38 +828,41 @@ const categories = useMemo(() => {
                     )}
                   </button>
 
-              {activeCategory === category && (
-                <div className="pl-4 mt-2 space-y-4">
-                  {Array.isArray(content) ? (
-                    renderNodes(content)
-                  ) : (
-                    Object.entries(content).map(([subcategory, subGroup]) => (
-                      <div key={subcategory}>
-                        <button
-                          className="w-full text-left py-2 px-3 font-semibold text-gray-700 hover:bg-gray-200 rounded flex items-center justify-between"
-                          onClick={() => toggleSubcategory(`${category}-${subcategory}`)}
-                        >
-                          <span>{subcategory}</span>
-                          <span className="text-gray-500">
-                            {activeSubcategories.has(`${category}-${subcategory}`) ? '▼' : '▶'}
-                          </span>
-                        </button>
-                        {activeSubcategories.has(`${category}-${subcategory}`) && (
-                          <div className="pl-2 mt-2">
-                            {renderNodes(subGroup)}
-                          </div>
-                        )}
-                      </div>
-                    ))
+                  {activeCategory === category && (
+                    <div className="pl-4 mt-2 space-y-4">
+                      {Array.isArray(content)
+                        ? renderNodes(content)
+                        : Object.entries(content)
+                          .filter(
+                            ([, subGroup]) =>
+                              filterNodeGroup(subGroup).length > 0
+                          )
+                          .map(([subcategory, subGroup]) => (
+                            <div key={subcategory}>
+                              <button
+                                className="w-full text-left py-2 px-3 font-semibold text-gray-700 hover:bg-gray-200 rounded flex items-center justify-between"
+                                onClick={() => toggleSubcategory(`${category}-${subcategory}`)}
+                              >
+                                <span>{subcategory}</span>
+                                <span className="text-gray-500">
+                                  {activeSubcategories.has(`${category}-${subcategory}`) ? '▼' : '▶'}
+                                </span>
+                              </button>
+                              {activeSubcategories.has(`${category}-${subcategory}`) && (
+                                <div className="pl-2 mt-2">
+                                  {renderNodes(subGroup)}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                    </div>
                   )}
                 </div>
-              )}
-            </div>
-          );
-        }
+              );
+            }
           )}
         </nav>
       </aside>
     </div>
   );
-}
+};
