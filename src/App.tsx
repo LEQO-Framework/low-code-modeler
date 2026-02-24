@@ -25,7 +25,7 @@ import Modal, { NewDiagramModal } from "./Modal";
 import './index.css';
 import { Placement } from 'react-joyride';
 import { startCompile } from "./backend";
-import { ancillaConstructColor, classicalConstructColor, ClassicalOperatorNode, controlFlowConstructColor, grover, hadamard_test_imaginary_part, hadamard_test_real_part, qaoa, quantum_types, quantumConstructColor, swap_test, custom_template, TEMPLATE_STORAGE_KEY, templates } from "./constants";
+import { ancillaConstructColor, classicalConstructColor, ClassicalOperatorNode, controlFlowConstructColor, grover, hadamard_test_imaginary_part, hadamard_test_real_part, qaoa, quantum_types, quantumConstructColor, swap_test, quantum_k_means, custom_template, TEMPLATE_STORAGE_KEY, templates } from "./constants";
 import Joyride from 'react-joyride';
 import { ConfigModal } from "./components/modals/configModal";
 import { QunicornModal } from "./components/modals/qunicornModal";
@@ -36,7 +36,7 @@ import { HistoryItem, HistoryModal } from "./components/modals/historyModal";
 import { ValidationModal } from "./components/modals/validationModal";
 import AiModal from "./components/modals/aiModal";
 import OpenAI from "openai";
-import { grover_algorithm, hadamard_test_imaginary_part_algorithm, hadamard_test_real_part_algorithm, qaoa_algorithm, swap_test_algorithm } from "./constants/templates";
+import { grover_algorithm, hadamard_test_imaginary_part_algorithm, hadamard_test_real_part_algorithm, qaoa_algorithm, swap_test_algorithm, quantum_k_means_algorithm } from "./constants/templates";
 import JSZip, { JSZipObject } from "jszip";
 import { createDeploymentModel, createNodeType, createServiceTemplate, updateNodeType, updateServiceTemplate } from "./winery";
 import custom from "./components/nodes/custom";
@@ -1455,6 +1455,9 @@ If none apply, return { "algorithms": [] }.
       }
       else if (label == grover) {
         loadFlow(grover_algorithm);
+      }
+      else if (label == quantum_k_means) {
+        loadFlow(quantum_k_means_algorithm);
       }
       else if (label.startsWith(custom_template)) {
         const userTemplateFlowData = JSON.parse(event.dataTransfer.getData("application/reactflow/templateFlowData"));
