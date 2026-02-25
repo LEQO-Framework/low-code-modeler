@@ -34,6 +34,8 @@ interface ToolbarProps {
   onLoadJson: () => void;
   sendToBackend: () => void;
   startQuantumAlgorithmSelection: ()=> void;
+  uploadPatternSolution: () => void,
+  openPatternSolution: () => void,
   //sendToQunicorn: () => void;
   openHistory: () => void;
   startTour: () => void;
@@ -50,6 +52,8 @@ const Toolbar: React.FC<ToolbarProps> = ({
   onLoadJson,
   sendToBackend,
   startQuantumAlgorithmSelection,
+  uploadPatternSolution,
+  openPatternSolution,
   //sendToQunicorn,
   openHistory,
   startTour,
@@ -66,9 +70,24 @@ const Toolbar: React.FC<ToolbarProps> = ({
           <Button size="sm" onClick={onLoadJson} title="Open a new diagram">
             <FilePlus className="w-4 h-4 mr-2" /> New Diagram
           </Button>
-          <Button size="sm" onClick={onRestore} title="Open a diagram">
-            <FolderOpen className="w-4 h-4 mr-2" /> Open
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="default" className="focus:ring-0 focus-visible:ring-0 outline-none">
+                <FolderOpen className="w-4 h-4 mr-2" /> Open
+                <ChevronDown className="w-4 h-4 ml-2" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" onCloseAutoFocus={(e) => e.preventDefault()}>
+              <DropdownMenuItem onClick={onRestore} title="Open a file">
+                <FileJson className="w-4 h-4 mr-2" />
+                <span>File</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={openPatternSolution} title="Open a pattern solution">
+                <ImageIcon className="w-4 h-4 mr-2" />
+                <span>Pattern Solution</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button size="sm" variant="default" className="focus:ring-0 focus-visible:ring-0 outline-none">
@@ -92,9 +111,24 @@ const Toolbar: React.FC<ToolbarProps> = ({
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button size="sm" onClick={uploadDiagram} title="Upload the current diagram to GitHub">
-            <UploadCloud className="w-4 h-4 mr-2" /> Upload
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="default" className="focus:ring-0 focus-visible:ring-0 outline-none">
+                <UploadCloud className="w-4 h-4 mr-2" /> Upload
+                <ChevronDown className="w-4 h-4 ml-2" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" onCloseAutoFocus={(e) => e.preventDefault()}>
+              <DropdownMenuItem onClick={uploadDiagram} title="Upload the current diagram to GitHub">
+                <FileJson className="w-4 h-4 mr-2" />
+                <span>File</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={uploadPatternSolution} title="Upload the current diagram as pattern solution">
+                <ImageIcon className="w-4 h-4 mr-2" />
+                <span>Pattern Solution</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button size="sm" onClick={onManageTemplates} title="Manage all custom user templates">
             <Settings className="w-4 h-4 mr-2" /> Manage Templates
           </Button>
