@@ -177,10 +177,9 @@ export const DataTypeNode = memo((node: Node) => {
     "boolean": 'booleanIcon.png',
     "angle": 'angleIcon.png',
     "complex": 'complexIcon.png',
-    "string": 'basis_encoding_icon.png',
-    "File": 'complexIcon.png',
+    "String": 'stringIcon.png',
     "Array": 'arrayIcon.png',
-    "file": 'matrix_encoding_icon.png',
+    "File": 'fileIcon.png',
   };
   const label = data.label;
   const iconSrc = iconMap[label];
@@ -192,10 +191,9 @@ export const DataTypeNode = memo((node: Node) => {
     "boolean": { width: 45, height: 45 },
     "angle": { width: 45, height: 45 },
     "complex": { width: 55, height: 55 },
-    "string": { width: 50, height: 50 },
-    "File": { width: 55, height: 55 },
-    "Array": { width: 60, height: 60 },
-    "file": { width: 55, height: 55 },
+    "String": { width: 50, height: 50 },
+    "Array": { width: 55, height: 60 },
+    "File": { width: 45, height: 45 },
   };
 
   return (
@@ -231,26 +229,7 @@ export const DataTypeNode = memo((node: Node) => {
             <div className="w-full bg-orange-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
               {(() => {
                 const { width, height } = iconSizeMap[node.data.label];
-                if (node.data.label === "File" || node.data.label === "file") {
-                  return (
-                    <div
-                      className="flex-shrink-0 flex items-center justify-center"
-                      style={{
-                        width: `${width}px`,
-                        height: `${height}px`,
-                        background: "white",
-			borderRadius: "25%",
-			border: "1px solid black",
-                      }}
-                    >
-                      <File
-                        size={Math.min(width, height) * 0.65}
-                        strokeWidth={1.5}
-                        color="#333"
-                      />
-                    </div>
-                  );
-                }
+               
                 return (
                   <img
                     src={iconSrc}
@@ -276,15 +255,15 @@ export const DataTypeNode = memo((node: Node) => {
                             ? "23px"
                             : data.label === "angle"
                               ? "29px"
-                              : data.label === "file"
-                                ? "30px"
+                              : data.label === "File"
+                                ? "22px"
                                 : data.label === "string"
                                   ? "22px"
                                   : "10px",
                 }}
               >
 
-                {data.label === "file" ? "File" : data.label}
+                {data.label}
               </span>
             </div>
           </div>
@@ -359,21 +338,21 @@ export const DataTypeNode = memo((node: Node) => {
                   <option value="h">h</option>
                 </select>
               </div>
-            ) : data.label === "file" ? (
+            ) : data.label === "File" ? (
               <input
                 id="value"
                 type="text"
-                className={`input-classical-focus p-1 text-black opacity-75 text-sm rounded-lg w-full text-center border-2 ${valueError ? 'bg-red-500 border-red-500' : 'bg-white border-orange-300'}`}
+                className={`input-classical-focus p-1 text-black opacity-75 text-sm rounded-full w-full text-center border-2 ${valueError ? 'bg-red-500 border-red-500' : 'bg-white border-orange-300'}`}
                 value={node.data.value || value}
                 placeholder="http://example.com/data.json"
                 onChange={changeValue}
                 style={{ minWidth: '200px' }}
               />
-            ) : data.label === "string" ? (
+            ) : data.label === "String" ? (
               <input
                 id="value"
                 type="text"
-                className={`input-classical-focus p-1 text-black opacity-75 text-sm rounded-lg w-32 text-center border-2 ${valueError ? 'bg-red-500 border-red-500' : 'bg-white border-orange-300'}`}
+                className={`input-classical-focus p-1 text-black opacity-75 text-sm rounded-full w-32 text-center border-2 ${valueError ? 'bg-red-500 border-red-500' : 'bg-white border-orange-300'}`}
                 value={node.data.value || value}
                 placeholder="text"
                 onChange={changeValue}

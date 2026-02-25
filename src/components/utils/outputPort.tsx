@@ -167,6 +167,13 @@ export default function OutputPort({
       wasBellState.current = false;
     }
   }, [node.data.quantumStateName]);
+  const rawType = displayedOutputType;
+
+  const normalizedType =
+    rawType === "String" || rawType === "File"
+      ? rawType
+      : rawType.toLowerCase();
+
 
   return (
     <div className="relative flex items-center justify-end space-x-0 mt-1">
@@ -185,7 +192,7 @@ export default function OutputPort({
         <div className="w-full flex justify-between items-center">
           <span className="text-left text-sm text-black font-semibold">Output:</span>
           <span className="text-[10px] text-gray-600">
-            type: {displayedOutputType.toLowerCase()}
+            type: {normalizedType}
           </span>
         </div>
 

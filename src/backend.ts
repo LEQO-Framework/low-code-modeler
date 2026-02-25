@@ -179,14 +179,14 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                             value: node.data.value === "1" ? 1 : 0
                         }
 
-                    case "string":
+                    case "String":
                         return {
                             id: node.id,
                             type: "string",
                             value: node.data.value
                         }
 
-                    case "file":
+                    case "File":
                         return {
                             id: node.id,
                             type: "file",
