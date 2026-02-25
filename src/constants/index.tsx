@@ -68,7 +68,7 @@ export const controlStructureNodes = "Control Structure Elements";
 export const operator = "Operators";
 export const customOperators = "Custom Operators";
 
-export const machineLearningNodes = "ML Elements";
+export const machineLearningNodes = "Machine Learning (ML) Elements";
 
 export const templates = "Templates";
 

@@ -175,9 +175,9 @@ export const categories: Record<string, CategoryEntry> = {
   },
 
   [consts.machineLearningNodes]: {
-    description: "Machine learning and quantum machine learning plugins.",
+    description: "Elements for implementing classical and quantum machine learning algorithms focused on clustering, classification, and dimensionality reduction.",
     content: {
-      "Quantum ML Nodes": [
+      "Quantum ML Elements": [
         { label: "Quantum Clustering", type: consts.PluginNode, icon: "PaletteIcon_QuantumClustering.png", description: "Clusters data with quantum k-means algorithm.", completionGuaranteed: false, compactOptions: [true, false] },
         { label: "qnn", type: consts.PluginNode, icon: "PaletteIcon_qnn.png", description: "Classifies data with a quantum neural network.", completionGuaranteed: false, compactOptions: [true, false] },
         { label: "quantum-cnn", type: consts.PluginNode, icon: "PaletteIcon_quantum-cnn.png", description: "Labels data with a quantum convolutional neural network.", completionGuaranteed: false, compactOptions: [true, false] },
@@ -187,7 +187,7 @@ export const categories: Record<string, CategoryEntry> = {
         { label: "vqc", type: consts.PluginNode, icon: "PaletteIcon_vqc.png", description: "Variational Quantum Classifier.", completionGuaranteed: false, compactOptions: [true, false] },
         { label: "hybrid-autoencoder", type: consts.PluginNode, icon: "PaletteIcon_hybrid-autoencoder.png", description: "Reduces dimensionality with classical and quantum neural networks.", completionGuaranteed: false, compactOptions: [true, false] },
       ],
-      "Classical ML Nodes": [
+      "Classical ML Elements": [
         { label: "Classical Clustering", type: consts.PluginNode, icon: "PaletteIcon_ClassicalClustering.png", description: "Clusters data with classical k-means algorithm.", completionGuaranteed: false, compactOptions: [true, false] },
         { label: "classical-k-medoids", type: consts.PluginNode, icon: "PaletteIcon_classical-k-medoids.png", description: "Clusters data with classical k-medoids algorithm.", completionGuaranteed: false, compactOptions: [true, false] },
         { label: "optics", type: consts.PluginNode, icon: "PaletteIcon_optics.png", description: "Clusters data with the OPTICS algorithm.", completionGuaranteed: false, compactOptions: [true, false] },

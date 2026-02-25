@@ -271,11 +271,11 @@ function App() {
     client = null;
   }
 
-/*
-  const client = new OpenAI({
-    apiKey: openAIToken, dangerouslyAllowBrowser: true
-  });
-*/
+  /*
+    const client = new OpenAI({
+      apiKey: openAIToken, dangerouslyAllowBrowser: true
+    });
+  */
 
 
   const detectQuantumAlgorithms = async (userInput: string): Promise<string | null> => {
@@ -1085,7 +1085,9 @@ If none apply, return { "algorithms": [] }.
   // Checks if there are any Nodes conflicting with QASM
   const [containsWorkflowNodes, setContainsWorkflowNodes] = useState(false);
   function checkContainsWorkflowNodes(flow): boolean {
-    return flow.nodes?.some((node) => node.type == "plugin"||"file"||"string");
+    return flow.nodes?.some((node) =>
+      ["plugin", "File", "String"].includes(node.type)
+    )
   };
 
   const startQuantumAlgorithmSelection = () => {
@@ -2026,7 +2028,7 @@ If none apply, return { "algorithms": [] }.
 
         if (isForbidden) {
           const maxY = relativeY > nd.height / 2;
-        
+
 
           console.warn("Cannot drop node in the right half due to 'if' constraint.");
           return;
