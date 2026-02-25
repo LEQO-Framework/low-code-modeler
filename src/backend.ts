@@ -264,14 +264,20 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                     }
                 };
 
-            case consts.PluginNode:
+            case consts.PluginNode: {
+                const basePluginName = node.data.pluginName;
+                const algo = node.data.clusteringAlgorithm;
+                let effectivePluginName = basePluginName;
+                if (algo && algo !== 'k-means' && (basePluginName === 'classical-k-means' || basePluginName === 'quantum-k-means')) {
+                    const prefix = basePluginName === 'classical-k-means' ? 'classical' : 'quantum';
+                    effectivePluginName = `${prefix}-${algo}`;
+                }
                 return {
                     id: node.id,
                     type: "plugin",
                     pluginIdentifier: node.data.pluginIdentifier,
-                    pluginName: node.data.pluginName,
+                    pluginName: effectivePluginName,
                     pluginApiRoot: node.data.pluginApiRoot,
-                    clusteringAlgorithm: node.data.clusteringAlgorithm || null,
                     inputs: node.data.dataInputs?.map((input: any) => ({
                         parameter: input.parameter,
                         dataType: input.data_type,
@@ -285,6 +291,7 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                         required: output.required
                     })) || []
                 };
+            }
 
         }
         throw new Error(`Unsupported node ${node.type} (${node.data.label})`)
