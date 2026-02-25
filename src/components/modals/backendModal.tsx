@@ -21,10 +21,10 @@ export const SendRequestModal = ({
   sendToBackend,
 }: SendRequestModalProps) => {
   useEffect(() => {
-    if (containsPlaceholder && compilationTarget === "qasm") {
+    if ((containsPlaceholder||containsWorkflowNodes) && compilationTarget === "qasm") {
       setCompilationTarget("workflow");
     }
-  }, [containsPlaceholder, compilationTarget, setCompilationTarget]);
+  }, [containsPlaceholder, compilationTarget, setCompilationTarget, containsWorkflowNodes]);
 
   return (
     <Modal
@@ -55,6 +55,7 @@ export const SendRequestModal = ({
             <option value="workflow">Workflow</option>
             <option value="qasm" disabled={containsPlaceholder||containsWorkflowNodes}>
               OpenQASM3 {containsPlaceholder ? "(not available, placeholder present)" : ""}
+              {containsWorkflowNodes ? "(not available, QML, File or String nodes present)" : ""}
             </option>
           </select>
         </div>
