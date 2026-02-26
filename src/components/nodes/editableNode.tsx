@@ -14,17 +14,14 @@ const selector = (state: any) => ({
   ancillaMode: state.ancillaMode,
   updateNodeValue: state.updateNodeValue,
   setSelectedNode: state.setSelectedNode,
-  setEdges: state.setEdges,
-  setNewEdges: state.setNewEdges,
-  setContainsPlaceholder: state.setContainsPlaceholder,
 });
 
 export const EditableNode = memo((node: Node) => {
   const { data, selected } = node;
   const { nodes, edges, updateNodeValue, setSelectedNode, ancillaMode } =
     useStore(selector, shallow);
-  const updateNodeInternals = useUpdateNodeInternals();
 
+  const updateNodeInternals = useUpdateNodeInternals();
   const isDataType = data.isDataType;
   const label = data.label || "Editable Node";
 
@@ -37,219 +34,112 @@ export const EditableNode = memo((node: Node) => {
     setSelectedNode(node);
   }, [ancillaMode]);
 
-  console.log(data.constraints)
-  console.log(data.icon)
+  // --------------------- VALIDATION ---------------------
+  const validateSingleConstraint = (
+    val: string,
+    constraintObj: any,
+    allValues: string[],
+    properties: any[]
+  ) => {
+    const { constraint, value } = constraintObj;
 
-  const isCrossProperty = (constraintObj: any, properties: any[]) => {
-  return properties.some(p => p.name === constraintObj.value);
-};
-const validateSingleConstraint = (
-  val: string,
-  constraintObj: any,
-  allValues: string[]
-) => {
-  const { constraint, value } = constraintObj;
+    if (constraint === "is required") {
+      return val.trim() === "" ? "This field is required" : "";
+    }
 
-  if (constraint === "is required") {
-    return val.trim() === "" ? "This field is required" : "";
-  }
+    // Check if the value refers to another property
+    let compareValue = value;
+    const otherIndex = properties.findIndex((p: any) => p.name === value);
+    if (otherIndex !== -1) compareValue = allValues[otherIndex];
 
-  // Is value another property?
-  const otherIndex = data.properties.findIndex(
-    (p: any) => p.name === value
-  );
+    if (!val || !compareValue) return "";
 
-  let compareValue = value;
+    // Numeric comparison
+    const numVal = parseFloat(val);
+    const numCompare = parseFloat(compareValue);
+    if (!isNaN(numVal) && !isNaN(numCompare)) {
+      switch (constraint) {
+        case ">":
+          return numVal > numCompare ? "" : `Must be > ${value}`;
+        case "<":
+          return numVal < numCompare ? "" : `Must be < ${value}`;
+        case ">=":
+          return numVal >= numCompare ? "" : `Must be >= ${value}`;
+        case "<=":
+          return numVal <= numCompare ? "" : `Must be <= ${value}`;
+      }
+    }
 
-  if (otherIndex !== -1) {
-    compareValue = allValues[otherIndex];
-  }
+    // Date comparison
+    const dateVal = Date.parse(val);
+    const dateCompare = Date.parse(compareValue);
+    if (!isNaN(dateVal) && !isNaN(dateCompare)) {
+      switch (constraint) {
+        case ">":
+          return dateVal > dateCompare ? "" : `Must be after ${value}`;
+        case "<":
+          return dateVal < dateCompare ? "" : `Must be before ${value}`;
+        case ">=":
+          return dateVal >= dateCompare ? "" : `Must be on/after ${value}`;
+        case "<=":
+          return dateVal <= dateCompare ? "" : `Must be on/before ${value}`;
+      }
+    }
 
-  const numVal = parseFloat(val);
-  const numCompare = parseFloat(compareValue);
+    return "";
+  };
 
-  const dateVal = Date.parse(val);
-  const dateCompare = Date.parse(compareValue);
-
-  switch (constraint) {
-    case ">":
-      if (!isNaN(numVal) && !isNaN(numCompare))
-        return numVal > numCompare ? "" : `Must be > ${value}`;
-      if (!isNaN(dateVal) && !isNaN(dateCompare))
-        return dateVal > dateCompare ? "" : `Must be after ${value}`;
-      break;
-
-    case "<":
-      if (!isNaN(numVal) && !isNaN(numCompare))
-        return numVal < numCompare ? "" : `Must be < ${value}`;
-      if (!isNaN(dateVal) && !isNaN(dateCompare))
-        return dateVal < dateCompare ? "" : `Must be before ${value}`;
-      break;
-  }
-
-  return "";
-};
-
-const validateAllFields = (values: string[]) => {
-  return values.map((val, index) => {
-    const prop = data.properties[index];
-
-    const constraints =
-      data.constraints?.filter(
-        (c: any) => c.propertyName === prop.name
-      ) || [];
-
-    let error = "";
-
-    constraints.forEach((c: any) => {
-      const msg = validateSingleConstraint(val, c, values);
-      if (msg) error = msg;
+  const validateAllFields = (
+    values: string[],
+    properties: any[],
+    constraints: any[]
+  ) => {
+    return values.map((val, index) => {
+      const prop = properties[index];
+      const propConstraints =
+        constraints?.filter((c: any) => c.propertyName === prop.name) || [];
+      let error = "";
+      propConstraints.forEach((c) => {
+        const msg = validateSingleConstraint(val, c, values, properties);
+        if (msg) error = msg;
+      });
+      return error;
     });
+  };
 
-    return error;
-  });
-};
-
-
-  const validateConstraint = (
-  val: string,
-  constraintObj: any,
-  allValues: string[],
-  properties: any[]
-) => {
-  const { constraint, value } = constraintObj;
-
-  // Required
-  if (constraint === "is required") {
-    return val.trim() === "" ? "This field is required" : "";
-  }
-
-  // Check if value references another property
-  const otherPropertyIndex = properties.findIndex(
-    (p: any) => p.name === value
-  );
-
-  let compareValue: any = value;
-
-  if (otherPropertyIndex !== -1) {
-    compareValue = allValues[otherPropertyIndex];
-  }
-
-  // Try numeric comparison
-  const numVal = parseFloat(val);
-  const numCompare = parseFloat(compareValue);
-
-  const bothNumbers = !isNaN(numVal) && !isNaN(numCompare);
-
-  // Try date comparison
-  const dateVal = Date.parse(val);
-  const dateCompare = Date.parse(compareValue);
-
-  const bothDates = !isNaN(dateVal) && !isNaN(dateCompare);
-
-  switch (constraint) {
-    case ">":
-      if (bothNumbers) return numVal > numCompare ? "" : `Must be > ${value}`;
-      if (bothDates) return dateVal > dateCompare ? "" : `Must be after ${value}`;
-      break;
-
-    case "<":
-      if (bothNumbers) return numVal < numCompare ? "" : `Must be < ${value}`;
-      if (bothDates) return dateVal < dateCompare ? "" : `Must be before ${value}`;
-      break;
-
-    case ">=":
-      if (bothNumbers) return numVal >= numCompare ? "" : `Must be >= ${value}`;
-      if (bothDates) return dateVal >= dateCompare ? "" : `Must be on/after ${value}`;
-      break;
-
-    case "<=":
-      if (bothNumbers) return numVal <= numCompare ? "" : `Must be <= ${value}`;
-      if (bothDates) return dateVal <= dateCompare ? "" : `Must be on/before ${value}`;
-      break;
-  }
-
-  return "";
-};
-
-
-  // ---------------------------
-  // DataType Node Layout
-  // ---------------------------
+  // --------------------- DATA TYPE NODE ---------------------
   if (isDataType) {
-    const propertyCount = data.properties?.length || 0;
-    const initialPropertyValues =
-      data.properties?.map(
-        (prop: any) => data.propertyValues?.[prop.name] || ""
-      ) || [];
-    const [propertyValues, setPropertyValues] = useState<string[]>(
-      initialPropertyValues
-    );
+    const properties = data.properties || [];
+    const constraints = data.constraints || [];
+    const initialValues =
+      properties.map((prop: any) => data.propertyValues?.[prop.name] || "") ||
+      [];
+    const [propertyValues, setPropertyValues] = useState<string[]>(initialValues);
     const [propertyErrors, setPropertyErrors] = useState<string[]>(
-      initialPropertyValues.map(() => "")
+      validateAllFields(initialValues, properties, constraints)
     );
 
-    const validateConstraint = (val: string, constraintObj: any) => {
-      const { constraint, value } = constraintObj;
-
-      if (constraint === "is required") {
-        return val.trim() === "" ? "This field is required" : "";
-      }
-
-      // For numeric comparisons
-      const numericVal = parseFloat(val);
-      const numericConstraint = parseFloat(value);
-
-      if (!isNaN(numericVal)) {
-        switch (constraint) {
-          case ">":
-            return numericVal > numericConstraint ? "" : `Must be > ${value}`;
-          case ">=":
-            return numericVal >= numericConstraint ? "" : `Must be >= ${value}`;
-          case "<":
-            return numericVal < numericConstraint ? "" : `Must be < ${value}`;
-          case "<=":
-            return numericVal <= numericConstraint ? "" : `Must be <= ${value}`;
-          case "==":
-            return numericVal === numericConstraint ? "" : `Must be equal to ${value}`;
-          case "!=":
-            return numericVal !== numericConstraint ? "" : `Must not be ${value}`;
-        }
-      }
-
-      // fallback: no error
-      return "";
-    };
-
-
-    // Dynamic height based on properties
-    const baseHeight = 80; // header + padding
-    const propertyRowHeight = 60;
-    const bottomSpace = 80; // space for output port
-    const dynamicHeight = baseHeight + propertyCount * propertyRowHeight + bottomSpace + 120;
+    const dynamicHeight = 100 + properties.length * 60 + 200;
 
     return (
       <motion.div
         className="relative w-[450px]"
         initial={false}
         animate={{ height: dynamicHeight }}
-        transition={{ duration: 0.3, ease: "easeInOut" }}
       >
-        {/* Node background */}
         <div
           className={cn(
             "relative w-full h-full rounded-[80px] bg-white shadow-md border border-gray-700",
             selected && "border-blue-500"
           )}
         >
-          {/* Orange header pinned above node */}
-          <div className="absolute -top-0 left-0 w-full h-[60px] rounded-t-[120px] overflow-hidden z-10">
+          {/* Header */}
+          <div className="absolute top-0 left-0 w-full h-[60px] rounded-t-[80px] overflow-hidden">
             <div className="w-full h-full bg-orange-300 flex items-center px-8">
               <img
                 src={data.icon}
                 alt="icon"
                 style={{ width: 45, height: 45 }}
-                className="flex-shrink-0"
               />
               <div className="h-full w-[1px] bg-black mx-2" />
               <span className="font-semibold">{label}</span>
@@ -257,60 +147,64 @@ const validateAllFields = (values: string[]) => {
           </div>
 
           {/* Properties */}
-          {/* Properties */}
-          <div className="pt-[60px] px-4 pb-4 flex flex-col gap-3">
-            {data.properties?.map((prop: any, index: number) => {
-              // Find constraints for this property
-              const constraints = data.constraints?.filter(
-                (c: any) => c.propertyName === prop.name
-              ) || [];
-
-              // Compute error for current value
-              let errorMessage = "";
-              constraints.forEach((c: any) => {
-                const msg = validateConstraint(propertyValues[index], c);
-                if (msg) errorMessage = msg; // override if any constraint fails
-              });
+          <div className="pt-[70px] px-4 pb-4 flex flex-col gap-3">
+            {properties.map((prop: any, index: number) => {
+              const errorMessage = propertyErrors[index];
 
               return (
-                <div key={index} className="flex flex-col items-center w-full">
-                  <label className="text-sm text-black mb-1">{prop.name}</label>
+                <div key={index} className="flex flex-col items-center">
+                  <label className="text-sm mb-1">{prop.name}</label>
+
                   <input
-                    type="text"
+                    type={
+                      prop.type === "date"
+                        ? "date"
+                        : prop.type === "number"
+                        ? "number"
+                        : "text"
+                    }
                     value={propertyValues[index]}
                     onChange={(e) => {
-  const newValues = [...propertyValues];
-  newValues[index] = e.target.value;
+                      const newValues = [...propertyValues];
+                      newValues[index] = e.target.value;
 
-  setPropertyValues(newValues);
+                      setPropertyValues(newValues);
 
-  const newErrors = validateAllFields(newValues);
-  setPropertyErrors(newErrors);
+                      const newErrors = validateAllFields(
+                        newValues,
+                        properties,
+                        constraints
+                      );
+                      setPropertyErrors(newErrors);
 
-  node.data.propertyValues = node.data.propertyValues || {};
-  node.data.propertyValues[prop.name] = e.target.value;
-  updateNodeValue(node.id, "propertyValues", node.data.propertyValues);
-}}
-
-                    placeholder={prop.type === "string" ? "Text" : prop.type === "number" ? "0" : ""}
+                      node.data.propertyValues = node.data.propertyValues || {};
+                      node.data.propertyValues[prop.name] = e.target.value;
+                      updateNodeValue(
+                        node.id,
+                        "propertyValues",
+                        node.data.propertyValues
+                      );
+                    }}
                     className={cn(
-                      "rounded-full border-2 px-2 py-1 text-center w-[380px]",
-                      errorMessage ? "border-red-500 bg-red-100" : "border-orange-300 bg-white"
+                      "rounded-full border-2 px-3 py-1 w-[380px] text-center",
+                      errorMessage
+                        ? "border-red-500 bg-red-100"
+                        : "border-orange-300"
                     )}
                   />
+
                   {errorMessage && (
-                    <span className="text-xs text-red-600 mt-1">{errorMessage}</span>
+                    <span className="text-xs text-red-600 mt-1">
+                      {errorMessage}
+                    </span>
                   )}
                 </div>
               );
             })}
-
           </div>
 
-
-
-          {/* OutputPort bottom-right */}
-          <div className="absolute bottom-10 right-0 z-10 w-[200px] h-auto">
+          {/* Output Port */}
+          <div className="absolute bottom-10 right-0 w-[200px]">
             <OutputPort
               node={node}
               index={0}
@@ -333,9 +227,7 @@ const validateAllFields = (values: string[]) => {
     );
   }
 
-  // ---------------------------
-  // Standard EditableNode layout
-  // ---------------------------
+  // --------------------- STANDARD NODE ---------------------
   const numberInputs = data.properties?.length || 0;
   const numberOutputs = 1;
   const headerHeight = 52;
@@ -352,7 +244,6 @@ const validateAllFields = (values: string[]) => {
       animate={{ width: 320, height: dynamicHeight }}
       transition={{ duration: 0.3, ease: "easeInOut" }}
     >
-      {/* Node background */}
       <div
         className={cn(
           "w-[320px] bg-white border border-solid border-gray-700 shadow-md relative rounded-[28px]",
