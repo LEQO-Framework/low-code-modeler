@@ -557,13 +557,13 @@ export default function DomainProfileTableModal({
               a.click();
               URL.revokeObjectURL(url);
             }}
-            className="flex items-center gap-1 bg-blue-600 text-white px-3 py-1 rounded-md hover:bg-green-700 text-sm"
+            className="flex items-center gap-1 bg-blue-600 text-white px-3 py-1 rounded-md hover:bg-blue-700 text-sm"
           >
             Export Profile
           </button>
 
           {/* Import Button */}
-          <label className="flex items-center gap-1 bg-blue-500 text-white px-3 py-1 rounded-md hover:bg-yellow-600 text-sm cursor-pointer">
+          <label className="flex items-center gap-1 bg-blue-500 text-white px-3 py-1 rounded-md hover:bg-blue-700 text-sm cursor-pointer">
             Import Profile
             <input
               type="file"
