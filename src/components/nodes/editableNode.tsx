@@ -235,7 +235,7 @@ export const EditableNode = memo((node: Node) => {
   const inputsTotalHeight = numberInputs * inputHeight;
   const outputHeight = 120;
   const outputsStartTop = headerHeight + inputsTotalHeight + 10;
-  const dynamicHeight = 200 + numberInputs * 50 + numberOutputs * 130 + 250;
+  const dynamicHeight = 200 + numberInputs * 50 + numberOutputs * 130 + 100;
 
   return (
     <motion.div
@@ -246,28 +246,30 @@ export const EditableNode = memo((node: Node) => {
     >
       <div
         className={cn(
-          "w-[320px] bg-white border border-solid border-gray-700 shadow-md relative rounded-[28px]",
+          "w-[320px] bg-white border border-solid border-gray-700 shadow-md relative",
           selected && "border-blue-500"
         )}
         style={{ height: `${dynamicHeight}px` }}
       >
         {/* Header */}
-        <div className="absolute top-0 left-0 w-full h-[60px] -translate-y-4 rounded-t-[28px] overflow-hidden z-10">
-          <div className="w-full h-full bg-orange-300 flex items-center px-2">
-            <img
-              src="classicalAlgorithmIcon.png"
-              alt="icon"
-              className="w-[42px] h-[42px] object-contain flex-shrink-0"
-            />
-            <div className="h-full w-[1px] bg-black mx-2" />
-            <span className="font-semibold leading-none cursor-pointer pl-6">
-              {label}
-            </span>
-          </div>
-        </div>
+        {/* Header */}
+<div className="absolute top-[0px] left-0 w-full h-[60px] overflow-hidden z-10">
+  <div className="w-full h-full bg-blue-300 flex items-center px-2">
+    <img
+      src="classicalAlgorithmIcon.png"
+      alt="icon"
+      className="w-[42px] h-[42px] object-contain flex-shrink-0"
+    />
+    <div className="h-full w-[1px] bg-black mx-2" />
+    <span className="font-semibold leading-none cursor-pointer pl-6">
+      {label}
+    </span>
+  </div>
+</div>
+
 
         {/* Inputs */}
-        <div className="mt-[5px] flex flex-col relative z-0">
+        <div className="mt-[70px] flex flex-col relative z-0">
           {data.properties?.map((prop: any, index: number) => (
             <div
               key={`input-${index}`}
