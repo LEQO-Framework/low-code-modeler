@@ -256,12 +256,65 @@ function ConstraintEditor({
   );
 }
 
-const staticMappingOptions = { "Number": "Number", "Array": "Array", "QUBO": "QUBO", "VQE": "VQE", "QAE": "QAE" } // with descriptions
+const staticMappingOptions = { "Number": "Number", "Array": "Array", "QUBO": "QUBO", "QAOA": "QAOA", "VQE": "VQE", "QAE": "QAE" } // with descriptions
 const dynamicMappingOptions = extractNodeLabels(categories);
 const mappingOptions: Record<string, string> = {
   ...staticMappingOptions,
   ...dynamicMappingOptions
 };
+
+function OutputTypeEditor({
+  outputTypes,
+  onChange
+}: {
+  outputTypes: string[],
+  onChange: (types: string[]) => void
+}) {
+
+  const addType = () => {
+    onChange([...outputTypes, ""]);
+  };
+
+  const updateType = (index: number, value: string) => {
+    const newTypes = [...outputTypes];
+    newTypes[index] = value;
+    onChange(newTypes);
+  };
+
+  const removeType = (index: number) => {
+    onChange(outputTypes.filter((_, i) => i !== index));
+  };
+
+  return (
+    <div className="space-y-2 min-w-[150px]">
+      {outputTypes.map((type, idx) => (
+        <div key={idx} className="flex items-center gap-1 p-1 border rounded bg-gray-50 relative group">
+          <input
+            className="flex-1 border rounded px-1 py-0.5 text-xs"
+            value={type}
+            onChange={(e) => updateType(idx, e.target.value)}
+          />
+          <button
+            type="button"
+            onClick={() => removeType(idx)}
+            className="bg-red-100 text-red-600 rounded-full p-1 hover:bg-red-200"
+          >
+            <Trash2 size={12} />
+          </button>
+        </div>
+      ))}
+
+      <button
+        type="button"
+        onClick={addType}
+        className="flex items-center justify-center gap-1 w-full py-1 border-2 border-dashed border-gray-300 rounded text-gray-500 hover:border-blue-400 hover:text-blue-500 text-xs font-medium transition-colors"
+      >
+        <Plus size={14} /> Add Output Type
+      </button>
+    </div>
+  );
+}
+
 
 function MappingGroup({
   selected,
@@ -692,14 +745,13 @@ export default function DomainProfileTableModal({
                       </td>
                       {/* Output Type: String */}
                       <td className="p-2 border text-center">
-                        <input
-                          className="w-full border rounded px-2 py-1 text-sm"
-                          value={node.outputType}
-                          onChange={(e) =>
-                            updateNode(idx, "outputType", e.target.value)
-                          }
-                        />
-                      </td>
+  <OutputTypeEditor
+    outputTypes={Array.isArray(node.outputType) ? node.outputType : [node.outputType].filter(Boolean)}
+    onChange={(newTypes) => updateNode(idx, "outputType", newTypes)}
+  />
+</td>
+
+
                       {/* Properties  */}
                       <td className="p-2 border text-center">
                         <PropertyEditor
