@@ -11,8 +11,8 @@ export interface EditableNodeProfile {
   visible: boolean;
   outputType: string | string[];
   category: string;
-  properties: NodeProfileProperty[]; 
-  constraints: NodeProfileConstraint[]; 
+  properties: NodeProfileProperty[];
+  constraints: NodeProfileConstraint[];
   mapping: string[][];
 
   originalLabel: string;
@@ -48,7 +48,7 @@ function extractNodes(content: any): EditableNodeProfile[] {
             icon: n.icon,
             visible: true,
             outputType: n.outputType || "",
-            category: n.type || "", 
+            category: n.type || "",
             properties: [],
             constraints: [],
             mapping: [[]],
@@ -86,14 +86,14 @@ function extractNodeLabels(content: any): Record<string, string> {
   return labels;
 }
 
-function PropertyEditor({ 
-  properties, 
-  onChange 
-}: { 
-  properties: NodeProfileProperty[], 
-  onChange: (props: NodeProfileProperty[]) => void 
+function PropertyEditor({
+  properties,
+  onChange
+}: {
+  properties: NodeProfileProperty[],
+  onChange: (props: NodeProfileProperty[]) => void
 }) {
-  
+
   const addProperty = () => {
     onChange([...properties, { name: "", type: "" }]);
   };
@@ -112,26 +112,26 @@ function PropertyEditor({
     <div className="space-y-3 min-w-[200px]">
       {properties.map((prop, idx) => (
         <div key={idx} className="p-2 border rounded bg-gray-50 relative group">
-          <button 
+          <button
             onClick={() => removeProperty(idx)}
             className="absolute -top-2 -right-2 bg-red-100 text-red-600 rounded-full p-1 hover:bg-red-200"
           >
             <Trash2 size={12} />
           </button>
-          
+
           <div className="grid grid-cols-2 gap-2">
             <div>
               <label className="block text-[10px] font-bold text-gray-500 uppercase">Name</label>
-              <input 
-                className="w-full border rounded px-1 py-0.5 text-xs" 
+              <input
+                className="w-full border rounded px-1 py-0.5 text-xs"
                 value={prop.name}
                 onChange={(e) => updateProperty(idx, "name", e.target.value)}
               />
             </div>
             <div>
               <label className="block text-[10px] font-bold text-gray-500 uppercase">Type</label>
-              <input 
-                className="w-full border rounded px-1 py-0.5 text-xs" 
+              <input
+                className="w-full border rounded px-1 py-0.5 text-xs"
                 value={prop.type}
                 onChange={(e) => updateProperty(idx, "type", e.target.value)}
               />
@@ -150,17 +150,17 @@ function PropertyEditor({
   );
 }
 
-function ConstraintEditor({ 
-  constraints, 
+function ConstraintEditor({
+  constraints,
   availableProperties,
-  onChange 
-}: { 
-  constraints: NodeProfileConstraint[], 
+  onChange
+}: {
+  constraints: NodeProfileConstraint[],
   availableProperties: NodeProfileProperty[],
-  onChange: (props: NodeProfileConstraint[]) => void 
+  onChange: (props: NodeProfileConstraint[]) => void
 }) {
-  const constraintOptions = ["==", "!=", "<", ">", "is required"] 
-  
+  const constraintOptions = ["==", "!=", "<", ">", "is required"]
+
   const propertyOptions = (availableProperties || []).flatMap(prop => {
     const base = [prop.name];
     // Check if type contains 'array' or '[]'
@@ -176,9 +176,9 @@ function ConstraintEditor({
 
   const updateConstraint = (index: number, field: keyof NodeProfileConstraint, value: any) => {
     const newConstraints = [...constraints];
-    const finalValue = field === "constraint" && value === "is required" ? "" : 
-                       field === "value" ? value : newConstraints[index].value;
-    
+    const finalValue = field === "constraint" && value === "is required" ? "" :
+      field === "value" ? value : newConstraints[index].value;
+
     newConstraints[index] = { ...newConstraints[index], [field]: value, value: finalValue };
     onChange(newConstraints);
   };
@@ -187,24 +187,24 @@ function ConstraintEditor({
     onChange(constraints.filter((_, i) => i !== index));
   };
 
-  return ( 
+  return (
     <div className="space-y-3 min-w-[200px]">
       {constraints.map((con, idx) => {
         const isRequiredType = con.constraint === "is required";
 
         return (
-        <div key={idx} className="p-2 border rounded bg-gray-50 relative group">
-          <button 
-            onClick={() => removeConstraint(idx)}
-            className="absolute -top-2 -right-2 bg-red-100 text-red-600 rounded-full p-1 hover:bg-red-200"
-          >
-            <Trash2 size={12} />
-          </button>
-          
-          <div className="grid grid-cols-3 gap-2">
-            {/* Property Name */}
-            <div>
-              <label className="block text-[10px] font-bold text-gray-500 uppercase">Property</label>
+          <div key={idx} className="p-2 border rounded bg-gray-50 relative group">
+            <button
+              onClick={() => removeConstraint(idx)}
+              className="absolute -top-2 -right-2 bg-red-100 text-red-600 rounded-full p-1 hover:bg-red-200"
+            >
+              <Trash2 size={12} />
+            </button>
+
+            <div className="grid grid-cols-3 gap-2">
+              {/* Property Name */}
+              <div>
+                <label className="block text-[10px] font-bold text-gray-500 uppercase">Property</label>
                 <select
                   className="w-full border rounded px-1 py-0.5 text-xs bg-white"
                   value={con.propertyName}
@@ -215,10 +215,10 @@ function ConstraintEditor({
                     <option key={opt} value={opt}>{opt}</option>
                   ))}
                 </select>
-            </div>
-            {/* Constraint */}
-            <div>
-              <label className="block text-[10px] font-bold text-gray-500 uppercase">Constraint</label>
+              </div>
+              {/* Constraint */}
+              <div>
+                <label className="block text-[10px] font-bold text-gray-500 uppercase">Constraint</label>
                 <select
                   className="w-full border rounded px-1 py-0.5 text-xs bg-white"
                   value={con.constraint}
@@ -229,20 +229,20 @@ function ConstraintEditor({
                     <option key={opt} value={opt}>{opt}</option>
                   ))}
                 </select>
-            </div>
-            {/* Value */}
-            <div>
-              <label className="block text-[10px] font-bold text-gray-500 uppercase">Value</label>
-                <input 
+              </div>
+              {/* Value */}
+              <div>
+                <label className="block text-[10px] font-bold text-gray-500 uppercase">Value</label>
+                <input
                   className={`w-full border rounded px-1 py-0.5 text-xs ${isRequiredType ? "bg-gray-200 cursor-not-allowed text-transparent" : "bg-white"}`}
                   value={con.value}
                   disabled={isRequiredType}
                   placeholder={isRequiredType ? "-" : "Value..."}
                   onChange={(e) => updateConstraint(idx, "value", e.target.value)}
                 />
+              </div>
             </div>
           </div>
-        </div>
         );
       })}
 
@@ -256,21 +256,21 @@ function ConstraintEditor({
   );
 }
 
-const staticMappingOptions ={"QUBO": "Quadratic Unconstrained Binary Optimization", "QAE": "Quantum Amplitude Estimation", "VQE": "Variational Quantum Eigensolver"} // with descriptions
+const staticMappingOptions = { "Number": "Number", "Array": "Array", "QUBO": "QUBO", "VQE": "VQE", "QAE": "QAE" } // with descriptions
 const dynamicMappingOptions = extractNodeLabels(categories);
-const mappingOptions: Record<string, string> = { 
-  ...staticMappingOptions, 
-  ...dynamicMappingOptions 
+const mappingOptions: Record<string, string> = {
+  ...staticMappingOptions,
+  ...dynamicMappingOptions
 };
 
-function MappingGroup({ 
-  selected, 
-  onToggle, 
-  onRemove 
-}: { 
-  selected: string[], 
-  onToggle: (val: string) => void, 
-  onRemove: () => void 
+function MappingGroup({
+  selected,
+  onToggle,
+  onRemove
+}: {
+  selected: string[],
+  onToggle: (val: string) => void,
+  onRemove: () => void
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -325,7 +325,7 @@ function MappingGroup({
         )}
       </div>
 
-      <button 
+      <button
         onClick={onRemove}
         className="bg-red-100 text-red-600 rounded-full p-1 hover:bg-red-200" // TODO: evtl.  nicht rot, an templateModal anpassen
       >
@@ -335,17 +335,17 @@ function MappingGroup({
   );
 }
 
-export function MappingEditor({ 
-  mappings, 
-  onChange 
-}: { 
-  mappings: string[][], 
-  onChange: (newMappings: string[][]) => void 
+export function MappingEditor({
+  mappings,
+  onChange
+}: {
+  mappings: string[][],
+  onChange: (newMappings: string[][]) => void
 }) {
   const handleToggle = (groupIdx: number, val: string) => {
     const newMappings = [...mappings];
     const currentGroup = newMappings[groupIdx] || [];
-    
+
     if (currentGroup.includes(val)) {
       newMappings[groupIdx] = currentGroup.filter(v => v !== val);
     } else {
@@ -355,20 +355,20 @@ export function MappingEditor({
   };
 
   const addGroup = () => onChange([...mappings, []]);
-  
+
   const removeGroup = (idx: number) => onChange(mappings.filter((_, i) => i !== idx));
 
   return (
     <div className="min-w-[200px] p-1">
       {mappings.map((group, idx) => (
-        <MappingGroup 
-          key={idx} 
-          selected={group} 
-          onToggle={(val) => handleToggle(idx, val)} 
-          onRemove={() => removeGroup(idx)} 
+        <MappingGroup
+          key={idx}
+          selected={group}
+          onToggle={(val) => handleToggle(idx, val)}
+          onRemove={() => removeGroup(idx)}
         />
       ))}
-      
+
       <button
         onClick={addGroup}
         className="flex items-center justify-center gap-1 w-full py-1 border-2 border-dashed border-gray-200 rounded text-gray-400 hover:border-blue-300 hover:text-blue-500 text-[10px] transition-all"
@@ -395,7 +395,7 @@ export default function DomainProfileTableModal({
   useEffect(() => {
     if (!open) {
       setLocalNodes([]);
-      setProfileName(""); 
+      setProfileName("");
     }
   }, [open]);
 
@@ -413,7 +413,7 @@ export default function DomainProfileTableModal({
       const cat = node.category || "Uncategorized";
       if (!acc[cat]) {
         acc[cat] = {
-          description: "", 
+          description: "",
           content: []
         };
       }
@@ -422,19 +422,19 @@ export default function DomainProfileTableModal({
         label: node.label,
         description: node.description,
         icon: node.icon,
-        type: type, 
+        type: type,
         category: node.category,
         outputType: node.outputType,
         properties: node.properties,
         constraints: node.constraints,
         mapping: node.mapping,
-        completionGuaranteed: true, 
+        completionGuaranteed: true,
         compactOptions: [true, false],
         isDataType: node.category.includes("Data"),
       };
 
-      (acc[cat].content as any[]).push(nodeData); 
-      
+      (acc[cat].content as any[]).push(nodeData);
+
       return acc;
     }, {} as Record<string, CategoryEntry>);
 
@@ -453,8 +453,8 @@ export default function DomainProfileTableModal({
     value: any
   ) => {
     setLocalNodes((prev) => {
-      const copy:any = structuredClone(prev);
-      copy[index] = {...copy[index], [field]: value};
+      const copy: any = structuredClone(prev);
+      copy[index] = { ...copy[index], [field]: value };
       console.log("changed Node", copy[index])
       return copy;
     });
@@ -507,7 +507,7 @@ export default function DomainProfileTableModal({
   };
 
   const categoryOptions = [dataTypes, boundaryNodes, operator, controlStructureNodes, customOperators, circuitLevelNodes, templates];
-  
+
   return (
     <Modal
       title="Domain Profile"
@@ -515,64 +515,132 @@ export default function DomainProfileTableModal({
       onClose={onClose}
       className="max-w-6xl"
       footer={
-          <div className="space-x-2">
-            <button
-              className="btn btn-primary"
-              onClick={saveProfile}
-            >
-              Save Profile
-            </button>
-            <button className="btn btn-secondary" onClick={onClose}>
-              Cancel
-            </button>
-          </div>
+        <div className="space-x-2">
+          <button
+            className="btn btn-primary"
+            onClick={saveProfile}
+          >
+            Save Profile
+          </button>
+          <button className="btn btn-secondary" onClick={onClose}>
+            Cancel
+          </button>
+        </div>
       }
     >
-      <div className="max-h-[70vh] space-y-8">
-          <div className="flex justify-start items-center gap-2">
-            <span className="px-4 py-2 font-semibold"> Domain Profile Name </span>
-            <input
-              className="border rounded px-2 py-1"
-              value={profileName}
-              placeholder="Insert name..."
-              onChange={(e) => setProfileName(e.target.value)}
-            />
-            <button
-              onClick={addNode}
-              className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-shadow shadow-sm font-medium"
-            >
-              <Plus size={18} /> Add Domain Block
-            </button>
-          </div>
+      <div className="overflow-y-auto max-h-[70vh] space-y-8">
+        <div className="flex justify-start items-center gap-2">
+          <span className="px-4 py-2 font-semibold">Domain Profile Name</span>
+          <input
+            className="border rounded px-2 py-1"
+            value={profileName}
+            placeholder="Insert name..."
+            onChange={(e) => setProfileName(e.target.value)}
+          />
 
-          <div className="max-h-[70vh] overflow-y-auto space-y-8">
-            <div className="overflow-x-auto">
-              <table className="table-auto w-full border border-gray-300 rounded-md">
-                <thead className="sticky top-0 bg-gray-100 z-10">
-                  <tr>
-                    <th className="p-2 border w-32">Name</th>
-                    <th className="p-2 border w-24">Icon</th>
-                    <th className="p-2 border w-24">Category</th>
-                    <th className="p-2 border w-24">Output Type</th>
-                    <th className="p-2 border w-32">Properties</th>
-                    <th className="p-2 border w-32">Constraints</th>
-                    <th className="p-2 border w-24">Mapping</th>
-                    {/* <th className="p-2 border">Description</th>
+          <button
+            onClick={addNode}
+            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-shadow shadow-sm font-medium"
+          >
+            <Plus size={18} /> Add Domain Block
+          </button>
+
+          {/* Export Button */}
+          <button
+            onClick={() => {
+              const dataStr = JSON.stringify({ name: profileName, nodes: localNodes }, null, 2);
+              const blob = new Blob([dataStr], { type: "application/json" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `${profileName || "domain_profile"}.json`;
+              a.click();
+              URL.revokeObjectURL(url);
+            }}
+            className="flex items-center gap-1 bg-blue-600 text-white px-3 py-1 rounded-md hover:bg-green-700 text-sm"
+          >
+            Export Profile
+          </button>
+
+          {/* Import Button */}
+          <label className="flex items-center gap-1 bg-blue-500 text-white px-3 py-1 rounded-md hover:bg-yellow-600 text-sm cursor-pointer">
+            Import Profile
+            <input
+              type="file"
+              accept="application/json"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = () => {
+                  try {
+                    const json = JSON.parse(reader.result as string);
+                    if (!json.name || !Array.isArray(json.nodes)) {
+                      alert("Invalid domain profile JSON.");
+                      return;
+                    }
+
+                    // Map imported nodes to ensure defaults
+                    const sanitizedNodes: EditableNodeProfile[] = json.nodes.map((n: any) => ({
+                      label: n.label || "",
+                      description: n.description || "",
+                      icon: n.icon || "QAOA.png",
+                      visible: n.visible ?? true,
+                      outputType: n.outputType || "",
+                      category: n.category || "",
+                      properties: n.properties || [],
+                      constraints: n.constraints || [],
+                      mapping: n.mapping || [[]],
+
+                      originalLabel: n.originalLabel || n.label || "",
+                      originalDescription: n.originalDescription || n.description || "",
+                      originalIcon: n.originalIcon || n.icon || "",
+                    }));
+
+                    setProfileName(json.name);
+                    setLocalNodes(sanitizedNodes);
+                  } catch (err) {
+                    console.error(err);
+                    alert("Failed to parse JSON file.");
+                  }
+                };
+                reader.readAsText(file);
+              }}
+            />
+
+          </label>
+        </div>
+
+
+        <div className="max-h-[70vh] overflow-y-auto space-y-8">
+          <div className="overflow-x-auto">
+            <table className="table-auto w-full border border-gray-300 rounded-md">
+              <thead className="sticky top-0 bg-gray-100 z-10">
+                <tr>
+                  <th className="p-2 border w-32">Name</th>
+                  <th className="p-2 border w-24">Icon</th>
+                  <th className="p-2 border w-24">Category</th>
+                  <th className="p-2 border w-24">Output Type</th>
+                  <th className="p-2 border w-32">Properties</th>
+                  <th className="p-2 border w-32">Constraints</th>
+                  <th className="p-2 border w-24">Mapping</th>
+                  {/* <th className="p-2 border">Description</th>
                     <th className="p-2 border w-20 text-center">
                       Visible
                     </th>
                     <th className="p-2 border w-24">Actions</th> */}
-                  </tr>
-                </thead>
+                </tr>
+              </thead>
 
-                <tbody>
-                  {localNodes.length === 0 ? (
-                    <tr>
-                      <td colSpan={8} className="p-12 text-center text-gray-400 italic">
-                        No blocks added yet. Click "Add Domain Block" to begin.
-                      </td>
-                    </tr>
-                  ) : (
+              <tbody>
+                {localNodes.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="p-12 text-center text-gray-400 italic">
+                      No blocks added yet. Click "Add Domain Block" to begin.
+                    </td>
+                  </tr>
+                ) : (
                   localNodes.map((node, idx) => (
                     <tr
                       key={`${node.originalLabel}-${idx}`}
@@ -590,11 +658,11 @@ export default function DomainProfileTableModal({
                       </td>
                       {/* Icon */}
                       <td className="relative group w-24 h-24 bg-white border rounded shrink-0 overflow-hidden p-2 border text-center">
-                        <img 
+                        <img
                           src={Array.isArray(node.icon)
-                              ? node.icon[0]
-                              : node.icon} 
-                          className="w-full h-full object-contain p-1" 
+                            ? node.icon[0]
+                            : node.icon}
+                          className="w-full h-full object-contain p-1"
                           alt="icon"
                         />
                         <label className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity">
@@ -610,7 +678,7 @@ export default function DomainProfileTableModal({
                           id="profile-select"
                           value={node.category}
                           onChange={(e) =>
-                            updateNode(idx,"category",e.target.value)
+                            updateNode(idx, "category", e.target.value)
                           }
                           className="border rounded px-2 py-1 bg-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
@@ -634,36 +702,36 @@ export default function DomainProfileTableModal({
                       </td>
                       {/* Properties  */}
                       <td className="p-2 border text-center">
-                        <PropertyEditor 
-                          properties={node.properties || []} 
-                          onChange={(newProperties) => 
+                        <PropertyEditor
+                          properties={node.properties || []}
+                          onChange={(newProperties) =>
                             updateNode(idx, "properties", newProperties)
                           }
                         />
                       </td>
                       {/* Constraints  */}
                       <td className="p-2 border text-center">
-                        <ConstraintEditor 
-                          constraints={node.constraints || []} 
+                        <ConstraintEditor
+                          constraints={node.constraints || []}
                           availableProperties={node.properties || []}
-                          onChange={(newConstraints) => 
+                          onChange={(newConstraints) =>
                             updateNode(idx, "constraints", newConstraints)
                           }
                         />
                       </td>
                       {/* Mappings  */}
                       <td className="p-2 border text-center">
-                        <MappingEditor 
-                          mappings={node.mapping} 
-                          onChange={(newMappings) => 
+                        <MappingEditor
+                          mappings={node.mapping}
+                          onChange={(newMappings) =>
                             updateNode(idx, "mapping", newMappings)
                           }
                         />
                       </td>
                     </tr>
                   )))}
-                </tbody>
-              </table>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
