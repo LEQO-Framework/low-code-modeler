@@ -69,6 +69,12 @@ export const categories: Record<string, CategoryEntry> = {
           label: "Amplitude Encoding", type: consts.StatePreparationNode, icon: ["PaletteIcon_AmplitudeEncoding.png", "PaletteIcon_Ancilla_AmplitudeEncoding.png"], description: "Encodes a normalized classical vector into quantum state amplitudes.", completionGuaranteed: false, compactOptions: [false],
         },
         {
+          label: "Matrix Encoding", type: consts.StatePreparationNode, icon: ["PaletteIcon_MatrixEncoding.png", "PaletteIcon_Ancilla_MatrixEncoding.png"], description: "Prepare an arbitrary state.", completionGuaranteed: false, compactOptions: [false],
+        },
+        {
+          label: "Schmidt Decomposition", type: consts.StatePreparationNode, icon: ["PaletteIcon_SchmidtDecomposition.png", "PaletteIcon_Ancilla_SchmidtDecomposition.png"], description: "Encodes a normalized classical vector into quantum state amplitudes.", completionGuaranteed: false, compactOptions: [false],
+        },
+        {
           label: "Prepare State", type: consts.StatePreparationNode, icon: ["PaletteIcon_PrepareState.png", "PaletteIcon_Ancilla_PrepareState.png"], description: "Initializes qubits into a specific quantum state.", completionGuaranteed: true, compactOptions: [true, false],
         },
       ],
