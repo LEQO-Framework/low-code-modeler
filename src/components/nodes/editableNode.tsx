@@ -53,10 +53,15 @@ export const EditableNode = memo((node: Node) => {
     if (otherIndex !== -1) compareValue = allValues[otherIndex];
 
     if (!val || !compareValue) return "";
+    
 
     // Numeric comparison
     const numVal = parseFloat(val);
     const numCompare = parseFloat(compareValue);
+    const dateVal = Date.parse(val);
+    const dateCompare = Date.parse(compareValue);
+    const isDate = !isNaN(dateVal) && !isNaN(dateCompare);
+    if(!isDate){
     if (!isNaN(numVal) && !isNaN(numCompare)) {
       switch (constraint) {
         case ">":
@@ -68,11 +73,10 @@ export const EditableNode = memo((node: Node) => {
         case "<=":
           return numVal <= numCompare ? "" : `Must be <= ${value}`;
       }
-    }
+    }}
 
     // Date comparison
-    const dateVal = Date.parse(val);
-    const dateCompare = Date.parse(compareValue);
+
     if (!isNaN(dateVal) && !isNaN(dateCompare)) {
       switch (constraint) {
         case ">":

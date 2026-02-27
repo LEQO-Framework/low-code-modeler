@@ -441,7 +441,7 @@ export const useStore = create<RFState>()(persist((set, get) => ({
 
   addUserTemplate: (template: Template) => {
     set({
-      userTemplates: [... get().userTemplates, template]
+      userTemplates: [...get().userTemplates, template]
     })
   },
 
@@ -532,7 +532,7 @@ export const useStore = create<RFState>()(persist((set, get) => ({
         const sourceNode = currentNodes.find((n) => n.id === removedEdge.source);
         console.log("target Node", targetNode);
 
-        if(targetNode){
+        if (targetNode) {
           const targetNodeIndex = currentNodes.findIndex((n) => n.id === targetNode.id);
 
           let targetData = {
@@ -605,10 +605,31 @@ export const useStore = create<RFState>()(persist((set, get) => ({
   onConnect: (connection: Connection) => {
     const getNodeLockedType = (nodeId: string): string => {
       const node = get().nodes.find(n => n.id === nodeId);
+      const sourceNode = get().nodes.find(n => n.id === connection.source);
       if (!node) return "any";
       if (node.type === consts.AlgorithmNode || node.type === consts.ClassicalAlgorithmNode) {
         return "any"
       }
+      else if (node.type.includes("editable")) {
+        // Ensure we have properties
+        const inputTypes = node.data?.properties?.map((p: any) => p.type) || [];
+        console.log(inputTypes)
+        console.log(connection.targetHandle)
+
+        // Extract the index from the targetHandle string
+        // Example targetHandle: "classicalHandleInput0node123"
+        let handleIndex = 0;
+        
+        const match = connection.targetHandle.match(/^classicalHandleInput(\d)/);
+        if (match) {
+          handleIndex = parseInt(match[1], 10);
+        }
+        console.log(handleIndex)
+        console.log(inputTypes[handleIndex])
+
+        return inputTypes[handleIndex].toLowerCase();
+      }
+
 
       // Find the first input that has a type other than "any"
       if (node.data.inputs) {
@@ -909,7 +930,7 @@ export const useStore = create<RFState>()(persist((set, get) => ({
     const targetType = getNodeInputType(connection.target, connection.targetHandle).toLowerCase();
     const inputIndex = getHandleIndex(connection.target, connection.targetHandle);
 
-    
+
     const sourceNode = get().nodes.find(n => n.id === connection.source);
     const targetNode = get().nodes.find(n => n.id === connection.target);
     if (!targetNode) {
@@ -927,9 +948,9 @@ export const useStore = create<RFState>()(persist((set, get) => ({
       insertEdge = false;
       return false; // reject edge
     }
-    
 
-    const lockedType = getNodeLockedType(targetNode.id);
+
+    const lockedType = getNodeLockedType(targetNode.id).toLowerCase();
 
     if (sourceNode) {
       if (sourceNode.type === "dataTypeNode") sourceType = sourceNode.data?.dataType ?? "any";
@@ -1577,13 +1598,13 @@ export const useStore = create<RFState>()(persist((set, get) => ({
     console.log("Updated state after redo:", get());
   },
 }),
-{
-  name: "user-app-storage",
+  {
+    name: "user-app-storage",
 
-  partialize: (state) => ({
-    userTemplates: state.userTemplates,
-    allDomainProfiles: state.allDomainProfiles,
-  }),
-}));
+    partialize: (state) => ({
+      userTemplates: state.userTemplates,
+      allDomainProfiles: state.allDomainProfiles,
+    }),
+  }));
 
 
