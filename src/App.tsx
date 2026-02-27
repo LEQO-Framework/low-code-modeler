@@ -74,7 +74,7 @@ const selector = (state: {
   setCompletionGuaranteed: (completionGuaranteed: boolean) => void;
   setExperienceLevel: (experienceLevel: string) => void;
   addUserTemplate: (template: Template) => void;
-	setUserTemplates: (newTemplates: Template[]) => void;
+  setUserTemplates: (newTemplates: Template[]) => void;
   setAllDomainProfiles: (newProfiles: DomainProfile[]) => void;
   setContainsPlaceholder: (containsPlaceholder: boolean) => void;
   undo: () => void;
@@ -554,6 +554,31 @@ If none apply, return { "algorithms": [] }.
     setAlreadyExecuted(false);
   };
 
+  type Node2 = {
+    mapping?: string[][];
+  };
+
+  type Flow = {
+    nodes: Node2[];
+  };
+
+  function hasMultipleMappingsInFlow(flow: Flow): boolean {
+    for (const node of flow.nodes) {
+      if (!node.mapping || node.mapping.length === 0) continue;
+
+      // Convert each sub-array to a string
+      const mappingStrings = node.mapping.map(arr => arr.join('+'));
+
+      // Check unique mappings
+      const uniqueMappings = new Set(mappingStrings);
+
+      if (uniqueMappings.size > 1) {
+        return true; // Found a node with multiple distinct mappings
+      }
+    }
+
+    return false; // No node with multiple mappings found
+  }
   const sendToBackend = async () => {
     //setLoading(true);
     setModalOpen(false);
@@ -1396,19 +1421,19 @@ If none apply, return { "algorithms": [] }.
         setContextMenu((prev) => ({ ...prev, left: evt.clientX, top: evt.clientY }));
       }
     }, [nodes, setContextMenu]);
-  
+
   const currentCategories: Record<string, CategoryEntry> = useMemo(() => {
-      const domainProfileNames = allDomainProfiles.map((p) => p.name);
-      const index = domainProfileNames.indexOf(domainProfile);
-      console.log("domainProfile", domainProfile)
-      console.log("index", index)
-      if (index > -1) {
-          return allDomainProfiles[index].domainBlocks;
-      } else {
-          return categories;
-      }
-    }, [domainProfile, allDomainProfiles]);
-  
+    const domainProfileNames = allDomainProfiles.map((p) => p.name);
+    const index = domainProfileNames.indexOf(domainProfile);
+    console.log("domainProfile", domainProfile)
+    console.log("index", index)
+    if (index > -1) {
+      return allDomainProfiles[index].domainBlocks;
+    } else {
+      return categories;
+    }
+  }, [domainProfile, allDomainProfiles]);
+
   const onDrop = React.useCallback(
     (event: any) => {
       console.log("dropped")
@@ -2428,8 +2453,14 @@ If none apply, return { "algorithms": [] }.
               //store the workflow data in your state
               setWorkflow(modelData);
               const resultResponse = await fetch(item.links.result);
-              const qasmText = await resultResponse.text();
-              await deployWorkflowToCamunda("process-workflow", qasmText, "");
+              const workflow = await resultResponse.text();
+
+              // agentic subprocess is only a feature supported by camunda 8
+              if (hasMultipleMappingsInFlow(modelData)) {
+                //sendWorkflowForDeployment(workflow);
+
+              }
+              await deployWorkflowToCamunda("process-workflow", workflow, "");
 
               // Upload the QRMS file to GitHub if available
               if (item.links?.qrms) {
@@ -2585,7 +2616,7 @@ If none apply, return { "algorithms": [] }.
               completionGuaranteed={completionGuaranteed}
               onCompletionGuaranteedChange={setCompletionGuaranteed}
               domainProfile={domainProfile}
-              onDomainProfileChange={(event) => {setDomainProfile(event)}}
+              onDomainProfileChange={(event) => { setDomainProfile(event) }}
               domainProfileNames={allDomainProfiles.map((p) => p.name)}
             />
 

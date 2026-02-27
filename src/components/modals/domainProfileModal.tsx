@@ -738,10 +738,10 @@ export default function DomainProfileTableModal({
                           <option value="" disabled>Choose a category...</option>
                           
                             <option key={"dataTypes"} value={"dataTypes"}>
-                              Data Element
+                              Data Types
                             </option>
                             <option key={"operators"} value={"Operators"}>
-                              Operator
+                              Operators
                             </option>
                           
                         </select>
