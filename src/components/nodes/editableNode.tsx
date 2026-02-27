@@ -64,6 +64,10 @@ export const EditableNode = memo((node: Node) => {
     if(!isDate){
     if (!isNaN(numVal) && !isNaN(numCompare)) {
       switch (constraint) {
+        case "!=":
+          return numVal != numCompare ? "" : `Must be != ${value}`;
+        case "==":
+          return numVal == numCompare ? "" : `Must be == ${value}`;
         case ">":
           return numVal > numCompare ? "" : `Must be > ${value}`;
         case "<":
@@ -79,6 +83,10 @@ export const EditableNode = memo((node: Node) => {
 
     if (!isNaN(dateVal) && !isNaN(dateCompare)) {
       switch (constraint) {
+        case "!=":
+          return dateVal != dateCompare ? "" : `Must be != ${value}`;
+        case "==":
+          return dateVal == dateCompare ? "" : `Must be == ${value}`;
         case ">":
           return dateVal > dateCompare ? "" : `Must be after ${value}`;
         case "<":

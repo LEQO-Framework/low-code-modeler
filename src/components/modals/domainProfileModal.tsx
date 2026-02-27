@@ -159,7 +159,7 @@ function ConstraintEditor({
   availableProperties: NodeProfileProperty[],
   onChange: (props: NodeProfileConstraint[]) => void
 }) {
-  const constraintOptions = ["==", "!=", "<", ">", "is required"]
+  const constraintOptions = ["==", "!=", "<", ">", "<=", ">=", "is required"]
 
   const propertyOptions = (availableProperties || []).flatMap(prop => {
     const base = [prop.name];
@@ -736,11 +736,14 @@ export default function DomainProfileTableModal({
                           className="border rounded px-2 py-1 bg-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
                           <option value="" disabled>Choose a category...</option>
-                          {categoryOptions.map((option) => (
-                            <option key={option} value={option}>
-                              {option}
+                          
+                            <option key={"dataTypes"} value={"dataTypes"}>
+                              Data Element
                             </option>
-                          ))}
+                            <option key={"operators"} value={"Operators"}>
+                              Operator
+                            </option>
+                          
                         </select>
                       </td>
                       {/* Output Type: String */}
