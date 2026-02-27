@@ -151,6 +151,9 @@ function App() {
   const [nisqAnalyzerEndpoint, setNisqAnalyzerEndpoint] = useState(
     import.meta.env.VITE_NISQ_ANALYZER || "http://localhost:8098/nisq-analyzer"
   );
+  const [camundaEndpoint, setCamundaEndpoint] = useState(
+    import.meta.env.VITE_CAMUNDA7_ENDPOINT || "http://localhost:8090/engine-rest"
+  );
 
   const [openAIToken, setOpenAIToken] = useState(
     import.meta.env.VITE_OPENAI_TOKEN
@@ -350,6 +353,7 @@ If none apply, return { "algorithms": [] }.
   }
 
 
+  globalThis.setCamundaEndpoint = setCamundaEndpoint;
   globalThis.setNisqAnalyzerEndpoint = setNisqAnalyzerEndpoint;
   globalThis.setQunicornEndpoint = setQunicornEndpoint;
   globalThis.setLowcodeBackendEndpoint = setLowcodeBackendEndpoint;
@@ -383,6 +387,7 @@ If none apply, return { "algorithms": [] }.
 
   const handleSave = (newValues) => {
     console.log(newValues)
+    setCamundaEndpoint(newValues.tempCamundaEndpoint);
     setNisqAnalyzerEndpoint(newValues.tempNisqAnalyzerEndpoint);
     setOpenAIToken(newValues.tempOpenAIToken);
     setQunicornEndpoint(newValues.tempQunicornEndpoint);
@@ -1983,7 +1988,7 @@ If none apply, return { "algorithms": [] }.
         "Deploying to Camunda Engine: "
       );
       const response = await fetch(
-        "http://localhost:8090/engine-rest" + "/deployment/create",
+        camundaEndpoint + "/deployment/create",
         {
           method: "POST",
           body: form,
@@ -2299,6 +2304,7 @@ If none apply, return { "algorithms": [] }.
         compactVisualization={compactVisualization}
         completionGuaranteed={completionGuaranteed}
         experienceLevel={experienceLevel}
+        tempCamundaEndpoint={camundaEndpoint}
         tempNisqAnalyzerEndpoint={nisqAnalyzerEndpoint}
         tempOpenAIToken={openAIToken}
         tempQunicornEndpoint={qunicornEndpoint}
@@ -2384,7 +2390,7 @@ If none apply, return { "algorithms": [] }.
               setWorkflow(modelData);
               const resultResponse = await fetch(item.links.result);
               const qasmText = await resultResponse.text();
-              await deployWorkflowToCamunda("test", qasmText, "");
+              await deployWorkflowToCamunda("process-workflow", qasmText, "");
 
               // Upload the QRMS file to GitHub if available
               if (item.links?.qrms) {
