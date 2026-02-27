@@ -151,6 +151,9 @@ function App() {
   const [nisqAnalyzerEndpoint, setNisqAnalyzerEndpoint] = useState(
     import.meta.env.VITE_NISQ_ANALYZER || "http://localhost:8098/nisq-analyzer"
   );
+  const [camundaEndpoint, setCamundaEndpoint] = useState(
+    import.meta.env.VITE_CAMUNDA7_ENDPOINT || "http://localhost:8090/engine-rest"
+  );
 
   const [openAIToken, setOpenAIToken] = useState(
     import.meta.env.VITE_OPENAI_TOKEN
@@ -350,6 +353,7 @@ If none apply, return { "algorithms": [] }.
   }
 
 
+  globalThis.setCamundaEndpoint = setCamundaEndpoint;
   globalThis.setNisqAnalyzerEndpoint = setNisqAnalyzerEndpoint;
   globalThis.setQunicornEndpoint = setQunicornEndpoint;
   globalThis.setLowcodeBackendEndpoint = setLowcodeBackendEndpoint;
@@ -383,6 +387,7 @@ If none apply, return { "algorithms": [] }.
 
   const handleSave = (newValues) => {
     console.log(newValues)
+    setCamundaEndpoint(newValues.tempCamundaEndpoint);
     setNisqAnalyzerEndpoint(newValues.tempNisqAnalyzerEndpoint);
     setOpenAIToken(newValues.tempOpenAIToken);
     setQunicornEndpoint(newValues.tempQunicornEndpoint);
@@ -1951,6 +1956,92 @@ If none apply, return { "algorithms": [] }.
       .catch((err) => console.error("Error exporting SVG:", err));
   };
 
+  async function deployWorkflowToCamunda(
+    workflowName,
+    workflowXml,
+    viewMap
+  ) {
+    console.log(
+      "Deploying workflow to Camunda Engine"
+    );
+
+    // add required form data fields
+    const form = new FormData();
+    form.append("deployment-name", workflowName);
+    form.append("deployment-source", "QuantME Modeler");
+    form.append("deploy-changed-only", "false");
+
+    // add bpmn file ending if not present
+    let fileName = workflowName;
+    if (!fileName.endsWith(".bpmn")) {
+      fileName = fileName + ".bpmn";
+    }
+    console.log(workflowXml)
+
+    // add diagram to the body
+    const bpmnFile = new File([workflowXml], fileName, { type: "text/xml" });
+    form.append("data", bpmnFile);
+
+    // make the request and wait for the response of the deployment endpoint
+    try {
+      console.log(
+        "Deploying to Camunda Engine: "
+      );
+      const response = await fetch(
+        camundaEndpoint + "/deployment/create",
+        {
+          method: "POST",
+          body: form,
+        }
+      );
+
+      if (response.ok) {
+        // retrieve deployment results from response
+        const result = await response.json();
+        console.info("Deployment provides result: ", result);
+        console.info(
+          "Deployment successful with deployment id: %s",
+          result["id"]
+        );
+        console.log(result["deployedProcessDefinitions"]);
+
+        // abort if there is not exactly one deployed process definition
+        if (
+          Object.values(result["deployedProcessDefinitions"] || {}).length !== 1
+        ) {
+          console.error(
+            "Invalid size of deployed process definitions list: " +
+            Object.values(result["deployedProcessDefinitions"] || {}).length
+          );
+          return { status: "failed" };
+        }
+
+        return {
+          status: "deployed",
+          deployedProcessDefinition: Object.values(
+            result["deployedProcessDefinitions"] || {}
+          )[0],
+        };
+      } else {
+        console.error(
+          "Deployment of workflow returned invalid status code: %s",
+          response.status
+        );
+        return {
+          status: "failed",
+          message:
+            "Deployment of workflow returned invalid response: " + response,
+        };
+      }
+    } catch (error) {
+      console.error("Error while executing post to deploy workflow: " + error);
+      return {
+        status: "failed",
+        message: "Error while executing post to deploy workflow: " + error,
+      };
+    }
+  }
+
   /**
    * Uploads a QRMS ZIP file to GitHub, updating files if they already exist.
    */
@@ -2213,6 +2304,7 @@ If none apply, return { "algorithms": [] }.
         compactVisualization={compactVisualization}
         completionGuaranteed={completionGuaranteed}
         experienceLevel={experienceLevel}
+        tempCamundaEndpoint={camundaEndpoint}
         tempNisqAnalyzerEndpoint={nisqAnalyzerEndpoint}
         tempOpenAIToken={openAIToken}
         tempQunicornEndpoint={qunicornEndpoint}
@@ -2296,6 +2388,9 @@ If none apply, return { "algorithms": [] }.
             if (compilationTarget === "workflow") {
               //store the workflow data in your state
               setWorkflow(modelData);
+              const resultResponse = await fetch(item.links.result);
+              const qasmText = await resultResponse.text();
+              await deployWorkflowToCamunda("process-workflow", qasmText, "");
 
               // Upload the QRMS file to GitHub if available
               if (item.links?.qrms) {
