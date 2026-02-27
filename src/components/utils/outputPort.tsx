@@ -56,6 +56,7 @@ export default function OutputPort({
   const outputIdentifier = outputs[index]?.identifier || "";
   const outputSize = outputs[index]?.size || "";
   const isConnected = edges.some(edge => edge.sourceHandle === handleId);
+  const outputType = node.data.outputType || "";
 
   // Handle numeric size change and validation
   const handleYChange = (value: string, field: string) => {
@@ -124,9 +125,13 @@ export default function OutputPort({
       }
 
     }
+    else if (node.type.startsWith("editable")) {
+      outputType = node.data.outputType || "any"; // default: "any", if outputType isn't defined
+    }
     else if (type === "classical") {
       outputType = "array";
     }
+    
 
 
     console.log("OUTPUT PORT displayedOutputType", node.id, outputType)

@@ -19,6 +19,7 @@ import { ClassicalAlgorithmNode } from "@/components/nodes/classicalalgorithm";
 import { QubitNode } from "@/components/nodes/qubit";
 import { ClassicalOperationNode } from "@/components/nodes/classicalOperation";
 import { GroupNode } from "@/components/nodes/group";
+import { EditableNode } from "@/components/nodes/editableNode";
 
 export const nodesConfig = {
   initialNodes: [ ] as unknown as Node[],
@@ -40,7 +41,8 @@ export const nodesConfig = {
     mergerNode: MergerNode,
     qubitNode: QubitNode,
     classicalOperatorNode: ClassicalOperationNode,
-    groupNode: GroupNode
+    groupNode: GroupNode,
+    editableNode: EditableNode,
   } as any,
   edgesTypes: {
     quantumEdge: QuantumEdge,

@@ -12,6 +12,12 @@ export interface Node {
   completionGuaranteed?: boolean;
   aliases?: string[];
   compactOptions: boolean[];
+  properties?: any[];
+  constraints?: any[];
+  mapping?: string[][];
+  category?: string,
+  outputType?: string,
+  isDataType?: boolean,
 }
 
 export interface Template {
@@ -31,7 +37,7 @@ export interface Template {
   };
 }
 
-interface CategoryEntry {
+export interface CategoryEntry {
   description?: string | string[];
   content: CategoryContent;
 }

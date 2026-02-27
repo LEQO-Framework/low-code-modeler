@@ -32,6 +32,7 @@ interface ToolbarProps {
   onOpenConfig: () => void;
   uploadDiagram: () => void;
   onLoadJson: () => void;
+  createDomainProfile: ()=>void;
   sendToBackend: () => void;
   startQuantumAlgorithmSelection: ()=> void;
   //sendToQunicorn: () => void;
@@ -48,6 +49,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
   uploadDiagram,
   onOpenConfig,
   onLoadJson,
+  createDomainProfile,
   sendToBackend,
   startQuantumAlgorithmSelection,
   //sendToQunicorn,
@@ -100,6 +102,9 @@ const Toolbar: React.FC<ToolbarProps> = ({
           </Button>
           <Button size="sm" onClick={onOpenConfig} title="Configure the editor and the endpoints">
             <Settings className="w-4 h-4 mr-2" /> Configuration
+          </Button>
+          <Button size="sm" onClick={createDomainProfile} title="Configure the editor and the endpoints">
+            <Settings className="w-4 h-4 mr-2" /> Manage Domain Profiles
           </Button>
           <Button className="backend-button" size="sm" onClick={sendToBackend} title="Send the diagram to the backend">
             <Send className="w-4 h-4 mr-2" /> Send to Backend
