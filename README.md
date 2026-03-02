@@ -1,8 +1,8 @@
-# Low Code Modeler
+# Quantum Low-Code Modeler
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-A low code modeler which allows to model quantum algorithms.
+A low-code modeler which allows modeling and executing quantum applications.
 
 ## Requirements
 
@@ -63,6 +63,10 @@ For full ML workflow support, you can integrate with QHAna Plugin Runner:
 2. Start the QHAna Registry on port 5006
 3. Start the QHAna Backend on port 9090
 4. Configure the LCM to communicate with these services
+1. Clone the repository: `git clone https://github.com/LEQO-Framework/low-code-modeler.git`
+2. Install dependencies: `pnpm install`
+3. Start the development server: `npm run dev`
+4. Open the application in your browser at http://localhost:4242
 
 ## Execution in Docker
 
@@ -86,6 +90,23 @@ Afterwards the application is available in a browser on [http://localhost:4242](
 - public – Public assets and static files.
 
 - THIRD_PARTY_LICENSES – Contains third-party licenses and dependencies.
+
+## Pattern Integration Requirements
+
+The Quantum Low-Code Modeler can be used to create or update pattern solutions and display the underlying quantum computing patterns of an algorithm.
+
+To ensure full functionality, the following projects must be running:
+
+- Database
+
+- QC-Atlas
+
+- Pattern Atlas API
+
+- Pattern Atlas UI
+
+You can start all required services using the provided Docker setup here:
+https://github.com/UST-QuAntiL/QuantME-UseCases/tree/fix/2025-icse-docker/2025-icse/docker
 
 
 ## Disclaimer of Warranty
