@@ -715,7 +715,9 @@ const categories = useMemo(() => {
                     ? "w-[120px] h-[140px]"
                     : node.type === consts.SplitterNode || node.type === consts.MergerNode
                       ? "w-[190px] h-[190px]"
-                      : "w-70 h-70"
+                      : node.type === consts.templates
+                        ? "w-[120px] h-[120px]"
+                        : "w-70 h-70"
                     }`}
                 />
               ) : (

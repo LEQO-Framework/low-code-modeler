@@ -243,7 +243,7 @@ export const categories: Record<string, CategoryEntry> = {
       {
         label: consts.quantum_k_means,
         type: consts.templates,
-        icon: "PaletteIcon_QuantumClustering.png",
+        icon: "atom-icon.svg",
         description: "Clusters data points into k groups using a quantum-enhanced K-Means algorithm.",
         completionGuaranteed: false,
         compactOptions: [true, false],
