@@ -1883,24 +1883,6 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     if (!defaultAction)
       return;
 
-    // Save to backend and show solution ID
-    try {
-      const response = await fetch(`${lowcodeBackendEndpoint}/models/`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(flowWithMetadata)
-      });
-
-      if (response.ok) {
-        const solutionId = validMetadata.id;
-        alert(`Model "${validMetadata.name}" saved successfully!\n\nSolution ID: ${solutionId}\n\nTest URL: ${window.location.origin}/?solutionId=${solutionId}`);
-      }
-    } catch (error) {
-      console.error('Error saving to backend:', error);
-    }
-
-    localStorage.setItem(flowKey, JSON.stringify(flowWithMetadata));
-    console.log("Flow saved:", flowWithMetadata);
     // Create a downloadable JSON file
     const jsonBlob = new Blob([JSON.stringify(flowWithMetadata, null, 2)], {
       type: "application/json",
@@ -2048,7 +2030,6 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     [setSelectedNode],
   );
 
-  const [isModalOpen, setIsModalOpen] = useState(true);
   const [modeledDiagram, setModeledDiagram] = useState(null);
 
   useEffect(() => {
@@ -2068,11 +2049,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
         return response.json();
       })
       .then((modelData) => {
-        const flowData = {
-          ...modelData,
-          initialEdges: modelData.edges || modelData.initialEdges
-        };
-        overwriteFlow(flowData);
+        overwriteFlow(modelData);
         showToast("Model loaded successfully from URL", "success");
       })
       .catch((error) => {
@@ -2087,11 +2064,6 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
       console.error("React Flow instance is not initialized.");
       return;
     }
-    // For backward compatibility
-    const edgesToLoad = flow.edges || flow.initialEdges;
-    if (edgesToLoad) {
-      reactFlowInstance.setEdges(edgesToLoad);
-    }
     console.log(flow.initialEdges)
     console.log(flow.nodes)
     if (flow.nodes) {
@@ -2100,8 +2072,6 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
           ...node,
           data: {
             ...node.data,
-            inputs: node.data?.inputs || [],
-            outputs: node.data?.outputs || [],
           },
         }))
       );
@@ -2130,51 +2100,6 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     }
 
   };
-
-  // Get model from backend
-  const fetchModelData = async (modelId: string) => {
-    const url = `${lowcodeBackendEndpoint}/models/${modelId}/`;
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch model: ${response.status} ${response.statusText}`);
-    }
-
-    return await response.json();
-  };
-
-  // Load model from URL parameter
-  const loadSolutionFromUrl = async (solutionId: string) => {
-    try {
-      const modelData = await fetchModelData(solutionId);
-      overwriteFlow(modelData);
-
-      // Clear URL parameter to prevent reload on refresh
-      const url = new URL(window.location.href);
-      url.searchParams.delete('solutionId');
-      window.history.replaceState({}, '', url.toString());
-    } catch (error) {
-      console.error("Error loading solution from URL:", error);
-      alert(`Failed to load solution: ${error?.message || error}`);
-    }
-  };
-
-  // Check for solutionId URL parameter on mount
-  useEffect(() => {
-    if (!reactFlowInstance) return;
-
-    const urlParams = new URLSearchParams(window.location.search);
-    const solutionId = urlParams.get('solutionId');
-
-    if (solutionId) {
-      loadSolutionFromUrl(solutionId);
-    }
-  }, [reactFlowInstance]);
-
-  const overlappingNodeRef = useRef<Node | null>(null);
 
   // Function to load the flow in addition to all nodes and edges already on the canvas
   const loadFlow = (flow: any) => {
