@@ -13,6 +13,7 @@ interface ConfigModalProps {
     experienceLevel: string;
     compactVisualization:boolean;
     completionGuaranteed: boolean;
+    tempCamundaEndpoint: string;
     tempNisqAnalyzerEndpoint: string;
     tempQunicornEndpoint: string;
     tempOpenAIToken: string;
@@ -27,7 +28,7 @@ interface ConfigModalProps {
   }) => void;
   activeTab: string;
   setActiveTab: (tab: string) => void;
-
+  tempCamundaEndpoint: string;
   // Current App state values
   tempNisqAnalyzerEndpoint: string;
   tempQunicornEndpoint: string;
@@ -52,6 +53,7 @@ export const ConfigModal = ({
   experienceLevel,
   compactVisualization,
   completionGuaranteed,
+  tempCamundaEndpoint,
   tempNisqAnalyzerEndpoint,
   tempQunicornEndpoint,
   tempLowcodeBackendEndpoint,
@@ -73,6 +75,7 @@ export const ConfigModal = ({
     useState(compactVisualization);
 
   const [localNisq, setLocalNisq] = useState(tempNisqAnalyzerEndpoint);
+  const [localCamunda, setLocalCamunda] = useState(tempCamundaEndpoint);
   const [localQunicorn, setLocalQunicorn] = useState(tempQunicornEndpoint);
   const [localLowcode, setLocalLowcode] = useState(tempLowcodeBackendEndpoint);
   const [localOpenAIToken, setLocalOpenAIToken] = useState(tempOpenAIToken);
@@ -110,6 +113,7 @@ export const ConfigModal = ({
     onSave({
       ancillaMode: localAncillaMode,
       experienceLevel: localExperienceLevel,
+      tempCamundaEndpoint: localCamunda,
       compactVisualization: localCompactVisualization,
       completionGuaranteed: localCompletionGuaranteed,
       tempNisqAnalyzerEndpoint: localNisq,
@@ -251,6 +255,22 @@ export const ConfigModal = ({
 
         {activeTab === "lowCodeEndpoints" && (
           <div>
+            <h3 className="labels">Camunda</h3>
+            <table className="config-table">
+              <tbody>
+                <tr>
+                  <td align="right">Camunda 7 Endpoint:</td>
+                  <td align="left">
+                    <input
+                      className="qwm-input"
+                      type="text"
+                      value={localCamunda}
+                      onChange={(e) => setLocalCamunda(e.target.value)}
+                    />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
             <h3 className="labels">NISQ Analyzer</h3>
             <table className="config-table">
               <tbody>
