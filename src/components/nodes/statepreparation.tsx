@@ -196,10 +196,13 @@ export const StatePreparationNode = memo((node: Node) => {
     const sourceNode = nodes.find((n) => n.id === edge.source);
     if (!sourceNode) return;
 
-    const sourceType =
-      sourceNode.data.outputs?.find(
+    const outputIndex =
+      sourceNode.data.outputs?.findIndex(
         (o) => o.id === edge.sourceHandle
-      )?.toLowerCase();
+      ) ?? 0;
+
+    const sourceType =
+      sourceNode.data.outputTypes?.[outputIndex]?.toLowerCase();
 
     // Enforce array-only constraint
     if (sourceType !== "array") {
