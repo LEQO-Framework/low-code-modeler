@@ -228,8 +228,9 @@ export const DataTypeNode = memo((node: Node) => {
           <div className="w-full flex items-center" style={{ height: '52px', paddingLeft: '100px' }}>
             <div className="w-full bg-orange-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
               {(() => {
-                const { width, height } = iconSizeMap[node.data.label];
-               
+                const iconSize = iconSizeMap[node.data.label] ?? { width: 50, height: 50 };
+                const { width, height } = iconSize;
+
                 return (
                   <img
                     src={iconSrc}
