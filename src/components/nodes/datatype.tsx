@@ -182,7 +182,7 @@ export const DataTypeNode = memo((node: Node) => {
     "File": 'fileIcon.png',
   };
   const label = data.label;
-  const iconSrc = iconMap[label];
+  const iconSrc = iconMap[label] ?? iconMap[label?.charAt(0).toUpperCase() + label?.slice(1)];
   const iconSizeMap = {
     "int": { width: 60, height: 60 },
     "Number": { width: 55, height: 55 },
@@ -228,7 +228,7 @@ export const DataTypeNode = memo((node: Node) => {
           <div className="w-full flex items-center" style={{ height: '52px', paddingLeft: '100px' }}>
             <div className="w-full bg-orange-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
               {(() => {
-                const iconSize = iconSizeMap[node.data.label] ?? { width: 50, height: 50 };
+                const iconSize = iconSizeMap[node.data.label] ?? iconSizeMap[node.data.label?.charAt(0).toUpperCase() + node.data.label?.slice(1)] ?? { width: 50, height: 50 };
                 const { width, height } = iconSize;
 
                 return (
