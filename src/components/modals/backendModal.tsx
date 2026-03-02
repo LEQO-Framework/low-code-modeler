@@ -6,6 +6,7 @@ interface SendRequestModalProps {
   onClose: () => void;
   compilationTarget: string;
   containsPlaceholder: boolean;
+  containsWorkflowNodes: boolean;
   setCompilationTarget: (target: string) => void;
   sendToBackend: () => void;
 }
@@ -15,14 +16,15 @@ export const SendRequestModal = ({
   onClose,
   compilationTarget,
   containsPlaceholder,
+  containsWorkflowNodes,
   setCompilationTarget,
   sendToBackend,
 }: SendRequestModalProps) => {
   useEffect(() => {
-    if (containsPlaceholder && compilationTarget === "qasm") {
+    if ((containsPlaceholder||containsWorkflowNodes) && compilationTarget === "qasm") {
       setCompilationTarget("workflow");
     }
-  }, [containsPlaceholder, compilationTarget, setCompilationTarget]);
+  }, [containsPlaceholder, compilationTarget, setCompilationTarget, containsWorkflowNodes]);
 
   return (
     <Modal
@@ -50,10 +52,11 @@ export const SendRequestModal = ({
             value={compilationTarget}
             onChange={(e) => setCompilationTarget(e.target.value)}
           >
-            <option value="qasm" disabled={containsPlaceholder}>
-              OpenQASM3 {containsPlaceholder ? "(not available, placeholder present)" : ""}
-            </option>
             <option value="workflow">Workflow</option>
+            <option value="qasm" disabled={containsPlaceholder||containsWorkflowNodes}>
+              OpenQASM3 {containsPlaceholder ? "(not available, placeholder present)" : ""}
+              {containsWorkflowNodes ? "(not available, QML, File or String nodes present)" : ""}
+            </option>
           </select>
         </div>
       </div>

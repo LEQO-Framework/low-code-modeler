@@ -26,7 +26,7 @@ export function isPointInBox(
   );
 }
 
-export function handleOnDrop(
+export async function handleOnDrop(
   event: React.DragEvent<HTMLDivElement>,
   reactFlowWrapper: any,
   reactFlowInstance: any,
@@ -38,35 +38,103 @@ export function handleOnDrop(
     const type = event.dataTransfer.getData("application/reactflow");
     const dataType = event.dataTransfer.getData("application/reactflow/dataType");
     const label = event.dataTransfer.getData("application/reactflow/label");
+    const pluginDataStr = event.dataTransfer.getData("application/reactflow/pluginData");
+
     console.log(type)
     console.log(dataType)
-
-    //let position2 = reactFlowInstance.screenToFlowPosition();
-
-    //console.log(position2)
-
 
     // check if the dropped element is valid
     if (typeof type === "undefined" || !type) {
       return;
     }
-    const def = findNodeDefinition(type, label);
-    console.log(def)
-
-    const compactOptions = def.compactOptions;
 
     const position = reactFlowInstance.project({
       x: event.clientX - reactFlowBounds.left,
       y: event.clientY - reactFlowBounds.top,
     });
-    const newNode = {
-      id: getId(),
-      type,
-      position,
-      data: { label: label, inputs: [], children: [], implementation: "", implementationType: "", uncomputeImplementationType: "", uncomputeImplementation: "", completionGuaranteed: def?.completionGuaranteed ?? false, compactOptions: compactOptions }
-    };
 
-    setNodes(newNode);
+    // For plugin nodes, create node with plugin data
+    if (type === "pluginNode" && pluginDataStr) {
+      try {
+        const pluginData = JSON.parse(pluginDataStr);
+
+        // Determine display name
+        let displayName = pluginData.name;
+        if (pluginData.name === 'classical-k-means') {
+          displayName = 'Classical Clustering';
+        } else if (pluginData.name === 'quantum-k-means') {
+          displayName = 'Quantum Clustering';
+        }
+
+        // Try to fetch full plugin metadata from API, but fallback to mock data if it fails
+        let dataInputs: any[] = pluginData.mockDataInputs || [];
+        let dataOutputs: any[] = pluginData.mockDataOutputs || [];
+
+        try {
+          const metadataResponse = await fetch(pluginData.apiRoot);
+          if (metadataResponse.ok) {
+            const fullMetadata = await metadataResponse.json();
+            dataInputs = fullMetadata.entry_point?.data_input || dataInputs;
+            dataOutputs = fullMetadata.entry_point?.data_output || dataOutputs;
+          }
+        } catch (fetchError) {
+          // Fallback to mock data if API fetch fails
+        }
+
+        const newNode = {
+          id: getId(),
+          type,
+          position,
+          data: {
+            label: displayName,
+            pluginIdentifier: pluginData.identifier,
+            pluginName: pluginData.name,
+            pluginDescription: pluginData.description,
+            pluginApiRoot: pluginData.apiRoot,
+            tags: pluginData.tags || [],
+            dataInputs,
+            dataOutputs,
+            inputs: [],
+            children: [],
+            implementation: "",
+            implementationType: "",
+            uncomputeImplementationType: "",
+            uncomputeImplementation: "",
+            // Set default clustering algorithm for k-means nodes
+            clusteringAlgorithm: (pluginData.name === 'classical-k-means' || pluginData.name === 'quantum-k-means') ? 'k-means' : undefined
+          }
+        };
+
+        setNodes(newNode);
+      } catch (error) {
+        console.error('Error creating plugin node:', error);
+      }
+    } else {
+      // Standard node creation for non-plugin nodes
+      const def = findNodeDefinition(type, label);
+      console.log(def);
+
+      const compactOptions = def?.compactOptions ?? [true, false];
+
+      const newNode = {
+        id: getId(),
+        type,
+        position,
+        data: {
+          label: label,
+          inputs: [],
+          children: [],
+          implementation: "",
+          implementationType: "",
+          uncomputeImplementationType: "",
+          uncomputeImplementation: "",
+          completionGuaranteed: def?.completionGuaranteed ?? false,
+          compactOptions: compactOptions
+        }
+      };
+
+      setNodes(newNode);
+    }
   }
 }
 

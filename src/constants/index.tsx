@@ -29,6 +29,7 @@ export const MergerNode: string = "mergerNode";
 export const OperatorNode: string = "quantumOperatorNode";
 export const ClassicalOperatorNode: string = "classicalOperatorNode";
 export const GroupNode: string = "groupNode";
+export const PluginNode: string = "pluginNode";
 
 
 export const NodeTypes = [
@@ -47,7 +48,8 @@ export const NodeTypes = [
   MergerNode,
   OperatorNode,
   ClassicalOperatorNode,
-  GroupNode
+  GroupNode,
+  PluginNode
 ]
 
 export const quantumLabel = "Quantum ";
@@ -65,7 +67,11 @@ export const dataTypes = "Data Types";
 export const controlStructureNodes = "Control Structure Elements";
 export const operator = "Operators";
 export const customOperators = "Custom Operators";
+
+export const machineLearningNodes = "Machine Learning (ML) Elements";
+
 export const templates = "Templates";
+
 
 // handle prefix ensures correctness of edges
 export const classicalHandle: string = "classicalHandle";
@@ -140,6 +146,7 @@ export const grover = "Grover's Algorithm";
 export const hadamard_test_real_part = "Hadamard Test (Real Part)";
 export const hadamard_test_imaginary_part = "Hadamard Test (Imaginary Part)";
 export const swap_test = "SWAP Test";
+export const quantum_k_means = "Quantum K-Means";
 export const custom_template = "Custom Template";
 
 
