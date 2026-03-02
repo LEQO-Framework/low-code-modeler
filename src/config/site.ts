@@ -1,7 +1,7 @@
 import AncillaEdge from "@/components/edges/ancillaEdgeType";
 import ClassicalEdge from "@/components/edges/classicalEdgeType";
 import QuantumEdge from "@/components/edges/customEdgeType";
-import { DataTypeNode } from "@/components/nodes";
+import { DataTypeNode, PluginNode } from "@/components/nodes";
 import { AlgorithmNode } from "@/components/nodes/algorithm";
 import { AncillaNode } from "@/components/nodes/ancilla";
 import {  IfElseNode } from "@/components/nodes/ifelse";
@@ -40,7 +40,8 @@ export const nodesConfig = {
     mergerNode: MergerNode,
     qubitNode: QubitNode,
     classicalOperatorNode: ClassicalOperationNode,
-    groupNode: GroupNode
+    groupNode: GroupNode,
+    pluginNode: PluginNode
   } as any,
   edgesTypes: {
     quantumEdge: QuantumEdge,
@@ -69,7 +70,8 @@ export const initialDiagram = {
     mergerNode: MergerNode,
     qubitNode: QubitNode,
     classicalOperatorNode: ClassicalOperationNode,
-    groupNode: GroupNode
+    groupNode: GroupNode,
+    pluginNode: PluginNode
   } as any,
 };
 

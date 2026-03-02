@@ -25,11 +25,16 @@ const categoryIcons: Record<string, string> = {
   [consts.customOperators]: "CustomOperators.png",
   [consts.operator]: "Operators.png",
   [consts.dataTypes]: "DataTypes.png",
+
+  [consts.machineLearningNodes]: "MLElements.svg",
+
   [consts.templates]: "Templates.png",
+
 };
 
 export const AddNodePanel = () => {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [activeSubcategories, setActiveSubcategories] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState<string>("");
   const { ancillaMode, completionGuaranteed, compact, experienceLevel, userTemplates } = useStore(
     selector,
@@ -55,10 +60,544 @@ const categories = useMemo(() => {
   };
 }, [userTemplates]);
 
+  // Define mock inputs/outputs for ML plugins (until Plugin Runner metadata is available)
+  const getMockPluginMetadata = (pluginName: string) => {
+    switch (pluginName) {
+      case 'classical-k-means':
+      case 'quantum-k-means':
+        return {
+          dataInputs: [
+            {
+              parameter: 'entityPointsUrl',
+              data_type: 'entity/vector',
+              content_type: ['application/json', 'text/csv'],
+              required: true,
+            },
+            {
+              parameter: 'numberOfClusters',
+              data_type: 'int',
+              content_type: ['text/plain'],
+              required: true,
+            },
+            {
+              parameter: 'variant',
+              data_type: 'string',
+              content_type: ['text/plain'],
+              required: pluginName === 'quantum-k-means',
+            },
+            {
+              parameter: 'tolerance',
+              data_type: 'float',
+              content_type: ['text/plain'],
+              required: false,
+            },
+            {
+              parameter: 'maxIterations',
+              data_type: 'int',
+              content_type: ['text/plain'],
+              required: false,
+            },
+          ],
+          dataOutputs: [
+            {
+              name: 'Cluster Labels',
+              data_type: 'entity/label',
+              content_type: ['application/json'],
+              required: true,
+            },
+            {
+              name: 'Visualization',
+              data_type: 'plot',
+              content_type: ['text/html'],
+              required: false,
+            },
+          ],
+        };
+
+      case 'quantum-k-nearest-neighbours':
+        return {
+          dataInputs: [
+            {
+              parameter: 'trainingDataUrl',
+              data_type: 'entity/vector',
+              content_type: ['application/json', 'text/csv'],
+              required: true,
+            },
+            {
+              parameter: 'trainingLabelsUrl',
+              data_type: 'entity/label',
+              content_type: ['application/json', 'text/csv'],
+              required: true,
+            },
+            {
+              parameter: 'testDataUrl',
+              data_type: 'entity/vector',
+              content_type: ['application/json', 'text/csv'],
+              required: true,
+            },
+            {
+              parameter: 'k',
+              data_type: 'int',
+              content_type: ['text/plain'],
+              required: true,
+            },
+          ],
+          dataOutputs: [
+            {
+              name: 'Predicted Labels',
+              data_type: 'entity/label',
+              content_type: ['application/json'],
+              required: true,
+            },
+          ],
+        };
+
+      case 'classical-k-medoids':
+        return {
+          dataInputs: [
+            {
+              parameter: 'entityPointsUrl',
+              data_type: 'entity/vector',
+              content_type: ['application/json', 'text/csv'],
+              required: true,
+            },
+            {
+              parameter: 'numberOfClusters',
+              data_type: 'int',
+              content_type: ['text/plain'],
+              required: true,
+            },
+            {
+              parameter: 'tolerance',
+              data_type: 'float',
+              content_type: ['text/plain'],
+              required: false,
+            },
+            {
+              parameter: 'maxIterations',
+              data_type: 'int',
+              content_type: ['text/plain'],
+              required: false,
+            },
+          ],
+          dataOutputs: [
+            {
+              name: 'Cluster Labels',
+              data_type: 'entity/label',
+              content_type: ['application/json'],
+              required: true,
+            },
+          ],
+        };
+
+      case 'optics':
+        return {
+          dataInputs: [
+            {
+              parameter: 'entityPointsUrl',
+              data_type: 'entity/vector',
+              content_type: ['application/json', 'text/csv'],
+              required: true,
+            },
+            {
+              parameter: 'minSamples',
+              data_type: 'int',
+              content_type: ['text/plain'],
+              required: true,
+            },
+            {
+              parameter: 'maxEps',
+              data_type: 'float',
+              content_type: ['text/plain'],
+              required: false,
+            },
+          ],
+          dataOutputs: [
+            {
+              name: 'Cluster Labels',
+              data_type: 'entity/label',
+              content_type: ['application/json'],
+              required: true,
+            },
+          ],
+        };
+
+      case 'qnn':
+        return {
+          dataInputs: [
+            {
+              parameter: 'trainingDataUrl',
+              data_type: 'entity/vector',
+              content_type: ['application/json', 'text/csv'],
+              required: true,
+            },
+            {
+              parameter: 'trainingLabelsUrl',
+              data_type: 'entity/label',
+              content_type: ['application/json', 'text/csv'],
+              required: true,
+            },
+            {
+              parameter: 'testDataUrl',
+              data_type: 'entity/vector',
+              content_type: ['application/json', 'text/csv'],
+              required: true,
+            },
+            {
+              parameter: 'epochs',
+              data_type: 'int',
+              content_type: ['text/plain'],
+              required: false,
+            },
+          ],
+          dataOutputs: [
+            {
+              name: 'Predicted Labels',
+              data_type: 'entity/label',
+              content_type: ['application/json'],
+              required: true,
+            },
+          ],
+        };
+
+      case 'quantum-cnn':
+        return {
+          dataInputs: [
+            {
+              parameter: 'trainingDataUrl',
+              data_type: 'entity/vector',
+              content_type: ['application/json', 'text/csv'],
+              required: true,
+            },
+            {
+              parameter: 'trainingLabelsUrl',
+              data_type: 'entity/label',
+              content_type: ['application/json', 'text/csv'],
+              required: true,
+            },
+            {
+              parameter: 'testDataUrl',
+              data_type: 'entity/vector',
+              content_type: ['application/json', 'text/csv'],
+              required: true,
+            },
+            {
+              parameter: 'epochs',
+              data_type: 'int',
+              content_type: ['text/plain'],
+              required: false,
+            },
+          ],
+          dataOutputs: [
+            {
+              name: 'Predicted Labels',
+              data_type: 'entity/label',
+              content_type: ['application/json'],
+              required: true,
+            },
+          ],
+        };
+
+      case 'quantum-parzen-window':
+        return {
+          dataInputs: [
+            {
+              parameter: 'trainingDataUrl',
+              data_type: 'entity/vector',
+              content_type: ['application/json', 'text/csv'],
+              required: true,
+            },
+            {
+              parameter: 'trainingLabelsUrl',
+              data_type: 'entity/label',
+              content_type: ['application/json', 'text/csv'],
+              required: true,
+            },
+            {
+              parameter: 'testDataUrl',
+              data_type: 'entity/vector',
+              content_type: ['application/json', 'text/csv'],
+              required: true,
+            },
+            {
+              parameter: 'bandwidth',
+              data_type: 'float',
+              content_type: ['text/plain'],
+              required: false,
+            },
+          ],
+          dataOutputs: [
+            {
+              name: 'Predicted Labels',
+              data_type: 'entity/label',
+              content_type: ['application/json'],
+              required: true,
+            },
+          ],
+        };
+
+      case 'vqc':
+        return {
+          dataInputs: [
+            {
+              parameter: 'trainingDataUrl',
+              data_type: 'entity/vector',
+              content_type: ['application/json', 'text/csv'],
+              required: true,
+            },
+            {
+              parameter: 'trainingLabelsUrl',
+              data_type: 'entity/label',
+              content_type: ['application/json', 'text/csv'],
+              required: true,
+            },
+            {
+              parameter: 'testDataUrl',
+              data_type: 'entity/vector',
+              content_type: ['application/json', 'text/csv'],
+              required: true,
+            },
+          ],
+          dataOutputs: [
+            {
+              name: 'Predicted Labels',
+              data_type: 'entity/label',
+              content_type: ['application/json'],
+              required: true,
+            },
+          ],
+        };
+
+      case 'svm':
+        return {
+          dataInputs: [
+            {
+              parameter: 'trainingDataUrl',
+              data_type: 'entity/vector',
+              content_type: ['application/json', 'text/csv'],
+              required: true,
+            },
+            {
+              parameter: 'trainingLabelsUrl',
+              data_type: 'entity/label',
+              content_type: ['application/json', 'text/csv'],
+              required: true,
+            },
+            {
+              parameter: 'testDataUrl',
+              data_type: 'entity/vector',
+              content_type: ['application/json', 'text/csv'],
+              required: true,
+            },
+          ],
+          dataOutputs: [
+            {
+              name: 'Predicted Labels',
+              data_type: 'entity/label',
+              content_type: ['application/json'],
+              required: true,
+            },
+          ],
+        };
+
+      case 'neural-network':
+        return {
+          dataInputs: [
+            {
+              parameter: 'trainingDataUrl',
+              data_type: 'entity/vector',
+              content_type: ['application/json', 'text/csv'],
+              required: true,
+            },
+            {
+              parameter: 'trainingLabelsUrl',
+              data_type: 'entity/label',
+              content_type: ['application/json', 'text/csv'],
+              required: true,
+            },
+          ],
+          dataOutputs: [
+            {
+              name: 'Model',
+              data_type: 'model',
+              content_type: ['application/json'],
+              required: true,
+            },
+          ],
+        };
+
+      case 'hybrid-autoencoder':
+        return {
+          dataInputs: [
+            {
+              parameter: 'entityPointsUrl',
+              data_type: 'entity/vector',
+              content_type: ['application/json', 'text/csv'],
+              required: true,
+            },
+            {
+              parameter: 'targetDimensions',
+              data_type: 'int',
+              content_type: ['text/plain'],
+              required: true,
+            },
+          ],
+          dataOutputs: [
+            {
+              name: 'Reduced Data',
+              data_type: 'entity/vector',
+              content_type: ['application/json'],
+              required: true,
+            },
+          ],
+        };
+
+      case 'quantum-kernel-estimation':
+        return {
+          dataInputs: [
+            {
+              parameter: 'entityPointsUrl',
+              data_type: 'entity/vector',
+              content_type: ['application/json', 'text/csv'],
+              required: true,
+            },
+            {
+              parameter: 'featureMap',
+              data_type: 'string',
+              content_type: ['text/plain'],
+              required: false,
+            },
+          ],
+          dataOutputs: [
+            {
+              name: 'Kernel Matrix',
+              data_type: 'entity/matrix',
+              content_type: ['application/json'],
+              required: true,
+            },
+          ],
+        };
+
+      default:
+        return { dataInputs: [], dataOutputs: [] };
+    }
+  };
+
+  // Get icon for plugin based on name/tags - using Palette icons (same style as other nodes)
+  const getPluginIcon = (plugin: any) => {
+    const name = plugin.name.toLowerCase();
+    const tags = plugin.tags || [];
+
+    // Clustering nodes - use PaletteIcon style (like other nodes)
+    if (name === 'quantum-k-means') {
+      return 'PaletteIcon_QuantumClustering.png';
+    }
+    if (name === 'classical-k-means') {
+      return 'PaletteIcon_ClassicalClustering.png';
+    }
+
+    // QNN - specific PaletteIcon
+    if (name === 'qnn') {
+      return 'PaletteIcon_qnn.png';
+    }
+
+    // Quantum CNN
+    if (name === 'quantum-cnn') {
+      return 'PaletteIcon_quantum-cnn.png';
+    }
+
+    // Quantum K-Nearest Neighbours
+    if (name === 'quantum-k-nearest-neighbours') {
+      return 'PaletteIcon_quantum-k-nearest-neighbours.png';
+    }
+
+    // Quantum Parzen Window
+    if (name === 'quantum-parzen-window') {
+      return 'PaletteIcon_quantum-parzen-window.png';
+    }
+
+    // Classical K-Medoids
+    if (name === 'classical-k-medoids') {
+      return 'PaletteIcon_classical-k-medoids.png';
+    }
+
+    // Hybrid Autoencoder
+    if (name === 'hybrid-autoencoder') {
+      return 'PaletteIcon_hybrid-autoencoder.png';
+    }
+
+    // OPTICS
+    if (name === 'optics') {
+      return 'PaletteIcon_optics.png';
+    }
+
+    // Neural Network
+    if (name === 'neural-network') {
+      return 'PaletteIcon_neural-network.png';
+    }
+
+    // SVM
+    if (name === 'svm') {
+      return 'PaletteIcon_svm.png';
+    }
+
+    // VQC
+    if (name === 'vqc') {
+      return 'PaletteIcon_vqc.png';
+    }
+
+    // Quantum Kernel Estimation
+    if (name === 'quantum-kernel-estimation' || name === 'qiskit-quantum-kernel-estimation') {
+      return 'PaletteIcon_quantum-kernel-estimation.png';
+    }
+
+    // Generic fallback based on tags
+    if (tags.includes('clustering')) {
+      return '/plugin-icons/quantum_clustering-thin.svg';
+    }
+
+    if (tags.includes('classification')) {
+      return '/plugin-icons/quantum_classification-thin.svg';
+    }
+
+    return undefined;
+  };
+
+  // Map display labels to plugin names for metadata lookup
+  const labelToPluginName: Record<string, string> = {
+    "Quantum Clustering": "quantum-k-means",
+    "Classical Clustering": "classical-k-means",
+    "qnn": "qnn",
+    "quantum-cnn": "quantum-cnn",
+    "quantum-k-nearest-neighbours": "quantum-k-nearest-neighbours",
+    "quantum-parzen-window": "quantum-parzen-window",
+    "quantum-kernel-estimation": "quantum-kernel-estimation",
+    "vqc": "vqc",
+    "hybrid-autoencoder": "hybrid-autoencoder",
+    "classical-k-medoids": "classical-k-medoids",
+    "optics": "optics",
+    "svm": "svm",
+    "neural-network": "neural-network",
+  };
+
   const onDragStart = (event: React.DragEvent<HTMLDivElement>, node: any) => {
     event.dataTransfer.setData("application/reactflow", node.type);
     event.dataTransfer.setData("application/reactflow/dataType", node.dataType);
     event.dataTransfer.setData("application/reactflow/label", node.label);
+
+    // For plugin nodes, store additional metadata
+    if (node.type === consts.PluginNode) {
+      const pluginName = labelToPluginName[node.label] || node.label;
+      const mockMetadata = getMockPluginMetadata(pluginName);
+      const pluginData = {
+        name: pluginName,
+        mockDataInputs: mockMetadata.dataInputs,
+        mockDataOutputs: mockMetadata.dataOutputs,
+        ...node.pluginData,
+      };
+      event.dataTransfer.setData("application/reactflow/pluginData", JSON.stringify(pluginData));
+    }
+
     event.dataTransfer.effectAllowed = "move";
     // if node is a custom user template: also pass flow data
     if(node.flowData) {
@@ -73,12 +612,26 @@ const categories = useMemo(() => {
     );
   };
 
+  const toggleSubcategory = (subcategory: string) => {
+    setActiveSubcategories((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(subcategory)) {
+        newSet.delete(subcategory);
+      } else {
+        newSet.add(subcategory);
+      }
+      return newSet;
+    });
+  };
+
   const allNodes = Object.values(categories).flatMap(({ content }) => {
     if (Array.isArray(content)) {
       return content;
     } else {
       return Object.values(content).flatMap((group) =>
-        Array.isArray(group) ? group : Object.values(group).flat()
+        Array.isArray(group)
+          ? group
+          : Object.values(group).flat()
       );
     }
   });
@@ -118,7 +671,7 @@ const categories = useMemo(() => {
         (node: Node) =>
           !(!ancillaMode && node.type === "ancillaNode") &&
           (completionGuaranteed ? node.completionGuaranteed : true) &&
-          node.compactOptions.includes(compact)
+          node.compactOptions?.includes(compact)
       );
     } else {
       return Object.values(nodeGroup).flatMap((group: any) =>
@@ -236,7 +789,6 @@ const categories = useMemo(() => {
                 ) : (
                   <span className="font-semibold">{node.label}</span>
                 )}
-
               </div>
             ))}
           </div>
@@ -246,7 +798,7 @@ const categories = useMemo(() => {
           {Object.entries(categories).map(
             ([category, { content, description }]) => {
               const visibleNodes = filterNodeGroup(content);
-              const shownDescription = (category === consts.dataTypes ||category === consts.operator)?
+              const shownDescription = (category === consts.dataTypes || category === consts.operator)?
                               description[completionGuaranteed?1:0] : description;
               if (visibleNodes.length === 0) return null;
 
@@ -287,10 +839,20 @@ const categories = useMemo(() => {
                           )
                           .map(([subcategory, subGroup]) => (
                             <div key={subcategory}>
-                              <div className="text-md font-bold text-gray-800 mt-2">
-                                {subcategory}
-                              </div>
-                              {renderNodes(subGroup)}
+                              <button
+                                className="w-full text-left py-2 px-3 font-semibold text-gray-700 hover:bg-gray-200 rounded flex items-center justify-between"
+                                onClick={() => toggleSubcategory(`${category}-${subcategory}`)}
+                              >
+                                <span>{subcategory}</span>
+                                <span className="text-gray-500">
+                                  {activeSubcategories.has(`${category}-${subcategory}`) ? '▼' : '▶'}
+                                </span>
+                              </button>
+                              {activeSubcategories.has(`${category}-${subcategory}`) && (
+                                <div className="pl-2 mt-2">
+                                  {renderNodes(subGroup)}
+                                </div>
+                              )}
                             </div>
                           ))}
                     </div>

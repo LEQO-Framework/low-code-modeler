@@ -1,5 +1,158 @@
 import { initialEdges } from "."
 
+export const quantum_k_means_algorithm = {
+  metadata: [{
+    "version": "1.0.0",
+    "name": "My Model",
+    "description": "Quantum K-Means is a quantum-enhanced clustering algorithm. It groups data points into k clusters by iteratively assigning each point to the nearest centroid and updating centroids, using quantum subroutines to speed up distance calculations.",
+    "author": "",
+    "containsPlaceholder": false,
+    "id": "flow-quantum-k-means-001",
+    "timestamp": "2026-02-24T00:00:00.000Z"
+  }],
+  nodes: [
+    {
+      "id": "qkm-file-in",
+      "type": "dataTypeNode",
+      "position": { "x": 100, "y": 60 },
+      "data": {
+        "label": "file",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "completionGuaranteed": true,
+        "compactOptions": [true, false],
+        "identifiers": [],
+        "dataType": "file",
+        "value": "",
+        "outputIdentifier": "",
+        "inputTypes": [],
+        "outputTypes": { "0": "file" }
+      },
+      "width": 450,
+      "height": 270
+    },
+    {
+      "id": "qkm-num-clusters",
+      "type": "dataTypeNode",
+      "position": { "x": 100, "y": 380 },
+      "data": {
+        "label": "Number",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "completionGuaranteed": true,
+        "compactOptions": [true, false],
+        "identifiers": [],
+        "dataType": "float",
+        "value": "3",
+        "outputIdentifier": "",
+        "inputTypes": [],
+        "outputTypes": { "0": "Number" }
+      },
+      "width": 450,
+      "height": 270
+    },
+    {
+      "id": "qkm-str-variant",
+      "type": "dataTypeNode",
+      "position": { "x": 100, "y": 700 },
+      "data": {
+        "label": "string",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "completionGuaranteed": true,
+        "compactOptions": [true, false],
+        "identifiers": [],
+        "dataType": "string",
+        "value": "lloyd",
+        "outputIdentifier": "",
+        "inputTypes": [],
+        "outputTypes": { "0": "string" }
+      },
+      "width": 450,
+      "height": 270
+    },
+    {
+      "id": "qkm-plugin",
+      "type": "pluginNode",
+      "position": { "x": 700, "y": 250 },
+      "data": {
+        "label": "Quantum Clustering",
+        "pluginName": "quantum-k-means",
+        "tags": [],
+        "dataInputs": [
+          { "parameter": "entityPointsUrl", "data_type": "entity/vector", "content_type": ["application/json", "text/csv"], "required": true },
+          { "parameter": "numberOfClusters", "data_type": "int", "content_type": ["text/plain"], "required": true },
+          { "parameter": "variant", "data_type": "string", "content_type": ["text/plain"], "required": true },
+          { "parameter": "tolerance", "data_type": "float", "content_type": ["text/plain"], "required": false },
+          { "parameter": "maxIterations", "data_type": "int", "content_type": ["text/plain"], "required": false }
+        ],
+        "dataOutputs": [
+          { "name": "Cluster Labels", "data_type": "entity/label", "content_type": ["application/json"], "required": true },
+          { "name": "Visualization", "data_type": "plot", "content_type": ["text/html"], "required": false }
+        ],
+        "inputs": [
+          { "id": "qkm-file-in", "edgeId": "qkm-edge-01", "outputIdentifier": "", "identifiers": [], "targetHandle": "classicalHandlePluginInput0qkm-plugin" },
+          { "id": "qkm-num-clusters", "edgeId": "qkm-edge-02", "outputIdentifier": "", "identifiers": [], "targetHandle": "classicalHandlePluginInput1qkm-plugin" },
+          { "id": "qkm-str-variant", "edgeId": "qkm-edge-03", "outputIdentifier": "", "identifiers": [], "targetHandle": "classicalHandlePluginInput2qkm-plugin" }
+        ],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "clusteringAlgorithm": "k-means",
+        "identifiers": [],
+        "inputTypes": [],
+        "outputTypes": {}
+      },
+      "width": 320,
+      "height": 600
+    }
+  ],
+  initialEdges: [
+    {
+      "source": "qkm-file-in",
+      "sourceHandle": "classicalHandleDataTypeOutput0qkm-file-in",
+      "target": "qkm-plugin",
+      "targetHandle": "classicalHandlePluginInput0qkm-plugin",
+      "type": "classicalEdge",
+      "id": "qkm-edge-01",
+      "markerEnd": { "type": "arrowclosed", "width": 20, "height": 20, "color": "#F5A843", "hidden": false }
+    },
+    {
+      "source": "qkm-num-clusters",
+      "sourceHandle": "classicalHandleDataTypeOutput0qkm-num-clusters",
+      "target": "qkm-plugin",
+      "targetHandle": "classicalHandlePluginInput1qkm-plugin",
+      "type": "classicalEdge",
+      "id": "qkm-edge-02",
+      "markerEnd": { "type": "arrowclosed", "width": 20, "height": 20, "color": "#F5A843", "hidden": false }
+    },
+    {
+      "source": "qkm-str-variant",
+      "sourceHandle": "classicalHandleDataTypeOutput0qkm-str-variant",
+      "target": "qkm-plugin",
+      "targetHandle": "classicalHandlePluginInput2qkm-plugin",
+      "type": "classicalEdge",
+      "id": "qkm-edge-03",
+      "markerEnd": { "type": "arrowclosed", "width": 20, "height": 20, "color": "#F5A843", "hidden": false }
+    }
+  ],
+  viewport: { "x": 0, "y": 0, "zoom": 1 }
+}
+
 export const swap_test_algorithm =
 {
   metadata: [

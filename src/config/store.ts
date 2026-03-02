@@ -97,7 +97,7 @@ export const useStore = create<RFState>()(persist((set, get) => ({
   edges: nodesConfig.initialEdges,
   ancillaMode: false,
   compact: false,
-  completionGuaranteed: true,
+  completionGuaranteed: false,
   experienceLevel: "explorer",
   selectedNode: null,
   history: [],
@@ -201,6 +201,18 @@ export const useStore = create<RFState>()(persist((set, get) => ({
       node.data.operator = "";
       node.data.outputIdentifier = "";
     }
+    // Map plugin data_type to internal type system
+    const mapPluginTypeToInternal = (dataType: string): string => {
+      const t = dataType.toLowerCase();
+      if (t.startsWith("entity/")) return "file";
+      if (t === "int") return "number";
+      if (t === "float") return "number";
+      if (t === "string") return "string";
+      if (t === "plot") return "any";
+      if (t === "model") return "file";
+      return "any";
+    };
+
     // Helper to get default types based on node type and label
     const getInitialInputTypes = (node: Node): string[] => {
       const type = node.type;
@@ -223,6 +235,9 @@ export const useStore = create<RFState>()(persist((set, get) => ({
         if (encodingType.includes("Matrix") || encodingType.includes("Amplitude") || encodingType.includes("Angle") || encodingType.includes("Schmidt")) return ["array"];
         if (encodingType.includes("Basis") || encodingType.includes("Custom")) return ["any"];
       }
+      else if (type === consts.PluginNode && node.data.dataInputs) {
+        return node.data.dataInputs.map((input: any) => mapPluginTypeToInternal(input.data_type ?? "any"));
+      }
 
       return []; // Default empty
     }
@@ -244,6 +259,9 @@ export const useStore = create<RFState>()(persist((set, get) => ({
       else if (type === "measurementNode") return ["array", "quantum register"];
       else if (type === "qubitNode" || type === "ancillaNode" || type === "statePreparationNode") return ["quantum register"];
       else if (type === "dataTypeNode") return [(node.data.dataType ?? "any").toLowerCase()];
+      else if (type === consts.PluginNode && node.data.dataOutputs) {
+        return node.data.dataOutputs.map((output: any) => mapPluginTypeToInternal(output.data_type ?? "any"));
+      }
       return []; // Default empty
     }
     const inputTypes = getInitialInputTypes(node);
@@ -584,6 +602,9 @@ export const useStore = create<RFState>()(persist((set, get) => ({
       if (node.type === consts.AlgorithmNode || node.type === consts.ClassicalAlgorithmNode) {
         return "any"
       }
+      // TODO: figure out a better way to opt out of locked input types
+      if (node.type === consts.PluginNode)
+        return "any"
 
       // Find the first input that has a type other than "any"
       if (node.data.inputs) {
@@ -913,7 +934,8 @@ export const useStore = create<RFState>()(persist((set, get) => ({
     }
 
     // If the target node already has a locked type, new input must match
-    if (targetNode.type !== "controlStructureNode" && lockedType !== "any" && sourceType !== "any" && sourceType !== lockedType) {
+    // Skip this check for pluginNodes - each input can have its own type
+    if (targetNode.type !== "controlStructureNode" && targetNode.type !== "pluginNode" && lockedType !== "any" && sourceType !== "any" && sourceType !== lockedType) {
       const errorMsg = `Cannot connect: type "${sourceType}" does not match locked type "${lockedType}"`
       console.warn(errorMsg);
       setTypeError(errorMsg);

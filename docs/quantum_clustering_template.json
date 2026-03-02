@@ -1,0 +1,299 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "name": "Quantum Clustering Template",
+    "id": "quantum-clustering-template-001",
+    "description": "Template for Quantum K-Means clustering with all data types",
+    "timestamp": "2026-02-22T21:00:00.000Z",
+    "author": "Low-Code Modeler",
+    "optimizeWidth": false,
+    "optimizeDepth": false
+  },
+  "nodes": [
+    {
+      "id": "fileInputNode",
+      "type": "positionNode",
+      "position": {
+        "x": 100,
+        "y": 100
+      },
+      "data": {
+        "label": "Training Data (File)",
+        "inputs": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "dataType": "file",
+        "value": "",
+        "outputIdentifier": "entityPointsUrl",
+        "identifier": "file001"
+      },
+      "width": 320,
+      "height": 150
+    },
+    {
+      "id": "intInputNode1",
+      "type": "positionNode",
+      "position": {
+        "x": 100,
+        "y": 300
+      },
+      "data": {
+        "label": "Number of Clusters (int)",
+        "inputs": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "dataType": "int",
+        "value": "3",
+        "outputIdentifier": "numberOfClusters",
+        "identifier": "int001"
+      },
+      "width": 320,
+      "height": 150
+    },
+    {
+      "id": "stringInputNode",
+      "type": "positionNode",
+      "position": {
+        "x": 100,
+        "y": 500
+      },
+      "data": {
+        "label": "Variant (string)",
+        "inputs": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "dataType": "string",
+        "value": "default",
+        "outputIdentifier": "variant",
+        "identifier": "string001"
+      },
+      "width": 320,
+      "height": 150
+    },
+    {
+      "id": "floatInputNode",
+      "type": "positionNode",
+      "position": {
+        "x": 100,
+        "y": 700
+      },
+      "data": {
+        "label": "Tolerance (float)",
+        "inputs": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementation": "",
+        "uncomputeImplementationType": "",
+        "dataType": "float",
+        "value": "0.001",
+        "outputIdentifier": "tolerance",
+        "identifier": "float001"
+      },
+      "width": 320,
+      "height": 150
+    },
+    {
+      "id": "intInputNode2",
+      "type": "positionNode",
+      "position": {
+        "x": 100,
+        "y": 900
+      },
+      "data": {
+        "label": "Max Iterations (int)",
+        "inputs": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "dataType": "int",
+        "value": "100",
+        "outputIdentifier": "maxIterations",
+        "identifier": "int002"
+      },
+      "width": 320,
+      "height": 150
+    },
+    {
+      "id": "quantumClusteringNode",
+      "type": "pluginNode",
+      "position": {
+        "x": 600,
+        "y": 400
+      },
+      "data": {
+        "label": "Quantum K-Means",
+        "pluginName": "quantum-k-means",
+        "pluginIdentifier": "quantum-k-means-001",
+        "pluginDescription": "Quantum K-Means clustering algorithm",
+        "pluginType": "clustering",
+        "pluginApiRoot": "",
+        "clusteringAlgorithm": "k-means",
+        "dataInputs": [
+          {
+            "parameter": "entityPointsUrl",
+            "data_type": "entity/vector",
+            "content_type": ["application/json", "text/csv"],
+            "required": true
+          },
+          {
+            "parameter": "numberOfClusters",
+            "data_type": "int",
+            "content_type": ["text/plain"],
+            "required": true
+          },
+          {
+            "parameter": "variant",
+            "data_type": "string",
+            "content_type": ["text/plain"],
+            "required": true
+          },
+          {
+            "parameter": "tolerance",
+            "data_type": "float",
+            "content_type": ["text/plain"],
+            "required": false
+          },
+          {
+            "parameter": "maxIterations",
+            "data_type": "int",
+            "content_type": ["text/plain"],
+            "required": false
+          }
+        ],
+        "dataOutputs": [
+          {
+            "name": "Cluster Labels",
+            "data_type": "entity/label",
+            "content_type": ["application/json"],
+            "required": true
+          },
+          {
+            "name": "Visualization",
+            "data_type": "plot",
+            "content_type": ["text/html"],
+            "required": false
+          }
+        ],
+        "inputs": [
+          {
+            "id": "fileInputNode",
+            "outputIdentifier": "entityPointsUrl",
+            "identifier": "file001",
+            "edgeId": "edge1"
+          },
+          {
+            "id": "intInputNode1",
+            "outputIdentifier": "numberOfClusters",
+            "identifier": "int001",
+            "edgeId": "edge2"
+          },
+          {
+            "id": "stringInputNode",
+            "outputIdentifier": "variant",
+            "identifier": "string001",
+            "edgeId": "edge3"
+          },
+          {
+            "id": "floatInputNode",
+            "outputIdentifier": "tolerance",
+            "identifier": "float001",
+            "edgeId": "edge4"
+          },
+          {
+            "id": "intInputNode2",
+            "outputIdentifier": "maxIterations",
+            "identifier": "int002",
+            "edgeId": "edge5"
+          }
+        ],
+        "outputs": []
+      },
+      "width": 320,
+      "height": 500
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge1",
+      "source": "fileInputNode",
+      "sourceHandle": "classicalHandleDataType",
+      "target": "quantumClusteringNode",
+      "targetHandle": "classicalHandlePluginInput0quantumClusteringNode",
+      "type": "classicalEdge",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#F5A843"
+      }
+    },
+    {
+      "id": "edge2",
+      "source": "intInputNode1",
+      "sourceHandle": "classicalHandleDataType",
+      "target": "quantumClusteringNode",
+      "targetHandle": "classicalHandlePluginInput1quantumClusteringNode",
+      "type": "classicalEdge",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#F5A843"
+      }
+    },
+    {
+      "id": "edge3",
+      "source": "stringInputNode",
+      "sourceHandle": "classicalHandleDataType",
+      "target": "quantumClusteringNode",
+      "targetHandle": "classicalHandlePluginInput2quantumClusteringNode",
+      "type": "classicalEdge",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#F5A843"
+      }
+    },
+    {
+      "id": "edge4",
+      "source": "floatInputNode",
+      "sourceHandle": "classicalHandleDataType",
+      "target": "quantumClusteringNode",
+      "targetHandle": "classicalHandlePluginInput3quantumClusteringNode",
+      "type": "classicalEdge",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#F5A843"
+      }
+    },
+    {
+      "id": "edge5",
+      "source": "intInputNode2",
+      "sourceHandle": "classicalHandleDataType",
+      "target": "quantumClusteringNode",
+      "targetHandle": "classicalHandlePluginInput4quantumClusteringNode",
+      "type": "classicalEdge",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#F5A843"
+      }
+    }
+  ],
+  "viewport": {
+    "x": 0,
+    "y": 0,
+    "zoom": 1
+  }
+}
