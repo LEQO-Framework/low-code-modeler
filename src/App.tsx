@@ -12,6 +12,8 @@ import ReactFlow, {
   useUpdateNodeInternals
 } from "reactflow";
 import "reactflow/dist/style.css";
+import { v4 as uuidv4 } from 'uuid';
+
 import { ContextMenu, CustomPanel, Palette } from "./components";
 import Toolbar from "./components/toolbar";
 import { nodesConfig, tutorial } from "./config/site";
@@ -44,6 +46,8 @@ import { categories, CategoryEntry, Template } from "./components/panels/categor
 import { ManageTemplateModal } from "./components/modals/templateModal";
 import { v4 as uuid } from "uuid";
 import DomainProfileModal, { DomainProfile } from "./components/modals/domainProfileModal";
+import { PatternSelectionModal } from "./components/modals/patternSelectionModal";
+import { PatternImplementationSelectionModal } from "./components/modals/patternImplementationSelectionModal";
 
 const selector = (state: {
   nodes: Node[];
@@ -256,6 +260,10 @@ function App() {
   const [accessToken, setAccessToken] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [errorJobMessage, setErrorJobMessage] = useState("");
+  const [isPatternModalOpen, setIsPatternModalOpen] = useState(false);
+  const [isPatternImplementationOpen, setIsPatternImplementationOpen] = useState(false);
+  const [selectedPatternId, setSelectedPatternId] = useState<string | null>(null);
+
 
 
   const [isLoadJsonModalOpen, setIsLoadJsonModalOpen] = useState(false);
@@ -278,9 +286,21 @@ function App() {
   const [patternGraph, setPatternGraph] = useState(null);
   const [isDetectingAlgorithms, setIsDetectingAlgorithms] = useState(false);
 
-  const client = new OpenAI({
-    apiKey: openAIToken, dangerouslyAllowBrowser: true
-  });
+  let client: OpenAI | null = null;
+  try {
+    if (openAIToken) {
+      client = new OpenAI({ apiKey: openAIToken, dangerouslyAllowBrowser: true });
+    }
+  } catch (e) {
+    console.warn("OpenAI init failed, continuing without it:", e);
+    client = null;
+  }
+
+  /*
+    const client = new OpenAI({
+      apiKey: openAIToken, dangerouslyAllowBrowser: true
+    });
+  */
 
 
   const detectQuantumAlgorithms = async (userInput: string): Promise<string | null> => {
@@ -1078,6 +1098,11 @@ If none apply, return { "algorithms": [] }.
     return { warnings, errors };
   }
 
+  // Checks if there are any Nodes conflicting with QASM
+  const [containsWorkflowNodes, setContainsWorkflowNodes] = useState(false);
+  function checkContainsWorkflowNodes(flow): boolean {
+    return flow.nodes?.some((node) => node.type == "plugin" || "file" || "string");
+  };
 
   const startQuantumAlgorithmSelection = () => {
     setQuantumAlgorithmModalStep(1);
@@ -1488,6 +1513,7 @@ If none apply, return { "algorithms": [] }.
   const flowKey = "example-flow";
 
   async function uploadToGitHub() {
+
     let flowId = `model-${Date.now()}`;
     const repoOwner = githubRepositoryOwner;
     const repo = githubRepositoryName;
@@ -1570,6 +1596,273 @@ If none apply, return { "algorithms": [] }.
       return { success: false };
     }
   }
+
+  async function registerAndUploadToGitHub(patternId, patternName, overwriteImplementationId, solutionId) {
+    const flowId = `flow-${Date.now()}`;
+    const modelFileName = `${flowId}.json`;
+    const sqlPath = 'example-data/SQL/backup-files/2_pattern_solutions.sql';
+    const modelPath = 'example-data/models';
+
+
+    // 1. Prepare Model Content
+    const modelContent = JSON.stringify({
+      metadata: {
+        ...metadata,
+        containsPlaceholder: containsPlaceholder,
+        id: flowId,
+        timestamp: new Date().toISOString(),
+      },
+      flow: reactFlowInstance.toObject(),
+    }, null, 2);
+
+    // 2. Generate SQL for registration
+
+    const ids = {
+      algo: crypto.randomUUID(),
+      fileId: crypto.randomUUID(),
+      fileImplementationId: crypto.randomUUID(),
+      filePackageId: crypto.randomUUID(),
+      data: crypto.randomUUID(),
+      package: crypto.randomUUID(),
+    };
+
+    const toHex = (str: string) => {
+      const encoder = new TextEncoder();         // Encode string to bytes
+      const bytes = encoder.encode(str);
+      return '\\x' + Array.from(bytes)           // Convert each byte to hex
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+    };
+
+    console.log(toHex(ids.algo));
+
+
+    const sqlAppend = `
+-- Register ${modelFileName}
+INSERT INTO public.knowledge_artifact (id, creation_date, last_modified_at) VALUES ('${ids.algo}', NULL, NULL);
+INSERT INTO public.knowledge_artifact (id, creation_date, last_modified_at) VALUES ('${ids.package}', NULL, NULL);
+INSERT INTO public.knowledge_artifact (id, creation_date, last_modified_at) VALUES ('${ids.fileId}', NULL, NULL);
+INSERT INTO public.algorithm (acronym, algo_parameter, assumptions, computation_model, input_format, intent, name, output_format, problem, solution, id) VALUES (NULL, NULL, NULL, NULL, NULL, NULL, 'QML Implementation', NULL, NULL, NULL, '${ids.algo}');
+INSERT INTO public.quantum_algorithm (nisq_ready, quantum_computation_model, speed_up, id) VALUES (false, 0, NULL, '${ids.algo}');
+INSERT INTO public.quantum_algorithm (nisq_ready, quantum_computation_model, id) VALUES (false, 0, '${ids.algo}');
+INSERT INTO public.implementation (assumptions, contributors, dependencies, description, input_format, license, link, name, technology, output_format, parameter, problem_statement, version, id, implemented_algorithm_id) VALUES (NULL, NULL, NULL, NULL, NULL, NULL, NULL, '${patternName} low-code solution', NULL, NULL, NULL, NULL, NULL, '${ids.package}', '${ids.algo}');
+INSERT INTO public.pattern_uris (implementation_id, pattern_uri) VALUES ('${ids.package}', 'patternLanguages/af7780d5-1f97-4536-8da7-4194b093ab1d/patterns/${patternId}');
+INSERT INTO public.file (fileurl, mime_type, name, id) VALUES ('${modelFileName}', 'application/json', '${modelFileName}', '${ids.fileId}');
+INSERT INTO public.file_data (id, data, file_id) VALUES ('${ids.data}', '${toHex(modelContent)}', '${ids.fileId}');
+INSERT INTO public.implementation_package (dtype, id, description, name, package_type, implementation_id, type) VALUES ('FileImplementationPackage', '${ids.fileImplementationId}', '${patternName} solution', 'Pattern low_code_modeler package', 0, '${ids.package}', 'low_code_modeler');
+INSERT INTO public.implementation_package_file (file_id, implementation_package_id) VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
+
+`;
+
+    const headers = {
+      Authorization: `token ${githubToken}`,
+      Accept: "application/vnd.github.v3+json",
+      "Content-Type": "application/json",
+    };
+
+    try {
+      // 3. Update SQL Seed File via API
+      const sqlUrl = `https://api.github.com/repos/${githubRepositoryOwner}/${githubRepositoryName}/contents/${sqlPath}`;
+      const sqlGet = await fetch(`${sqlUrl}?ref=${githubBranch}`, { headers });
+
+      if (sqlGet.ok) {
+        const { content, sha } = await sqlGet.json();
+        const updatedSql = atob(content) + sqlAppend;
+
+        await fetch(sqlUrl, {
+          method: "PUT",
+          headers,
+          body: JSON.stringify({
+            message: `Register ${modelFileName} in seed data`,
+            content: btoa(updatedSql),
+            sha,
+            branch: githubBranch
+          }),
+        });
+      }
+
+      // 4. Upload the Model JSON File
+      const modelUrl = `https://api.github.com/repos/${githubRepositoryOwner}/${githubRepositoryName}/contents/${modelPath}/${modelFileName}`;
+      const modelUpload = await fetch(modelUrl, {
+        method: "PUT",
+        headers,
+        body: JSON.stringify({
+          message: `Upload model ${flowId}`,
+          content: btoa(modelContent),
+          branch: githubBranch
+        }),
+      });
+
+      if (modelUpload.ok) {
+        console.log("Database registration and model upload successful.");
+        return { success: true, flowId };
+      }
+    } catch (error) {
+      console.error("GitHub API Error:", error);
+      return { success: false };
+    }
+  }
+
+  async function registerAndUploadToGitHub2(patternId: string, patternName: string, overwriteImplementationId, solutionId) {
+    const flowId = `flow-${Date.now()}`;
+    const modelFileName = `${flowId}.json`;
+    const sqlPath = 'example-data/SQL/backup-files/2_pattern_solutions.sql';
+    const modelPath = 'example-data/models';
+
+    console.log(overwriteImplementationId);
+    console.log(solutionId)
+    const headers = {
+      Authorization: `token ${githubToken}`,
+      Accept: "application/vnd.github.v3+json",
+      "Content-Type": "application/json",
+    };
+
+    // ------------------------
+    // Generate model content
+    // ------------------------
+    const modelContent = JSON.stringify({
+      metadata: {
+        ...metadata,
+        id: flowId,
+        timestamp: new Date().toISOString(),
+      },
+      ...reactFlowInstance.toObject(),
+    }, null, 2);
+
+    const toHex = (str: string) => {
+      const encoder = new TextEncoder();
+      const bytes = encoder.encode(str);
+      return '\\x' + Array.from(bytes)
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+    };
+
+    const hexData = toHex(modelContent);
+
+    try {
+      // ------------------------
+      // 1. Fetch SQL file
+      // ------------------------
+      const sqlUrl = `https://api.github.com/repos/${githubRepositoryOwner}/${githubRepositoryName}/contents/${sqlPath}`;
+      const sqlGet = await fetch(`${sqlUrl}?ref=${githubBranch}`, { headers });
+
+      if (!sqlGet.ok) throw new Error("Failed to fetch SQL file");
+
+      const { content, sha } = await sqlGet.json();
+      let sqlContent = atob(content);
+
+      // ------------------------
+      // 2. Check if implementation already exists
+      // ------------------------
+      const packageFileRegex = new RegExp(
+        `INSERT INTO public\\.implementation_package_file\\s*\\([^)]*\\)\\s*VALUES\\s*\\('([^']+)'\\s*,\\s*'([^']+)'\\);`,
+        'g'
+      );
+
+
+
+      console.log(solutionId);
+      console.log(overwriteImplementationId)
+
+      const match = [...sqlContent.matchAll(packageFileRegex)]
+        .find(m => m[2] === solutionId);
+
+      console.log(match)
+
+      if (match) {
+        // =========================================
+        // UPDATE EXISTING ENTRY
+        // =========================================
+
+        const fileId = match[1];
+
+        // Replace file_data hex
+        const fileDataRegex = new RegExp(
+          `INSERT INTO public\\.file_data \\(id, data, file_id\\) VALUES \\('([^']+)', '\\\\x[0-9a-f]*', '${fileId}'\\);`
+        );
+
+        sqlContent = sqlContent.replace(
+          fileDataRegex,
+          (full, dataId) =>
+            `INSERT INTO public.file_data (id, data, file_id) VALUES ('${dataId}', '${hexData}', '${fileId}');`
+        );
+
+        console.log("Existing implementation updated.");
+        showToast("Update existing implementation for "+ patternName, "success");
+    } else {
+        // =========================================
+        // CREATE NEW ENTRY
+        // =========================================
+
+        const ids = {
+          algo: crypto.randomUUID(),
+          fileId: crypto.randomUUID(),
+          fileImplementationId: crypto.randomUUID(),
+          data: crypto.randomUUID(),
+          package: crypto.randomUUID(),
+        };
+
+        const sqlAppend = `
+-- Register ${modelFileName}
+INSERT INTO public.knowledge_artifact (id, creation_date, last_modified_at) VALUES ('${ids.algo}', NULL, NULL);
+INSERT INTO public.knowledge_artifact (id, creation_date, last_modified_at) VALUES ('${ids.package}', NULL, NULL);
+INSERT INTO public.knowledge_artifact (id, creation_date, last_modified_at) VALUES ('${ids.fileId}', NULL, NULL);
+INSERT INTO public.algorithm (name, id) VALUES ('QML Implementation', '${ids.algo}');
+INSERT INTO public.quantum_algorithm (nisq_ready, quantum_computation_model, id) VALUES (false, 0, '${ids.algo}');
+INSERT INTO public.implementation (name, id, implemented_algorithm_id) VALUES ('${patternName} low-code solution', '${ids.package}', '${ids.algo}');
+INSERT INTO public.pattern_uris (implementation_id, pattern_uri) VALUES ('${ids.package}', 'pattern-languages/${patternId}');
+INSERT INTO public.file (fileurl, mime_type, name, id) VALUES ('${modelFileName}', 'application/json', '${modelFileName}', '${ids.fileId}');
+INSERT INTO public.file_data (id, data, file_id) VALUES ('${ids.data}', '${hexData}', '${ids.fileId}');
+INSERT INTO public.implementation_package (dtype, id, description, name, package_type, implementation_id, type)
+VALUES ('FileImplementationPackage', '${ids.fileImplementationId}', '${patternName} solution', 'Pattern low_code_modeler package', 0, '${ids.package}', 'low_code_modeler');
+INSERT INTO public.implementation_package_file (file_id, implementation_package_id)
+VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
+`;
+
+        sqlContent += sqlAppend;
+        console.log("New implementation inserted.");
+        showToast("Upload new implementation for "+ patternName, "success");
+      }
+
+      // ------------------------
+      // 3. Upload updated SQL
+      // ------------------------
+      await fetch(sqlUrl, {
+        method: "PUT",
+        headers,
+        body: JSON.stringify({
+          message: `Register or update ${modelFileName}`,
+          content: btoa(sqlContent),
+          sha,
+          branch: githubBranch
+        }),
+      });
+
+      // ------------------------
+      // 4. Upload model JSON
+      // ------------------------
+      const modelUrl = `https://api.github.com/repos/${githubRepositoryOwner}/${githubRepositoryName}/contents/${modelPath}/${modelFileName}`;
+
+      await fetch(modelUrl, {
+        method: "PUT",
+        headers,
+        body: JSON.stringify({
+          message: `Upload model ${flowId}`,
+          content: btoa(modelContent),
+          branch: githubBranch
+        }),
+      });
+
+      console.log("SQL + Model upload successful.");
+      return { success: true, flowId };
+
+    } catch (error) {
+      console.error("GitHub API Error:", error);
+       showToast("Upload of implementation for "+ patternName +" failed.", "error");
+      return { success: false };
+    }
+  }
+
 
   async function handleSaveClick() {
     if (!reactFlowInstance) {
@@ -1931,7 +2224,6 @@ If none apply, return { "algorithms": [] }.
 
         if (isForbidden) {
           const maxY = relativeY > nd.height / 2;
-          //node.position.y = relativeY ;
 
           console.warn("Cannot drop node in the right half due to 'if' constraint.");
           return;
@@ -2166,6 +2458,62 @@ If none apply, return { "algorithms": [] }.
     }
   }
 
+  /**
+   * Configuration for the new pattern solution entry
+   */
+  const NEW_FILE_NAME = 'new-workflow.json';
+  const NEW_FILE_CONTENT = {
+    metadata: { version: "1.0.0", name: "New Workflow" },
+    nodes: [],
+    edges: []
+  };
+  const PACKAGE_TYPE = 'workflow_editor';
+  const ALGO_NAME = 'New Algorithm Entry';
+  const IMPL_NAME = 'New Implementation Entry';
+
+  /**
+   * Helper to convert JSON to Postgres Hex format (\x...)
+   */
+  const toHex = (obj: any) => '\\x' + Buffer.from(JSON.stringify(obj)).toString('hex');
+
+  function generateAppendSql() {
+    const ka_algo_id = uuidv4();
+    const ka_impl_id = uuidv4();
+    const ka_file_id = uuidv4();
+    const ka_pkg_id = uuidv4();
+    const file_data_id = uuidv4();
+    let fileContent = JSON.stringify({
+      metadata: {
+        ...metadata,
+        containsPlaceholder: containsPlaceholder,
+        id: "flow123",
+        timestamp: new Date().toISOString(),
+      },
+      flow: reactFlowInstance.toObject(),
+    }, null, 2);
+
+    return `
+
+-- Additional manual registration for ${NEW_FILE_NAME}
+INSERT INTO public.knowledge_artifact (id) VALUES ('${ka_algo_id}');
+INSERT INTO public.knowledge_artifact (id) VALUES ('${ka_impl_id}');
+INSERT INTO public.knowledge_artifact (id) VALUES ('${ka_file_id}');
+INSERT INTO public.knowledge_artifact (id) VALUES ('${ka_pkg_id}');
+
+INSERT INTO public.algorithm (name, id) VALUES ('${ALGO_NAME}', '${ka_algo_id}');
+INSERT INTO public.quantum_algorithm (nisq_ready, quantum_computation_model, id) VALUES (false, 0, '${ka_algo_id}');
+INSERT INTO public.implementation (name, id, implemented_algorithm_id) VALUES ('${IMPL_NAME}', '${ka_impl_id}', '${ka_algo_id}');
+
+INSERT INTO public.implementation_package (id, type) VALUES ('${ka_pkg_id}', '${PACKAGE_TYPE}');
+
+INSERT INTO public.file (fileurl, mime_type, name, id) VALUES ('${NEW_FILE_NAME}', 'application/json', '${NEW_FILE_NAME}', '${ka_file_id}');
+INSERT INTO public.file_data (id, data, file_id) VALUES ('${file_data_id}', '${toHex(fileContent)}', '${ka_file_id}');
+
+INSERT INTO public.implementation_package_file (file_id, implementation_package_id) VALUES ('${ka_file_id}', '${ka_pkg_id}');
+`;
+  }
+
+
   async function createServiceTemplates(serviceDeploymentModelsUrl: string, namespace: string): Promise<void> {
     const res = await fetch(serviceDeploymentModelsUrl);
     if (!res.ok) throw new Error(`Failed to fetch service deployment models: ${res.statusText}`);
@@ -2322,6 +2670,10 @@ If none apply, return { "algorithms": [] }.
           onSaveAsSVG={handleSaveAsSVG}
           onOpenConfig={handleOpenConfig}
           uploadDiagram={() => uploadToGitHub()}
+          uploadPatternSolution={() => setIsPatternModalOpen(true)}
+          openPatternSolution={() => setIsPatternImplementationOpen(true)}
+
+          //uploadPatternSolution={() => registerAndUploadToGitHub()}
           onLoadJson={handleLoadJson}
           sendToBackend={handleOpenValidation}
           createDomainProfile={() => setDomainProfileOpen(true)}
@@ -2602,6 +2954,26 @@ If none apply, return { "algorithms": [] }.
                 onClose={() => setToast(null)}
               />
             )}
+
+            {isPatternModalOpen && (
+              <PatternSelectionModal
+                onClose={() => setIsPatternModalOpen(false)}
+                onConfirm={(patternId, patternName, overwriteImplementationId, solutionId) => {
+                  setIsPatternModalOpen(false);
+                  registerAndUploadToGitHub2(patternId, patternName, overwriteImplementationId, solutionId);
+                }} open={isPatternModalOpen} />
+            )}
+
+            {isPatternImplementationOpen && (
+              <PatternImplementationSelectionModal
+                onClose={() => setIsPatternImplementationOpen(false)}
+                onConfirm={(patternId, patternName, json) => {
+                  setIsPatternImplementationOpen(false);
+                  loadFlow(json)
+                }} open={isPatternImplementationOpen} />
+            )}
+
+
 
             <ExperienceModePanel
               expanded={expanded}
