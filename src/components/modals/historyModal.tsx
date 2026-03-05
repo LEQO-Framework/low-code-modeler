@@ -29,6 +29,7 @@ export const HistoryModal = ({ open, onClose, history, onExecute }: HistoryModal
 
   const containsMeasurement = (qasm: string) => /\bmeasure\b/i.test(qasm);
 
+
   // Check for measurements
   useEffect(() => {
     if (!open) return;
@@ -46,9 +47,10 @@ export const HistoryModal = ({ open, onClose, history, onExecute }: HistoryModal
           try {
             const res = await fetch(item.links.result);
             if (!res.ok) return;
-
-            const qasm = await res.text();
-            result[item.uuid] = !containsMeasurement(qasm);
+            if (compilationTargets[item.uuid] === "qasm") {
+              const qasm = await res.text();
+              result[item.uuid] = !containsMeasurement(qasm);
+            }
           } catch {
             // ignore errors
           } finally {
@@ -81,7 +83,7 @@ export const HistoryModal = ({ open, onClose, history, onExecute }: HistoryModal
           setCompilationTargets((prev) => ({ ...prev, [item.uuid]: null }));
         });
     });
-  }, [open, history]);
+  }, [open, history, compilationTargets]);
 
   return (
     <Modal
