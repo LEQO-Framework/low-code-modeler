@@ -66,7 +66,7 @@ export const DataTypeNode = memo((node: Node) => {
     if (data.dataType === "Array") {
       const trimmedValue = value.trim();
       if (trimmedValue === "") return; // optional empty
-      const arrayRegex = /^-?\d+(?:,-?\d+)*$/;
+      const arrayRegex = /^-?\d+(?:\.\d+)?(?:,-?\d+(?:\.\d+)?)*$/;
       if (!arrayRegex.test(trimmedValue)) {
         setValueError("Array must be comma-separated integers (e.g., 1,2,3)");
         return;
