@@ -22,6 +22,15 @@ const selector = (state: {
   setContainsPlaceholder: state.setContainsPlaceholder
 });
 
+function calculateOptimalBitSize(val: number): number {
+  if (val < 0) {
+    // Need an extra bit for the sign (Two's complement) for negative numbers
+    return Math.max(1, Math.ceil(Math.log2(Math.abs(val) + 1)) + 1);
+  }
+  // Standard calculation for positive integers
+  return Math.max(1, Math.ceil(Math.log2(val + 1)));
+}
+
 export const DataTypeNode = memo((node: Node) => {
   const [value, setValue] = useState("");
   const [outputIdentifier, setOutputIdentifier] = useState("");

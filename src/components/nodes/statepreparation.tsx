@@ -16,54 +16,38 @@ const selector = (state: {
   edges: Edge[];
   nodes: Node[];
   ancillaMode: boolean;
-  compact: boolean;
   completionGuaranteed: boolean;
   updateNodeValue: (nodeId: string, field: string, nodeVal: any) => void;
   setNodes: (node: Node) => void;
   setSelectedNode: (node: Node) => void;
-  setTypeError: (message: string) => void;
 }) => ({
   selectedNode: state.selectedNode,
   edges: state.edges,
   nodes: state.nodes,
   ancillaMode: state.ancillaMode,
   completionGuaranteed: state.completionGuaranteed,
-  compact: state.compact,
   setNodes: state.setNodes,
   updateNodeValue: state.updateNodeValue,
   setSelectedNode: state.setSelectedNode,
-  setTypeError: state.setTypeError
 });
 
 export const StatePreparationNode = memo((node: Node) => {
-  console.log("StatePreparation Node Beginning to exist")
   const [size, setSize] = useState("");
   const [bound, setBound] = useState("");
   const [quantumStateName, setQuantumStateName] = useState("Bell State φ+");
   const [outputIdentifier, setOutputIdentifier] = useState("");
   const [showingChildren, setShowingChildren] = useState(false);
   const [sizeError, setSizeError] = useState(false);
-  const [missingSizeError, setMissingSizeError] = useState(false);
   const [outputs, setOutputs] = useState(node.data.outputs || []);
   const [outputIdentifierError, setOutputIdentifierError] = useState(false);
   const [encodingType, setEncodingType] = useState("Basis Encoding");
   const [mounted, setMounted] = useState(false);
   const [startsWithDigitError, setStartsWithDigitError] = useState(false);
   const [boundError, setBoundError] = useState(false);
-  const iconMap = {
-    "Prepare State": "prepareStateIcon.png",
-    "Encode Value": "encodeValueIcon.png",
-    "Basis Encoding": "basisEncodingIcon.png",
-    "Angle Encoding": "angleEncodingIcon.png",
-    "Custom Encoding": "encodeValueIcon.png",
-    "Matrix Encoding": "matrixEncodingIcon.png",
-    "Schmidt Decomposition": "schmidtDecompositionIcon.png",
-    "Amplitude Encoding": "amplitudeEncodingIcon.png",
-  };
 
 
 
-  const { updateNodeValue, setSelectedNode, setNodes, setTypeError, edges, nodes, ancillaMode, completionGuaranteed, compact } = useStore(selector, shallow);
+  const { updateNodeValue, setSelectedNode, setNodes, edges, nodes, ancillaMode, completionGuaranteed } = useStore(selector, shallow);
   const isConnected = edges.some(
     edge => edge.target === node.id && edge.targetHandle === `ancillaHandlePrepareState0${node.id}`
   );
@@ -89,7 +73,6 @@ export const StatePreparationNode = memo((node: Node) => {
     node.data[field] = value;
     updateNodeValue(node.id, field, value);
     setSelectedNode(node);
-    updateNodeInternals(node.id);
   };
 
   console.log(node)
@@ -107,14 +90,6 @@ export const StatePreparationNode = memo((node: Node) => {
           updateNodeValue(node.id, "encodingType", node.data.label);
         }
         else if (node.data.label === "Amplitude Encoding") {
-          updateNodeValue(node.id, "encodingType", node.data.label);
-        }
-        else if (node.data.label === "Custom Encoding") {
-          updateNodeValue(node.id, "encodingType", node.data.label);
-        }
-        else if (node.data.label === "Schmidt Decomposition") {
-          updateNodeValue(node.id, "encodingType", node.data.label);
-        } else if (node.data.label === "Matrix Encoding") {
           updateNodeValue(node.id, "encodingType", node.data.label);
         } else {
           updateNodeValue(node.id, "encodingType", encodingType);
@@ -142,77 +117,17 @@ export const StatePreparationNode = memo((node: Node) => {
   );
 
   useEffect(() => {
-    const value = node.data.size;
-    const num = Number(value);
-    console.log(value)
-    if (num === 0 && node.data.label === "Prepare State") {
-      setMissingSizeError(true);
-    } else if (
-      quantumStateName === "GHZ") {
-      const value = node.data.size;
-      const num = Number(value);
-
-      const isInvalid =
-        value === "" ||
-        num < 3;
-
-      setSizeError(isInvalid);
-      setMissingSizeError(false);
-    } else if ((quantumStateName === "Uniform Superposition" ||
-      quantumStateName === "Custom State")) {
-      const isInvalid =
-        value === "" ||
-        num < 1;
-
-      setSizeError(isInvalid);
-      setMissingSizeError(false);
-    }
-
-    else {
+    if (quantumStateName === "GHZ" || quantumStateName === "Uniform Superposition" || quantumStateName === "Custom State") {
+      const numSize = parseInt(node.data.size);
+      if (isNaN(numSize) || numSize < 3) {
+        setSizeError(true);
+      } else {
+        setSizeError(false);
+      }
+    } else {
       setSizeError(false);
-      setMissingSizeError(false);
     }
-  }, [quantumStateName, node.data.size]);
-
-
-  useEffect(() => {
-    const encoding = node.data.encodingType;
-
-    // Only array-only encodings enforce compatibility
-    const isArrayOnly =
-      encoding !== "Basis Encoding" &&
-      encoding !== "Custom Encoding";
-
-    if (!isArrayOnly) return;
-
-    const edge = edges.find(
-      (e) =>
-        e.target === node.id &&
-        e.targetHandle === `classicalHandleStatePreparationInput0${node.id}`
-    );
-
-    if (!edge) return;
-
-    const sourceNode = nodes.find((n) => n.id === edge.source);
-    if (!sourceNode) return;
-
-    const outputIndex =
-      sourceNode.data.outputs?.findIndex(
-        (o) => o.id === edge.sourceHandle
-      ) ?? 0;
-
-    const sourceType =
-      sourceNode.data.outputTypes?.[outputIndex].toLowerCase();
-
-    // Enforce array-only constraint
-    if (sourceType !== "array") {
-      console.log("remove edge")
-      useStore.getState().onEdgesChange([{ id: edge.id, type: "remove" }]);
-      const errorMsg = `Type mismatch: ${sourceType} -> array, connection removed`
-      console.log(errorMsg);
-      setTypeError(errorMsg);
-    }
-  }, [node.data.encodingType]);
+  }, [quantumStateName, size]);
 
 
 
@@ -235,19 +150,10 @@ export const StatePreparationNode = memo((node: Node) => {
     if (!node.data.encodingType && node.data.label === "Basis Encoding") {
       updateNodeValue(node.id, "encodingType", node.data.label);
     }
-    if (!node.data.encodingType && node.data.label === "Custom Encoding") {
-      updateNodeValue(node.id, "encodingType", node.data.label);
-    }
     if (!node.data.encodingType && node.data.label === "Angle Encoding") {
       updateNodeValue(node.id, "encodingType", node.data.label);
     }
     if (!node.data.encodingType && node.data.label === "Amplitude Encoding") {
-      updateNodeValue(node.id, "encodingType", node.data.label);
-    }
-    if (!node.data.encodingType && node.data.label === "Matrix Encoding") {
-      updateNodeValue(node.id, "encodingType", node.data.label);
-    }
-    if (!node.data.encodingType && node.data.label === "Schmidt Decomposition") {
       updateNodeValue(node.id, "encodingType", node.data.label);
     }
     if (!node.data.encodingType && node.data.label === "Encode Value") {
@@ -258,23 +164,15 @@ export const StatePreparationNode = memo((node: Node) => {
     }
     console.log(encodingType)
     if ((node.data.encodingType === "Basis Encoding" || node.data.encodingType === "Angle Encoding") && (encodingType !== "Angle Encoding" && encodingType !== "Basis Encoding")) {
-      setEncodingType(node.data.encodingType);
       updateNodeInternals(node.id);
+      setEncodingType(node.data.encodingType);
     }
     console.log(node.data.quantumStateName)
     if (node.data.quantumStateName !== quantumStateName) {
-      setQuantumStateName(node.data.quantumStateName);
       updateNodeInternals(node.id);
+      setQuantumStateName(node.data.quantumStateName)
     }
   }, [nodes, node.data.outputIdentifier, node.id]);
-  useEffect(() => {
-    updateNodeInternals(node.id);
-  }, [compact])
-
-
-  useEffect(() => {
-    updateNodeInternals(node.id);
-  }, [node.data.encodingType, ancillaMode]);
 
   const { data, selected } = node;
 
@@ -335,7 +233,7 @@ export const StatePreparationNode = memo((node: Node) => {
           )}
           style={{
             height:
-              ["Custom Encoding", "Basis Encoding", "Angle Encoding", "Amplitude Encoding", "Matrix Encoding", "Schmidt Decomposition"].includes(data.label)
+              ["Basis Encoding", "Angle Encoding", "Amplitude Encoding"].includes(data.label)
                 ? !ancillaMode
                   ? "300px"
                   : `${Math.max(dynamicHeight - 70, 200)}px`
@@ -367,7 +265,7 @@ export const StatePreparationNode = memo((node: Node) => {
             </div>
           )}
 
-          {node.data.size !== "" && sizeError && (
+          {sizeError && (
             <div className="absolute top-2 right-[-40px] group z-20">
               <AlertCircle className="text-red-600 w-5 h-5" />
               <div
@@ -376,20 +274,7 @@ export const StatePreparationNode = memo((node: Node) => {
                   top: !(outputIdentifierError || startsWithDigitError) ? '35px' : '80px',
                 }}
               >
-                Size must be at least 3.
-              </div>
-            </div>
-          )}
-          {((node.data.size === "" || missingSizeError) && node.data.label === "Prepare State") && (
-            <div className="absolute top-2 right-[-40px] group z-20">
-              <AlertCircle className="text-red-600 w-5 h-5" />
-              <div
-                className="absolute left-[30px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap"
-                style={{
-                  top: !(outputIdentifierError || startsWithDigitError) ? '35px' : '80px',
-                }}
-              >
-                Size is required.
+                Size is not an integer.
               </div>
             </div>
           )}
@@ -424,14 +309,21 @@ export const StatePreparationNode = memo((node: Node) => {
                 "Prepare State",
                 "Encode Value",
                 "Basis Encoding",
-                "Custom Encoding",
                 "Angle Encoding",
                 "Amplitude Encoding",
-                "Matrix Encoding",
-                "Schmidt Decomposition"
               ].includes(data.label) && (
                   <img
-                    src={iconMap[data.label] ?? "amplitudeEncodingIcon.png"}
+                    src={
+                      data.label === "Prepare State"
+                        ? "prepareStateIcon.png"
+                        : data.label === "Encode Value"
+                          ? "encodeValueIcon.png"
+                          : data.label === "Basis Encoding"
+                            ? "basisEncodingIcon.png"
+                            : data.label === "Angle Encoding"
+                              ? "angleEncodingIcon.png"
+                              : "amplitudeEncodingIcon.png"
+                    }
                     alt={`${data.label} icon`}
                     className={
                       data.label === "Prepare State"
@@ -465,16 +357,16 @@ export const StatePreparationNode = memo((node: Node) => {
                     style={{ visibility: showingChildren ? "hidden" : "visible" }}
                     onChange={(e) => handleStateChange(e, "encodingType")}
                   >
-                    {!completionGuaranteed && (<option value="Amplitude Encoding">Amplitude Encoding</option>)}
-                    {!completionGuaranteed && (<option value="Angle Encoding">Angle Encoding</option>)}
-                    <option value="Basis Encoding">Basis Encoding</option>
-                    <option value="Custom Encoding">Custom Encoding</option>
-                    {!completionGuaranteed && (<option value="Matrix Encoding">Matrix Encoding</option>)}
-                    {!completionGuaranteed && (<option value="Schmidt Decomposition">Schmidt Decomposition</option>)}
+                    {!completionGuaranteed && (<option value="amplitude">Amplitude Encoding</option>)}
+                    {!completionGuaranteed && (<option value="angle">Angle Encoding</option>)}
+                    <option value="basis">Basis Encoding</option>
+                    <option value="custom">Custom Encoding</option>
+                    {!completionGuaranteed && (<option value="matrix">Matrix Encoding</option>)}
+                    {!completionGuaranteed && (<option value="schmidt">Schmidt Decomposition</option>)}
 
                   </select>
 
-                  {node.data.encodingType !== "Basis Encoding" && node.data.encodingType !== "Angle Encoding" && (
+                  {node.data.encodingType !== "basis" && node.data.encodingType !== "angle" && (
                     <>
                       <label className="text-sm text-black">Bound:</label>
                       <input
@@ -490,7 +382,7 @@ export const StatePreparationNode = memo((node: Node) => {
 
                 </>
               )}
-              {(node.data.label === "Amplitude Encoding" || node.data.label === "Custom Encoding" || node.data.label === "Matrix Encoding" || node.data.label === "Schmidt Decomposition") && (
+              {node.data.label === "Amplitude Encoding" && (
                 <>
 
                   {node.data.encodingType !== "Basis Encoding" && node.data.encodingType !== "Angle Encoding" && (
@@ -542,7 +434,7 @@ export const StatePreparationNode = memo((node: Node) => {
           )}
           <div className="custom-node-port-in mb-3 mt-2">
             <div className="relative flex flex-col overflow-visible">
-              {(node.data.label === "Encode Value" || node.data.label === "Basis Encoding" || node.data.label === "Custom Encoding" || node.data.label === "Angle Encoding" || node.data.label === "Amplitude Encoding" || node.data.label === "Matrix Encoding" || node.data.label === "Schmidt Decomposition") && (
+              {(node.data.label === "Encode Value" || node.data.label === "Basis Encoding" || node.data.label === "Angle Encoding" || node.data.label === "Amplitude Encoding") && (
                 <div
                   className="relative p-2 mb-1"
                   style={{
@@ -567,15 +459,7 @@ export const StatePreparationNode = memo((node: Node) => {
                     className="z-10 classical-circle-port-operation !bg-orange-300 !border-black -left-[8px]"
                     style={{ top: '50%', transform: 'translateY(-50%)' }}
                   />
-                  <div className="flex flex-col items-center w-full leading-tight">
-                    <span className="text-black text-sm">
-                      {node.data.inputs[0]?.outputIdentifier || "Value"}
-                    </span>
-                    <span className="text-[10px] text-gray-600">
-                      type: {node.data.inputTypes[0]?.toLowerCase() ?? "number"}
-                    </span>
-                  </div>
-
+                  <span className="text-black text-sm text-center w-full">{node.data.inputs[0]?.outputIdentifier || "Value"}</span>
                 </div>)}
 
               {ancillaMode && (<div>
@@ -656,7 +540,7 @@ export const StatePreparationNode = memo((node: Node) => {
                   outputs={outputs}
                   setOutputs={setOutputs}
                   edges={edges}
-                  sizeError={sizeError || missingSizeError}
+                  sizeError={sizeError}
                   outputIdentifierError={(outputIdentifierError || startsWithDigitError)}
                   updateNodeValue={updateNodeValue}
                   setOutputIdentifierError={setOutputIdentifierError}
@@ -664,7 +548,7 @@ export const StatePreparationNode = memo((node: Node) => {
                   setSelectedNode={setSelectedNode}
                   active={true}
                 />)}
-              {(node.data.label === "Encode Value" || node.data.label === "Custom Encoding" || node.data.label === "Basis Encoding" || node.data.label === "Amplitude Encoding" || node.data.label === "Angle Encoding" || node.data.label ==="Matrix Encoding" ||node.data.label ==="Schmidt Decomposition") && (
+              {(node.data.label === "Encode Value" || node.data.label === "Basis Encoding" || node.data.label === "Amplitude Encoding" || node.data.label === "Angle Encoding") && (
                 <OutputPort
                   node={node}
                   index={0}
