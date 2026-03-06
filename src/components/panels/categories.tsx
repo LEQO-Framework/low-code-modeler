@@ -57,7 +57,7 @@ export const categories: Record<string, CategoryEntry> = {
           label: "Custom Encoding", type: consts.StatePreparationNode, icon: ["PaletteIcon_CustomEncoding.png", "PaletteIcon_Ancilla_CustomEncoding.png"], description: "Encodes classical bits into quantum states using a custom encoding.", completionGuaranteed: true, compactOptions: [false],
         },
         {
-          label: "Angle Encoding", type: consts.StatePreparationNode, icon: ["PaletteIcon_AngleEncoding.png", "PaletteIcon_Ancilla_AngleEncoding.png"], description: "Encodes classical data into qubit rotation angles.", completionGuaranteed: false, compactOptions: [false],
+          label: "Angle Encoding", type: consts.StatePreparationNode, icon: ["PaletteIcon_AngleEncoding.png", "PaletteIcon_Ancilla_AngleEncoding.png"], description: "Encodes classical data into qubit rotation angles.", completionGuaranteed: true, compactOptions: [false],
         },
         {
           label: "Amplitude Encoding", type: consts.StatePreparationNode, icon: ["PaletteIcon_AmplitudeEncoding.png", "PaletteIcon_Ancilla_AmplitudeEncoding.png"], description: "Encodes a normalized classical vector into quantum state amplitudes.", completionGuaranteed: false, compactOptions: [false],
