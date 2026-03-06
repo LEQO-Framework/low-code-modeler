@@ -431,7 +431,17 @@ export const StatePreparationNode = memo((node: Node) => {
                 "Schmidt Decomposition"
               ].includes(data.label) && (
                   <img
-                    src={iconMap[data.label] ?? "amplitudeEncodingIcon.png"}
+                    src={
+                      data.label === "Prepare State"
+                        ? "prepareStateIcon.png"
+                        : data.label === "Encode Value"
+                          ? "encodeValueIcon.png"
+                          : data.label === "Basis Encoding"
+                            ? "basisEncodingIcon.png"
+                            : data.label === "Angle Encoding"
+                              ? "angleEncodingIcon.png"
+                              : "amplitudeEncodingIcon.png"
+                    }
                     alt={`${data.label} icon`}
                     className={
                       data.label === "Prepare State"
@@ -465,16 +475,16 @@ export const StatePreparationNode = memo((node: Node) => {
                     style={{ visibility: showingChildren ? "hidden" : "visible" }}
                     onChange={(e) => handleStateChange(e, "encodingType")}
                   >
-                    {!completionGuaranteed && (<option value="Amplitude Encoding">Amplitude Encoding</option>)}
-                    {!completionGuaranteed && (<option value="Angle Encoding">Angle Encoding</option>)}
-                    <option value="Basis Encoding">Basis Encoding</option>
-                    <option value="Custom Encoding">Custom Encoding</option>
-                    {!completionGuaranteed && (<option value="Matrix Encoding">Matrix Encoding</option>)}
-                    {!completionGuaranteed && (<option value="Schmidt Decomposition">Schmidt Decomposition</option>)}
+                    {!completionGuaranteed && (<option value="amplitude">Amplitude Encoding</option>)}
+                    {!completionGuaranteed && (<option value="angle">Angle Encoding</option>)}
+                    <option value="basis">Basis Encoding</option>
+                    <option value="custom">Custom Encoding</option>
+                    {!completionGuaranteed && (<option value="matrix">Matrix Encoding</option>)}
+                    {!completionGuaranteed && (<option value="schmidt">Schmidt Decomposition</option>)}
 
                   </select>
 
-                  {node.data.encodingType !== "Basis Encoding" && node.data.encodingType !== "Angle Encoding" && (
+                  {node.data.encodingType !== "basis" && node.data.encodingType !== "angle" && (
                     <>
                       <label className="text-sm text-black">Bound:</label>
                       <input
