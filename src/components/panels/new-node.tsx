@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { categories as staticCategories, Node, Template } from "./categories";
+import { categories as staticCategories, Node, Template, CategoryEntry } from "./categories";
 import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
 import * as consts from "../../constants";
+import { DomainProfile } from "../modals/domainProfileModal";
 
 const selector = (state: {
   ancillaMode: boolean;
@@ -10,12 +11,16 @@ const selector = (state: {
   experienceLevel: string;
   completionGuaranteed: boolean;
   userTemplates: Template[];
+  domainProfile: string;
+  allDomainProfiles: DomainProfile[];
 }) => ({
   ancillaMode: state.ancillaMode,
   experienceLevel: state.experienceLevel,
   compact: state.compact,
   completionGuaranteed: state.completionGuaranteed,
   userTemplates: state.userTemplates,
+  domainProfile: state.domainProfile,
+  allDomainProfiles: state.allDomainProfiles,
 });
 
 const categoryIcons: Record<string, string> = {
@@ -31,29 +36,39 @@ const categoryIcons: Record<string, string> = {
 export const AddNodePanel = () => {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const { ancillaMode, completionGuaranteed, compact, experienceLevel, userTemplates } = useStore(
+  const { ancillaMode, completionGuaranteed, compact, experienceLevel, userTemplates, domainProfile, allDomainProfiles } = useStore(
     selector,
     shallow
   );
   
 
-  // merge static categories with user templates
-const categories = useMemo(() => {
-  // no user templates: only return standard templates (staticCategories)
-  if (userTemplates.length === 0) return staticCategories;
-
-  // else: deep copy of staticCategories + user templates as Subcategory 
-  return {
-    ...staticCategories,
-    [consts.templates]: {
-      ...staticCategories[consts.templates],
-      content: {
-        "Standard Templates": staticCategories[consts.templates].content,
-        "User Templates": userTemplates,
-      }
+  // select correct categories (based on domainProfile)
+  const categories = useMemo(() => {
+   
+    const domainProfileNames = allDomainProfiles.map((p) => p.name);
+    const index = domainProfileNames.indexOf(domainProfile);
+    let baseCategories: Record<string, CategoryEntry>;
+    if (index > -1) {
+      baseCategories = allDomainProfiles[index].domainBlocks;
+    } else {
+      baseCategories = staticCategories;
     }
-  };
-}, [userTemplates]);
+    console.log(baseCategories);
+    // no user templates: only return standard templates (baseCategories)
+    if (userTemplates.length === 0) return baseCategories;
+
+    // else: deep copy of staticCategories + user templates as Subcategory 
+    return {
+      ...baseCategories,
+      [consts.templates]: {
+        ...baseCategories[consts.templates],
+        content: {
+          "Standard Templates": baseCategories[consts.templates].content,
+          "User Templates": userTemplates,
+        }
+      }
+    };
+  }, [userTemplates, domainProfile, allDomainProfiles]);
 
   const onDragStart = (event: React.DragEvent<HTMLDivElement>, node: any) => {
     event.dataTransfer.setData("application/reactflow", node.type);
