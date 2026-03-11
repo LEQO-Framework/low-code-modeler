@@ -55,7 +55,8 @@ export const TextPanel = () => {
     "nodeType",
     "basis",
     "indices",
-    "condition"
+    "condition",
+    "clusteringAlgorithm"
   ];
 
 
