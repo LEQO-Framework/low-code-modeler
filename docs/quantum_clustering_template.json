@@ -133,7 +133,6 @@
         "pluginIdentifier": "quantum-k-means-001",
         "pluginDescription": "Quantum K-Means clustering algorithm",
         "pluginType": "clustering",
-        "pluginApiRoot": "",
         "clusteringAlgorithm": "k-means",
         "dataInputs": [
           {

@@ -49,7 +49,6 @@ interface PluginNodeData {
   pluginIdentifier?: string;
   pluginDescription?: string;
   pluginType?: string;
-  pluginApiRoot?: string;
   dataInputs?: PluginInputMetadata[];
   dataOutputs?: PluginOutputMetadata[];
   tags?: string[];

@@ -277,7 +277,6 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                     type: "plugin",
                     pluginIdentifier: node.data.pluginIdentifier,
                     pluginName: effectivePluginName,
-                    pluginApiRoot: node.data.pluginApiRoot,
                     inputs: node.data.dataInputs?.map((input: any) => ({
                         parameter: input.parameter,
                         dataType: input.data_type,

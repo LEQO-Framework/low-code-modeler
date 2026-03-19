@@ -422,8 +422,6 @@ export interface components {
             pluginIdentifier?: string | null;
             /** Plugin Name */
             pluginName?: string | null;
-            /** Plugin API Root */
-            pluginApiRoot?: string | null;
             /** Inputs */
             inputs?: any[];
             /** Outputs */

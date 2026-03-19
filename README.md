@@ -52,7 +52,6 @@ The Low Code Modeler supports Plugin Nodes for integrating external ML services 
 2. Configure the plugin settings:
    - **Plugin Name**: Name of the ML algorithm (e.g., "quantum-k-means")
    - **Plugin Identifier**: Unique identifier for the plugin
-   - **API Root**: URL of the plugin service
 3. Connect inputs and outputs according to the plugin's interface
 
 ### Integration with QHAna

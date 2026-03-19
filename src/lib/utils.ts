@@ -70,17 +70,6 @@ export async function handleOnDrop(
         let dataInputs: any[] = pluginData.mockDataInputs || [];
         let dataOutputs: any[] = pluginData.mockDataOutputs || [];
 
-        try {
-          const metadataResponse = await fetch(pluginData.apiRoot);
-          if (metadataResponse.ok) {
-            const fullMetadata = await metadataResponse.json();
-            dataInputs = fullMetadata.entry_point?.data_input || dataInputs;
-            dataOutputs = fullMetadata.entry_point?.data_output || dataOutputs;
-          }
-        } catch (fetchError) {
-          // Fallback to mock data if API fetch fails
-        }
-
         const newNode = {
           id: getId(),
           type,
@@ -90,7 +79,6 @@ export async function handleOnDrop(
             pluginIdentifier: pluginData.identifier,
             pluginName: pluginData.name,
             pluginDescription: pluginData.description,
-            pluginApiRoot: pluginData.apiRoot,
             tags: pluginData.tags || [],
             dataInputs,
             dataOutputs,
