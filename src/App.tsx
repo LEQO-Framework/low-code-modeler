@@ -2944,7 +2944,6 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
             </>
           )}
             <Controls />
-            <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#d1d5db" />
             {toast && (
               <Toast
                 message={toast.message}
@@ -3034,6 +3033,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
             />
 
 
+            <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
           </ReactFlow>
           {contextMenu.visible && contextMenu.nodeId && (
             <ContextMenu

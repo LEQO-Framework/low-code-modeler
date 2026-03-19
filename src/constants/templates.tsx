@@ -1,20 +1,24 @@
 import { initialEdges } from "."
 
 export const quantum_k_means_algorithm = {
-  metadata: [{
+  "metadata": {
     "version": "1.0.0",
-    "name": "My Model",
-    "description": "Quantum K-Means is a quantum-enhanced clustering algorithm. It groups data points into k clusters by iteratively assigning each point to the nearest centroid and updating centroids, using quantum subroutines to speed up distance calculations.",
+    "name": "Quantum Clustering Template",
+    "id": "quantum-clustering-template-001",
+    "description": "Template for Quantum K-Means clustering with all data types",
     "author": "",
     "containsPlaceholder": false,
-    "id": "flow-quantum-k-means-001",
-    "timestamp": "2026-02-24T00:00:00.000Z"
-  }],
-  nodes: [
+    "id": "flow-1773928357208",
+    "timestamp": "2026-03-19T13:52:37.208Z"
+  },
+  "nodes": [
     {
-      "id": "qkm-file-in",
+      "id": "9ef53baf-381b-4248-9940-d4f3724ef65d",
       "type": "dataTypeNode",
-      "position": { "x": 100, "y": 60 },
+      "position": {
+        "x": 420,
+        "y": 210
+      },
       "data": {
         "label": "File",
         "inputs": [],
@@ -24,21 +28,35 @@ export const quantum_k_means_algorithm = {
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
         "completionGuaranteed": true,
-        "compactOptions": [true, false],
-        "identifiers": [],
-        "dataType": "file",
+        "compactOptions": [
+          true,
+          false
+        ],
+        "identifiers": [
+          "q771933"
+        ],
+        "dataType": "File",
         "value": "",
         "outputIdentifier": "",
         "inputTypes": [],
-        "outputTypes": { "0": "File" }
+        "outputTypes": {
+          "0": "File"
+        }
       },
       "width": 450,
-      "height": 270
+      "height": 270,
+      "positionAbsolute": {
+        "x": 420,
+        "y": 210
+      }
     },
     {
-      "id": "qkm-num-clusters",
+      "id": "b2e86758-3061-47ef-9613-6085e20c7146",
       "type": "dataTypeNode",
-      "position": { "x": 100, "y": 380 },
+      "position": {
+        "x": 420,
+        "y": 495
+      },
       "data": {
         "label": "Number",
         "inputs": [],
@@ -48,21 +66,36 @@ export const quantum_k_means_algorithm = {
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
         "completionGuaranteed": true,
-        "compactOptions": [true, false],
-        "identifiers": [],
+        "compactOptions": [
+          true,
+          false
+        ],
+        "identifiers": [
+          "q332971"
+        ],
         "dataType": "Number",
-        "value": "3",
+        "value": "",
         "outputIdentifier": "",
         "inputTypes": [],
-        "outputTypes": { "0": "Number" }
+        "outputTypes": {
+          "0": "Number"
+        }
       },
       "width": 450,
-      "height": 270
+      "height": 270,
+      "positionAbsolute": {
+        "x": 420,
+        "y": 495
+      },
+      "dragging": true
     },
     {
-      "id": "qkm-str-variant",
+      "id": "51193793-6568-418b-b54a-9a9721fd45c2",
       "type": "dataTypeNode",
-      "position": { "x": 100, "y": 700 },
+      "position": {
+        "x": 435,
+        "y": 795
+      },
       "data": {
         "label": "String",
         "inputs": [],
@@ -72,40 +105,129 @@ export const quantum_k_means_algorithm = {
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
         "completionGuaranteed": true,
-        "compactOptions": [true, false],
-        "identifiers": [],
-        "dataType": "string",
-        "value": "lloyd",
+        "compactOptions": [
+          true,
+          false
+        ],
+        "identifiers": [
+          "q541013"
+        ],
+        "dataType": "String",
+        "value": "",
         "outputIdentifier": "",
         "inputTypes": [],
-        "outputTypes": { "0": "String" }
+        "outputTypes": {
+          "0": "String"
+        }
       },
       "width": 450,
-      "height": 270
+      "height": 270,
+      "positionAbsolute": {
+        "x": 435,
+        "y": 795
+      },
+      "dragging": true
     },
     {
-      "id": "qkm-plugin",
+      "id": "61b9b81f-e325-47f8-a0ab-c3d75336c732",
       "type": "pluginNode",
-      "position": { "x": 700, "y": 250 },
+      "position": {
+        "x": 1095,
+        "y": 375
+      },
       "data": {
         "label": "Quantum Clustering",
         "pluginName": "quantum-k-means",
         "tags": [],
         "dataInputs": [
-          { "parameter": "entityPointsUrl", "data_type": "entity/vector", "content_type": ["application/json", "text/csv"], "required": true },
-          { "parameter": "numberOfClusters", "data_type": "int", "content_type": ["text/plain"], "required": true },
-          { "parameter": "variant", "data_type": "string", "content_type": ["text/plain"], "required": true },
-          { "parameter": "tolerance", "data_type": "float", "content_type": ["text/plain"], "required": false },
-          { "parameter": "maxIterations", "data_type": "int", "content_type": ["text/plain"], "required": false }
+          {
+            "parameter": "entityPointsUrl",
+            "data_type": "entity/vector",
+            "content_type": [
+              "application/json",
+              "text/csv"
+            ],
+            "required": true
+          },
+          {
+            "parameter": "numberOfClusters",
+            "data_type": "int",
+            "content_type": [
+              "text/plain"
+            ],
+            "required": true
+          },
+          {
+            "parameter": "variant",
+            "data_type": "string",
+            "content_type": [
+              "text/plain"
+            ],
+            "required": true
+          },
+          {
+            "parameter": "tolerance",
+            "data_type": "float",
+            "content_type": [
+              "text/plain"
+            ],
+            "required": false
+          },
+          {
+            "parameter": "maxIterations",
+            "data_type": "int",
+            "content_type": [
+              "text/plain"
+            ],
+            "required": false
+          }
         ],
         "dataOutputs": [
-          { "name": "Cluster Labels", "data_type": "entity/label", "content_type": ["application/json"], "required": true },
-          { "name": "Visualization", "data_type": "plot", "content_type": ["text/html"], "required": false }
+          {
+            "name": "Cluster Labels",
+            "data_type": "entity/label",
+            "content_type": [
+              "application/json"
+            ],
+            "required": true
+          },
+          {
+            "name": "Visualization",
+            "data_type": "plot",
+            "content_type": [
+              "text/html"
+            ],
+            "required": false
+          }
         ],
         "inputs": [
-          { "id": "qkm-file-in", "edgeId": "qkm-edge-01", "outputIdentifier": "", "identifiers": [], "targetHandle": "classicalHandlePluginInput0qkm-plugin" },
-          { "id": "qkm-num-clusters", "edgeId": "qkm-edge-02", "outputIdentifier": "", "identifiers": [], "targetHandle": "classicalHandlePluginInput1qkm-plugin" },
-          { "id": "qkm-str-variant", "edgeId": "qkm-edge-03", "outputIdentifier": "", "identifiers": [], "targetHandle": "classicalHandlePluginInput2qkm-plugin" }
+          {
+            "id": "9ef53baf-381b-4248-9940-d4f3724ef65d",
+            "edgeId": "b8571e87-3f59-44d9-8fab-c568d96249f9",
+            "outputIdentifier": "",
+            "identifiers": [
+              "q771933"
+            ],
+            "targetHandle": "classicalHandlePluginInput061b9b81f-e325-47f8-a0ab-c3d75336c732"
+          },
+          {
+            "id": "b2e86758-3061-47ef-9613-6085e20c7146",
+            "edgeId": "13ce429a-fc7e-4e83-b190-0f54ffe316ab",
+            "outputIdentifier": "",
+            "identifiers": [
+              "q332971"
+            ],
+            "targetHandle": "classicalHandlePluginInput161b9b81f-e325-47f8-a0ab-c3d75336c732"
+          },
+          {
+            "id": "51193793-6568-418b-b54a-9a9721fd45c2",
+            "edgeId": "60042e39-f6c2-451c-a7c2-310bb5a91251",
+            "outputIdentifier": "",
+            "identifiers": [
+              "q541013"
+            ],
+            "targetHandle": "classicalHandlePluginInput261b9b81f-e325-47f8-a0ab-c3d75336c732"
+          }
         ],
         "children": [],
         "implementation": "",
@@ -113,44 +235,82 @@ export const quantum_k_means_algorithm = {
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
         "clusteringAlgorithm": "k-means",
-        "identifiers": [],
-        "inputTypes": ["file", "number", "string", "number", "number"],
-        "outputTypes": {}
+        "identifiers": [
+          "q541013"
+        ],
+        "inputTypes": [
+          "file",
+          "number",
+          "string",
+          "number",
+          "number"
+        ],
+        "outputTypes": {
+          "0": "array",
+          "1": "any"
+        }
       },
       "width": 320,
-      "height": 600
+      "height": 590,
+      "positionAbsolute": {
+        "x": 1095,
+        "y": 375
+      },
+      "dragging": true
     }
   ],
-  initialEdges: [
+  "edges": [
     {
-      "source": "qkm-file-in",
-      "sourceHandle": "classicalHandleDataTypeOutput0qkm-file-in",
-      "target": "qkm-plugin",
-      "targetHandle": "classicalHandlePluginInput0qkm-plugin",
+      "source": "51193793-6568-418b-b54a-9a9721fd45c2",
+      "sourceHandle": "classicalHandleDataTypeOutput051193793-6568-418b-b54a-9a9721fd45c2",
+      "target": "61b9b81f-e325-47f8-a0ab-c3d75336c732",
+      "targetHandle": "classicalHandlePluginInput261b9b81f-e325-47f8-a0ab-c3d75336c732",
       "type": "classicalEdge",
-      "id": "qkm-edge-01",
-      "markerEnd": { "type": "arrowclosed", "width": 20, "height": 20, "color": "#F5A843", "hidden": false }
+      "id": "60042e39-f6c2-451c-a7c2-310bb5a91251",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#F5A843",
+        "hidden": false
+      }
     },
     {
-      "source": "qkm-num-clusters",
-      "sourceHandle": "classicalHandleDataTypeOutput0qkm-num-clusters",
-      "target": "qkm-plugin",
-      "targetHandle": "classicalHandlePluginInput1qkm-plugin",
+      "source": "b2e86758-3061-47ef-9613-6085e20c7146",
+      "sourceHandle": "classicalHandleDataTypeOutput0b2e86758-3061-47ef-9613-6085e20c7146",
+      "target": "61b9b81f-e325-47f8-a0ab-c3d75336c732",
+      "targetHandle": "classicalHandlePluginInput161b9b81f-e325-47f8-a0ab-c3d75336c732",
       "type": "classicalEdge",
-      "id": "qkm-edge-02",
-      "markerEnd": { "type": "arrowclosed", "width": 20, "height": 20, "color": "#F5A843", "hidden": false }
+      "id": "13ce429a-fc7e-4e83-b190-0f54ffe316ab",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#F5A843",
+        "hidden": false
+      }
     },
     {
-      "source": "qkm-str-variant",
-      "sourceHandle": "classicalHandleDataTypeOutput0qkm-str-variant",
-      "target": "qkm-plugin",
-      "targetHandle": "classicalHandlePluginInput2qkm-plugin",
+      "source": "9ef53baf-381b-4248-9940-d4f3724ef65d",
+      "sourceHandle": "classicalHandleDataTypeOutput09ef53baf-381b-4248-9940-d4f3724ef65d",
+      "target": "61b9b81f-e325-47f8-a0ab-c3d75336c732",
+      "targetHandle": "classicalHandlePluginInput061b9b81f-e325-47f8-a0ab-c3d75336c732",
       "type": "classicalEdge",
-      "id": "qkm-edge-03",
-      "markerEnd": { "type": "arrowclosed", "width": 20, "height": 20, "color": "#F5A843", "hidden": false }
+      "id": "b8571e87-3f59-44d9-8fab-c568d96249f9",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#F5A843",
+        "hidden": false
+      }
     }
   ],
-  viewport: { "x": 0, "y": 0, "zoom": 1 }
+  "viewport": {
+    "x": 62.684741684490405,
+    "y": 41.563151147579106,
+    "zoom": 0.6858666442952986
+  }
 }
 
 export const swap_test_algorithm =
