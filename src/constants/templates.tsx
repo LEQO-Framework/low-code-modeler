@@ -16,7 +16,7 @@ export const quantum_k_means_algorithm = {
       "type": "dataTypeNode",
       "position": { "x": 100, "y": 60 },
       "data": {
-        "label": "file",
+        "label": "File",
         "inputs": [],
         "children": [],
         "implementation": "",
@@ -30,7 +30,7 @@ export const quantum_k_means_algorithm = {
         "value": "",
         "outputIdentifier": "",
         "inputTypes": [],
-        "outputTypes": { "0": "file" }
+        "outputTypes": { "0": "File" }
       },
       "width": 450,
       "height": 270
@@ -50,7 +50,7 @@ export const quantum_k_means_algorithm = {
         "completionGuaranteed": true,
         "compactOptions": [true, false],
         "identifiers": [],
-        "dataType": "float",
+        "dataType": "Number",
         "value": "3",
         "outputIdentifier": "",
         "inputTypes": [],
@@ -64,7 +64,7 @@ export const quantum_k_means_algorithm = {
       "type": "dataTypeNode",
       "position": { "x": 100, "y": 700 },
       "data": {
-        "label": "string",
+        "label": "String",
         "inputs": [],
         "children": [],
         "implementation": "",
@@ -78,7 +78,7 @@ export const quantum_k_means_algorithm = {
         "value": "lloyd",
         "outputIdentifier": "",
         "inputTypes": [],
-        "outputTypes": { "0": "string" }
+        "outputTypes": { "0": "String" }
       },
       "width": 450,
       "height": 270
@@ -114,7 +114,7 @@ export const quantum_k_means_algorithm = {
         "uncomputeImplementation": "",
         "clusteringAlgorithm": "k-means",
         "identifiers": [],
-        "inputTypes": [],
+        "inputTypes": ["file", "number", "string", "number", "number"],
         "outputTypes": {}
       },
       "width": 320,
