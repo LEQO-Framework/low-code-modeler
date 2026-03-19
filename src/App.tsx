@@ -1098,9 +1098,7 @@ If none apply, return { "algorithms": [] }.
   // Checks if there are any Nodes conflicting with QASM
   const [containsWorkflowNodes, setContainsWorkflowNodes] = useState(false);
   function checkContainsWorkflowNodes(flow): boolean {
-    return flow.nodes?.some((node) =>
-      ["plugin", "File", "String"].includes(node.type)
-    )
+    return flow.nodes?.some((node) => (node.type == "dataTypeNode" && ["String", "File"].includes(node.data?.dataType)) || ["pluginNode"].includes(node.type));
   };
 
   const startQuantumAlgorithmSelection = () => {

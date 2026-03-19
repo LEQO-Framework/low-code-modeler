@@ -55,7 +55,7 @@ export const SendRequestModal = ({
             <option value="workflow">Workflow</option>
             <option value="qasm" disabled={containsPlaceholder||containsWorkflowNodes}>
               OpenQASM3 {containsPlaceholder ? "(not available, placeholder present)" : ""}
-              {containsWorkflowNodes ? "(not available, QML, File or String nodes present)" : ""}
+              {containsWorkflowNodes ? "(not available, Machine Learning, File or String node present)" : ""}
             </option>
           </select>
         </div>
