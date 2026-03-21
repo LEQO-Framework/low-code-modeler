@@ -2344,6 +2344,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
           body: form,
         }
       );
+      showToast("Deployment of workflow started ", "info");
 
       if (response.ok) {
         // retrieve deployment results from response
@@ -2365,7 +2366,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
           );
           return { status: "failed" };
         }
-
+        showToast("Workflow is deployed ", "success");
         return {
           status: "deployed",
           deployedProcessDefinition: Object.values(
@@ -2377,6 +2378,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
           "Deployment of workflow returned invalid status code: %s",
           response.status
         );
+
         return {
           status: "failed",
           message:
@@ -2385,6 +2387,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
       }
     } catch (error) {
       console.error("Error while executing post to deploy workflow: " + error);
+      showToast("Error while executing post to deploy workflow: ", "error");
       return {
         status: "failed",
         message: "Error while executing post to deploy workflow: " + error,
