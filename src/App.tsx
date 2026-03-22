@@ -710,6 +710,7 @@ If none apply, return { "algorithms": [] }.
         setStatus("completed");
         setLoading(false);
         showToast("Result for model " + id + " is available.", "success");
+        setModalOpen(true);  
       }, 3000);
       setStatus("completed");
       setLoading(false);
@@ -2805,6 +2806,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
         containsWorkflowNodes={containsWorkflowNodes}
         setCompilationTarget={setCompilationTarget}
         sendToBackend={sendToBackend}
+         qasmCode={openqasmCode}
       />
 
       <ConfigModal
