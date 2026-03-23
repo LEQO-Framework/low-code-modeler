@@ -1788,8 +1788,8 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
         );
 
         console.log("Existing implementation updated.");
-        showToast("Update existing implementation for "+ patternName, "success");
-    } else {
+        showToast("Update existing implementation for " + patternName, "success");
+      } else {
         // =========================================
         // CREATE NEW ENTRY
         // =========================================
@@ -1821,7 +1821,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
 
         sqlContent += sqlAppend;
         console.log("New implementation inserted.");
-        showToast("Upload new implementation for "+ patternName, "success");
+        showToast("Upload new implementation for " + patternName, "success");
       }
 
       // ------------------------
@@ -1858,7 +1858,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
 
     } catch (error) {
       console.error("GitHub API Error:", error);
-       showToast("Upload of implementation for "+ patternName +" failed.", "error");
+      showToast("Upload of implementation for " + patternName + " failed.", "error");
       return { success: false };
     }
   }
@@ -2997,12 +2997,18 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
 
             <MiniMap
               nodeClassName={(node) => {
-                if (node.type === 'dataTypeNode' || node.type === "classicalAlgorithmNode" || node.type === ClassicalOperatorNode) return 'minimap-node-circle';
+                 let isDataType = node.data.isDataType;
+
+                if (node.type === 'dataTypeNode' || node.type === "classicalAlgorithmNode" || node.type === ClassicalOperatorNode || isDataType) return 'minimap-node-circle';
                 if (node.type === 'rounded') return 'minimap-node-rounded';
                 return 'minimap-node-default';
               }}
               nodeColor={(node) => {
                 switch (node.type) {
+                  case 'editableNode':
+                    return node.data.isDataType
+                      ? classicalConstructColor
+                      : quantumConstructColor;
                   case 'dataTypeNode':
                   case 'classicalAlgorithmNode':
                   case ClassicalOperatorNode:
