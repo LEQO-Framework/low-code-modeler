@@ -1,6 +1,8 @@
 import { ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { categories } from "@/components/panels/categories";
+import { CategoryEntry } from "@/components/panels/categories";
+
+
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -31,6 +33,7 @@ export function handleOnDrop(
   reactFlowWrapper: any,
   reactFlowInstance: any,
   setNodes: any,
+  categories: Record<string, CategoryEntry>,
 ) {
   event.preventDefault();
   if (reactFlowWrapper) {
@@ -50,9 +53,10 @@ export function handleOnDrop(
     if (typeof type === "undefined" || !type) {
       return;
     }
-    const def = findNodeDefinition(type, label);
-    console.log(def)
 
+    const def = findNodeDefinition(type, label, categories);
+    console.log(def)
+    console.log(categories)
     const compactOptions = def.compactOptions;
 
     const position = reactFlowInstance.project({
@@ -63,14 +67,23 @@ export function handleOnDrop(
       id: getId(),
       type,
       position,
-      data: { label: label, inputs: [], children: [], implementation: "", implementationType: "", uncomputeImplementationType: "", uncomputeImplementation: "", completionGuaranteed: def?.completionGuaranteed ?? false, compactOptions: compactOptions }
+      data: { label: label, inputs: [], children: [], implementation: "", implementationType: "", uncomputeImplementationType: "", uncomputeImplementation: "", completionGuaranteed: def?.completionGuaranteed ?? false, compactOptions: compactOptions,
+        ...(def.properties && { properties: def.properties }),
+        ...(def.constraints && { constraints: def.constraints }),
+        ...(def.mapping && { mapping: def.mapping }),
+        ...(def.description && { description: def.description }),
+        ...(def.outputType && { outputType: def.outputType }),
+        ...(def.icon && { icon: def.icon }),
+        ...(def.isDataType && {isDataType: def.isDataType}),
+       }
     };
 
     setNodes(newNode);
   }
 }
 
-function findNodeDefinition(type: string, label: string) {
+function findNodeDefinition(type: string, label: string, categories: Record<string, CategoryEntry>) {
+
   for (const cat of Object.values(categories)) {
     const content = cat.content;
 
