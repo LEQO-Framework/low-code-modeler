@@ -35,9 +35,8 @@ interface SendRequestModalProps {
   containsWorkflowNodes: boolean;
   setCompilationTarget: (target: string) => void;
   sendToBackend: () => void;
-  /** Der OpenQASM-String aus App.tsx (openqasmCode). Optional – wenn leer,
-   *  wird der Dirac-Tab ausgeblendet. */
   qasmCode?: string;
+  onGetCircuitSvg?: () => Promise<string>;  // ← NEU
 }
 
 // ---------------------------------------------------------------------------
@@ -53,6 +52,7 @@ export const SendRequestModal = ({
   setCompilationTarget,
   sendToBackend,
   qasmCode = "",
+  onGetCircuitSvg,
 }: SendRequestModalProps) => {
   // Automatisch auf "workflow" umschalten wenn placeholder vorhanden
   useEffect(() => {
@@ -166,6 +166,7 @@ export const SendRequestModal = ({
             <QasmDiracPanel
               qasm={qasmCode}
               title="Dirac-Darstellung des letzten QASM-Outputs"
+              onGetCircuitSvg={onGetCircuitSvg}
             />
           </div>
         )}
