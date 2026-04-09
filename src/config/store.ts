@@ -605,13 +605,17 @@ export const useStore = create<RFState>()(persist((set, get) => ({
 
 
   onConnect: (connection: Connection) => {
+    let setTypeError = get().setTypeError;
     const getNodeLockedType = (nodeId: string): string => {
       const node = get().nodes.find(n => n.id === nodeId);
       const sourceNode = get().nodes.find(n => n.id === connection.source);
+      const targetNode = get().nodes.find(n => n.id === connection.target);
+      
       if (!node) return "any";
       if (node.type === consts.AlgorithmNode || node.type === consts.ClassicalAlgorithmNode) {
         return "any"
       }
+      
       else if (node.type.includes("editable")) {
         // Ensure we have properties
         const inputTypes = node.data?.properties?.map((p: any) => p.type) || [];
@@ -739,10 +743,17 @@ export const useStore = create<RFState>()(persist((set, get) => ({
     let type = "classicalEdge";
     let color = "#F5A843";
 
-    let nodeDataSource;
+    let nodeDataSource = get().nodes.find((node) => node.id === connection.source);
     let nodeDataTarget;
     console.log(connection)
+    console.log("HIERRRRRRRRRRRR")
     const target = get().nodes.find((node) => node.id === connection.target);
+    console.log(nodeDataSource)
+    console.log(target)
+    if(nodeDataSource.data.label == consts.qubitLabel && target.type === consts.SplitterNode) {
+      setTypeError("A qubit cannot be split into smaller units");
+      return false;
+    }
     const hasCycle = (node, visited = new Set()) => {
       if (visited.has(node.id)) { console.log("has"); return false; }
 
@@ -863,7 +874,6 @@ export const useStore = create<RFState>()(persist((set, get) => ({
 
     console.log(connection)
     console.log(insertEdge);
-    let setTypeError = get().setTypeError;
 
 
     if (!insertEdge) {

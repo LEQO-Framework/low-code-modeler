@@ -75,6 +75,8 @@ export const quantumHandle: string = "quantumHandle";
 export const ancillaHandle: string = "ancillaHandle";
 export const dirtyAncillaHandle: string = "dirtyAncillaHandle";
 
+export const qubitLabel = "Qubit Circuit";
+
 // colors for modeling constructs
 export const quantumConstructColor = "rgba(105, 145, 210, 0.2)";
 export const ancillaConstructColor = "rgba(83, 242, 71, 0.2)";
