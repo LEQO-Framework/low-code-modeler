@@ -2077,6 +2077,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
 
     // Reset the viewport (optional based on your use case)
     const { x = 0, y = 0, zoom = 1 } = flow.viewport || {};
+    console.log(flow.viewport)
     reactFlowInstance.setViewport({ x, y, zoom });
 
     console.log(flow.metadata)
@@ -2620,13 +2621,24 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
           console.log(type);
           if (type === 'step:before' && index === 0) {
             // open both side panels if they're not opened
+
             setIsPaletteOpen(true);
             setIsPanelOpen(true);
+
+            let fileContent =reactFlowInstance.toObject();
+            const validMetadata = {
+              ...metadata,
+              containsPlaceholder: containsPlaceholder,
+              id: `flow-${Date.now()}`,
+              timestamp: new Date().toISOString(),
+            };
+
+            console.log(validMetadata);
+            console.log(metadata);
+
+            const flowWithMetadata = { metadata: validMetadata, ...fileContent };
+            setModeledDiagram(JSON.stringify(flowWithMetadata));
             //setExpanded(true);
-          }
-          if (type === 'step:before' && index === 1) {
-            let fileContent = JSON.stringify(reactFlowInstance.toObject());
-            setModeledDiagram(fileContent);
           }
           if (type === 'step:before' && index === 3) {
             startTour2();
@@ -2658,15 +2670,21 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
           }
           if (['finished', 'skipped'].includes(data.status)) {
             setRunTour(false);
+
             setExpanded(false);
+            const toolbar = document.querySelector('.toolbar-container');
+            if (toolbar) {
+              (toolbar as HTMLElement).style.overflowX = 'auto';
+            }
             if (modeledDiagram) {
+              console.log("Load old diagram.");
               overwriteFlow(JSON.parse(modeledDiagram));
             }
           }
         }}
       />
 
-      <div className="toolbar-container">
+      <div className="toolbar-container bg-gray-100 w-full">
         <Toolbar
           onSave={handleSaveClick}
           onRestore={handleRestoreClick}
@@ -2997,7 +3015,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
 
             <MiniMap
               nodeClassName={(node) => {
-                 let isDataType = node.data.isDataType;
+                let isDataType = node.data.isDataType;
 
                 if (node.type === 'dataTypeNode' || node.type === "classicalAlgorithmNode" || node.type === ClassicalOperatorNode || isDataType) return 'minimap-node-circle';
                 if (node.type === 'rounded') return 'minimap-node-rounded';
