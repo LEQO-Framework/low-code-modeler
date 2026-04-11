@@ -1,36 +1,89 @@
 ML Elements
+===========
+
+ML Elements provide building blocks for creating machine learning (ML) and
+quantum machine learning (QML) workflows. These elements are translated into
+executable workflows using QHAna plugins.
+
+ML nodes operate on standard input types such as:
+
+- **File**: A dataset provided via URL or local file path
+- **Number**: Numeric parameters (e.g., number of clusters, neighbors, epochs)
+
+
+Quantum Machine Learning Nodes
+=============================
+
+Quantum Clustering
+------------------
+Performs clustering using quantum-enhanced algorithms.
+
+Supported methods:
+
+- k-means
+- k-median
+
+
+Quantum Neural Network (QNN)
+---------------------------
+Classifies data using a quantum neural network.
+
+
+Quantum CNN
 -----------
+Applies a quantum convolutional neural network (QCNN) to label data.
 
-ML Elements provide machine learning and quantum machine learning nodes that integrate with the QHAna Plugin Runner for execution.
 
-The following quantum ML nodes are supported:
+Quantum k-Nearest Neighbours (QkNN)
+----------------------------------
+Classifies data based on proximity using a quantum version of the
+k-nearest neighbors algorithm.
 
-- **Quantum Clustering**: Clusters data using the quantum k-means algorithm.
 
-- **qnn**: Classifies data with a quantum neural network.
+Quantum Parzen Window
+---------------------
+Performs classification using a quantum-enhanced Parzen window approach.
 
-- **quantum-cnn**: Labels data with a quantum convolutional neural network.
 
-- **quantum-k-nearest-neighbours**: Quantum k-nearest neighbours classification.
+Quantum Kernel Estimator
+------------------------
+Generates a kernel matrix using a quantum kernel. The resulting matrix
+can be used as input for other algorithms such as support vector machines.
 
-- **quantum-parzen-window**: Quantum parzen window classification.
 
-- **quantum-kernel-estimation**: Produces a kernel matrix from a quantum kernel.
+Variational Quantum Classifier (VQC)
+-----------------------------------
+A hybrid quantum-classical classifier that uses parameterized quantum
+circuits for supervised learning tasks.
 
-- **vqc**: Variational Quantum Classifier.
 
-- **hybrid-autoencoder**: Reduces dimensionality with classical and quantum neural networks.
+Hybrid Autoencoder
+------------------
+Reduces data dimensionality using a combination of classical and quantum
+neural network components.
 
-The following classical ML nodes are supported:
 
-- **Classical Clustering**: Clusters data with the classical k-means algorithm.
+Classical Machine Learning Nodes
+===============================
 
-- **classical-k-medoids**: Clusters data with the classical k-medoids algorithm.
+Classical Clustering
+--------------------
+Clusters data using standard algorithms.
 
-- **optics**: Clusters data with the OPTICS algorithm.
+Supported methods:
 
-- **svm**: Classifies data with a support vector machine.
+- k-means
+- k-medoids
+- k-median
+- OPTICS
 
-- **neural-network**: Neural network objective-function plugin.
 
-ML nodes use classical data types for input such as **file** (URL or file path to data) and **Number** (numeric parameters).
+Support Vector Machine (SVM)
+----------------------------
+Classifies data using a support vector machine.
+
+
+Neural Network
+--------------
+A classical neural network for general-purpose learning tasks such as
+classification and regression.

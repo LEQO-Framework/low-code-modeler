@@ -434,7 +434,7 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
               <option value="k-median">K-Median</option>
               {data.pluginName === 'Classical Clustering' && (<div>
                 <option value="k-medoids">K-Medoids</option>
-                <option value="optics">Optics</option></div>
+                <option value="optics">OPTICS</option></div>
               )}
             </select>
           </div>
