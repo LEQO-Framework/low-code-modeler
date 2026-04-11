@@ -19,54 +19,6 @@ Make sure to start:
 3. **Configure**: Create `.env` with `VITE_LOW_CODE_BACKEND=http://localhost:8000`
 4. **Open**: http://localhost:4242
 
-## Usage
-
-### Creating a Workflow
-
-1. Open the application at http://localhost:4242
-2. Use the node palette on the left to drag nodes onto the canvas
-3. Connect nodes by dragging from output handles to input handles
-4. Configure node parameters by clicking on them
-
-### Available Node Types
-
-- **Qubit Nodes**: Create qubit registers
-- **Literal Nodes**: Integer, Float, Bit, Bool, Array literals
-- **Gate Nodes**: Quantum gates (H, X, Y, Z, CNOT, etc.)
-- **Control Structures**: If statements, loops
-- **Plugin Nodes**: External services like ML algorithms
-
-### Compiling to OpenQASM
-
-1. Create your workflow using the visual editor
-2. Click the "Compile" button in the toolbar
-3. The compiled OpenQASM code will be displayed
-
-## ML Workflows with Plugin Nodes
-
-The Low Code Modeler supports Plugin Nodes for integrating external ML services (e.g., from QHAna).
-
-### Using Plugin Nodes
-
-1. Add a "Plugin" node from the node palette
-2. Configure the plugin settings:
-   - **Plugin Name**: Name of the ML algorithm (e.g., "quantum-k-means")
-   - **Plugin Identifier**: Unique identifier for the plugin
-3. Connect inputs and outputs according to the plugin's interface
-
-### Integration with QHAna
-
-For full ML workflow support, you can integrate with QHAna Plugin Runner:
-
-1. Start the QHAna Plugin Runner on port 5005
-2. Start the QHAna Registry on port 5006
-3. Start the QHAna Backend on port 9090
-4. Configure the LCM to communicate with these services
-1. Clone the repository: `git clone https://github.com/LEQO-Framework/low-code-modeler.git`
-2. Install dependencies: `pnpm install`
-3. Start the development server: `npm run dev`
-4. Open the application in your browser at http://localhost:4242
-
 ## Execution in Docker
 
 To build and run an own image execute:
@@ -106,7 +58,6 @@ To ensure full functionality, the following projects must be running:
 
 You can start all required services using the provided Docker setup here:
 https://github.com/UST-QuAntiL/QuantME-UseCases/tree/fix/2025-icse-docker/2025-icse/docker
-
 
 ## Disclaimer of Warranty
 
