@@ -21,7 +21,7 @@ const selector = (state: {
 
 export const SplitterNode = memo((node: Node) => {
   const { data } = node;
-  const { edges, setEdges, setNewEdges } = useStore(selector, shallow);
+  const { edges, setEdges, updateNodeValue, setNewEdges } = useStore(selector, shallow);
   const [edgesGraph, setEdgesGraph] = useState(edges);
 
   const numberInputs = 1;
@@ -69,6 +69,10 @@ export const SplitterNode = memo((node: Node) => {
   const updateNodeInternals = useUpdateNodeInternals();
   useEffect(() => {
     updateNodeInternals(node.id);
+    if(node.data.numberOutputs === undefined){
+      console.log("set outputs")
+      updateNodeValue(node.id, "numberOutputs", "2");
+    }
 
     const edgesToRemove = edges.filter((edge) => {
       const match = edge.sourceHandle?.match(

@@ -37,6 +37,16 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
 
         switch (node.type) {
             // Boundary Nodes
+            case consts.EditableNode:
+                return {
+                    id: node.id,
+                    type: "editableNode",
+                    label: node.data.label, // optional
+                    propertyValues: node.data.propertyValues || {}, // numeric/string/date/etc.
+                    mapping: node.data.mapping || [], // input-output mapping
+            
+                };
+
             case consts.StatePreparationNode:
                 switch (node.data.label) {
                     case "Encode Value":

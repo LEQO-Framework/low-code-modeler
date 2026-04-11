@@ -26,12 +26,15 @@ import { remove } from "jszip";
 import { IPortData } from "@/components/nodes/model";
 import { Regex } from "lucide-react";
 import { Template } from "@/components/panels/categories";
+import { DomainProfile } from "@/components/modals/domainProfileModal";
 
 export type NodeData = {
   label: string;
   dataType: string;
   isInitial?: boolean;
 };
+
+
 
 export type NodeTypes = "customNodeComponent";
 
@@ -53,17 +56,21 @@ type RFState = {
   historyIndex: number;
   typeError: string | null;
   userTemplates: Template[];
+  domainProfile: string;
+  allDomainProfiles: DomainProfile[];
+  setDomainProfile: (domainProfile: string) => void;
   setTypeError: (message: string | null) => void;
   setNodes: (node: Node) => void;
   setEdges: (edge: Edge) => void;
-  setAncillaMode: (ancillaMode: boolean) => void
-  setCompletionGuaranteed: (completionGuaranteed: boolean) => void
-  setContainsPlaceholder: (containsPlaceholder: boolean) => void
-  setCompact: (compact: boolean) => void
-  setExperienceLevel: (experienceLevel: string) => void
+  setAncillaMode: (ancillaMode: boolean) => void;
+  setCompletionGuaranteed: (completionGuaranteed: boolean) => void;
+  setContainsPlaceholder: (containsPlaceholder: boolean) => void;
+  setCompact: (compact: boolean) => void;
+  setExperienceLevel: (experienceLevel: string) => void;
   setNewEdges: (newEdges: Edge[]) => void;
   addUserTemplate: (template: Template) => void;
   setUserTemplates: (newTemplates: Template[]) => void;
+  setAllDomainProfiles: (newProfiles: DomainProfile[]) => void;
   onNodesChange: OnNodesChange;
   onEdgesChange: OnEdgesChange;
   onConnect: OnConnect;
@@ -105,6 +112,14 @@ export const useStore = create<RFState>()(persist((set, get) => ({
   containsPlaceholder: false,
   typeError: null,
   userTemplates: [],
+  domainProfile: "standard",
+  allDomainProfiles: [],
+
+  setDomainProfile: (domainProfile: string) => {
+    set({
+      domainProfile
+    });
+  },
 
   setTypeError: (message: string | null) => {
     set({ typeError: message });
@@ -238,6 +253,10 @@ export const useStore = create<RFState>()(persist((set, get) => ({
       else if (type === consts.PluginNode && node.data.dataInputs) {
         return node.data.dataInputs.map((input: any) => mapPluginTypeToInternal(input.data_type ?? "any"));
       }
+      else if (type.includes("editable")) {
+        const inputTypes = node.data.properties.map((p) => p.type);
+        return inputTypes;
+      }
 
       return []; // Default empty
     }
@@ -262,6 +281,7 @@ export const useStore = create<RFState>()(persist((set, get) => ({
       else if (type === consts.PluginNode && node.data.dataOutputs) {
         return node.data.dataOutputs.map((output: any) => mapPluginTypeToInternal(output.data_type ?? "any"));
       }
+      else if (type.includes("editable")) return [node.data.outputType];
       return []; // Default empty
     }
     const inputTypes = getInitialInputTypes(node);
@@ -450,6 +470,13 @@ export const useStore = create<RFState>()(persist((set, get) => ({
     console.log("after setting templates", get().userTemplates)
   },
 
+  setAllDomainProfiles(newProfiles) {
+    set({
+      allDomainProfiles: newProfiles
+    })
+    console.log("after setting templates", get().userTemplates)
+  },
+
   onNodesChange: (changes: NodeChange[]) => {
     const currentNodes = applyNodeChanges(changes, get().nodes);
     const currentEdges = get().edges;
@@ -524,8 +551,8 @@ export const useStore = create<RFState>()(persist((set, get) => ({
           const sourceNode = currentNodes.find((n) => n.id === removedEdge.source);
           console.log("target Node", targetNode);
 
-          if (targetNode) {
-            const targetNodeIndex = currentNodes.findIndex((n) => n.id === targetNode.id);
+        if (targetNode) {
+          const targetNodeIndex = currentNodes.findIndex((n) => n.id === targetNode.id);
 
             let targetData = {
               ...targetNode.data,
@@ -596,8 +623,12 @@ export const useStore = create<RFState>()(persist((set, get) => ({
 
 
   onConnect: (connection: Connection) => {
+    let setTypeError = get().setTypeError;
     const getNodeLockedType = (nodeId: string): string => {
       const node = get().nodes.find(n => n.id === nodeId);
+      const sourceNode = get().nodes.find(n => n.id === connection.source);
+      const targetNode = get().nodes.find(n => n.id === connection.target);
+      
       if (!node) return "any";
       if (node.type === consts.AlgorithmNode || node.type === consts.ClassicalAlgorithmNode) {
         return "any"
@@ -605,6 +636,27 @@ export const useStore = create<RFState>()(persist((set, get) => ({
       // TODO: figure out a better way to opt out of locked input types
       if (node.type === consts.PluginNode)
         return "any"
+      
+      else if (node.type.includes("editable")) {
+        // Ensure we have properties
+        const inputTypes = node.data?.properties?.map((p: any) => p.type) || [];
+        console.log(inputTypes)
+        console.log(connection.targetHandle)
+
+        // Extract the index from the targetHandle string
+        // Example targetHandle: "classicalHandleInput0node123"
+        let handleIndex = 0;
+        
+        const match = connection.targetHandle.match(/^classicalHandleInput(\d)/);
+        if (match) {
+          handleIndex = parseInt(match[1], 10);
+        }
+        console.log(handleIndex)
+        console.log(inputTypes[handleIndex])
+
+        return inputTypes[handleIndex].toLowerCase();
+      }
+
 
       // Find the first input that has a type other than "any"
       if (node.data.inputs) {
@@ -712,10 +764,17 @@ export const useStore = create<RFState>()(persist((set, get) => ({
     let type = "classicalEdge";
     let color = "#F5A843";
 
-    let nodeDataSource;
+    let nodeDataSource = get().nodes.find((node) => node.id === connection.source);
     let nodeDataTarget;
     console.log(connection)
+    console.log("HIERRRRRRRRRRRR")
     const target = get().nodes.find((node) => node.id === connection.target);
+    console.log(nodeDataSource)
+    console.log(target)
+    if(nodeDataSource.data.label == consts.qubitLabel && target.type === consts.SplitterNode) {
+      setTypeError("A qubit cannot be split into smaller units");
+      return false;
+    }
     const hasCycle = (node, visited = new Set()) => {
       if (visited.has(node.id)) { console.log("has"); return false; }
 
@@ -836,7 +895,6 @@ export const useStore = create<RFState>()(persist((set, get) => ({
 
     console.log(connection)
     console.log(insertEdge);
-    let setTypeError = get().setTypeError;
 
 
     if (!insertEdge) {
@@ -926,7 +984,7 @@ export const useStore = create<RFState>()(persist((set, get) => ({
     }
 
 
-    const lockedType = getNodeLockedType(targetNode.id);
+    const lockedType = getNodeLockedType(targetNode.id).toLowerCase();
 
     if (sourceNode) {
       if (sourceNode.type === "dataTypeNode") sourceType = sourceNode.data?.dataType ?? "any";
@@ -1577,10 +1635,11 @@ export const useStore = create<RFState>()(persist((set, get) => ({
   },
 }),
   {
-    name: "user-templates-storage",
+    name: "user-app-storage",
 
     partialize: (state) => ({
       userTemplates: state.userTemplates,
+      allDomainProfiles: state.allDomainProfiles,
     }),
   }));
 

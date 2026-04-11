@@ -30,6 +30,7 @@ export const OperatorNode: string = "quantumOperatorNode";
 export const ClassicalOperatorNode: string = "classicalOperatorNode";
 export const GroupNode: string = "groupNode";
 export const PluginNode: string = "pluginNode";
+export const EditableNode: string = "editableNode";
 
 
 export const NodeTypes = [
@@ -49,7 +50,8 @@ export const NodeTypes = [
   OperatorNode,
   ClassicalOperatorNode,
   GroupNode,
-  PluginNode
+  PluginNode,
+  EditableNode
 ]
 
 export const quantumLabel = "Quantum ";
@@ -78,6 +80,8 @@ export const classicalHandle: string = "classicalHandle";
 export const quantumHandle: string = "quantumHandle";
 export const ancillaHandle: string = "ancillaHandle";
 export const dirtyAncillaHandle: string = "dirtyAncillaHandle";
+
+export const qubitLabel = "Qubit Circuit";
 
 // colors for modeling constructs
 export const quantumConstructColor = "rgba(105, 145, 210, 0.2)";

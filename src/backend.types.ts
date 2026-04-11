@@ -128,6 +128,29 @@ export interface components {
             /** Value */
             value: any[];
         };
+        EditableNode: {
+      /** Unique node ID */
+      id: string;
+
+      /** Optional label */
+      label?: string | null;
+
+      /** Node type discriminator */
+      type: "editableNode";
+
+      /** Editable properties of the node */
+      propertyValues: Record<string, any>;
+
+      /** Optional input-output mapping */
+      mapping?: string[][];
+
+      /** Input types */
+      inputTypes?: string[];
+
+      /** Output types */
+      outputTypes?: string[];
+    };
+
         /** AncillaNode */
         AncillaNode: {
             /** Id */

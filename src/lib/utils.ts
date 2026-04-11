@@ -1,6 +1,8 @@
 import { ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { categories } from "@/components/panels/categories";
+import { CategoryEntry } from "@/components/panels/categories";
+
+
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -31,6 +33,7 @@ export async function handleOnDrop(
   reactFlowWrapper: any,
   reactFlowInstance: any,
   setNodes: any,
+  categories: Record<string, CategoryEntry>,
 ) {
   event.preventDefault();
   if (reactFlowWrapper) {
@@ -48,10 +51,29 @@ export async function handleOnDrop(
       return;
     }
 
+    const def = findNodeDefinition(type, label, categories);
+    console.log(def)
+    console.log(categories)
+    const compactOptions = def.compactOptions;
+
     const position = reactFlowInstance.project({
       x: event.clientX - reactFlowBounds.left,
       y: event.clientY - reactFlowBounds.top,
     });
+    const newNode = {
+      id: getId(),
+      type,
+      position,
+      data: { label: label, inputs: [], children: [], implementation: "", implementationType: "", uncomputeImplementationType: "", uncomputeImplementation: "", completionGuaranteed: def?.completionGuaranteed ?? false, compactOptions: compactOptions,
+        ...(def.properties && { properties: def.properties }),
+        ...(def.constraints && { constraints: def.constraints }),
+        ...(def.mapping && { mapping: def.mapping }),
+        ...(def.description && { description: def.description }),
+        ...(def.outputType && { outputType: def.outputType }),
+        ...(def.icon && { icon: def.icon }),
+        ...(def.isDataType && {isDataType: def.isDataType}),
+       }
+    };
 
     // For plugin nodes, create node with plugin data
     if (type === "pluginNode" && pluginDataStr) {
@@ -99,7 +121,7 @@ export async function handleOnDrop(
       }
     } else {
       // Standard node creation for non-plugin nodes
-      const def = findNodeDefinition(type, label);
+      const def = findNodeDefinition(type, label,categories);
       console.log(def);
 
       const compactOptions = def?.compactOptions ?? [true, false];
@@ -126,7 +148,8 @@ export async function handleOnDrop(
   }
 }
 
-function findNodeDefinition(type: string, label: string) {
+function findNodeDefinition(type: string, label: string, categories: Record<string, CategoryEntry>) {
+
   for (const cat of Object.values(categories)) {
     const content = cat.content;
 

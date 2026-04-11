@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactFlow, {
   Background,
   BackgroundVariant,
@@ -42,9 +42,10 @@ import { grover_algorithm, hadamard_test_imaginary_part_algorithm, hadamard_test
 import JSZip, { JSZipObject } from "jszip";
 import { createDeploymentModel, createNodeType, createServiceTemplate, updateNodeType, updateServiceTemplate } from "./winery";
 import custom from "./components/nodes/custom";
-import { Template } from "./components/panels/categories";
+import { categories, CategoryEntry, Template } from "./components/panels/categories";
 import { ManageTemplateModal } from "./components/modals/templateModal";
 import { v4 as uuid } from "uuid";
+import DomainProfileModal, { DomainProfile } from "./components/modals/domainProfileModal";
 import { PatternSelectionModal } from "./components/modals/patternSelectionModal";
 import { PatternImplementationSelectionModal } from "./components/modals/patternImplementationSelectionModal";
 
@@ -62,6 +63,9 @@ const selector = (state: {
   onConnectEnd: any;
   typeError: string | null;
   userTemplates: Template[];
+  domainProfile: string;
+  allDomainProfiles: DomainProfile[];
+  setDomainProfile: (domainProfile: string) => void;
   setTypeError: (message: string | null) => void;
   setSelectedNode: (node: Node | null) => void;
   updateNodeValue: (nodeId: string, field: string, nodeVal: string) => void;
@@ -75,6 +79,7 @@ const selector = (state: {
   setExperienceLevel: (experienceLevel: string) => void;
   addUserTemplate: (template: Template) => void;
   setUserTemplates: (newTemplates: Template[]) => void;
+  setAllDomainProfiles: (newProfiles: DomainProfile[]) => void;
   setContainsPlaceholder: (containsPlaceholder: boolean) => void;
   undo: () => void;
   redo: () => void;
@@ -91,6 +96,9 @@ const selector = (state: {
   onConnectEnd: state.onConnectEnd,
   typeError: state.typeError,
   userTemplates: state.userTemplates,
+  domainProfile: state.domainProfile,
+  allDomainProfiles: state.allDomainProfiles,
+  setDomainProfile: state.setDomainProfile,
   setTypeError: state.setTypeError,
   setSelectedNode: state.setSelectedNode,
   updateNodeValue: state.updateNodeValue,
@@ -105,6 +113,7 @@ const selector = (state: {
   setExperienceLevel: state.setExperienceLevel,
   addUserTemplate: state.addUserTemplate,
   setUserTemplates: state.setUserTemplates,
+  setAllDomainProfiles: state.setAllDomainProfiles,
   undo: state.undo,
   redo: state.redo,
 });
@@ -125,6 +134,10 @@ function App() {
     onConnectEnd,
     typeError,
     userTemplates,
+    domainProfile,
+    allDomainProfiles,
+    setAllDomainProfiles,
+    setDomainProfile,
     addUserTemplate,
     setUserTemplates,
     setTypeError,
@@ -260,6 +273,7 @@ function App() {
   const [executed, setAlreadyExecuted] = useState(false);
   const [jobId, setJobId] = useState(null);
   const [quantumAlgorithmModalStep, setQuantumAlgorithmModalStep] = useState(0);
+  const [domainProfileOpen, setDomainProfileOpen] = useState(false);
   const [quantumAlgorithms, setQuantumAlgorithms] = useState([
     { name: "Quantum Approximate Optimization Algorithm (QAOA)", configCount: 0, patternGraphPng: "patterns/qaoa_patterngraph.png" },
     { name: "SWAP Test", configCount: 0, patternGraphPng: null },
@@ -561,6 +575,31 @@ If none apply, return { "algorithms": [] }.
     setAlreadyExecuted(false);
   };
 
+  type Node2 = {
+    mapping?: string[][];
+  };
+
+  type Flow = {
+    nodes: Node2[];
+  };
+
+  function hasMultipleMappingsInFlow(flow: Flow): boolean {
+    for (const node of flow.nodes) {
+      if (!node.mapping || node.mapping.length === 0) continue;
+
+      // Convert each sub-array to a string
+      const mappingStrings = node.mapping.map(arr => arr.join('+'));
+
+      // Check unique mappings
+      const uniqueMappings = new Set(mappingStrings);
+
+      if (uniqueMappings.size > 1) {
+        return true; // Found a node with multiple distinct mappings
+      }
+    }
+
+    return false; // No node with multiple mappings found
+  }
   const sendToBackend = async () => {
     //setLoading(true);
     setModalOpen(false);
@@ -1445,6 +1484,17 @@ If none apply, return { "algorithms": [] }.
       }
     }, [nodes, setContextMenu]);
 
+  const currentCategories: Record<string, CategoryEntry> = useMemo(() => {
+    const domainProfileNames = allDomainProfiles.map((p) => p.name);
+    const index = domainProfileNames.indexOf(domainProfile);
+    console.log("domainProfile", domainProfile)
+    console.log("index", index)
+    if (index > -1) {
+      return allDomainProfiles[index].domainBlocks;
+    } else {
+      return categories;
+    }
+  }, [domainProfile, allDomainProfiles]);
 
   const onDrop = React.useCallback(
     (event: any) => {
@@ -1455,6 +1505,8 @@ If none apply, return { "algorithms": [] }.
       })
       const label = event.dataTransfer.getData("application/reactflow/label");
       console.log(position);
+
+
       if (label == qaoa) {
         loadFlow(qaoa_algorithm)
       } else if (label == swap_test) {
@@ -1484,12 +1536,13 @@ If none apply, return { "algorithms": [] }.
         }
       }
       else {
-        handleOnDrop(event, reactFlowWrapper, reactFlowInstance, setNodes);
+        console.log("current categories", currentCategories)
+        handleOnDrop(event, reactFlowWrapper, reactFlowInstance, setNodes, currentCategories);
       }
 
       //setContextMenu((prev) => ({ ...prev, left: event.clientX, top: event.clientY,}));
     },
-    [reactFlowInstance, setNodes],
+    [reactFlowInstance, setNodes, currentCategories],
   );
 
   const onNodesDelete = useCallback(() => {
@@ -1775,8 +1828,8 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
         );
 
         console.log("Existing implementation updated.");
-        showToast("Update existing implementation for "+ patternName, "success");
-    } else {
+        showToast("Update existing implementation for " + patternName, "success");
+      } else {
         // =========================================
         // CREATE NEW ENTRY
         // =========================================
@@ -1808,7 +1861,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
 
         sqlContent += sqlAppend;
         console.log("New implementation inserted.");
-        showToast("Upload new implementation for "+ patternName, "success");
+        showToast("Upload new implementation for " + patternName, "success");
       }
 
       // ------------------------
@@ -1845,7 +1898,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
 
     } catch (error) {
       console.error("GitHub API Error:", error);
-       showToast("Upload of implementation for "+ patternName +" failed.", "error");
+      showToast("Upload of implementation for " + patternName + " failed.", "error");
       return { success: false };
     }
   }
@@ -1898,6 +1951,11 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     console.log("Flow saved:", flowWithMetadata);
   }
 
+  const handleSaveDomainProfile = (newProfile: DomainProfile) => {
+    const updatedProfiles = [...allDomainProfiles, newProfile]
+    setAllDomainProfiles(updatedProfiles);
+    console.log("Profile saved and appended:", newProfile);
+  };
 
 
 
@@ -2086,6 +2144,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
 
     // Reset the viewport 
     const { x = 0, y = 0, zoom = 1 } = flow.viewport || {};
+    console.log(flow.viewport)
     reactFlowInstance.setViewport({ x, y, zoom });
 
     console.log(flow.metadata)
@@ -2352,6 +2411,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
           body: form,
         }
       );
+      showToast("Deployment of workflow started ", "info");
 
       if (response.ok) {
         // retrieve deployment results from response
@@ -2373,7 +2433,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
           );
           return { status: "failed" };
         }
-
+        showToast("Workflow is deployed ", "success");
         return {
           status: "deployed",
           deployedProcessDefinition: Object.values(
@@ -2385,6 +2445,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
           "Deployment of workflow returned invalid status code: %s",
           response.status
         );
+
         return {
           status: "failed",
           message:
@@ -2393,6 +2454,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
       }
     } catch (error) {
       console.error("Error while executing post to deploy workflow: " + error);
+      showToast("Error while executing post to deploy workflow: ", "error");
       return {
         status: "failed",
         message: "Error while executing post to deploy workflow: " + error,
@@ -2625,13 +2687,24 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
           console.log(type);
           if (type === 'step:before' && index === 0) {
             // open both side panels if they're not opened
+
             setIsPaletteOpen(true);
             setIsPanelOpen(true);
+
+            let fileContent =reactFlowInstance.toObject();
+            const validMetadata = {
+              ...metadata,
+              containsPlaceholder: containsPlaceholder,
+              id: `flow-${Date.now()}`,
+              timestamp: new Date().toISOString(),
+            };
+
+            console.log(validMetadata);
+            console.log(metadata);
+
+            const flowWithMetadata = { metadata: validMetadata, ...fileContent };
+            setModeledDiagram(JSON.stringify(flowWithMetadata));
             //setExpanded(true);
-          }
-          if (type === 'step:before' && index === 1) {
-            let fileContent = JSON.stringify(reactFlowInstance.toObject());
-            setModeledDiagram(fileContent);
           }
           if (type === 'step:before' && index === 3) {
             startTour2();
@@ -2663,15 +2736,21 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
           }
           if (['finished', 'skipped'].includes(data.status)) {
             setRunTour(false);
+
             setExpanded(false);
+            const toolbar = document.querySelector('.toolbar-container');
+            if (toolbar) {
+              (toolbar as HTMLElement).style.overflowX = 'auto';
+            }
             if (modeledDiagram) {
+              console.log("Load old diagram.");
               overwriteFlow(JSON.parse(modeledDiagram));
             }
           }
         }}
       />
 
-      <div className="toolbar-container">
+      <div className="toolbar-container bg-gray-100 w-full">
         <Toolbar
           onSave={handleSaveClick}
           onRestore={handleRestoreClick}
@@ -2684,6 +2763,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
           //uploadPatternSolution={() => registerAndUploadToGitHub()}
           onLoadJson={handleLoadJson}
           sendToBackend={handleOpenValidation}
+          createDomainProfile={() => setDomainProfileOpen(true)}
           startQuantumAlgorithmSelection={startQuantumAlgorithmSelection}
           //sendToQunicorn={() => setIsQunicornOpen(true)}
           openHistory={openHistoryModal}
@@ -2776,6 +2856,11 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
         </Modal>
       )}
 
+      <DomainProfileModal
+        open={domainProfileOpen}
+        onClose={() => setDomainProfileOpen(false)}
+        onSave={handleSaveDomainProfile}
+      />
 
       <AiModal
         quantumAlgorithmModalStep={quantumAlgorithmModalStep}
@@ -2808,8 +2893,14 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
               //store the workflow data in your state
               setWorkflow(modelData);
               const resultResponse = await fetch(item.links.result);
-              const qasmText = await resultResponse.text();
-              await deployWorkflowToCamunda("process-workflow", qasmText, "");
+              const workflow = await resultResponse.text();
+
+              // agentic subprocess is only a feature supported by camunda 8
+              if (hasMultipleMappingsInFlow(modelData)) {
+                //sendWorkflowForDeployment(workflow);
+
+              }
+              await deployWorkflowToCamunda("process-workflow", workflow, "");
 
               // Upload the QRMS file to GitHub if available
               if (item.links?.qrms) {
@@ -2984,16 +3075,25 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
               onCompactVisualizationChange={() => { setCompactVisualization(!compact); setCompact(!compact) }}
               completionGuaranteed={completionGuaranteed}
               onCompletionGuaranteedChange={setCompletionGuaranteed}
+              domainProfile={domainProfile}
+              onDomainProfileChange={(event) => { setDomainProfile(event) }}
+              domainProfileNames={allDomainProfiles.map((p) => p.name)}
             />
 
             <MiniMap
               nodeClassName={(node) => {
-                if (node.type === 'dataTypeNode' || node.type === "classicalAlgorithmNode" || node.type === ClassicalOperatorNode) return 'minimap-node-circle';
+                let isDataType = node.data.isDataType;
+
+                if (node.type === 'dataTypeNode' || node.type === "classicalAlgorithmNode" || node.type === ClassicalOperatorNode || isDataType) return 'minimap-node-circle';
                 if (node.type === 'rounded') return 'minimap-node-rounded';
                 return 'minimap-node-default';
               }}
               nodeColor={(node) => {
                 switch (node.type) {
+                  case 'editableNode':
+                    return node.data.isDataType
+                      ? classicalConstructColor
+                      : quantumConstructColor;
                   case 'dataTypeNode':
                   case 'classicalAlgorithmNode':
                   case ClassicalOperatorNode:
