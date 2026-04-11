@@ -4,7 +4,7 @@ export const quantum_k_means_algorithm = {
   "metadata": {
     "version": "1.0.0",
     "name": "Quantum Clustering Template",
-    "description": "Template for Quantum K-Means clustering with all data types",
+    "description": "Template for Quantum K-Means clustering",
     "author": "",
     "containsPlaceholder": false,
     "id": "flow-1773928357208",

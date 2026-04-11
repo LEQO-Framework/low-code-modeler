@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { classicalConstructColor, quantumConstructColor } from "@/constants";
 import OutputPort from "../utils/outputPort";
+
 import {
   Atom, BrainCircuit, Layers, Activity, Share2,
   Grid, CircuitBoard, Combine, Boxes, BoxSelect,
@@ -83,13 +84,13 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
   }, [dataInputs, dataOutputs, data.clusteringAlgorithm]);
 
   // Check if this is a clustering node (k-means)
-  const isClusteringNode = data.pluginName === 'classical-k-means' || data.pluginName === 'quantum-k-means';
+  const isClusteringNode = data.pluginName === 'Classical Clustering' || data.pluginName === 'Quantum Clustering';
 
   // Check if this is a quantum plugin (for styling: blue + angular)
   const isQuantumPlugin = data.pluginName?.toLowerCase().includes('quantum') ||
-                          data.label?.toLowerCase().includes('quantum') ||
-                          ['qnn', 'vqc', 'hybrid-autoencoder'].includes(data.pluginName?.toLowerCase() || '');
-  
+    data.label?.toLowerCase().includes('quantum') ||
+    ['quantum neural network', 'varational quantum classifier', 'hybrid autoencoder'].includes(data.pluginName?.toLowerCase() || '');
+
   // Determine if an input is quantum or classical based on its parameter name                        
   const isQuantumIO = (param?: string) => {
     const p = (param ?? "").toLowerCase().trim();
@@ -129,58 +130,115 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
       size: 32,
       className: "flex-shrink-0 text-gray-700",
       style: {
-	background: "white",
-	border: "1px solid black",
-	borderRadius: isQuantumPlugin ? "0" : "25%",
+        background: "white",
+        border: "1px solid black",
+        borderRadius: isQuantumPlugin ? "0" : "25%",
       },
     };
     const name = data.pluginName?.toLowerCase() || data.label?.toLowerCase() || '';
 
     // Quantum ML nodes
     if (name.includes('quantum') && name.includes('clustering') || name === 'quantum clustering') {
-      return <Atom {...iconProps} />;
+      return <img
+        src="quantumClusteringIcon.png"
+        alt="icon"
+        style={{ width: `${45}px`, height: `${45}px` }}
+        className="object-contain flex-shrink-0"
+      />;
     }
-    if (name === 'qnn') {
-      return <BrainCircuit {...iconProps} />;
+    if (name === 'quantum neural network') {
+      return <img
+        src="qnnIcon.png"
+        alt="icon"
+        style={{ width: `${45}px`, height: `${45}px` }}
+        className="object-contain flex-shrink-0"
+      />;
+
     }
-    if (name === 'quantum-cnn' || name.includes('quantum-cnn')) {
+    if (name === 'Quantum Convolutional Neural Network' || name.includes('quantum-cnn')) {
       return <Layers {...iconProps} />;
     }
-    if (name === 'vqc') {
-      return <Activity {...iconProps} />;
+    if (name === 'variational quantum classifier') {
+      return <img
+        src="variationalQuantumClassifier.png"
+        alt="icon"
+        style={{ width: `${45}px`, height: `${45}px` }}
+        className="object-contain flex-shrink-0"
+      />;
     }
-    if (name.includes('quantum-k-nearest') || name.includes('k-nearest-neighbour')) {
-      return <Share2 {...iconProps} />;
+    if (name.includes('quantum k-nearest') || name.includes('k-nearest-neighbour')) {
+      return <img
+        src="quantumKNearestNeighbor.png"
+        alt="icon"
+        style={{ width: `${45}px`, height: `${45}px` }}
+        className="object-contain flex-shrink-0"
+      />;
     }
-    if (name.includes('quantum-parzen') || name.includes('parzen-window')) {
-      return <Grid {...iconProps} />;
+    if (name.includes('quantum parzen') || name.includes('parzen-window')) {
+      return <img
+        src="quantumParzenWindow.png"
+        alt="icon"
+        style={{ width: `${45}px`, height: `${45}px` }}
+        className="object-contain flex-shrink-0"
+      />;
     }
-    if (name.includes('quantum-kernel') || name.includes('kernel-estimation')) {
-      return <CircuitBoard {...iconProps} />;
+    if (name.includes('quantum kernel estimator') || name.includes('kernel-estimation')) {
+      return <img
+        src="quantumKernelEstimator.png"
+        alt="icon"
+        style={{ width: `${45}px`, height: `${45}px` }}
+        className="object-contain flex-shrink-0"
+      />;
     }
-    if (name.includes('hybrid-autoencoder') || name.includes('autoencoder')) {
-      return <Combine {...iconProps} />;
+    if (name.includes('hybrid autoencoder') || name.includes('autoencoder')) {
+      return <img
+        src="autoencoder.png"
+        alt="icon"
+        style={{ width: `${45}px`, height: `${45}px` }}
+        className="object-contain flex-shrink-0"
+      />;
     }
 
     // Classical ML nodes
     if (name.includes('classical') && name.includes('clustering') || name === 'classical clustering') {
-      return <Boxes {...iconProps} />;
+      return <img
+        src="clusteringIcon.png"
+        alt="icon"
+        style={{ width: `${45}px`, height: `${45}px` }}
+        className="object-contain flex-shrink-0"
+      />;
     }
-    if (name.includes('k-medoids') || name.includes('classical-k-medoids')) {
-      return <BoxSelect {...iconProps} />;
+
+    if (name === 'support vector machine') {
+      return <img
+        src="supportVectorMachine.png"
+        alt="icon"
+        style={{ width: `${45}px`, height: `${45}px` }}
+        className="object-contain flex-shrink-0"
+      />;
     }
-    if (name === 'optics') {
-      return <Focus {...iconProps} />;
-    }
-    if (name === 'svm') {
-      return <Split {...iconProps} />;
-    }
-    if (name === 'neural-network' || name.includes('neural-network')) {
-      return <Network {...iconProps} />;
+    if (name === 'neural network' || name.includes('neural-network')) {
+      return <img
+        src="neuralNetwork.png"
+        alt="icon"
+        style={{ width: `${45}px`, height: `${45}px` }}
+        className="object-contain flex-shrink-0"
+      />;
+
     }
 
     // Fallback
-    return isQuantumPlugin ? <Atom {...iconProps} /> : <Cpu {...iconProps} />;
+    return isQuantumPlugin ? <img
+      src="quantumClusteringIcon.png"
+      alt="icon"
+      style={{ width: `${45}px`, height: `${45}px` }}
+      className="object-contain flex-shrink-0"
+    /> : <img
+      src="clusteringIcon.png"
+      alt="icon"
+      style={{ width: `${45}px`, height: `${45}px` }}
+      className="object-contain flex-shrink-0"
+    />;;
   };
 
   return (
@@ -214,26 +272,15 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
           >
             {renderIcon()}
             <div className="h-full w-[1px] bg-black mx-2" />
-            {isEditingLabel ? (
-              <input
-                autoFocus
-                type="text"
-                value={editableLabel}
-                onChange={(e) => setEditableLabel(e.target.value)}
-                onBlur={handleLabelChange}
-                onKeyDown={(e) => { if (e.key === "Enter") handleLabelChange(); }}
-                className="font-semibold leading-none bg-white border border-gray-400 px-2 py-1 rounded"
-                style={{ paddingLeft: "15px", width: "100%" }}
-              />
-            ) : (
-              <span
-                className="truncate font-semibold leading-none cursor-pointer"
-                style={{ paddingLeft: '15px' }}
-                onClick={() => setIsEditingLabel(true)}
-              >
-                {editableLabel}
-              </span>
-            )}
+
+            <span
+              className="font-semibold leading-none cursor-pointer"
+              style={{ paddingLeft: '15px' }}
+              onClick={() => setIsEditingLabel(true)}
+            >
+              {editableLabel}
+            </span>
+
           </div>
         </div>
 
@@ -251,7 +298,7 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
                 const newAlgorithm = e.target.value;
 
                 // Full input/output specs per algorithm
-                const isQuantum = data.pluginName === 'quantum-k-means';
+                const isQuantum = data.pluginName === 'Quantum Clustering';
                 const algorithmInputs: Record<string, PluginInputMetadata[]> = {
                   'k-means': [
                     { parameter: 'entityPointsUrl', data_type: 'entity/vector', content_type: ['application/json', 'text/csv'], required: true },
@@ -272,6 +319,28 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
                     { parameter: 'tolerance', data_type: 'float', content_type: ['text/plain'], required: false },
                     { parameter: 'maxIterations', data_type: 'int', content_type: ['text/plain'], required: false },
                   ],
+                  'optics': [
+
+                    {
+                      parameter: 'entityPointsUrl',
+                      data_type: 'entity/vector',
+                      content_type: ['application/json', 'text/csv'],
+                      required: true,
+                    },
+                    {
+                      parameter: 'minSamples',
+                      data_type: 'int',
+                      content_type: ['text/plain'],
+                      required: true,
+                    },
+                    {
+                      parameter: 'maxEps',
+                      data_type: 'float',
+                      content_type: ['text/plain'],
+                      required: false,
+                    },
+                  ],
+
                 };
                 const algorithmOutputs: Record<string, PluginOutputMetadata[]> = {
                   'k-means': [
@@ -282,6 +351,9 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
                     { name: 'Cluster Labels', data_type: 'entity/label', content_type: ['application/json'], required: true },
                   ],
                   'k-medoids': [
+                    { name: 'Cluster Labels', data_type: 'entity/label', content_type: ['application/json'], required: true },
+                  ],
+                  'optics': [
                     { name: 'Cluster Labels', data_type: 'entity/label', content_type: ['application/json'], required: true },
                   ],
                 };
@@ -355,8 +427,9 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
             >
               <option value="k-means">K-Means</option>
               <option value="k-median">K-Median</option>
-              {data.pluginName === 'classical-k-means' && (
+              {data.pluginName === 'Classical Clustering' && (<div>
                 <option value="k-medoids">K-Medoids</option>
+                <option value="optics">Optics</option></div>
               )}
             </select>
           </div>
@@ -394,10 +467,10 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
                       input.required || isInputConnected
                         ? ioIsClassical
                           ? "classical-circle-port-operation !bg-orange-300 !border-black"
-                          : "circle-port-op !bg-blue-300 !border-black"            
+                          : "circle-port-op !bg-blue-300 !border-black"
                         : ioIsClassical
                           ? "classical-circle-port-operation !bg-gray-200 !border-dashed !border-gray-500"
-                          : "circle-port-op !bg-gray-200 !border-dashed !border-gray-500"                          
+                          : "circle-port-op !bg-gray-200 !border-dashed !border-gray-500"
                     )}
                     style={{ top: '50%', transform: 'translateY(-50%)' }}
                   />

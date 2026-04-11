@@ -88,16 +88,16 @@ export const AddNodePanel = () => {
 
     return open;
   }, [categories]);
-  
+
   useEffect(() => {
     setActiveSubcategories(defaultOpenSubcategories);
   }, [defaultOpenSubcategories]);
 
   // Define mock inputs/outputs for ML plugins (until Plugin Runner metadata is available)
-  const getMockPluginMetadata = (pluginName: string) => {
+  const getMockPluginMetadata = (node:any, pluginName: string) => {
     switch (pluginName) {
-      case 'classical-k-means':
-      case 'quantum-k-means':
+      case 'Classical Clustering':
+      case 'Quantum Clustering':
         return {
           dataInputs: [
             {
@@ -116,7 +116,7 @@ export const AddNodePanel = () => {
               parameter: 'variant',
               data_type: 'string',
               content_type: ['text/plain'],
-              required: pluginName === 'quantum-k-means',
+              required: true,
             },
             {
               parameter: 'tolerance',
@@ -147,7 +147,7 @@ export const AddNodePanel = () => {
           ],
         };
 
-      case 'quantum-k-nearest-neighbours':
+      case 'Quantum K-Nearest Neighbours':
         return {
           dataInputs: [
             {
@@ -185,45 +185,7 @@ export const AddNodePanel = () => {
           ],
         };
 
-      case 'classical-k-medoids':
-        return {
-          dataInputs: [
-            {
-              parameter: 'entityPointsUrl',
-              data_type: 'entity/vector',
-              content_type: ['application/json', 'text/csv'],
-              required: true,
-            },
-            {
-              parameter: 'numberOfClusters',
-              data_type: 'int',
-              content_type: ['text/plain'],
-              required: true,
-            },
-            {
-              parameter: 'tolerance',
-              data_type: 'float',
-              content_type: ['text/plain'],
-              required: false,
-            },
-            {
-              parameter: 'maxIterations',
-              data_type: 'int',
-              content_type: ['text/plain'],
-              required: false,
-            },
-          ],
-          dataOutputs: [
-            {
-              name: 'Cluster Labels',
-              data_type: 'entity/label',
-              content_type: ['application/json'],
-              required: true,
-            },
-          ],
-        };
-
-      case 'optics':
+      case 'Optics':
         return {
           dataInputs: [
             {
@@ -255,7 +217,7 @@ export const AddNodePanel = () => {
           ],
         };
 
-      case 'qnn':
+      case 'Quantum Neural Network':
         return {
           dataInputs: [
             {
@@ -293,7 +255,7 @@ export const AddNodePanel = () => {
           ],
         };
 
-      case 'quantum-cnn':
+      case 'Quantum Convolutional Neural Network':
         return {
           dataInputs: [
             {
@@ -331,7 +293,7 @@ export const AddNodePanel = () => {
           ],
         };
 
-      case 'quantum-parzen-window':
+      case 'Quantum Parzen Windows':
         return {
           dataInputs: [
             {
@@ -369,7 +331,7 @@ export const AddNodePanel = () => {
           ],
         };
 
-      case 'vqc':
+      case 'Variational Quantum Classifier':
         return {
           dataInputs: [
             {
@@ -401,7 +363,7 @@ export const AddNodePanel = () => {
           ],
         };
 
-      case 'svm':
+      case 'Support Vector Machine':
         return {
           dataInputs: [
             {
@@ -433,7 +395,7 @@ export const AddNodePanel = () => {
           ],
         };
 
-      case 'neural-network':
+      case 'Neural Network':
         return {
           dataInputs: [
             {
@@ -459,7 +421,7 @@ export const AddNodePanel = () => {
           ],
         };
 
-      case 'hybrid-autoencoder':
+      case 'Hybrid Autoencoder':
         return {
           dataInputs: [
             {
@@ -485,7 +447,7 @@ export const AddNodePanel = () => {
           ],
         };
 
-      case 'quantum-kernel-estimation':
+      case 'Quantum Kernel Estimator':
         return {
           dataInputs: [
             {
@@ -516,103 +478,6 @@ export const AddNodePanel = () => {
     }
   };
 
-  // Get icon for plugin based on name/tags - using Palette icons (same style as other nodes)
-  const getPluginIcon = (plugin: any) => {
-    const name = plugin.name.toLowerCase();
-    const tags = plugin.tags || [];
-
-    // Clustering nodes - use PaletteIcon style (like other nodes)
-    if (name === 'quantum-k-means') {
-      return 'PaletteIcon_QuantumClustering.png';
-    }
-    if (name === 'classical-k-means') {
-      return 'PaletteIcon_ClassicalClustering.png';
-    }
-
-    // QNN - specific PaletteIcon
-    if (name === 'qnn') {
-      return 'PaletteIcon_qnn.png';
-    }
-
-    // Quantum CNN
-    if (name === 'quantum-cnn') {
-      return 'PaletteIcon_quantum-cnn.png';
-    }
-
-    // Quantum K-Nearest Neighbours
-    if (name === 'quantum-k-nearest-neighbours') {
-      return 'PaletteIcon_quantum-k-nearest-neighbours.png';
-    }
-
-    // Quantum Parzen Window
-    if (name === 'quantum-parzen-window') {
-      return 'PaletteIcon_quantum-parzen-window.png';
-    }
-
-    // Classical K-Medoids
-    if (name === 'classical-k-medoids') {
-      return 'PaletteIcon_classical-k-medoids.png';
-    }
-
-    // Hybrid Autoencoder
-    if (name === 'hybrid-autoencoder') {
-      return 'PaletteIcon_hybrid-autoencoder.png';
-    }
-
-    // OPTICS
-    if (name === 'optics') {
-      return 'PaletteIcon_optics.png';
-    }
-
-    // Neural Network
-    if (name === 'neural-network') {
-      return 'PaletteIcon_neural-network.png';
-    }
-
-    // SVM
-    if (name === 'svm') {
-      return 'PaletteIcon_svm.png';
-    }
-
-    // VQC
-    if (name === 'vqc') {
-      return 'PaletteIcon_vqc.png';
-    }
-
-    // Quantum Kernel Estimation
-    if (name === 'quantum-kernel-estimation' || name === 'qiskit-quantum-kernel-estimation') {
-      return 'PaletteIcon_quantum-kernel-estimation.png';
-    }
-
-    // Generic fallback based on tags
-    if (tags.includes('clustering')) {
-      return '/plugin-icons/quantum_clustering-thin.svg';
-    }
-
-    if (tags.includes('classification')) {
-      return '/plugin-icons/quantum_classification-thin.svg';
-    }
-
-    return undefined;
-  };
-
-  // Map display labels to plugin names for metadata lookup
-  const labelToPluginName: Record<string, string> = {
-    "Quantum Clustering": "quantum-k-means",
-    "Classical Clustering": "classical-k-means",
-    "qnn": "qnn",
-    "quantum-cnn": "quantum-cnn",
-    "quantum-k-nearest-neighbours": "quantum-k-nearest-neighbours",
-    "quantum-parzen-window": "quantum-parzen-window",
-    "quantum-kernel-estimation": "quantum-kernel-estimation",
-    "vqc": "vqc",
-    "hybrid-autoencoder": "hybrid-autoencoder",
-    "classical-k-medoids": "classical-k-medoids",
-    "optics": "optics",
-    "svm": "svm",
-    "neural-network": "neural-network",
-  };
-
   const onDragStart = (event: React.DragEvent<HTMLDivElement>, node: any) => {
     event.dataTransfer.setData("application/reactflow", node.type);
     event.dataTransfer.setData("application/reactflow/dataType", node.dataType);
@@ -620,8 +485,8 @@ export const AddNodePanel = () => {
 
     // For plugin nodes, store additional metadata
     if (node.type === consts.PluginNode) {
-      const pluginName = labelToPluginName[node.label] || node.label;
-      const mockMetadata = getMockPluginMetadata(pluginName);
+      const pluginName = node.label;
+      const mockMetadata = getMockPluginMetadata(node,pluginName);
       const pluginData = {
         name: pluginName,
         mockDataInputs: mockMetadata.dataInputs,
