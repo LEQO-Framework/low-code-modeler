@@ -45,11 +45,11 @@ export const AddNodePanel = () => {
     selector,
     shallow
   );
-  
+
 
   // select correct categories (based on domainProfile)
   const categories = useMemo(() => {
-   
+
     const domainProfileNames = allDomainProfiles.map((p) => p.name);
     const index = domainProfileNames.indexOf(domainProfile);
     let baseCategories: Record<string, CategoryEntry>;
@@ -74,6 +74,24 @@ export const AddNodePanel = () => {
       }
     };
   }, [userTemplates, domainProfile, allDomainProfiles]);
+
+  const defaultOpenSubcategories = useMemo(() => {
+    const open = new Set<string>();
+
+    Object.entries(categories).forEach(([category, { content }]) => {
+      if (!content || Array.isArray(content)) return;
+
+      Object.keys(content).forEach((subcategory) => {
+        open.add(`${category}-${subcategory}`);
+      });
+    });
+
+    return open;
+  }, [categories]);
+  
+  useEffect(() => {
+    setActiveSubcategories(defaultOpenSubcategories);
+  }, [defaultOpenSubcategories]);
 
   // Define mock inputs/outputs for ML plugins (until Plugin Runner metadata is available)
   const getMockPluginMetadata = (pluginName: string) => {
@@ -615,7 +633,7 @@ export const AddNodePanel = () => {
 
     event.dataTransfer.effectAllowed = "move";
     // if node is a custom user template: also pass flow data
-    if(node.flowData) {
+    if (node.flowData) {
       event.dataTransfer.setData("application/reactflow/templateFlowData", JSON.stringify(node.flowData));
     }
     console.log("drag start", node);
@@ -815,8 +833,8 @@ export const AddNodePanel = () => {
           {Object.entries(categories).map(
             ([category, { content, description }]) => {
               const visibleNodes = filterNodeGroup(content);
-              const shownDescription = (category === consts.dataTypes || category === consts.operator)?
-                              description[completionGuaranteed?1:0] : description;
+              const shownDescription = (category === consts.dataTypes || category === consts.operator) ?
+                description[completionGuaranteed ? 1 : 0] : description;
               if (visibleNodes.length === 0) return null;
 
               return (
