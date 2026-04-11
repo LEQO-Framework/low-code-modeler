@@ -155,8 +155,13 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
       />;
 
     }
-    if (name === 'Quantum Convolutional Neural Network' || name.includes('quantum-cnn')) {
-      return <Layers {...iconProps} />;
+    if (name === 'quantum convolutional neural network' || name.includes('quantum-cnn')) {
+      return <img
+        src="qcnnIcon.png"
+        alt="icon"
+        style={{ width: `${45}px`, height: `${45}px` }}
+        className="object-contain flex-shrink-0"
+      />;
     }
     if (name === 'variational quantum classifier') {
       return <img
