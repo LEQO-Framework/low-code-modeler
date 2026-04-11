@@ -202,14 +202,15 @@ export const StatePreparationNode = memo((node: Node) => {
       ) ?? 0;
 
     const sourceType =
-      sourceNode.data.outputTypes?.[outputIndex].toLowerCase();
+      sourceNode.data.outputTypes?.[outputIndex]?.toLowerCase();
 
     // Enforce array-only constraint
     if (sourceType !== "array") {
       console.log("remove edge")
       useStore.getState().onEdgesChange([{ id: edge.id, type: "remove" }]);
-      const errorMsg = `Type mismatch: ${sourceType} -> array, connection removed`
-      console.log(errorMsg);
+      const errorMsg = (sourceType == null) ? "Source does not have a type, your diagram is probably broken, connection removed"
+        : `Type mismatch: ${sourceType} -> array, connection removed`;
+      console.error(errorMsg);
       setTypeError(errorMsg);
     }
   }, [node.data.encodingType]);

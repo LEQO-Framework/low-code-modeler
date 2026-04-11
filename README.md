@@ -6,24 +6,28 @@ A low-code modeler which allows modeling and executing quantum applications.
 
 ## Requirements
 
-The project was created with npm 10.9.0 and node 22.12.0.
+- Node.js 22.x+
+- pnpm
+- Docker & Docker Compose
 
-## Installation
+## Quick Start
 
-To get started with this application, you will need to follow these steps:
+Make sure to start:
 
-1. Clone the repository: `git clone https://github.com/LEQO-Framework/low-code-modeler.git`
-2. Install dependencies: `pnpm install`
-3. Start the development server: `npm run dev`
-4. Open the application in your browser at http://localhost:4242
+1. **leqo-backend**: `cd leqo-backend && docker compose -f compose-dev.yaml up -d` (runs on port 8000)
+2. **Low Code Modeler**: `pnpm install && npm run dev` (runs on port 4242)
+3. **Configure**: Create `.env` with `VITE_LOW_CODE_BACKEND=http://localhost:8000`
+4. **Open**: http://localhost:4242
 
 ## Execution in Docker
 
 To build and run an own image execute:
 
-```
+```bash
 docker build -t low-code-modeler .
-docker run --name low-code-modeler -p 4242:4242 low-code-modeler
+docker run --name low-code-modeler -p 4242:4242 \
+  -e VITE_LOW_CODE_BACKEND=http://host.docker.internal:8000 \
+  low-code-modeler
 ```
 
 Afterwards the application is available in a browser on [http://localhost:4242](http://localhost:4242).
@@ -54,7 +58,6 @@ To ensure full functionality, the following projects must be running:
 
 You can start all required services using the provided Docker setup here:
 https://github.com/UST-QuAntiL/QuantME-UseCases/tree/fix/2025-icse-docker/2025-icse/docker
-
 
 ## Disclaimer of Warranty
 
