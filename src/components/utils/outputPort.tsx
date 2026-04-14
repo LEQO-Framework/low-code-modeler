@@ -56,6 +56,7 @@ export default function OutputPort({
   const outputIdentifier = outputs[index]?.identifier || "";
   const outputSize = outputs[index]?.size || "";
   const isConnected = edges.some(edge => edge.sourceHandle === handleId);
+  const outputType = node.data.outputType || "";
 
   // Handle numeric size change and validation
   const handleYChange = (value: string, field: string) => {
@@ -124,9 +125,13 @@ export default function OutputPort({
       }
 
     }
+    else if (node.type.startsWith("editable")) {
+      outputType = node.data.outputType || "any"; // default: "any", if outputType isn't defined
+    }
     else if (type === "classical") {
       outputType = "array";
     }
+    
 
 
     console.log("OUTPUT PORT displayedOutputType", node.id, outputType)
@@ -167,6 +172,13 @@ export default function OutputPort({
       wasBellState.current = false;
     }
   }, [node.data.quantumStateName]);
+  const rawType = displayedOutputType;
+
+  const normalizedType =
+    rawType === "String" || rawType === "File"
+      ? rawType
+      : rawType.toLowerCase();
+
 
   return (
     <div className="relative flex items-center justify-end space-x-0 mt-1">
@@ -185,7 +197,7 @@ export default function OutputPort({
         <div className="w-full flex justify-between items-center">
           <span className="text-left text-sm text-black font-semibold">Output:</span>
           <span className="text-[10px] text-gray-600">
-            type: {displayedOutputType.toLowerCase()}
+            type: {normalizedType}
           </span>
         </div>
 

@@ -12,6 +12,12 @@ export interface Node {
   completionGuaranteed?: boolean;
   aliases?: string[];
   compactOptions: boolean[];
+  properties?: any[];
+  constraints?: any[];
+  mapping?: string[][];
+  category?: string,
+  outputType?: string,
+  isDataType?: boolean,
 }
 
 export interface Template {
@@ -25,13 +31,13 @@ export interface Template {
   completionGuaranteed: boolean;
   compactOptions: boolean[];
   flowData: {
-    metadata?: any | any[], 
-    nodes: Node[], edges: Edge[], 
-    viewport?: {x: number, y: number, zoom: number}
+    metadata?: any | any[],
+    nodes: Node[], edges: Edge[],
+    viewport?: { x: number, y: number, zoom: number }
   };
 }
 
-interface CategoryEntry {
+export interface CategoryEntry {
   description?: string | string[];
   content: CategoryContent;
 }
@@ -53,7 +59,7 @@ export const categories: Record<string, CategoryEntry> = {
         {
           label: "Basis Encoding", type: consts.StatePreparationNode, icon: ["PaletteIcon_BasisEncoding.png", "PaletteIcon_Ancilla_BasisEncoding.png"], description: "Encodes classical bits into computational basis quantum states.", completionGuaranteed: true, compactOptions: [false],
         },
-         {
+        {
           label: "Custom Encoding", type: consts.StatePreparationNode, icon: ["PaletteIcon_CustomEncoding.png", "PaletteIcon_Ancilla_CustomEncoding.png"], description: "Encodes classical bits into quantum states using a custom encoding.", completionGuaranteed: true, compactOptions: [false],
         },
         {
@@ -130,6 +136,8 @@ export const categories: Record<string, CategoryEntry> = {
         //{ label: "int", dataType: "int", type: consts.DataTypeNode, icon: "PaletteIcon_Int.png", description: "Integer value (whole number).", completionGuaranteed: true, compactOptions: [true, false] },
         { label: "Number", dataType: "float", type: consts.DataTypeNode, icon: "PaletteIcon_Number.png", description: "Integer value (whole number) or floating-point number (decimal).", completionGuaranteed: true, compactOptions: [true, false] },
         { label: "Array", dataType: "Array", type: consts.DataTypeNode, icon: "PaletteIcon_Array.png", description: "A list of values, possibly of varying length.", completionGuaranteed: true, compactOptions: [true, false] },
+        { label: "File", dataType: "file", type: consts.DataTypeNode, icon: "PaletteIcon_File.png", description: "URL or file path to data.", completionGuaranteed: true, compactOptions: [true, false] },
+        { label: "String", dataType: "string", type: consts.DataTypeNode, icon: "PaletteIcon_String.png", description: "Text value, possibly of varying length.", completionGuaranteed: true, compactOptions: [true, false] },
       ],
       "Quantum Datatypes": [
         { label: "Ancilla", dataType: consts.AncillaNode, type: consts.AncillaNode, icon: "PaletteIcon_Ancilla.png", description: "Helper qubit used temporarily in a computation.", completionGuaranteed: false, compactOptions: [true, false] },
@@ -139,7 +147,7 @@ export const categories: Record<string, CategoryEntry> = {
   },
 
   [consts.operator]: {
-    description: ["Predefined quantum and classical operators, including arithmetic, bitwise, and comparison operations.", "Predefined classical arithematic operator."],
+    description: ["Predefined quantum and classical operators, including arithmetic, bitwise, and comparison operations.", "Predefined quantum arithmetic operator."],
     content: {
       "Quantum Operators": [
         { label: consts.quantumLabel + consts.arithmeticOperatorLabel, type: consts.OperatorNode, icon: ["PaletteIcon_ArithmeticOperator.png", "PaletteIcon_Ancilla_ArithmeticOperator.png"], description: "Performs quantum arithmetic (add, subtract, etc.).", completionGuaranteed: true, compactOptions: [true, false] },
@@ -170,6 +178,84 @@ export const categories: Record<string, CategoryEntry> = {
       { label: "Custom Quantum Operator", type: consts.AlgorithmNode, icon: ["PaletteIcon_CustomQuantumOperator.png", "PaletteIcon_Ancilla_CustomQuantumOperator.png"], description: "Encapsulates a reusable quantum operation defined by the user.", completionGuaranteed: true, compactOptions: [true, false] },
       { label: "Custom Classical Operator", type: consts.ClassicalAlgorithmNode, icon: "PaletteIcon_CustomClassicalOperator.png", description: "Encapsulates a reusable classical computation defined by the user.", completionGuaranteed: true, compactOptions: [true, false] },
     ],
+  },
+
+  [consts.machineLearningNodes]: {
+    description: "Elements for implementing classical and quantum machine learning algorithms focused on clustering, classification, and dimensionality reduction.",
+    content: {
+      "Quantum ML Elements": [
+        {
+          label: "Quantum Clustering",
+          type: consts.PluginNode,
+          icon: "PaletteIcon_QuantumClustering.png",
+          description: "Performs clustering using a quantum-enhanced clustering algorithm.",
+          completionGuaranteed: true,
+          compactOptions: [true, false]
+        },
+        {
+          label: "Quantum Neural Network",
+          type: consts.PluginNode,
+          icon: "PaletteIcon_qnn.png",
+          description: "Classifies data using a quantum neural network model (QNN).",
+          completionGuaranteed: false,
+          compactOptions: [true, false]
+        },
+        {
+          label: "Quantum Convolutional Neural Network",
+          type: consts.PluginNode,
+          icon: "PaletteIcon_quantum-cnn.png",
+          description: "Labels data using a quantum convolutional neural network (QCNN).",
+          completionGuaranteed: false,
+          compactOptions: [true, false]
+        },
+        {
+          label: "Quantum K-Nearest Neighbours",
+          type: consts.PluginNode,
+          icon: "PaletteIcon_quantum-k-nearest-neighbours.png",
+          description: "Performs classification using a quantum k-nearest neighbours (QkNN) algorithm.",
+          completionGuaranteed: false,
+          compactOptions: [true, false]
+        },
+        {
+          label: "Quantum Parzen Windows",
+          type: consts.PluginNode,
+          icon: "PaletteIcon_quantum-parzen-window.png",
+          description: "Performs classification using a quantum-enhanced Parzen window approach.",
+          completionGuaranteed: false,
+          compactOptions: [true, false]
+        },
+        {
+          label: "Quantum Kernel Estimator",
+          type: consts.PluginNode,
+          icon: "PaletteIcon_quantum-kernel-estimation.png",
+          description: "Generates a kernel matrix using a quantum kernel for use in downstream algorithms such as support vector machines.",
+          completionGuaranteed: false,
+          compactOptions: [true, false]
+        },
+        {
+          label: "Variational Quantum Classifier",
+          type: consts.PluginNode,
+          icon: "PaletteIcon_vqc.png",
+          description: "Implements a variational quantum classifier (VQC) using parameterized quantum circuits for supervised learning tasks.",
+          completionGuaranteed: false,
+          compactOptions: [true, false]
+        },
+        {
+          label: "Hybrid Autoencoder",
+          type: consts.PluginNode,
+          icon: "PaletteIcon_hybrid-autoencoder.png",
+          description: "Reduces data dimensionality using a combination of classical and quantum components.",
+          completionGuaranteed: false,
+          compactOptions: [true, false]
+        }
+      ],
+
+      "Classical ML Elements": [
+        { label: "Classical Clustering", type: consts.PluginNode, icon: "PaletteIcon_ClassicalClustering.png", description: "Clusters data using standard algorithms.", completionGuaranteed: true, compactOptions: [true, false] },
+        { label: "Support Vector Machine", type: consts.PluginNode, icon: "PaletteIcon_svm.png", description: "Classifies data with a support vector machine.", completionGuaranteed: false, compactOptions: [true, false] },
+        { label: "Neural Network", type: consts.PluginNode, icon: "PaletteIcon_neural-network.png", description: "A classical neural network for general-purpose learning tasks such as classification and regression.", completionGuaranteed: false, compactOptions: [true, false] },
+      ],
+    },
   },
 
   [consts.templates]: {
@@ -215,7 +301,16 @@ export const categories: Record<string, CategoryEntry> = {
         completionGuaranteed: false,
         compactOptions: [true, false],
       },
+      {
+        label: consts.quantum_k_means,
+        type: consts.templates,
+        icon: "quantumClusteringIcon.png",
+        description: "Clusters data points into k groups using a quantum-enhanced K-Means algorithm.",
+        completionGuaranteed: true,
+        compactOptions: [true, false],
+      },
     ]
     ,
+
   },
 };

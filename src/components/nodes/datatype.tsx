@@ -3,7 +3,7 @@ import { Handle, Position, Node, Edge } from "reactflow";
 import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
 import { findDuplicateOutputIdentifiers, isUniqueIdentifier } from "../utils/utils";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, File } from "lucide-react";
 import OutputPort from "../utils/outputPort";
 
 const selector = (state: {
@@ -36,70 +36,71 @@ export const DataTypeNode = memo((node: Node) => {
   const { data } = node;
 
   const changeValue = (e) => {
-    let value = e.target.value.trim();
-    setValue(value);
-    node.data["value"] = value;
-    updateNodeValue(node.id, "value", value);
+    const newValue = e.target.value;
 
-    // Clear error by default
+    setValue(newValue);
+    node.data["value"] = newValue;
+    updateNodeValue(node.id, "value", newValue);
+
     setValueError("");
-    if (value.trim() === "") {
-      setContainsPlaceholder(false);
+
+    const containsLetters = (val) => /[a-zA-Z]/.test(val);
+    const startsWithNumber = (val) => /^[+-]?\d/.test(val.trim());
+
+    const updatedNodes = nodes.map(n =>
+      n.id === node.id ? { ...n, data: { ...n.data, value: newValue } } : n
+    );
+
+    const hasAnyPlaceholder = updatedNodes.some(n =>
+      containsLetters(n.data?.value || "")
+    );
+
+    if (data.dataType === "Number") {
+      if (startsWithNumber(newValue)) {
+        if (!/^-?\d+(\.\d+)?$/.test(newValue.trim())) {
+          setValueError("Value must be a number");
+          setContainsPlaceholder(false);
+          return;
+        }
+      }
     }
 
-    if (isPlaceholder(value)) {
-      updateNodeValue(node.id, "value", value);
-      setContainsPlaceholder(true);
+    setContainsPlaceholder(hasAnyPlaceholder);
+
+    if (containsLetters(newValue)) {
       return;
     }
 
-    // Array validation
     if (data.dataType === "Array") {
-      const trimmedValue = value.trim();
-      if (trimmedValue === "") return; // optional empty
-      const arrayRegex = /^-?\d+(?:\.\d+)?(?:,-?\d+(?:\.\d+)?)*$/;
-      if (!arrayRegex.test(trimmedValue)) {
-        setValueError("Array must be comma-separated integers (e.g., 1,2,3)");
+      const trimmed = newValue.trim();
+      if (trimmed === "") return;
+
+      const arrayRegex = /^-?\d+(\.\d+)?(?:,-?\d+(\.\d+)?)*$/;
+
+      if (!arrayRegex.test(trimmed)) {
+        setValueError("Array must be comma-separated numbers (e.g., 1,2,3)");
         return;
       }
     }
 
-    // Integer validation
-    if (data.dataType === "int") {
-      if (!/^-?\d+$/.test(value) && value !== "") {
-        setValueError("Value must be an integer");
-        return;
-      }
-    }
 
-    // Float validation
-    if (data.dataType === "float") {
-      if (!/^-?\d+(\.\d+)?$/.test(value) && value !== "") {
-        setValueError("Value must be a float number");
-        return;
-      }
-    }
-
-    // Complex number validation
     if (data.label === "complex") {
-      if (!isComplexNumber(value)) {
+      if (!isComplexNumber(newValue)) {
         setValueError("Value must be a valid complex number (e.g., 1+2i, 3, -i)");
         return;
       }
     }
 
-    // Duration validation
     if (data.label === "duration") {
-      if (!isPositiveValue(value)) {
+      if (!isPositiveValue(newValue)) {
         setValueError("Value must be a positive number");
         return;
       }
       updateNodeValue(node.id, "durationUnit", durationUnit);
     }
 
-    // Angle validation
     if (data.dataType === "angle") {
-      if (parseToNormalizedAngle(value) === null && value !== "") {
+      if (parseToNormalizedAngle(newValue) === null && newValue !== "") {
         setValueError("Value must be a valid angle (number or multiple of pi)");
         return;
       }
@@ -177,11 +178,12 @@ export const DataTypeNode = memo((node: Node) => {
     "boolean": 'booleanIcon.png',
     "angle": 'angleIcon.png',
     "complex": 'complexIcon.png',
-    "File": 'complexIcon.png',
+    "String": 'stringIcon.png',
     "Array": 'arrayIcon.png',
+    "File": 'fileIcon.png',
   };
   const label = data.label;
-  const iconSrc = iconMap[label];
+  const iconSrc = iconMap[label] ?? iconMap[label?.charAt(0).toUpperCase() + label?.slice(1)];
   const iconSizeMap = {
     "int": { width: 60, height: 60 },
     "Number": { width: 55, height: 55 },
@@ -190,8 +192,9 @@ export const DataTypeNode = memo((node: Node) => {
     "boolean": { width: 45, height: 45 },
     "angle": { width: 45, height: 45 },
     "complex": { width: 55, height: 55 },
-    "File": { width: 55, height: 55 },
-    "Array": { width: 60, height: 60 },
+    "String": { width: 50, height: 50 },
+    "Array": { width: 55, height: 60 },
+    "File": { width: 45, height: 45 },
   };
 
   return (
@@ -226,7 +229,9 @@ export const DataTypeNode = memo((node: Node) => {
           <div className="w-full flex items-center" style={{ height: '52px', paddingLeft: '100px' }}>
             <div className="w-full bg-orange-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
               {(() => {
-                const { width, height } = iconSizeMap[node.data.label];
+                const iconSize = iconSizeMap[node.data.label] ?? iconSizeMap[node.data.label?.charAt(0).toUpperCase() + node.data.label?.slice(1)] ?? { width: 50, height: 50 };
+                const { width, height } = iconSize;
+
                 return (
                   <img
                     src={iconSrc}
@@ -252,7 +257,11 @@ export const DataTypeNode = memo((node: Node) => {
                             ? "23px"
                             : data.label === "angle"
                               ? "29px"
-                              : "10px",
+                              : data.label === "File"
+                                ? "22px"
+                                : data.label === "string"
+                                  ? "22px"
+                                  : "10px",
                 }}
               >
 
@@ -331,15 +340,34 @@ export const DataTypeNode = memo((node: Node) => {
                   <option value="h">h</option>
                 </select>
               </div>
-            )  : (
-            <input
-              id="value"
-              type="text"
-              className={`input-classical-focus p-1 text-black opacity-75 text-sm rounded-full w-20 text-center border-2 ${valueError ? 'bg-red-500 border-red-500' : 'bg-white border-orange-300'}`}
-              value={node.data.value || value}
-              placeholder="0"
-              onChange={changeValue}
-            />
+            ) : data.label === "File" ? (
+              <input
+                id="value"
+                type="text"
+                className={`input-classical-focus p-1 text-black opacity-75 text-sm rounded-full w-full text-center border-2 ${valueError ? 'bg-red-500 border-red-500' : 'bg-white border-orange-300'}`}
+                value={node.data.value || value}
+                placeholder="http://example.com/data.json"
+                onChange={changeValue}
+                style={{ minWidth: '200px' }}
+              />
+            ) : data.label === "String" ? (
+              <input
+                id="value"
+                type="text"
+                className={`input-classical-focus p-1 text-black opacity-75 text-sm rounded-full w-32 text-center border-2 ${valueError ? 'bg-red-500 border-red-500' : 'bg-white border-orange-300'}`}
+                value={node.data.value || value}
+                placeholder="text"
+                onChange={changeValue}
+              />
+            ) : (
+              <input
+                id="value"
+                type="text"
+                className={`input-classical-focus p-1 text-black opacity-75 text-sm rounded-full w-20 text-center border-2 ${valueError ? 'bg-red-500 border-red-500' : 'bg-white border-orange-300'}`}
+                value={node.data.value || value}
+                placeholder="0"
+                onChange={changeValue}
+              />
             )}
           </div>
         </div>

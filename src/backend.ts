@@ -37,6 +37,16 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
 
         switch (node.type) {
             // Boundary Nodes
+            case consts.EditableNode:
+                return {
+                    id: node.id,
+                    type: "editableNode",
+                    label: node.data.label, // optional
+                    propertyValues: node.data.propertyValues || {}, // numeric/string/date/etc.
+                    mapping: node.data.mapping || [], // input-output mapping
+            
+                };
+
             case consts.StatePreparationNode:
                 switch (node.data.label) {
                     case "Encode Value":
@@ -179,6 +189,20 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                             value: node.data.value === "1" ? 1 : 0
                         }
 
+                    case "String":
+                        return {
+                            id: node.id,
+                            type: "string",
+                            value: node.data.value
+                        }
+
+                    case "File":
+                        return {
+                            id: node.id,
+                            type: "file",
+                            value: node.data.value
+                        }
+
                     case "Array":
                         return {
                             id: node.id,
@@ -218,7 +242,7 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                     type: "repeat",
                     iterations: node.data?.condition,
                     block: {
-                        nodes: nodes.filter(x => x.parentNode === node.id).map(x => mapNode(x)),
+                        nodes: nodes.filter(x => x.parentNode === node.id).map(x => mapNode(x)) as any,
                         edges: edges.filter(x => isEdgeWithin(x, node.id)).map(x => mapEdge(x))
                     }
                 }
@@ -235,20 +259,48 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                     type: "if-then-else",
                     condition: node.data?.condition || "true",
                     thenBlock: {
-                        nodes: thenNodes.map(mapNode),
+                        nodes: thenNodes.map(mapNode) as any,
                         edges: edges.filter(e =>
                             e.source && e.target &&
                             thenNodeIds.has(e.source) || thenNodeIds.has(e.target)
                         ).map(mapEdge)
                     },
                     elseBlock: {
-                        nodes: elseNodes.map(mapNode),
+                        nodes: elseNodes.map(mapNode) as any,
                         edges: edges.filter(e =>
                             e.source && e.target &&
                             elseNodeIds.has(e.source) && elseNodeIds.has(e.target)
                         ).map(mapEdge)
                     }
                 };
+
+            case consts.PluginNode: {
+                const basePluginName = node.data.pluginName;
+                const algo = node.data.clusteringAlgorithm;
+                let effectivePluginName = basePluginName;
+                if (algo && algo !== 'k-means' && (basePluginName === 'classical-k-means' || basePluginName === 'quantum-k-means')) {
+                    const prefix = basePluginName === 'classical-k-means' ? 'classical' : 'quantum';
+                    effectivePluginName = `${prefix}-${algo}`;
+                }
+                return {
+                    id: node.id,
+                    type: "plugin",
+                    pluginIdentifier: node.data.pluginIdentifier,
+                    pluginName: effectivePluginName,
+                    inputs: node.data.dataInputs?.map((input: any) => ({
+                        parameter: input.parameter,
+                        dataType: input.data_type,
+                        contentType: input.content_type,
+                        required: input.required
+                    })) || [],
+                    outputs: node.data.dataOutputs?.map((output: any, index: number) => ({
+                        name: output.name || `output_${index}`,
+                        dataType: output.data_type,
+                        contentType: output.content_type,
+                        required: output.required
+                    })) || []
+                };
+            }
 
         }
         throw new Error(`Unsupported node ${node.type} (${node.data.label})`)
