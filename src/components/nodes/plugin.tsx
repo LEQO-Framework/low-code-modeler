@@ -7,12 +7,6 @@ import { cn } from "@/lib/utils";
 import { classicalConstructColor, quantumConstructColor } from "@/constants";
 import OutputPort from "../utils/outputPort";
 
-import {
-  Atom, BrainCircuit, Layers, Activity, Share2,
-  Grid, CircuitBoard, Combine, Boxes, BoxSelect,
-  Focus, Split, Network, Cpu, File
-} from "lucide-react";
-
 // Plugin metadata types
 interface PluginInputMetadata {
   parameter: string;
@@ -72,15 +66,14 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
   const dataInputs = data.dataInputs || [];
   const dataOutputs = data.dataOutputs || [];
 
-  const handleLabelChange = () => {
-    setIsEditingLabel(false);
-    updateNodeValue(node.id, "label", editableLabel);
-    node.data.label = editableLabel;
-    setSelectedNode(node);
-  };
-
   useEffect(() => {
     updateNodeInternals(node.id);
+    if (
+      (node.data.label === "Quantum Clustering" || node.data.label === "Classical Clustering") &&
+      !node.data.clusteringAlgorithm
+    ) {
+      updateNodeValue(node.id, "clusteringAlgorithm", "k-means");
+    }
   }, [dataInputs, dataOutputs, data.clusteringAlgorithm]);
 
   // Check if this is a clustering node (k-means)
