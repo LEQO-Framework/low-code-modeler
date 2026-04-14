@@ -36,71 +36,71 @@ export const DataTypeNode = memo((node: Node) => {
   const { data } = node;
 
   const changeValue = (e) => {
-    let value = e.target.value.trim();
-    setValue(value);
-    node.data["value"] = value;
-    updateNodeValue(node.id, "value", value);
+    const newValue = e.target.value;
 
-    // Clear error by default
+    setValue(newValue);
+    node.data["value"] = newValue;
+    updateNodeValue(node.id, "value", newValue);
+
     setValueError("");
-    if (value.trim() === "") {
-      setContainsPlaceholder(false);
+
+    const containsLetters = (val) => /[a-zA-Z]/.test(val);
+    const startsWithNumber = (val) => /^[+-]?\d/.test(val.trim());
+
+    const updatedNodes = nodes.map(n =>
+      n.id === node.id ? { ...n, data: { ...n.data, value: newValue } } : n
+    );
+
+    const hasAnyPlaceholder = updatedNodes.some(n =>
+      containsLetters(n.data?.value || "")
+    );
+
+    if (data.dataType === "Number") {
+      if (startsWithNumber(newValue)) {
+        if (!/^-?\d+(\.\d+)?$/.test(newValue.trim())) {
+          setValueError("Value must be a number");
+          setContainsPlaceholder(false);
+          return;
+        }
+      }
     }
 
-    if (isPlaceholder(value)) {
-      updateNodeValue(node.id, "value", value);
-      setContainsPlaceholder(true);
+    setContainsPlaceholder(hasAnyPlaceholder);
+
+    if (containsLetters(newValue)) {
       return;
     }
 
-    // Array validation
     if (data.dataType === "Array") {
-      const trimmedValue = value.trim();
-      if (trimmedValue === "") return; // optional empty
+      const trimmed = newValue.trim();
+      if (trimmed === "") return;
+
       const arrayRegex = /^-?\d+(\.\d+)?(?:,-?\d+(\.\d+)?)*$/;
 
-      if (!arrayRegex.test(trimmedValue)) {
-        setValueError("Array must be comma-separated integers (e.g., 1,2,3)");
+      if (!arrayRegex.test(trimmed)) {
+        setValueError("Array must be comma-separated numbers (e.g., 1,2,3)");
         return;
       }
     }
 
-    // Integer validation
-    if (data.dataType === "int") {
-      if (!/^-?\d+$/.test(value) && value !== "") {
-        setValueError("Value must be an integer");
-        return;
-      }
-    }
 
-    // Float validation
-    if (data.dataType === "float") {
-      if (!/^-?\d+(\.\d+)?$/.test(value) && value !== "") {
-        setValueError("Value must be a float number");
-        return;
-      }
-    }
-
-    // Complex number validation
     if (data.label === "complex") {
-      if (!isComplexNumber(value)) {
+      if (!isComplexNumber(newValue)) {
         setValueError("Value must be a valid complex number (e.g., 1+2i, 3, -i)");
         return;
       }
     }
 
-    // Duration validation
     if (data.label === "duration") {
-      if (!isPositiveValue(value)) {
+      if (!isPositiveValue(newValue)) {
         setValueError("Value must be a positive number");
         return;
       }
       updateNodeValue(node.id, "durationUnit", durationUnit);
     }
 
-    // Angle validation
     if (data.dataType === "angle") {
-      if (parseToNormalizedAngle(value) === null && value !== "") {
+      if (parseToNormalizedAngle(newValue) === null && newValue !== "") {
         setValueError("Value must be a valid angle (number or multiple of pi)");
         return;
       }
