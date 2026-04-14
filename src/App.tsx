@@ -1002,6 +1002,20 @@ If none apply, return { "algorithms": [] }.
           });
         }
       }
+      const value = node.data?.value;
+
+      if (typeof value === "string" && node.data.label ==="Number") {
+        const startsWithNumber = /^[+-]?\d/.test(value.trim());
+        const hasLetter = /[a-zA-Z]/.test(value);
+
+        if (startsWithNumber && hasLetter) {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Invalid value "${value}". Values starting with a number cannot contain letters.`,
+          });
+        }
+      }
 
       // Control / If Nodes 
       if (node.type === "ifElseNode") {
@@ -2691,7 +2705,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
             setIsPaletteOpen(true);
             setIsPanelOpen(true);
 
-            let fileContent =reactFlowInstance.toObject();
+            let fileContent = reactFlowInstance.toObject();
             const validMetadata = {
               ...metadata,
               containsPlaceholder: containsPlaceholder,
