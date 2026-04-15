@@ -71,8 +71,6 @@ export const SendRequestModal = ({
 
   const hasDirac = qasmCode.trim().length > 0;
 
-  console.log("qasmCode:", qasmCode);
-
   return (
     <Modal
       title="Send Request To Low-Code Backend"

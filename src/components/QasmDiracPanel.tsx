@@ -4,9 +4,10 @@
  */
 
 import { useMemo, useState, useEffect } from "react";
-import { qasmToDirac } from "./utils/qasmToDirac";
+import { qasmToDirac, qasmToDiracSteps, type DiracStepsResult } from "./utils/qasmToDirac";
 import type { Complex } from "@/lib/diracFormatter";
 import { statevectorToDirac } from "@/lib/diracFormatter";
+import JSZip from "jszip";
 
 type QasmProps = {
   qasm: string;
@@ -85,7 +86,8 @@ function buildLatexExport(
   latex: string,
   numQubits: number,
   terms: any[],
-  pngBase64?: string
+  pngBase64?: string,
+  stepsResult?: DiracStepsResult
 ): string {
   const termLines = terms
     .map((t) => {
@@ -97,32 +99,46 @@ function buildLatexExport(
   const circuitSection = pngBase64
     ? `\\section*{Quantenschaltkreis}
 
-\\begin{figure}[h]
-  \\centering
-  \\includegraphics[width=0.9\\textwidth]{circuit}
-  \\caption{Modellierter Quantenschaltkreis}
-  \\label{fig:circuit}
-\\end{figure}
+        \\begin{figure}[h]
+          \\centering
+          \\includegraphics[width=0.9\\textwidth]{circuit}
+          \\caption{Modellierter Quantenschaltkreis}
+          \\label{fig:circuit}
+        \\end{figure}
 
-`
-    : "";
+        `
+            : "";
 
   const tableSection = terms.length > 0
     ? `\\section*{Messwahrscheinlichkeiten}
 
-\\begin{table}[h]
-  \\centering
-  \\begin{tabular}{|c|c|}
-    \\hline
-    \\textbf{Basiszustand} & \\textbf{Wahrscheinlichkeit} \\\\
-${termLines}
-    \\hline
-  \\end{tabular}
-  \\caption{Messwahrscheinlichkeiten der Basiszustände}
-\\end{table}
+        \\begin{table}[h]
+          \\centering
+          \\begin{tabular}{|c|c|}
+            \\hline
+            \\textbf{Basiszustand} & \\textbf{Wahrscheinlichkeit} \\\\
+        ${termLines}
+            \\hline
+          \\end{tabular}
+          \\caption{Messwahrscheinlichkeiten der Basiszustände}
+        \\end{table}
+
+        `
+            : "";
+
+  const stepsSection = stepsResult && stepsResult.steps.length > 0
+    ? `\\section*{Mathematische Zwischenschritte}
+
+\\begin{align}
+  |\\psi_0\\rangle &= ${stepsResult.initial.latex} \\\\[6pt]
+${stepsResult.steps.map((step, idx) =>
+  `  &\\xrightarrow{${step.gateLabelLatex}} \\\\[2pt]\n  |\\psi_{${idx + 1}}\\rangle &= ${step.latex}`
+).join(' \\\\[6pt]\n')}
+\\end{align}
 
 `
     : "";
+
 
   const hint = pngBase64
     ? "% OVERLEAF: circuit.png separat hochladen (Export → \"Circuit PNG\")\n"
@@ -153,7 +169,7 @@ Der Zustand des Quantensystems mit ${numQubits} Qubit${numQubits !== 1 ? "s" : "
   |\\psi\\rangle = ${latex}
 \\end{equation}
 
-${tableSection}\\end{document}
+${stepsSection}${tableSection}\\end{document}
 `;
 }
 
@@ -167,16 +183,30 @@ function downloadTex(content: string) {
   URL.revokeObjectURL(url);
 }
 
+async function downloadZip(texContent: string, pngBase64: string) {
+  const zip = new JSZip();
+  zip.file("main.tex", texContent);
+  zip.file("circuit.png", pngBase64, { base64: true });
+  const blob = await zip.generateAsync({ type: "blob" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "dirac_export.zip";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 // ---------------------------------------------------------------------------
 // Export-Menü
 // ---------------------------------------------------------------------------
 
-function ExportMenu({ latex, numQubits, terms, unicode, onGetCircuitSvg }: {
+function ExportMenu({ latex, numQubits, terms, unicode, onGetCircuitSvg, stepsResult}: {
   latex: string;
   numQubits: number;
   terms: any[];
   unicode: string;
   onGetCircuitSvg?: () => Promise<string>;
+  stepsResult?: DiracStepsResult;
 }) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
@@ -196,15 +226,16 @@ function ExportMenu({ latex, numQubits, terms, unicode, onGetCircuitSvg }: {
       try {
         const svg = await onGetCircuitSvg();
         const pngBase64 = await svgToPngBase64(svg);
-        downloadTex(buildLatexExport(latex, numQubits, terms, pngBase64));
+        const texContent = buildLatexExport(latex, numQubits, terms, pngBase64, stepsResult);
+        await downloadZip(texContent, pngBase64);
       } catch (e) {
         console.error("Export fehlgeschlagen:", e);
-        downloadTex(buildLatexExport(latex, numQubits, terms));
+        downloadTex(buildLatexExport(latex, numQubits, terms, undefined, stepsResult));
       } finally {
         setLoadingSvg(false);
       }
     } else {
-      downloadTex(buildLatexExport(latex, numQubits, terms));
+      downloadTex(buildLatexExport(latex, numQubits, terms, undefined, stepsResult));
     }
   };
 
@@ -239,7 +270,7 @@ function ExportMenu({ latex, numQubits, terms, unicode, onGetCircuitSvg }: {
       {open && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 w-64 py-1 text-sm">
+          <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 w-60 py-1 text-sm">
 
             {/* Kopieren */}
             <button onClick={() => copy(`|\\psi\\rangle = ${latex}`, "latex")}
@@ -260,30 +291,20 @@ function ExportMenu({ latex, numQubits, terms, unicode, onGetCircuitSvg }: {
               <span>↓</span>
               <span>
                 <span className="block">main.tex herunterladen</span>
-                <span className="block text-gray-400" style={{ fontSize: "10px" }}>fertiges LaTeX-Dokument</span>
+                <span className="block text-gray-400" style={{ fontSize: "10px" }}>nur Formel & Tabelle</span>
               </span>
             </button>
 
-            {/* .tex + Schaltkreisreferenz */}
+            {/* .zip mit .tex + circuit.png */}
             {onGetCircuitSvg && (
-              <>
-                <button onClick={() => handleDownloadTex(true)}
-                  className="w-full text-left px-3 py-2 hover:bg-gray-50 text-gray-700 flex items-center gap-2">
-                  <span>↓</span>
-                  <span>
-                    <span className="block">main.tex mit Schaltkreis</span>
-                    <span className="block text-gray-400" style={{ fontSize: "10px" }}>+ circuit.png separat hochladen</span>
-                  </span>
-                </button>
-                <button onClick={handleDownloadPng}
-                  className="w-full text-left px-3 py-2 hover:bg-gray-50 text-gray-700 flex items-center gap-2">
-                  <span>↓</span>
-                  <span>
-                    <span className="block">circuit.png herunterladen</span>
-                    <span className="block text-gray-400" style={{ fontSize: "10px" }}>Schaltkreis-Bild für Overleaf</span>
-                  </span>
-                </button>
-              </>
+              <button onClick={() => handleDownloadTex(true)}
+                className="w-full text-left px-3 py-2 hover:bg-gray-50 text-gray-700 flex items-center gap-2">
+                <span>↓</span>
+                <span>
+                  <span className="block">dirac_export.zip</span>
+                  <span className="block text-gray-400" style={{ fontSize: "10px" }}>main.tex + circuit.png</span>
+                </span>
+              </button>
             )}
           </div>
         </>
@@ -416,9 +437,15 @@ function Histogram({ data }: { data: HistogramBar[] }) {
 export function QasmDiracPanel(props: Props) {
   const title = props.title ?? "Dirac-Darstellung";
   const [showBasisStates, setShowBasisStates] = useState(true);
+  const [showSteps, setShowSteps] = useState(false);
 
   const fullResult = useMemo(() => {
     if ("qasm" in props && props.qasm) return qasmToDirac(props.qasm);
+    return null;
+  }, [props]);
+
+  const stepsResult = useMemo(() => {
+    if ("qasm" in props && props.qasm) return qasmToDiracSteps(props.qasm);
     return null;
   }, [props]);
 
@@ -506,6 +533,19 @@ export function QasmDiracPanel(props: Props) {
               Histogramm
             </button>
           )}
+          {"qasm" in props && props.qasm && stepsResult && stepsResult.steps.length > 0 && (
+            <button
+              onClick={() => setShowSteps((v) => !v)}
+              className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                showSteps
+                  ? "bg-blue-50 border-blue-300 text-blue-600"
+                  : "border-gray-300 hover:bg-gray-100 text-gray-600"
+              }`}
+            >
+              <span>{showSteps ? "▾" : "▸"}</span>
+              Schritte
+            </button>
+          )}
           {fullResult && terms.length > 0 && (
             <ExportMenu
               latex={fullResult.latex}
@@ -513,6 +553,7 @@ export function QasmDiracPanel(props: Props) {
               terms={terms}
               unicode={fullResult.unicode}
               onGetCircuitSvg={props.onGetCircuitSvg}
+              stepsResult={stepsResult ?? undefined}
             />
           )}
         </div>
@@ -535,6 +576,43 @@ export function QasmDiracPanel(props: Props) {
           |ψ⟩ = {unicodeStr}
         </span>
       </div>
+
+      {/* Zwischenschritte */}
+      {showSteps && stepsResult && stepsResult.steps.length > 0 && (
+        <div className="flex-shrink-0 rounded-lg border border-blue-100 bg-blue-50/30 px-3 py-3 overflow-x-auto">
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+            Mathematische Zwischenschritte
+          </p>
+          <div className="flex flex-col gap-0 font-mono text-sm">
+            {/* Initialzustand */}
+            <div className="flex items-baseline gap-2 py-1">
+              <span className="text-gray-400 text-xs min-w-[36px]">|ψ₀⟩</span>
+              <span className="text-gray-500 text-xs">=</span>
+              <span className="text-gray-800 whitespace-nowrap">{stepsResult.initial.unicode}</span>
+            </div>
+            {stepsResult.steps.map((step, idx) => (
+              <div key={idx} className="flex flex-col">
+                {/* Pfeil mit Gate-Label */}
+                <div className="flex items-center gap-1.5 py-0.5 pl-10">
+                  <span className="text-blue-400 text-xs">──</span>
+                  <span className="text-blue-600 text-xs font-sans font-medium bg-blue-50 border border-blue-100 px-1.5 py-0.5 rounded whitespace-nowrap">
+                    {step.gateLabel}
+                  </span>
+                  <span className="text-blue-400 text-xs">──→</span>
+                </div>
+                {/* Zustand nach Gate */}
+                <div className="flex items-baseline gap-2 py-1">
+                  <span className="text-gray-400 text-xs min-w-[36px]">
+                    |ψ{'₀₁₂₃₄₅₆₇₈₉'[idx + 1] ?? (idx + 1)}⟩
+                  </span>
+                  <span className="text-gray-500 text-xs">=</span>
+                  <span className="text-gray-800 whitespace-nowrap">{step.unicode}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Histogramm + Qubit-Selektor */}
       {terms.length > 0 && showBasisStates && (

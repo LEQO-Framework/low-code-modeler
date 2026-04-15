@@ -781,17 +781,6 @@ export function marginalizeQubits(
 
 /**
  * Wandelt einen QASM-String in Dirac-Notation um.
- *
- * @example
- * const result = qasmToDirac(`
- *   OPENQASM 2.0;
- *   include "qelib1.inc";
- *   qreg q[2];
- *   h q[0];
- *   cx q[0], q[1];
- * `);
- * console.log(result.unicode);
- * // 1/√2 |00⟩ + 1/√2 |11⟩
  */
 export function qasmToDirac(qasm: string): DiracResult {
   const { numQubits, gates, warnings: parseWarnings } = parseQasm(qasm);
@@ -801,4 +790,274 @@ export function qasmToDirac(qasm: string): DiracResult {
     ...simWarnings,
   ]);
   return result;
+}
+
+// ---------------------------------------------------------------------------
+// Zwischenschritt-API
+// ---------------------------------------------------------------------------
+
+export interface DiracStep {
+  /** Gate-Label für den Pfeil (unicode), z. B. "H₀ ⊗ I₁" */
+  gateLabel: string;
+  /** Gate-Label für LaTeX, z. B. "H_{0} \otimes I_{1}" */
+  gateLabelLatex: string;
+  /** Dirac-Notation nach diesem Schritt (unicode) */
+  unicode: string;
+  /** Dirac-Notation nach diesem Schritt (latex) */
+  latex: string;
+}
+
+export interface DiracStepsResult {
+  /** Initialzustand (vor allen Gates) */
+  initial: { unicode: string; latex: string };
+  /** Alle Schritte mit Gate-Label und Zustand danach */
+  steps: DiracStep[];
+  numQubits: number;
+  warnings: string[];
+}
+
+/** Formatiert einen Gate-Namen lesbar für die Anzeige */
+function formatGateLabel(gate: ParsedGate, numQubits: number): string {
+  const q = gate.qubits;
+  const p = gate.params;
+
+  // Hilfsfunktion: Parameter als lesbare Zeichenkette
+  const paramStr = (val: number): string => {
+    if (Math.abs(val - Math.PI) < 1e-6)       return 'π';
+    if (Math.abs(val - Math.PI / 2) < 1e-6)   return 'π/2';
+    if (Math.abs(val - Math.PI / 4) < 1e-6)   return 'π/4';
+    if (Math.abs(val - -Math.PI) < 1e-6)      return '-π';
+    if (Math.abs(val - 2 * Math.PI) < 1e-6)   return '2π';
+    return val.toFixed(3);
+  };
+
+  // Tiefgestellte Ziffern
+  const sub = (n: number): string =>
+    String(n).split('').map(d => '₀₁₂₃₄₅₆₇₈₉'[parseInt(d)]).join('');
+
+  // Alle Qubit-Indizes als Tensor-Produkt mit Identitäten
+  // Einzel-Qubit: H₀ ⊗ I₁ ⊗ I₂
+  // Zwei-Qubit:   CNOT₀₁ ⊗ I₂  oder  I₀ ⊗ CNOT₁₃ ⊗ I₂
+  // Drei-Qubit:   Toffoli₀₁₂ ⊗ I₃
+
+  const buildTensor = (gateName: string, gateQubits: number[]): string => {
+    const gateSet = new Set(gateQubits);
+    const parts: string[] = [];
+    let i = 0;
+    while (i < numQubits) {
+      if (gateSet.has(i) && i === Math.min(...gateQubits)) {
+        // Gate-Block: alle beteiligten Qubit-Indizes als Subscript
+        const subscripts = gateQubits.map(sub).join('');
+        parts.push(`${gateName}${subscripts}`);
+        // Überspringe alle Gate-Qubits (auch nicht-benachbarte werden als Block behandelt)
+        // Füge Identitäten für übersprungene Qubits zwischen Gate-Qubits ein
+        const sorted = [...gateQubits].sort((a, b) => a - b);
+        const gaps = sorted.slice(0, -1)
+          .flatMap((qA, k) => {
+            const qB = sorted[k + 1];
+            return Array.from({ length: qB - qA - 1 }, (_, j) => qA + j + 1);
+          });
+        // Wenn es übersprungene Qubits gibt, zeige sie als I im Block
+        i = Math.max(...gateQubits) + 1;
+      } else if (!gateSet.has(i)) {
+        parts.push(`I${sub(i)}`);
+        i++;
+      } else {
+        i++; // übersprungene Gate-Qubits (nicht der erste)
+      }
+    }
+    return parts.join(' ⊗ ');
+  };
+
+  switch (gate.name) {
+    case 'h':    return buildTensor('H', [q[0]]);
+    case 'x':    return buildTensor('X', [q[0]]);
+    case 'y':    return buildTensor('Y', [q[0]]);
+    case 'z':    return buildTensor('Z', [q[0]]);
+    case 's':    return buildTensor('S', [q[0]]);
+    case 'sdg':  return buildTensor('S†', [q[0]]);
+    case 't':    return buildTensor('T', [q[0]]);
+    case 'tdg':  return buildTensor('T†', [q[0]]);
+    case 'sx':   return buildTensor('√X', [q[0]]);
+    case 'rx':   return buildTensor(`Rₓ(${paramStr(p[0])})`, [q[0]]);
+    case 'ry':   return buildTensor(`Rᵧ(${paramStr(p[0])})`, [q[0]]);
+    case 'rz':
+    case 'p':    return buildTensor(`Rᵤ(${paramStr(p[0])})`, [q[0]]);
+    case 'u1':   return buildTensor(`Rᵤ(${paramStr(p[0])})`, [q[0]]);
+    case 'u2':   return buildTensor(`U2`, [q[0]]);
+    case 'u3':
+    case 'u':    return buildTensor(`U3`, [q[0]]);
+    case 'cx':
+    case 'cnot': return buildTensor('CNOT', [q[0], q[1]]);
+    case 'cy':   return buildTensor('CY', [q[0], q[1]]);
+    case 'cz':   return buildTensor('CZ', [q[0], q[1]]);
+    case 'ch':   return buildTensor('CH', [q[0], q[1]]);
+    case 'swap': return buildTensor('SWAP', [q[0], q[1]]);
+    case 'cp':   return buildTensor(`CP(${paramStr(p[0])})`, [q[0], q[1]]);
+    case 'crx':  return buildTensor(`CRₓ(${paramStr(p[0])})`, [q[0], q[1]]);
+    case 'cry':  return buildTensor(`CRᵧ(${paramStr(p[0])})`, [q[0], q[1]]);
+    case 'crz':  return buildTensor(`CRᵤ(${paramStr(p[0])})`, [q[0], q[1]]);
+    case 'cu':   return buildTensor('CU', [q[0], q[1]]);
+    case 'ccx':
+    case 'toffoli': return buildTensor('Toffoli', [q[0], q[1], q[2]]);
+    case 'cswap':
+    case 'fredkin': return buildTensor('CSWAP', [q[0], q[1], q[2]]);
+    case 'measure': return `Messung q${sub(q[0])}`;
+    default: return gate.name.toUpperCase();
+  }
+}
+
+/** Formatiert ein Gate-Label für LaTeX */
+function formatGateLabelLatex(gate: ParsedGate, numQubits: number): string {
+  const q = gate.qubits;
+  const p = gate.params;
+
+  const paramLatex = (val: number): string => {
+    if (Math.abs(val - Math.PI) < 1e-6)     return '\\pi';
+    if (Math.abs(val - Math.PI / 2) < 1e-6) return '\\pi/2';
+    if (Math.abs(val - Math.PI / 4) < 1e-6) return '\\pi/4';
+    if (Math.abs(val - -Math.PI) < 1e-6)    return '-\\pi';
+    if (Math.abs(val - 2 * Math.PI) < 1e-6) return '2\\pi';
+    return val.toFixed(3);
+  };
+
+  const sub = (n: number): string => `_{${n}}`;
+
+  const buildTensorLatex = (gateName: string, gateQubits: number[]): string => {
+    const gateSet = new Set(gateQubits);
+    const parts: string[] = [];
+    let i = 0;
+    while (i < numQubits) {
+      if (gateSet.has(i) && i === Math.min(...gateQubits)) {
+        const subscripts = `_{${gateQubits.join('')}}`;
+        parts.push(`${gateName}${subscripts}`);
+        i = Math.max(...gateQubits) + 1;
+      } else if (!gateSet.has(i)) {
+        parts.push(`I${sub(i)}`);
+        i++;
+      } else {
+        i++;
+      }
+    }
+    return parts.join(' \\otimes ');
+  };
+
+  switch (gate.name) {
+    case 'h':    return buildTensorLatex('H', [q[0]]);
+    case 'x':    return buildTensorLatex('X', [q[0]]);
+    case 'y':    return buildTensorLatex('Y', [q[0]]);
+    case 'z':    return buildTensorLatex('Z', [q[0]]);
+    case 's':    return buildTensorLatex('S', [q[0]]);
+    case 'sdg':  return buildTensorLatex('S^\\dagger', [q[0]]);
+    case 't':    return buildTensorLatex('T', [q[0]]);
+    case 'tdg':  return buildTensorLatex('T^\\dagger', [q[0]]);
+    case 'sx':   return buildTensorLatex('\\sqrt{X}', [q[0]]);
+    case 'rx':   return buildTensorLatex(`R_x(${paramLatex(p[0])})`, [q[0]]);
+    case 'ry':   return buildTensorLatex(`R_y(${paramLatex(p[0])})`, [q[0]]);
+    case 'rz':
+    case 'p':    return buildTensorLatex(`R_z(${paramLatex(p[0])})`, [q[0]]);
+    case 'cx':
+    case 'cnot': return buildTensorLatex('\\text{CNOT}', [q[0], q[1]]);
+    case 'cy':   return buildTensorLatex('\\text{CY}', [q[0], q[1]]);
+    case 'cz':   return buildTensorLatex('\\text{CZ}', [q[0], q[1]]);
+    case 'ch':   return buildTensorLatex('\\text{CH}', [q[0], q[1]]);
+    case 'swap': return buildTensorLatex('\\text{SWAP}', [q[0], q[1]]);
+    case 'cp':   return buildTensorLatex(`\\text{CP}(${paramLatex(p[0])})`, [q[0], q[1]]);
+    case 'crx':  return buildTensorLatex(`\\text{CR}_x(${paramLatex(p[0])})`, [q[0], q[1]]);
+    case 'cry':  return buildTensorLatex(`\\text{CR}_y(${paramLatex(p[0])})`, [q[0], q[1]]);
+    case 'crz':  return buildTensorLatex(`\\text{CR}_z(${paramLatex(p[0])})`, [q[0], q[1]]);
+    case 'ccx':
+    case 'toffoli': return buildTensorLatex('\\text{Toffoli}', [q[0], q[1], q[2]]);
+    case 'cswap':
+    case 'fredkin': return buildTensorLatex('\\text{CSWAP}', [q[0], q[1], q[2]]);
+    default: return `\\text{${gate.name.toUpperCase()}}`;
+  }
+}
+
+/**
+ * Berechnet den Quantenzustand nach jedem einzelnen Gate-Schritt.
+ *
+ * @example
+ * const steps = qasmToDiracSteps(`
+ *   OPENQASM 2.0;
+ *   qreg q[2];
+ *   h q[0];
+ *   cx q[0], q[1];
+ * `);
+ * // steps.initial.unicode  → "|00⟩"
+ * // steps.steps[0].gateLabel → "H⊗I"
+ * // steps.steps[0].unicode   → "1/√2 |00⟩ + 1/√2 |10⟩"
+ * // steps.steps[1].gateLabel → "CNOT q0→q1"
+ * // steps.steps[1].unicode   → "1/√2 |00⟩ + 1/√2 |11⟩"
+ */
+export function qasmToDiracSteps(qasm: string): DiracStepsResult {
+  const { numQubits, gates, warnings: parseWarnings } = parseQasm(qasm);
+  const simWarnings: string[] = [];
+
+  // Initialzustand
+  let sv = createStatevector(numQubits);
+  const initialResult = statevectorToDirac(sv, numQubits);
+
+  const steps: DiracStep[] = [];
+
+  // Gates einzeln anwenden und nach jedem Schritt Zustand speichern
+  for (const gate of gates) {
+    const [q0, q1] = gate.qubits;
+    const [p0, p1, p2] = gate.params;
+
+    switch (gate.name) {
+      case 'h':   sv = applySingleQubitGate(sv, numQubits, q0, GATE_H); break;
+      case 'x':   sv = applySingleQubitGate(sv, numQubits, q0, GATE_X); break;
+      case 'y':   sv = applySingleQubitGate(sv, numQubits, q0, GATE_Y); break;
+      case 'z':   sv = applySingleQubitGate(sv, numQubits, q0, GATE_Z); break;
+      case 's':   sv = applySingleQubitGate(sv, numQubits, q0, GATE_S); break;
+      case 'sdg': sv = applySingleQubitGate(sv, numQubits, q0, GATE_SDG); break;
+      case 't':   sv = applySingleQubitGate(sv, numQubits, q0, GATE_T); break;
+      case 'tdg': sv = applySingleQubitGate(sv, numQubits, q0, GATE_TDG); break;
+      case 'sx':  sv = applySingleQubitGate(sv, numQubits, q0, GATE_SX); break;
+      case 'rx':  sv = applySingleQubitGate(sv, numQubits, q0, gateRX(p0 ?? 0)); break;
+      case 'ry':  sv = applySingleQubitGate(sv, numQubits, q0, gateRY(p0 ?? 0)); break;
+      case 'rz':
+      case 'p':   sv = applySingleQubitGate(sv, numQubits, q0, gateRZ(p0 ?? 0)); break;
+      case 'u1':  sv = applySingleQubitGate(sv, numQubits, q0, gateRZ(p0 ?? 0)); break;
+      case 'u2':  sv = applySingleQubitGate(sv, numQubits, q0, gateU3(Math.PI / 2, p0 ?? 0, p1 ?? 0)); break;
+      case 'u3':
+      case 'u':   sv = applySingleQubitGate(sv, numQubits, q0, gateU3(p0 ?? 0, p1 ?? 0, p2 ?? 0)); break;
+      case 'cx':
+      case 'cnot': sv = applyControlledGate(sv, numQubits, q0, q1, GATE_X); break;
+      case 'cy':  sv = applyControlledGate(sv, numQubits, q0, q1, GATE_Y); break;
+      case 'cz':  sv = applyControlledGate(sv, numQubits, q0, q1, GATE_Z); break;
+      case 'ch':  sv = applyControlledGate(sv, numQubits, q0, q1, GATE_H); break;
+      case 'cp':
+      case 'cphase': sv = applyControlledGate(sv, numQubits, q0, q1, gateCPMatrix(p0 ?? 0)); break;
+      case 'crx': sv = applyControlledGate(sv, numQubits, q0, q1, gateRX(p0 ?? 0)); break;
+      case 'cry': sv = applyControlledGate(sv, numQubits, q0, q1, gateRY(p0 ?? 0)); break;
+      case 'crz': sv = applyControlledGate(sv, numQubits, q0, q1, gateRZ(p0 ?? 0)); break;
+      case 'cu':  sv = applyControlledGate(sv, numQubits, q0, q1, gateCUMatrix(p0 ?? 0, p1 ?? 0, p2 ?? 0, gate.params[3] ?? 0)); break;
+      case 'ccx':
+      case 'toffoli': sv = applyToffoli(sv, numQubits, q0, q1, gate.qubits[2]); break;
+      case 'cswap':
+      case 'fredkin': sv = applyCSwap(sv, numQubits, q0, q1, gate.qubits[2]); break;
+      case 'swap': sv = applySwap(sv, numQubits, q0, q1); break;
+      case 'measure': continue; // Messung überspringen
+      default:
+        simWarnings.push(`Unbekanntes Gate: "${gate.name}" — übersprungen.`);
+        continue;
+    }
+
+    const stepResult = statevectorToDirac(sv, numQubits);
+    steps.push({
+      gateLabel: formatGateLabel(gate, numQubits),
+      gateLabelLatex: formatGateLabelLatex(gate, numQubits),
+      unicode: stepResult.unicode,
+      latex: stepResult.latex,
+    });
+  }
+
+  return {
+    initial: { unicode: initialResult.unicode, latex: initialResult.latex },
+    steps,
+    numQubits,
+    warnings: [...parseWarnings, ...simWarnings],
+  };
 }
