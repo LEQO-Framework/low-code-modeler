@@ -18,6 +18,7 @@ export const DeutschJozsaNode = memo((node: Node) => {
   const { id, data, selected } = node;
   const { updateNodeValue, nodes, edges, setSelectedNode } = useStore(selector, shallow);
 
+  const [numQubits, setNumQubits] = useState(data.numQubits || 3);
   const [oracleType, setOracleType] = useState(data.oracleType || "balanced");
   const [balancedMask, setBalancedMask] = useState(data.balancedMask || 5);
   const [constantValue, setConstantValue] = useState(data.constantValue ?? 0);
@@ -32,15 +33,11 @@ export const DeutschJozsaNode = memo((node: Node) => {
     setSelectedNode(node);
   };
 
-  const impliedQubits = oracleType === "balanced" 
-    ? Math.max(1, balancedMask.toString(2).length) 
-    : 1;
-
   return (
     <motion.div
       className="grand-parent"
       initial={false}
-      animate={{ width: 320, height: 440 }} 
+      animate={{ width: 320, height: 500 }} 
       transition={{ duration: 0.3, ease: "easeInOut" }}
     >
       <div className="grand-parent">
@@ -49,13 +46,13 @@ export const DeutschJozsaNode = memo((node: Node) => {
             "w-[320px] bg-white border border-solid border-gray-700 shadow-md relative",
             selected && "border-blue-500"
           )}
-          style={{ height: "440px" }}
+          style={{ height: "500px" }}
         >
           {/* HEADER */}
           <div className="w-full flex items-center" style={{ height: '52px' }}>
             <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
               <img
-                src="PaletteIcon_DJ.png" // Change this if you have a specific DJ icon!
+                src="PaletteIcon_DJ.png" 
                 alt="DJ icon"
                 className="w-[40px] h-[40px] object-contain flex-shrink-0"
               />
@@ -93,7 +90,24 @@ export const DeutschJozsaNode = memo((node: Node) => {
 
           {/* CONFIGURATION BODY */}
           <div className="px-4 py-1 mt-4">
-            <div className="mt-2">
+            
+            {/* NEW: Query Qubits Input */}
+            <div>
+              <label className="text-xs font-semibold text-gray-700">Query Qubits (n):</label>
+              <input
+                type="number"
+                min="1"
+                className="w-full p-2 mt-1 text-sm text-center text-black border-2 border-blue-200 rounded-full outline-none focus:border-blue-400 transition-colors"
+                value={numQubits}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value, 10) || 1;
+                  setNumQubits(val);
+                  handleChange("numQubits", val);
+                }}
+              />
+            </div>
+
+            <div className="mt-4">
               <label className="text-xs font-semibold text-gray-700">Oracle Type:</label>
               <select
                 className="w-full p-2 mt-1 bg-white rounded-full text-center text-sm text-black border-2 border-blue-200 outline-none focus:border-blue-400 transition-colors"
@@ -122,9 +136,6 @@ export const DeutschJozsaNode = memo((node: Node) => {
                     handleChange("balancedMask", val);
                   }}
                 />
-                <div className="text-[10px] text-blue-500 mt-2 font-medium italic text-center">
-                  Uses {impliedQubits} query qubits
-                </div>
               </div>
             ) : (
               <div className="mt-4">

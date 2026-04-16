@@ -39,20 +39,26 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
             // Boundary Nodes
             case consts.StatePreparationNode:
                 switch (node.data.label) {
-                    case "Encode Value":
+                    case "Encode Value": {
+                        // Resilient mapping to support both the old labels and the new unmerged PR labels
+                        const rawType = node.data.encodingType;
+                        const encMap: Record<string, string> = {
+                            "Amplitude Encoding": "amplitude",
+                            "Angle Encoding": "angle",
+                            "Basis Encoding": "basis",
+                            "Custom Encoding": "custom",
+                            "Matrix Encoding": "matrix",
+                            "Schmidt Decomposition": "schmidt",
+                        };
+                        const resolvedType = encMap[rawType] || rawType;
+
                         return {
                             id: node.id,
                             type: "encode",
-                            encoding: map({
-                                "Amplitude Encoding": "amplitude",
-                                "Angle Encoding": "angle",
-                                "Basis Encoding": "basis",
-                                "Custom Encoding": "custom",
-                                "Matrix Encoding": "matrix",
-                                "Schmidt Decomposition": "schmidt",
-                            }, node.data.encodingType),
-                            bounds: (node.data.encodingType === "Basis Encoding") ? 0 : parseFloat(node.data.bound)
+                            encoding: resolvedType as any,
+                            bounds: (resolvedType === "basis" || resolvedType === "angle") ? 0 : parseFloat(node.data.bound || "0")
                         }
+                    }
 
                     case "Basis Encoding":
                         return {
@@ -111,7 +117,7 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                 return {
                     id: node.id,
                     type: "measure",
-                    indices: (node.data.indices || null)?.split(",").map(x => parseInt(x, 10)) ?? []
+                    indices: (node.data.indices || null)?.split(",").map((x: string) => parseInt(x, 10)) ?? []
                 }
 
             // Circuit Blocks
@@ -254,6 +260,7 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                 id: node.id,
                 type: "deutsch-jozsa",
                 label: "Deutsch-Jozsa Algorithm",
+                numQubits: node.data.numQubits || 3,
                 oracleType: node.data.oracleType || "balanced",
                 balancedMask: node.data.balancedMask || 5,
                 constantValue: node.data.constantValue ?? 0,
