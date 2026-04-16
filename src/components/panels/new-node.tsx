@@ -97,6 +97,48 @@ export const AddNodePanel = () => {
   const getMockPluginMetadata = (node:any, pluginName: string) => {
     switch (pluginName) {
       case 'Classical Clustering':
+        return {
+          dataInputs: [
+            {
+              parameter: 'entityPointsUrl',
+              data_type: 'entity/vector',
+              content_type: ['application/json', 'text/csv'],
+              required: true,
+            },
+            {
+              parameter: 'numberOfClusters',
+              data_type: 'int',
+              content_type: ['text/plain'],
+              required: true,
+            },
+            {
+              parameter: 'relativeResidual',
+              data_type: 'float',
+              content_type: ['text/plain'],
+              required: true,
+            },
+            {
+              parameter: 'maxIterations',
+              data_type: 'int',
+              content_type: ['text/plain'],
+              required: true,
+            },
+          ],
+          dataOutputs: [
+            {
+              name: 'Cluster Labels',
+              data_type: 'entity/label',
+              content_type: ['application/json'],
+              required: true,
+            },
+            {
+              name: 'Visualization',
+              data_type: 'plot',
+              content_type: ['text/html'],
+              required: false,
+            },
+          ],
+        };
       case 'Quantum Clustering':
         return {
           dataInputs: [
