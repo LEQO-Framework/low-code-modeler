@@ -17,6 +17,7 @@ export const DataTypeNode: string = "dataTypeNode";
 export const GateNode: string = "gateNode";
 export const AlgorithmNode: string = "algorithmNode";
 export const ClassicalAlgorithmNode: string = "classicalAlgorithmNode";
+export const DeutschJozsaNode: string = "deutsch-jozsa";
 export const StatePreparationNode: string = "statePreparationNode";
 export const MeasurementNode: string = "measurementNode";
 export const AncillaNode: string = "ancillaNode";
@@ -36,6 +37,7 @@ export const NodeTypes = [
   GateNode,
   AlgorithmNode,
   ClassicalAlgorithmNode,
+  DeutschJozsaNode,
   StatePreparationNode,
   MeasurementNode,
   AncillaNode,

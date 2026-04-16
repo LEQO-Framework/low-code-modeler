@@ -169,6 +169,14 @@ export const categories: Record<string, CategoryEntry> = {
     content: [
       { label: "Custom Quantum Operator", type: consts.AlgorithmNode, icon: ["PaletteIcon_CustomQuantumOperator.png", "PaletteIcon_Ancilla_CustomQuantumOperator.png"], description: "Encapsulates a reusable quantum operation defined by the user.", completionGuaranteed: true, compactOptions: [true, false] },
       { label: "Custom Classical Operator", type: consts.ClassicalAlgorithmNode, icon: "PaletteIcon_CustomClassicalOperator.png", description: "Encapsulates a reusable classical computation defined by the user.", completionGuaranteed: true, compactOptions: [true, false] },
+      { 
+        label: "Deutsch-Jozsa", 
+        type: consts.DeutschJozsaNode,
+        icon: "PaletteIcon_DeutschJozsa.png", // Reusing an existing icon, change if you have a custom one
+        description: "Evaluates if a hidden boolean function is constant or balanced.", 
+        completionGuaranteed: false, 
+        compactOptions: [false] 
+      },
     ],
   },
 

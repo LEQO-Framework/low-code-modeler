@@ -5,6 +5,7 @@ import { DataTypeNode } from "@/components/nodes";
 import { AlgorithmNode } from "@/components/nodes/algorithm";
 import { AncillaNode } from "@/components/nodes/ancilla";
 import {  IfElseNode } from "@/components/nodes/ifelse";
+import { DeutschJozsaNode as DeutschJozsaComponent } from "@/components/nodes/DeutschJozsaNode";
 import { DynamicNode } from "@/components/nodes/dynamically";
 import { GateNode } from "@/components/nodes/gate";
 import { MeasurementNode } from "@/components/nodes/measurement";
@@ -19,6 +20,7 @@ import { ClassicalAlgorithmNode } from "@/components/nodes/classicalalgorithm";
 import { QubitNode } from "@/components/nodes/qubit";
 import { ClassicalOperationNode } from "@/components/nodes/classicalOperation";
 import { GroupNode } from "@/components/nodes/group";
+import * as consts from "@/constants";
 
 export const nodesConfig = {
   initialNodes: [ ] as unknown as Node[],
@@ -40,7 +42,8 @@ export const nodesConfig = {
     mergerNode: MergerNode,
     qubitNode: QubitNode,
     classicalOperatorNode: ClassicalOperationNode,
-    groupNode: GroupNode
+    groupNode: GroupNode,
+    [consts.DeutschJozsaNode]: DeutschJozsaComponent
   } as any,
   edgesTypes: {
     quantumEdge: QuantumEdge,
@@ -69,7 +72,8 @@ export const initialDiagram = {
     mergerNode: MergerNode,
     qubitNode: QubitNode,
     classicalOperatorNode: ClassicalOperationNode,
-    groupNode: GroupNode
+    groupNode: GroupNode,
+    [consts.DeutschJozsaNode]: DeutschJozsaComponent
   } as any,
 };
 

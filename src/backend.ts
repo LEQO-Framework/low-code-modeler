@@ -249,6 +249,15 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                         ).map(mapEdge)
                     }
                 };
+            case "deutsch-jozsa":
+            return {
+                id: node.id,
+                type: "deutsch-jozsa",
+                label: "Deutsch-Jozsa Algorithm",
+                oracleType: node.data.oracleType || "balanced",
+                balancedMask: node.data.balancedMask || 5,
+                constantValue: node.data.constantValue ?? 0,
+            } as any;
 
         }
         throw new Error(`Unsupported node ${node.type} (${node.data.label})`)
