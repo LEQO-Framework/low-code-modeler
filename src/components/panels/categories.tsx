@@ -206,14 +206,6 @@ export const categories: Record<string, CategoryEntry> = {
           compactOptions: [true, false]
         },
         {
-          label: "Quantum Convolutional Neural Network",
-          type: consts.PluginNode,
-          icon: "PaletteIcon_quantum-cnn.png",
-          description: "Labels data using a quantum convolutional neural network (QCNN).",
-          completionGuaranteed: false,
-          compactOptions: [true, false]
-        },
-        {
           label: "Quantum K-Nearest Neighbours",
           type: consts.PluginNode,
           icon: "PaletteIcon_quantum-k-nearest-neighbours.png",
