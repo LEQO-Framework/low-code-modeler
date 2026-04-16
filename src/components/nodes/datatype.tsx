@@ -54,6 +54,10 @@ export const DataTypeNode = memo((node: Node) => {
     const hasAnyPlaceholder = updatedNodes.some(n =>
       containsLetters(n.data?.value || "")
     );
+    if (data.dataType === "boolean") {
+        setContainsPlaceholder(false);
+        return;
+    }
 
     if (data.dataType === "Number") {
       if (startsWithNumber(newValue)) {
