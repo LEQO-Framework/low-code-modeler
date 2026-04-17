@@ -155,12 +155,6 @@ export const AddNodePanel = () => {
               required: true,
             },
             {
-              parameter: 'variant',
-              data_type: 'string',
-              content_type: ['text/plain'],
-              required: true,
-            },
-            {
               parameter: 'tolerance',
               data_type: 'float',
               content_type: ['text/plain'],
@@ -237,13 +231,61 @@ export const AddNodePanel = () => {
               required: true,
             },
             {
+              parameter: 'method',
+              data_type: 'string',
+              content_type: ['text/plain'],
+              required: true,
+            },
+            {
+              parameter: 'minClusterSize',
+              data_type: 'int',
+              content_type: ['text/plain'],
+              required: true,
+            },
+            {
+              parameter: 'minkowskiPValue',
+              data_type: 'int',
+              content_type: ['text/plain'],
+              required: true,
+            },
+            {
+              parameter: 'metric',
+              data_type: 'string',
+              content_type: ['text/plain'],
+              required: true,
+            },
+            {
+              parameter: 'leafSize',
+              data_type: 'int',
+              content_type: ['text/plain'],
+              required: true,
+            },
+            {
+              parameter: 'algorithm',
+              data_type: 'string',
+              content_type: ['text/plain'],
+              required: true,
+            },
+            {
+              parameter: 'epsilon',
+              data_type: 'float',
+              content_type: ['text/plain'],
+              required: false,
+            },
+            {
+              parameter: 'minSteepness',
+              data_type: 'int',
+              content_type: ['text/plain'],
+              required: true,
+            },
+            {
               parameter: 'minSamples',
               data_type: 'int',
               content_type: ['text/plain'],
               required: true,
             },
             {
-              parameter: 'maxEps',
+              parameter: 'maxDistance',
               data_type: 'float',
               content_type: ['text/plain'],
               required: false,
@@ -277,6 +319,12 @@ export const AddNodePanel = () => {
             {
               parameter: 'testDataUrl',
               data_type: 'entity/vector',
+              content_type: ['application/json', 'text/csv'],
+              required: true,
+            },
+            {
+              parameter: 'testDataUrl',
+              data_type: 'entity/label',
               content_type: ['application/json', 'text/csv'],
               required: true,
             },
@@ -351,15 +399,27 @@ export const AddNodePanel = () => {
               required: true,
             },
             {
+              parameter: 'variant',
+              data_type: 'string',
+              content_type: ['text/plain'],
+              required: true,
+            },
+            {
+              parameter: 'windowSize',
+              data_type: 'int',
+              content_type: ['text/plain'],
+              required: true,
+            },
+             {
               parameter: 'testDataUrl',
               data_type: 'entity/vector',
               content_type: ['application/json', 'text/csv'],
               required: true,
             },
             {
-              parameter: 'bandwidth',
-              data_type: 'float',
-              content_type: ['text/plain'],
+              parameter: 'testLabelsUrl',
+              data_type: 'entity/label',
+              content_type: ['application/json', 'text/csv'],
               required: false,
             },
           ],
@@ -467,16 +527,40 @@ export const AddNodePanel = () => {
         return {
           dataInputs: [
             {
-              parameter: 'entityPointsUrl',
+              parameter: 'trainingPointsUrl',
               data_type: 'entity/vector',
               content_type: ['application/json', 'text/csv'],
               required: true,
             },
             {
-              parameter: 'targetDimensions',
+              parameter: 'embeddingSize',
+              data_type: 'integer',
+              content_type: ['text/plain'],
+              required: true,
+            },
+             {
+              parameter: 'qnnName',
+              data_type: 'string',
+              content_type: ['text/plain'],
+              required: true,
+            },
+            {
+              parameter: 'trainingSteps',
               data_type: 'int',
               content_type: ['text/plain'],
               required: true,
+            },
+            {
+              parameter: 'numberOfQubits ',
+              data_type: 'int',
+              content_type: ['text/plain'],
+              required: true,
+            },
+            {
+              parameter: 'testPointsUrl',
+              data_type: 'string',
+              content_type: ['text/plain'],
+              required: false,
             },
           ],
           dataOutputs: [

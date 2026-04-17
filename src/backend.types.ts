@@ -451,6 +451,12 @@ export interface components {
             outputs?: any[];
             /** Clustering Algorithm */
             clusteringAlgorithm?: string | null;
+            metricEnum?: string |null;
+            methodEnum?: string |null;
+            minkowskiP?: string | null;
+            maxEpsilon?: string |null;
+            algorithmEnum?: string|null;
+            xi?: string |null;
         };
         /** ParameterizedGateNode */
         ParameterizedGateNode: {

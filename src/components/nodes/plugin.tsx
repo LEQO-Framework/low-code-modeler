@@ -50,6 +50,12 @@ interface PluginNodeData {
   clusteringAlgorithm?: string;
   inputs?: any[];
   outputs?: any[];
+  initializationMethod?: string;
+  algorithm?: string;
+  variant?: string;
+  minkowskiPValue: string;
+  method: string;
+  metric: string;
 }
 
 export const PluginNode = memo((node: Node<PluginNodeData>) => {
@@ -68,6 +74,12 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
 
   useEffect(() => {
     updateNodeInternals(node.id);
+    console.log("clusteringAlgorithm");
+    console.log(node.data.clusteringAlgorithm)
+    if (node.data.clusteringAlgorithm === "k-medoids") {
+      updateNodeValue(node.id, "initializationMethod", "random");
+      updateNodeValue(node.id, "algorithm", "pam");
+    }
     if (
       (node.data.label === "Quantum Clustering" || node.data.label === "Classical Clustering") &&
       !node.data.clusteringAlgorithm
@@ -110,12 +122,17 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
   }
 
 
+  const isKMedoids = data.clusteringAlgorithm === "k-medoids";
+const isOptics = data.clusteringAlgorithm === "optics";
+  const kMedoidsExtraHeight = isKMedoids ? 102 : 0;
+  const opticsExtraHeight = isOptics ? 250 : 0;
+
   // Calculate dynamic height
   const baseHeight = 200;
   const inputHeight = 40;
   const outputHeight = 130;
   const dropdownHeight = isClusteringNode ? 60 : 0;
-  const dynamicHeight = baseHeight + (dataInputs.length * inputHeight) + (dataOutputs.length > 0 ? outputHeight : 0) + dropdownHeight;
+  const dynamicHeight = baseHeight + (dataInputs.length * inputHeight) + (dataOutputs.length > 0 ? outputHeight : 0) + dropdownHeight + kMedoidsExtraHeight+ opticsExtraHeight;
 
   // Render lucide icon based on plugin name
   const renderIcon = () => {
@@ -283,7 +300,7 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
         </div>
 
         {/* Algorithm Dropdown for clustering nodes */}
-        {isClusteringNode && (
+        {isClusteringNode && !node.data.label.includes("Quantum") && (
           <div className="px-3 py-1 mb-1">
             <label className="text-sm text-black">Algorithm:</label>
             <select
@@ -301,28 +318,40 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
                   'k-means': [
                     { parameter: 'entityPointsUrl', data_type: 'entity/vector', content_type: ['application/json', 'text/csv'], required: true },
                     { parameter: 'numberOfClusters', data_type: 'int', content_type: ['text/plain'], required: true },
-                    { parameter: 'variant', data_type: 'string', content_type: ['text/plain'], required: isQuantum },
-                    { parameter: 'tolerance', data_type: 'float', content_type: ['text/plain'], required: false },
-                    { parameter: 'maxIterations', data_type: 'int', content_type: ['text/plain'], required: false },
-                  ],
-                  'k-median': [
-                    { parameter: 'entityPointsUrl', data_type: 'entity/vector', content_type: ['application/json', 'text/csv'], required: true },
-                    { parameter: 'numberOfClusters', data_type: 'int', content_type: ['text/plain'], required: true },
-                    { parameter: 'tolerance', data_type: 'float', content_type: ['text/plain'], required: false },
-                    { parameter: 'maxIterations', data_type: 'int', content_type: ['text/plain'], required: false },
+                    { parameter: 'maxIterations', data_type: 'int', content_type: ['text/plain'], required: true },
+                    { parameter: 'relativeResidual', data_type: 'float', content_type: ['text/plain'], required: true },
                   ],
                   'k-medoids': [
                     { parameter: 'entityPointsUrl', data_type: 'entity/vector', content_type: ['application/json', 'text/csv'], required: true },
                     { parameter: 'numberOfClusters', data_type: 'int', content_type: ['text/plain'], required: true },
-                    { parameter: 'tolerance', data_type: 'float', content_type: ['text/plain'], required: false },
-                    { parameter: 'maxIterations', data_type: 'int', content_type: ['text/plain'], required: false },
+                    { parameter: 'maxIterations', data_type: 'int', content_type: ['text/plain'], required: true },
+                    { parameter: 'initializationMethod', data_type: 'string', content_type: ['text/plain'], required: true },
+                    { parameter: 'algorithm', data_type: 'string', content_type: ['text/plain'], required: true },
                   ],
                   'optics': [
-
                     {
                       parameter: 'entityPointsUrl',
                       data_type: 'entity/vector',
                       content_type: ['application/json', 'text/csv'],
+                      required: true,
+                    },
+                    {
+                      parameter: 'minClusterSize',
+                      data_type: 'int',
+                      content_type: ['text/plain'],
+                      required: true,
+                    },
+                    {
+                      parameter: 'leafSize',
+                      data_type: 'int',
+                      content_type: ['text/plain'],
+                      required: true,
+                    },
+                   
+                    {
+                      parameter: 'minSteepness',
+                      data_type: 'int',
+                      content_type: ['text/plain'],
                       required: true,
                     },
                     {
@@ -332,7 +361,13 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
                       required: true,
                     },
                     {
-                      parameter: 'maxEps',
+                      parameter: 'maxDistance',
+                      data_type: 'float',
+                      content_type: ['text/plain'],
+                      required: true,
+                    },
+                     {
+                      parameter: 'epsilon',
                       data_type: 'float',
                       content_type: ['text/plain'],
                       required: false,
@@ -344,9 +379,6 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
                   'k-means': [
                     { name: 'Cluster Labels', data_type: 'entity/label', content_type: ['application/json'], required: true },
                     { name: 'Visualization', data_type: 'plot', content_type: ['text/html'], required: false },
-                  ],
-                  'k-median': [
-                    { name: 'Cluster Labels', data_type: 'entity/label', content_type: ['application/json'], required: true },
                   ],
                   'k-medoids': [
                     { name: 'Cluster Labels', data_type: 'entity/label', content_type: ['application/json'], required: true },
@@ -424,7 +456,7 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
               }}
             >
               <option value="k-means">K-Means</option>
-              <option value="k-median">K-Median</option>
+
               {data.pluginName === 'Classical Clustering' && (<div>
                 <option value="k-medoids">K-Medoids</option>
                 <option value="optics">OPTICS</option></div>
@@ -432,6 +464,181 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
             </select>
           </div>
         )}
+
+        
+
+        {isClusteringNode && data.clusteringAlgorithm === "optics" && (
+  <div className="px-3 py-1 mb-2 space-y-2">
+
+<div>
+      <label className="text-sm text-black">Method:</label>
+      <select
+        className={cn(
+          "w-full p-1 mt-1 bg-white text-center text-lg text-black border-2",
+          isQuantumPlugin ? "border-blue-300 rounded-none" : "border-orange-300 rounded-full"
+        )}
+        value={node.data.method || "xi"}
+        onChange={(e) => {
+          updateNodeValue(node.id, "method", e.target.value);
+        }}
+      >
+        <option value="xi">xi</option>
+        <option value="dbscan">dbscan</option>
+      </select>
+    </div>
+    {/* Method dropdown */}
+    <div>
+      <label className="text-sm text-black">Method:</label>
+      <select
+        className={cn(
+          "w-full p-1 mt-1 bg-white text-center text-lg text-black border-2",
+          isQuantumPlugin ? "border-blue-300 rounded-none" : "border-orange-300 rounded-full"
+        )}
+        value={node.data.metric || "dice"}
+        onChange={(e) => {
+          updateNodeValue(node.id, "metric", e.target.value);
+        }}
+      >
+        <option value="braycurtis">braycurtis</option>
+        <option value="canberra">canberra</option>
+        <option value="chebyshev">chebyshev</option>
+        <option value="cityblock">cityblock</option>
+        <option value="correlation">correlation</option>
+        <option value="cosine">cosine</option>
+        <option value="dice">dice</option>
+        <option value="euclidean">euclidean</option>
+        <option value="hamming">hamming</option>
+        <option value="haversine">haversine</option>
+        <option value="jaccard">jaccard</option>
+        <option value="kulsinski">kulsinski</option>
+        <option value="l1">l1</option>
+        <option value="l2">l2</option>
+        <option value="manhattan">manhattan</option>
+        <option value="matching">matching</option>
+        <option value="minkowski">minkowski</option>
+        <option value="nan_euclidean">nan_euclidean</option>
+        <option value="rogerstanimoto">rogerstanimoto</option>
+        <option value="russellrao">russellrao</option>
+        <option value="sokalmichener">sokalmichener</option>
+        <option value="sokalsneath">sokalsneath</option>
+        <option value="sqeuclidean">sqeuclidean</option>
+        <option value="yule">yule</option>
+      </select>
+    </div>
+
+    {/* Minkowski P value (only when needed) */}
+    {node.data.metric === "minkowski" && (
+      <div>
+        <label className="text-sm text-black">Minkowski p-value:</label>
+        <input
+          type="number"
+          min={1}
+          step="1"
+          className={cn(
+            "w-full p-1 mt-1 text-center text-lg border-2",
+            isQuantumPlugin ? "border-blue-300 rounded-none" : "border-orange-300 rounded-full"
+          )}
+          value={node.data.minkowskiPValue || 2}
+          onChange={(e) => {
+            const val = Math.max(1, Number(e.target.value)); // enforce p >= 1
+            updateNodeValue(node.id, "minkowskiPValue", val);
+          }}
+        />
+      </div>
+    )}
+
+    {/* Algorithm dropdown */}
+    <div>
+      <label className="text-sm text-black">Algorithm:</label>
+      <select
+        className={cn(
+          "w-full p-1 mt-1 bg-white text-center text-lg text-black border-2",
+          isQuantumPlugin ? "border-blue-300 rounded-none" : "border-orange-300 rounded-full"
+        )}
+        value={node.data.algorithm || "auto"}
+        onChange={(e) => {
+          updateNodeValue(node.id, "algorithm", e.target.value);
+        }}
+      >
+        <option value="auto">auto</option>
+        <option value="kd_tree">kd_tree</option>
+        <option value="ball_tree">ball_tree</option>
+        <option value="brute">brute</option>
+      </select>
+    </div>
+
+  </div>
+)}
+
+        {isClusteringNode && data.clusteringAlgorithm === "k-medoids" && (
+          <div className="px-3 py-1 mb-2 space-y-2">
+
+            {/* Initialization Method */}
+            <div>
+              <label className="text-sm text-black">Initialization Method:</label>
+              <select
+                className={cn(
+                  "w-full p-1 mt-1 bg-white text-center text-lg text-black border-2",
+                  isQuantumPlugin ? "border-blue-300 rounded-none" : "border-orange-300 rounded-full"
+                )}
+                value={node.data.initializationMethod || "random"}
+                onChange={(e) => {
+                  updateNodeValue(node.id, "initializationMethod", e.target.value);
+                }}
+              >
+                <option value="build">Build</option>
+                <option value="heuristic">Heuristic</option>
+                <option value="random">Random</option>
+                <option value="k-medoids++">K-Medoids++</option>
+              </select>
+            </div>
+
+            {/* Algorithm */}
+            <div>
+              <label className="text-sm text-black">Algorithm:</label>
+              <select
+                className={cn(
+                  "w-full p-1 mt-1 bg-white text-center text-lg text-black border-2",
+                  isQuantumPlugin ? "border-blue-300 rounded-none" : "border-orange-300 rounded-full"
+                )}
+                value={node.data.algorithm || "pam"}
+                onChange={(e) => {
+                  updateNodeValue(node.id, "algorithm", e.target.value);
+                }}
+              >
+                <option value="alternate">Alternate</option>
+                <option value="pam">PAM</option>
+              </select>
+            </div>
+
+          </div>
+        )}
+
+        {isClusteringNode && data.clusteringAlgorithm === "k-means" && node.data.label.includes("Quantum") && (
+          <div className="px-3 py-1 mb-2 space-y-2">
+            <div>
+              <label className="text-sm text-black">Variant:</label>
+              <select
+                className={cn(
+                  "w-full p-1 mt-1 bg-white text-center text-lg text-black border-2",
+                  isQuantumPlugin ? "border-blue-300 rounded-none" : "border-orange-300 rounded-full"
+                )}
+                value={node.data.variant || "negative_rotation"}
+                onChange={(e) => {
+                  updateNodeValue(node.id, "variant", e.target.value);
+                }}
+              >
+                <option value="destructive_interference">Destructive Interference</option>
+                <option value="positive_correlation">Positive Correlation</option>
+                <option value="negative_rotation">Negative Rotation</option>
+                <option value="state_prepartion">State Preparation</option>
+              </select>
+            </div>
+
+          </div>
+        )}
+
+
 
         {/* Input Handles */}
         <div className="custom-node-port-in mb-3 mt-2">

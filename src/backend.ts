@@ -277,6 +277,12 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
             case consts.PluginNode: {
                 const basePluginName = node.data.pluginName;
                 const algo = node.data.clusteringAlgorithm;
+                const algorithm = node.data.algorithm;
+                const method = node.data.method;
+                const metric = node.data.metric;
+                const minSteepness = node.data.minSteepness;
+                const maxDistance = node.data.maxDistance;
+                const minkowskiPValue = node.data.minkowskiPValue;
                 let effectivePluginName = basePluginName;
                 if (algo && algo !== 'k-means' && (basePluginName === 'classical-k-means' || basePluginName === 'quantum-k-means')) {
                     const prefix = basePluginName === 'classical-k-means' ? 'classical' : 'quantum';
@@ -288,6 +294,12 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                     pluginIdentifier: node.data.pluginIdentifier,
                     pluginName: effectivePluginName,
                     clusteringAlgorithm: algo,
+                    metricEnum: metric,
+                    methodEnum: method,
+                    maxEpsilon: maxDistance,
+                    algorithmEnum: algorithm,
+                    minkowskiP: minkowskiPValue,
+                    xi: minSteepness,
                     inputs: node.data.dataInputs?.map((input: any) => ({
                         parameter: input.parameter,
                         dataType: input.data_type,
