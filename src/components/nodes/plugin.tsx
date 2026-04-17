@@ -123,7 +123,7 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
 
 
   const isKMedoids = data.clusteringAlgorithm === "k-medoids";
-const isOptics = data.clusteringAlgorithm === "optics";
+  const isOptics = data.clusteringAlgorithm === "optics";
   const kMedoidsExtraHeight = isKMedoids ? 102 : 0;
   const opticsExtraHeight = isOptics ? 250 : 0;
 
@@ -132,7 +132,7 @@ const isOptics = data.clusteringAlgorithm === "optics";
   const inputHeight = 40;
   const outputHeight = 130;
   const dropdownHeight = isClusteringNode ? 60 : 0;
-  const dynamicHeight = baseHeight + (dataInputs.length * inputHeight) + (dataOutputs.length > 0 ? outputHeight : 0) + dropdownHeight + kMedoidsExtraHeight+ opticsExtraHeight;
+  const dynamicHeight = baseHeight + (dataInputs.length * inputHeight) + (dataOutputs.length > 0 ? outputHeight : 0) + dropdownHeight + kMedoidsExtraHeight + opticsExtraHeight;
 
   // Render lucide icon based on plugin name
   const renderIcon = () => {
@@ -347,7 +347,7 @@ const isOptics = data.clusteringAlgorithm === "optics";
                       content_type: ['text/plain'],
                       required: true,
                     },
-                   
+
                     {
                       parameter: 'minSteepness',
                       data_type: 'int',
@@ -366,7 +366,7 @@ const isOptics = data.clusteringAlgorithm === "optics";
                       content_type: ['text/plain'],
                       required: true,
                     },
-                     {
+                    {
                       parameter: 'epsilon',
                       data_type: 'float',
                       content_type: ['text/plain'],
@@ -465,110 +465,110 @@ const isOptics = data.clusteringAlgorithm === "optics";
           </div>
         )}
 
-        
+
 
         {isClusteringNode && data.clusteringAlgorithm === "optics" && (
-  <div className="px-3 py-1 mb-2 space-y-2">
+          <div className="px-3 py-1 mb-2 space-y-2">
 
-<div>
-      <label className="text-sm text-black">Method:</label>
-      <select
-        className={cn(
-          "w-full p-1 mt-1 bg-white text-center text-lg text-black border-2",
-          isQuantumPlugin ? "border-blue-300 rounded-none" : "border-orange-300 rounded-full"
+            <div>
+              <label className="text-sm text-black">Method:</label>
+              <select
+                className={cn(
+                  "w-full p-1 mt-1 bg-white text-center text-lg text-black border-2",
+                  isQuantumPlugin ? "border-blue-300 rounded-none" : "border-orange-300 rounded-full"
+                )}
+                value={node.data.method || "xi"}
+                onChange={(e) => {
+                  updateNodeValue(node.id, "method", e.target.value);
+                }}
+              >
+                <option value="xi">xi</option>
+                <option value="dbscan">dbscan</option>
+              </select>
+            </div>
+            {/* Method dropdown */}
+            <div>
+              <label className="text-sm text-black">Method:</label>
+              <select
+                className={cn(
+                  "w-full p-1 mt-1 bg-white text-center text-lg text-black border-2",
+                  isQuantumPlugin ? "border-blue-300 rounded-none" : "border-orange-300 rounded-full"
+                )}
+                value={node.data.metric || "dice"}
+                onChange={(e) => {
+                  updateNodeValue(node.id, "metric", e.target.value);
+                }}
+              >
+                <option value="braycurtis">braycurtis</option>
+                <option value="canberra">canberra</option>
+                <option value="chebyshev">chebyshev</option>
+                <option value="cityblock">cityblock</option>
+                <option value="correlation">correlation</option>
+                <option value="cosine">cosine</option>
+                <option value="dice">dice</option>
+                <option value="euclidean">euclidean</option>
+                <option value="hamming">hamming</option>
+                <option value="haversine">haversine</option>
+                <option value="jaccard">jaccard</option>
+                <option value="kulsinski">kulsinski</option>
+                <option value="l1">l1</option>
+                <option value="l2">l2</option>
+                <option value="manhattan">manhattan</option>
+                <option value="matching">matching</option>
+                <option value="minkowski">minkowski</option>
+                <option value="nan_euclidean">nan_euclidean</option>
+                <option value="rogerstanimoto">rogerstanimoto</option>
+                <option value="russellrao">russellrao</option>
+                <option value="sokalmichener">sokalmichener</option>
+                <option value="sokalsneath">sokalsneath</option>
+                <option value="sqeuclidean">sqeuclidean</option>
+                <option value="yule">yule</option>
+              </select>
+            </div>
+
+            {/* Minkowski P value (only when needed) */}
+            {node.data.metric === "minkowski" && (
+              <div>
+                <label className="text-sm text-black">Minkowski p-value:</label>
+                <input
+                  type="number"
+                  min={1}
+                  step="1"
+                  className={cn(
+                    "w-full p-1 mt-1 text-center text-lg border-2",
+                    isQuantumPlugin ? "border-blue-300 rounded-none" : "border-orange-300 rounded-full"
+                  )}
+                  value={node.data.minkowskiPValue || 2}
+                  onChange={(e) => {
+                    const val = Math.max(1, Number(e.target.value)); // enforce p >= 1
+                    updateNodeValue(node.id, "minkowskiPValue", val);
+                  }}
+                />
+              </div>
+            )}
+
+            {/* Algorithm dropdown */}
+            <div>
+              <label className="text-sm text-black">Algorithm:</label>
+              <select
+                className={cn(
+                  "w-full p-1 mt-1 bg-white text-center text-lg text-black border-2",
+                  isQuantumPlugin ? "border-blue-300 rounded-none" : "border-orange-300 rounded-full"
+                )}
+                value={node.data.algorithm || "auto"}
+                onChange={(e) => {
+                  updateNodeValue(node.id, "algorithm", e.target.value);
+                }}
+              >
+                <option value="auto">auto</option>
+                <option value="kd_tree">kd_tree</option>
+                <option value="ball_tree">ball_tree</option>
+                <option value="brute">brute</option>
+              </select>
+            </div>
+
+          </div>
         )}
-        value={node.data.method || "xi"}
-        onChange={(e) => {
-          updateNodeValue(node.id, "method", e.target.value);
-        }}
-      >
-        <option value="xi">xi</option>
-        <option value="dbscan">dbscan</option>
-      </select>
-    </div>
-    {/* Method dropdown */}
-    <div>
-      <label className="text-sm text-black">Method:</label>
-      <select
-        className={cn(
-          "w-full p-1 mt-1 bg-white text-center text-lg text-black border-2",
-          isQuantumPlugin ? "border-blue-300 rounded-none" : "border-orange-300 rounded-full"
-        )}
-        value={node.data.metric || "dice"}
-        onChange={(e) => {
-          updateNodeValue(node.id, "metric", e.target.value);
-        }}
-      >
-        <option value="braycurtis">braycurtis</option>
-        <option value="canberra">canberra</option>
-        <option value="chebyshev">chebyshev</option>
-        <option value="cityblock">cityblock</option>
-        <option value="correlation">correlation</option>
-        <option value="cosine">cosine</option>
-        <option value="dice">dice</option>
-        <option value="euclidean">euclidean</option>
-        <option value="hamming">hamming</option>
-        <option value="haversine">haversine</option>
-        <option value="jaccard">jaccard</option>
-        <option value="kulsinski">kulsinski</option>
-        <option value="l1">l1</option>
-        <option value="l2">l2</option>
-        <option value="manhattan">manhattan</option>
-        <option value="matching">matching</option>
-        <option value="minkowski">minkowski</option>
-        <option value="nan_euclidean">nan_euclidean</option>
-        <option value="rogerstanimoto">rogerstanimoto</option>
-        <option value="russellrao">russellrao</option>
-        <option value="sokalmichener">sokalmichener</option>
-        <option value="sokalsneath">sokalsneath</option>
-        <option value="sqeuclidean">sqeuclidean</option>
-        <option value="yule">yule</option>
-      </select>
-    </div>
-
-    {/* Minkowski P value (only when needed) */}
-    {node.data.metric === "minkowski" && (
-      <div>
-        <label className="text-sm text-black">Minkowski p-value:</label>
-        <input
-          type="number"
-          min={1}
-          step="1"
-          className={cn(
-            "w-full p-1 mt-1 text-center text-lg border-2",
-            isQuantumPlugin ? "border-blue-300 rounded-none" : "border-orange-300 rounded-full"
-          )}
-          value={node.data.minkowskiPValue || 2}
-          onChange={(e) => {
-            const val = Math.max(1, Number(e.target.value)); // enforce p >= 1
-            updateNodeValue(node.id, "minkowskiPValue", val);
-          }}
-        />
-      </div>
-    )}
-
-    {/* Algorithm dropdown */}
-    <div>
-      <label className="text-sm text-black">Algorithm:</label>
-      <select
-        className={cn(
-          "w-full p-1 mt-1 bg-white text-center text-lg text-black border-2",
-          isQuantumPlugin ? "border-blue-300 rounded-none" : "border-orange-300 rounded-full"
-        )}
-        value={node.data.algorithm || "auto"}
-        onChange={(e) => {
-          updateNodeValue(node.id, "algorithm", e.target.value);
-        }}
-      >
-        <option value="auto">auto</option>
-        <option value="kd_tree">kd_tree</option>
-        <option value="ball_tree">ball_tree</option>
-        <option value="brute">brute</option>
-      </select>
-    </div>
-
-  </div>
-)}
 
         {isClusteringNode && data.clusteringAlgorithm === "k-medoids" && (
           <div className="px-3 py-1 mb-2 space-y-2">

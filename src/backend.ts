@@ -283,6 +283,7 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                 const minSteepness = node.data.minSteepness;
                 const maxDistance = node.data.maxDistance;
                 const minkowskiPValue = node.data.minkowskiPValue;
+                const initEnum = node.data.initializationMethod;
                 let effectivePluginName = basePluginName;
                 if (algo && algo !== 'k-means' && (basePluginName === 'classical-k-means' || basePluginName === 'quantum-k-means')) {
                     const prefix = basePluginName === 'classical-k-means' ? 'classical' : 'quantum';

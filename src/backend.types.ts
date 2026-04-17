@@ -457,6 +457,7 @@ export interface components {
             maxEpsilon?: string |null;
             algorithmEnum?: string|null;
             xi?: string |null;
+            initEnum?: string |null;
         };
         /** ParameterizedGateNode */
         ParameterizedGateNode: {
