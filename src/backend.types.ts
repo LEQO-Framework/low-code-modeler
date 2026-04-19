@@ -451,6 +451,7 @@ export interface components {
             outputs?: any[];
             /** Clustering Algorithm */
             clusteringAlgorithm?: string | null;
+            variant?: string | null
             metricEnum?: string |null;
             methodEnum?: string |null;
             minkowskiP?: string | null;

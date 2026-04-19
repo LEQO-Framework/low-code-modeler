@@ -277,6 +277,7 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
             case consts.PluginNode: {
                 const basePluginName = node.data.pluginName;
                 const algo = node.data.clusteringAlgorithm;
+                const variant = node.data.variant;
                 const algorithm = node.data.algorithm;
                 const method = node.data.method;
                 const metric = node.data.metric;
@@ -295,6 +296,8 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                     pluginIdentifier: node.data.pluginIdentifier,
                     pluginName: effectivePluginName,
                     clusteringAlgorithm: algo,
+                    variant: variant,
+                    initEnum: initEnum,
                     metricEnum: metric,
                     methodEnum: method,
                     maxEpsilon: maxDistance,
