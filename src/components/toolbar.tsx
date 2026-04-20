@@ -23,7 +23,11 @@ import {
   PuzzleIcon,
   LucidePuzzle,
   Puzzle,
+  Group,
+  BoxSelect,
 } from "lucide-react";
+
+
 
 interface ToolbarProps {
   onSave: () => void;
@@ -42,6 +46,8 @@ interface ToolbarProps {
   startTour: () => void;
   onSaveAsTemplate: () => void;
   onManageTemplates: () => void;
+  onGroupSelected: () => void;  
+
 }
 
 const Toolbar: React.FC<ToolbarProps> = ({
@@ -60,7 +66,8 @@ const Toolbar: React.FC<ToolbarProps> = ({
   openHistory,
   startTour,
   onSaveAsTemplate,
-  onManageTemplates
+  onManageTemplates,
+  onGroupSelected,
 }) => {
   const [saveIsOpen, setSaveIsOpen] = useState(false);
   return (
@@ -143,6 +150,14 @@ const Toolbar: React.FC<ToolbarProps> = ({
           <Button className="backend-button" size="sm" onClick={sendToBackend} title="Send the diagram to the backend">
             <Send className="w-4 h-4 mr-2" /> Send to Backend
           </Button>
+              <Button
+                size="sm"
+                onClick={onGroupSelected}
+                title="Ausgewählte Nodes gruppieren (Lasso: Shift+Drag)"
+              >
+                <BoxSelect className="w-4 h-4 mr-2" /> Gruppieren
+              </Button>
+
              <Button size="sm" onClick={startQuantumAlgorithmSelection}>
           <Settings className="w-4 h-4 mr-2" /> Detect Algorithm
         </Button>

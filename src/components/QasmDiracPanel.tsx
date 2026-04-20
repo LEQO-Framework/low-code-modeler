@@ -99,33 +99,17 @@ function buildLatexExport(
   const circuitSection = pngBase64
     ? `\\section*{Quantenschaltkreis}
 
-        \\begin{figure}[h]
-          \\centering
-          \\includegraphics[width=0.9\\textwidth]{circuit}
-          \\caption{Modellierter Quantenschaltkreis}
-          \\label{fig:circuit}
-        \\end{figure}
+\\begin{figure}[h]
+  \\centering
+  \\includegraphics[width=0.9\\textwidth]{circuit}
+  \\caption{Modellierter Quantenschaltkreis}
+  \\label{fig:circuit}
+\\end{figure}
 
-        `
-            : "";
+`
+    : "";
 
-  const tableSection = terms.length > 0
-    ? `\\section*{Messwahrscheinlichkeiten}
-
-        \\begin{table}[h]
-          \\centering
-          \\begin{tabular}{|c|c|}
-            \\hline
-            \\textbf{Basiszustand} & \\textbf{Wahrscheinlichkeit} \\\\
-        ${termLines}
-            \\hline
-          \\end{tabular}
-          \\caption{Messwahrscheinlichkeiten der Basiszustände}
-        \\end{table}
-
-        `
-            : "";
-
+  // Zwischenschritte als align-Umgebung
   const stepsSection = stepsResult && stepsResult.steps.length > 0
     ? `\\section*{Mathematische Zwischenschritte}
 
@@ -139,9 +123,75 @@ ${stepsResult.steps.map((step, idx) =>
 `
     : "";
 
+  // pgfplots Histogramm
+  const histogramSection = terms.length > 0
+    ? (() => {
+        const coords = terms
+          .map((t) => {
+            const p = prob(t.amplitude.re, t.amplitude.im);
+            // Escape den Basiszustand für pgfplots x-Tick-Labels
+            return { label: `|${t.basisState}\\rangle`, value: p };
+          });
+        const coordStr = coords
+          .map((c, i) => `(${i}, ${c.value})`)
+          .join(' ');
+        const tickLabels = coords
+          .map((c) => `$${c.label}$`)
+          .join(', ');
+        const xMax = coords.length - 0.5;
+
+        return `\\section*{Messwahrscheinlichkeiten}
+
+\\begin{figure}[h]
+  \\centering
+  \\begin{tikzpicture}
+    \\begin{axis}[
+      ybar,
+      bar width=0.5cm,
+      width=0.85\\textwidth,
+      height=6cm,
+      ymin=0, ymax=100,
+      xmin=-0.5, xmax=${xMax},
+      xtick={${coords.map((_, i) => i).join(', ')}},
+      xticklabels={${tickLabels}},
+      xticklabel style={font=\\small},
+      ylabel={Wahrscheinlichkeit (\\%)},
+      ymajorgrids=true,
+      grid style=dashed,
+      nodes near coords,
+      nodes near coords align={vertical},
+      every node near coord/.append style={font=\\tiny},
+    ]
+      \\addplot[fill=blue!60, draw=blue!80] coordinates {${coordStr}};
+    \\end{axis}
+  \\end{tikzpicture}
+  \\caption{Messwahrscheinlichkeiten der Basiszustände}
+  \\label{fig:histogram}
+\\end{figure}
+
+`;
+      })()
+    : "";
+
+  const tableSection = terms.length > 0
+    ? `\\section*{Messwahrscheinlichkeiten (Tabelle)}
+
+\\begin{table}[h]
+  \\centering
+  \\begin{tabular}{|c|c|}
+    \\hline
+    \\textbf{Basiszustand} & \\textbf{Wahrscheinlichkeit} \\\\
+${termLines}
+    \\hline
+  \\end{tabular}
+  \\caption{Messwahrscheinlichkeiten der Basiszustände}
+\\end{table}
+
+`
+    : "";
 
   const hint = pngBase64
-    ? "% OVERLEAF: circuit.png separat hochladen (Export → \"Circuit PNG\")\n"
+    ? "% OVERLEAF: circuit.png liegt in der ZIP-Datei\n"
     : "";
 
   return `\\documentclass{article}
@@ -151,6 +201,8 @@ ${stepsResult.steps.map((step, idx) =>
 \\usepackage{braket}
 \\usepackage{graphicx}
 \\usepackage{geometry}
+\\usepackage{pgfplots}
+\\pgfplotsset{compat=1.18}
 \\geometry{margin=2.5cm}
 
 ${hint}
@@ -169,7 +221,7 @@ Der Zustand des Quantensystems mit ${numQubits} Qubit${numQubits !== 1 ? "s" : "
   |\\psi\\rangle = ${latex}
 \\end{equation}
 
-${stepsSection}${tableSection}\\end{document}
+${stepsSection}${histogramSection}${tableSection}\\end{document}
 `;
 }
 
@@ -543,7 +595,7 @@ export function QasmDiracPanel(props: Props) {
               }`}
             >
               <span>{showSteps ? "▾" : "▸"}</span>
-              Schritte
+              Zwischenschritte
             </button>
           )}
           {fullResult && terms.length > 0 && (
@@ -584,7 +636,6 @@ export function QasmDiracPanel(props: Props) {
             Mathematische Zwischenschritte
           </p>
           <div className="flex flex-col gap-0 font-mono text-sm">
-            {/* Initialzustand */}
             <div className="flex items-baseline gap-2 py-1">
               <span className="text-gray-400 text-xs min-w-[36px]">|ψ₀⟩</span>
               <span className="text-gray-500 text-xs">=</span>
@@ -592,7 +643,6 @@ export function QasmDiracPanel(props: Props) {
             </div>
             {stepsResult.steps.map((step, idx) => (
               <div key={idx} className="flex flex-col">
-                {/* Pfeil mit Gate-Label */}
                 <div className="flex items-center gap-1.5 py-0.5 pl-10">
                   <span className="text-blue-400 text-xs">──</span>
                   <span className="text-blue-600 text-xs font-sans font-medium bg-blue-50 border border-blue-100 px-1.5 py-0.5 rounded whitespace-nowrap">
@@ -600,7 +650,6 @@ export function QasmDiracPanel(props: Props) {
                   </span>
                   <span className="text-blue-400 text-xs">──→</span>
                 </div>
-                {/* Zustand nach Gate */}
                 <div className="flex items-baseline gap-2 py-1">
                   <span className="text-gray-400 text-xs min-w-[36px]">
                     |ψ{'₀₁₂₃₄₅₆₇₈₉'[idx + 1] ?? (idx + 1)}⟩

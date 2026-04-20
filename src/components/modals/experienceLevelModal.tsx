@@ -14,6 +14,8 @@ interface ExperienceModePanelProps {
   domainProfile: string;
   onDomainProfileChange: (profile: string) => void;
   domainProfileNames: string[];
+  mathMode: boolean;               // ← NEU
+  onToggleMathMode: () => void;    // ← NEU
 }
 
 export default function ExperienceModePanel({
@@ -30,6 +32,8 @@ export default function ExperienceModePanel({
   domainProfile,
   onDomainProfileChange,
   domainProfileNames,
+  mathMode,
+  onToggleMathMode,
 }: ExperienceModePanelProps) {
   return (
     <Panel position="top-left" className="p-2 z-50">
@@ -58,9 +62,7 @@ export default function ExperienceModePanel({
             <tbody>
               <tr>
                 <td align="right">
-                  <span title="Choose your domain profile.">
-                    Domain Profile
-                  </span>
+                  <span title="Choose your domain profile.">Domain Profile</span>
                 </td>
                 <td align="left">
                   <select
@@ -68,10 +70,10 @@ export default function ExperienceModePanel({
                     onChange={(e) => onDomainProfileChange(e.target.value)}
                     className="mt-1 px-2 py-1 border rounded"
                   >
-                    <option value="none">
-                      None
-                    </option>
-                    {domainProfileNames.map((name) => (<option key = {name} value={name}>{name}</option>))}
+                    <option value="none">None</option>
+                    {domainProfileNames.map((name) => (
+                      <option key={name} value={name}>{name}</option>
+                    ))}
                   </select>
                 </td>
               </tr>
@@ -87,19 +89,14 @@ export default function ExperienceModePanel({
                     onChange={(e) => onExperienceLevelChange(e.target.value)}
                     className="mt-1 px-2 py-1 border rounded"
                   >
-                    <option value="explorer" title="New to quantum computing, curious and starting the journey.">
-                      Explorer
-                    </option>
-                    <option value="pioneer" title="Advanced understanding, pushing the frontier of quantum computing.">
-                      Pioneer
-                    </option>
+                    <option value="explorer">Explorer</option>
+                    <option value="pioneer">Pioneer</option>
                   </select>
                 </td>
               </tr>
-
               <tr>
                 <td align="right">
-                  <span title="Ancilla qubits are helper qubits used for intermediate calculations. Turning Ancilla Mode on allows use of additional helper qubits, which can reduce circuit depth but increases qubit count.">
+                  <span title="Ancilla qubits are helper qubits used for intermediate calculations.">
                     Ancilla Modeling
                   </span>
                 </td>
@@ -110,16 +107,13 @@ export default function ExperienceModePanel({
                       ancillaModelingOn ? "bg-blue-600" : "bg-gray-400"
                     }`}
                   >
-                    <span title="Ancilla qubits are helper qubits used for intermediate calculations. Turning Ancilla Mode on allows use of additional helper qubits, which can reduce circuit depth but increases qubit count.">
                     {ancillaModelingOn ? "On" : "Off"}
-                    </span>
                   </button>
                 </td>
               </tr>
-
               <tr>
                 <td align="right">
-                  <span title="Compact Visualization reduces visual space by compressing nodes. Recommended for advanced users.">
+                  <span title="Compact Visualization reduces visual space by compressing nodes.">
                     Compact Visualization
                   </span>
                 </td>
@@ -130,13 +124,10 @@ export default function ExperienceModePanel({
                       compactVisualization ? "bg-blue-600" : "bg-gray-400"
                     }`}
                   >
-                    <span title="Compact Visualization reduces visual space by compressing nodes. Recommended for advanced users.">
                     {compactVisualization ? "On" : "Off"}
-                    </span>
                   </button>
                 </td>
               </tr>
-
               <tr>
                 <td align="right">
                   <span title="Completion Guaranteed ensures that the backend has a suitable implementation.">
@@ -144,17 +135,36 @@ export default function ExperienceModePanel({
                   </span>
                 </td>
                 <td align="left">
-                  
                   <select
                     value={completionGuaranteed ? "Yes" : "No"}
                     onChange={(e) => onCompletionGuaranteedChange(e.target.value === "Yes")}
                     className="px-2 py-1 border rounded"
                   >
-                    <option title="The backend has suitable implementations for all nodes available.">Yes</option>
-                    <option title="The backend does not have suitable implementations for all nodes available.">No</option>
+                    <option>Yes</option>
+                    <option>No</option>
                   </select>
                 </td>
               </tr>
+
+              {/* Math Mode Toggle */}
+              <tr>
+                <td align="right">
+                  <span title="Zeigt die Dirac-Notation des letzten QASM-Outputs im Properties Panel an.">
+                    Math Mode
+                  </span>
+                </td>
+                <td align="left">
+                  <button
+                    onClick={onToggleMathMode}
+                    className={`px-2 py-1 rounded text-white ${
+                      mathMode ? "bg-blue-600" : "bg-gray-400"
+                    }`}
+                  >
+                    {mathMode ? "On" : "Off"}
+                  </button>
+                </td>
+              </tr>
+
             </tbody>
           </table>
 

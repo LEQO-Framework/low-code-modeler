@@ -48,6 +48,8 @@ import { v4 as uuid } from "uuid";
 import DomainProfileModal, { DomainProfile } from "./components/modals/domainProfileModal";
 import { PatternSelectionModal } from "./components/modals/patternSelectionModal";
 import { PatternImplementationSelectionModal } from "./components/modals/patternImplementationSelectionModal";
+import { groupSelectedNodes, ungroupNodes, handleNodeDropOnGroup } from "./lib/groupHandler";
+
 
 const selector = (state: {
   nodes: Node[];
@@ -265,7 +267,7 @@ function App() {
   const [selectedPatternId, setSelectedPatternId] = useState<string | null>(null);
 
 
-
+  const [mathMode, setMathMode] = useState(false);
   const [isLoadJsonModalOpen, setIsLoadJsonModalOpen] = useState(false);
   const [isPaletteOpen, setIsPaletteOpen] = useState(true);
   const [chartData, setChartData] = useState(null);
@@ -491,7 +493,7 @@ If none apply, return { "algorithms": [] }.
   const [compactVisualization, setCompactVisualization] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
   const [workflow, setWorkflow] = useState("");
-
+ const [panelWidth, setPanelWidth] = useState(350);
 
   const updateNodeInternals = useUpdateNodeInternals();
 
@@ -628,7 +630,14 @@ If none apply, return { "algorithms": [] }.
       const response = await startCompile(
         lowcodeBackendEndpoint,
         validMetadata,
-        reactFlowInstance.getNodes(),
+        reactFlowInstance.getNodes().map(n => ({
+          ...n,
+          // parentNode und extent entfernen damit Backend normale Nodes bekommt
+          parentNode: undefined,
+          extent: undefined,
+          // Absolute Position verwenden statt relative
+          position: n.positionAbsolute ?? n.position,
+        })).filter(n => n.type !== "groupNode"), // GroupNodes selbst nicht senden
         reactFlowInstance.getEdges(),
         compilationTarget
       );
@@ -1404,6 +1413,13 @@ If none apply, return { "algorithms": [] }.
       if (node.type === "group") {
         return;
       }
+
+      // Drag-to-Group für groupNode
+    if (node.type !== "groupNode") {
+      reactFlowInstance.setNodes(handleNodeDropOnGroup(node, reactFlowInstance.getNodes()));
+    }
+    
+
       console.log("onNodeDrag");
       console.log(node);
       let nodeT = nodes[0];
@@ -2405,6 +2421,35 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
   });
 };
 
+  //Handler-Funktionen für Gruppierung von Nodes
+  const handleGroupSelected = useCallback(() => {
+    const currentNodes = reactFlowInstance.getNodes();
+      
+    // React Flow speichert selected manchmal als separate Liste
+    // Hole ausgewählte Nodes über das selection-System
+    const selectedNodes = currentNodes.filter(
+      (n) => n.selected || reactFlowInstance.getNode(n.id)?.selected
+    );
+    
+    console.log("Selected nodes:", selectedNodes.length);
+    
+    if (selectedNodes.length < 2) {
+      showToast("Mindestens 2 Nodes auswählen um zu gruppieren.", "info");
+      return;
+    }
+    
+    const currentEdges = reactFlowInstance.getEdges();
+    const updatedNodes = groupSelectedNodes(currentNodes, currentEdges);
+    if (updatedNodes !== currentNodes) {
+      reactFlowInstance.setNodes(updatedNodes);
+      showToast("Nodes gruppiert.", "success");
+    } else {
+      showToast("Mindestens 2 Nodes auswählen um zu gruppieren.", "info");
+    }
+  }, [reactFlowInstance, showToast]);
+
+
+
 
   async function deployWorkflowToCamunda(
     workflowName,
@@ -2803,6 +2848,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
           startTour={() => { startTour(); }}
           onSaveAsTemplate={handleSaveAsTemplate}
           onManageTemplates={handleManageTemplates}
+          onGroupSelected={handleGroupSelected}
         />
       </div>
       {<NewDiagramModal open={isLoadJsonModalOpen} onClose={cancelLoadJson} onConfirm={confirmNewDiagram} />}
@@ -2974,38 +3020,35 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
 
 
       <main className="flex flex-col lg:flex-row h-[calc(100vh_-_60px)]">
-        <div className="relative flex h-[calc(100vh_-_60px)]  border-gray-200 border">
+        <div className="relative flex h-[calc(100vh_-_60px)] border-gray-200 border">
+
+          {/* Button zum Aufklappen */}
+          {!isPaletteOpen && (
+            <button
+              onClick={togglePalette}
+              style={{ width: "24px", paddingLeft: "4px" }}
+              className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white p-2 rounded-r-lg shadow-md hover:bg-gray-600 z-50 -left-0 ${isValidationOpen ? "hidden" : ""}`}
+            >
+              →
+            </button>
+          )}
+
           <div
             className={`transition-all duration-300 ${isPaletteOpen ? "w-[300px] lg:w-[350px]" : "w-0 overflow-hidden"}`}
           >
             {isPaletteOpen && <Palette ancillaMode={ancillaModelingOn} />}
           </div>
-          <button
-            onClick={togglePalette}
-            style={{
-              width: "24px"
-            }}
-            className={`
-    absolute top-1/2 transform -translate-y-1/2 
-    bg-gray-400 text-white p-2 rounded-l-lg shadow-md hover:bg-gray-600 z-50 
-    ${isPaletteOpen ? "right-0" : "hidden"} 
-    ${isValidationOpen ? "hidden" : ""}
-  `}
-          >
-            {isPaletteOpen ? "←" : "→"}
-          </button>
 
-          <button
-            onClick={togglePalette}
-            style={{
-              width: "24px",
-              paddingLeft: "4px"
-            }}
-            className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white p-2 rounded-r-lg shadow-md hover:bg-gray-600 z-50 ${isPaletteOpen ? "hidden" : "-left-0"} ${isValidationOpen ? "hidden" : ""}`}
-          >
-            {isPaletteOpen ? "←" : "→"}
-          </button>
-
+          {/* Button zum Einklappen  */}
+          {isPaletteOpen && (
+            <button
+              onClick={togglePalette}
+              style={{ width: "24px" }}
+              className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white p-2 rounded-l-lg shadow-md hover:bg-gray-600 z-50 right-0 ${isValidationOpen ? "hidden" : ""}`}
+            >
+              ←
+            </button>
+          )}
         </div>
 
         <div
@@ -3113,6 +3156,8 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
               domainProfile={domainProfile}
               onDomainProfileChange={(event) => { setDomainProfile(event) }}
               domainProfileNames={allDomainProfiles.map((p) => p.name)}
+              mathMode={mathMode}
+              onToggleMathMode={() => setMathMode((v) => !v)} 
             />
 
             <MiniMap
@@ -3180,36 +3225,80 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
           )}
         </div>
 
-        <div className="relative flex bg-gray-100 h-[calc(100vh_-_60px)]  border-gray-200 border">
+        <div className="relative flex bg-gray-100 h-[calc(100vh_-_60px)] border-gray-200 border">
+
+  {/* Button zum Aufklappen*/}
+  {!isPanelOpen && (
+    <button
+      onClick={togglePanel}
+      style={{ width: "24px" }}
+      className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white p-2 rounded-l-lg shadow-md hover:bg-gray-600 z-50 right-0 ${isValidationOpen ? "hidden" : ""}`}
+    >
+      ←
+    </button>
+  )}
+
+      <div
+        className={`transition-all duration-300 relative ${isPanelOpen ? "" : "w-0 overflow-hidden"}`}
+        style={isPanelOpen ? { width: `${panelWidth}px` } : {}}>
+
+        {/* Drag-Handle */}
+        {isPanelOpen && (
           <div
-            className={`transition-all duration-300 ${isPanelOpen ? "w-[300px] lg:w-[350px]" : "w-0 overflow-hidden"}`}
+            onMouseDown={(e) => {
+              const startX = e.clientX;
+              const startWidth = panelWidth;
+              const onMove = (e: MouseEvent) => {
+                const newWidth = Math.min(900, Math.max(280, startWidth + (startX - e.clientX)));
+                setPanelWidth(newWidth);
+              };
+              const onUp = () => {
+                window.removeEventListener("mousemove", onMove);
+                window.removeEventListener("mouseup", onUp);
+                document.body.style.cursor = "";
+              };
+              document.body.style.cursor = "ew-resize";
+              window.addEventListener("mousemove", onMove);
+              window.addEventListener("mouseup", onUp);
+            }}
+            style={{
+              position: "absolute",
+              left: 0,
+              top: 0,
+              width: "6px",
+              height: "100%",
+              cursor: "ew-resize",
+              zIndex: 50,
+              borderLeft: "2px solid #e5e7eb",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#6366f1")}
+            onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#e5e7eb")}
+          />
+        )}
+
+        {/* Button zum Einklappen */}
+        {isPanelOpen && (
+          <button
+            onClick={togglePanel}
+            style={{ width: "24px", paddingLeft: "4px" }}
+            className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white text-center p-2 rounded-r-lg shadow-md hover:bg-gray-600 z-50 -left-0 ${isValidationOpen ? "hidden" : ""}`}
           >
+            →
+          </button>
+        )}
 
-            <button
-              onClick={togglePanel}
-              style={{
-                width: "24px",
-                paddingLeft: "4px",
-              }}
-              className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white text-center p-2 rounded-r-lg shadow-md hover:bg-gray-600 z-50 ${isPanelOpen ? "-left-0" : "hidden"} ${isValidationOpen ? "hidden" : ""}`}
-            >
-
-              {isPanelOpen ? "→" : "←"}
-            </button>
-            <button
-              onClick={togglePanel}
-              style={{
-                width: "24px"
-              }}
-              className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white p-2 rounded-l-lg shadow-md hover:bg-gray-600 z-50 ${isPanelOpen ? "hidden" : "right-0"} ${isValidationOpen ? "hidden" : ""}`}
-            >
-              {isPanelOpen ? "→" : "←"}
-            </button>
-
-
-            {isPanelOpen && <CustomPanel metadata={metadata} onUpdateMetadata={setMetadata} />}
-          </div>
-        </div>
+        {isPanelOpen && (
+          <CustomPanel
+            metadata={metadata}
+            onUpdateMetadata={setMetadata}
+            mathMode={mathMode}
+            qasmCode={openqasmCode}
+            onGetCircuitSvg={getCircuitSvg}
+            onWidthChange={setPanelWidth}
+          />
+        )}
+      </div>
+    </div>
 
 
       </main>

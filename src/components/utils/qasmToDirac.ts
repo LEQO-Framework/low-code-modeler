@@ -842,28 +842,29 @@ function formatGateLabel(gate: ParsedGate, numQubits: number): string {
 
   const buildTensor = (gateName: string, gateQubits: number[]): string => {
     const gateSet = new Set(gateQubits);
+    const sorted = [...gateQubits].sort((a, b) => a - b);
+    const minQ = sorted[0];
+    const maxQ = sorted[sorted.length - 1];
+
     const parts: string[] = [];
     let i = 0;
     while (i < numQubits) {
-      if (gateSet.has(i) && i === Math.min(...gateQubits)) {
-        // Gate-Block: alle beteiligten Qubit-Indizes als Subscript
-        const subscripts = gateQubits.map(sub).join('');
+      if (i === minQ) {
+        // Gate-Block: Indizes mit Komma getrennt als Subscript
+        const subscripts = gateQubits.map(sub).join(',');
         parts.push(`${gateName}${subscripts}`);
-        // Überspringe alle Gate-Qubits (auch nicht-benachbarte werden als Block behandelt)
-        // Füge Identitäten für übersprungene Qubits zwischen Gate-Qubits ein
-        const sorted = [...gateQubits].sort((a, b) => a - b);
-        const gaps = sorted.slice(0, -1)
-          .flatMap((qA, k) => {
-            const qB = sorted[k + 1];
-            return Array.from({ length: qB - qA - 1 }, (_, j) => qA + j + 1);
-          });
-        // Wenn es übersprungene Qubits gibt, zeige sie als I im Block
-        i = Math.max(...gateQubits) + 1;
+        // Übersprungene Qubits zwischen Gate-Qubits als I einfügen
+        for (let j = minQ + 1; j <= maxQ; j++) {
+          if (!gateSet.has(j)) {
+            parts.push(`I${sub(j)}`);
+          }
+        }
+        i = maxQ + 1;
       } else if (!gateSet.has(i)) {
         parts.push(`I${sub(i)}`);
         i++;
       } else {
-        i++; // übersprungene Gate-Qubits (nicht der erste)
+        i++;
       }
     }
     return parts.join(' ⊗ ');
@@ -925,13 +926,24 @@ function formatGateLabelLatex(gate: ParsedGate, numQubits: number): string {
 
   const buildTensorLatex = (gateName: string, gateQubits: number[]): string => {
     const gateSet = new Set(gateQubits);
+    const sorted = [...gateQubits].sort((a, b) => a - b);
+    const minQ = sorted[0];
+    const maxQ = sorted[sorted.length - 1];
+
     const parts: string[] = [];
     let i = 0;
     while (i < numQubits) {
-      if (gateSet.has(i) && i === Math.min(...gateQubits)) {
-        const subscripts = `_{${gateQubits.join('')}}`;
+      if (i === minQ) {
+        // Komma-getrennte Indizes im Subscript: CNOT_{0,2}
+        const subscripts = `_{${gateQubits.join(',')}}`;
         parts.push(`${gateName}${subscripts}`);
-        i = Math.max(...gateQubits) + 1;
+        // Übersprungene Qubits zwischen Gate-Qubits als I einfügen
+        for (let j = minQ + 1; j <= maxQ; j++) {
+          if (!gateSet.has(j)) {
+            parts.push(`I${sub(j)}`);
+          }
+        }
+        i = maxQ + 1;
       } else if (!gateSet.has(i)) {
         parts.push(`I${sub(i)}`);
         i++;
