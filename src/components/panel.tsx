@@ -3,7 +3,7 @@
  * Platzierung: src/components/panel.tsx
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Node } from "reactflow";
 import { shallow } from "zustand/shallow";
 import { useStore } from "@/config/store";
@@ -34,15 +34,14 @@ export const CustomPanel = ({
 }: CustomPanelProps) => {
   const { selectedNode, nodes } = useStore(selector, shallow);
   const [activeTab, setActiveTab] = useState<"properties" | "math">("properties");
-  const [prevMathMode, setPrevMathMode] = useState(false);
 
-  // Wenn Math Mode eingeschaltet wird, Panel automatisch breiter machen
-  if (mathMode !== prevMathMode) {
-    setPrevMathMode(mathMode);
+  // Wenn Math Mode ausgeschaltet wird → zurück zu Properties
+  useEffect(() => {
+    if (!mathMode) {
+      setActiveTab("properties");
+    }
     onWidthChange?.(mathMode ? 480 : 350);
-  }
-
-  const CurrentPanel = selectedNode ? TextPanel : MetadataPanel;
+  }, [mathMode]);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
     onUpdateMetadata(e);
@@ -82,7 +81,11 @@ export const CustomPanel = ({
       {/* Properties Tab */}
       {activeTab === "properties" && (
         <div className="flex-1 overflow-y-auto">
-          <CurrentPanel metadata={metadata} onUpdateMetadata={handleChange} />
+          {selectedNode ? (
+            <TextPanel />
+          ) : (
+            <MetadataPanel metadata={metadata} onUpdateMetadata={handleChange} />
+          )}
         </div>
       )}
 

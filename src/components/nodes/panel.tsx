@@ -7,8 +7,8 @@ import { useState, useRef, useCallback } from "react";
 import { Node } from "reactflow";
 import { shallow } from "zustand/shallow";
 import { useStore } from "@/config/store";
-import { TextPanel, MetadataPanel } from "./panels";
-import { QasmDiracPanel } from "./QasmDiracPanel";
+import { TextPanel, MetadataPanel } from "../panels";
+import { QasmDiracPanel } from "../QasmDiracPanel";
 
 const selector = (state: { selectedNode: Node | null }) => ({
   selectedNode: state.selectedNode,
@@ -45,6 +45,7 @@ export const CustomPanel = ({
   if (mathMode !== prevMathMode) {
     setPrevMathMode(mathMode);
     setWidth(mathMode ? MATH_MODE_WIDTH : DEFAULT_WIDTH);
+     if (!mathMode) setActiveTab("properties");
   }
 
   // Drag-to-resize
