@@ -107,8 +107,6 @@ export const HistoryModal = ({ open, onClose, history, onExecute }: HistoryModal
               <th className="px-4 py-2 border">Name</th>
               <th className="px-4 py-2 border">Description</th>
               <th className="px-4 py-2 border">Model File</th>
-              <th className="px-4 py-2 border">QRMS</th>
-              <th className="px-4 py-2 border">Service Deployment</th>
               <th className="px-4 py-2 border">Created</th>
               <th className="px-4 py-2 border">Result Status</th>
               <th className="px-4 py-2 border">Result File</th>
@@ -146,38 +144,6 @@ export const HistoryModal = ({ open, onClose, history, onExecute }: HistoryModal
                       <span className="text-gray-400">—</span>
                     )}
                   </td>
-
-                  <td className="px-4 py-2 border">
-                    {target === "qasm" ? (
-                      <span className="text-gray-400">—</span>
-                    ) : item.links?.qrms ? (
-                      <span
-                        className="text-blue-600 underline cursor-pointer"
-                        onClick={() => window.open(item.links.qrms!, "_blank")}
-                      >
-                        Open
-                      </span>
-                    ) : (
-                      <span className="text-gray-400">—</span>
-                    )}
-                  </td>
-
-
-                  <td className="px-4 py-2 border">
-                    {target === "qasm" ? (
-                      <span className="text-gray-400">—</span>
-                    ) : item.links?.serviceDeploymentModels ? (
-                      <span
-                        className="text-blue-600 underline cursor-pointer"
-                        onClick={() => window.open(item.links.serviceDeploymentModels!, "_blank")}
-                      >
-                        Open
-                      </span>
-                    ) : (
-                      <span className="text-gray-400">—</span>
-                    )}
-                  </td>
-
 
                   <td className="px-4 py-2 border">{new Date(item.created).toLocaleString()}</td>
                   <td className="px-4 py-2 border">{item.status}</td>
@@ -217,7 +183,7 @@ export const HistoryModal = ({ open, onClose, history, onExecute }: HistoryModal
                           ? "Loading..."
                           : target === "workflow"
                             ? "Deploy Workflow"
-                            : "Execute"}
+                            : "Execute Circuit"}
                       </button>
                     )}
                   </td>
