@@ -3,16 +3,18 @@
  * Platzierung: src/components/panel.tsx
  */
 
-import { useState, useEffect } from "react";
-import { Node } from "reactflow";
+import { useState, useEffect, useCallback } from "react";
+import { Node, Edge } from "reactflow";
 import { shallow } from "zustand/shallow";
 import { useStore } from "@/config/store";
 import { TextPanel, MetadataPanel } from "./panels";
 import { QasmDiracPanel } from "./QasmDiracPanel";
+import { analyzeComponents, type DiracComponent } from "@/lib/componentAnalyzer";
 
-const selector = (state: { selectedNode: Node | null; nodes: Node[] }) => ({
+const selector = (state: { selectedNode: Node | null; nodes: Node[]; edges: Edge[] }) => ({
   selectedNode: state.selectedNode,
   nodes: state.nodes,
+  edges: state.edges,
 });
 
 interface CustomPanelProps {
@@ -22,6 +24,8 @@ interface CustomPanelProps {
   qasmCode?: string;
   onGetCircuitSvg?: () => Promise<string>;
   onWidthChange?: (width: number) => void;
+  backendUrl?: string;
+  compilationTarget?: string;
 }
 
 export const CustomPanel = ({
@@ -31,23 +35,48 @@ export const CustomPanel = ({
   qasmCode = "",
   onGetCircuitSvg,
   onWidthChange,
+  backendUrl = "",
+  compilationTarget = "qasm",
 }: CustomPanelProps) => {
-  const { selectedNode, nodes } = useStore(selector, shallow);
+  const { selectedNode, nodes, edges } = useStore(selector, shallow);
   const [activeTab, setActiveTab] = useState<"properties" | "math">("properties");
+  const [components, setComponents] = useState<DiracComponent[]>([]);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [hasAnalyzedOnce, setHasAnalyzedOnce] = useState(false);
 
-  // Wenn Math Mode ausgeschaltet wird → zurück zu Properties
+  // Wenn Math Mode ausgeschaltet → zurück zu Properties
   useEffect(() => {
-    if (!mathMode) {
-      setActiveTab("properties");
-    }
+    if (!mathMode) setActiveTab("properties");
     onWidthChange?.(mathMode ? 480 : 350);
   }, [mathMode]);
+
+  // Wenn neues QASM ankommt → Analyse zurücksetzen
+  useEffect(() => {
+    setComponents([]);
+    setHasAnalyzedOnce(false);
+  }, [qasmCode]);
+
+  // Analyse-Funktion – aufrufbar per Refresh-Button oder automatisch
+  const runAnalysis = useCallback(() => {
+    if (!backendUrl || !qasmCode.trim()) return;
+    setAnalyzing(true);
+    setComponents([]);
+    analyzeComponents(nodes, edges, backendUrl, metadata, compilationTarget)
+      .then(setComponents)
+      .finally(() => setAnalyzing(false));
+  }, [nodes, edges, backendUrl, metadata, compilationTarget, qasmCode]);
+
+  // Beim ersten Öffnen des Math Mode Tabs automatisch analysieren
+  useEffect(() => {
+    if (activeTab === "math" && mathMode && backendUrl && !hasAnalyzedOnce && qasmCode.trim().length > 0) {
+      setHasAnalyzedOnce(true);
+      runAnalysis();
+    }
+  }, [activeTab, mathMode, qasmCode]);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
     onUpdateMetadata(e);
   }
-
-  const hasMathContent = mathMode && qasmCode.trim().length > 0;
 
   return (
     <div className="currentPanel-container bg-gray-100 h-full border-gray-200 border text-black flex flex-col">
@@ -91,22 +120,47 @@ export const CustomPanel = ({
 
       {/* Math Mode Tab */}
       {activeTab === "math" && mathMode && (
-        <div className="flex-1 overflow-y-auto p-2">
-          {hasMathContent ? (
-            <MathModePanel
-              qasmCode={qasmCode}
-              onGetCircuitSvg={onGetCircuitSvg}
-              nodes={nodes}
-            />
-          ) : (
-            <div className="flex flex-col items-center justify-center h-full gap-2 text-gray-400">
-              <span className="text-2xl">⟩</span>
-              <p className="text-sm text-center">Noch kein QASM-Output vorhanden.</p>
-              <p className="text-xs text-center text-gray-300">
-                Sende das Modell ans Backend um die Dirac-Notation zu sehen.
-              </p>
-            </div>
-          )}
+        <div className="flex-1 overflow-y-auto flex flex-col">
+
+          {/* Refresh-Button */}
+          <div className="flex-shrink-0 flex justify-end px-2 pt-2">
+            <button
+              onClick={runAnalysis}
+              disabled={analyzing || !qasmCode.trim()}
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border border-gray-300 hover:bg-gray-100 text-gray-600 transition-colors disabled:opacity-40"
+              title="Dirac-Notation neu berechnen"
+            >
+              <span className={analyzing ? "animate-spin" : ""}>↺</span>
+              {analyzing ? "Analysiere..." : "Aktualisieren"}
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-2">
+            {analyzing ? (
+              <div className="flex flex-col items-center justify-center h-full gap-2 text-gray-400">
+                <span className="text-lg animate-spin">⟳</span>
+                <p className="text-sm">Schaltkreise werden analysiert...</p>
+              </div>
+            ) : components.length > 0 ? (
+              <ComponentsView
+                components={components}
+                onGetCircuitSvg={onGetCircuitSvg}
+              />
+            ) : qasmCode.trim().length > 0 ? (
+              <div className="flex flex-col items-center justify-center h-full gap-2 text-gray-400">
+                <span className="text-2xl">⟩</span>
+                <p className="text-sm text-center">Auf „Aktualisieren" drücken um die Dirac-Notation zu berechnen.</p>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full gap-2 text-gray-400">
+                <span className="text-2xl">⟩</span>
+                <p className="text-sm text-center">Noch kein QASM-Output vorhanden.</p>
+                <p className="text-xs text-center text-gray-300">
+                  Sende das Modell ans Backend um die Dirac-Notation zu sehen.
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -114,78 +168,58 @@ export const CustomPanel = ({
 };
 
 // ---------------------------------------------------------------------------
-// Math Mode Panel – mit Gruppenunterstützung
+// Komponenten-Ansicht
 // ---------------------------------------------------------------------------
 
-function MathModePanel({
-  qasmCode,
+function ComponentsView({
+  components,
   onGetCircuitSvg,
-  nodes,
 }: {
-  qasmCode: string;
+  components: DiracComponent[];
   onGetCircuitSvg?: () => Promise<string>;
-  nodes: Node[];
 }) {
-  const groups = nodes.filter((n) => n.type === "groupNode");
-
-  if (groups.length === 0) {
-    return (
-      <QasmDiracPanel
-        qasm={qasmCode}
-        title="Dirac-Notation"
-        onGetCircuitSvg={onGetCircuitSvg}
-      />
-    );
-  }
-
-  const ungroupedNodes = nodes.filter(
-    (n) => !n.parentNode && n.type !== "groupNode"
-  );
-
   return (
     <div className="flex flex-col gap-3">
-      <div className="text-xs text-gray-400 bg-gray-50 border border-gray-200 rounded px-3 py-2">
-        ℹ Das QASM des gesamten Modells wird pro Gruppe dargestellt.
-      </div>
-
-      {groups.map((group) => {
-        const childNodes = nodes.filter((n) => n.parentNode === group.id);
+      {components.length > 1 && (
+        <div className="text-xs text-gray-400 bg-gray-50 border border-gray-200 rounded px-3 py-2">
+          ℹ {components.length} separate Schaltkreise gefunden.
+        </div>
+      )}
+      {components.map((component, idx) => {
+        const label = component.groupLabel
+          ? component.groupLabel
+          : components.length === 1
+          ? "Dirac-Notation"
+          : `Schaltkreis ${idx + 1}`;
         return (
-          <GroupSection
-            key={group.id}
-            label={group.data?.label || "Gruppe"}
-            color={group.data?.color || "#6366f1"}
-            childCount={childNodes.length}
-            qasmCode={qasmCode}
+          <ComponentSection
+            key={idx}
+            label={label}
+            color={component.groupColor || "#6366f1"}
+            nodeCount={component.nodes.length}
+            qasm={component.qasm}
+            error={component.error}
             onGetCircuitSvg={onGetCircuitSvg}
           />
         );
       })}
-
-      {ungroupedNodes.length > 0 && (
-        <GroupSection
-          label="Ohne Gruppe"
-          color="#9ca3af"
-          childCount={ungroupedNodes.length}
-          qasmCode={qasmCode}
-          onGetCircuitSvg={onGetCircuitSvg}
-        />
-      )}
     </div>
   );
 }
 
-function GroupSection({
+function ComponentSection({
   label,
   color,
-  childCount,
-  qasmCode,
+  nodeCount,
+  qasm,
+  error,
   onGetCircuitSvg,
 }: {
   label: string;
   color: string;
-  childCount: number;
-  qasmCode: string;
+  nodeCount: number;
+  qasm: string | null;
+  error: string | null;
   onGetCircuitSvg?: () => Promise<string>;
 }) {
   const [expanded, setExpanded] = useState(true);
@@ -211,7 +245,7 @@ function GroupSection({
           <span style={{ color, fontSize: "12px" }}>▣</span>
           <span style={{ fontSize: "13px", fontWeight: 600, color }}>{label}</span>
           <span style={{ fontSize: "11px", color: `${color}99` }}>
-            ({childCount} Node{childCount !== 1 ? "s" : ""})
+            ({nodeCount} Node{nodeCount !== 1 ? "s" : ""})
           </span>
         </div>
         <span style={{ color, fontSize: "11px" }}>{expanded ? "▾" : "▸"}</span>
@@ -219,11 +253,19 @@ function GroupSection({
 
       {expanded && (
         <div style={{ padding: "8px" }}>
-          <QasmDiracPanel
-            qasm={qasmCode}
-            title={`Dirac-Notation – ${label}`}
-            onGetCircuitSvg={onGetCircuitSvg}
-          />
+          {error ? (
+            <div className="text-xs text-red-500 bg-red-50 border border-red-200 rounded px-3 py-2">
+              ⚠ {error}
+            </div>
+          ) : qasm ? (
+            <QasmDiracPanel
+              qasm={qasm}
+              title={label}
+              onGetCircuitSvg={onGetCircuitSvg}
+            />
+          ) : (
+            <div className="text-xs text-gray-400 px-2 py-1">Kein QASM verfügbar.</div>
+          )}
         </div>
       )}
     </div>

@@ -3295,6 +3295,8 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
             qasmCode={openqasmCode}
             onGetCircuitSvg={getCircuitSvg}
             onWidthChange={setPanelWidth}
+            backendUrl={lowcodeBackendEndpoint}        
+            compilationTarget={compilationTarget}
           />
         )}
       </div>
