@@ -24,8 +24,8 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
     nodes.forEach(child => {
         if (child.type === consts.IfElseNode || child.type === consts.ControlStructureNode) return;
 
-        const ifNodes = nodes.filter(n => n.type === consts.IfElseNode);
-        for (const container of ifNodes) {
+        const containers = nodes.filter(n => n.type === consts.IfElseNode || n.type === consts.ControlStructureNode);
+        for (const container of containers) {
             const cx = container.positionAbsolute?.x ?? container.position?.x ?? 0;
             const cy = container.positionAbsolute?.y ?? container.position?.y ?? 0;
             const cw = container.width ?? 1100;
@@ -47,8 +47,10 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
             if (child.parentNode === container.id || (nodeCenterX > cx && nodeCenterX < cx + cw && nodeCenterY > cy && nodeCenterY < cy + ch)) {
                 child.parentNode = container.id;
                 
-                // Top half is Then ("if"), Bottom half is Else ("else")
-                child.data.scope = nodeCenterY < (cy + ch / 2) ? "if" : "else";
+                // Top half is Then ("if"), Bottom half is Else ("else") - ONLY FOR IF NODES
+                if (container.type === consts.IfElseNode) {
+                    child.data.scope = nodeCenterY < (cy + ch / 2) ? "if" : "else";
+                }
                 break;
             }
         }
@@ -286,7 +288,7 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
                 return {
                     id: node.id,
                     type: "repeat",
-                    iterations: node.data?.condition,
+                    iterations: parseInt(node.data?.condition || "1", 10),
                     block: {
                         nodes: nodes.filter(x => x.parentNode === node.id).map(x => mapNode(x)) as any,
                         edges: edges.filter(x => isEdgeWithin(x, node.id)).map(x => mapEdge(x))
@@ -414,9 +416,9 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
             throw new Error(`Could not extract handle index from ${handleType} handleId: ${handleId}`);
         }
 
-        // --- PREVENT PORT COLLISIONS FOR IF-THEN-ELSE NODES ---
+        // --- PREVENT PORT COLLISIONS FOR CONTAINERS ---
         const parentNode = nodes.find(n => n.id === nodeId);
-        if (parentNode && parentNode.type === consts.IfElseNode) {
+        if (parentNode && (parentNode.type === consts.IfElseNode || parentNode.type === consts.ControlStructureNode)) {
             if (handleId.toLowerCase().includes("quantum")) {
                 const numClassical = parentNode.data.numberClassicalInputs || 1;
                 extractedIndex += numClassical;
