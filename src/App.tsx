@@ -9,17 +9,21 @@ import ReactFlow, {
   MiniMap,
   getNodesBounds,
   Panel,
-  useUpdateNodeInternals
+  useUpdateNodeInternals,
+  Connection,
+  MarkerType,
+  applyNodeChanges,
+  NodeChange
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { v4 as uuidv4 } from 'uuid';
-
+import { nodesMap, edgesMap, ydoc, awareness, yProvider } from "@/yjs";
 import { ContextMenu, CustomPanel, Palette } from "./components";
 import Toolbar from "./components/toolbar";
 import { nodesConfig, tutorial } from "./config/site";
 import { useStore } from "./config/store";
 import { useShallow } from "zustand/react/shallow";
-import { handleDragOver, handleOnDrop } from "./lib/utils";
+import { findNodeDefinition, handleDragOver, handleOnDrop } from "./lib/utils";
 import useKeyBindings from "./hooks/useKeyBindings";
 import { toSvg } from "html-to-image";
 import { initialDiagram } from "./config/site";
@@ -48,6 +52,8 @@ import { v4 as uuid } from "uuid";
 import DomainProfileModal, { DomainProfile } from "./components/modals/domainProfileModal";
 import { PatternSelectionModal } from "./components/modals/patternSelectionModal";
 import { PatternImplementationSelectionModal } from "./components/modals/patternImplementationSelectionModal";
+import UserCountPanel from "./components/modals/userAwareness";
+import VersioningPanel from "./components/modals/versioningModal";
 
 const selector = (state: {
   nodes: Node[];
@@ -156,12 +162,36 @@ function App() {
 
 
 
+  const addNode = () => {
+    console.log("add node===============================================================")
+    nodesMap.set(nodes[0].id, nodes[0]);
+  };
   const [metadata, setMetadata] = React.useState<any>({
     version: "1.0.0",
     name: "My Model",
     description: "This is a model.",
     author: ""
   });
+
+
+  const historyArray = ydoc.getArray<any>("history");
+  const [versioningHistory, setVersioningHistory] = useState<any[]>([]);
+
+
+  const [nodesI, setNodesI] = useState<Node[]>([]);
+  const [edgesI, setEdgesI] = useState<Edge[]>([]);
+  useEffect(() => {
+    const update = () => {
+      setVersioningHistory([...historyArray.toArray()]);
+      console.log(versioningHistory)
+    };
+
+    historyArray.observe(update);
+    update();
+
+    return () => historyArray.unobserve(update);
+  }, []);
+
   const [menu, setMenu] = useState(null);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [isManageTemplatesOpen, setIsManageTemplatesOpen] = useState(false);
@@ -206,6 +236,16 @@ function App() {
     top: 0,
     left: 0,
   });
+
+
+  const [cursors, setCursors] = useState<{
+    [clientId: number]: {
+      name: string; x: number, y: number, color: string
+    }
+  }>({});
+  const [myClientId, setMyClientId] = useState<number | null>(null);
+
+
 
   const onNodeContextMenu = useCallback(
     (event: React.MouseEvent, node: Node) => {
@@ -514,6 +554,83 @@ If none apply, return { "algorithms": [] }.
       showToast(typeError, "error");
     }
   }, [typeError, showToast, setTypeError]);
+
+
+  useEffect(() => {
+    console.log("rerun")
+
+
+    // observe remote changes
+    const nodesObserver = () => {
+      const sharedNodes = Array.from(nodesMap.values());
+      setNodesI(sharedNodes);
+      console.log(nodesI)
+    };
+
+    const edgesObserver = () => {
+      const sharedEdges = Array.from(edgesMap.values());
+      setEdgesI(sharedEdges);
+      console.log(edgesI)
+    };
+
+    nodesObserver();
+    edgesObserver()
+    nodesMap.observe(nodesObserver);
+    edgesMap.observe(edgesObserver);
+    return () => { nodesMap.unobserve(nodesObserver); edgesMap.unobserve(edgesObserver) };
+
+  }, []);
+
+  useEffect(() => {
+
+    const updateCursors = () => {
+      const newCursors: typeof cursors = {};
+      awareness.getStates().forEach((state: any, clientId: number) => {
+        if (state.cursor) {
+          // Replace name with "Me" if this is your client
+          newCursors[clientId] = {
+            ...state.cursor,
+            name: clientId === awareness.clientID ? "Me" : state.cursor.name
+          };
+        }
+      });
+      setCursors(newCursors);
+    };
+
+
+    awareness.on("change", updateCursors);
+    updateCursors();
+
+    return () => awareness.off("change", updateCursors);
+  }, []);
+
+  useEffect(() => {
+
+
+    // Generate a random username
+    const randomNames = ["Alice", "Bob", "Charlie", "Dana", "Eve", "Frank", "Grace", "Hugo"];
+    const randomUsername = randomNames[Math.floor(Math.random() * randomNames.length)];
+    // Store local clientId
+    setMyClientId(awareness.clientID);
+
+    const color = "#" + Math.floor(Math.random() * 16777215).toString(16);
+
+    // Set initial cursor state with username
+    awareness.setLocalStateField("cursor", {
+      x: 0,
+      y: 0,
+      color,
+      name: randomUsername
+    });
+
+    awareness.setLocalStateField("locks", {
+      nodeIds: []
+    });
+
+  }, []);
+
+
+
 
   const [runTour, setRunTour] = useState(false);
   const [joyrideStepId, setJoyRideStepId] = useState(0);
@@ -1561,7 +1678,66 @@ If none apply, return { "algorithms": [] }.
       }
       else {
         console.log("current categories", currentCategories)
-        handleOnDrop(event, reactFlowWrapper, reactFlowInstance, setNodes, currentCategories);
+        //handleOnDrop(event, reactFlowWrapper, reactFlowInstance, setNodes, currentCategories);
+        event.preventDefault();
+        if (reactFlowWrapper) {
+          const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
+          const type = event.dataTransfer.getData("application/reactflow");
+          const dataType = event.dataTransfer.getData("application/reactflow/dataType");
+          const label = event.dataTransfer.getData("application/reactflow/label");
+          console.log(type)
+          console.log(dataType)
+
+          //let position2 = reactFlowInstance.screenToFlowPosition();
+
+          //console.log(position2)
+
+
+          // check if the dropped element is valid
+          if (typeof type === "undefined" || !type) {
+            return;
+          }
+          const def = findNodeDefinition(type, label, categories);
+          console.log(def)
+
+          const getId = () => crypto.randomUUID();
+          const compactOptions = def.compactOptions;
+
+          const position = reactFlowInstance.project({
+            x: event.clientX - reactFlowBounds.left,
+            y: event.clientY - reactFlowBounds.top,
+          });
+          const newNode = {
+            id: getId(),
+            type,
+            position,
+            data: { label: label, inputs: [], children: [], implementation: "", implementationType: "", uncomputeImplementationType: "", uncomputeImplementation: "", completionGuaranteed: def?.completionGuaranteed ?? false, compactOptions: compactOptions }
+          };
+
+          setNodes(newNode);
+          nodesMap.set(newNode.id, newNode);
+
+          console.log(cursors)
+          Object.entries(cursors).map(([clientId, cursor]) => {
+            const displayName = Number(clientId) === myClientId ? "Me" : cursor.name;
+
+            // Store name in a variable for history usage
+            const userName = cursor.name;
+
+
+            historyArray.push([{
+              type: "node-added",
+              nodeId: newNode.id,
+              label: newNode.data?.label,
+              user: Number(clientId) === myClientId ? "Me" : userName,
+              timestamp: Date.now(),
+            }]);
+
+            console.log(historyArray)
+          });
+
+
+        }
       }
 
       //setContextMenu((prev) => ({ ...prev, left: event.clientX, top: event.clientY,}));
@@ -1660,6 +1836,22 @@ If none apply, return { "algorithms": [] }.
       return { success: false };
     }
   }
+
+  const handleMouseMove = (event: React.MouseEvent) => {
+    if (!awareness) return;
+
+    const bounds = reactFlowWrapper.current?.getBoundingClientRect();
+    if (!bounds) return;
+
+    const x = event.clientX - bounds.left;
+    const y = event.clientY - bounds.top;
+
+    awareness.setLocalStateField("cursor", {
+      ...awareness.getLocalState()?.cursor,
+      x,
+      y
+    });
+  };
 
   async function registerAndUploadToGitHub(patternId, patternName, overwriteImplementationId, solutionId) {
     const flowId = `flow-${Date.now()}`;
@@ -2705,6 +2897,158 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
 
   }
 
+  const onNodesChangeSync = useCallback((changes: NodeChange[]) => {
+    console.log("Incoming changes:", changes);
+
+    // 🔒 Build global lock map
+    const states = awareness.getStates();
+    const lockMap = new Map<string, number>();
+
+    states.forEach((state: any, clientId: number) => {
+      if (state?.locks?.nodeIds) {
+        state.locks.nodeIds.forEach((nodeId: string) => {
+          lockMap.set(nodeId, clientId);
+        });
+      }
+    });
+
+    // 🚫 Filter unauthorized changes safely
+    const allowedChanges = changes.filter((change) => {
+      if (!hasId(change)) return true; // allow changes without id
+
+      const owner = lockMap.get(change.id);
+      return !owner || owner === myClientId;
+    });
+
+    if (allowedChanges.length === 0) {
+      console.log("All changes blocked due to locks");
+      return;
+    }
+
+    // 🧠 Apply changes locally
+    const updatedNodes = applyNodeChanges(allowedChanges, nodesI);
+    setNodesI(updatedNodes);
+
+    // 🔁 Sync with React Flow
+    onNodesChange(allowedChanges);
+
+    // 🔥 Handle deletions
+    allowedChanges.forEach((change) => {
+      if (change.type === "remove" && hasId(change)) {
+        const nodeId = change.id;
+
+        console.log("Node deleted:", nodeId);
+
+        nodesMap.delete(nodeId);
+
+        // remove connected edges
+        edgesMap.forEach((edge: Edge, edgeId: string) => {
+          if (edge.source === nodeId || edge.target === nodeId) {
+            edgesMap.delete(edgeId);
+          }
+        });
+
+        historyArray.push([{
+          type: "node-deleted",
+          nodeId,
+          user: myClientId,
+          timestamp: Date.now(),
+        }]);
+      }
+    });
+
+  }, [nodesI, awareness, myClientId]);
+  function hasId(
+    change: NodeChange
+  ): change is NodeChange & { id: string } {
+    return "id" in change;
+  }
+
+  const getGlobalLocks = () => {
+    const states = awareness.getStates();
+
+    const lockMap = new Map<string, number>();
+
+    states.forEach((state, clientId) => {
+      if (state?.locks?.nodeIds) {
+        state.locks.nodeIds.forEach((nodeId: string) => {
+          lockMap.set(nodeId, clientId);
+        });
+      }
+    });
+
+    return lockMap;
+  };
+
+  const onSelectionChange = useCallback(({ nodes }) => {
+    const lockedIds = nodes.map(n => n.id);
+
+    awareness.setLocalStateField("locks", {
+      nodeIds: lockedIds
+    });
+  }, []);
+
+  const onConnectSync = useCallback((params: Connection) => {
+    console.log(params)
+    let type = "classicalEdge";
+    let color = "#F5A843"; // default classical color
+
+    // Quantum edge
+    if (
+      (params.sourceHandle.includes("quantumHandle") || params.sourceHandle.includes("sideQuantumHandle")) &&
+      params.targetHandle.includes("quantumHandle")
+    ) {
+      type = "quantumEdge";
+      color = "#93C5FD";
+    }
+
+    // Ancilla edge
+    if (
+      (params.sourceHandle.includes("ancilla") || params.sourceHandle.includes("dirtyAncilla")) &&
+      (params.targetHandle.includes("ancilla") || params.targetHandle.includes("dirtyAncilla"))
+    ) {
+      type = "ancillaEdge";
+      color = "#86EFAC";
+    }
+
+    const edge: Edge = {
+      ...params,
+      id: uuid(),
+      type,
+      markerEnd: {
+        type: MarkerType.ArrowClosed,
+        width: 20,
+        height: 20,
+        color: color,
+      },
+      style: { stroke: color },
+    };
+
+
+    // 1. Update local Zustand store (your existing store logic)
+    onConnect(params);
+
+    // 2. Save edge to Yjs shared map
+    edgesMap.set(edge.id, edge);
+    Object.entries(cursors).map(([clientId, cursor]) => {
+      const displayName = Number(clientId) === myClientId ? "Me" : cursor.name;
+
+      // Store name in a variable for history usage
+      const userName = cursor.name;
+
+      historyArray.push([{
+        type: "edge-added",
+        source: edge.source,
+        target: edge.target,
+        edgeId: edge.id,
+        user: cursor.name,
+        timestamp: Date.now(),
+      }]);
+    });
+
+
+  }, []);
+
   return (
     <>
       <Joyride
@@ -2805,7 +3149,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
           createDomainProfile={() => setDomainProfileOpen(true)}
           startQuantumAlgorithmSelection={startQuantumAlgorithmSelection}
           //sendToQunicorn={() => setIsQunicornOpen(true)}
-          openHistory={openHistoryModal}
+          openHistory={addNode}
           startTour={() => { startTour(); }}
           onSaveAsTemplate={handleSaveAsTemplate}
           onManageTemplates={handleManageTemplates}
@@ -3018,24 +3362,26 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
         >
           <ReactFlow
             ref={ref}
-            nodes={nodes}
-            edges={edges}
-            onNodesChange={onNodesChange}
+            nodes={nodesI}
+            edges={edgesI}
+            onNodesChange={onNodesChangeSync}
             onEdgesChange={onEdgesChange}
             onNodeContextMenu={onNodeContextMenu}
             onNodeClick={(event: React.MouseEvent, node: Node) => {
               handleClick(event, node);
             }}
             onConnectEnd={onConnectEnd}
-            onConnect={onConnect}
+            onConnect={onConnectSync}
             onPaneClick={onPaneClick}
             onClick={onClick}
             onDragOver={onDragOver}
             onNodeDrag={onNodeDrag}
             onNodeDragStop={onNodeDragStop}
             onDrop={onDrop}
+            onMouseMove={handleMouseMove}
             onNodesDelete={onNodesDelete}
             onEdgesDelete={onEdgesDelete}
+             onSelectionChange={onSelectionChange}
 
             fitView
             fitViewOptions={{ maxZoom: 1 }}
@@ -3074,6 +3420,48 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
             </>
           )}
             <Controls />
+            {Object.entries(cursors).length> 1 && Object.entries(cursors).map(([clientId, cursor]) => {
+              const displayName = Number(clientId) === myClientId ? "Me" : cursor.name;
+              return (
+                <div
+                  key={clientId}
+                  style={{
+                    position: "absolute",
+                    left: cursor.x,
+                    top: cursor.y,
+                    pointerEvents: "none",
+                    transform: "translate(-50%, -50%)",
+                    zIndex: 999,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                  }}
+                >
+                  <div
+                    style={{
+                      marginBottom: 4,
+                      fontSize: 12,
+                      color: "#fff",
+                      backgroundColor: cursor.color,
+                      padding: "1px 4px",
+                      borderRadius: 4,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {displayName}
+                  </div>
+                  <div
+                    style={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: "50%",
+                      backgroundColor: cursor.color,
+                      transition: "left 0.05s linear, top 0.05s linear",
+                    }}
+                  />
+                </div>
+              );
+            })}
             {toast && (
               <Toast
                 message={toast.message}
@@ -3101,6 +3489,8 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
             )}
 
 
+            <UserCountPanel provider={yProvider} roomName="demo" />
+            <VersioningPanel history={versioningHistory} experienceLevel={experienceLevel} />
 
             <ExperienceModePanel
               expanded={expanded}
