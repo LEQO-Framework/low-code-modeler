@@ -48,6 +48,8 @@ import { v4 as uuid } from "uuid";
 import DomainProfileModal, { DomainProfile } from "./components/modals/domainProfileModal";
 import { PatternSelectionModal } from "./components/modals/patternSelectionModal";
 import { PatternImplementationSelectionModal } from "./components/modals/patternImplementationSelectionModal";
+import PromptFlowModal from "./components/modals/promptFlowModal";
+import { generateFlow, sendToMistral } from "./generation";
 
 const selector = (state: {
   nodes: Node[];
@@ -174,6 +176,9 @@ function App() {
 
   const [openAIToken, setOpenAIToken] = useState(
     import.meta.env.VITE_OPENAI_TOKEN
+  );
+  const [mistralToken, setMistralToken] = useState(
+    import.meta.env.VITE_MISTRAL_TOKEN
   );
   const [qunicornEndpoint, setQunicornEndpoint] = useState(
     import.meta.env.VITE_QUNICORN || "http://localhost:8080"
@@ -424,6 +429,7 @@ If none apply, return { "algorithms": [] }.
     setCamundaEndpoint(newValues.tempCamundaEndpoint);
     setNisqAnalyzerEndpoint(newValues.tempNisqAnalyzerEndpoint);
     setOpenAIToken(newValues.tempOpenAIToken);
+    setMistralToken(newValues.tempMistralToken);
     setQunicornEndpoint(newValues.tempQunicornEndpoint);
     setLowcodeBackendEndpoint(newValues.tempLowcodeBackendEndpoint);
     setPatternAtlasUiEndpoint(newValues.tempPatternAtlasUiEndpoint);
@@ -484,6 +490,7 @@ If none apply, return { "algorithms": [] }.
   const [status, setStatus] = useState("");
   const [modalStep, setModalStep] = useState(1);
   const [isQunicornOpen, setIsQunicornOpen] = useState(false);
+   const [isPromptModalOpen, setIsPromptModalOpen] = useState(false);
   const [loadingQunicorn, setLoadingQunicorn] = useState(true);
   const [statusQunicorn, setStatusQunicorn] = useState(null);
   const [ancillaModelingOn, setAncillaModelingOn] = useState(false);
@@ -1373,6 +1380,7 @@ If none apply, return { "algorithms": [] }.
       setLoading(false);
     }
   };
+
 
   const pollStatus = async () => {
     const interval = setInterval(async () => {
@@ -2809,6 +2817,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
           startTour={() => { startTour(); }}
           onSaveAsTemplate={handleSaveAsTemplate}
           onManageTemplates={handleManageTemplates}
+          generateModel={() => setIsPromptModalOpen(true)}
         />
       </div>
       {<NewDiagramModal open={isLoadJsonModalOpen} onClose={cancelLoadJson} onConfirm={confirmNewDiagram} />}
@@ -2854,6 +2863,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
         tempGithubRepositoryName={githubRepositoryName}
         tempGithubBranch={githubBranch}
         tempGithubToken={githubToken}
+        tempMistralToken={mistralToken}
       />
 
       <ManageTemplateModal
@@ -2884,6 +2894,19 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
         progress={progress}
         chartData={chartData}
       />
+
+      <PromptFlowModal
+        open={isPromptModalOpen}
+        mistralToken={mistralToken}
+        onClose={(flow) => {
+          if (flow) loadFlow(flow);
+          setIsPromptModalOpen(false);
+        }}
+        sendToMistral={sendToMistral}
+        generateFlow={generateFlow}
+      />
+
+
 
       {patternGraph && (
         <Modal
