@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { useReactFlow, Node, useStore, useUpdateNodeInternals } from "reactflow";
+import { useReactFlow, Node, useStore, useUpdateNodeInternals, isEdge } from "reactflow";
 import { FaTrash, FaCopy, FaPlus, FaMinus, FaReact, FaCaretRight } from "react-icons/fa";
 import { FaGear } from "react-icons/fa6";
 import { v4 as uuid } from "uuid";
@@ -32,10 +32,10 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   onAction,
   styles = {}, // Default styles as an empty object
 }) => {
-  const { getNode, setNodes, addNodes, setEdges } = useReactFlow();
-  const type = getNode(id).type
+  const { getNode, setNodes, addNodes, setEdges, getEdge } = useReactFlow();
+  const type = getNode(id)?.type || "edge";
   console.log("type", type)
-  const [inputs, setInputs] = useState(getNode(id).data.inputs || []);
+  const [inputs, setInputs] = useState(getNode(id)?.data?.inputs || []);
   const updateNodeInternals = useUpdateNodeInternals();
   const duplicateNode = useCallback(() => { // duplicate node at slighlty shifted position
     const node = getNode(id);
@@ -58,9 +58,10 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
     }
   }, [id, getNode, addNodes, onAction]);
 
-  const deleteNode = useCallback(() => { // delete node
+  const deleteComponent = useCallback(() => { // delete node or edge
     setNodes((nodes) => nodes.filter((node) => node.id !== id));
     setEdges((edges) => edges.filter((edge) => edge.source !== id));
+    setEdges((edges) => edges.filter((edge) => edge.id !== id)); // incase edge is deleted and not node
     if (onAction) onAction("delete", id);
   }, [id, setNodes, setEdges, onAction]);
 
@@ -108,28 +109,31 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   const node = useStore(
     useCallback((state) => state.nodeInternals.get(id), [id])
   );
+  console.log(node)
 
   
   const quantumInputs =
-    Number(node.data["numberQuantumInputs"] ?? 0);
-  const hasQuantumInputs = quantumInputs > minInput // what happens if node has no filed numQuantumInputs?
-  const hasClassicalInputs = node.data["numberClassicalInputs"] > minInput
-  const hasQuantumOutputs = node.data["numberQuantumOutputs"] > minOutput // what happens if node has no filed numQuantumInputs?
-  const hasClassicalOutputs = node.data["numberClassicalOutputs"] > minOutput
-  const hasInputs = node.data["numberInputs"] > minInput
-  const hasOutputs = node.data["numberOutputs"] > minOutput
+    Number(node?.data["numberQuantumInputs"] ?? 0);
+  const hasQuantumInputs = quantumInputs > minInput || false; // what happens if node has no filed numQuantumInputs?
+  const hasClassicalInputs = node?.data["numberClassicalInputs"] > minInput || false; 
+  const hasQuantumOutputs = node?.data["numberQuantumOutputs"] > minOutput || false;  // what happens if node has no filed numQuantumInputs?
+  const hasClassicalOutputs = node?.data["numberClassicalOutputs"] > minOutput || false; 
+  const hasInputs = node?.data["numberInputs"] > minInput || false; 
+  const hasOutputs = node?.data["numberOutputs"] > minOutput || false; 
 
   console.log("contextMenu")
-  console.log(getNode(id).type)
-  console.log(getNode(id).data["numberQuantumInputs"])
+  console.log(getNode(id)?.type)
+  console.log(getNode(id)?.data["numberQuantumInputs"])
   console.log(hasQuantumInputs)
   console.log(hasClassicalInputs)
-   useEffect(() => {
-    updateNodeInternals(node.id);
-    console.log("update handles")
-   
-  }, [node.data["numberClassicalInputs"] ]);
 
+  if(type !== "edge") {
+    useEffect(() => {
+      updateNodeInternals(node.id);
+      console.log("update handles")
+    
+    }, [node.data["numberClassicalInputs"] ]);
+  }
 
   const toggleSubmenuInputAdd = useCallback((e: React.MouseEvent) => {
     e.stopPropagation(); // prevent closing parent
@@ -154,20 +158,22 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   }, []);
 
   let buttons = [];
-  // every node can be duplicated and deleted
+  // every node can be duplicated and deleted, edges can only be deleted
+  if(type !== "edge"){
+    buttons.push(
+      <button
+        onClick={duplicateNode}
+        style={buttonStyle}
+        aria-label="Duplicate Node"
+      >
+        <FaCopy style={iconStyle} /> Duplicate
+      </button>);
+  }
   buttons.push(
     <button
-      onClick={duplicateNode}
+      onClick={deleteComponent}
       style={buttonStyle}
-      aria-label="Duplicate Node"
-    >
-      <FaCopy style={iconStyle} /> Duplicate
-    </button>);
-  buttons.push(
-    <button
-      onClick={deleteNode}
-      style={buttonStyle}
-      aria-label="Delete Node"
+      aria-label={type === "edge"?"Delete Edge":"Delete Node"}
     >
       <FaTrash style={iconStyle} /> Delete
     </button>);
