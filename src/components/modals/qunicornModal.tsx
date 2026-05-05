@@ -71,7 +71,7 @@ export const QunicornModal = ({
 
   const formatXAxis = (tickItem: number) => {
     const bin = tickItem.toString(2).padStart(numQubits, '0');
-    return `${tickItem} (${bin})`;
+    return `${tickItem} (0b${bin})`;
   };
 
   return (
