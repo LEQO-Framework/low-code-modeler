@@ -776,6 +776,7 @@ export const useStore = create<RFState>()(persist((set, get) => ({
       return false;
     }
     const hasCycle = (node, visited = new Set()) => {
+      console.log("has Cycle ID", node.id)
       if (visited.has(node.id)) { console.log("has"); return false; }
 
       visited.add(node.id);
@@ -785,10 +786,11 @@ export const useStore = create<RFState>()(persist((set, get) => ({
         if (hasCycle(outgoer, visited)) { console.log("hasCcycle"); return true; }
       }
     };
+    console.log("!hasCycle", !hasCycle(target))
+    if(hasCycle(target)) { console.log("Cycle detected"); return false }
 
     if (target.id === connection.source && target.type !== "splitterNode" && target.type !== "mergerNode") { console.log("source target"); return false };
-    console.log(!hasCycle(target))
-    let cycle = !hasCycle(target);
+
     for (let node of currentNodes) {
       if (node.id === connection.source) {
         nodeDataSource = node;
