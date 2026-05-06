@@ -16,6 +16,7 @@ const GROUP_COLORS = [
 ];
 
 let colorIndex = 0;
+let groupCounter = 1;
 
 export function groupSelectedNodes(nodes: Node[], edges: Edge[]): Node[] {
   // Alle selektierten Nodes außer:
@@ -42,7 +43,9 @@ export function groupSelectedNodes(nodes: Node[], edges: Edge[]): Node[] {
 
   const groupId = uuid();
   const color   = GROUP_COLORS[colorIndex % GROUP_COLORS.length];
+  const label   = `Gruppe ${groupCounter}`;
   colorIndex++;
+  groupCounter++;
 
   const selectedIds = new Set(selected.map((n) => n.id));
 
@@ -53,7 +56,7 @@ export function groupSelectedNodes(nodes: Node[], edges: Edge[]): Node[] {
     position: { x: minX, y: minY },
     style: { width: groupWidth, height: groupHeight },
     data: {
-      label: "Gruppe",
+      label,
       collapsed: false,
       color,
       childCount: selected.length,
@@ -145,6 +148,7 @@ export function handleNodeDropOnGroup(
   const targetGroup = nodes.find((n) => {
     if (n.type !== "groupNode" || n.id === draggedNode.parentNode) return false;
     if (n.data?.collapsed) return false;
+    if (n.data?.locked) return false; // ← gesperrte Gruppen akzeptieren keine neuen Nodes
 
     const gx = n.positionAbsolute?.x ?? n.position.x;
     const gy = n.positionAbsolute?.y ?? n.position.y;
@@ -175,6 +179,8 @@ export function handleNodeDropOnGroup(
   // Node aus Gruppe herausgezogen (hatte parentNode, landet außerhalb)
   if (draggedNode.parentNode) {
     const parentGroup = nodes.find((g) => g.id === draggedNode.parentNode);
+    // Gesperrte Gruppe → Node bleibt drin
+    if (parentGroup?.data?.locked) return nodes;
     // Prüfen ob Node noch innerhalb der Gruppe ist
     if (parentGroup) {
       const gx = parentGroup.positionAbsolute?.x ?? parentGroup.position.x;

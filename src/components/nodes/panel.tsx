@@ -158,9 +158,9 @@ export const CustomPanel = ({
             ) : (
               <div className="flex flex-col items-center justify-center h-full gap-2 text-gray-400">
                 <span className="text-2xl">⟩</span>
-                <p className="text-sm text-center">Noch kein QASM-Output vorhanden.</p>
+                <p className="text-sm text-center">No QASM output available yet.</p>
                 <p className="text-xs text-center text-gray-300">
-                  Sende das Modell ans Backend um die Dirac-Notation zu sehen.
+                  Send the model to the backend to see the Dirac notation.
                 </p>
               </div>
             )}

@@ -718,8 +718,7 @@ If none apply, return { "algorithms": [] }.
       setTimeout(() => {
         setStatus("completed");
         setLoading(false);
-        showToast("Result for model " + id + " is available.", "success");
-        setModalOpen(true);  
+        showToast("Result for model " + id + " is available.", "success"); 
       }, 3000);
       setStatus("completed");
       setLoading(false);
@@ -1415,8 +1414,12 @@ If none apply, return { "algorithms": [] }.
       }
 
       // Drag-to-Group für groupNode
-    if (node.type !== "groupNode") {
-      reactFlowInstance.setNodes(handleNodeDropOnGroup(node, reactFlowInstance.getNodes()));
+   if (node.type !== "groupNode") {
+      const currentNodes = reactFlowInstance.getNodes();
+      const updatedNodes = handleNodeDropOnGroup(node, currentNodes);
+      if (updatedNodes !== currentNodes) {
+        reactFlowInstance.setNodes(updatedNodes);
+      }
     }
     
 
@@ -1508,6 +1511,7 @@ If none apply, return { "algorithms": [] }.
           }
         }
       });
+      
       //setNodes(nodeT);
       if (node.id == contextMenu.nodeId) {
         console.log("moving context menu for node", node.id)
@@ -1515,7 +1519,30 @@ If none apply, return { "algorithms": [] }.
       }
     }, [nodes, setContextMenu]);
 
-  const currentCategories: Record<string, CategoryEntry> = useMemo(() => {
+    const onSelectionChange = useCallback(({ nodes: selectedNodes }: { nodes: Node[] }) => {
+      if (selectedNodes.length === 0) return;
+
+        // Prüfe ob Nodes in einer Gruppe selektiert wurden
+        const groupedSelected = selectedNodes.filter((n) => n.parentNode);
+        if (groupedSelected.length === 0) return;  // ← Fehler hier, .size gibt es nicht bei Array
+
+        if (groupedSelected.length === 0) return;
+
+        // Kind-Nodes deselektieren
+        reactFlowInstance.setNodes((nds: Node[]) =>
+          nds.map((n) => {
+            if (n.parentNode) {
+              return { ...n, selected: false };
+            }
+            return n;
+          })
+        );
+    }, [reactFlowInstance]);
+
+
+
+
+    const currentCategories: Record<string, CategoryEntry> = useMemo(() => {
     const domainProfileNames = allDomainProfiles.map((p) => p.name);
     const index = domainProfileNames.indexOf(domainProfile);
     console.log("domainProfile", domainProfile)
@@ -2870,8 +2897,8 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
         containsWorkflowNodes={containsWorkflowNodes}
     setCompilationTarget={setCompilationTarget}
     sendToBackend={sendToBackend}
-     qasmCode={openqasmCode}
-  onGetCircuitSvg={getCircuitSvg}   // ← NEU
+    
+  
         />
 
       <ConfigModal
@@ -3065,6 +3092,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
             onNodeClick={(event: React.MouseEvent, node: Node) => {
               handleClick(event, node);
             }}
+            onSelectionChange={onSelectionChange}
             onConnectEnd={onConnectEnd}
             onConnect={onConnect}
             onPaneClick={onPaneClick}
@@ -3292,11 +3320,11 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
             metadata={metadata}
             onUpdateMetadata={setMetadata}
             mathMode={mathMode}
-            qasmCode={openqasmCode}
-            onGetCircuitSvg={getCircuitSvg}
             onWidthChange={setPanelWidth}
             backendUrl={lowcodeBackendEndpoint}        
             compilationTarget={compilationTarget}
+            qasmCode={openqasmCode}
+            onGetCircuitSvg={getCircuitSvg}
           />
         )}
       </div>

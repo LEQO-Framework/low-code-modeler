@@ -97,12 +97,12 @@ function buildLatexExport(
     .join("\n");
 
   const circuitSection = pngBase64
-    ? `\\section*{Quantenschaltkreis}
+    ? `\\section*{Quantum Circuit}
 
 \\begin{figure}[h]
   \\centering
   \\includegraphics[width=0.9\\textwidth]{circuit}
-  \\caption{Modellierter Quantenschaltkreis}
+  \\caption{Modellierter Quantum Circuit}
   \\label{fig:circuit}
 \\end{figure}
 
@@ -111,7 +111,7 @@ function buildLatexExport(
 
   // Zwischenschritte als align-Umgebung
   const stepsSection = stepsResult && stepsResult.steps.length > 0
-    ? `\\section*{Mathematische Zwischenschritte}
+    ? `\\section*{Mathematical Intermediate Steps}
 
 \\begin{align}
   |\\psi_0\\rangle &= ${stepsResult.initial.latex} \\\\[6pt]
@@ -123,13 +123,13 @@ ${stepsResult.steps.map((step, idx) =>
 `
     : "";
 
-  // pgfplots Histogramm
+  // pgfplots Histogram
   const histogramSection = terms.length > 0
     ? (() => {
         const coords = terms
           .map((t) => {
             const p = prob(t.amplitude.re, t.amplitude.im);
-            // Escape den Basiszustand für pgfplots x-Tick-Labels
+            // Escape den Basis State für pgfplots x-Tick-Labels
             return { label: `|${t.basisState}\\rangle`, value: p };
           });
         const coordStr = coords
@@ -140,7 +140,7 @@ ${stepsResult.steps.map((step, idx) =>
           .join(', ');
         const xMax = coords.length - 0.5;
 
-        return `\\section*{Messwahrscheinlichkeiten}
+        return `\\section*{Measurement Probabilities}
 
 \\begin{figure}[h]
   \\centering
@@ -155,7 +155,7 @@ ${stepsResult.steps.map((step, idx) =>
       xtick={${coords.map((_, i) => i).join(', ')}},
       xticklabels={${tickLabels}},
       xticklabel style={font=\\small},
-      ylabel={Wahrscheinlichkeit (\\%)},
+      ylabel={Probability (\\%)},
       ymajorgrids=true,
       grid style=dashed,
       nodes near coords,
@@ -165,7 +165,7 @@ ${stepsResult.steps.map((step, idx) =>
       \\addplot[fill=blue!60, draw=blue!80] coordinates {${coordStr}};
     \\end{axis}
   \\end{tikzpicture}
-  \\caption{Messwahrscheinlichkeiten der Basiszustände}
+  \\caption{Measurement Probabilities of Basis States}
   \\label{fig:histogram}
 \\end{figure}
 
@@ -174,24 +174,24 @@ ${stepsResult.steps.map((step, idx) =>
     : "";
 
   const tableSection = terms.length > 0
-    ? `\\section*{Messwahrscheinlichkeiten (Tabelle)}
+    ? `\\section*{Measurement Probabilities (Table)}
 
 \\begin{table}[h]
   \\centering
   \\begin{tabular}{|c|c|}
     \\hline
-    \\textbf{Basiszustand} & \\textbf{Wahrscheinlichkeit} \\\\
+    \\textbf{Basis State} & \\textbf{Probability} \\\\
 ${termLines}
     \\hline
   \\end{tabular}
-  \\caption{Messwahrscheinlichkeiten der Basiszustände}
+  \\caption{Measurement Probabilities of Basis States}
 \\end{table}
 
 `
     : "";
 
   const hint = pngBase64
-    ? "% OVERLEAF: circuit.png liegt in der ZIP-Datei\n"
+    ? "% OVERLEAF: circuit.png is included in the ZIP file\n"
     : "";
 
   return `\\documentclass{article}
@@ -206,16 +206,16 @@ ${termLines}
 \\geometry{margin=2.5cm}
 
 ${hint}
-\\title{Dirac-Notation -- Quantum Low-Code Modeler}
+\\title{Dirac Notation -- Quantum Low-Code Modeler}
 \\date{\\today}
 
 \\begin{document}
 
 \\maketitle
 
-${circuitSection}\\section*{Quantenzustand in Dirac-Notation}
+${circuitSection}\\section*{Quantum State in Dirac Notation}
 
-Der Zustand des Quantensystems mit ${numQubits} Qubit${numQubits !== 1 ? "s" : ""} ist:
+The quantum system state with ${numQubits} qubit${numQubits !== 1 ? "s" : ""} is:
 
 \\begin{equation}
   |\\psi\\rangle = ${latex}
@@ -281,7 +281,7 @@ function ExportMenu({ latex, numQubits, terms, unicode, onGetCircuitSvg, stepsRe
         const texContent = buildLatexExport(latex, numQubits, terms, pngBase64, stepsResult);
         await downloadZip(texContent, pngBase64);
       } catch (e) {
-        console.error("Export fehlgeschlagen:", e);
+        console.error("Export failed:", e);
         downloadTex(buildLatexExport(latex, numQubits, terms, undefined, stepsResult));
       } finally {
         setLoadingSvg(false);
@@ -303,7 +303,7 @@ function ExportMenu({ latex, numQubits, terms, unicode, onGetCircuitSvg, stepsRe
       a.download = "circuit.png";
       a.click();
     } catch (e) {
-      console.error("PNG Export fehlgeschlagen:", e);
+      console.error("PNG Export failed:", e);
     } finally {
       setLoadingSvg(false);
     }
@@ -327,23 +327,23 @@ function ExportMenu({ latex, numQubits, terms, unicode, onGetCircuitSvg, stepsRe
             {/* Kopieren */}
             <button onClick={() => copy(`|\\psi\\rangle = ${latex}`, "latex")}
               className="w-full text-left px-3 py-2 hover:bg-gray-50 text-gray-700 flex items-center gap-2">
-              <span>𝜓</span>{copied === "latex" ? "✓ Kopiert!" : "LaTeX kopieren"}
+              <span>𝜓</span>{copied === "latex" ? "✓ Copied!" : "Copy LaTeX"}
             </button>
             <button onClick={() => copy(unicode, "unicode")}
               className="w-full text-left px-3 py-2 hover:bg-gray-50 text-gray-700 flex items-center gap-2">
-              <span>⟩</span>{copied === "unicode" ? "✓ Kopiert!" : "Unicode kopieren"}
+              <span>⟩</span>{copied === "unicode" ? "✓ Copied!" : "Copy Unicode"}
             </button>
 
             <hr className="my-1 border-gray-100" />
             <p className="px-3 py-1 text-gray-400" style={{ fontSize: "10px" }}>OVERLEAF EXPORT</p>
 
-            {/* .tex ohne Schaltkreis */}
+            {/* .tex without circuit */}
             <button onClick={() => handleDownloadTex(false)}
               className="w-full text-left px-3 py-2 hover:bg-gray-50 text-gray-700 flex items-center gap-2">
               <span>↓</span>
               <span>
-                <span className="block">main.tex herunterladen</span>
-                <span className="block text-gray-400" style={{ fontSize: "10px" }}>nur Formel & Tabelle</span>
+                <span className="block">Download main.tex</span>
+                <span className="block text-gray-400" style={{ fontSize: "10px" }}>formula & table only</span>
               </span>
             </button>
 
@@ -366,7 +366,7 @@ function ExportMenu({ latex, numQubits, terms, unicode, onGetCircuitSvg, stepsRe
 }
 
 // ---------------------------------------------------------------------------
-// Qubit-Selektor
+// Qubit Selector
 // ---------------------------------------------------------------------------
 
 interface QubitSelectorProps {
@@ -391,7 +391,7 @@ function QubitSelector({ numQubits, selected, onChange }: QubitSelectorProps) {
   };
   return (
     <div className="flex flex-wrap items-center gap-1.5">
-      <span className="text-xs text-gray-500 mr-1">Qubits:</span>
+      <span className="text-xs text-gray-500 mr-1">qubits:</span>
       <button
         onClick={toggleAll}
         className={`text-xs px-2 py-0.5 rounded border transition-colors ${
@@ -414,7 +414,7 @@ function QubitSelector({ numQubits, selected, onChange }: QubitSelectorProps) {
 }
 
 // ---------------------------------------------------------------------------
-// Histogramm
+// Histogram
 // ---------------------------------------------------------------------------
 
 interface HistogramBar { label: string; value: number; }
@@ -487,7 +487,7 @@ function Histogram({ data }: { data: HistogramBar[] }) {
 // ---------------------------------------------------------------------------
 
 export function QasmDiracPanel(props: Props) {
-  const title = props.title ?? "Dirac-Darstellung";
+  const title = props.title ?? "Dirac Representation";
   const [showBasisStates, setShowBasisStates] = useState(true);
   const [showSteps, setShowSteps] = useState(false);
 
@@ -510,9 +510,9 @@ export function QasmDiracPanel(props: Props) {
 
   const numQubits = fullResult?.numQubits ?? ("numQubits" in props ? props.numQubits : 0);
 
-  const [selectedQubits, setSelectedQubits] = useState<number[]>([]);
+  const [selectedqubits, setSelectedQubits] = useState<number[]>([]);
 
-  // Wenn numQubits sich ändert (neues QASM geladen), alle Qubits auswählen
+  // Wenn numQubits sich ändert (neues QASM geladen), alle qubits auswählen
   useEffect(() => {
     if (numQubits > 0) {
       setSelectedQubits(Array.from({ length: numQubits }, (_, i) => i));
@@ -520,10 +520,10 @@ export function QasmDiracPanel(props: Props) {
   }, [numQubits]);
 
   const effectiveSelected = useMemo(() => {
-    if (selectedQubits.length === 0 || selectedQubits.some((q) => q >= numQubits))
+    if (selectedqubits.length === 0 || selectedqubits.some((q) => q >= numQubits))
       return Array.from({ length: numQubits }, (_, i) => i);
-    return selectedQubits;
-  }, [selectedQubits, numQubits]);
+    return selectedqubits;
+  }, [selectedqubits, numQubits]);
 
   const histogramData = useMemo((): HistogramBar[] => {
     if (!fullResult) return [];
@@ -556,7 +556,7 @@ export function QasmDiracPanel(props: Props) {
   if (!unicodeStr) {
     return (
       <div className="rounded-xl border p-4 text-sm text-gray-400">
-        Kein QASM-Code vorhanden.
+        No QASM code available.
       </div>
     );
   }
@@ -573,7 +573,7 @@ export function QasmDiracPanel(props: Props) {
         <div className="flex items-center gap-2">
           {fullResult && (
             <span className="text-xs text-gray-400">
-              {numQubits} Qubits · {terms.length} Terme
+              {numQubits} qubits · {terms.length} Terms
             </span>
           )}
           {terms.length > 0 && (
@@ -582,7 +582,7 @@ export function QasmDiracPanel(props: Props) {
               className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border border-gray-300 hover:bg-gray-100 text-gray-600 transition-colors"
             >
               <span>{showBasisStates ? "▾" : "▸"}</span>
-              Histogramm
+              Histogram
             </button>
           )}
           {"qasm" in props && props.qasm && stepsResult && stepsResult.steps.length > 0 && (
@@ -595,7 +595,7 @@ export function QasmDiracPanel(props: Props) {
               }`}
             >
               <span>{showSteps ? "▾" : "▸"}</span>
-              Zwischenschritte
+              Intermediate Steps
             </button>
           )}
           {fullResult && terms.length > 0 && (
@@ -622,7 +622,7 @@ export function QasmDiracPanel(props: Props) {
         </div>
       )}
 
-      {/* Formel */}
+      {/* Formula */}
       <div className="flex-shrink-0 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 overflow-x-auto">
         <span className="font-mono text-sm text-gray-800 whitespace-nowrap">
           |ψ⟩ = {unicodeStr}
@@ -633,7 +633,7 @@ export function QasmDiracPanel(props: Props) {
       {showSteps && stepsResult && stepsResult.steps.length > 0 && (
         <div className="flex-shrink-0 rounded-lg border border-blue-100 bg-blue-50/30 px-3 py-3 overflow-x-auto">
           <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
-            Mathematische Zwischenschritte
+            Mathematical Intermediate Steps
           </p>
           <div className="flex flex-col gap-0 font-mono text-sm">
             <div className="flex items-baseline gap-2 py-1">
@@ -663,7 +663,7 @@ export function QasmDiracPanel(props: Props) {
         </div>
       )}
 
-      {/* Histogramm + Qubit-Selektor */}
+      {/* Histogram + Qubit Selector */}
       {terms.length > 0 && showBasisStates && (
         <div className="flex-shrink-0 flex flex-col gap-2">
           {numQubits > 1 && (
@@ -671,13 +671,13 @@ export function QasmDiracPanel(props: Props) {
               <QubitSelector numQubits={numQubits} selected={effectiveSelected} onChange={setSelectedQubits} />
               {isPartial && (
                 <p className="text-xs text-blue-600">
-                  Partielle Messung: Wahrscheinlichkeiten über nicht gewählte Qubits aufsummiert
+                  Partial measurement: probabilities summed over unselected qubits
                 </p>
               )}
             </div>
           )}
           <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-            Messwahrscheinlichkeiten{isPartial && ` (q${effectiveSelected.join(", q")})`}
+            Measurement Probabilities{isPartial && ` (q${effectiveSelected.join(", q")})`}
           </p>
           <Histogram data={histogramData} />
         </div>

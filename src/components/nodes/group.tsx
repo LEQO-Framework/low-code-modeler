@@ -3,7 +3,7 @@
  * Platzierung: src/components/nodes/group.tsx
  */
 
-import { memo, useState, useCallback, useEffect } from "react";
+import { memo, useState, useCallback } from "react";
 import { NodeResizer, Handle, Position, Node, useReactFlow } from "reactflow";
 import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
@@ -16,10 +16,42 @@ const selector = (state: {
   updateNodeValue: state.updateNodeValue,
 });
 
-// Standardgröße wenn ausgeklappt
 const EXPANDED_MIN_WIDTH  = 300;
 const EXPANDED_MIN_HEIGHT = 200;
 const COLLAPSED_HEIGHT    = 48;
+
+// Node-Typ Kategorien
+const QUANTUM_TYPES = new Set([
+  "gateNode", "quantumOperatorNode", "ancillaNode", "statePreparationNode",
+  "uncomputeNode", "algorithmNode", "qubitNode", "measurementNode",
+]);
+const CLASSICAL_TYPES = new Set([
+  "dataTypeNode", "classicalAlgorithmNode", "classicalOperatorNode",
+]);
+
+type GroupType = "quantum" | "classical" | "mixed";
+
+function getGroupType(childNodes: Node[]): GroupType {
+  const types = childNodes.map((n) => n.type ?? "");
+  const hasQuantum  = types.some((t) => QUANTUM_TYPES.has(t));
+  const hasClassical = types.some((t) => CLASSICAL_TYPES.has(t));
+  if (hasQuantum && hasClassical) return "mixed";
+  if (hasClassical) return "classical";
+  return "quantum";
+}
+
+function getGroupStyle(type: GroupType, locked: boolean): {
+  color: string;
+  borderRadius: string;
+  borderStyle: string;
+} {
+  if (locked) return { color: "#d97706", borderRadius: "8px", borderStyle: "solid" };
+  switch (type) {
+    case "quantum":   return { color: "#3b82f6", borderRadius: "8px",  borderStyle: "dashed" }; // blau, Ecken
+    case "classical": return { color: "#f97316", borderRadius: "20px", borderStyle: "dashed" }; // orange, abgerundet
+    case "mixed":     return { color: "#8b5cf6", borderRadius: "4px",  borderStyle: "dashed" }; // lila, leicht abgeschnitten
+  }
+}
 
 export const GroupNode = memo((node: Node) => {
   const { data, selected, id } = node;
@@ -29,12 +61,16 @@ export const GroupNode = memo((node: Node) => {
   const [isEditingLabel, setIsEditingLabel] = useState(false);
   const [editableLabel, setEditableLabel] = useState(data.label || "Gruppe");
   const collapsed = data.collapsed === true;
-  const color = data.color || "#6366f1";
+  const locked = data.locked === true;
 
-  // Kind-Nodes dieser Gruppe
+  // Typ anhand der Kind-Nodes bestimmen
   const childNodes = nodes.filter((n) => n.parentNode === id);
+  const groupType = getGroupType(childNodes);
+  const groupStyle = getGroupStyle(groupType, locked);
+  const color = locked ? "#d90606" : groupStyle.color;
+  const borderRadius = groupStyle.borderRadius;
+  const borderStyle = collapsed ? "solid" : groupStyle.borderStyle;
 
-  // Bounding Box der Kind-Nodes berechnen
   const getChildBounds = useCallback(() => {
     const children = getNodes().filter((n) => n.parentNode === id);
     if (children.length === 0) return null;
@@ -50,14 +86,11 @@ export const GroupNode = memo((node: Node) => {
 
   const toggleCollapse = useCallback(() => {
     const newCollapsed = !collapsed;
-
-    // Kind-Nodes ein-/ausblenden
     setNodes((nds: Node[]) =>
       nds.map((n) => {
         if (n.parentNode === id) {
           return { ...n, hidden: newCollapsed };
         }
-        // GroupNode selbst: Größe anpassen
         if (n.id === id) {
           const bounds = newCollapsed ? null : getChildBounds();
           return {
@@ -66,7 +99,7 @@ export const GroupNode = memo((node: Node) => {
             style: {
               ...n.style,
               width:  newCollapsed ? (n.style?.width ?? EXPANDED_MIN_WIDTH) : (bounds?.width  ?? EXPANDED_MIN_WIDTH),
-              height: newCollapsed ? COLLAPSED_HEIGHT                         : (bounds?.height ?? EXPANDED_MIN_HEIGHT),
+              height: newCollapsed ? COLLAPSED_HEIGHT : (bounds?.height ?? EXPANDED_MIN_HEIGHT),
             },
           };
         }
@@ -75,16 +108,29 @@ export const GroupNode = memo((node: Node) => {
     );
   }, [collapsed, id, setNodes, getChildBounds]);
 
-  // Gruppierung aufheben – Kind-Nodes werden wieder eigenständig
+  const handleToggleLock = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    const newLocked = !locked;
+    setNodes((nds: Node[]) =>
+      nds.map((n) => {
+        if (n.parentNode === id) {
+          return { ...n, draggable: !newLocked, connectable: !newLocked };
+        }
+        if (n.id === id) {
+          return { ...n, data: { ...n.data, locked: newLocked } };
+        }
+        return n;
+      })
+    );
+  }, [locked, id, setNodes]);
+
   const handleUngroup = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     const groupNode = getNodes().find((n) => n.id === id);
     if (!groupNode) return;
-
-    setNodes((nds: Node[]) => {
-      // Kind-Nodes aus der Gruppe herauslösen
-      const updated = nds
-        .filter((n) => n.id !== id) // GroupNode entfernen
+    setNodes((nds: Node[]) =>
+      nds
+        .filter((n) => n.id !== id)
         .map((n) => {
           if (n.parentNode === id) {
             return {
@@ -92,6 +138,8 @@ export const GroupNode = memo((node: Node) => {
               parentNode: undefined,
               extent: undefined,
               hidden: false,
+              draggable: true,       // ← Lock zurücksetzen
+              connectable: true,     // ← Lock zurücksetzen
               position: {
                 x: n.position.x + groupNode.position.x,
                 y: n.position.y + groupNode.position.y,
@@ -99,12 +147,10 @@ export const GroupNode = memo((node: Node) => {
             };
           }
           return n;
-        });
-      return updated;
-    });
+        })
+    );
   }, [id, setNodes, getNodes]);
 
-  // Label speichern
   const handleLabelBlur = () => {
     setIsEditingLabel(false);
     updateNodeValue(id, "label", editableLabel);
@@ -127,11 +173,11 @@ export const GroupNode = memo((node: Node) => {
 
       <div
         style={{
-          width:  "100%",
+          width: "100%",
           height: "100%",
-          border: `2px ${collapsed ? "solid" : "dashed"} ${color}`,
-          borderRadius: "8px",
-          backgroundColor: `${color}${collapsed ? "22" : "0d"}`,
+          border: `2px ${borderStyle} ${color}`,
+          borderRadius,
+          backgroundColor: locked ? "#fffbeb" : `${color}${collapsed ? "22" : "0d"}`,
           position: "relative",
           transition: "height 0.2s ease, background-color 0.2s ease",
           boxSizing: "border-box",
@@ -143,7 +189,7 @@ export const GroupNode = memo((node: Node) => {
           style={{
             backgroundColor: `${color}33`,
             borderBottom: collapsed ? "none" : `1px dashed ${color}55`,
-            borderRadius: collapsed ? "6px" : "6px 6px 0 0",
+            borderRadius: collapsed ? borderRadius : `calc(${borderRadius} - 2px) calc(${borderRadius} - 2px) 0 0`,
             padding: "6px 10px",
             height: "36px",
             display: "flex",
@@ -164,7 +210,7 @@ export const GroupNode = memo((node: Node) => {
                 onKeyDown={handleLabelKeyDown}
                 onClick={(e) => e.stopPropagation()}
                 style={{
-                  fontSize: "12px",
+                  fontSize: "18px",
                   fontWeight: 600,
                   color,
                   background: "transparent",
@@ -178,7 +224,7 @@ export const GroupNode = memo((node: Node) => {
             ) : (
               <span
                 style={{
-                  fontSize: "12px",
+                  fontSize: "18px",
                   fontWeight: 600,
                   color,
                   overflow: "hidden",
@@ -206,45 +252,44 @@ export const GroupNode = memo((node: Node) => {
           <button
             onClick={(e) => { e.stopPropagation(); toggleCollapse(); }}
             style={{
-              flexShrink: 0,
-              width: "20px",
-              height: "20px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              borderRadius: "4px",
-              fontSize: "11px",
-              fontWeight: "bold",
-              backgroundColor: `${color}33`,
-              color,
-              border: `1px solid ${color}66`,
-              cursor: "pointer",
-              lineHeight: 1,
+              flexShrink: 0, width: "20px", height: "20px",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              borderRadius: "4px", fontSize: "11px", fontWeight: "bold",
+              backgroundColor: `${color}33`, color,
+              border: `1px solid ${color}66`, cursor: "pointer", lineHeight: 1,
             }}
             title={collapsed ? "Aufklappen" : "Einklappen"}
           >
             {collapsed ? "▸" : "▾"}
           </button>
 
+          {/* Lock Button */}
+          <button
+            onClick={handleToggleLock}
+            style={{
+              flexShrink: 0, width: "20px", height: "20px",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              borderRadius: "4px", fontSize: "11px",
+              backgroundColor: locked ? "#fef3c7" : `${color}33`,
+              color: locked ? "#d97706" : color,
+              border: `1px solid ${locked ? "#fcd34d" : `${color}66`}`,
+              cursor: "pointer", lineHeight: 1, marginLeft: "2px",
+            }}
+            title={locked ? "Gruppe entsperren" : "Gruppe sperren"}
+          >
+            {locked ? "🔒" : "🔓"}
+          </button>
+
           {/* Gruppierung aufheben */}
           <button
             onClick={handleUngroup}
             style={{
-              flexShrink: 0,
-              width: "20px",
-              height: "20px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              borderRadius: "4px",
-              fontSize: "11px",
-              fontWeight: "bold",
-              backgroundColor: "#fee2e2",
-              color: "#ef4444",
-              border: "1px solid #fca5a5",
-              cursor: "pointer",
-              lineHeight: 1,
-              marginLeft: "4px",
+              flexShrink: 0, width: "20px", height: "20px",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              borderRadius: "4px", fontSize: "11px", fontWeight: "bold",
+              backgroundColor: "#fee2e2", color: "#ef4444",
+              border: "1px solid #fca5a5", cursor: "pointer",
+              lineHeight: 1, marginLeft: "4px",
             }}
             title="Gruppierung aufheben"
           >
