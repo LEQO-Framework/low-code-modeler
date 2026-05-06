@@ -44,7 +44,7 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                     label: node.data.label, // optional
                     propertyValues: node.data.propertyValues || {}, // numeric/string/date/etc.
                     mapping: node.data.mapping || [], // input-output mapping
-            
+
                 };
 
             case consts.StatePreparationNode:
@@ -131,7 +131,15 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                         id: node.id,
                         type: "qubit"
                     }
-                } else if (["RX(θ)", "RY(θ)", "RZ(θ)"].includes(node.data.label)) {
+                }
+                if (node.data.label === "QFT") {
+                    return {
+                        id: node.id,
+                        type: "qft",
+                        size: 1
+                    }
+                }
+                else if (["RX(θ)", "RY(θ)", "RZ(θ)"].includes(node.data.label)) {
                     return {
                         id: node.id,
                         type: "gate-with-param",
@@ -153,7 +161,7 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                             "T": "t",
                             "X": "x",
                             "Y": "y",
-                            "Z": "z",
+                            "Z": "z"
                         }, node.data.label)
                     }
                 }
