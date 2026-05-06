@@ -65,7 +65,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
     if (onAction) onAction("delete", id);
   }, [id, setNodes, setEdges, onAction]);
 
-  const incrementNodeDataField = useCallback((field: string, min_value: number) => { //TODO: richtiges Feld verwenden (bei merger: numberInputs) --> Feld als Argument übergeben?
+  const incrementNodeDataField = useCallback((field: string, min_value: number) => {
     const node = getNode(id);
     //const field = "numberQuantumInputs";
     console.log("[INCREMENT] field value", field, "field value type", typeof node.data[field])
@@ -581,7 +581,35 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
         </div>
       </div>
     );
-  } else {
+  } 
+  else if (type ==="edge"){
+    return (
+      <div
+        style={{
+          position: "absolute",
+          top,
+          left,
+          ...styles, // Merge passed styles
+          backgroundColor: "#fff",
+          border: "1px solid #ddd",
+          borderRadius: "8px",
+          boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.1)",
+          padding: "10px",
+          zIndex: 1000,
+          display: "flex",
+          flexDirection: "column",
+        }}
+        className="context-menu"
+      >
+        <p style={{ margin: "0.5em", fontSize: "14px", color: "#666" }}>
+          <small>Edge: {id}</small>
+        </p>
+        <div>
+          {buttons}
+        </div>
+      </div>
+    );
+  }else {
     return (
       <div
         style={{
