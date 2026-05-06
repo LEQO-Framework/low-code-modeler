@@ -119,6 +119,8 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   const hasInputs = node.data["numberInputs"] > minInput
   const hasOutputs = node.data["numberOutputs"] > minOutput
 
+  const hasQFTInputs = node.data["numberOutputs"] > minInput
+
   console.log("contextMenu")
   console.log(getNode(id).type)
   console.log(getNode(id).data["numberQuantumInputs"])
@@ -532,7 +534,53 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
         </div>
       </div>
     );
-  } else if (type === "splitterNode") {
+  } else if (type === "qftNode") {
+    return (
+      <div
+        style={{
+          position: "absolute",
+          top,
+          left,
+          ...styles, // Merge passed styles
+          backgroundColor: "#fff",
+          border: "1px solid #ddd",
+          borderRadius: "8px",
+          boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.1)",
+          padding: "10px",
+          zIndex: 1000,
+          display: "flex",
+          flexDirection: "column",
+        }}
+        className="context-menu"
+      >
+        <p style={{ margin: "0.5em", fontSize: "14px", color: "#666" }}>
+          <small>Node: {id}</small>
+        </p>
+        <div>
+          <button
+            onClick={() => incrementNodeDataField("numberOutputs", 1)}
+            style={buttonStyle}
+            aria-label="Add Input"
+          >
+            <FaPlus style={iconStyle} /> Add Input
+          </button>
+          {hasQFTInputs && <button
+            onClick={() => decrementNodeDataField("numberOutputs", 0)}
+            style={buttonStyle}
+            aria-label="Remove Input"
+          >
+            <FaMinus style={iconStyle} /> Remove Input
+          </button>}
+        </div>
+        <div>
+          {buttons}
+        </div>
+      </div>
+    );
+  } 
+  
+  
+  else if (type === "splitterNode") {
     return (
       <div
         style={{

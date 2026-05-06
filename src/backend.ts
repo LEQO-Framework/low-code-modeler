@@ -132,13 +132,6 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                         type: "qubit"
                     }
                 }
-                if (node.data.label === "QFT") {
-                    return {
-                        id: node.id,
-                        type: "qft",
-                        size: 1
-                    }
-                }
                 else if (["RX(θ)", "RY(θ)", "RZ(θ)"].includes(node.data.label)) {
                     return {
                         id: node.id,
@@ -241,6 +234,14 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                     id: node.id,
                     type: "operator",
                     operator: node.data.operator || node.data.minmax
+                }
+
+
+            case consts.QFTNode:
+                return {
+                    id: node.id,
+                    type: "qft",
+                    size: node.data.numberOutputs
                 }
 
 
