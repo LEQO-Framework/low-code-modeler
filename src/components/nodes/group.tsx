@@ -303,13 +303,15 @@ export const GroupNode = memo((node: Node) => {
         type="target"
         id={`groupInput0${id}`}
         position={Position.Left}
-        style={{ top: "50%", background: color, border: "2px solid white", width: 10, height: 10 }}
+        isConnectable={true}
+        style={{ top: "50%", background: color, border: "2px solid white", width: 13, height: 16, zIndex: 10 }}
       />
       <Handle
         type="source"
         id={`groupOutput0${id}`}
         position={Position.Right}
-        style={{ top: "50%", background: color, border: "2px solid white", width: 10, height: 10 }}
+        isConnectable={true}
+        style={{ top: "50%", background: color, border: "2px solid white", width: 13, height: 16, zIndex: 10 }}
       />
     </>
   );
