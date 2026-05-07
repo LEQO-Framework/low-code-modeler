@@ -77,6 +77,40 @@ export const categories: Record<string, CategoryEntry> = {
           label: "Measurement", type: consts.MeasurementNode, icon: "PaletteIcon_Measurement.png", description: "Measures a quantum state and returns its classical information and collapsed quantum state.", completionGuaranteed: true, compactOptions: [true, false],
         },
       ],
+      "Oracles & Algorithms": [
+        {
+          label: "Deutsch-Jozsa", 
+          type: consts.DeutschJozsaNode,
+          icon: "PaletteIcon_DeutschJozsa.png",
+          description: "Evaluates if a hidden boolean function is constant or balanced.", 
+          completionGuaranteed: false,
+          compactOptions: [false]
+        },
+        { 
+          label: "Universal Oracle", 
+          type: consts.UniversalOracleNode,
+          icon: "PaletteIcon_UniversalOracle.png",
+          description: "Arbitrary Oracle defined by a Truth Table for Boolean or Phase evaluation.", 
+          completionGuaranteed: false,
+          compactOptions: [false]
+        },
+        { 
+          label: "Grover Diffuser", 
+          type: consts.GroverDiffuserNode,
+          icon: "PaletteIcon_GroverDiffuser.png",
+          description: "Applies inversion about the mean for amplitude amplification.", 
+          completionGuaranteed: false,
+          compactOptions: [false]
+        },
+        { 
+          label: "Grover's Algorithm (Block)", 
+          type: consts.GroverNode,
+          icon: "PaletteIcon_GroverAlgorithm.png",
+          description: "Complete Grover search with integrated Oracle and Diffuser.", 
+          completionGuaranteed: false,
+          compactOptions: [false]
+        },
+      ],
     },
   },
 
@@ -169,30 +203,6 @@ export const categories: Record<string, CategoryEntry> = {
     content: [
       { label: "Custom Quantum Operator", type: consts.AlgorithmNode, icon: ["PaletteIcon_CustomQuantumOperator.png", "PaletteIcon_Ancilla_CustomQuantumOperator.png"], description: "Encapsulates a reusable quantum operation defined by the user.", completionGuaranteed: true, compactOptions: [true, false] },
       { label: "Custom Classical Operator", type: consts.ClassicalAlgorithmNode, icon: "PaletteIcon_CustomClassicalOperator.png", description: "Encapsulates a reusable classical computation defined by the user.", completionGuaranteed: true, compactOptions: [true, false] },
-      { 
-        label: "Deutsch-Jozsa", 
-        type: consts.DeutschJozsaNode,
-        icon: "PaletteIcon_DeutschJozsa.png",
-        description: "Evaluates if a hidden boolean function is constant or balanced.", 
-        completionGuaranteed: false,
-        compactOptions: [false]
-      },
-      { 
-        label: "Universal Oracle", 
-        type: consts.UniversalOracleNode,
-        icon: "PaletteIcon_UniversalOracle.png",
-        description: "Arbitrary Oracle defined by a Truth Table for Boolean or Phase evaluation.", 
-        completionGuaranteed: false,
-        compactOptions: [false]
-      },
-      { 
-        label: "Grover Diffuser", 
-        type: consts.GroverDiffuserNode,
-        icon: "PaletteIcon_GroverDiffuser.png",
-        description: "Applies inversion about the mean for amplitude amplification.", 
-        completionGuaranteed: false,
-        compactOptions: [false]
-      },
     ],
   },
 

@@ -278,6 +278,14 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                     type: "grover-diffuser",
                     numQubits: node.data.numQubits || 3
                 } as any;
+            case consts.GroverNode:
+                return {
+                    id: node.id,
+                    type: "grover",
+                    numQubits: node.data.numQubits || 3,
+                    truthTable: node.data.truthTable || "10000000",
+                    numIterations: node.data.numIterations || 1
+                } as any;
 
         }
         throw new Error(`Unsupported node ${node.type} (${node.data.label})`)
