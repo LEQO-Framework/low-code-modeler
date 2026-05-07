@@ -8,6 +8,7 @@ import { qasmToDirac, qasmToDiracSteps, type DiracStepsResult } from "./utils/qa
 import type { Complex } from "@/lib/diracFormatter";
 import { statevectorToDirac } from "@/lib/diracFormatter";
 import JSZip from "jszip";
+import { BlochSphere } from "./BlochSphere";
 
 type QasmProps = {
   qasm: string;
@@ -490,6 +491,8 @@ export function QasmDiracPanel(props: Props) {
   const title = props.title ?? "Dirac Representation";
   const [showBasisStates, setShowBasisStates] = useState(true);
   const [showSteps, setShowSteps] = useState(false);
+  const [showBloch, setShowBloch] = useState(false);
+  const [blochQubit, setBlochQubit] = useState(0);
 
   const fullResult = useMemo(() => {
     if ("qasm" in props && props.qasm) return qasmToDirac(props.qasm);
@@ -595,7 +598,20 @@ export function QasmDiracPanel(props: Props) {
               }`}
             >
               <span>{showSteps ? "▾" : "▸"}</span>
-              Intermediate Steps
+              Steps
+            </button>
+          )}
+          {fullResult && numQubits > 0 && (
+            <button
+              onClick={() => setShowBloch((v) => !v)}
+              className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                showBloch
+                  ? "bg-purple-50 border-purple-300 text-purple-600"
+                  : "border-gray-300 hover:bg-gray-100 text-gray-600"
+              }`}
+            >
+              <span>{showBloch ? "▾" : "▸"}</span>
+              Bloch
             </button>
           )}
           {fullResult && terms.length > 0 && (
@@ -680,6 +696,46 @@ export function QasmDiracPanel(props: Props) {
             Measurement Probabilities{isPartial && ` (q${effectiveSelected.join(", q")})`}
           </p>
           <Histogram data={histogramData} />
+        </div>
+      )}
+
+      {/* Bloch Sphere */}
+      {showBloch && fullResult && numQubits > 0 && (
+        <div className="flex-shrink-0 rounded-lg border border-purple-100 bg-purple-50/20 px-3 py-3">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+              Bloch Sphere
+            </p>
+            {/* Qubit-Auswahl */}
+            {numQubits > 1 && (
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-gray-400">Qubit:</span>
+                {Array.from({ length: numQubits }, (_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setBlochQubit(i)}
+                    className={`text-xs px-2 py-0.5 rounded-full border transition-colors ${
+                      blochQubit === i
+                        ? "bg-purple-500 border-purple-500 text-white"
+                        : "border-gray-300 text-gray-600 hover:bg-gray-100"
+                    }`}
+                  >
+                    q{i}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="flex justify-center">
+            <BlochSphere
+              statevector={Array.from({ length: 1 << numQubits }, (_, i) => {
+                const term = fullResult.terms.find(t => parseInt(t.basisState, 2) === i);
+                return term ? term.amplitude : { re: 0, im: 0 };
+              })}
+              numQubits={numQubits}
+              qubitIndex={blochQubit}
+            />
+          </div>
         </div>
       )}
     </div>

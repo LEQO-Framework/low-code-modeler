@@ -76,10 +76,10 @@ export function groupSelectedNodes(nodes: Node[], edges: Edge[]): Node[] {
     return {
       ...n,
       parentNode: groupId,
-      extent: "parent" as const,
+      extent: undefined,          // ← kein extent:parent
       position: {
         x: absX - minX,
-        y: absY - minY,
+        y: Math.max(40, absY - minY),
       },
       selected: false,
     };
@@ -170,8 +170,11 @@ export function handleNodeDropOnGroup(
       return {
         ...n,
         parentNode: targetGroup.id,
-        extent: "parent" as const,
-        position: { x: dragX - gx, y: dragY - gy },
+        extent: undefined,          // ← kein extent:parent
+        position: {
+          x: Math.max(0, dragX - gx),
+          y: Math.max(40, dragY - gy),
+        },
       };
     });
   }
@@ -181,7 +184,6 @@ export function handleNodeDropOnGroup(
     const parentGroup = nodes.find((g) => g.id === draggedNode.parentNode);
     // Gesperrte Gruppe → Node bleibt drin
     if (parentGroup?.data?.locked) return nodes;
-    // Prüfen ob Node noch innerhalb der Gruppe ist
     if (parentGroup) {
       const gx = parentGroup.positionAbsolute?.x ?? parentGroup.position.x;
       const gy = parentGroup.positionAbsolute?.y ?? parentGroup.position.y;
@@ -189,16 +191,15 @@ export function handleNodeDropOnGroup(
       const gh = (parentGroup.style?.height as number) ?? parentGroup.height ?? 200;
       // Noch innerhalb → nichts tun
       if (cx >= gx && cx <= gx + gw && cy >= gy && cy <= gy + gh) return nodes;
-      // Außerhalb → aus Gruppe lösen
-      const pgx = parentGroup.positionAbsolute?.x ?? parentGroup.position.x ?? 0;
-      const pgy = parentGroup.positionAbsolute?.y ?? parentGroup.position.y ?? 0;
+      // Außerhalb → aus Gruppe lösen, absolute Position berechnen
       return nodes.map((n) => {
         if (n.id !== draggedNode.id) return n;
         return {
           ...n,
           parentNode: undefined,
           extent: undefined,
-          position: { x: n.position.x + pgx, y: n.position.y + pgy },
+          // Absolute Position = relative Position + Gruppenposition
+          position: { x: dragX, y: dragY },
         };
       });
     }

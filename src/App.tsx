@@ -9,7 +9,8 @@ import ReactFlow, {
   MiniMap,
   getNodesBounds,
   Panel,
-  useUpdateNodeInternals
+  useUpdateNodeInternals,
+  SelectionMode,
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { v4 as uuidv4 } from 'uuid';
@@ -193,8 +194,6 @@ function App() {
   const [qcAtlasEndpoint, setQcAtlasEndpoint] = useState(
     import.meta.env.VITE_QC_ATLAS || "http://localhost:6626"
   );
-
-
   const [activeTab, setActiveTab] = useState("editor");
   const [warningExecution, setWarningExecution] = useState(false);
   const [contextMenu, setContextMenu] = useState<{
@@ -265,7 +264,7 @@ function App() {
   const [isPatternModalOpen, setIsPatternModalOpen] = useState(false);
   const [isPatternImplementationOpen, setIsPatternImplementationOpen] = useState(false);
   const [selectedPatternId, setSelectedPatternId] = useState<string | null>(null);
-
+  const [lassoMode, setLassoMode] = useState(false);
 
   const [mathMode, setMathMode] = useState(false);
   const [isLoadJsonModalOpen, setIsLoadJsonModalOpen] = useState(false);
@@ -1539,6 +1538,19 @@ If none apply, return { "algorithms": [] }.
         );
     }, [reactFlowInstance]);
 
+    const onSelectionEnd = useCallback(() => {
+      if (!lassoMode) return;
+      const currentNodes = reactFlowInstance.getNodes();
+      const currentEdges = reactFlowInstance.getEdges();
+      const updatedNodes = groupSelectedNodes(currentNodes, currentEdges);
+      if (updatedNodes !== currentNodes) {
+        reactFlowInstance.setNodes(updatedNodes);
+        setLassoMode(false); // Lasso nach Gruppierung deaktivieren
+      }
+    }, [lassoMode, reactFlowInstance]);
+
+    // In <ReactFlow>:
+    // onSelectionEnd={onSelectionEnd}
 
 
 
@@ -3086,8 +3098,12 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
             ref={ref}
             nodes={nodes}
             edges={edges}
+            selectionOnDrag={lassoMode}        // ← Lasso nur wenn aktiv
+            panOnDrag={!lassoMode}             // ← Panning deaktivieren wenn Lasso aktiv
+            selectionMode={SelectionMode.Partial} // ← Nodes die teilweise im Lasso sind auch
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
+            onSelectionEnd={onSelectionEnd}
             onNodeContextMenu={onNodeContextMenu}
             onNodeClick={(event: React.MouseEvent, node: Node) => {
               handleClick(event, node);
@@ -3140,7 +3156,70 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
               )}
             </>
           )}
+
+
+                 {/* Controls */} 
             <Controls />
+
+            {/* Lasso Button – separat positioniert über den Controls */}
+            <div
+              style={{
+                position: "absolute",
+                bottom: "130px",  // anbinden an Controls nicht möglich, daher Position separat festlegen
+                left: "14px",
+                zIndex: 10,
+              }}
+              onMouseEnter={(e) => {
+              const tooltip = e.currentTarget.querySelector(".lasso-tooltip") as HTMLElement;
+              if (tooltip) tooltip.style.opacity = "1";
+              }}
+              onMouseLeave={(e) => {
+                const tooltip = e.currentTarget.querySelector(".lasso-tooltip") as HTMLElement;
+                if (tooltip) tooltip.style.opacity = "0";
+        }}
+            >
+              <button
+                onClick={() => setLassoMode((v) => !v)}
+                style={{
+                  width: "28px",
+                  height: "24px",
+                  background: lassoMode ? "#6366f1" : "white",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: "4px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  boxShadow: "0 1px 4px rgba(0,0,0,0.15)",
+                  color: lassoMode ? "white" : "#374151",
+                }}
+              >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <ellipse cx="7" cy="6" rx="5" ry="4" strokeDasharray="3 1.5"/>
+                <line x1="11" y1="9" x2="13" y2="13"/>
+              </svg>
+              </button>
+              <span style={{
+                position: "absolute",
+                left: "30px",
+                top: "50%",
+                transform: "translateY(-50%)",
+                background: "#1f2937",
+                color: "white",
+                fontSize: "11px",
+                padding: "2px 8px",
+                borderRadius: "4px",
+                whiteSpace: "nowrap",
+                pointerEvents: "none",
+                opacity: 0,
+                transition: "opacity 0.15s",
+              }}              
+              >
+                {lassoMode ? "Cancel grouping" : "Group selection"}
+              </span>
+            </div>
+            
             {toast && (
               <Toast
                 message={toast.message}
