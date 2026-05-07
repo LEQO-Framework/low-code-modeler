@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { X } from "lucide-react";
 
 interface ToastProps {
-  message: string;
+  message: ReactNode;
   type: "success" | "error" | "info";
   onClose: () => void;
   duration?: number;

@@ -54,6 +54,7 @@ On the left side is the *palette*, offering a searchable, categorized list of mo
 - *Control Structure Nodes*
 - *Operators*
 - *Custom Operators*
+- *ML Elements*
 
 Users can drag and drop elements from the palette onto the canvas. Usability features include a responsive search bar, intuitive category labels, and collapsible groups to reduce visual clutter.
 
@@ -79,7 +80,7 @@ Modeling Constructs and Blocks
 
 The quantum low-code tool provides modeling constructs for defining quantum applications at different levels of abstraction. In particular, quantum modeling constructs offer both higher-level abstractions and lower-level modeling blocks representing quantum gates, while supporting users across a broad spectrum of quantum computing expertise.
 
-The constructs are organized into six categories: Data Types, Circuit-Level Nodes, Boundary Nodes, Operators, Control Structure Nodes, and Custom Nodes. Each category includes visual elements that enable users to build quantum circuits, workflows, and logic in an intuitive way.
+The constructs are organized into seven categories: Data Types, Circuit-Level Nodes, Boundary Nodes, Operators, Control Structure Nodes, Custom Nodes, and ML Elements. Each category includes visual elements that enable users to build quantum circuits, workflows, and logic in an intuitive way.
 
 Detailed descriptions and examples for each construct type are provided in the corresponding subsections.
 
@@ -93,3 +94,4 @@ Detailed descriptions and examples for each construct type are provided in the c
    modelingconstructs_operators
    modelingconstructs_controlStructureNodes
    modelingconstructs_customNodes
+   modelingconstructs_mlNodes

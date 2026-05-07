@@ -128,6 +128,29 @@ export interface components {
             /** Value */
             value: any[];
         };
+        EditableNode: {
+      /** Unique node ID */
+      id: string;
+
+      /** Optional label */
+      label?: string | null;
+
+      /** Node type discriminator */
+      type: "editableNode";
+
+      /** Editable properties of the node */
+      propertyValues: Record<string, any>;
+
+      /** Optional input-output mapping */
+      mapping?: string[][];
+
+      /** Input types */
+      inputTypes?: string[];
+
+      /** Output types */
+      outputTypes?: string[];
+    };
+
         /** AncillaNode */
         AncillaNode: {
             /** Id */
@@ -183,7 +206,7 @@ export interface components {
         CompileRequest: {
             metadata: components["schemas"]["MetaData"];
             /** Nodes */
-            nodes: (components["schemas"]["ImplementationNode"] | components["schemas"]["ArrayLiteralNode"] | components["schemas"]["QubitNode"] | components["schemas"]["EncodeValueNode"] | components["schemas"]["PrepareStateNode"] | components["schemas"]["SplitterNode"] | components["schemas"]["MergerNode"] | components["schemas"]["MeasurementNode"] | components["schemas"]["GateNode"] | components["schemas"]["ParameterizedGateNode"] | components["schemas"]["BitLiteralNode"] | components["schemas"]["BoolLiteralNode"] | components["schemas"]["IntLiteralNode"] | components["schemas"]["FloatLiteralNode"] | components["schemas"]["AncillaNode"] | components["schemas"]["IfThenElseNode"] | components["schemas"]["RepeatNode"] | components["schemas"]["OperatorNode"])[];
+            nodes: (components["schemas"]["ImplementationNode"] | components["schemas"]["ArrayLiteralNode"] | components["schemas"]["EditableNode"] | components["schemas"]["QubitNode"] | components["schemas"]["EncodeValueNode"] | components["schemas"]["PrepareStateNode"] | components["schemas"]["SplitterNode"] | components["schemas"]["MergerNode"] | components["schemas"]["MeasurementNode"] | components["schemas"]["GateNode"] | components["schemas"]["ParameterizedGateNode"] | components["schemas"]["BitLiteralNode"] | components["schemas"]["BoolLiteralNode"] | components["schemas"]["IntLiteralNode"] | components["schemas"]["FloatLiteralNode"] | components["schemas"]["FileLiteralNode"] | components["schemas"]["StringLiteralNode"] | components["schemas"]["AncillaNode"] | components["schemas"]["IfThenElseNode"] | components["schemas"]["RepeatNode"] | components["schemas"]["OperatorNode"] | components["schemas"]["PluginNode"])[];
             /** Edges */
             edges: components["schemas"]["Edge"][];
             compilation_target: string;
@@ -226,6 +249,22 @@ export interface components {
              * @default 0
              */
             bounds?: number;
+        };
+        /** FileLiteralNode */
+        FileLiteralNode: {
+            /** Id */
+            id: string;
+            /** Label */
+            label?: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "file";
+            /**
+             * Value
+             */
+            value: string;
         };
         /** FloatLiteralNode */
         FloatLiteralNode: {
@@ -391,6 +430,36 @@ export interface components {
              */
             operator: "+" | "-" | "*" | "/" | "**" | "|" | "&" | "~" | "^" | "<" | "<=" | ">" | ">=" | "==" | "!=" | "min" | "max";
         };
+        /** PluginNode */
+        PluginNode: {
+            /** Id */
+            id: string;
+            /** Label */
+            label?: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "plugin";
+            /** Plugin Identifier */
+            pluginIdentifier?: string | null;
+            /** Plugin Name */
+            pluginName?: string | null;
+            /** Inputs */
+            inputs?: any[];
+            /** Outputs */
+            outputs?: any[];
+            /** Clustering Algorithm */
+            clusteringAlgorithm?: string | null;
+            variant?: string | null
+            metricEnum?: string |null;
+            methodEnum?: string |null;
+            minkowskiP?: string | null;
+            maxEpsilon?: string |null;
+            algorithmEnum?: string|null;
+            xi?: string |null;
+            initEnum?: string |null;
+        };
         /** ParameterizedGateNode */
         ParameterizedGateNode: {
             /** Id */
@@ -484,6 +553,22 @@ export interface components {
             type: "splitter";
             /** Numberoutputs */
             numberOutputs: number;
+        };
+        /** StringLiteralNode */
+        StringLiteralNode: {
+            /** Id */
+            id: string;
+            /** Label */
+            label?: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "string";
+            /**
+             * Value
+             */
+            value: string;
         };
         /**
          * StatusBody

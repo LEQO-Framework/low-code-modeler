@@ -21,8 +21,9 @@ const selector = (state: {
 
 export const MergerNode = memo((node: Node) => {
   const { data } = node;
-  let { edges, setEdges, setNewEdges } = useStore(selector, shallow);
+  let { edges, setEdges, setNewEdges, updateNodeValue } = useStore(selector, shallow);
   const [edgesGraph, setEdgesGraph] = useState(edges);
+
 
   const numberInputs = data.numberInputs||2;
   const numberOutputs = data.numberOutputs || 1;
@@ -72,6 +73,11 @@ export const MergerNode = memo((node: Node) => {
 
   useEffect(() => {
     updateNodeInternals(node.id);
+    console.log(node.data.numberInputs)
+    if(node.data.numberInputs === undefined){
+      console.log("set inputs")
+      updateNodeValue(node.id, "numberInputs", "2");
+    }
     console.log("useEffect inputHandles", inputHandles)
 
     const edgesToRemove = edges.filter((edge) => {

@@ -5,6 +5,7 @@ import { FaGear } from "react-icons/fa6";
 import { v4 as uuid } from "uuid";
 import { Button } from "./ui";
 import { IPortData } from "@/components/nodes/model";
+import { MergerNode } from "@/constants";
 
 interface ContextMenuProps {
   id: string;
@@ -512,7 +513,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
         </p>
         <div>
           <button
-            onClick={() => incrementNodeDataField("numberInputs", 0)}
+            onClick={() => incrementNodeDataField("numberInputs", 2)}
             style={buttonStyle}
             aria-label="Add Input"
           >
