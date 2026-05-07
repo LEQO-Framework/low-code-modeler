@@ -787,7 +787,7 @@ export const useStore = create<RFState>()(persist((set, get) => ({
       }
     };
     console.log("!hasCycle", !hasCycle(target))
-    if(hasCycle(target)) { console.log("Cycle detected"); return false }
+    if(hasCycle(target)) { setTypeError("Cycles are not allowed, since the quantum output of an operation cannot be fed back as the input to a previous operation."); return false }
 
     if (target.id === connection.source && target.type !== "splitterNode" && target.type !== "mergerNode") { console.log("source target"); return false };
 
