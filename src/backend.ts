@@ -241,7 +241,7 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                 return {
                     id: node.id,
                     type: "qft",
-                    size: node.data.numberOutputs
+                    //size: node.data.numberOutputs
                 }
 
 

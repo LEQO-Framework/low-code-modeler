@@ -399,7 +399,7 @@ export interface components {
              */
             type: "qft";
             /** Numberinputs */
-            size: number;
+            size?: number | null;
         };
         /**
          * MetaData
