@@ -1,11 +1,10 @@
 import { memo, useState } from "react";
-import { Node, Handle, Position } from "reactflow";
+import { Node } from "reactflow";
 import { useStore } from "@/config/store"; 
 import { shallow } from "zustand/shallow";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import OutputPort from "../utils/outputPort"; 
-import { classicalConstructColor } from "@/constants";
 
 const selector = (state: any) => ({
   updateNodeValue: state.updateNodeValue,
@@ -37,7 +36,7 @@ export const DeutschJozsaNode = memo((node: Node) => {
     <motion.div
       className="grand-parent"
       initial={false}
-      animate={{ width: 320, height: 500 }} 
+      animate={{ width: 320, height: 400 }}
       transition={{ duration: 0.3, ease: "easeInOut" }}
     >
       <div className="grand-parent">
@@ -46,7 +45,7 @@ export const DeutschJozsaNode = memo((node: Node) => {
             "w-[320px] bg-white border border-solid border-gray-700 shadow-md relative",
             selected && "border-blue-500"
           )}
-          style={{ height: "500px" }}
+          style={{ height: "400px" }}
         >
           {/* HEADER */}
           <div className="w-full flex items-center" style={{ height: '52px' }}>
@@ -57,47 +56,21 @@ export const DeutschJozsaNode = memo((node: Node) => {
                 className="w-[40px] h-[40px] object-contain flex-shrink-0"
               />
               <div className="h-full w-[1px] bg-black mx-2" />
-              <span className="font-semibold leading-none" style={{ paddingLeft: '65px' }}>
+              <span className="font-semibold leading-none" style={{ paddingLeft: '60px' }}>
                 Deutsch-Jozsa
               </span>
             </div>
           </div>
 
-          {/* CLASSICAL INPUT PORT (Orange/Yellow) */}
-          <div className="mt-4 flex flex-col space-y-2">
-            <div
-              className="relative p-2"
-              style={{
-                backgroundColor: classicalConstructColor,
-                width: '140px',
-                borderTopRightRadius: '20px',
-                borderBottomRightRadius: '20px',
-              }}
-            >
-              <Handle
-                type="target"
-                id={`classicalHandleAlgorithmInput0${id}`}
-                position={Position.Left}
-                className="z-10 !bg-orange-300 !border-black -left-[8px]"
-                style={{ width: 12, height: 12 }}
-              />
-              <div className="flex flex-col items-center w-full leading-tight pl-2">
-                <span className="text-black text-[11px] font-medium">Oracle Params</span>
-                <span className="text-[9px] text-gray-600">type: number</span>
-              </div>
-            </div>
-          </div>
-
           {/* CONFIGURATION BODY */}
-          <div className="px-4 py-1 mt-4">
+          <div className="px-4 py-1 mt-2">
             
-            {/* NEW: Query Qubits Input */}
             <div>
               <label className="text-xs font-semibold text-gray-700">Query Qubits (n):</label>
               <input
                 type="number"
                 min="1"
-                className="w-full p-2 mt-1 text-sm text-center text-black border-2 border-blue-200 rounded-full outline-none focus:border-blue-400 transition-colors"
+                className="w-full p-1 mt-1 text-sm text-center text-black border-2 border-blue-200 rounded-full outline-none focus:border-blue-400 transition-colors"
                 value={numQubits}
                 onChange={(e) => {
                   const val = parseInt(e.target.value, 10) || 1;
@@ -107,10 +80,10 @@ export const DeutschJozsaNode = memo((node: Node) => {
               />
             </div>
 
-            <div className="mt-4">
+            <div className="mt-2">
               <label className="text-xs font-semibold text-gray-700">Oracle Type:</label>
               <select
-                className="w-full p-2 mt-1 bg-white rounded-full text-center text-sm text-black border-2 border-blue-200 outline-none focus:border-blue-400 transition-colors"
+                className="w-full p-1 mt-1 bg-white rounded-full text-center text-sm text-black border-2 border-blue-200 outline-none focus:border-blue-400 transition-colors"
                 value={oracleType}
                 onChange={(e) => {
                   setOracleType(e.target.value);
@@ -123,12 +96,12 @@ export const DeutschJozsaNode = memo((node: Node) => {
             </div>
 
             {oracleType === "balanced" ? (
-              <div className="mt-4">
+              <div className="mt-2">
                 <label className="text-xs font-semibold text-gray-700">Balanced Mask:</label>
                 <input
                   type="number"
                   min="1"
-                  className="w-full p-2 mt-1 text-sm text-center text-black border-2 border-blue-200 rounded-full outline-none focus:border-blue-400 transition-colors"
+                  className="w-full p-1 mt-1 text-sm text-center text-black border-2 border-blue-200 rounded-full outline-none focus:border-blue-400 transition-colors"
                   value={balancedMask}
                   onChange={(e) => {
                     const val = parseInt(e.target.value, 10) || 1;
@@ -138,7 +111,7 @@ export const DeutschJozsaNode = memo((node: Node) => {
                 />
               </div>
             ) : (
-              <div className="mt-4">
+              <div className="mt-2">
                 <label className="text-xs font-semibold text-gray-700">Constant Value:</label>
                 <select
                   className="w-full p-2 mt-1 text-sm text-center text-black border-2 border-blue-200 rounded-full outline-none focus:border-blue-400 transition-colors"
@@ -156,7 +129,7 @@ export const DeutschJozsaNode = memo((node: Node) => {
             )}
           </div>
 
-          {/* NATIVE OUTPUT PORT - Locked to bottom */}
+          {/* NATIVE OUTPUT PORT */}
           <div className="custom-node-port-out absolute bottom-4 right-0">
             <OutputPort
               node={node}

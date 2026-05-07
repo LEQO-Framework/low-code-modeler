@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <rect width="120" height="120" fill="white" stroke="#00153a" stroke-width="4"/>
+  <!-- Circuit Lines -->
+  <line x1="10" y1="40" x2="110" y2="40" stroke="#000" stroke-width="4"/>
+  <line x1="10" y1="80" x2="110" y2="80" stroke="#000" stroke-width="4"/>
+  <!-- Diffuser Box -->
+  <rect x="30" y="20" width="60" height="80" fill="#93b9f2" stroke="#00153a" stroke-width="4"/>
+  <text x="60" y="65" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="#00153a" text-anchor="middle">G</text>
+  <circle cx="60" cy="85" r="5" fill="#00153a"/>
+  <line x1="60" y1="80" x2="60" y2="90" stroke="#00153a" stroke-width="2"/>
+  <line x1="55" y1="85" x2="65" y2="85" stroke="#00153a" stroke-width="2"/>
+</svg>

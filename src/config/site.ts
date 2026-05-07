@@ -6,6 +6,8 @@ import { AlgorithmNode } from "@/components/nodes/algorithm";
 import { AncillaNode } from "@/components/nodes/ancilla";
 import {  IfElseNode } from "@/components/nodes/ifelse";
 import { DeutschJozsaNode as DeutschJozsaComponent } from "@/components/nodes/DeutschJozsaNode";
+import { UniversalOracleNode as UniversalOracleComponent } from "@/components/nodes/UniversalOracleNode";
+import { GroverDiffuserNode as GroverDiffuserComponent } from "@/components/nodes/GroverDiffuserNode";
 import { DynamicNode } from "@/components/nodes/dynamically";
 import { GateNode } from "@/components/nodes/gate";
 import { MeasurementNode } from "@/components/nodes/measurement";
@@ -43,7 +45,9 @@ export const nodesConfig = {
     qubitNode: QubitNode,
     classicalOperatorNode: ClassicalOperationNode,
     groupNode: GroupNode,
-    [consts.DeutschJozsaNode]: DeutschJozsaComponent
+    [consts.DeutschJozsaNode]: DeutschJozsaComponent,
+    [consts.UniversalOracleNode]: UniversalOracleComponent,
+    [consts.GroverDiffuserNode]: GroverDiffuserComponent
   } as any,
   edgesTypes: {
     quantumEdge: QuantumEdge,
@@ -73,7 +77,9 @@ export const initialDiagram = {
     qubitNode: QubitNode,
     classicalOperatorNode: ClassicalOperationNode,
     groupNode: GroupNode,
-    [consts.DeutschJozsaNode]: DeutschJozsaComponent
+    [consts.DeutschJozsaNode]: DeutschJozsaComponent,
+    [consts.UniversalOracleNode]: UniversalOracleComponent,
+    [consts.GroverDiffuserNode]: GroverDiffuserComponent
   } as any,
 };
 

@@ -172,10 +172,26 @@ export const categories: Record<string, CategoryEntry> = {
       { 
         label: "Deutsch-Jozsa", 
         type: consts.DeutschJozsaNode,
-        icon: "PaletteIcon_DeutschJozsa.png", // Reusing an existing icon, change if you have a custom one
+        icon: "PaletteIcon_DeutschJozsa.png",
         description: "Evaluates if a hidden boolean function is constant or balanced.", 
-        completionGuaranteed: false, 
-        compactOptions: [false] 
+        completionGuaranteed: false,
+        compactOptions: [false]
+      },
+      { 
+        label: "Universal Oracle", 
+        type: consts.UniversalOracleNode,
+        icon: "PaletteIcon_UniversalOracle.png",
+        description: "Arbitrary Oracle defined by a Truth Table for Boolean or Phase evaluation.", 
+        completionGuaranteed: false,
+        compactOptions: [false]
+      },
+      { 
+        label: "Grover Diffuser", 
+        type: consts.GroverDiffuserNode,
+        icon: "PaletteIcon_GroverDiffuser.png",
+        description: "Applies inversion about the mean for amplitude amplification.", 
+        completionGuaranteed: false,
+        compactOptions: [false]
       },
     ],
   },

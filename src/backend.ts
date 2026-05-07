@@ -256,15 +256,28 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                     }
                 };
             case "deutsch-jozsa":
-            return {
-                id: node.id,
-                type: "deutsch-jozsa",
-                label: "Deutsch-Jozsa Algorithm",
-                numQubits: node.data.numQubits || 3,
-                oracleType: node.data.oracleType || "balanced",
-                balancedMask: node.data.balancedMask || 5,
-                constantValue: node.data.constantValue ?? 0,
-            } as any;
+                return {
+                    id: node.id,
+                    type: "deutsch-jozsa",
+                    numQubits: node.data.numQubits || 3,
+                    oracleType: node.data.oracleType || "balanced",
+                    balancedMask: node.data.balancedMask || 5,
+                    constantValue: node.data.constantValue ?? 0,
+                } as any;
+            case consts.UniversalOracleNode:
+                return {
+                    id: node.id,
+                    type: "universal-oracle",
+                    numQubits: node.data.numQubits || 3,
+                    truthTable: node.data.truthTable || "10000000",
+                    mode: node.data.mode || "phase"
+                } as any;
+            case consts.GroverDiffuserNode:
+                return {
+                    id: node.id,
+                    type: "grover-diffuser",
+                    numQubits: node.data.numQubits || 3
+                } as any;
 
         }
         throw new Error(`Unsupported node ${node.type} (${node.data.label})`)

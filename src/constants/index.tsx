@@ -18,6 +18,8 @@ export const GateNode: string = "gateNode";
 export const AlgorithmNode: string = "algorithmNode";
 export const ClassicalAlgorithmNode: string = "classicalAlgorithmNode";
 export const DeutschJozsaNode: string = "deutsch-jozsa";
+export const UniversalOracleNode: string = "universal-oracle";
+export const GroverDiffuserNode: string = "grover-diffuser";
 export const StatePreparationNode: string = "statePreparationNode";
 export const MeasurementNode: string = "measurementNode";
 export const AncillaNode: string = "ancillaNode";
@@ -38,6 +40,8 @@ export const NodeTypes = [
   AlgorithmNode,
   ClassicalAlgorithmNode,
   DeutschJozsaNode,
+  UniversalOracleNode,
+  GroverDiffuserNode,
   StatePreparationNode,
   MeasurementNode,
   AncillaNode,
