@@ -55,8 +55,8 @@ export const GroverNode = memo((node: Node) => {
                 className="w-[40px] h-[40px] object-contain flex-shrink-0"
               />
               <div className="h-full w-[1px] bg-black mx-2" />
-              <span className="font-semibold leading-none" style={{ paddingLeft: '50px' }}>
-                Grover's Algorithm
+              <span className="font-semibold leading-none" style={{ paddingLeft: '20px' }}>
+                {node.data.label}
               </span>
             </div>
           </div>
@@ -65,7 +65,7 @@ export const GroverNode = memo((node: Node) => {
           <div className="px-4 py-1 mt-3">
             
             <div>
-              <label className="text-xs font-semibold text-gray-700">Search Qubits (n):</label>
+              <label className="text-xs font-semibold text-gray-700">Number of Qubits:</label>
               <input
                 type="number"
                 min="1"
@@ -80,7 +80,7 @@ export const GroverNode = memo((node: Node) => {
             </div>
 
             <div className="mt-2">
-              <label className="text-xs font-semibold text-gray-700">Target States (Truth Table):</label>
+              <label className="text-xs font-semibold text-gray-700">Search Elements:</label>
               <input
                 type="text"
                 placeholder={`Needs ${1 << numQubits} bits`}
@@ -98,11 +98,11 @@ export const GroverNode = memo((node: Node) => {
             </div>
 
             <div className="mt-2">
-              <label className="text-xs font-semibold text-gray-700">Iterations (O + D):</label>
+              <label className="text-xs font-semibold text-gray-700">Iterations (Oracle + Diffusion):</label>
               <input
                 type="number"
                 min="1"
-                className="w-full p-1 mt-1 text-sm text-center text-black border-2 border-blue-200 rounded-full outline-none focus:border-blue-400 transition-colors"
+                className="w-full p-1 mt-1 text-sm text-center text-black border-2 border-dashed border-blue-200 rounded-full outline-none focus:border-blue-400 transition-colors"
                 value={numIterations}
                 onChange={(e) => {
                   const val = parseInt(e.target.value, 10) || 1;

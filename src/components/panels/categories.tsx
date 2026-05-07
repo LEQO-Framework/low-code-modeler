@@ -89,32 +89,32 @@ export const categories: Record<string, CategoryEntry> = {
           type: consts.DeutschJozsaNode,
           icon: "PaletteIcon_DeutschJozsa.png",
           description: "Evaluates if a hidden boolean function is constant or balanced.", 
-          completionGuaranteed: false,
-          compactOptions: [false]
+          completionGuaranteed: true,
+          compactOptions: [false,true]
         },
         { 
-          label: "Universal Oracle", 
+          label: "Grover Oracle", 
           type: consts.UniversalOracleNode,
           icon: "PaletteIcon_UniversalOracle.png",
           description: "Arbitrary Oracle defined by a Truth Table for Boolean or Phase evaluation.", 
-          completionGuaranteed: false,
-          compactOptions: [false]
+          completionGuaranteed: true,
+          compactOptions: [false, true]
         },
         { 
           label: "Grover Diffuser", 
           type: consts.GroverDiffuserNode,
           icon: "PaletteIcon_GroverDiffuser.png",
           description: "Applies inversion about the mean for amplitude amplification.", 
-          completionGuaranteed: false,
-          compactOptions: [false]
+          completionGuaranteed: true,
+          compactOptions: [false, true]
         },
         { 
-          label: "Grover's Algorithm (Block)", 
+          label: "Grover's Search Algorithm", 
           type: consts.GroverNode,
           icon: "PaletteIcon_GroverAlgorithm.png",
           description: "Complete Grover search with integrated Oracle and Diffuser.", 
-          completionGuaranteed: false,
-          compactOptions: [false]
+          completionGuaranteed: true,
+          compactOptions: [false, true]
         },
       ],
     },
