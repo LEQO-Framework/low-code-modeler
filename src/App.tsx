@@ -489,15 +489,25 @@ If none apply, return { "algorithms": [] }.
   const [ancillaModelingOn, setAncillaModelingOn] = useState(false);
   const [experienceLevelOn, setExperienceLevelOn] = useState("explorer");
   const [compactVisualization, setCompactVisualization] = useState(false);
-  const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
+  //const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
+  const [toast, setToast] = useState<{
+    message: React.ReactNode;
+    type: "success" | "error" | "info";
+  } | null>(null);
+
   const [workflow, setWorkflow] = useState("");
 
 
   const updateNodeInternals = useUpdateNodeInternals();
 
-  const showToast = (message: string, type: "success" | "error" | "info") => {
+
+  const showToast = (
+    message: React.ReactNode,
+    type: "success" | "error" | "info"
+  ) => {
     setToast({ message, type });
   };
+
 
   useEffect(() => {
     if (typeError) {
@@ -1004,7 +1014,7 @@ If none apply, return { "algorithms": [] }.
       }
       const value = node.data?.value;
 
-      if (typeof value === "string" && node.data.label ==="Number") {
+      if (typeof value === "string" && node.data.label === "Number") {
         const startsWithNumber = /^[+-]?\d/.test(value.trim());
         const hasLetter = /[a-zA-Z]/.test(value);
 
@@ -2447,7 +2457,22 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
           );
           return { status: "failed" };
         }
-        showToast("Workflow is deployed ", "success");
+        const baseCamundaUrl = camundaEndpoint?.replace(/\/engine-rest\/?$/, "");
+        showToast(
+          <>
+            Workflow is deployed at{" "}
+            <a
+              href={`${baseCamundaUrl}/camunda/app/tasklist/default`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 underline"
+            >
+              Camunda
+            </a>
+          </>,
+          "success"
+        );
+
         return {
           status: "deployed",
           deployedProcessDefinition: Object.values(
