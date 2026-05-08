@@ -71,7 +71,7 @@ export const QFTNode = memo((node: Node) => {
     updateNodeInternals(node.id);
     if(node.data.numberOutputs === undefined){
       console.log("set outputs")
-      updateNodeValue(node.id, "numberOutputs", "2");
+      updateNodeValue(node.id, "numberOutputs", "1");
     }
 
     const edgesToRemove = edges.filter((edge) => {
