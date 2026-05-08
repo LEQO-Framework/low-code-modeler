@@ -11,7 +11,6 @@ import {
   FilePlus,
   FolderOpen,
   Save,
-  Download,
   UploadCloud,
   Settings,
   Send,
@@ -21,9 +20,9 @@ import {
   FileJson,
   ImageIcon,
   LayoutTemplate,
-  PuzzleIcon,
-  LucidePuzzle,
-  Puzzle,
+  BrainCircuit,
+  Search,
+  BadgeCheck,
 } from "lucide-react";
 
 interface ToolbarProps {
@@ -135,22 +134,22 @@ const Toolbar: React.FC<ToolbarProps> = ({
             </DropdownMenuContent>
           </DropdownMenu>
           <Button size="sm" onClick={onManageTemplates} title="Manage all custom user templates">
-            <Settings className="w-4 h-4 mr-2" /> Manage Templates
+            <LayoutTemplate className="w-4 h-4 mr-2" /> Manage Templates
           </Button>
           <Button size="sm" onClick={onOpenConfig} title="Configure the editor and the endpoints">
             <Settings className="w-4 h-4 mr-2" /> Configuration
           </Button>
           <Button size="sm" onClick={createDomainProfile} title="Create domain profiles and manage them.">
-            <Settings className="w-4 h-4 mr-2" /> Manage Domain Profiles
+            <BadgeCheck className="w-4 h-4 mr-2" /> Manage Domain Profiles
           </Button>
           <Button className="backend-button" size="sm" onClick={sendToBackend} title="Send the diagram to the backend">
             <Send className="w-4 h-4 mr-2" /> Send to Backend
           </Button>
           <Button size="sm" onClick={startQuantumAlgorithmSelection}>
-            <Settings className="w-4 h-4 mr-2" /> Detect Algorithm
+            <Search className="w-4 h-4 mr-2" /> Detect Algorithm
           </Button>
           <Button size="sm" onClick={generateModel} title="Generate a model based on user input.">
-            <Clock className="w-4 h-4 mr-2" />
+            <BrainCircuit className="w-4 h-4 mr-2" />
             Generate Model
           </Button>
           <Button size="sm" onClick={openHistory} title="Display the history">
