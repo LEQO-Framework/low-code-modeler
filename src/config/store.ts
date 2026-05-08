@@ -9,22 +9,15 @@ import {
   OnConnectEnd,
   OnEdgesChange,
   OnNodesChange,
-  addEdge,
   applyEdgeChanges,
   applyNodeChanges,
   getOutgoers,
-  useUpdateNodeInternals,
 } from "reactflow";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { nodesConfig } from "./site";
 import { v4 as uuid } from "uuid";
 import * as consts from "../constants";
-import TabPane from "antd/es/tabs/TabPane";
-import { insertTopNodeTag } from "@/winery";
-import { remove } from "jszip";
-import { IPortData } from "@/components/nodes/model";
-import { Regex } from "lucide-react";
 import { Template } from "@/components/panels/categories";
 import { DomainProfile } from "@/components/modals/domainProfileModal";
 

@@ -15,6 +15,7 @@ export enum HistoryAction {
 // supported modeling constructs
 export const DataTypeNode: string = "dataTypeNode";
 export const GateNode: string = "gateNode";
+export const QFTNode: string = "qftNode";
 export const AlgorithmNode: string = "algorithmNode";
 export const ClassicalAlgorithmNode: string = "classicalAlgorithmNode";
 export const StatePreparationNode: string = "statePreparationNode";
