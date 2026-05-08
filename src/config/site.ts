@@ -20,6 +20,7 @@ import { QubitNode } from "@/components/nodes/qubit";
 import { ClassicalOperationNode } from "@/components/nodes/classicalOperation";
 import { GroupNode } from "@/components/nodes/group";
 import { EditableNode } from "@/components/nodes/editableNode";
+import { QFTNode } from "@/components/nodes/qft";
 
 export const nodesConfig = {
   initialNodes: [] as unknown as Node[],
@@ -44,6 +45,7 @@ export const nodesConfig = {
     groupNode: GroupNode,
     pluginNode: PluginNode,
     editableNode: EditableNode,
+    qftNode: QFTNode
   } as any,
   edgesTypes: {
     quantumEdge: QuantumEdge,
@@ -73,7 +75,8 @@ export const initialDiagram = {
     qubitNode: QubitNode,
     classicalOperatorNode: ClassicalOperationNode,
     groupNode: GroupNode,
-    pluginNode: PluginNode
+    pluginNode: PluginNode,
+    qftNode: QFTNode
   } as any,
 };
 

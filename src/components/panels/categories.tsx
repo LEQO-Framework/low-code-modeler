@@ -63,7 +63,7 @@ export const categories: Record<string, CategoryEntry> = {
           label: "Custom Encoding", type: consts.StatePreparationNode, icon: ["PaletteIcon_CustomEncoding.png", "PaletteIcon_Ancilla_CustomEncoding.png"], description: "Encodes classical bits into quantum states using a custom encoding.", completionGuaranteed: true, compactOptions: [false],
         },
         {
-          label: "Angle Encoding", type: consts.StatePreparationNode, icon: ["PaletteIcon_AngleEncoding.png", "PaletteIcon_Ancilla_AngleEncoding.png"], description: "Encodes classical data into qubit rotation angles.", completionGuaranteed: false, compactOptions: [false],
+          label: "Angle Encoding", type: consts.StatePreparationNode, icon: ["PaletteIcon_AngleEncoding.png", "PaletteIcon_Ancilla_AngleEncoding.png"], description: "Encodes classical data into qubit rotation angles.", completionGuaranteed: true, compactOptions: [false],
         },
         {
           label: "Amplitude Encoding", type: consts.StatePreparationNode, icon: ["PaletteIcon_AmplitudeEncoding.png", "PaletteIcon_Ancilla_AmplitudeEncoding.png"], description: "Encodes a normalized classical vector into quantum state amplitudes.", completionGuaranteed: false, compactOptions: [false],
@@ -118,6 +118,7 @@ export const categories: Record<string, CategoryEntry> = {
         { label: "Toffoli", aliases: ["CCNOT", "Controlled-Controlled-NOT"], type: consts.GateNode, icon: ["Toffoli_palette.png", "PaletteIcon_Toffoli_Beginner.png"], description: "CCNOT: flips target if both controls are |1⟩.", completionGuaranteed: true, compactOptions: [true, false] },
         // { label: "Controlled-U", type: consts.GateNode, icon: ["Controlled-U_palette.png", "PaletteIcon_Controlled-U_Beginner.png"], description: "Controlled-U: applies U if control is |1⟩.", completionGuaranteed: true, compactOptions: [true, false] },
         { label: "CSWAP", aliases: ["Fredkin"], type: consts.GateNode, icon: ["CSWAP_palette.png", "PaletteIcon_CSWAP_Beginner.png"], description: "Controlled SWAP: swaps two qubits if control is |1⟩.", completionGuaranteed: true, compactOptions: [true, false] },
+        { label: "QFT", aliases: ["Quantum Fourier Transform"], type: consts.QFTNode, icon: ["QFT_palette.png", "QFT_palette.png"], description: "Applies the Quantum Fourier Transform.", completionGuaranteed: true, compactOptions: [true, false] },
         { label: "Splitter", type: consts.SplitterNode, icon: "Splitter_palette.png", description: "Splits a quantum register into individual qubits.", completionGuaranteed: true, compactOptions: [true, false] },
         { label: "Merger", type: consts.MergerNode, icon: "Merger_palette.png", description: "Merges multiple qubits into one register.", completionGuaranteed: true, compactOptions: [true, false] },
       ]

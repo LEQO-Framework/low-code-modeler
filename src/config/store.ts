@@ -9,22 +9,15 @@ import {
   OnConnectEnd,
   OnEdgesChange,
   OnNodesChange,
-  addEdge,
   applyEdgeChanges,
   applyNodeChanges,
   getOutgoers,
-  useUpdateNodeInternals,
 } from "reactflow";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { nodesConfig } from "./site";
 import { v4 as uuid } from "uuid";
 import * as consts from "../constants";
-import TabPane from "antd/es/tabs/TabPane";
-import { insertTopNodeTag } from "@/winery";
-import { remove } from "jszip";
-import { IPortData } from "@/components/nodes/model";
-import { Regex } from "lucide-react";
 import { Template } from "@/components/panels/categories";
 import { DomainProfile } from "@/components/modals/domainProfileModal";
 
@@ -776,6 +769,7 @@ export const useStore = create<RFState>()(persist((set, get) => ({
       return false;
     }
     const hasCycle = (node, visited = new Set()) => {
+      console.log("has Cycle ID", node.id)
       if (visited.has(node.id)) { console.log("has"); return false; }
 
       visited.add(node.id);
@@ -785,10 +779,11 @@ export const useStore = create<RFState>()(persist((set, get) => ({
         if (hasCycle(outgoer, visited)) { console.log("hasCcycle"); return true; }
       }
     };
+    console.log("!hasCycle", !hasCycle(target))
+    if(hasCycle(target)) { setTypeError("Cycles are not allowed, since the quantum output of an operation cannot be fed back as the input to a previous operation."); return false }
 
     if (target.id === connection.source && target.type !== "splitterNode" && target.type !== "mergerNode") { console.log("source target"); return false };
-    console.log(!hasCycle(target))
-    let cycle = !hasCycle(target);
+
     for (let node of currentNodes) {
       if (node.id === connection.source) {
         nodeDataSource = node;

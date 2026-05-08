@@ -1091,6 +1091,45 @@ If none apply, return { "algorithms": [] }.
         }
       }
 
+      if (node.data?.label === "QFT" || node.type === "qftNode") {
+        const qubitCount =
+          parseInt(node.data?.numberOutputs || "3");
+
+        const incoming = nodeConnections.get(node.id) || [];
+        const outgoing = outgoingConnections.get(node.id) || [];
+
+        for (let i = 0; i < qubitCount; i++) {
+          const handleId = `quantumHandleQFTInput${i}${node.id}`;
+
+          const isConnected = flow.edges?.some(
+            (e) => e.targetHandle === handleId
+          );
+
+          if (!isConnected) {
+            errors.push({
+              nodeId: node.id,
+              nodeType: node.type,
+              description: `QFT node "${node.id}" is missing connection on input ${i + 1}.`,
+            });
+          }
+        }
+
+        for (let i = 0; i < qubitCount; i++) {
+          const handleId = `qftOut${i}${node.id}`;
+
+          const isUsed = flow.edges?.some(
+            (e) => e.sourceHandle === handleId
+          );
+
+          if (!isUsed) {
+            warnings.push({
+              nodeId: node.id,
+              nodeType: node.type,
+              description: `QFT node "${node.id}" output ${i + 1}/${qubitCount} is not used.`,
+            });
+          }
+        }
+      }
       // Plugin Node Validation
       if (node.type === "pluginNode") {
         const dataInputs = node.data?.dataInputs || [];
@@ -1160,6 +1199,8 @@ If none apply, return { "algorithms": [] }.
           "Executing this flow will not produce meaningful results.",
       });
     }
+
+
 
 
     return { warnings, errors };
@@ -3193,7 +3234,6 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
               zoomable={true}
               pannable={true}
             />
-
 
             <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
           </ReactFlow>
