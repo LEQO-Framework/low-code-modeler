@@ -490,7 +490,7 @@ If none apply, return { "algorithms": [] }.
   const [status, setStatus] = useState("");
   const [modalStep, setModalStep] = useState(1);
   const [isQunicornOpen, setIsQunicornOpen] = useState(false);
-   const [isPromptModalOpen, setIsPromptModalOpen] = useState(false);
+  const [isPromptModalOpen, setIsPromptModalOpen] = useState(false);
   const [loadingQunicorn, setLoadingQunicorn] = useState(true);
   const [statusQunicorn, setStatusQunicorn] = useState(null);
   const [ancillaModelingOn, setAncillaModelingOn] = useState(false);
@@ -894,6 +894,14 @@ If none apply, return { "algorithms": [] }.
           });
         }
 
+      }
+
+      if (node.data.label === "Qubit" && (node.data.size === undefined || node.data.size === 0)) {
+        errors.push({
+          nodeId: node.id,
+          nodeType: node.type,
+          description: `Node "${node.id}" needs a size value.`,
+        });
       }
 
       if (threeQubitGates.includes(label)) {

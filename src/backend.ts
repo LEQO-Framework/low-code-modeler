@@ -129,7 +129,8 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                 if (node.data.label === "Qubit" || node.data.label === "Qubit Circuit") {
                     return {
                         id: node.id,
-                        type: "qubit"
+                        type: "qubit",
+                        width: node.data.size
                     }
                 }
                 else if (["RX(θ)", "RY(θ)", "RZ(θ)"].includes(node.data.label)) {
@@ -235,7 +236,13 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                     type: "operator",
                     operator: node.data.operator || node.data.minmax
                 }
-
+            
+            case consts.QubitNode:
+                 return {
+                        id: node.id,
+                        type: "qubit",
+                        size: node.data.size
+                    }
 
             case consts.QFTNode:
             case consts.InverseQFTNode:

@@ -148,10 +148,11 @@ const Toolbar: React.FC<ToolbarProps> = ({
           <Button size="sm" onClick={startQuantumAlgorithmSelection}>
             <Search className="w-4 h-4 mr-2" /> Detect Algorithm
           </Button>
-          <Button size="sm" onClick={generateModel} title="Generate a model based on user input.">
+          {/**<Button size="sm" onClick={generateModel} title="Generate a model based on user input.">
             <BrainCircuit className="w-4 h-4 mr-2" />
             Generate Model
-          </Button>
+          </Button>**/
+          }
           <Button size="sm" onClick={openHistory} title="Display the history">
             <Clock className="w-4 h-4 mr-2" />
             History
