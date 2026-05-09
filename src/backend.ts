@@ -164,18 +164,14 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
             case consts.DataTypeNode:
                 switch (node.data.dataType) {
                     case "int":
+                    case "Number": {
+                        const numValue = Number(node.data.value);
                         return {
                             id: node.id,
-                            type: "int",
-                            value: node.data.value
+                            type: Number.isInteger(numValue) ? "int" : "float",
+                            value: numValue
                         }
-
-                    case "Number":
-                        return {
-                            id: node.id,
-                            type: "int",
-                            value: node.data.value
-                        }
+                    }
 
                     case "boolean":
                         return {
