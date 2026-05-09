@@ -119,6 +119,8 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   const hasInputs = node.data["numberInputs"] > minInput
   const hasOutputs = node.data["numberOutputs"] > minOutput
 
+  const hasQFTInputs = node.data["numberOutputs"] > minInput
+
   console.log("contextMenu")
   console.log(getNode(id).type)
   console.log(getNode(id).data["numberQuantumInputs"])
@@ -532,7 +534,10 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
         </div>
       </div>
     );
-  } else if (type === "splitterNode") {
+  } 
+  
+  
+  else if (type === "splitterNode") {
     return (
       <div
         style={{

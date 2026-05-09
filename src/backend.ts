@@ -44,7 +44,7 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                     label: node.data.label, // optional
                     propertyValues: node.data.propertyValues || {}, // numeric/string/date/etc.
                     mapping: node.data.mapping || [], // input-output mapping
-            
+
                 };
 
             case consts.StatePreparationNode:
@@ -135,9 +135,11 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                 if (node.data.label === "Qubit" || node.data.label === "Qubit Circuit") {
                     return {
                         id: node.id,
-                        type: "qubit"
+                        type: "qubit",
+                        width: node.data.size
                     }
-                } else if (["RX(θ)", "RY(θ)", "RZ(θ)"].includes(node.data.label)) {
+                }
+                else if (["RX(θ)", "RY(θ)", "RZ(θ)"].includes(node.data.label)) {
                     return {
                         id: node.id,
                         type: "gate-with-param",
@@ -159,7 +161,7 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                             "T": "t",
                             "X": "x",
                             "Y": "y",
-                            "Z": "z",
+                            "Z": "z"
                         }, node.data.label)
                     }
                 }
@@ -168,18 +170,14 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
             case consts.DataTypeNode:
                 switch (node.data.dataType) {
                     case "int":
+                    case "Number": {
+                        const numValue = Number(node.data.value);
                         return {
                             id: node.id,
-                            type: "int",
-                            value: node.data.value
+                            type: Number.isInteger(numValue) ? "int" : "float",
+                            value: numValue
                         }
-
-                    case "Number":
-                        return {
-                            id: node.id,
-                            type: "int",
-                            value: node.data.value
-                        }
+                    }
 
                     case "boolean":
                         return {
@@ -239,6 +237,22 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                     id: node.id,
                     type: "operator",
                     operator: node.data.operator || node.data.minmax
+                }
+            
+            case consts.QubitNode:
+                 return {
+                        id: node.id,
+                        type: "qubit",
+                        size: node.data.size
+                    }
+
+            case consts.QFTNode:
+            case consts.InverseQFTNode:
+                return {
+                    id: node.id,
+                    type: "qft",
+                    inverse: node.data.inverse
+                    //size: node.data.numberOutputs
                 }
 
 
