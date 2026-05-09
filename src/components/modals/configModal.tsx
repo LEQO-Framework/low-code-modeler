@@ -5,13 +5,13 @@ interface ConfigModalProps {
   open: boolean;
   ancillaMode: boolean;
   experienceLevel: string;
-  compactVisualization:boolean;
+  compactVisualization: boolean;
   completionGuaranteed: boolean;
   onClose: () => void;
   onSave: (values: {
     ancillaMode: boolean;
     experienceLevel: string;
-    compactVisualization:boolean;
+    compactVisualization: boolean;
     completionGuaranteed: boolean;
     tempCamundaEndpoint: string;
     tempNisqAnalyzerEndpoint: string;
@@ -25,6 +25,7 @@ interface ConfigModalProps {
     tempGithubRepositoryName: string;
     tempGithubBranch: string;
     tempGithubToken: string;
+    tempMistralToken: string;
   }) => void;
   activeTab: string;
   setActiveTab: (tab: string) => void;
@@ -41,6 +42,7 @@ interface ConfigModalProps {
   tempGithubRepositoryName: string;
   tempGithubBranch: string;
   tempGithubToken: string;
+  tempMistralToken: string;
 }
 
 export const ConfigModal = ({
@@ -65,13 +67,14 @@ export const ConfigModal = ({
   tempGithubRepositoryName,
   tempGithubBranch,
   tempGithubToken,
+  tempMistralToken
 }: ConfigModalProps) => {
   // Local state copies
   const [localAncillaMode, setLocalAncillaMode] = useState(ancillaMode);
   const [localExperienceLevel, setLocalExperienceLevel] = useState(experienceLevel);
   const [localCompletionGuaranteed, setLocalCompletionGuaranteed] =
     useState(completionGuaranteed);
- const [localCompactVisualization, setLocalCompactVisualization] =
+  const [localCompactVisualization, setLocalCompactVisualization] =
     useState(compactVisualization);
 
   const [localNisq, setLocalNisq] = useState(tempNisqAnalyzerEndpoint);
@@ -79,6 +82,7 @@ export const ConfigModal = ({
   const [localQunicorn, setLocalQunicorn] = useState(tempQunicornEndpoint);
   const [localLowcode, setLocalLowcode] = useState(tempLowcodeBackendEndpoint);
   const [localOpenAIToken, setLocalOpenAIToken] = useState(tempOpenAIToken);
+  const [localMistralToken, setLocalMistralToken] = useState(tempMistralToken);
   const [localPatternUI, setLocalPatternUI] = useState(tempPatternAtlasUiEndpoint);
   const [localPatternAPI, setLocalPatternAPI] = useState(tempPatternAtlasApiEndpoint);
   const [localQcAtlas, setLocalQcAtlas] = useState(tempQcAtlasEndpoint);
@@ -95,6 +99,7 @@ export const ConfigModal = ({
       setLocalCompletionGuaranteed(completionGuaranteed);
       setLocalCompactVisualization(compactVisualization);
       setLocalOpenAIToken(tempOpenAIToken);
+      setLocalMistralToken(tempMistralToken);
 
       setLocalNisq(tempNisqAnalyzerEndpoint);
       setLocalQunicorn(tempQunicornEndpoint);
@@ -127,6 +132,7 @@ export const ConfigModal = ({
       tempGithubRepositoryName: localGitRepo,
       tempGithubBranch: localGitBranch,
       tempGithubToken: localGitToken,
+      tempMistralToken: localMistralToken
     });
     onClose();
   };
@@ -147,25 +153,24 @@ export const ConfigModal = ({
         </div>
       }
     >
-      <div>
+      <div className="max-h-[70vh] overflow-y-auto pr-2">
         <div className="flex border-b mb-4">
           {["editor", "github", "lowCodeEndpoints", "patternEndpoints"].map((tab) => (
             <button
               key={tab}
-              className={`px-4 py-2 ${
-                activeTab === tab
+              className={`px-4 py-2 ${activeTab === tab
                   ? "border-b-2 border-blue-500 font-semibold"
                   : "text-gray-600"
-              }`}
+                }`}
               onClick={() => setActiveTab(tab)}
             >
               {tab === "editor"
                 ? "Editor"
                 : tab === "github"
-                ? "GitHub"
-                : tab === "lowCodeEndpoints"
-                ? "Low-Code Endpoints"
-                : "Pattern Endpoints"}
+                  ? "GitHub"
+                  : tab === "lowCodeEndpoints"
+                    ? "Low-Code Endpoints"
+                    : "Pattern Endpoints"}
             </button>
           ))}
         </div>
@@ -197,7 +202,7 @@ export const ConfigModal = ({
                 <tr>
                   <td align="right">Compact Visualization:</td>
                   <td align="left">
-                     <input
+                    <input
                       type="checkbox"
                       checked={localCompactVisualization}
                       onChange={(e) => setLocalCompactVisualization(e.target.checked)}
@@ -230,9 +235,9 @@ export const ConfigModal = ({
                 </tr>
               </tbody>
             </table>
-         
 
-           <h3 className="labels mt-4">Experience Level</h3>
+
+            <h3 className="labels mt-4">Experience Level</h3>
             <table className="config-table">
               <tbody>
                 <tr>
@@ -250,7 +255,7 @@ export const ConfigModal = ({
                 </tr>
               </tbody>
             </table>
-             </div>
+          </div>
         )}
 
         {activeTab === "lowCodeEndpoints" && (
@@ -321,24 +326,42 @@ export const ConfigModal = ({
                 </tr>
               </tbody>
             </table>
-          
-          <h3 className="labels">OpenAI:</h3>
-              <table className="config-table">
-                <tbody>
-                  <tr>
-                    <td align="right">OpenAI Token:</td>
-                    <td align="left">
-                      <input
-                        className="qwm-input"
-                        type="password"
-                        value={localOpenAIToken}
-                        onChange={(event) => setLocalOpenAIToken(event.target.value)}
-                      />
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-              </div>
+
+            <h3 className="labels">OpenAI:</h3>
+            <table className="config-table">
+              <tbody>
+                <tr>
+                  <td align="right">OpenAI Token:</td>
+                  <td align="left">
+                    <input
+                      className="qwm-input"
+                      type="password"
+                      value={localOpenAIToken}
+                      onChange={(event) => setLocalOpenAIToken(event.target.value)}
+                    />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <h3 className="labels">Mistral:</h3>
+            <table className="config-table">
+              <tbody>
+                <tr>
+                  <td align="right">Mistral Token:</td>
+                  <td align="left">
+                    <input
+                      className="qwm-input"
+                      type="password"
+                      value={localMistralToken}
+                      onChange={(event) => setLocalMistralToken(event.target.value)}
+                    />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+          </div>
+
         )}
 
         {activeTab === "patternEndpoints" && (
