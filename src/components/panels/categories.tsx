@@ -119,6 +119,7 @@ export const categories: Record<string, CategoryEntry> = {
         // { label: "Controlled-U", type: consts.GateNode, icon: ["Controlled-U_palette.png", "PaletteIcon_Controlled-U_Beginner.png"], description: "Controlled-U: applies U if control is |1⟩.", completionGuaranteed: true, compactOptions: [true, false] },
         { label: "CSWAP", aliases: ["Fredkin"], type: consts.GateNode, icon: ["CSWAP_palette.png", "PaletteIcon_CSWAP_Beginner.png"], description: "Controlled SWAP: swaps two qubits if control is |1⟩.", completionGuaranteed: true, compactOptions: [true, false] },
         { label: "QFT", aliases: ["Quantum Fourier Transform"], type: consts.QFTNode, icon: ["QFT_palette.png", "QFT_palette.png"], description: "Applies the Quantum Fourier Transform.", completionGuaranteed: true, compactOptions: [true, false] },
+        { label: "Inverse QFT", aliases: ["Inverse Quantum Fourier Transform"], type: consts.InverseQFTNode, icon: ["InverseQFT_palette.png", "InverseQFT_palette.png"], description: "Applies the Inverse of the Quantum Fourier Transform.", completionGuaranteed: true, compactOptions: [true, false] },
         { label: "Splitter", type: consts.SplitterNode, icon: "Splitter_palette.png", description: "Splits a quantum register into individual qubits.", completionGuaranteed: true, compactOptions: [true, false] },
         { label: "Merger", type: consts.MergerNode, icon: "Merger_palette.png", description: "Merges multiple qubits into one register.", completionGuaranteed: true, compactOptions: [true, false] },
       ]

@@ -400,6 +400,7 @@ export interface components {
             type: "qft";
             /** Numberinputs */
             size?: number | null;
+            inverse: boolean;
         };
         /**
          * MetaData

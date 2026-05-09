@@ -72,6 +72,7 @@ export const QFTNode = memo((node: Node) => {
     if(node.data.numberOutputs === undefined){
       console.log("set outputs")
       updateNodeValue(node.id, "numberOutputs", "1");
+      updateNodeValue(node.id, "inverse", "false");
     }
 
     const edgesToRemove = edges.filter((edge) => {

@@ -238,9 +238,11 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
 
 
             case consts.QFTNode:
+            case consts.InverseQFTNode:
                 return {
                     id: node.id,
                     type: "qft",
+                    inverse: node.data.inverse
                     //size: node.data.numberOutputs
                 }
 
