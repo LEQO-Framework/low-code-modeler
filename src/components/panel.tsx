@@ -27,6 +27,8 @@ interface CustomPanelProps {
   onWidthChange?: (width: number) => void;
   backendUrl?: string;
   compilationTarget?: string;
+  onSendToBackend?: () => void;
+  onGetModel?: () => object;
 }
 
 export const CustomPanel = ({
@@ -38,6 +40,8 @@ export const CustomPanel = ({
   onWidthChange,
   backendUrl = "",
   compilationTarget = "qasm",
+  onSendToBackend,
+  onGetModel,
 }: CustomPanelProps) => {
   const { selectedNode, nodes, edges } = useStore(selector, shallow);
   const { setNodes } = useReactFlow();
@@ -45,6 +49,7 @@ export const CustomPanel = ({
   const [components, setComponents] = useState<DiracComponent[]>([]);
   const [analyzing, setAnalyzing] = useState(false);
   const [hasAnalyzedOnce, setHasAnalyzedOnce] = useState(false);
+  const [waitingForQasm, setWaitingForQasm] = useState(false);
 
   // Wenn Math Mode ausgeschaltet → zurück zu Properties
   useEffect(() => {
@@ -56,25 +61,47 @@ export const CustomPanel = ({
   useEffect(() => {
     setComponents([]);
     setHasAnalyzedOnce(false);
+    // Wenn wir auf QASM gewartet haben → jetzt analysieren
+    if (waitingForQasm && qasmCode.trim().length > 0) {
+      setWaitingForQasm(false);
+      setHasAnalyzedOnce(true);
+      setAnalyzing(true);
+      analyzeComponents(nodes, edges, backendUrl, metadata, compilationTarget)
+        .then(setComponents)
+        .finally(() => setAnalyzing(false));
+    }
   }, [qasmCode]);
 
-  // Analyse-Funktion – aufrufbar per Refresh-Button oder automatisch
+  // Analyse-Funktion – aufrufbar per Refresh-Button
   const runAnalysis = useCallback(() => {
-    if (!backendUrl || !qasmCode.trim()) return;
+    if (!backendUrl) return;
     setAnalyzing(true);
     setComponents([]);
     analyzeComponents(nodes, edges, backendUrl, metadata, compilationTarget)
       .then(setComponents)
       .finally(() => setAnalyzing(false));
-  }, [nodes, edges, backendUrl, metadata, compilationTarget, qasmCode]);
+  }, [nodes, edges, backendUrl, metadata, compilationTarget]);
 
-  // Automatically analyze on first Math Mode tab open
-  useEffect(() => {
-    if (activeTab === "math" && mathMode && backendUrl && !hasAnalyzedOnce && qasmCode.trim().length > 0) {
-      setHasAnalyzedOnce(true);
-      runAnalysis();
+  // Beim Wechsel zum Math Mode Tab → automatisch Backend-Call auslösen
+  const handleTabSwitch = useCallback((tab: "properties" | "math") => {
+    setActiveTab(tab);
+    if (tab === "math" && mathMode && !hasAnalyzedOnce) {
+      if (qasmCode.trim().length > 0) {
+        // QASM vorhanden → direkt analysieren
+        setHasAnalyzedOnce(true);
+        setAnalyzing(true);
+        setComponents([]);
+        analyzeComponents(nodes, edges, backendUrl, metadata, compilationTarget)
+          .then(setComponents)
+          .finally(() => setAnalyzing(false));
+      } else if (onSendToBackend) {
+        // Kein QASM → Backend-Call auslösen und warten
+        setWaitingForQasm(true);
+        setAnalyzing(true);
+        onSendToBackend();
+      }
     }
-  }, [activeTab, mathMode, qasmCode]);
+  }, [mathMode, hasAnalyzedOnce, qasmCode, nodes, edges, backendUrl, metadata, compilationTarget, onSendToBackend]);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
     onUpdateMetadata(e);
@@ -97,7 +124,7 @@ export const CustomPanel = ({
             Properties
           </button>
           <button
-            onClick={() => setActiveTab("math")}
+            onClick={() => handleTabSwitch("math")}
             className={`flex-1 px-3 py-2 text-xs font-medium transition-colors ${
               activeTab === "math"
                 ? "border-b-2 border-blue-500 text-blue-600 bg-white"
@@ -156,6 +183,7 @@ export const CustomPanel = ({
                 components={components}
                 onGetCircuitSvg={onGetCircuitSvg}
                 nodes={nodes}
+                onGetModel={onGetModel}
               />
             ) : qasmCode.trim().length > 0 ? (
               <div className="flex flex-col items-center justify-center h-full gap-2 text-gray-400">
@@ -186,10 +214,12 @@ function ComponentsView({
   components,
   onGetCircuitSvg,
   nodes,
+  onGetModel,
 }: {
   components: DiracComponent[];
   onGetCircuitSvg?: () => Promise<string>;
   nodes: Node[];
+  onGetModel?: () => object;
 }) {
   return (
     <div className="flex flex-col gap-3">
@@ -202,7 +232,7 @@ function ComponentsView({
         const label = component.groupLabel
           ? component.groupLabel
           : components.length === 1
-          ? "Dirac-Notation"
+          ? "Dirac Notation"
           : `Circuit ${idx + 1}`;
         return (
           <ComponentSection
@@ -215,6 +245,7 @@ function ComponentsView({
             onGetCircuitSvg={onGetCircuitSvg}
             groupId={component.groupId}
             nodes={nodes}
+            onGetModel={onGetModel}
           />
         );
       })}
@@ -231,6 +262,7 @@ function ComponentSection({
   onGetCircuitSvg,
   groupId,
   nodes,
+  onGetModel,
 }: {
   label: string;
   color: string;
@@ -240,6 +272,7 @@ function ComponentSection({
   onGetCircuitSvg?: () => Promise<string>;
   groupId: string | null;
   nodes: Node[];
+  onGetModel?: () => object;
 }) {
   const [expanded, setExpanded] = useState(true);
   const { setNodes, getNodes } = useReactFlow();
@@ -305,6 +338,7 @@ function ComponentSection({
               qasm={qasm}
               title={label}
               onGetCircuitSvg={getGroupCircuitSvg}
+              onGetModel={onGetModel}
             />
           ) : (
             <div className="text-xs text-gray-400 px-2 py-1">No QASM available.</div>
@@ -376,7 +410,7 @@ function ExportAllButton({
           const texContent = buildLatexForComponent(
             label,
             result.latex,
-            result.numqubits,
+            result.numQubits,
             result.terms,
             stepsResult,
             pngBase64

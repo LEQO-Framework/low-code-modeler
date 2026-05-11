@@ -11,6 +11,7 @@ import ReactFlow, {
   Panel,
   useUpdateNodeInternals,
   SelectionMode,
+  Connection,
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { v4 as uuidv4 } from 'uuid';
@@ -50,6 +51,7 @@ import DomainProfileModal, { DomainProfile } from "./components/modals/domainPro
 import { PatternSelectionModal } from "./components/modals/patternSelectionModal";
 import { PatternImplementationSelectionModal } from "./components/modals/patternImplementationSelectionModal";
 import { groupSelectedNodes, ungroupNodes, handleNodeDropOnGroup } from "./lib/groupHandler";
+import { qasmToNodes } from "./lib/qasmToNodes";
 
 
 const selector = (state: {
@@ -224,20 +226,18 @@ function App() {
   );
 
   const onEdgesDelete = (edges: Edge[]) => {
-    edges.forEach((edge) => {
-      console.log("ON EDGES DELETE")
-      console.log("EDGE", edge)
-      const targetNodeId = edge.target
-      const targetHandle = edge.targetHandle
-      const targetNode = nodes.find(n => n.id === targetNodeId);
-      const newInputs = targetNode.data.inputs.filter(i => i.targetHandle !== targetHandle)
-      updateNodeValue(targetNodeId, "inputs", newInputs)
-      console.log(targetHandle)
-      console.log("update new inputs", newInputs)
-      console.log("NEW INPUTS", targetNode.data.inputs)
-    })
-  };
+  edges.forEach((edge) => {
+    const targetNodeId = edge.target;
+    const targetHandle = edge.targetHandle;
+    const targetNode = nodes.find(n => n.id === targetNodeId);
 
+    // GroupNodes und Nodes ohne inputs überspringen
+    if (!targetNode || !targetNode.data?.inputs || targetNode.type === "groupNode") return;
+
+    const newInputs = targetNode.data.inputs.filter((i: any) => i.targetHandle !== targetHandle);
+    updateNodeValue(targetNodeId, "inputs", newInputs);
+  });
+  };
 
 
   const handleAction = (action: string, nodeId: string) => {
@@ -626,20 +626,81 @@ If none apply, return { "algorithms": [] }.
       console.log(validMetadata);
       console.log(metadata);
 
-      const response = await startCompile(
-        lowcodeBackendEndpoint,
-        validMetadata,
-        reactFlowInstance.getNodes().map(n => ({
-          ...n,
-          // parentNode und extent entfernen damit Backend normale Nodes bekommt
-          parentNode: undefined,
-          extent: undefined,
-          // Absolute Position verwenden statt relative
-          position: n.positionAbsolute ?? n.position,
-        })).filter(n => n.type !== "groupNode"), // GroupNodes selbst nicht senden
-        reactFlowInstance.getEdges(),
-        compilationTarget
-      );
+    
+    const response = await startCompile(
+      lowcodeBackendEndpoint,
+      validMetadata,
+      reactFlowInstance.getNodes().map(n => ({
+        ...n,
+        parentNode: undefined,
+        extent: undefined,
+        position: n.positionAbsolute ?? n.position,
+      })).filter(n => n.type !== "groupNode"),
+      (() => {
+        const allNodes = reactFlowInstance.getNodes();
+        const allEdges = reactFlowInstance.getEdges();
+        const expandedEdges: typeof allEdges = [];
+
+        const findNodeFromHandle = (handleId: string | null, groupId: string): Node | undefined => {
+          if (!handleId) return undefined;
+          const children = allNodes.filter(n => n.parentNode === groupId && n.type !== "groupNode");
+          // Prüfe ob Handle-ID eine Kind-Node ID enthält
+          const match = children.find(n => handleId.includes(n.id));
+          if (match) return match;
+          // Fallback: wenn es ein Gruppen-Handle ist (groupInput/groupOutput)
+          // dann ersten/letzten Kind-Node nehmen
+          if (handleId.includes("groupInput")) {
+            // Ersten Kind-Node mit freiem Input nehmen
+            return children.find(n => n.type === "gateNode" && n.data?.inputs?.length > 0)
+              ?? children[0];
+          }
+          if (handleId.includes("groupOutput")) {
+            // Letzten Kind-Node nehmen (Output)
+            return children[children.length - 1];
+          }
+          return children[0];
+        };
+
+
+        for (const edge of allEdges) {
+          const srcNode = allNodes.find(n => n.id === edge.source);
+          const tgtNode = allNodes.find(n => n.id === edge.target);
+
+          if (srcNode?.type === "groupNode" || tgtNode?.type === "groupNode") {
+            const realSrc = srcNode?.type === "groupNode"
+              ? findNodeFromHandle(edge.sourceHandle, srcNode.id)
+                ?? allNodes.filter(n => n.parentNode === srcNode.id && n.type !== "groupNode")[0]
+              : srcNode;
+            const realTgt = tgtNode?.type === "groupNode"
+              ? findNodeFromHandle(edge.targetHandle, tgtNode.id)
+                ?? allNodes.filter(n => n.parentNode === tgtNode.id && n.type !== "groupNode")[0]
+              : tgtNode;
+
+            if (realSrc && realTgt) {
+              // Generiere die korrekten Handle-IDs wenn es Gruppen-Handles waren
+              const newSourceHandle = edge.sourceHandle?.includes("groupOutput")
+                ? `quantumHandleGateOutput0${realSrc.id}`
+                : edge.sourceHandle;
+              const newTargetHandle = edge.targetHandle?.includes("groupInput")
+                ? `quantumHandleGateInput0${realTgt.id}`
+                : edge.targetHandle;
+
+              expandedEdges.push({
+                ...edge,
+                id: `expanded-${edge.id}`,
+                source: realSrc.id,
+                target: realTgt.id,
+                sourceHandle: newSourceHandle,
+                targetHandle: newTargetHandle,
+              });
+            } } else {
+            expandedEdges.push(edge);
+          }
+        }
+        return expandedEdges;
+      })(),
+      compilationTarget
+    );
       console.log(response)
 
       const jsonData = await response.json();
@@ -1413,13 +1474,17 @@ If none apply, return { "algorithms": [] }.
       }
 
       // Drag-to-Group für groupNode
-   if (node.type !== "groupNode") {
-      const currentNodes = reactFlowInstance.getNodes();
-      const updatedNodes = handleNodeDropOnGroup(node, currentNodes);
-      if (updatedNodes !== currentNodes) {
-        reactFlowInstance.setNodes(updatedNodes);
+    if (node.type !== "groupNode") {
+          try {
+            const currentNodes = reactFlowInstance.getNodes();
+            const updatedNodes = handleNodeDropOnGroup(node, currentNodes);
+            if (updatedNodes !== currentNodes) {
+              reactFlowInstance.setNodes(updatedNodes);
+            }
+          } catch (e) {
+            // Node nicht gefunden – kein Update nötig
+          }
       }
-    }
     
 
       console.log("onNodeDrag");
@@ -1549,8 +1614,24 @@ If none apply, return { "algorithms": [] }.
       }
     }, [lassoMode, reactFlowInstance]);
 
-    // In <ReactFlow>:
-    // onSelectionEnd={onSelectionEnd}
+    const handleConnect = useCallback((connection: Connection) => {
+  const sourceNode = reactFlowInstance.getNode(connection.source ?? "");
+  const targetNode = reactFlowInstance.getNode(connection.target ?? "");
+
+  if (sourceNode?.type === "groupNode" || targetNode?.type === "groupNode") {
+    const edgeType = connection.sourceHandle?.includes("quantum") ? "quantumEdge" : "classicalEdge";
+    const color = connection.sourceHandle?.includes("quantum") ? "#93C5FD" : "#F5A843";
+    reactFlowInstance.addEdges([{
+      ...connection,
+      id: `edge-group-${Date.now()}`,
+      type: edgeType,
+      markerEnd: { type: "arrowclosed", width: 20, height: 20, color, hidden: false },
+    }]);
+    return;
+  }
+
+  onConnect(connection);
+}, [reactFlowInstance, onConnect]);
 
 
 
@@ -2460,6 +2541,12 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
   });
 };
 
+  const getModel = useCallback(() => {
+    return reactFlowInstance.toObject();
+  }, [reactFlowInstance]);
+
+
+
   //Handler-Funktionen für Gruppierung von Nodes
   const handleGroupSelected = useCallback(() => {
     const currentNodes = reactFlowInstance.getNodes();
@@ -2476,6 +2563,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
       showToast("Mindestens 2 Nodes auswählen um zu gruppieren.", "info");
       return;
     }
+   
     
     const currentEdges = reactFlowInstance.getEdges();
     const updatedNodes = groupSelectedNodes(currentNodes, currentEdges);
@@ -2486,6 +2574,30 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
       showToast("Mindestens 2 Nodes auswählen um zu gruppieren.", "info");
     }
   }, [reactFlowInstance, showToast]);
+
+  const handleLoadQasm = useCallback((qasm: string) => {
+    const { nodes: newNodes, edges: newEdges } = qasmToNodes(qasm);
+
+    // Fehlende Node-Daten ergänzen die der Store erwartet
+    const enrichedNodes = newNodes.map(n => ({
+      ...n,
+      data: {
+        ...n.data,
+        inputTypes: n.data.inputs?.length > 0 ? ["quantum register"] : [],
+        outputTypes: ["quantum register"],
+        children: [],
+        implementation: "",
+        implementationType: "",
+        uncomputeImplementationType: "",
+        uncomputeImplementation: "",
+        completionGuaranteed: true,
+      }
+    }));
+
+  reactFlowInstance.setNodes(newNodes);
+  reactFlowInstance.setEdges(newEdges);
+  reactFlowInstance.fitView();
+}, [reactFlowInstance]);
 
 
 
@@ -2888,6 +3000,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
           onSaveAsTemplate={handleSaveAsTemplate}
           onManageTemplates={handleManageTemplates}
           onGroupSelected={handleGroupSelected}
+          onLoadQasm={handleLoadQasm}
         />
       </div>
       {<NewDiagramModal open={isLoadJsonModalOpen} onClose={cancelLoadJson} onConfirm={confirmNewDiagram} />}
@@ -3110,7 +3223,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
             }}
             onSelectionChange={onSelectionChange}
             onConnectEnd={onConnectEnd}
-            onConnect={onConnect}
+            onConnect={handleConnect}
             onPaneClick={onPaneClick}
             onClick={onClick}
             onDragOver={onDragOver}
@@ -3404,6 +3517,8 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
             compilationTarget={compilationTarget}
             qasmCode={openqasmCode}
             onGetCircuitSvg={getCircuitSvg}
+            onSendToBackend={sendToBackend}
+            onGetModel={getModel}
           />
         )}
       </div>

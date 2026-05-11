@@ -4,7 +4,7 @@
  */
 
 import { memo, useState, useCallback } from "react";
-import { NodeResizer, Handle, Position, Node, useReactFlow } from "reactflow";
+import { NodeResizer, Handle, Position, Node, Edge, useReactFlow } from "reactflow";
 import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
 
@@ -20,7 +20,6 @@ const EXPANDED_MIN_WIDTH  = 300;
 const EXPANDED_MIN_HEIGHT = 200;
 const COLLAPSED_HEIGHT    = 48;
 
-// Node-Typ Kategorien
 const QUANTUM_TYPES = new Set([
   "gateNode", "quantumOperatorNode", "ancillaNode", "statePreparationNode",
   "uncomputeNode", "algorithmNode", "qubitNode", "measurementNode",
@@ -33,43 +32,166 @@ type GroupType = "quantum" | "classical" | "mixed";
 
 function getGroupType(childNodes: Node[]): GroupType {
   const types = childNodes.map((n) => n.type ?? "");
-  const hasQuantum  = types.some((t) => QUANTUM_TYPES.has(t));
+  const hasQuantum   = types.some((t) => QUANTUM_TYPES.has(t));
   const hasClassical = types.some((t) => CLASSICAL_TYPES.has(t));
   if (hasQuantum && hasClassical) return "mixed";
   if (hasClassical) return "classical";
   return "quantum";
 }
 
-function getGroupStyle(type: GroupType, locked: boolean): {
-  color: string;
-  borderRadius: string;
-  borderStyle: string;
-} {
+function getGroupStyle(type: GroupType, locked: boolean) {
   if (locked) return { color: "#d97706", borderRadius: "8px", borderStyle: "solid" };
   switch (type) {
-    case "quantum":   return { color: "#3b82f6", borderRadius: "8px",  borderStyle: "dashed" }; // blau, Ecken
-    case "classical": return { color: "#f97316", borderRadius: "20px", borderStyle: "dashed" }; // orange, abgerundet
-    case "mixed":     return { color: "#8b5cf6", borderRadius: "4px",  borderStyle: "dashed" }; // lila, leicht abgeschnitten
+    case "quantum":   return { color: "#3b82f6", borderRadius: "8px",  borderStyle: "dashed" };
+    case "classical": return { color: "#f97316", borderRadius: "20px", borderStyle: "dashed" };
+    case "mixed":     return { color: "#8b5cf6", borderRadius: "4px",  borderStyle: "dashed" };
   }
+}
+
+// Handle-Farbe anhand der Handle-ID bestimmen
+function getHandleColor(handleId: string): string {
+  if (handleId.toLowerCase().includes("quantum"))   return "#93c5fd";
+  if (handleId.toLowerCase().includes("classical")) return "#F5A843";
+  if (handleId.toLowerCase().includes("ancilla"))   return "#c084fc";
+  return "#94a3b8";
+}
+
+interface ProxyHandle {
+  id: string;
+  type: "source" | "target";
+  color: string;
+  index: number;
+  total: number;
+}
+
+/**
+ * Berechnet die Proxy-Handles der Gruppe anhand der Edges:
+ * - Output: sourceHandle eines Kind-Nodes der NICHT intern verbunden ist
+ * - Input: targetHandle eines Kind-Nodes der NICHT intern verbunden ist
+ * Handles werden direkt aus den Edges abgeleitet – keine data.inputs nötig.
+ */
+function getProxyHandles(
+  childNodes: Node[],
+  edges: Edge[]
+): { inputs: ProxyHandle[]; outputs: ProxyHandle[] } {
+  const childIds = new Set(childNodes.map((n) => n.id));
+
+  // Interne Edges (beide Seiten sind Kind-Nodes)
+  const internalEdges = edges.filter(
+    (e) => childIds.has(e.source) && childIds.has(e.target)
+  );
+
+  // Handle-IDs aus internen Edges – als Prefix-Set für Vergleich
+  const internalSourceHandles = internalEdges.map((e) => e.sourceHandle).filter(Boolean) as string[];
+  const internalTargetHandles = internalEdges.map((e) => e.targetHandle).filter(Boolean) as string[];
+
+  // Externe Edges
+  const externalEdges = edges.filter(
+    (e) => (childIds.has(e.source) && !childIds.has(e.target)) ||
+            (!childIds.has(e.source) && childIds.has(e.target))
+  );
+  const externalSourceHandles = externalEdges.map((e) => e.sourceHandle).filter(Boolean) as string[];
+  const externalTargetHandles = externalEdges.map((e) => e.targetHandle).filter(Boolean) as string[];
+
+  // Prüft ob ein Handle-ID mit einem der gespeicherten Handles übereinstimmt
+  // (unterstützt sowohl exakte als auch prefix-basierte Übereinstimmung)
+  const isHandleUsed = (handleId: string, usedHandles: string[]): boolean => {
+    return usedHandles.some((h) =>
+      h === handleId ||
+      h.startsWith(handleId) ||
+      handleId.startsWith(h)
+    );
+  };
+
+  const inputs:  ProxyHandle[] = [];
+  const outputs: ProxyHandle[] = [];
+
+  childNodes.forEach((child) => {
+    const nodeType = child.type ?? "";
+
+    // Output-Handle ID nach bekanntem Muster generieren
+    let outputHandleId: string | null = null;
+    if (nodeType === "gateNode")               outputHandleId = `quantumHandleGateOutput0${child.id}`;
+    else if (nodeType === "qubitNode")         outputHandleId = `quantumHandleQubitOutput0${child.id}`;
+    else if (nodeType === "measurementNode")   outputHandleId = `quantumHandleMeasurementOutput0${child.id}`;
+    else if (nodeType === "statePreparationNode") outputHandleId = `quantumHandleStatePreparationOutput0${child.id}`;
+    else if (nodeType === "quantumOperatorNode")  outputHandleId = `quantumHandleQuantumOperatorOutput0${child.id}`;
+    else if (nodeType === "algorithmNode")     outputHandleId = `quantumHandleAlgorithmOutput0${child.id}`;
+    else if (nodeType === "ancillaNode")       outputHandleId = `ancillaHandleAncillaOutput0${child.id}`;
+    else if (nodeType === "uncomputeNode")     outputHandleId = `quantumHandleUncomputeOutput0${child.id}`;
+    else if (nodeType === "dataTypeNode")      outputHandleId = `classicalHandleDataTypeOutput0${child.id}`;
+    else if (nodeType === "classicalAlgorithmNode") outputHandleId = `classicalHandleClassicalAlgorithmOutput0${child.id}`;
+    else if (nodeType === "classicalOperatorNode")  outputHandleId = `classicalHandleClassicalOperatorOutput0${child.id}`;
+
+    // Output-Proxy: nicht intern verbunden UND nicht bereits extern verbunden
+    if (outputHandleId
+      && !isHandleUsed(outputHandleId, internalSourceHandles)
+      && !isHandleUsed(outputHandleId, externalSourceHandles)) {
+      outputs.push({
+        id: outputHandleId,
+        type: "source",
+        color: getHandleColor(outputHandleId),
+        index: outputs.length,
+        total: 0,
+      });
+    }
+
+    // Input-Handle ID nach bekanntem Muster generieren
+    let inputHandleId: string | null = null;
+    // gateNode: nur Input wenn der Node tatsächlich Inputs hat (nicht |0⟩ Qubit-Gate)
+    if (nodeType === "gateNode" && child.data?.inputs?.length > 0)
+                                               inputHandleId = `quantumHandleGateInput0${child.id}`;
+    else if (nodeType === "measurementNode")   inputHandleId = `quantumHandleMeasurementInput0${child.id}`;
+    else if (nodeType === "statePreparationNode") inputHandleId = `quantumHandleStatePreparationInput0${child.id}`;
+    else if (nodeType === "quantumOperatorNode")  inputHandleId = `quantumHandleQuantumOperatorInput0${child.id}`;
+    else if (nodeType === "algorithmNode")     inputHandleId = `quantumHandleAlgorithmInput0${child.id}`;
+    else if (nodeType === "uncomputeNode")     inputHandleId = `quantumHandleUncomputeInput0${child.id}`;
+    else if (nodeType === "classicalAlgorithmNode") inputHandleId = `classicalHandleClassicalAlgorithmInput0${child.id}`;
+    else if (nodeType === "classicalOperatorNode")  inputHandleId = `classicalHandleClassicalOperatorInput0${child.id}`;
+    // qubitNode, dataTypeNode: keine Inputs
+
+    // Input-Proxy: nicht intern verbunden UND nicht bereits extern verbunden
+    if (inputHandleId
+      && !isHandleUsed(inputHandleId, internalTargetHandles)
+      && !isHandleUsed(inputHandleId, externalTargetHandles)) {
+      inputs.push({
+        id: inputHandleId,
+        type: "target",
+        color: getHandleColor(inputHandleId),
+        index: inputs.length,
+        total: 0,
+      });
+    }
+  });
+
+  // Total aktualisieren
+  inputs.forEach((h, i)  => { h.index = i; h.total = inputs.length; });
+  outputs.forEach((h, i) => { h.index = i; h.total = outputs.length; });
+
+  return { inputs, outputs };
 }
 
 export const GroupNode = memo((node: Node) => {
   const { data, selected, id } = node;
   const { nodes, updateNodeValue } = useStore(selector, shallow);
-  const { setNodes, getNodes } = useReactFlow();
+  const { setNodes, getNodes, getEdges } = useReactFlow();
 
   const [isEditingLabel, setIsEditingLabel] = useState(false);
   const [editableLabel, setEditableLabel] = useState(data.label || "Gruppe");
   const collapsed = data.collapsed === true;
   const locked = data.locked === true;
 
-  // Typ anhand der Kind-Nodes bestimmen
   const childNodes = nodes.filter((n) => n.parentNode === id);
   const groupType = getGroupType(childNodes);
   const groupStyle = getGroupStyle(groupType, locked);
-  const color = locked ? "#d90606" : groupStyle.color;
+  const color = locked ? "#d97706" : groupStyle.color;
   const borderRadius = groupStyle.borderRadius;
   const borderStyle = collapsed ? "solid" : groupStyle.borderStyle;
+
+  // Proxy-Handles nur wenn aufgeklappt
+  const { inputs: proxyInputs, outputs: proxyOutputs } = !collapsed
+    ? getProxyHandles(childNodes, getEdges())
+    : { inputs: [], outputs: [] };
 
   const getChildBounds = useCallback(() => {
     const children = getNodes().filter((n) => n.parentNode === id);
@@ -88,9 +210,7 @@ export const GroupNode = memo((node: Node) => {
     const newCollapsed = !collapsed;
     setNodes((nds: Node[]) =>
       nds.map((n) => {
-        if (n.parentNode === id) {
-          return { ...n, hidden: newCollapsed };
-        }
+        if (n.parentNode === id) return { ...n, hidden: newCollapsed };
         if (n.id === id) {
           const bounds = newCollapsed ? null : getChildBounds();
           return {
@@ -113,12 +233,8 @@ export const GroupNode = memo((node: Node) => {
     const newLocked = !locked;
     setNodes((nds: Node[]) =>
       nds.map((n) => {
-        if (n.parentNode === id) {
-          return { ...n, draggable: !newLocked, connectable: !newLocked };
-        }
-        if (n.id === id) {
-          return { ...n, data: { ...n.data, locked: newLocked } };
-        }
+        if (n.parentNode === id) return { ...n, draggable: !newLocked, connectable: !newLocked };
+        if (n.id === id) return { ...n, data: { ...n.data, locked: newLocked } };
         return n;
       })
     );
@@ -129,25 +245,23 @@ export const GroupNode = memo((node: Node) => {
     const groupNode = getNodes().find((n) => n.id === id);
     if (!groupNode) return;
     setNodes((nds: Node[]) =>
-      nds
-        .filter((n) => n.id !== id)
-        .map((n) => {
-          if (n.parentNode === id) {
-            return {
-              ...n,
-              parentNode: undefined,
-              extent: undefined,
-              hidden: false,
-              draggable: true,       // ← Lock zurücksetzen
-              connectable: true,     // ← Lock zurücksetzen
-              position: {
-                x: n.position.x + groupNode.position.x,
-                y: n.position.y + groupNode.position.y,
-              },
-            };
-          }
-          return n;
-        })
+      nds.filter((n) => n.id !== id).map((n) => {
+        if (n.parentNode === id) {
+          return {
+            ...n,
+            parentNode: undefined,
+            extent: undefined,
+            hidden: false,
+            draggable: true,
+            connectable: true,
+            position: {
+              x: n.position.x + groupNode.position.x,
+              y: n.position.y + groupNode.position.y,
+            },
+          };
+        }
+        return n;
+      })
     );
   }, [id, setNodes, getNodes]);
 
@@ -159,6 +273,13 @@ export const GroupNode = memo((node: Node) => {
   const handleLabelKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter")  handleLabelBlur();
     if (e.key === "Escape") { setIsEditingLabel(false); setEditableLabel(data.label || "Gruppe"); }
+  };
+
+  // Vertikale Position der Handles gleichmäßig verteilen
+  const handleTop = (index: number, total: number): string => {
+    if (total === 1) return "50%";
+    const step = 70 / (total + 1);
+    return `${15 + step * (index + 1)}%`;
   };
 
   return (
@@ -173,15 +294,13 @@ export const GroupNode = memo((node: Node) => {
 
       <div
         style={{
-          width: "100%",
-          height: "100%",
+          width: "100%", height: "100%",
           border: `2px ${borderStyle} ${color}`,
           borderRadius,
           backgroundColor: locked ? "#fffbeb" : `${color}${collapsed ? "22" : "0d"}`,
           position: "relative",
           transition: "height 0.2s ease, background-color 0.2s ease",
-          boxSizing: "border-box",
-          overflow: "visible",
+          boxSizing: "border-box", overflow: "visible",
         }}
       >
         {/* Header */}
@@ -190,48 +309,32 @@ export const GroupNode = memo((node: Node) => {
             backgroundColor: `${color}33`,
             borderBottom: collapsed ? "none" : `1px dashed ${color}55`,
             borderRadius: collapsed ? borderRadius : `calc(${borderRadius} - 2px) calc(${borderRadius} - 2px) 0 0`,
-            padding: "6px 10px",
-            height: "36px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
+            padding: "6px 10px", height: "36px",
+            display: "flex", alignItems: "center", justifyContent: "space-between",
             userSelect: "none",
           }}
         >
-          {/* Icon + Label */}
           <div style={{ display: "flex", alignItems: "center", gap: "6px", flex: 1, minWidth: 0 }}>
             <span style={{ color, fontSize: "11px", flexShrink: 0 }}>▣</span>
             {isEditingLabel ? (
               <input
-                autoFocus
-                value={editableLabel}
+                autoFocus value={editableLabel}
                 onChange={(e) => setEditableLabel(e.target.value)}
-                onBlur={handleLabelBlur}
-                onKeyDown={handleLabelKeyDown}
+                onBlur={handleLabelBlur} onKeyDown={handleLabelKeyDown}
                 onClick={(e) => e.stopPropagation()}
                 style={{
-                  fontSize: "18px",
-                  fontWeight: 600,
-                  color,
-                  background: "transparent",
-                  border: "none",
-                  borderBottom: `1px solid ${color}`,
-                  outline: "none",
-                  flex: 1,
-                  minWidth: 0,
+                  fontSize: "18px", fontWeight: 600, color,
+                  background: "transparent", border: "none",
+                  borderBottom: `1px solid ${color}`, outline: "none",
+                  flex: 1, minWidth: 0,
                 }}
               />
             ) : (
               <span
                 style={{
-                  fontSize: "18px",
-                  fontWeight: 600,
-                  color,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                  flex: 1,
-                  cursor: "text",
+                  fontSize: "18px", fontWeight: 600, color,
+                  overflow: "hidden", textOverflow: "ellipsis",
+                  whiteSpace: "nowrap", flex: 1, cursor: "text",
                 }}
                 onDoubleClick={() => setIsEditingLabel(true)}
                 title="Doppelklick zum Bearbeiten"
@@ -241,16 +344,13 @@ export const GroupNode = memo((node: Node) => {
             )}
           </div>
 
-          {/* Node-Anzahl wenn collapsed */}
           {collapsed && childNodes.length > 0 && (
             <span style={{ fontSize: "10px", color: `${color}99`, marginRight: "6px", flexShrink: 0 }}>
               {childNodes.length} Node{childNodes.length !== 1 ? "s" : ""}
             </span>
           )}
 
-          {/* Collapse/Expand Button */}
-          <button
-            onClick={(e) => { e.stopPropagation(); toggleCollapse(); }}
+          <button onClick={(e) => { e.stopPropagation(); toggleCollapse(); }}
             style={{
               flexShrink: 0, width: "20px", height: "20px",
               display: "flex", alignItems: "center", justifyContent: "center",
@@ -259,13 +359,9 @@ export const GroupNode = memo((node: Node) => {
               border: `1px solid ${color}66`, cursor: "pointer", lineHeight: 1,
             }}
             title={collapsed ? "Aufklappen" : "Einklappen"}
-          >
-            {collapsed ? "▸" : "▾"}
-          </button>
+          >{collapsed ? "▸" : "▾"}</button>
 
-          {/* Lock Button */}
-          <button
-            onClick={handleToggleLock}
+          <button onClick={handleToggleLock}
             style={{
               flexShrink: 0, width: "20px", height: "20px",
               display: "flex", alignItems: "center", justifyContent: "center",
@@ -276,13 +372,9 @@ export const GroupNode = memo((node: Node) => {
               cursor: "pointer", lineHeight: 1, marginLeft: "2px",
             }}
             title={locked ? "Gruppe entsperren" : "Gruppe sperren"}
-          >
-            {locked ? "🔒" : "🔓"}
-          </button>
+          >{locked ? "🔒" : "🔓"}</button>
 
-          {/* Gruppierung aufheben */}
-          <button
-            onClick={handleUngroup}
+          <button onClick={handleUngroup}
             style={{
               flexShrink: 0, width: "20px", height: "20px",
               display: "flex", alignItems: "center", justifyContent: "center",
@@ -292,27 +384,57 @@ export const GroupNode = memo((node: Node) => {
               lineHeight: 1, marginLeft: "4px",
             }}
             title="Gruppierung aufheben"
-          >
-            ×
-          </button>
+          >×</button>
         </div>
       </div>
 
-      {/* Externe Handles */}
-      <Handle
-        type="target"
-        id={`groupInput0${id}`}
-        position={Position.Left}
-        isConnectable={true}
-        style={{ top: "50%", background: color, border: "2px solid white", width: 13, height: 16, zIndex: 10 }}
-      />
-      <Handle
-        type="source"
-        id={`groupOutput0${id}`}
-        position={Position.Right}
-        isConnectable={true}
-        style={{ top: "50%", background: color, border: "2px solid white", width: 13, height: 16, zIndex: 10 }}
-      />
+      {/* Proxy Input-Handles (links) */}
+      {!collapsed && proxyInputs.length > 0 && proxyInputs.map((h) => (
+        <Handle
+          key={h.id}
+          type="target"
+          id={h.id}
+          position={Position.Left}
+          isConnectable={true}
+          style={{
+            top: handleTop(h.index, h.total),
+            background: h.color,
+            border: "2px solid white",
+            width: 12, height: 12, zIndex: 10, borderRadius: 0,
+          }}
+        />
+      ))}
+
+      {/* Proxy Output-Handles (rechts) */}
+      {!collapsed && proxyOutputs.length > 0 && proxyOutputs.map((h) => (
+        <Handle
+          key={h.id}
+          type="source"
+          id={h.id}
+          position={Position.Right}
+          isConnectable={true}
+          style={{
+            top: handleTop(h.index, h.total),
+            background: h.color,
+            border: "2px solid white",
+            width: 12, height: 12, zIndex: 10, borderRadius: 0,
+          }}
+        />
+      ))}
+
+      {/* Fallback wenn keine Proxy-Handles */}
+      {(collapsed || proxyInputs.length === 0) && (
+        <Handle type="target" id={`groupInput0${id}`} position={Position.Left}
+          isConnectable={true}
+          style={{ top: "50%", background: color, border: "2px solid white", width: 13, height: 16, zIndex: 10, borderRadius: 0 }}
+        />
+      )}
+      {(collapsed || proxyOutputs.length === 0) && (
+        <Handle type="source" id={`groupOutput0${id}`} position={Position.Right}
+          isConnectable={true}
+          style={{ top: "50%", background: color, border: "2px solid white", width: 13, height: 16, zIndex: 10, borderRadius: 0 }}
+        />
+      )}
     </>
   );
 });

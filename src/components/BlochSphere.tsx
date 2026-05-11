@@ -91,7 +91,7 @@ export function BlochSphere({ statevector, numQubits, qubitIndex = 0 }: BlochSph
 
     // Camera
     const camera = new THREE.PerspectiveCamera(40, W / H, 0.1, 100);
-    camera.position.set(0, 0, 5.5);
+    camera.position.set(0, 0, 5.0);
     cameraRef.current = camera;
 
     // Renderer
@@ -136,9 +136,9 @@ export function BlochSphere({ statevector, numQubits, qubitIndex = 0 }: BlochSph
       ]);
       scene.add(new THREE.Line(geo, mat));
     };
-    addAxis(new THREE.Vector3(1, 0, 0), 0xef4444); // X rot
-    addAxis(new THREE.Vector3(0, 1, 0), 0x22c55e); // Y grün
-    addAxis(new THREE.Vector3(0, 0, 1), 0x6366f1); // Z blau
+    addAxis(new THREE.Vector3(1, 0, 0), 0xef4444); // X rot  → |+⟩/|-⟩
+    addAxis(new THREE.Vector3(0, 1, 0), 0x6366f1); // Z blau → |0⟩/|1⟩
+    addAxis(new THREE.Vector3(0, 0, 1), 0x22c55e); // Y grün → |i⟩/|-i⟩
 
     // Achsenbeschriftungen als Sprites
     const makeLabel = (text: string, pos: THREE.Vector3) => {
@@ -162,6 +162,11 @@ export function BlochSphere({ statevector, numQubits, qubitIndex = 0 }: BlochSph
     makeLabel("|1⟩", new THREE.Vector3(0, -1.6, 0));
     makeLabel("|+⟩", new THREE.Vector3(1.6, 0, 0));
     makeLabel("|-⟩", new THREE.Vector3(-1.6, 0, 0));
+
+    // Achsenbeschriftungen X, Y, Z
+    makeLabel("X", new THREE.Vector3(1.6, 0.15, 0));
+    makeLabel("Y", new THREE.Vector3(0, 0.15, 1.6));
+    makeLabel("Z", new THREE.Vector3(0.15, 1.6, 0));
 
     // Licht
     scene.add(new THREE.AmbientLight(0xffffff, 0.8));
@@ -198,7 +203,7 @@ export function BlochSphere({ statevector, numQubits, qubitIndex = 0 }: BlochSph
     };
     animate();
 
-    // Maus-Events
+    // Maus-Events – Links: X/Y Rotation, Rechts/Shift: Z Rotation
     const el = renderer.domElement;
     const onDown = (e: MouseEvent) => {
       isDragging.current = true;
@@ -209,8 +214,15 @@ export function BlochSphere({ statevector, numQubits, qubitIndex = 0 }: BlochSph
       const dx = e.clientX - lastMouse.current.x;
       const dy = e.clientY - lastMouse.current.y;
       lastMouse.current = { x: e.clientX, y: e.clientY };
-      pivot.rotation.y += dx * 0.01;
-      pivot.rotation.x += dy * 0.01;
+
+      if (e.shiftKey) {
+        // Shift+Drag → Z-Rotation (um Y-Achse der Sphäre)
+        pivot.rotation.z += dx * 0.01;
+      } else {
+        // Normal → X/Y Rotation
+        pivot.rotation.y += dx * 0.01;
+        pivot.rotation.x += dy * 0.01;
+      }
     };
     const onUp = () => { isDragging.current = false; };
 
@@ -240,9 +252,14 @@ export function BlochSphere({ statevector, numQubits, qubitIndex = 0 }: BlochSph
   }, [bloch.x, bloch.y, bloch.z]);
 
   return (
-    <div
-      ref={mountRef}
-      style={{ width: 260, height: 260, cursor: "grab", borderRadius: "8px", overflow: "hidden" }}
-    />
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
+      <div
+        ref={mountRef}
+        style={{ width: 260, height: 260, cursor: "grab", borderRadius: "8px", overflow: "hidden" }}
+      />
+      <span style={{ fontSize: "10px", color: "#9ca3af" }}>
+        Drag to rotate · Shift+Drag for Z-axis
+      </span>
+    </div>
   );
 }

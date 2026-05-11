@@ -29,12 +29,13 @@ export interface DiracComponent {
 /**
  * Findet alle zusammenhängenden Teilgraphen im Flow per BFS.
  * Ignoriert GroupNodes und versteckte Nodes.
+ * Gruppen-Edges werden auf Kind-Nodes erweitert.
  */
 export function findConnectedComponents(
   nodes: Node[],
-  edges: Edge[]
+  edges: Edge[],
+  allNodes?: Node[]
 ): Node[][] {
-  // Nur echte Schaltkreis-Nodes (keine Gruppen, keine versteckten)
   const activeNodes = nodes.filter(
     (n) => n.type !== "groupNode" && !n.hidden
   );
@@ -42,6 +43,37 @@ export function findConnectedComponents(
   if (activeNodes.length === 0) return [];
 
   const nodeIds = new Set(activeNodes.map((n) => n.id));
+  // allNodes enthält auch GroupNodes für die Expansion
+  const fullNodes = allNodes ?? nodes;
+
+  // Gruppen-Edges expandieren
+  const expandedEdges: Edge[] = [];
+  for (const edge of edges) {
+    const sourceNode = fullNodes.find((n) => n.id === edge.source);
+    const targetNode = fullNodes.find((n) => n.id === edge.target);
+
+    if (sourceNode?.type === "groupNode" || targetNode?.type === "groupNode") {
+      const sourceChildren = sourceNode?.type === "groupNode"
+        ? activeNodes.filter((n) => n.parentNode === sourceNode.id)
+        : sourceNode ? [sourceNode] : [];
+      const targetChildren = targetNode?.type === "groupNode"
+        ? activeNodes.filter((n) => n.parentNode === targetNode.id)
+        : targetNode ? [targetNode] : [];
+
+      for (const src of sourceChildren) {
+        for (const tgt of targetChildren) {
+          expandedEdges.push({
+            ...edge,
+            id: `virtual-${edge.id}-${src.id}-${tgt.id}`,
+            source: src.id,
+            target: tgt.id,
+          });
+        }
+      }
+    } else {
+      expandedEdges.push(edge);
+    }
+  }
 
   // Adjazenzliste aufbauen (bidirektional)
   const adjacency = new Map<string, Set<string>>();
@@ -49,7 +81,7 @@ export function findConnectedComponents(
     adjacency.set(node.id, new Set());
   }
 
-  for (const edge of edges) {
+  for (const edge of expandedEdges) {
     if (nodeIds.has(edge.source) && nodeIds.has(edge.target)) {
       adjacency.get(edge.source)?.add(edge.target);
       adjacency.get(edge.target)?.add(edge.source);
@@ -63,7 +95,6 @@ export function findConnectedComponents(
   for (const node of activeNodes) {
     if (visited.has(node.id)) continue;
 
-    // Neue Komponente starten
     const component: Node[] = [];
     const queue: string[] = [node.id];
     visited.add(node.id);
@@ -116,9 +147,8 @@ function getComponentGroupInfo(
 }
 
 /**
- * Sendet jede Gruppe/Komponente als einen Backend-Call.
- * Nodes derselben Gruppe werden zusammen gesendet.
- * Ungrouped Nodes werden als separate Schaltkreise gesendet.
+ * Sendet zusammenhängende Komponenten ans Backend.
+ * Verbundene Gruppen werden zusammen als ein Job gesendet.
  */
 export async function analyzeComponents(
   nodes: Node[],
@@ -132,66 +162,126 @@ export async function analyzeComponents(
   );
   if (activeNodes.length === 0) return [];
 
-  // Gruppen-IDs sammeln
-  const groupIds = new Set(
-    activeNodes.map((n) => n.parentNode).filter(Boolean) as string[]
-  );
+  // Zusammenhängende Komponenten finden (berücksichtigt Gruppen-Edges)
+  const components = findConnectedComponents(activeNodes, edges, nodes);
 
-  // Ungrouped Nodes → separate Komponenten per BFS
-  const ungroupedNodes = activeNodes.filter((n) => !n.parentNode);
-  const ungroupedComponents = findConnectedComponents(ungroupedNodes, edges);
+  // Gruppen-Edges expandieren für Backend-Calls
+  const expandEdges = (componentNodes: Node[]): Edge[] => {
+    const nodeIds = new Set(componentNodes.map((n) => n.id));
+    const result: Edge[] = [];
 
-  // Jobs aufbauen: eine Job-Einheit pro Gruppe + eine pro ungrouped Komponente
-  type Job = {
-    label: string | null;
-    groupId: string | null;
-    color: string;
-    jobNodes: Node[];
-    jobEdges: Edge[];
+    for (const edge of edges) {
+      const srcNode = nodes.find(n => n.id === edge.source);
+      const tgtNode = nodes.find(n => n.id === edge.target);
+
+      if (srcNode?.type === "groupNode" || tgtNode?.type === "groupNode") {
+        // Finde den richtigen Kind-Node anhand der Handle-ID
+          
+
+        const findChild = (handleId: string | null, groupId: string): Node | undefined => {
+        if (!handleId) return undefined;
+        const children = activeNodes.filter(n => n.parentNode === groupId);
+        
+        // Prüfe ob Handle-ID eine Kind-Node ID enthält
+        const match = children.find(n => handleId.includes(n.id));
+        if (match) return match;
+        
+        // Fallback: finde den ersten Node der keinen internen Input hat
+        // (d.h. der "Eingangs-Node" der Gruppe)
+        if (handleId.includes("groupInput")) {
+          const internalEdges = edges.filter(
+            e => children.some(c => c.id === e.source) && children.some(c => c.id === e.target)
+          );
+          const internalTargets = new Set(internalEdges.map(e => e.target));
+          // Node der kein internes Target ist = Eingangs-Node
+          return children.find(n => !internalTargets.has(n.id) && n.type !== "qubitNode")
+            ?? children[0];
+        }
+        if (handleId.includes("groupOutput")) {
+          const internalEdges = edges.filter(
+            e => children.some(c => c.id === e.source) && children.some(c => c.id === e.target)
+          );
+          const internalSources = new Set(internalEdges.map(e => e.source));
+          // Node der kein internes Source ist = Ausgangs-Node
+          return children.find(n => !internalSources.has(n.id))
+            ?? children[children.length - 1];
+        }
+        return children[0];
+      };
+
+        const realSrc = srcNode?.type === "groupNode"
+          ? findChild(edge.sourceHandle, srcNode.id)
+          : srcNode;
+        const realTgt = tgtNode?.type === "groupNode"
+          ? findChild(edge.targetHandle, tgtNode.id)
+          : tgtNode;
+
+        if (realSrc && realTgt && nodeIds.has(realSrc.id) && nodeIds.has(realTgt.id)) {
+          const newSourceHandle = edge.sourceHandle?.includes("groupOutput")
+            ? `quantumHandleGateOutput0${realSrc.id}`
+            : edge.sourceHandle;
+          const newTargetHandle = edge.targetHandle?.includes("groupInput")
+            ? `quantumHandleGateInput0${realTgt.id}`
+            : edge.targetHandle;
+          result.push({
+            ...edge,
+            id: `expanded-${edge.id}`,
+            source: realSrc.id,
+            target: realTgt.id,
+            sourceHandle: newSourceHandle,
+            targetHandle: newTargetHandle,
+          });
+        }
+      } else if (nodeIds.has(edge.source) && nodeIds.has(edge.target)) {
+        result.push(edge);
+      }
+    }
+    return result;
   };
 
-  const jobs: Job[] = [];
+  // Label und Farbe für eine Komponente bestimmen
+  const getComponentInfo = (componentNodes: Node[]) => {
+    const parentIds = new Set(componentNodes.map(n => n.parentNode).filter(Boolean) as string[]);
 
-  // Jobs für Gruppen
-  for (const groupId of groupIds) {
-    const groupNode = nodes.find((n) => n.id === groupId);
-    const groupNodes = activeNodes.filter((n) => n.parentNode === groupId);
-    const nodeIds = new Set(groupNodes.map((n) => n.id));
-    const groupEdges = edges.filter(
-      (e) => nodeIds.has(e.source) && nodeIds.has(e.target)
-    );
-    jobs.push({
-      label: groupNode?.data?.label || "Gruppe",
-      groupId,
-      color: groupNode?.data?.color || "#6366f1",
-      jobNodes: groupNodes.map((n) => ({
+    if (parentIds.size === 1) {
+      // Alle Nodes in derselben Gruppe
+      const groupId = [...parentIds][0];
+      const groupNode = nodes.find(n => n.id === groupId);
+      return {
+        label: groupNode?.data?.label || "Group",
+        color: groupNode?.data?.color || "#6366f1",
+        groupId,
+      };
+    } else if (parentIds.size > 1) {
+      // Nodes aus mehreren Gruppen → zusammengesetzter Name
+      const groupNames = [...parentIds].map(gid => {
+        const g = nodes.find(n => n.id === gid);
+        return g?.data?.label || "Group";
+      });
+      return {
+        label: groupNames.join(" → "),
+        color: "#8b5cf6",
+        groupId: null,
+      };
+    }
+    return { label: null, color: "#6366f1", groupId: null };
+  };
+
+  // Jobs erstellen
+  const jobs = components.map((componentNodes) => {
+    const info = getComponentInfo(componentNodes);
+    return {
+      label: info.label,
+      groupId: info.groupId,
+      color: info.color,
+      jobNodes: componentNodes.map(n => ({
         ...n,
         parentNode: undefined,
         extent: undefined,
         position: n.positionAbsolute ?? n.position,
       })),
-      jobEdges: groupEdges,
-    });
-  }
-
-  // Jobs für ungrouped Komponenten
-  ungroupedComponents.forEach((componentNodes, idx) => {
-    const nodeIds = new Set(componentNodes.map((n) => n.id));
-    const componentEdges = edges.filter(
-      (e) => nodeIds.has(e.source) && nodeIds.has(e.target)
-    );
-    jobs.push({
-      label: ungroupedComponents.length === 1 ? null : `Schaltkreis ${idx + 1}`,
-      groupId: null,
-      color: "#6366f1",
-      jobNodes: componentNodes.map((n) => ({
-        ...n,
-        parentNode: undefined,
-        extent: undefined,
-        position: n.positionAbsolute ?? n.position,
-      })),
-      jobEdges: componentEdges,
-    });
+      jobEdges: expandEdges(componentNodes),
+    };
   });
 
   // Alle Jobs parallel ausführen
@@ -206,11 +296,11 @@ export async function analyzeComponents(
           compilationTarget
         );
 
-        if (!response.ok) throw new Error(`Backend Fehler: ${response.status}`);
+        if (!response.ok) throw new Error(`Backend error: ${response.status}`);
 
         const data = await response.json();
         const uuid = data.uuid;
-        if (!uuid) throw new Error("Keine UUID vom Backend erhalten");
+        if (!uuid) throw new Error("No UUID from backend");
 
         const statusUrl = `${backendUrl}/status/${uuid}`;
         const resultUrl = `${backendUrl}/results/${uuid}`;
@@ -234,7 +324,7 @@ export async function analyzeComponents(
           groupColor: job.color,
           nodes: job.jobNodes,
           qasm: null,
-          error: e instanceof Error ? e.message : "Unbekannter Fehler",
+          error: e instanceof Error ? e.message : "Unknown error",
         } as DiracComponent;
       }
     })
@@ -249,7 +339,7 @@ export async function analyzeComponents(
       groupColor: "#6366f1",
       nodes: jobs[index]?.jobNodes ?? [],
       qasm: null,
-      error: "Fehler beim Backend-Call",
+      error: "Backend call failed",
     };
   });
 }

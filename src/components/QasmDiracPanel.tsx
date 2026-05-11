@@ -16,6 +16,7 @@ type QasmProps = {
   statevector?: never;
   title?: string;
   onGetCircuitSvg?: () => Promise<string>;
+  onGetModel?: () => object;
 };
 
 type StatevectorProps = {
@@ -24,6 +25,7 @@ type StatevectorProps = {
   qasm?: never;
   title?: string;
   onGetCircuitSvg?: () => Promise<string>;
+  onGetModel?: () => object;
 };
 
 type Props = QasmProps | StatevectorProps;
@@ -236,10 +238,13 @@ function downloadTex(content: string) {
   URL.revokeObjectURL(url);
 }
 
-async function downloadZip(texContent: string, pngBase64: string) {
+async function downloadZip(texContent: string, pngBase64: string, modelJson?: object) {
   const zip = new JSZip();
   zip.file("main.tex", texContent);
   zip.file("circuit.png", pngBase64, { base64: true });
+  if (modelJson) {
+    zip.file("model.json", JSON.stringify(modelJson, null, 2));
+  }
   const blob = await zip.generateAsync({ type: "blob" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -253,13 +258,14 @@ async function downloadZip(texContent: string, pngBase64: string) {
 // Export-Menü
 // ---------------------------------------------------------------------------
 
-function ExportMenu({ latex, numQubits, terms, unicode, onGetCircuitSvg, stepsResult}: {
+function ExportMenu({ latex, numQubits, terms, unicode, onGetCircuitSvg, stepsResult, onGetModel}: {
   latex: string;
   numQubits: number;
   terms: any[];
   unicode: string;
   onGetCircuitSvg?: () => Promise<string>;
   stepsResult?: DiracStepsResult;
+  onGetModel?: () => object;
 }) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
@@ -280,7 +286,8 @@ function ExportMenu({ latex, numQubits, terms, unicode, onGetCircuitSvg, stepsRe
         const svg = await onGetCircuitSvg();
         const pngBase64 = await svgToPngBase64(svg);
         const texContent = buildLatexExport(latex, numQubits, terms, pngBase64, stepsResult);
-        await downloadZip(texContent, pngBase64);
+        const modelJson = onGetModel?.();
+        await downloadZip(texContent, pngBase64, modelJson);
       } catch (e) {
         console.error("Export failed:", e);
         downloadTex(buildLatexExport(latex, numQubits, terms, undefined, stepsResult));
@@ -622,6 +629,7 @@ export function QasmDiracPanel(props: Props) {
               unicode={fullResult.unicode}
               onGetCircuitSvg={props.onGetCircuitSvg}
               stepsResult={stepsResult ?? undefined}
+              onGetModel={props.onGetModel}
             />
           )}
         </div>
