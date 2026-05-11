@@ -44,7 +44,7 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                     label: node.data.label, // optional
                     propertyValues: node.data.propertyValues || {}, // numeric/string/date/etc.
                     mapping: node.data.mapping || [], // input-output mapping
-            
+
                 };
 
             case consts.StatePreparationNode:
@@ -129,9 +129,11 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                 if (node.data.label === "Qubit" || node.data.label === "Qubit Circuit") {
                     return {
                         id: node.id,
-                        type: "qubit"
+                        type: "qubit",
+                        width: node.data.size
                     }
-                } else if (["RX(θ)", "RY(θ)", "RZ(θ)"].includes(node.data.label)) {
+                }
+                else if (["RX(θ)", "RY(θ)", "RZ(θ)"].includes(node.data.label)) {
                     return {
                         id: node.id,
                         type: "gate-with-param",
@@ -153,7 +155,7 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                             "T": "t",
                             "X": "x",
                             "Y": "y",
-                            "Z": "z",
+                            "Z": "z"
                         }, node.data.label)
                     }
                 }
@@ -162,18 +164,14 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
             case consts.DataTypeNode:
                 switch (node.data.dataType) {
                     case "int":
+                    case "Number": {
+                        const numValue = Number(node.data.value);
                         return {
                             id: node.id,
-                            type: "int",
-                            value: node.data.value
+                            type: Number.isInteger(numValue) ? "int" : "float",
+                            value: numValue
                         }
-
-                    case "Number":
-                        return {
-                            id: node.id,
-                            type: "int",
-                            value: node.data.value
-                        }
+                    }
 
                     case "boolean":
                         return {
@@ -234,6 +232,22 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                     type: "operator",
                     operator: node.data.operator || node.data.minmax
                 }
+            
+            case consts.QubitNode:
+                 return {
+                        id: node.id,
+                        type: "qubit",
+                        size: node.data.size
+                    }
+
+            case consts.QFTNode:
+            case consts.InverseQFTNode:
+                return {
+                    id: node.id,
+                    type: "qft",
+                    inverse: node.data.inverse
+                    //size: node.data.numberOutputs
+                }
 
 
             case consts.ControlStructureNode:
@@ -277,6 +291,14 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
             case consts.PluginNode: {
                 const basePluginName = node.data.pluginName;
                 const algo = node.data.clusteringAlgorithm;
+                const variant = node.data.variant;
+                const algorithm = node.data.algorithm;
+                const method = node.data.method;
+                const metric = node.data.metric;
+                const minSteepness = node.data.minSteepness;
+                const maxDistance = node.data.maxDistance;
+                const minkowskiPValue = node.data.minkowskiPValue;
+                const initEnum = node.data.initializationMethod;
                 let effectivePluginName = basePluginName;
                 if (algo && algo !== 'k-means' && (basePluginName === 'classical-k-means' || basePluginName === 'quantum-k-means')) {
                     const prefix = basePluginName === 'classical-k-means' ? 'classical' : 'quantum';
@@ -287,6 +309,15 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                     type: "plugin",
                     pluginIdentifier: node.data.pluginIdentifier,
                     pluginName: effectivePluginName,
+                    clusteringAlgorithm: algo,
+                    variant: variant,
+                    initEnum: initEnum,
+                    metricEnum: metric,
+                    methodEnum: method,
+                    maxEpsilon: maxDistance,
+                    algorithmEnum: algorithm,
+                    minkowskiP: minkowskiPValue,
+                    xi: minSteepness,
                     inputs: node.data.dataInputs?.map((input: any) => ({
                         parameter: input.parameter,
                         dataType: input.data_type,

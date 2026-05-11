@@ -53,6 +53,8 @@ import { PatternImplementationSelectionModal } from "./components/modals/pattern
 import { groupSelectedNodes, ungroupNodes, handleNodeDropOnGroup } from "./lib/groupHandler";
 import { qasmToNodes } from "./lib/qasmToNodes";
 
+import PromptFlowModal from "./components/modals/promptFlowModal";
+import { generateFlow, sendToMistral } from "./generation";
 
 const selector = (state: {
   nodes: Node[];
@@ -179,6 +181,9 @@ function App() {
 
   const [openAIToken, setOpenAIToken] = useState(
     import.meta.env.VITE_OPENAI_TOKEN
+  );
+  const [mistralToken, setMistralToken] = useState(
+    import.meta.env.VITE_MISTRAL_TOKEN
   );
   const [qunicornEndpoint, setQunicornEndpoint] = useState(
     import.meta.env.VITE_QUNICORN || "http://localhost:8080"
@@ -425,6 +430,7 @@ If none apply, return { "algorithms": [] }.
     setCamundaEndpoint(newValues.tempCamundaEndpoint);
     setNisqAnalyzerEndpoint(newValues.tempNisqAnalyzerEndpoint);
     setOpenAIToken(newValues.tempOpenAIToken);
+    setMistralToken(newValues.tempMistralToken);
     setQunicornEndpoint(newValues.tempQunicornEndpoint);
     setLowcodeBackendEndpoint(newValues.tempLowcodeBackendEndpoint);
     setPatternAtlasUiEndpoint(newValues.tempPatternAtlasUiEndpoint);
@@ -485,20 +491,31 @@ If none apply, return { "algorithms": [] }.
   const [status, setStatus] = useState("");
   const [modalStep, setModalStep] = useState(1);
   const [isQunicornOpen, setIsQunicornOpen] = useState(false);
+  const [isPromptModalOpen, setIsPromptModalOpen] = useState(false);
   const [loadingQunicorn, setLoadingQunicorn] = useState(true);
   const [statusQunicorn, setStatusQunicorn] = useState(null);
   const [ancillaModelingOn, setAncillaModelingOn] = useState(false);
   const [experienceLevelOn, setExperienceLevelOn] = useState("explorer");
   const [compactVisualization, setCompactVisualization] = useState(false);
-  const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
+  //const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
+  const [toast, setToast] = useState<{
+    message: React.ReactNode;
+    type: "success" | "error" | "info";
+  } | null>(null);
+
   const [workflow, setWorkflow] = useState("");
  const [panelWidth, setPanelWidth] = useState(350);
 
   const updateNodeInternals = useUpdateNodeInternals();
 
-  const showToast = (message: string, type: "success" | "error" | "info") => {
+
+  const showToast = (
+    message: React.ReactNode,
+    type: "success" | "error" | "info"
+  ) => {
     setToast({ message, type });
   };
+
 
   useEffect(() => {
     if (typeError) {
@@ -948,6 +965,14 @@ If none apply, return { "algorithms": [] }.
 
       }
 
+      if (node.data.label === "Qubit" && (node.data.size === undefined || node.data.size === 0)) {
+        errors.push({
+          nodeId: node.id,
+          nodeType: node.type,
+          description: `Node "${node.id}" needs a size value.`,
+        });
+      }
+
       if (threeQubitGates.includes(label)) {
         if (inputCount !== 3) {
           errors.push({
@@ -1073,7 +1098,7 @@ If none apply, return { "algorithms": [] }.
       }
       const value = node.data?.value;
 
-      if (typeof value === "string" && node.data.label ==="Number") {
+      if (typeof value === "string" && node.data.label === "Number") {
         const startsWithNumber = /^[+-]?\d/.test(value.trim());
         const hasLetter = /[a-zA-Z]/.test(value);
 
@@ -1143,6 +1168,45 @@ If none apply, return { "algorithms": [] }.
         }
       }
 
+      if (node.data?.label === "QFT" || node.type === "qftNode") {
+        const qubitCount =
+          parseInt(node.data?.numberOutputs || "3");
+
+        const incoming = nodeConnections.get(node.id) || [];
+        const outgoing = outgoingConnections.get(node.id) || [];
+
+        for (let i = 0; i < qubitCount; i++) {
+          const handleId = `quantumHandleQFTInput${i}${node.id}`;
+
+          const isConnected = flow.edges?.some(
+            (e) => e.targetHandle === handleId
+          );
+
+          if (!isConnected) {
+            errors.push({
+              nodeId: node.id,
+              nodeType: node.type,
+              description: `QFT node "${node.id}" is missing connection on input ${i + 1}.`,
+            });
+          }
+        }
+
+        for (let i = 0; i < qubitCount; i++) {
+          const handleId = `qftOut${i}${node.id}`;
+
+          const isUsed = flow.edges?.some(
+            (e) => e.sourceHandle === handleId
+          );
+
+          if (!isUsed) {
+            warnings.push({
+              nodeId: node.id,
+              nodeType: node.type,
+              description: `QFT node "${node.id}" output ${i + 1}/${qubitCount} is not used.`,
+            });
+          }
+        }
+      }
       // Plugin Node Validation
       if (node.type === "pluginNode") {
         const dataInputs = node.data?.dataInputs || [];
@@ -1212,6 +1276,8 @@ If none apply, return { "algorithms": [] }.
           "Executing this flow will not produce meaningful results.",
       });
     }
+
+
 
 
     return { warnings, errors };
@@ -1432,6 +1498,7 @@ If none apply, return { "algorithms": [] }.
       setLoading(false);
     }
   };
+
 
   const pollStatus = async () => {
     const interval = setInterval(async () => {
@@ -2662,7 +2729,22 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
           );
           return { status: "failed" };
         }
-        showToast("Workflow is deployed ", "success");
+        const baseCamundaUrl = camundaEndpoint?.replace(/\/engine-rest\/?$/, "");
+        showToast(
+          <>
+            Workflow is deployed at{" "}
+            <a
+              href={`${baseCamundaUrl}/camunda/app/tasklist/default`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 underline"
+            >
+              Camunda
+            </a>
+          </>,
+          "success"
+        );
+
         return {
           status: "deployed",
           deployedProcessDefinition: Object.values(
@@ -3001,6 +3083,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
           onManageTemplates={handleManageTemplates}
           onGroupSelected={handleGroupSelected}
           onLoadQasm={handleLoadQasm}
+          generateModel={() => setIsPromptModalOpen(true)}
         />
       </div>
       {<NewDiagramModal open={isLoadJsonModalOpen} onClose={cancelLoadJson} onConfirm={confirmNewDiagram} />}
@@ -3048,6 +3131,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
         tempGithubRepositoryName={githubRepositoryName}
         tempGithubBranch={githubBranch}
         tempGithubToken={githubToken}
+        tempMistralToken={mistralToken}
       />
 
       <ManageTemplateModal
@@ -3078,6 +3162,19 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
         progress={progress}
         chartData={chartData}
       />
+
+      <PromptFlowModal
+        open={isPromptModalOpen}
+        mistralToken={mistralToken}
+        onClose={(flow) => {
+          if (flow) loadFlow(flow);
+          setIsPromptModalOpen(false);
+        }}
+        sendToMistral={sendToMistral}
+        generateFlow={generateFlow}
+      />
+
+
 
       {patternGraph && (
         <Modal
@@ -3431,7 +3528,6 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
               zoomable={true}
               pannable={true}
             />
-
 
             <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
           </ReactFlow>
