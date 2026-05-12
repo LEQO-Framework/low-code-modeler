@@ -168,6 +168,7 @@ export const CustomPanel = ({
                 components={components}
                 onGetCircuitSvg={onGetCircuitSvg}
                 setNodes={setNodes}
+                onGetModel={onGetModel}
               />
             )}
           </div>
@@ -357,10 +358,12 @@ function ExportAllButton({
   components,
   onGetCircuitSvg,
   setNodes,
+  onGetModel,
 }: {
   components: DiracComponent[];
   onGetCircuitSvg: () => Promise<string>;
   setNodes: (fn: (nds: Node[]) => Node[]) => void;
+  onGetModel?: () => object;
 }) {
   const [exporting, setExporting] = useState(false);
 
@@ -369,6 +372,12 @@ function ExportAllButton({
     const zip = new JSZip();
 
     try {
+      // model.json einmal für die gesamte ZIP
+      if (onGetModel) {
+        const modelJson = onGetModel();
+        zip.file("model.json", JSON.stringify(modelJson, null, 2));
+      }
+
       for (const component of components) {
         const label = component.groupLabel || `Circuit_${component.index + 1}`;
         const safeName = label.replace(/[^a-zA-Z0-9_äöüÄÖÜ]/g, "_");
@@ -376,7 +385,6 @@ function ExportAllButton({
         // PNG für diese Gruppe erstellen
         let pngBase64: string | undefined;
         if (component.groupId) {
-          // Nur diese Gruppe anzeigen
           setNodes((nds: Node[]) =>
             nds.map((n) => {
               if (n.id === component.groupId || n.parentNode === component.groupId) return n;
@@ -394,7 +402,6 @@ function ExportAllButton({
             await new Promise((r) => setTimeout(r, 50));
           }
         } else {
-          // Ungrouped: export entire canvas
           try {
             const svg = await onGetCircuitSvg();
             pngBase64 = await svgToPngBase64(svg);
@@ -453,7 +460,7 @@ function ExportAllButton({
 function buildLatexForComponent(
   label: string,
   latex: string,
-  numqubits: number,
+  numQubits: number,
   terms: any[],
   stepsResult: any,
   pngBase64?: string
@@ -473,8 +480,50 @@ function buildLatexForComponent(
     ? `\\section*{Mathematical Intermediate Steps}\n\\begin{align}\n  |\\psi_0\\rangle &= ${stepsResult.initial.latex} \\\\[6pt]\n${stepsResult.steps.map((s: any, i: number) => `  &\\xrightarrow{${s.gateLabelLatex}} \\\\[2pt]\n  |\\psi_{${i + 1}}\\rangle &= ${s.latex}`).join(' \\\\[6pt]\n')}\n\\end{align}\n\n`
     : "";
 
+  // pgfplots Histogram
+  const histogramSection = terms.length > 0
+    ? (() => {
+        const coords = terms.map((t: any) => {
+          const p = Math.round((t.amplitude.re ** 2 + t.amplitude.im ** 2) * 10000) / 100;
+          return { label: `|${t.basisState}\\rangle`, value: p };
+        });
+        const coordStr = coords.map((c: any, i: number) => `(${i}, ${c.value})`).join(' ');
+        const tickLabels = coords.map((c: any) => `$${c.label}$`).join(', ');
+        const xMax = coords.length - 0.5;
+        return `\\section*{Measurement Probabilities}\n\\begin{figure}[h]\n  \\centering\n  \\begin{tikzpicture}\n    \\begin{axis}[\n      ybar, bar width=0.5cm, width=0.85\\textwidth, height=6cm,\n      ymin=0, ymax=100, xmin=-0.5, xmax=${xMax},\n      xtick={${coords.map((_: any, i: number) => i).join(', ')}},\n      xticklabels={${tickLabels}},\n      ylabel={Probability (\\%)}, ymajorgrids=true, grid style=dashed,\n      nodes near coords, nodes near coords align={vertical},\n    ]\n      \\addplot[fill=blue!60, draw=blue!80] coordinates {${coordStr}};\n    \\end{axis}\n  \\end{tikzpicture}\n  \\caption{Measurement Probabilities of Basis States}\n\\end{figure}\n\n`;
+      })()
+    : "";
+
   const tableSection = terms.length > 0
-    ? `\\section*{Measurement Probabilities}\n\\begin{table}[h]\n  \\centering\n  \\begin{tabular}{|c|c|}\n    \\hline\n    \\textbf{Basis State} & \\textbf{Probability} \\\\\n${termLines}\n    \\hline\n  \\end{tabular}\n\\end{table}\n\n`
+    ? `\\section*{Measurement Probabilities (Table)}\n\\begin{table}[h]\n  \\centering\n  \\begin{tabular}{|c|c|}\n    \\hline\n    \\textbf{Basis State} & \\textbf{Probability} \\\\\n${termLines}\n    \\hline\n  \\end{tabular}\n\\end{table}\n\n`
+    : "";
+
+  // Gate-Erklärungen
+  const GATE_INFO: Record<string, { desc: string; matrix: string; effect: string }> = {
+    H: { desc: "The Hadamard gate creates an equal superposition.", matrix: "\\frac{1}{\\sqrt{2}}\\begin{pmatrix}1&1\\\\1&-1\\end{pmatrix}", effect: "$H|0\\rangle=|+\\rangle,\\;H|1\\rangle=|-\\rangle$" },
+    X: { desc: "The Pauli-X gate is the quantum NOT gate.", matrix: "\\begin{pmatrix}0&1\\\\1&0\\end{pmatrix}", effect: "$X|0\\rangle=|1\\rangle,\\;X|1\\rangle=|0\\rangle$" },
+    Y: { desc: "The Pauli-Y gate rotates around the Y-axis.", matrix: "\\begin{pmatrix}0&-i\\\\i&0\\end{pmatrix}", effect: "$Y|0\\rangle=i|1\\rangle,\\;Y|1\\rangle=-i|0\\rangle$" },
+    Z: { desc: "The Pauli-Z gate applies a phase flip.", matrix: "\\begin{pmatrix}1&0\\\\0&-1\\end{pmatrix}", effect: "$Z|0\\rangle=|0\\rangle,\\;Z|1\\rangle=-|1\\rangle$" },
+    S: { desc: "The S gate applies a $\\pi/2$ phase rotation.", matrix: "\\begin{pmatrix}1&0\\\\0&i\\end{pmatrix}", effect: "$S|1\\rangle=i|1\\rangle$" },
+    T: { desc: "The T gate applies a $\\pi/4$ phase rotation.", matrix: "\\begin{pmatrix}1&0\\\\0&e^{i\\pi/4}\\end{pmatrix}", effect: "$T|1\\rangle=e^{i\\pi/4}|1\\rangle$" },
+    CNOT: { desc: "The CNOT gate flips the target qubit if control is $|1\\rangle$.", matrix: "\\begin{pmatrix}1&0&0&0\\\\0&1&0&0\\\\0&0&0&1\\\\0&0&1&0\\end{pmatrix}", effect: "$\\text{CNOT}|10\\rangle=|11\\rangle,\\;\\text{CNOT}|11\\rangle=|10\\rangle$" },
+    SWAP: { desc: "The SWAP gate exchanges the states of two qubits.", matrix: "\\begin{pmatrix}1&0&0&0\\\\0&0&1&0\\\\0&1&0&0\\\\0&0&0&1\\end{pmatrix}", effect: "$\\text{SWAP}|01\\rangle=|10\\rangle$" },
+  };
+
+  const usedGates = new Set<string>();
+  if (stepsResult?.steps) {
+    for (const s of stepsResult.steps) {
+      for (const key of Object.keys(GATE_INFO)) {
+        if ((s.gateLabel ?? s.gateLabelLatex ?? "").includes(key)) usedGates.add(key);
+      }
+    }
+  }
+
+  const gateSection = usedGates.size > 0
+    ? `\\section*{Gate Reference}\n\n` + [...usedGates].map(g => {
+        const info = GATE_INFO[g];
+        return `\\subsection*{${g} Gate}\n${info.desc}\n\\begin{equation}\n  ${g} = ${info.matrix}\n\\end{equation}\n\\textbf{Effect:} ${info.effect}\n`;
+      }).join("\n")
     : "";
 
   return `\\documentclass{article}
@@ -485,21 +534,25 @@ function buildLatexForComponent(
 \\usepackage{graphicx}
 \\usepackage{geometry}
 \\usepackage{pgfplots}
+\\usepackage{booktabs}
 \\pgfplotsset{compat=1.18}
 \\geometry{margin=2.5cm}
 
-\\title{Dirac-Notation -- ${label}}
+\\title{Dirac Notation -- ${label}}
 \\date{\\today}
 
 \\begin{document}
 \\maketitle
 
-${circuitSection}\\section*{Quantum State}
+${circuitSection}\\section*{Quantum State in Dirac Notation}
+
+The quantum system state with ${numQubits} qubit${numQubits !== 1 ? "s" : ""} is:
+
 \\begin{equation}
   |\\psi\\rangle = ${latex}
 \\end{equation}
 
-${stepsSection}${tableSection}\\end{document}
+${stepsSection}${histogramSection}${tableSection}${gateSection}\\end{document}
 `;
 }
 

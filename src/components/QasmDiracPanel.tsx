@@ -85,6 +85,105 @@ async function svgToPngBase64(svgInput: string, scale = 2): Promise<string> {
   });
 }
 
+// ---------------------------------------------------------------------------
+// Gate-Erklärungen und Matrizendarstellungen
+// ---------------------------------------------------------------------------
+
+const GATE_DESCRIPTIONS: Record<string, { description: string; matrix: string; effect: string }> = {
+  H: {
+    description: "The Hadamard gate creates an equal superposition of $|0\\rangle$ and $|1\\rangle$.",
+    matrix: "\\frac{1}{\\sqrt{2}}\\begin{pmatrix} 1 & 1 \\\\ 1 & -1 \\end{pmatrix}",
+    effect: "$H|0\\rangle = \\frac{1}{\\sqrt{2}}(|0\\rangle + |1\\rangle) = |+\\rangle$, \\quad $H|1\\rangle = \\frac{1}{\\sqrt{2}}(|0\\rangle - |1\\rangle) = |-\\rangle$",
+  },
+  X: {
+    description: "The Pauli-X gate is the quantum analogue of the classical NOT gate. It flips $|0\\rangle$ to $|1\\rangle$ and vice versa.",
+    matrix: "\\begin{pmatrix} 0 & 1 \\\\ 1 & 0 \\end{pmatrix}",
+    effect: "$X|0\\rangle = |1\\rangle$, \\quad $X|1\\rangle = |0\\rangle$",
+  },
+  Y: {
+    description: "The Pauli-Y gate rotates the qubit state by $\\pi$ around the Y-axis of the Bloch sphere.",
+    matrix: "\\begin{pmatrix} 0 & -i \\\\ i & 0 \\end{pmatrix}",
+    effect: "$Y|0\\rangle = i|1\\rangle$, \\quad $Y|1\\rangle = -i|0\\rangle$",
+  },
+  Z: {
+    description: "The Pauli-Z gate applies a phase flip. It leaves $|0\\rangle$ unchanged and maps $|1\\rangle$ to $-|1\\rangle$.",
+    matrix: "\\begin{pmatrix} 1 & 0 \\\\ 0 & -1 \\end{pmatrix}",
+    effect: "$Z|0\\rangle = |0\\rangle$, \\quad $Z|1\\rangle = -|1\\rangle$",
+  },
+  S: {
+    description: "The S gate (phase gate) applies a $\\frac{\\pi}{2}$ phase rotation.",
+    matrix: "\\begin{pmatrix} 1 & 0 \\\\ 0 & i \\end{pmatrix}",
+    effect: "$S|0\\rangle = |0\\rangle$, \\quad $S|1\\rangle = i|1\\rangle$",
+  },
+  T: {
+    description: "The T gate applies a $\\frac{\\pi}{4}$ phase rotation.",
+    matrix: "\\begin{pmatrix} 1 & 0 \\\\ 0 & e^{i\\pi/4} \\end{pmatrix}",
+    effect: "$T|0\\rangle = |0\\rangle$, \\quad $T|1\\rangle = e^{i\\pi/4}|1\\rangle$",
+  },
+  CNOT: {
+    description: "The CNOT (Controlled-NOT) gate flips the target qubit if and only if the control qubit is $|1\\rangle$. It is used to create entanglement.",
+    matrix: "\\begin{pmatrix} 1 & 0 & 0 & 0 \\\\ 0 & 1 & 0 & 0 \\\\ 0 & 0 & 0 & 1 \\\\ 0 & 0 & 1 & 0 \\end{pmatrix}",
+    effect: "$\\text{CNOT}|00\\rangle = |00\\rangle$, $\\text{CNOT}|01\\rangle = |01\\rangle$, $\\text{CNOT}|10\\rangle = |11\\rangle$, $\\text{CNOT}|11\\rangle = |10\\rangle$",
+  },
+  CZ: {
+    description: "The CZ (Controlled-Z) gate applies a Z gate to the target qubit if the control qubit is $|1\\rangle$.",
+    matrix: "\\begin{pmatrix} 1 & 0 & 0 & 0 \\\\ 0 & 1 & 0 & 0 \\\\ 0 & 0 & 1 & 0 \\\\ 0 & 0 & 0 & -1 \\end{pmatrix}",
+    effect: "$\\text{CZ}|11\\rangle = -|11\\rangle$, all other basis states unchanged",
+  },
+  SWAP: {
+    description: "The SWAP gate exchanges the states of two qubits.",
+    matrix: "\\begin{pmatrix} 1 & 0 & 0 & 0 \\\\ 0 & 0 & 1 & 0 \\\\ 0 & 1 & 0 & 0 \\\\ 0 & 0 & 0 & 1 \\end{pmatrix}",
+    effect: "$\\text{SWAP}|01\\rangle = |10\\rangle$, \\quad $\\text{SWAP}|10\\rangle = |01\\rangle$",
+  },
+  I: {
+    description: "The identity gate leaves the qubit state unchanged.",
+    matrix: "\\begin{pmatrix} 1 & 0 \\\\ 0 & 1 \\end{pmatrix}",
+    effect: "$I|\\psi\\rangle = |\\psi\\rangle$",
+  },
+};
+
+function buildGateExplanationsSection(stepsResult?: DiracStepsResult): string {
+  if (!stepsResult || stepsResult.steps.length === 0) return "";
+
+  // Alle verwendeten Gates aus den Steps extrahieren
+  const usedGates = new Set<string>();
+  for (const step of stepsResult.steps) {
+    // Gate-Label bereinigen (z.B. "H₀" → "H", "I₀ ⊗ CNOT₀,₂" → ["I", "CNOT"])
+    const label = step.gateLabel ?? step.gateLabelLatex ?? "";
+    for (const key of Object.keys(GATE_DESCRIPTIONS)) {
+      if (label.includes(key)) usedGates.add(key);
+    }
+  }
+
+  if (usedGates.size === 0) return "";
+
+  const gateEntries = [...usedGates].map(gate => {
+    const info = GATE_DESCRIPTIONS[gate];
+    if (!info) return "";
+    return `\\subsection*{${gate} Gate}
+
+${info.description}
+
+\\textbf{Matrix representation:}
+\\begin{equation}
+  ${gate} = ${info.matrix}
+\\end{equation}
+
+\\textbf{Effect on basis states:}
+\\begin{equation}
+  ${info.effect}
+\\end{equation}
+`;
+  }).filter(Boolean).join("\n");
+
+  return `\\section*{Gate Reference}
+
+The following quantum gates are used in this circuit:
+
+${gateEntries}
+`;
+}
+
 function buildLatexExport(
   latex: string,
   numQubits: number,
@@ -193,6 +292,8 @@ ${termLines}
 `
     : "";
 
+  const gateExplanationsSection = buildGateExplanationsSection(stepsResult);
+
   const hint = pngBase64
     ? "% OVERLEAF: circuit.png is included in the ZIP file\n"
     : "";
@@ -205,6 +306,7 @@ ${termLines}
 \\usepackage{graphicx}
 \\usepackage{geometry}
 \\usepackage{pgfplots}
+\\usepackage{booktabs}
 \\pgfplotsset{compat=1.18}
 \\geometry{margin=2.5cm}
 
@@ -224,7 +326,7 @@ The quantum system state with ${numQubits} qubit${numQubits !== 1 ? "s" : ""} is
   |\\psi\\rangle = ${latex}
 \\end{equation}
 
-${stepsSection}${histogramSection}${tableSection}\\end{document}
+${stepsSection}${histogramSection}${tableSection}${gateExplanationsSection}\\end{document}
 `;
 }
 

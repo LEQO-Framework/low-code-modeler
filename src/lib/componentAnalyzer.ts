@@ -147,8 +147,42 @@ function getComponentGroupInfo(
 }
 
 /**
+ * Sammelt alle erreichbaren Kind-Nodes von einem Gruppen-Target aus.
+ */
+function collectReachableNodes(
+  targetId: string,
+  allNodes: Node[],
+  activeNodes: Node[],
+  edges: Edge[],
+  visitedGroups: Set<string> = new Set()
+): Node[] {
+  const tgtNode = allNodes.find(n => n.id === targetId);
+  if (!tgtNode) return [];
+
+  const result: Node[] = [];
+
+  if (tgtNode.type === "groupNode") {
+    if (visitedGroups.has(tgtNode.id)) return [];
+    visitedGroups.add(tgtNode.id);
+    const children = activeNodes.filter(n => n.parentNode === tgtNode.id);
+    result.push(...children);
+    // Weiter durch ausgehende Edges
+    for (const nextEdge of edges.filter(e => e.source === tgtNode.id)) {
+      result.push(...collectReachableNodes(nextEdge.target, allNodes, activeNodes, edges, visitedGroups));
+    }
+  } else {
+    result.push(tgtNode);
+    // Weiter durch ausgehende Edges
+    for (const nextEdge of edges.filter(e => e.source === tgtNode.id)) {
+      result.push(...collectReachableNodes(nextEdge.target, allNodes, activeNodes, edges, visitedGroups));
+    }
+  }
+
+  return result;
+}
+
+/**
  * Sendet zusammenhängende Komponenten ans Backend.
- * Verbundene Gruppen werden zusammen als ein Job gesendet.
  */
 export async function analyzeComponents(
   nodes: Node[],
@@ -163,7 +197,199 @@ export async function analyzeComponents(
   if (activeNodes.length === 0) return [];
 
   // Zusammenhängende Komponenten finden (berücksichtigt Gruppen-Edges)
-  const components = findConnectedComponents(activeNodes, edges, nodes);
+  const rawComponents = findConnectedComponents(activeNodes, edges, nodes);
+
+  // Hilfsfunktion: Ziel-Gruppen-ID einer Edge bestimmen
+  const getEdgeTargetGroupId = (edge: Edge): string => {
+    const tgtNode = nodes.find(n => n.id === edge.target);
+    return tgtNode?.type === "groupNode" ? tgtNode.id : (tgtNode?.parentNode ?? edge.target);
+  };
+
+  // Für jede Gruppe prüfen ob ihre Outputs zu verschiedenen Zielen gehen
+  const splitGroupComponents = (groupId: string, groupNodes: Node[]): Node[][] => {
+    const groupNodeIds = new Set(groupNodes.map(n => n.id));
+
+    // Externe Edges die von dieser Gruppe ausgehen
+    const externalEdges = edges.filter(e => {
+      const srcNode = nodes.find(n => n.id === e.source);
+      // Edge geht von GroupNode selbst aus
+      if (srcNode?.type === "groupNode" && srcNode.id === groupId) return true;
+      // Edge geht von einem Kind-Node nach außen
+      if (groupNodeIds.has(e.source)) {
+        const tgtNode = nodes.find(n => n.id === e.target);
+        return !groupNodeIds.has(e.target) && tgtNode?.parentNode !== groupId;
+      }
+      return false;
+    });
+
+    if (externalEdges.length <= 1) return [groupNodes];
+
+    // Ziele bestimmen
+    const targetGroups = new Set(externalEdges.map(e => getEdgeTargetGroupId(e)));
+    if (targetGroups.size <= 1) return [groupNodes];
+
+    // Interne Edges der Gruppe
+    const internalEdges = edges.filter(
+      e => groupNodeIds.has(e.source) && groupNodeIds.has(e.target)
+    );
+    const internalTargets = new Set(internalEdges.map(e => e.target));
+
+    // Für jede externe Edge den zugehörigen Kind-Node finden
+    // und per BFS rückwärts alle verbundenen Nodes sammeln
+    const subComponents: Node[][] = [];
+    const assignedNodes = new Set<string>();
+
+    for (const edge of externalEdges) {
+      const srcNode = nodes.find(n => n.id === edge.source);
+
+      // Finde den Ausgangs-Kind-Node dieser Edge
+      let sourceKindNode: Node | undefined;
+
+      if (srcNode?.type === "groupNode") {
+        // Proxy-Handle: Handle-ID enthält Kind-Node ID
+        const handleId = edge.sourceHandle ?? "";
+        sourceKindNode = groupNodes.find(n => handleId.includes(n.id));
+
+        // Fallback: finde den Kind-Node der kein internes Target ist
+        // und zu diesem Ziel führt (per Index)
+        if (!sourceKindNode) {
+          const outputNodes = groupNodes.filter(n => !internalTargets.has(n.id) && n.type !== "qubitNode" && n.type !== "groupNode");
+          const edgeIndex = externalEdges.indexOf(edge);
+          sourceKindNode = outputNodes[edgeIndex] ?? outputNodes[0];
+        }
+      } else {
+        sourceKindNode = srcNode;
+      }
+
+      if (!sourceKindNode) continue;
+
+      // BFS rückwärts: finde alle Nodes die zu diesem Ausgangs-Node führen
+      const subComponent: Node[] = [];
+      const visited = new Set<string>();
+      const queue = [sourceKindNode.id];
+      visited.add(sourceKindNode.id);
+
+      while (queue.length > 0) {
+        const currentId = queue.shift()!;
+        const currentNode = groupNodes.find(n => n.id === currentId);
+        if (currentNode) subComponent.push(currentNode);
+
+        // Vorwärts-Nachbarn (intern)
+        for (const e of internalEdges) {
+          if (e.source === currentId && !visited.has(e.target)) {
+            visited.add(e.target);
+            queue.push(e.target);
+          }
+        }
+        // Rückwärts-Nachbarn (intern)
+        for (const e of internalEdges) {
+          if (e.target === currentId && !visited.has(e.source)) {
+            visited.add(e.source);
+            queue.push(e.source);
+          }
+        }
+      }
+
+      subComponent.forEach(n => assignedNodes.add(n.id));
+      if (subComponent.length > 0) subComponents.push(subComponent);
+    }
+
+    // Nicht zugeordnete Nodes zur ersten Sub-Komponente
+    const unassigned = groupNodes.filter(n => !assignedNodes.has(n.id));
+    if (unassigned.length > 0 && subComponents.length > 0) {
+      subComponents[0].push(...unassigned);
+    } else if (unassigned.length > 0) {
+      subComponents.push(unassigned);
+    }
+
+    return subComponents.length > 0 ? subComponents : [groupNodes];
+  };
+
+  // Gruppen mit mehreren Outputs zu verschiedenen Zielen identifizieren
+  const groupsWithMultipleTargets = new Set<string>();
+  for (const node of nodes) {
+    if (node.type !== "groupNode") continue;
+    const outEdges = edges.filter(e => e.source === node.id);
+    if (outEdges.length <= 1) continue;
+    const targets = new Set(outEdges.map(e => getEdgeTargetGroupId(e)));
+    if (targets.size > 1) groupsWithMultipleTargets.add(node.id);
+  }
+
+  let components: Node[][];
+
+  if (groupsWithMultipleTargets.size === 0) {
+    // Keine Aufteilung nötig – Komponenten derselben Gruppe zusammenführen
+    const mergedComponents: Node[][] = [];
+    const groupComponentMap = new Map<string, number>();
+    for (const component of rawComponents) {
+      const parentIds = [...new Set(component.map(n => n.parentNode).filter(Boolean) as string[])];
+      if (parentIds.length === 1) {
+        const groupId = parentIds[0];
+        if (groupComponentMap.has(groupId)) {
+          mergedComponents[groupComponentMap.get(groupId)!].push(...component);
+        } else {
+          groupComponentMap.set(groupId, mergedComponents.length);
+          mergedComponents.push([...component]);
+        }
+      } else {
+        mergedComponents.push(component);
+      }
+    }
+    components = mergedComponents;
+  } else {
+    // Aufteilen: für jede Split-Gruppe separate Sub-Komponenten erstellen
+    components = [];
+    const usedNodeIds = new Set<string>();
+
+    for (const splitGroupId of groupsWithMultipleTargets) {
+      const outEdges = edges.filter(e => e.source === splitGroupId);
+      const groupKindNodes = activeNodes.filter(n => n.parentNode === splitGroupId);
+      const internalEdges = edges.filter(
+        e => groupKindNodes.some(n => n.id === e.source) &&
+             groupKindNodes.some(n => n.id === e.target)
+      );
+      const internalTargets = new Set(internalEdges.map(e => e.target));
+
+      for (const outEdge of outEdges) {
+        const handleId = outEdge.sourceHandle ?? "";
+        let sourceKindNode = groupKindNodes.find(n => handleId.includes(n.id));
+        if (!sourceKindNode) {
+          const outputNodes = groupKindNodes.filter(n => !internalTargets.has(n.id) && n.type !== "qubitNode");
+          const idx = outEdges.indexOf(outEdge);
+          sourceKindNode = outputNodes[idx] ?? outputNodes[0];
+        }
+        if (!sourceKindNode) continue;
+
+        // BFS um Qubit-Pfad in Gruppe zu sammeln
+        const subNodes: Node[] = [];
+        const visited = new Set<string>();
+        const queue = [sourceKindNode.id];
+        visited.add(sourceKindNode.id);
+        while (queue.length > 0) {
+          const currentId = queue.shift()!;
+          const n = groupKindNodes.find(n => n.id === currentId);
+          if (n) subNodes.push(n);
+          for (const e of internalEdges) {
+            if (e.source === currentId && !visited.has(e.target)) { visited.add(e.target); queue.push(e.target); }
+            if (e.target === currentId && !visited.has(e.source)) { visited.add(e.source); queue.push(e.source); }
+          }
+        }
+
+        // Ziel-Nodes über die Edge sammeln
+        const targetNodes = collectReachableNodes(outEdge.target, nodes, activeNodes, edges, new Set([splitGroupId]));
+
+        const allSubNodes = [...subNodes, ...targetNodes];
+        allSubNodes.forEach(n => usedNodeIds.add(n.id));
+        components.push(allSubNodes);
+      }
+    }
+
+    // Restliche Komponenten aus rawComponents die nicht in Split-Gruppen waren
+    for (const comp of rawComponents) {
+      const notUsed = comp.filter(n => !usedNodeIds.has(n.id));
+      if (notUsed.length > 0) components.push(notUsed);
+    }
+  }
 
   // Gruppen-Edges expandieren für Backend-Calls
   const expandEdges = (componentNodes: Node[]): Edge[] => {
