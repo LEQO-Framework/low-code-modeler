@@ -602,6 +602,58 @@ export function QasmDiracPanel(props: Props) {
   const [showSteps, setShowSteps] = useState(false);
   const [showBloch, setShowBloch] = useState(false);
   const [blochQubit, setBlochQubit] = useState(0);
+  const [mistralExplanation, setMistralExplanation] = useState<string | null>(null);
+  const [mistralLoading, setMistralLoading] = useState(false);
+
+  const explainWithMistral = async () => {
+    if (!stepsResult || stepsResult.steps.length === 0) return;
+    setMistralLoading(true);
+    setMistralExplanation(null);
+
+    try {
+      const token = import.meta.env.VITE_MISTRAL_TOKEN;
+      if (!token) {
+        setMistralExplanation("⚠ No Mistral API token found. Please add VITE_MISTRAL_TOKEN to your .env file.");
+        return;
+      }
+
+      // Prompt aufbauen
+      const stepsText = stepsResult.steps.map((s, i) =>
+        `Step ${i + 1}: Apply ${s.gateLabel} → |ψ${i + 1}⟩ = ${s.unicode}`
+      ).join("\n");
+
+      const prompt = `You are a quantum computing tutor. Explain the following quantum circuit computation in simple, clear English. For each step, explain what the gate does physically and mathematically, and why the state changes the way it does.
+
+Initial state: |ψ₀⟩ = ${stepsResult.initial.unicode}
+
+${stepsText}
+
+Final state: |ψ⟩ = ${"unicode" in props ? "" : ""} ${stepsResult.steps[stepsResult.steps.length - 1]?.unicode ?? ""}
+
+Please explain each step in 2-3 sentences. Focus on intuition and physical meaning.`;
+
+      const response = await fetch("https://api.mistral.ai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          model: "mistral-small-latest",
+          messages: [{ role: "user", content: prompt }],
+          max_tokens: 800,
+        }),
+      });
+
+      if (!response.ok) throw new Error(`Mistral API error: ${response.status}`);
+      const data = await response.json();
+      setMistralExplanation(data.choices?.[0]?.message?.content ?? "No explanation received.");
+    } catch (e) {
+      setMistralExplanation(`⚠ Error: ${e instanceof Error ? e.message : "Unknown error"}`);
+    } finally {
+      setMistralLoading(false);
+    }
+  };
 
   const fullResult = useMemo(() => {
     if ("qasm" in props && props.qasm) return qasmToDirac(props.qasm);
@@ -758,9 +810,24 @@ export function QasmDiracPanel(props: Props) {
       {/* Zwischenschritte */}
       {showSteps && stepsResult && stepsResult.steps.length > 0 && (
         <div className="flex-shrink-0 rounded-lg border border-blue-100 bg-blue-50/30 px-3 py-3 overflow-x-auto">
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
-            Mathematical Intermediate Steps
-          </p>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+              Mathematical Intermediate Steps
+            </p>
+            <button
+              onClick={explainWithMistral}
+              disabled={mistralLoading}
+              className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                mistralLoading
+                  ? "border-purple-200 text-purple-400 opacity-60"
+                  : "border-purple-300 hover:bg-purple-50 text-purple-600"
+              }`}
+              title="Explain steps with Mistral AI"
+            >
+              <span>{mistralLoading ? "⟳" : "✦"}</span>
+              {mistralLoading ? "Explaining..." : "Explain"}
+            </button>
+          </div>
           <div className="flex flex-col gap-0 font-mono text-sm">
             <div className="flex items-baseline gap-2 py-1">
               <span className="text-gray-400 text-xs min-w-[36px]">|ψ₀⟩</span>
@@ -786,6 +853,19 @@ export function QasmDiracPanel(props: Props) {
               </div>
             ))}
           </div>
+
+          {/* Mistral Erklärung */}
+          {mistralExplanation && (
+            <div className="mt-3 pt-3 border-t border-blue-100">
+              <div className="flex items-center gap-1.5 mb-2">
+                <span className="text-purple-500 text-xs">✦</span>
+                <p className="text-xs font-medium text-purple-700">AI Explanation</p>
+              </div>
+              <p className="text-xs text-gray-700 leading-relaxed whitespace-pre-wrap font-sans">
+                {mistralExplanation}
+              </p>
+            </div>
+          )}
         </div>
       )}
 
