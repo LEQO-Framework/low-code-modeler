@@ -1,16 +1,16 @@
 import React, { useState } from "react";
-import { 
-  Button, 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger } from "./ui";
+import {
+  Button,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from "./ui";
 
 import {
   FilePlus,
   FolderOpen,
   Save,
-  Download,
   UploadCloud,
   Settings,
   Send,
@@ -20,9 +20,9 @@ import {
   FileJson,
   ImageIcon,
   LayoutTemplate,
-  PuzzleIcon,
-  LucidePuzzle,
-  Puzzle,
+  BrainCircuit,
+  Search,
+  BadgeCheck,
 } from "lucide-react";
 
 interface ToolbarProps {
@@ -32,8 +32,9 @@ interface ToolbarProps {
   onOpenConfig: () => void;
   uploadDiagram: () => void;
   onLoadJson: () => void;
+  createDomainProfile: () => void;
   sendToBackend: () => void;
-  startQuantumAlgorithmSelection: ()=> void;
+  startQuantumAlgorithmSelection: () => void;
   uploadPatternSolution: () => void,
   openPatternSolution: () => void,
   //sendToQunicorn: () => void;
@@ -41,6 +42,7 @@ interface ToolbarProps {
   startTour: () => void;
   onSaveAsTemplate: () => void;
   onManageTemplates: () => void;
+  generateModel: () => void;
 }
 
 const Toolbar: React.FC<ToolbarProps> = ({
@@ -50,6 +52,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
   uploadDiagram,
   onOpenConfig,
   onLoadJson,
+  createDomainProfile,
   sendToBackend,
   startQuantumAlgorithmSelection,
   uploadPatternSolution,
@@ -58,7 +61,8 @@ const Toolbar: React.FC<ToolbarProps> = ({
   openHistory,
   startTour,
   onSaveAsTemplate,
-  onManageTemplates
+  onManageTemplates,
+  generateModel
 }) => {
   const [saveIsOpen, setSaveIsOpen] = useState(false);
   return (
@@ -68,12 +72,12 @@ const Toolbar: React.FC<ToolbarProps> = ({
         <span className="font-semibold text-lg">Qonstruct</span>
         <div className="ml-[170px] flex gap-2">
           <Button size="sm" onClick={onLoadJson} title="Open a new diagram">
-            <FilePlus className="w-4 h-4 mr-2" /> New Diagram
+            <FilePlus className="w-4 h-4 mr-2" />
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button size="sm" variant="default" className="focus:ring-0 focus-visible:ring-0 outline-none">
-                <FolderOpen className="w-4 h-4 mr-2" /> Open
+                <FolderOpen className="w-4 h-4 mr-2" />
                 <ChevronDown className="w-4 h-4 ml-2" />
               </Button>
             </DropdownMenuTrigger>
@@ -92,7 +96,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
             <DropdownMenuTrigger asChild>
               <Button size="sm" variant="default" className="focus:ring-0 focus-visible:ring-0 outline-none">
                 <Save className="w-4 h-4 mr-2" />
-                Save
+
                 <ChevronDown className="w-4 h-4 ml-2" />
               </Button>
             </DropdownMenuTrigger>
@@ -114,7 +118,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button size="sm" variant="default" className="focus:ring-0 focus-visible:ring-0 outline-none">
-                <UploadCloud className="w-4 h-4 mr-2" /> Upload
+                <UploadCloud className="w-4 h-4 mr-2" />
                 <ChevronDown className="w-4 h-4 ml-2" />
               </Button>
             </DropdownMenuTrigger>
@@ -130,23 +134,32 @@ const Toolbar: React.FC<ToolbarProps> = ({
             </DropdownMenuContent>
           </DropdownMenu>
           <Button size="sm" onClick={onManageTemplates} title="Manage all custom user templates">
-            <Settings className="w-4 h-4 mr-2" /> Manage Templates
+            <LayoutTemplate className="w-4 h-4 mr-2" /> Manage Templates
           </Button>
           <Button size="sm" onClick={onOpenConfig} title="Configure the editor and the endpoints">
             <Settings className="w-4 h-4 mr-2" /> Configuration
           </Button>
+          <Button size="sm" onClick={createDomainProfile} title="Create domain profiles and manage them.">
+            <BadgeCheck className="w-4 h-4 mr-2" /> Manage Domain Profiles
+          </Button>
           <Button className="backend-button" size="sm" onClick={sendToBackend} title="Send the diagram to the backend">
             <Send className="w-4 h-4 mr-2" /> Send to Backend
           </Button>
-             <Button size="sm" onClick={startQuantumAlgorithmSelection}>
-          <Settings className="w-4 h-4 mr-2" /> Detect Algorithm
-        </Button>
+          <Button size="sm" onClick={startQuantumAlgorithmSelection}>
+            <Search className="w-4 h-4 mr-2" /> Detect Algorithm
+          </Button>
+          {/**<Button size="sm" onClick={generateModel} title="Generate a model based on user input.">
+            <BrainCircuit className="w-4 h-4 mr-2" />
+            Generate Model
+          </Button>**/
+          }
           <Button size="sm" onClick={openHistory} title="Display the history">
             <Clock className="w-4 h-4 mr-2" />
             History
           </Button>
+
           <Button size="sm" onClick={startTour} title="Start guided tour">
-           <HelpCircle className="w-4 h-4 mr-2" />
+            <HelpCircle className="w-4 h-4 mr-2" />
             Help
           </Button>
         </div>

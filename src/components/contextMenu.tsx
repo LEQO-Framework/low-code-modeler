@@ -5,6 +5,7 @@ import { FaGear } from "react-icons/fa6";
 import { v4 as uuid } from "uuid";
 import { Button } from "./ui";
 import { IPortData } from "@/components/nodes/model";
+import { MergerNode } from "@/constants";
 
 interface ContextMenuProps {
   id: string;
@@ -117,6 +118,8 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   const hasClassicalOutputs = node.data["numberClassicalOutputs"] > minOutput
   const hasInputs = node.data["numberInputs"] > minInput
   const hasOutputs = node.data["numberOutputs"] > minOutput
+
+  const hasQFTInputs = node.data["numberOutputs"] > minInput
 
   console.log("contextMenu")
   console.log(getNode(id).type)
@@ -512,7 +515,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
         </p>
         <div>
           <button
-            onClick={() => incrementNodeDataField("numberInputs", 0)}
+            onClick={() => incrementNodeDataField("numberInputs", 2)}
             style={buttonStyle}
             aria-label="Add Input"
           >
@@ -531,7 +534,10 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
         </div>
       </div>
     );
-  } else if (type === "splitterNode") {
+  } 
+  
+  
+  else if (type === "splitterNode") {
     return (
       <div
         style={{

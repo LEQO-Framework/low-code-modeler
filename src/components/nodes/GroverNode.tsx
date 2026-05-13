@@ -90,7 +90,7 @@ export const GroverNode = memo((node: Node) => {
                 className="w-full p-1 mt-1 text-sm text-center text-black border-2 border-blue-200 rounded-full outline-none focus:border-blue-400 transition-colors"
                 value={targetStates}
                 onChange={(e) => {
-                  const val = e.target.value.replace(/[^0-9,\s]/g, ""); 
+                  const val = e.target.value.replace(/[^0-9,\s]/g, "");
                   setTargetStates(val);
                   handleChange("targetStates", val);
                 }}
@@ -101,7 +101,7 @@ export const GroverNode = memo((node: Node) => {
             </div>
 
             <div className="mt-2">
-              <label className="text-xs font-semibold text-gray-700">Iterations (Leave blank for Auto):</label>
+              <label className="text-xs font-semibold text-gray-700">Iterations (Oracle + Diffusion):</label>
               <input
                 type="text"
                 placeholder="Auto"

@@ -189,7 +189,7 @@ export const GateNode = memo((node: Node) => {
             <img
               src="hadamardBeginner.png"
               alt="Hadamard gate"
-              style={{ width: "320px", height: "120px", marginLeft: "53px" }}
+              style={{ width: "320px", height: "120px", marginLeft: "53px", marginTop: "18px" }}
               className=""
             />
           ) : data.label === "RX(θ)" ? (
