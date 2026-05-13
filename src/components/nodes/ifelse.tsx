@@ -523,6 +523,7 @@ export const IfElseNode = memo((node: Node) => {
                       left: "-6px",
                     }}
                     isConnectable={true}
+                    isValidConnection={() => true}
                   />
                 );
               })}
@@ -574,6 +575,7 @@ export const IfElseNode = memo((node: Node) => {
                       left: "-6px",
                     }}
                     isConnectable={true}
+                    isValidConnection={() => true}
                   />
                 );
               })}
