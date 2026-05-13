@@ -17,9 +17,9 @@ export const GroverNode = memo((node: Node) => {
   const { id, data, selected } = node;
   const { updateNodeValue, nodes, edges, setSelectedNode } = useStore(selector, shallow);
 
-  const [numQubits, setNumQubits] = useState(data.numQubits || 3);
-  const [truthTable, setTruthTable] = useState(data.truthTable || "10000000");
-  const [numIterations, setNumIterations] = useState(data.numIterations || 1);
+  const [numQubitsStr, setNumQubitsStr] = useState(String(data.numQubits || 3));
+  const [targetStates, setTargetStates] = useState(data.targetStates || "");
+  const [iterationsStr, setIterationsStr] = useState(data.numIterations ? String(data.numIterations) : "");
   
   const [outputs, setOutputs] = useState(data.outputs || []);
   const [outputIdentifierError, setOutputIdentifierError] = useState(false);
@@ -65,49 +65,52 @@ export const GroverNode = memo((node: Node) => {
           <div className="px-4 py-1 mt-3">
             
             <div>
-              <label className="text-xs font-semibold text-gray-700">Search Qubits (n):</label>
+              <label className="text-xs font-semibold text-gray-700">Number of Qubits:</label>
               <input
-                type="number"
-                min="1"
+                type="text"
+                inputMode="numeric"
                 className="w-full p-1 mt-1 text-sm text-center text-black border-2 border-blue-200 rounded-full outline-none focus:border-blue-400 transition-colors"
-                value={numQubits}
+                value={numQubitsStr}
                 onChange={(e) => {
-                  const val = parseInt(e.target.value, 10) || 1;
-                  setNumQubits(val);
-                  handleChange("numQubits", val);
+                  const val = e.target.value.replace(/[^0-9]/g, "");
+                  setNumQubitsStr(val);
+                  const parsed = parseInt(val, 10);
+                  if (!isNaN(parsed)) {
+                    handleChange("numQubits", parsed);
+                  }
                 }}
               />
             </div>
 
             <div className="mt-2">
-              <label className="text-xs font-semibold text-gray-700">Target States (Truth Table):</label>
+              <label className="text-xs font-semibold text-gray-700">Marked States (Comma-separated indices):</label>
               <input
                 type="text"
-                placeholder={`Needs ${1 << numQubits} bits`}
+                placeholder="e.g. 0, 3, 7"
                 className="w-full p-1 mt-1 text-sm text-center text-black border-2 border-blue-200 rounded-full outline-none focus:border-blue-400 transition-colors"
-                value={truthTable}
+                value={targetStates}
                 onChange={(e) => {
-                  const val = e.target.value.replace(/[^01]/g, ""); 
-                  setTruthTable(val);
-                  handleChange("truthTable", val);
+                  const val = e.target.value.replace(/[^0-9,\s]/g, ""); 
+                  setTargetStates(val);
+                  handleChange("targetStates", val);
                 }}
               />
               <p className="text-[10px] text-gray-500 mt-1 text-center">
-                Length must be exactly 2^n ({1 << numQubits} bits)
+                Max index: {(1 << (parseInt(numQubitsStr, 10) || 1)) - 1}
               </p>
             </div>
 
             <div className="mt-2">
-              <label className="text-xs font-semibold text-gray-700">Iterations (O + D):</label>
+              <label className="text-xs font-semibold text-gray-700">Iterations (Leave blank for Auto):</label>
               <input
-                type="number"
-                min="1"
+                type="text"
+                placeholder="Auto"
                 className="w-full p-1 mt-1 text-sm text-center text-black border-2 border-blue-200 rounded-full outline-none focus:border-blue-400 transition-colors"
-                value={numIterations}
+                value={iterationsStr}
                 onChange={(e) => {
-                  const val = parseInt(e.target.value, 10) || 1;
-                  setNumIterations(val);
-                  handleChange("numIterations", val);
+                  const val = e.target.value.replace(/[^0-9]/g, "");
+                  setIterationsStr(val);
+                  handleChange("numIterations", val === "" ? "" : parseInt(val, 10));
                 }}
               />
             </div>

@@ -17,9 +17,9 @@ export const DeutschJozsaNode = memo((node: Node) => {
   const { id, data, selected } = node;
   const { updateNodeValue, nodes, edges, setSelectedNode } = useStore(selector, shallow);
 
-  const [numQubits, setNumQubits] = useState(data.numQubits || 3);
+  const [numQubitsStr, setNumQubitsStr] = useState(String(data.numQubits || 3));
   const [oracleType, setOracleType] = useState(data.oracleType || "balanced");
-  const [balancedMask, setBalancedMask] = useState(data.balancedMask || 5);
+  const [balancedMaskStr, setBalancedMaskStr] = useState(String(data.balancedMask || 5));
   const [constantValue, setConstantValue] = useState(data.constantValue ?? 0);
   
   const [outputs, setOutputs] = useState(data.outputs || []);
@@ -66,16 +66,19 @@ export const DeutschJozsaNode = memo((node: Node) => {
           <div className="px-4 py-1 mt-2">
             
             <div>
-              <label className="text-xs font-semibold text-gray-700">Query Qubits (n):</label>
+              <label className="text-xs font-semibold text-gray-700">Number of Qubits:</label>
               <input
-                type="number"
-                min="1"
+                type="text"
+                inputMode="numeric"
                 className="w-full p-1 mt-1 text-sm text-center text-black border-2 border-blue-200 rounded-full outline-none focus:border-blue-400 transition-colors"
-                value={numQubits}
+                value={numQubitsStr}
                 onChange={(e) => {
-                  const val = parseInt(e.target.value, 10) || 1;
-                  setNumQubits(val);
-                  handleChange("numQubits", val);
+                  const val = e.target.value.replace(/[^0-9]/g, "");
+                  setNumQubitsStr(val);
+                  const parsed = parseInt(val, 10);
+                  if (!isNaN(parsed)) {
+                    handleChange("numQubits", parsed);
+                  }
                 }}
               />
             </div>
@@ -99,14 +102,18 @@ export const DeutschJozsaNode = memo((node: Node) => {
               <div className="mt-2">
                 <label className="text-xs font-semibold text-gray-700">Balanced Mask:</label>
                 <input
-                  type="number"
-                  min="1"
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="e.g., 5"
                   className="w-full p-1 mt-1 text-sm text-center text-black border-2 border-blue-200 rounded-full outline-none focus:border-blue-400 transition-colors"
-                  value={balancedMask}
+                  value={balancedMaskStr}
                   onChange={(e) => {
-                    const val = parseInt(e.target.value, 10) || 1;
-                    setBalancedMask(val);
-                    handleChange("balancedMask", val);
+                    const val = e.target.value.replace(/[^0-9]/g, "");
+                    setBalancedMaskStr(val);
+                    const parsed = parseInt(val, 10);
+                    if (!isNaN(parsed)) {
+                      handleChange("balancedMask", parsed);
+                    }
                   }}
                 />
               </div>

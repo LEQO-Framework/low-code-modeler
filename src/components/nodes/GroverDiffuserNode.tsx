@@ -18,7 +18,7 @@ export const GroverDiffuserNode = memo((node: Node) => {
   const { id, data, selected } = node;
   const { updateNodeValue, nodes, edges, setSelectedNode } = useStore(selector, shallow);
 
-  const [numQubits, setNumQubits] = useState(data.numQubits || 3);
+  const [numQubitsStr, setNumQubitsStr] = useState(String(data.numQubits || 3));
   
   const [outputs, setOutputs] = useState(data.outputs || []);
   const [outputIdentifierError, setOutputIdentifierError] = useState(false);
@@ -60,15 +60,15 @@ export const GroverDiffuserNode = memo((node: Node) => {
             </div>
           </div>
 
-          {/* QUANTUM INPUT PORT */}
+          {/* QUANTUM INPUT PORT (SQUARED OFF) */}
           <div className="mt-3 flex flex-col space-y-2">
             <div
               className="relative p-1"
               style={{
                 backgroundColor: quantumConstructColor, // Blue
                 width: '140px',
-                borderTopRightRadius: '20px',
-                borderBottomRightRadius: '20px',
+                borderTopRightRadius: '4px',
+                borderBottomRightRadius: '4px',
               }}
             >
               <Handle
@@ -87,16 +87,19 @@ export const GroverDiffuserNode = memo((node: Node) => {
           {/* CONFIGURATION BODY */}
           <div className="px-4 py-1 mt-4">
             <div>
-              <label className="text-xs font-semibold text-gray-700">Qubits (n):</label>
+              <label className="text-xs font-semibold text-gray-700">Number of Qubits:</label>
               <input
-                type="number"
-                min="2"
+                type="text"
+                inputMode="numeric"
                 className="w-full p-2 mt-1 text-sm text-center text-black border-2 border-blue-200 rounded-full outline-none focus:border-blue-400 transition-colors"
-                value={numQubits}
+                value={numQubitsStr}
                 onChange={(e) => {
-                  const val = parseInt(e.target.value, 10) || 2;
-                  setNumQubits(val);
-                  handleChange("numQubits", val);
+                  const val = e.target.value.replace(/[^0-9]/g, "");
+                  setNumQubitsStr(val);
+                  const parsed = parseInt(val, 10);
+                  if (!isNaN(parsed)) {
+                    handleChange("numQubits", parsed);
+                  }
                 }}
               />
             </div>

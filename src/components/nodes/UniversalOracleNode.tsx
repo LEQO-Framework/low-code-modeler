@@ -18,9 +18,9 @@ export const UniversalOracleNode = memo((node: Node) => {
   const { id, data, selected } = node;
   const { updateNodeValue, nodes, edges, setSelectedNode } = useStore(selector, shallow);
 
-  const [numQubits, setNumQubits] = useState(data.numQubits || 3);
+  const [numQubitsStr, setNumQubitsStr] = useState(String(data.numQubits || 3));
   const [mode, setMode] = useState(data.mode || "phase");
-  const [truthTable, setTruthTable] = useState(data.truthTable || "10000000");
+  const [targetStates, setTargetStates] = useState(data.targetStates || "");
   
   const [outputs, setOutputs] = useState(data.outputs || []);
   const [outputIdentifierError, setOutputIdentifierError] = useState(false);
@@ -62,15 +62,15 @@ export const UniversalOracleNode = memo((node: Node) => {
             </div>
           </div>
 
-          {/* QUANTUM INPUT PORT (Blue) */}
+          {/* QUANTUM INPUT PORT (Blue) - SQUARED OFF */}
           <div className="mt-4 flex flex-col space-y-2">
             <div
               className="relative p-2"
               style={{
                 backgroundColor: quantumConstructColor,
                 width: '140px',
-                borderTopRightRadius: '20px',
-                borderBottomRightRadius: '20px',
+                borderTopRightRadius: '4px',
+                borderBottomRightRadius: '4px',
               }}
             >
               <Handle
@@ -89,16 +89,19 @@ export const UniversalOracleNode = memo((node: Node) => {
           {/* CONFIGURATION BODY */}
           <div className="px-4 py-1 mt-3">
             <div>
-              <label className="text-xs font-semibold text-gray-700">Query Qubits (n):</label>
+              <label className="text-xs font-semibold text-gray-700">Number of Qubits:</label>
               <input
-                type="number"
-                min="1"
+                type="text"
+                inputMode="numeric"
                 className="w-full p-1 mt-1 text-sm text-center text-black border-2 border-blue-200 rounded-full outline-none focus:border-blue-400 transition-colors"
-                value={numQubits}
+                value={numQubitsStr}
                 onChange={(e) => {
-                  const val = parseInt(e.target.value, 10) || 1;
-                  setNumQubits(val);
-                  handleChange("numQubits", val);
+                  const val = e.target.value.replace(/[^0-9]/g, "");
+                  setNumQubitsStr(val);
+                  const parsed = parseInt(val, 10);
+                  if (!isNaN(parsed)) {
+                    handleChange("numQubits", parsed);
+                  }
                 }}
               />
             </div>
@@ -119,20 +122,20 @@ export const UniversalOracleNode = memo((node: Node) => {
             </div>
 
             <div className="mt-3">
-              <label className="text-xs font-semibold text-gray-700">Truth Table (0s and 1s):</label>
+              <label className="text-xs font-semibold text-gray-700">Marked States (Comma-separated indices):</label>
               <input
                 type="text"
-                placeholder={`Needs ${1 << numQubits} bits`}
+                placeholder="e.g. 0, 3, 7"
                 className="w-full p-1 mt-1 text-sm text-center text-black border-2 border-blue-200 rounded-full outline-none focus:border-blue-400 transition-colors"
-                value={truthTable}
+                value={targetStates}
                 onChange={(e) => {
-                  const val = e.target.value.replace(/[^01]/g, ""); 
-                  setTruthTable(val);
-                  handleChange("truthTable", val);
+                  const val = e.target.value.replace(/[^0-9,\s]/g, ""); 
+                  setTargetStates(val);
+                  handleChange("targetStates", val);
                 }}
               />
               <p className="text-[10px] text-gray-500 mt-1 text-center">
-                Length must be exactly 2^n ({1 << numQubits} bits)
+                Max index: {(1 << (parseInt(numQubitsStr, 10) || 1)) - 1}
               </p>
             </div>
           </div>

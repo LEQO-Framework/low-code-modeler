@@ -269,7 +269,7 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                     id: node.id,
                     type: "universal-oracle",
                     numQubits: node.data.numQubits || 3,
-                    truthTable: node.data.truthTable || "10000000",
+                    targetStates: node.data.targetStates || "",
                     mode: node.data.mode || "phase"
                 } as any;
             case consts.GroverDiffuserNode:
@@ -283,8 +283,8 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                     id: node.id,
                     type: "grover",
                     numQubits: node.data.numQubits || 3,
-                    truthTable: node.data.truthTable || "10000000",
-                    numIterations: node.data.numIterations || 1
+                    targetStates: node.data.targetStates || "",
+                    numIterations: node.data.numIterations || ""
                 } as any;
 
         }
