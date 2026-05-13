@@ -5,7 +5,6 @@ import { shallow } from "zustand/shallow";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import OutputPort from "../utils/outputPort"; 
-import { quantumConstructColor } from "@/constants";
 
 const selector = (state: any) => ({
   updateNodeValue: state.updateNodeValue,
@@ -31,6 +30,9 @@ export const UniversalOracleNode = memo((node: Node) => {
     updateNodeValue(id, field, value);
     setSelectedNode(node);
   };
+
+  // Determine if the input port is actively connected
+  const isConnected = edges.some(edge => edge.target === id && edge.targetHandle === `quantumHandleInput0${id}`);
 
   return (
     <motion.div
@@ -62,32 +64,44 @@ export const UniversalOracleNode = memo((node: Node) => {
             </div>
           </div>
 
-          {/* QUANTUM INPUT PORT (Blue) - SQUARED OFF */}
+          {/* QUANTUM INPUT PORT */}
           <div className="mt-4 flex flex-col space-y-2">
             <div
-              className="relative p-2"
+              className={cn(
+                "relative p-2 flex items-center",
+                isConnected 
+                  ? ""
+                  : "border border-l-0 border-dashed border-gray-400"
+              )}
               style={{
-                backgroundColor: quantumConstructColor,
                 width: '140px',
-                borderTopRightRadius: '4px',
-                borderBottomRightRadius: '4px',
+                backgroundColor: isConnected ? "rgba(105, 145, 210, 0.2)" : "#f9fafb"
               }}
             >
               <Handle
                 type="target"
                 id={`quantumHandleInput0${id}`}
                 position={Position.Left}
-                className="z-10 !bg-blue-400 !border-black -left-[8px]"
+                className={cn(
+                  "z-10 !rounded-none !border-black -left-[7px]",
+                  isConnected ? "!bg-blue-400" : "!bg-gray-400"
+                )}
                 style={{ width: 12, height: 12 }}
+                isConnectable={!isConnected}
               />
-              <div className="flex flex-col items-center w-full leading-tight pl-2">
-                <span className="text-black text-[11px] font-medium">State In</span>
+              <div className="flex flex-col w-full text-center leading-tight">
+                <span className="text-black text-sm truncate">
+                  {node.data.inputs?.[0]?.outputIdentifier || "Register"}
+                </span>
+                <span className="text-[10px] text-gray-600">
+                  type: quantum register
+                </span>
               </div>
             </div>
           </div>
 
           {/* CONFIGURATION BODY */}
-          <div className="px-4 py-1 mt-3">
+          <div className="px-4 py-1 mt-2">
             <div>
               <label className="text-xs font-semibold text-gray-700">Number of Qubits:</label>
               <input
