@@ -1,5 +1,3 @@
-
-
 type FlowJson = {
   metadata: any;
   nodes: any[];
@@ -14,10 +12,13 @@ type FlowJson = {
 const GATE_LABELS: Record<string, string> = {
   x: "X",
   h: "H",
-  cx: "CX",
+  cx: "CNOT",
   cz: "CZ",
   swap: "SWAP",
 };
+
+const generateId = () =>
+  `node-${Math.random().toString(36).substring(2, 9)}-${Date.now()}`;
 
 function createNode(
   id: string,
@@ -31,40 +32,58 @@ function createNode(
     id,
     type: "gateNode",
     position: { x, y },
+
     data: {
       label,
+
       inputs,
+
       children: [],
       implementation: "",
       implementationType: "",
       uncomputeImplementationType: "",
       uncomputeImplementation: "",
+
       completionGuaranteed: true,
+
       compactOptions: [true, false],
+
       identifiers,
-      inputTypes: inputs.length ? ["any"] : [],
+
+      inputTypes: Array(inputs.length).fill("any"),
+
       outputTypes: [],
+
       parameter: "0",
     },
+
     width: 110,
     height: 110,
+
     positionAbsolute: { x, y },
   };
 }
-const generateId = () => `node-${Math.random().toString(36).substring(2, 9)}-${Date.now()}`;
 
-
-function createEdge(source: string, target: string) {
+function createEdge(
+  source: string,
+  target: string,
+  targetInputIndex: number
+) {
   const edgeId = generateId();
-
 
   return {
     source,
+
     sourceHandle: `quantumHandleGateOutput0${source}`,
+
     target,
-    targetHandle: `quantumHandleGateInput0${target}`,
+
+    targetHandle: `quantumHandleGateInput${targetInputIndex}${target}`,
+
     type: "quantumEdge",
+
     id: edgeId,
+
     markerEnd: {
       type: "arrowclosed",
       width: 20,
@@ -75,66 +94,68 @@ function createEdge(source: string, target: string) {
   };
 }
 
-export function openQasmToFlow(openqasm: string): string {
+export function openQasmToFlow(openqasm: string): FlowJson {
   const nodes: any[] = [];
   const edges: any[] = [];
 
   // ---------------------------------------------------
-  // Parse qubit count
+  // Parse qubit register
   // ---------------------------------------------------
 
-  const qubitMatch = openqasm.match(/qubit\[(\d+)\]/);
+  const qubitMatch = [
+    ...openqasm.matchAll(
+      /qubit\s*\[\s*(\d+)\s*\]\s*([a-zA-Z0-9_]+)\s*;/g
+    ),
+  ];
 
-  if (!qubitMatch) {
+  if (!qubitMatch.length) {
     throw new Error("No qubit register found.");
   }
 
-  const qubitCount = Number(qubitMatch[1]);
+  const qubitCount = Number(qubitMatch[0][1]);
 
   // ---------------------------------------------------
   // Create initial qubit nodes
   // ---------------------------------------------------
 
-  const qubitIds: string[] = [];
   const qubitIdentifiers: string[] = [];
-
-  // Track last node per qubit
   const lastNodePerQubit: string[] = [];
 
+  // horizontal placement tracking
+  const depthPerQubit: number[] = [];
+
   for (let i = 0; i < qubitCount; i++) {
-    const nodeId = generateId()
+    const nodeId = generateId();
 
+    const identifier = `q${i}`;
 
-    const identifier = `q${Math.floor(Math.random() * 900000 + 100000)}`;
-
-    qubitIds.push(nodeId);
     qubitIdentifiers.push(identifier);
 
     const y = i * 180 - 90;
 
-    const node = createNode(
-      nodeId,
-      "Qubit Circuit",
-      -90,
-      y,
-      [identifier]
+    nodes.push(
+      createNode(
+        nodeId,
+        "Qubit Circuit",
+        -90,
+        y,
+        [identifier]
+      )
     );
 
-    nodes.push(node);
-
     lastNodePerQubit[i] = nodeId;
+
+    depthPerQubit[i] = 0;
   }
 
   // ---------------------------------------------------
   // Parse alias mapping
-  // Example:
-  // let foo = leqo_reg[{0,1,2}]
   // ---------------------------------------------------
 
   const aliasMap: Record<string, number[]> = {};
 
   const aliasRegex =
-    /let\s+([a-zA-Z0-9_]+)\s*=\s*[a-zA-Z0-9_]+\[\{([0-9,\s]+)\}\]/g;
+    /let\s+([a-zA-Z0-9_]+)\s*=\s*[a-zA-Z0-9_]+\s*\[\s*\{([0-9,\s]+)\}\s*\]\s*;/g;
 
   let aliasMatch;
 
@@ -149,80 +170,137 @@ export function openQasmToFlow(openqasm: string): string {
   }
 
   // ---------------------------------------------------
-  // Parse gate operations
-  // Example:
-  // x foo[0];
+  // Parse gates
   // ---------------------------------------------------
 
   const gateRegex =
-    /\b([a-z]+)\s+([a-zA-Z0-9_]+)\[(\d+)\]\s*;/g;
+    /\b([a-z]+)\s+([a-zA-Z0-9_]+)\[(\d+)\](?:\s*,\s*([a-zA-Z0-9_]+)\[(\d+)\])?\s*;/g;
 
   let gateMatch;
 
-  const gateColumnCounter: Record<number, number> = {};
-
   while ((gateMatch = gateRegex.exec(openqasm)) !== null) {
     const gate = gateMatch[1].toLowerCase();
-    const alias = gateMatch[2];
-    const aliasIndex = Number(gateMatch[3]);
 
-    if (!aliasMap[alias]) continue;
+    const alias1 = gateMatch[2];
+    const idx1 = Number(gateMatch[3]);
 
-    const physicalQubit = aliasMap[alias][aliasIndex];
+    const alias2 = gateMatch[4];
+    const idx2 = gateMatch[5]
+      ? Number(gateMatch[5])
+      : undefined;
 
-    const label = GATE_LABELS[gate] || gate.toUpperCase();
+    if (!aliasMap[alias1]) continue;
+
+    const q1 = aliasMap[alias1][idx1];
+
+    const q2 =
+      alias2 && idx2 !== undefined
+        ? aliasMap[alias2]?.[idx2]
+        : undefined;
+
+    const physicalQubits =
+      q2 !== undefined ? [q1, q2] : [q1];
+
+    const label =
+      gate === "cx"
+        ? "CNOT"
+        : GATE_LABELS[gate] || gate.toUpperCase();
 
     const nodeId = generateId();
 
+    // ---------------------------------------------------
+    // Gate depth / horizontal positioning
+    // ---------------------------------------------------
 
-    gateColumnCounter[physicalQubit] ??= 0;
+    const gateDepth =
+      Math.max(
+        ...physicalQubits.map((q) => depthPerQubit[q])
+      ) + 1;
 
-    const x = 120 + gateColumnCounter[physicalQubit] * 180;
-    const y = physicalQubit * 180 - 90;
+    const x = gateDepth * 300 - 180;
 
-    const previousNode = lastNodePerQubit[physicalQubit];
+    const y =
+      physicalQubits.length === 1
+        ? q1 * 180 - 90
+        : ((q1 + q2!) / 2) * 180 - 90;
 
-    const edge = createEdge(previousNode, nodeId);
+    // ---------------------------------------------------
+    // Build inputs + edges
+    // ---------------------------------------------------
 
-    const input = {
-      id: previousNode,
-      edgeId: edge.id,
-      identifiers: [qubitIdentifiers[physicalQubit]],
-      targetHandle: `quantumHandleGateInput0${nodeId}`,
-    };
+    const inputNodes: any[] = [];
 
-    const node = createNode(
-      nodeId,
-      label,
-      x,
-      y,
-      [qubitIdentifiers[physicalQubit]],
-      [input]
+    physicalQubits.forEach((q, inputIndex) => {
+      const prev = lastNodePerQubit[q];
+
+      if (!prev) return;
+
+      const edge = createEdge(
+        prev,
+        nodeId,
+        inputIndex
+      );
+
+      edges.push(edge);
+
+      inputNodes.push({
+        id: prev,
+
+        edgeId: edge.id,
+
+        identifiers: [qubitIdentifiers[q]],
+
+        targetHandle:
+          `quantumHandleGateInput${inputIndex}${nodeId}`,
+      });
+    });
+
+    nodes.push(
+      createNode(
+        nodeId,
+        label,
+        x,
+        y,
+        physicalQubits.map(
+          (q) => qubitIdentifiers[q]
+        ),
+        inputNodes
+      )
     );
 
-    nodes.push(node);
-    edges.push(edge);
+    // ---------------------------------------------------
+    // Update qubit state tracking
+    // ---------------------------------------------------
 
-    lastNodePerQubit[physicalQubit] = nodeId;
+    for (const q of physicalQubits) {
+      lastNodePerQubit[q] = nodeId;
 
-    gateColumnCounter[physicalQubit]++;
+      depthPerQubit[q] = gateDepth;
+    }
   }
+
+  // ---------------------------------------------------
+  // Final flow object
+  // ---------------------------------------------------
 
   return {
     metadata: {
       version: "1.0.0",
-      name: "OpenQASM Import",
+      name: "OpenQASM 3.1 Import",
       description: "Generated from OpenQASM",
       author: "",
       containsPlaceholder: false,
       id: `flow-${Date.now()}`,
       timestamp: new Date().toISOString(),
     },
+
     nodes,
+
     edges,
+
     viewport: {
-      x: 0,
-      y: 0,
+      x: 383,
+      y: 378.5,
       zoom: 1,
     },
   };
