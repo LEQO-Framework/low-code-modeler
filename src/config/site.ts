@@ -11,6 +11,7 @@ import { MeasurementNode } from "@/components/nodes/measurement";
 import { OperationNode } from "@/components/nodes/operation";
 import { StatePreparationNode } from "@/components/nodes/statepreparation";
 import { UncomputeNode } from "@/components/nodes/uncompute";
+import { MCMTGateNode } from "@/components/nodes/mcmtGate";
 import { Edge } from "reactflow";
 import { ControlStructureNode } from "@/components/nodes/controlstructure";
 import { SplitterNode } from "@/components/nodes/splitter";
@@ -22,6 +23,7 @@ import { GroupNode } from "@/components/nodes/group";
 import { EditableNode } from "@/components/nodes/editableNode";
 import { QFTNode } from "@/components/nodes/qft";
 import { InverseQFTNode } from "@/components/nodes/qftInverse";
+import * as consts from "@/constants";
 
 export const nodesConfig = {
   initialNodes: [] as unknown as Node[],
@@ -47,7 +49,8 @@ export const nodesConfig = {
     pluginNode: PluginNode,
     editableNode: EditableNode,
     qftNode: QFTNode,
-    inverseQftNode: InverseQFTNode
+    inverseQftNode: InverseQFTNode,
+    [consts.MCMTGateNode]: MCMTGateNode,
   } as any,
   edgesTypes: {
     quantumEdge: QuantumEdge,
@@ -79,7 +82,8 @@ export const initialDiagram = {
     groupNode: GroupNode,
     pluginNode: PluginNode,
     qftNode: QFTNode,
-    inverseQftNode: InverseQFTNode
+    inverseQftNode: InverseQFTNode,
+    [consts.MCMTGateNode]: MCMTGateNode,
   } as any,
 };
 

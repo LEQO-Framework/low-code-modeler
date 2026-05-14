@@ -206,7 +206,7 @@ export interface components {
         CompileRequest: {
             metadata: components["schemas"]["MetaData"];
             /** Nodes */
-            nodes: (components["schemas"]["ImplementationNode"] | components["schemas"]["ArrayLiteralNode"] | components["schemas"]["QFTNode"] |components["schemas"]["EditableNode"] | components["schemas"]["QubitNode"] | components["schemas"]["EncodeValueNode"] | components["schemas"]["PrepareStateNode"] | components["schemas"]["SplitterNode"] | components["schemas"]["MergerNode"] | components["schemas"]["MeasurementNode"] | components["schemas"]["GateNode"] | components["schemas"]["ParameterizedGateNode"] | components["schemas"]["BitLiteralNode"] | components["schemas"]["BoolLiteralNode"] | components["schemas"]["IntLiteralNode"] | components["schemas"]["FloatLiteralNode"] | components["schemas"]["FileLiteralNode"] | components["schemas"]["StringLiteralNode"] | components["schemas"]["AncillaNode"] | components["schemas"]["IfThenElseNode"] | components["schemas"]["RepeatNode"] | components["schemas"]["OperatorNode"] | components["schemas"]["PluginNode"])[];
+            nodes: (components["schemas"]["ImplementationNode"] | components["schemas"]["MCMTGateNode"] | components["schemas"]["ArrayLiteralNode"] | components["schemas"]["QFTNode"] |components["schemas"]["EditableNode"] | components["schemas"]["QubitNode"] | components["schemas"]["EncodeValueNode"] | components["schemas"]["PrepareStateNode"] | components["schemas"]["SplitterNode"] | components["schemas"]["MergerNode"] | components["schemas"]["MeasurementNode"] | components["schemas"]["GateNode"] | components["schemas"]["ParameterizedGateNode"] | components["schemas"]["BitLiteralNode"] | components["schemas"]["BoolLiteralNode"] | components["schemas"]["IntLiteralNode"] | components["schemas"]["FloatLiteralNode"] | components["schemas"]["FileLiteralNode"] | components["schemas"]["StringLiteralNode"] | components["schemas"]["AncillaNode"] | components["schemas"]["IfThenElseNode"] | components["schemas"]["RepeatNode"] | components["schemas"]["OperatorNode"] | components["schemas"]["PluginNode"])[];
             /** Edges */
             edges: components["schemas"]["Edge"][];
             compilation_target: string;
@@ -374,6 +374,29 @@ export interface components {
             /** Indices */
             indices: number[];
         };
+        /** MCMTGateNode */
+        MCMTGateNode: {
+            /** Id */
+            id: string;
+            /** Label */
+            label?: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "mcmt-gate";
+            /**
+             * Base Gate
+             * @enum {string}
+             */
+            baseGate: "x" | "y" | "z" | "h" | "rx" | "ry" | "rz" | "s" | "sdg" | "t" | "tdg";
+            /** Number of Controls */
+            numControls: number;
+            /** Number of Targets */
+            numTargets: number;
+            /** Parameter */
+            parameter?: number | null;
+        };
         /** MergerNode */
         MergerNode: {
             /** Id */
@@ -423,7 +446,7 @@ export interface components {
         /** NestedBlock */
         NestedBlock: {
             /** Nodes */
-            nodes: (components["schemas"]["ImplementationNode"] | components["schemas"]["QubitNode"] | components["schemas"]["ArrayLiteralNode"] | components["schemas"]["EncodeValueNode"] | components["schemas"]["PrepareStateNode"] | components["schemas"]["SplitterNode"] | components["schemas"]["MergerNode"] | components["schemas"]["MeasurementNode"] | components["schemas"]["GateNode"] | components["schemas"]["ParameterizedGateNode"] | components["schemas"]["BitLiteralNode"] | components["schemas"]["BoolLiteralNode"] | components["schemas"]["IntLiteralNode"] | components["schemas"]["FloatLiteralNode"] | components["schemas"]["AncillaNode"] | components["schemas"]["IfThenElseNode"] | components["schemas"]["RepeatNode"] | components["schemas"]["OperatorNode"])[];
+            nodes: (components["schemas"]["ImplementationNode"] | components["schemas"]["QubitNode"] | components["schemas"]["MCMTGateNode"] | components["schemas"]["ArrayLiteralNode"] | components["schemas"]["EncodeValueNode"] | components["schemas"]["PrepareStateNode"] | components["schemas"]["SplitterNode"] | components["schemas"]["MergerNode"] | components["schemas"]["MeasurementNode"] | components["schemas"]["GateNode"] | components["schemas"]["ParameterizedGateNode"] | components["schemas"]["BitLiteralNode"] | components["schemas"]["BoolLiteralNode"] | components["schemas"]["IntLiteralNode"] | components["schemas"]["FloatLiteralNode"] | components["schemas"]["AncillaNode"] | components["schemas"]["IfThenElseNode"] | components["schemas"]["RepeatNode"] | components["schemas"]["OperatorNode"])[];
             /** Edges */
             edges: components["schemas"]["Edge"][];
         };

@@ -83,6 +83,23 @@ export const categories: Record<string, CategoryEntry> = {
           label: "Measurement", type: consts.MeasurementNode, icon: "PaletteIcon_Measurement.png", description: "Measures a quantum state and returns its classical information and collapsed quantum state.", completionGuaranteed: true, compactOptions: [true, false],
         },
       ],
+      "Oracles & Algorithms": [
+        { 
+          label: "MCMT Gate", 
+          type: consts.MCMTGateNode,
+          icon: "PaletteIcon_MCMT.png",
+          description: "Multi-Controlled Multi-Target Gate. Applies a base gate to multiple targets using multiple controls.", 
+          completionGuaranteed: false,
+          compactOptions: [false],
+          data: {
+              label: "MCMT Gate",
+              baseGate: "X",
+              numControls: 1,
+              numTargets: 1,
+              parameter: 0
+          }
+        }
+      ],
     },
   },
 
