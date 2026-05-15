@@ -1,10 +1,11 @@
 import { memo, useState } from "react";
 import { Node, Handle, Position } from "reactflow";
-import { useStore } from "@/config/store"; 
+import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
-import OutputPort from "../utils/outputPort"; 
+import OutputPort from "../utils/outputPort";
+import { quantumConstructColor } from "@/constants";
 
 const selector = (state: any) => ({
   updateNodeValue: state.updateNodeValue,
@@ -18,7 +19,7 @@ export const GroverDiffuserNode = memo((node: Node) => {
   const { updateNodeValue, nodes, edges, setSelectedNode } = useStore(selector, shallow);
 
   const [numQubitsStr, setNumQubitsStr] = useState(String(data.numQubits || 3));
-  
+
   const [outputs, setOutputs] = useState(data.outputs || []);
   const [outputIdentifierError, setOutputIdentifierError] = useState(false);
   const [sizeError, setSizeError] = useState(false);
@@ -36,7 +37,7 @@ export const GroverDiffuserNode = memo((node: Node) => {
     <motion.div
       className="grand-parent"
       initial={false}
-      animate={{ width: 320, height: 350 }} 
+      animate={{ width: 320, height: 350 }}
       transition={{ duration: 0.3, ease: "easeInOut" }}
     >
       <div className="grand-parent">
@@ -51,7 +52,7 @@ export const GroverDiffuserNode = memo((node: Node) => {
           <div className="w-full flex items-center" style={{ height: '52px' }}>
             <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
               <img
-                src="PaletteIcon_Grover.svg" 
+                src="PaletteIcon_Grover.svg"
                 alt="Grover icon"
                 className="w-[40px] h-[40px] object-contain flex-shrink-0"
               />
@@ -66,23 +67,16 @@ export const GroverDiffuserNode = memo((node: Node) => {
           <div className="mt-4 flex flex-col space-y-2">
             <div
               className={cn(
-                "relative p-2 flex items-center",
-                isConnected 
-                  ? "" 
-                  : "border border-l-0 border-dashed border-gray-400"
-              )}
-              style={{
-                width: '140px',
-                backgroundColor: isConnected ? "rgba(105, 145, 210, 0.2)" : "#f9fafb"
-              }}
+                "relative p-2 flex items-center")}
+              style={{ width: "140px", background: quantumConstructColor }}
             >
               <Handle
                 type="target"
                 id={`quantumHandleInput0${id}`}
                 position={Position.Left}
                 className={cn(
-                  "z-10 !rounded-none !border-black -left-[7px]",
-                  isConnected ? "!bg-blue-400" : "!bg-gray-400"
+                  "z-10 !rounded-none !border-dashed !border-gray-500 -left-[7px]",
+                  isConnected ? "!bg-blue-400" : "!bg-gray-200"
                 )}
                 style={{ width: 12, height: 12 }}
                 isConnectable={!isConnected}
