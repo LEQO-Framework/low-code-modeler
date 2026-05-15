@@ -11,9 +11,13 @@ type FlowJson = {
 
 const GATE_LABELS: Record<string, string> = {
   x: "X",
+  z: "Z",
+  y: "Y",
+  t: "T",
+  cy: "CY",
+  cz: "CZ",
   h: "H",
   cx: "CNOT",
-  cz: "CZ",
   swap: "SWAP",
   ccx: "Toffoli",
 };
