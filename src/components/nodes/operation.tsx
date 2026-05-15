@@ -99,7 +99,7 @@ export const OperationNode = memo((node: Node) => {
   useEffect(() => {
     if (!operatorInitialized && node.data.operator === undefined) {
       let defaultOperator = "+";
-      if (node.data.label === consts.quantumLabel + consts.bitwiseOperatorLabel) defaultOperator = "OR";
+      if (node.data.label === consts.quantumLabel + consts.bitwiseOperatorLabel) defaultOperator = "INVERT";
       else if (node.data.label === consts.quantumLabel + consts.comparisonOperatorLabel) defaultOperator = "<";
       else if (node.data.label !== consts.quantumLabel + consts.arithmeticOperatorLabel) defaultOperator = "min";
 
@@ -236,10 +236,10 @@ export const OperationNode = memo((node: Node) => {
 
               {(node.data.label === consts.quantumLabel + "Bitwise Operator") && (
                 <>
-                  <option value="|">OR</option>
-                  <option value="&">AND</option>
+                  {!completionGuaranteed &&(<option value="|">OR</option>)}
+                  {!completionGuaranteed &&(<option value="&">AND</option>)}
                   <option value="~">INVERT</option>
-                  <option value="^">XOR</option>
+                  {!completionGuaranteed &&(<option value="^">XOR</option>)}
                 </>
               )}
 
@@ -292,7 +292,7 @@ export const OperationNode = memo((node: Node) => {
                 </div>
 
               </div>
-              {node.data.label !== consts.quantumLabel + consts.minMaxOperatorLabel && (
+              {(node.data.label !== consts.quantumLabel + consts.minMaxOperatorLabel) || (node.data.operator !== "INVERT")&& (
                 <div
                   className="relative p-2 mb-1"
                   style={{
