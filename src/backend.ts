@@ -129,8 +129,7 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                 if (node.data.label === "Qubit" || node.data.label === "Qubit Circuit") {
                     return {
                         id: node.id,
-                        type: "qubit",
-                        width: node.data.size
+                        type: "qubit"
                     }
                 }
                 else if (["RX(θ)", "RY(θ)", "RZ(θ)"].includes(node.data.label)) {
@@ -221,6 +220,13 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
 
             // Operators
             case consts.OperatorNode:
+                if(node.data.operator === "INVERT"){
+                    return {
+                    id: node.id,
+                    type: "operator",
+                    operator: "~"
+                }
+                }
                 return {
                     id: node.id,
                     type: "operator",

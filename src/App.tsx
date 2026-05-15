@@ -871,7 +871,7 @@ If none apply, return { "algorithms": [] }.
       if (
         twoQubitGates.includes(label) ||
         ((node.type === "quantumOperatorNode" || node.type === "classicalOperatorNode") &&
-          !minMaxOperators.includes(operator))
+          !minMaxOperators.includes(operator) && operator !== "INVERT")
       ) {
         if (inputCount !== 2) {
           errors.push({
