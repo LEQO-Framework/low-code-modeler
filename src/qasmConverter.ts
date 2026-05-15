@@ -15,10 +15,10 @@ const GATE_LABELS: Record<string, string> = {
   cx: "CNOT",
   cz: "CZ",
   swap: "SWAP",
+  ccx: "Toffoli",
 };
 
-const generateId = () =>
-  `node-${Math.random().toString(36).substring(2, 9)}-${Date.now()}`;
+const generateId = () => crypto.randomUUID();
 
 function createNode(
   id: string,
@@ -31,6 +31,7 @@ function createNode(
   return {
     id,
     type: "gateNode",
+
     position: { x, y },
 
     data: {
@@ -39,8 +40,10 @@ function createNode(
       inputs,
 
       children: [],
+
       implementation: "",
       implementationType: "",
+
       uncomputeImplementationType: "",
       uncomputeImplementation: "",
 
@@ -114,14 +117,9 @@ export function openQasmToFlow(openqasm: string): FlowJson {
 
   const qubitCount = Number(qubitMatch[0][1]);
 
-  // ---------------------------------------------------
   // Create initial qubit nodes
-  // ---------------------------------------------------
-
   const qubitIdentifiers: string[] = [];
   const lastNodePerQubit: string[] = [];
-
-  // horizontal placement tracking
   const depthPerQubit: number[] = [];
 
   for (let i = 0; i < qubitCount; i++) {
@@ -150,12 +148,15 @@ export function openQasmToFlow(openqasm: string): FlowJson {
 
   // ---------------------------------------------------
   // Parse alias mapping
+  // Supports:
+  // let a = q[{0}];
+  // let b = q[{0,1,2}];
   // ---------------------------------------------------
 
   const aliasMap: Record<string, number[]> = {};
 
   const aliasRegex =
-    /let\s+([a-zA-Z0-9_]+)\s*=\s*[a-zA-Z0-9_]+\s*\[\s*\{([0-9,\s]+)\}\s*\]\s*;/g;
+    /let\s+([a-zA-Z0-9_]+)\s*=\s*[a-zA-Z0-9_]+\s*\[\s*\{([^}]+)\}\s*\]\s*;/g;
 
   let aliasMatch;
 
@@ -164,68 +165,126 @@ export function openQasmToFlow(openqasm: string): FlowJson {
 
     const indices = aliasMatch[2]
       .split(",")
-      .map((v) => Number(v.trim()));
+      .map((v) => Number(v.trim()))
+      .filter((v) => !Number.isNaN(v));
 
     aliasMap[alias] = indices;
   }
 
   // ---------------------------------------------------
   // Parse gates
+  // Supports:
+  // x a[0];
+  // cx a[0], a[1];
+  // ccx a[0], a[1], a[2];
+  // Also supports direct aliases:
+  // x q0;
+  // cx q0, q1;
+  // ccx q0, q1, q2;
   // ---------------------------------------------------
 
   const gateRegex =
-    /\b([a-z]+)\s+([a-zA-Z0-9_]+)\[(\d+)\](?:\s*,\s*([a-zA-Z0-9_]+)\[(\d+)\])?\s*;/g;
+    /\b([a-z]+)\s+([a-zA-Z0-9_]+)(?:\[(\d+)\])?(?:\s*,\s*([a-zA-Z0-9_]+)(?:\[(\d+)\])?)?(?:\s*,\s*([a-zA-Z0-9_]+)(?:\[(\d+)\])?)?\s*;/g;
 
   let gateMatch;
 
   while ((gateMatch = gateRegex.exec(openqasm)) !== null) {
     const gate = gateMatch[1].toLowerCase();
 
+    // ---------------------------------------------------
+    // Operand 1
+    // ---------------------------------------------------
+
     const alias1 = gateMatch[2];
-    const idx1 = Number(gateMatch[3]);
+    const idx1 =
+      gateMatch[3] !== undefined
+        ? Number(gateMatch[3])
+        : 0;
+
+    // ---------------------------------------------------
+    // Operand 2
+    // ---------------------------------------------------
 
     const alias2 = gateMatch[4];
-    const idx2 = gateMatch[5]
-      ? Number(gateMatch[5])
-      : undefined;
+    const idx2 =
+      gateMatch[5] !== undefined
+        ? Number(gateMatch[5])
+        : 0;
 
-    if (!aliasMap[alias1]) continue;
+    // ---------------------------------------------------
+    // Operand 3
+    // ---------------------------------------------------
+
+    const alias3 = gateMatch[6];
+    const idx3 =
+      gateMatch[7] !== undefined
+        ? Number(gateMatch[7])
+        : 0;
+
+    // ---------------------------------------------------
+    // Resolve physical qubits
+    // ---------------------------------------------------
+
+    if (!aliasMap[alias1]) {
+      continue;
+    }
 
     const q1 = aliasMap[alias1][idx1];
 
     const q2 =
-      alias2 && idx2 !== undefined
-        ? aliasMap[alias2]?.[idx2]
+      alias2 && aliasMap[alias2]
+        ? aliasMap[alias2][idx2]
         : undefined;
 
-    const physicalQubits =
-      q2 !== undefined ? [q1, q2] : [q1];
+    const q3 =
+      alias3 && aliasMap[alias3]
+        ? aliasMap[alias3][idx3]
+        : undefined;
+
+    const physicalQubits: number[] = [q1];
+
+    if (q2 !== undefined) {
+      physicalQubits.push(q2);
+    }
+
+    if (q3 !== undefined) {
+      physicalQubits.push(q3);
+    }
+
+    // ---------------------------------------------------
+    // Gate label
+    // ---------------------------------------------------
 
     const label =
-      gate === "cx"
-        ? "CNOT"
-        : GATE_LABELS[gate] || gate.toUpperCase();
+      GATE_LABELS[gate] || gate.toUpperCase();
 
     const nodeId = generateId();
 
     // ---------------------------------------------------
-    // Gate depth / horizontal positioning
+    // Compute gate depth
     // ---------------------------------------------------
 
     const gateDepth =
       Math.max(
-        ...physicalQubits.map((q) => depthPerQubit[q])
+        ...physicalQubits.map(
+          (q) => depthPerQubit[q]
+        )
       ) + 1;
 
     const x = gateDepth * 300 - 180;
 
+    // ---------------------------------------------------
+    // Vertical positioning
+    // ---------------------------------------------------
+
+    const minQubit = Math.min(...physicalQubits);
+    const maxQubit = Math.max(...physicalQubits);
+
     const y =
-      physicalQubits.length === 1
-        ? q1 * 180 - 90
-        : ((q1 + q2!) / 2) * 180 - 90;
+      ((minQubit + maxQubit) / 2) * 180 - 90;
 
     // ---------------------------------------------------
-    // Build inputs + edges
+    // Build edges + inputs
     // ---------------------------------------------------
 
     const inputNodes: any[] = [];
@@ -255,6 +314,10 @@ export function openQasmToFlow(openqasm: string): FlowJson {
       });
     });
 
+    // ---------------------------------------------------
+    // Create node
+    // ---------------------------------------------------
+
     nodes.push(
       createNode(
         nodeId,
@@ -269,7 +332,7 @@ export function openQasmToFlow(openqasm: string): FlowJson {
     );
 
     // ---------------------------------------------------
-    // Update qubit state tracking
+    // Update tracking
     // ---------------------------------------------------
 
     for (const q of physicalQubits) {
