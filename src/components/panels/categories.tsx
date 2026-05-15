@@ -130,8 +130,8 @@ export const categories: Record<string, CategoryEntry> = {
           type: consts.MCMTGateNode,
           icon: "PaletteIcon_MCMT.png",
           description: "Multi-Controlled Multi-Target Gate. Applies a base gate to multiple targets using multiple controls.",
-          completionGuaranteed: false,
-          compactOptions: [false],
+          completionGuaranteed: true,
+          compactOptions: [false, true],
           data: {
             label: "MCMT Gate",
             baseGate: "X",
