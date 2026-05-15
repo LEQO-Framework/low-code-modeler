@@ -15,9 +15,16 @@ export interface Node {
   properties?: any[];
   constraints?: any[];
   mapping?: string[][];
-  category?: string,
-  outputType?: string,
-  isDataType?: boolean,
+  category?: string;
+  outputType?: string;
+  isDataType?: boolean;
+  data?: {
+    label?: string;
+    baseGate?: string;
+    numControls?: number;
+    numTargets?: number;
+    parameter?: number;
+  };
 }
 
 export interface Template {
@@ -83,23 +90,6 @@ export const categories: Record<string, CategoryEntry> = {
           label: "Measurement", type: consts.MeasurementNode, icon: "PaletteIcon_Measurement.png", description: "Measures a quantum state and returns its classical information and collapsed quantum state.", completionGuaranteed: true, compactOptions: [true, false],
         },
       ],
-      "Oracles & Algorithms": [
-        { 
-          label: "MCMT Gate", 
-          type: consts.MCMTGateNode,
-          icon: "PaletteIcon_MCMT.png",
-          description: "Multi-Controlled Multi-Target Gate. Applies a base gate to multiple targets using multiple controls.", 
-          completionGuaranteed: false,
-          compactOptions: [false],
-          data: {
-              label: "MCMT Gate",
-              baseGate: "X",
-              numControls: 1,
-              numTargets: 1,
-              parameter: 0
-          }
-        }
-      ],
     },
   },
 
@@ -135,6 +125,21 @@ export const categories: Record<string, CategoryEntry> = {
         { label: "Toffoli", aliases: ["CCNOT", "Controlled-Controlled-NOT"], type: consts.GateNode, icon: ["Toffoli_palette.png", "PaletteIcon_Toffoli_Beginner.png"], description: "CCNOT: flips target if both controls are |1⟩.", completionGuaranteed: true, compactOptions: [true, false] },
         // { label: "Controlled-U", type: consts.GateNode, icon: ["Controlled-U_palette.png", "PaletteIcon_Controlled-U_Beginner.png"], description: "Controlled-U: applies U if control is |1⟩.", completionGuaranteed: true, compactOptions: [true, false] },
         { label: "CSWAP", aliases: ["Fredkin"], type: consts.GateNode, icon: ["CSWAP_palette.png", "PaletteIcon_CSWAP_Beginner.png"], description: "Controlled SWAP: swaps two qubits if control is |1⟩.", completionGuaranteed: true, compactOptions: [true, false] },
+        {
+          label: "MCMT Gate",
+          type: consts.MCMTGateNode,
+          icon: "PaletteIcon_MCMT.png",
+          description: "Multi-Controlled Multi-Target Gate. Applies a base gate to multiple targets using multiple controls.",
+          completionGuaranteed: false,
+          compactOptions: [false],
+          data: {
+            label: "MCMT Gate",
+            baseGate: "X",
+            numControls: 1,
+            numTargets: 1,
+            parameter: 0
+          }
+        },
         { label: "QFT", aliases: ["Quantum Fourier Transform"], type: consts.QFTNode, icon: ["QFT_palette.png", "QFT_palette.png"], description: "Applies the Quantum Fourier Transform.", completionGuaranteed: true, compactOptions: [true, false] },
         { label: "Inverse QFT", aliases: ["Inverse Quantum Fourier Transform"], type: consts.InverseQFTNode, icon: ["InverseQFT_palette.png", "InverseQFT_palette.png"], description: "Applies the Inverse of the Quantum Fourier Transform.", completionGuaranteed: true, compactOptions: [true, false] },
         { label: "Splitter", type: consts.SplitterNode, icon: "Splitter_palette.png", description: "Splits a quantum register into individual qubits.", completionGuaranteed: true, compactOptions: [true, false] },
