@@ -1,0 +1,44 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "name": "My Model",
+    "description": "This is a model that creates the W-state for n=3.",
+    "author": "",
+    "id": "flow-1743625456329",
+    "timestamp": "2025-04-02T20:24:16.329Z"
+  },
+  "nodes": [
+    {
+      "id": "newNode1",
+      "type": "statePreparationNode",
+      "position": {
+        "x": 375,
+        "y": 210
+      },
+      "data": {
+        "label": "Prepare State",
+        "inputs": [],
+        "implementation": "OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[4];\ncreg c[3];\nry(2*pi/3) q[0];\ncry(1.9106332362490186) q[0],q[1];\ncry(pi/2) q[1],q[2];\ncx q[2],q[3];\ncx q[1],q[2];\ncx q[0],q[1];\nx q[0];\nmeasure q[0] -> c[0];\nmeasure q[1] -> c[1];\nmeasure q[2] -> c[2];",
+        "implementationType": "openqasm2",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": "q102964",
+        "quantumStateName": "W-State",
+        "size": 3,
+        "outputIdentifier": "a"
+      },
+      "width": 320,
+      "height": 373,
+      "positionAbsolute": {
+        "x": 375,
+        "y": 210
+      }
+    }
+  ],
+  "edges": [],
+  "viewport": {
+    "x": -13.5,
+    "y": -16.5,
+    "zoom": 1
+  }
+}

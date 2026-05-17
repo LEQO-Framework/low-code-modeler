@@ -1,0 +1,139 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "name": "My Model",
+    "description": "This is a model that applies a CNOT.",
+    "author": "",
+    "id": "flow-1743620719377",
+    "timestamp": "2025-04-02T19:05:19.377Z"
+  },
+  "nodes": [
+    {
+      "id": "newNode4",
+      "type": "gateNode",
+      "position": {
+        "x": 135,
+        "y": 360
+      },
+      "data": {
+        "label": "Qubit",
+        "inputs": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q373666"
+        ]
+      },
+      "width": 150,
+      "height": 120,
+      "positionAbsolute": {
+        "x": 135,
+        "y": 360
+      },
+      "dragging": true
+    },
+    {
+      "id": "newNode9",
+      "type": "gateNode",
+      "position": {
+        "x": 450,
+        "y": 465
+      },
+      "data": {
+        "label": "CNOT",
+        "inputs": [
+          {
+            "id": "newNode4",
+            "identifiers": [
+              "q373666"
+            ]
+          },
+          {
+            "id": "newNode10",
+            "identifiers": [
+              "q230722"
+            ]
+          }
+        ],
+        "implementation": "OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[2];\ncx q[0], q[1]",
+        "implementationType": "openqasm2",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q351234",
+          "q364759"
+        ]
+      },
+      "width": 150,
+      "height": 120,
+      "positionAbsolute": {
+        "x": 450,
+        "y": 465
+      },
+      "dragging": true
+    },
+    {
+      "id": "newNode10",
+      "type": "gateNode",
+      "position": {
+        "x": 135,
+        "y": 570
+      },
+      "data": {
+        "label": "Qubit",
+        "inputs": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q230722"
+        ]
+      },
+      "width": 150,
+      "height": 120,
+      "positionAbsolute": {
+        "x": 135,
+        "y": 570
+      },
+      "dragging": true
+    }
+  ],
+  "edges": [
+    {
+      "source": "newNode10",
+      "sourceHandle": "quantumHandleGateOutput1newNode10",
+      "target": "newNode9",
+      "targetHandle": "quantumHandleGateInput2newNode9",
+      "type": "quantumEdge",
+      "id": "f0a2ff5e-e42a-4417-a550-5e23d5163af4",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD"
+      }
+    },
+    {
+      "source": "newNode4",
+      "sourceHandle": "quantumHandleGateOutput1newNode4",
+      "target": "newNode9",
+      "targetHandle": "quantumHandleGateInput1newNode9",
+      "type": "quantumEdge",
+      "id": "068a6caf-0576-474c-a144-011686c8524b",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD"
+      }
+    }
+  ],
+  "viewport": {
+    "x": -59,
+    "y": -139,
+    "zoom": 1
+  }
+}

@@ -1,0 +1,184 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "name": "My Model",
+    "description": "This is a model that applies a Toffoli.",
+    "author": "",
+    "id": "flow-1743620858222",
+    "timestamp": "2025-04-02T19:07:38.222Z"
+  },
+  "nodes": [
+    {
+      "id": "newNode4",
+      "type": "gateNode",
+      "position": {
+        "x": 135,
+        "y": 360
+      },
+      "data": {
+        "label": "Qubit",
+        "inputs": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q373666"
+        ]
+      },
+      "width": 150,
+      "height": 120,
+      "positionAbsolute": {
+        "x": 135,
+        "y": 360
+      },
+      "dragging": true
+    },
+    {
+      "id": "newNode10",
+      "type": "gateNode",
+      "position": {
+        "x": 135,
+        "y": 570
+      },
+      "data": {
+        "label": "Qubit",
+        "inputs": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q230722"
+        ]
+      },
+      "width": 150,
+      "height": 120,
+      "positionAbsolute": {
+        "x": 135,
+        "y": 570
+      },
+      "dragging": true
+    },
+    {
+      "id": "newNode11",
+      "type": "gateNode",
+      "position": {
+        "x": 465,
+        "y": 570
+      },
+      "data": {
+        "label": "Toffoli",
+        "inputs": [
+          {
+            "id": "newNode4",
+            "identifiers": [
+              "q373666"
+            ]
+          },
+          {
+            "id": "newNode10",
+            "identifiers": [
+              "q230722"
+            ]
+          },
+          {
+            "id": "newNode12",
+            "identifiers": [
+              "q427056"
+            ]
+          }
+        ],
+        "implementation": "OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[3];\nccx q[0], q[1], q[2]",
+        "implementationType": "openqasm2",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q470150"
+        ]
+      },
+      "width": 150,
+      "height": 120,
+      "positionAbsolute": {
+        "x": 465,
+        "y": 570
+      },
+      "dragging": true
+    },
+    {
+      "id": "newNode12",
+      "type": "gateNode",
+      "position": {
+        "x": 135,
+        "y": 780
+      },
+      "data": {
+        "label": "Qubit",
+        "inputs": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q427056"
+        ]
+      },
+      "width": 150,
+      "height": 120,
+      "positionAbsolute": {
+        "x": 135,
+        "y": 780
+      },
+      "dragging": true
+    }
+  ],
+  "edges": [
+    {
+      "source": "newNode12",
+      "sourceHandle": "quantumHandleGateOutput1newNode12",
+      "target": "newNode11",
+      "targetHandle": "quantumHandleGateInput3newNode11",
+      "type": "quantumEdge",
+      "id": "b98d883b-d77e-4bd1-89f6-7826ca8bb6fc",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD"
+      }
+    },
+    {
+      "source": "newNode10",
+      "sourceHandle": "quantumHandleGateOutput1newNode10",
+      "target": "newNode11",
+      "targetHandle": "quantumHandleGateInput2newNode11",
+      "type": "quantumEdge",
+      "id": "25210795-36ed-47d5-9790-69587233c211",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD"
+      }
+    },
+    {
+      "source": "newNode4",
+      "sourceHandle": "quantumHandleGateOutput1newNode4",
+      "target": "newNode11",
+      "targetHandle": "quantumHandleGateInput1newNode11",
+      "type": "quantumEdge",
+      "id": "0c8a51cb-676d-4f01-87bc-b319deb743d5",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD"
+      }
+    }
+  ],
+  "viewport": {
+    "x": 28,
+    "y": -191,
+    "zoom": 1
+  }
+}

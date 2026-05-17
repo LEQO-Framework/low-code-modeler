@@ -1,0 +1,90 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "name": "My Model",
+    "description": "This is a model.",
+    "author": "",
+    "id": "flow-1750109049139",
+    "timestamp": "2025-06-16T21:24:09.139Z"
+  },
+  "nodes": [
+    {
+      "id": "1c918f50-1538-43cf-b6a4-2eb66081a394",
+      "type": "dataTypeNode",
+      "position": {
+        "x": 570,
+        "y": 120
+      },
+      "data": {
+        "label": "int",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q302368"
+        ],
+        "dataType": "int",
+        "value": "",
+        "outputIdentifier": "a",
+        "outputs": [
+          {
+            "identifier": "a",
+            "size": ""
+          }
+        ]
+      },
+      "width": 450,
+      "height": 270,
+      "positionAbsolute": {
+        "x": 570,
+        "y": 120
+      },
+      "dragging": true
+    },
+    {
+      "id": "5da32a94-0c31-4ebe-9330-40bcf374a392",
+      "type": "dataTypeNode",
+      "position": {
+        "x": -45,
+        "y": 120
+      },
+      "data": {
+        "label": "int",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q205552"
+        ],
+        "dataType": "int",
+        "value": "5.5",
+        "outputIdentifier": "a",
+        "outputs": [
+          {
+            "identifier": "a",
+            "size": ""
+          }
+        ]
+      },
+      "width": 450,
+      "height": 270,
+      "positionAbsolute": {
+        "x": -45,
+        "y": 120
+      },
+      "dragging": true
+    }
+  ],
+  "edges": [],
+  "viewport": {
+    "x": 221.733289037468,
+    "y": 349.9981924300969,
+    "zoom": 1.0820815600053568
+  }
+}

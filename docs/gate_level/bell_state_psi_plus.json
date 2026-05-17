@@ -1,0 +1,185 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "name": "My Model",
+    "description": "This is a model that creates the state |psi^+>.",
+    "author": "",
+    "id": "flow-1743624099970",
+    "timestamp": "2025-04-02T20:01:39.970Z"
+  },
+  "nodes": [
+    {
+      "id": "newNode1",
+      "type": "gateNode",
+      "position": {
+        "x": 195,
+        "y": 255
+      },
+      "data": {
+        "label": "Qubit",
+        "inputs": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q422079"
+        ]
+      },
+      "width": 150,
+      "height": 120,
+      "positionAbsolute": {
+        "x": 195,
+        "y": 255
+      }
+    },
+    {
+      "id": "newNode2",
+      "type": "gateNode",
+      "position": {
+        "x": 195,
+        "y": 435
+      },
+      "data": {
+        "label": "Qubit",
+        "inputs": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q828146"
+        ]
+      },
+      "width": 150,
+      "height": 120,
+      "positionAbsolute": {
+        "x": 195,
+        "y": 435
+      },
+      "dragging": true
+    },
+    {
+      "id": "newNode3",
+      "type": "gateNode",
+      "position": {
+        "x": 405,
+        "y": 255
+      },
+      "data": {
+        "label": "H",
+        "inputs": [
+          {
+            "id": "newNode1",
+            "identifiers": [
+              "q422079"
+            ]
+          }
+        ],
+        "implementation": "OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[1];\nh q[0];",
+        "implementationType": "openqasm2",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q740532"
+        ]
+      },
+      "width": 150,
+      "height": 120,
+      "positionAbsolute": {
+        "x": 405,
+        "y": 255
+      },
+      "dragging": true
+    },
+    {
+      "id": "newNode5",
+      "type": "gateNode",
+      "position": {
+        "x": 765,
+        "y": 375
+      },
+      "data": {
+        "label": "CNOT",
+        "inputs": [
+          {
+            "id": "newNode3",
+            "identifiers": [
+              "q740532"
+            ]
+          },
+          {
+            "id": "newNode2",
+            "identifiers": [
+              "q828146"
+            ]
+          }
+        ],
+        "implementation": "OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[2];\ncx q[0], q[1]",
+        "implementationType": "openqasm2",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "control0": "true",
+        "identifiers": [
+          "q944855",
+          "q861251"
+        ]
+      },
+      "width": 150,
+      "height": 120,
+      "positionAbsolute": {
+        "x": 765,
+        "y": 375
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source": "newNode2",
+      "sourceHandle": "quantumHandleGateOutput1newNode2",
+      "target": "newNode5",
+      "targetHandle": "quantumHandleGateInput2newNode5",
+      "type": "quantumEdge",
+      "id": "05985126-d6ea-4d23-a9b7-3dee306a614f",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD"
+      }
+    },
+    {
+      "source": "newNode3",
+      "sourceHandle": "quantumHandleGateOutput1newNode3",
+      "target": "newNode5",
+      "targetHandle": "quantumHandleGateInput1newNode5",
+      "type": "quantumEdge",
+      "id": "6b912237-be67-4b40-bea1-0321044b7899",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD"
+      }
+    },
+    {
+      "source": "newNode1",
+      "sourceHandle": "quantumHandleGateOutput1newNode1",
+      "target": "newNode3",
+      "targetHandle": "quantumHandleGateInput1newNode3",
+      "type": "quantumEdge",
+      "id": "d0007428-c3c1-4278-8b45-bc442ecd5e1f",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD"
+      }
+    }
+  ],
+  "viewport": {
+    "x": -389.5,
+    "y": -187.5,
+    "zoom": 1
+  }
+}

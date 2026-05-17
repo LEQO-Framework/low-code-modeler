@@ -1,0 +1,130 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "name": "My Model",
+    "description": "This is a model.",
+    "author": "",
+    "id": "flow-1750112136933",
+    "timestamp": "2025-06-16T22:15:36.933Z"
+  },
+  "nodes": [
+    {
+      "id": "71513ade-a417-49a6-a817-a10332e21136",
+      "type": "quantumOperatorNode",
+      "position": {
+        "x": -105,
+        "y": 135
+      },
+      "data": {
+        "label": "Arithmetic Operator",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q606051"
+        ],
+        "operator": "+"
+      },
+      "width": 320,
+      "height": 373,
+      "positionAbsolute": {
+        "x": -105,
+        "y": 135
+      },
+      "dragging": true
+    },
+    {
+      "id": "ee4f48f9-b1b1-4201-82ee-a8155bea9016",
+      "type": "quantumOperatorNode",
+      "position": {
+        "x": 270,
+        "y": 135
+      },
+      "data": {
+        "label": "Bitwise Operator",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q953549"
+        ],
+        "operator": "OR"
+      },
+      "width": 320,
+      "height": 373,
+      "positionAbsolute": {
+        "x": 270,
+        "y": 135
+      },
+      "dragging": true
+    },
+    {
+      "id": "66ff28d4-4341-4def-9c24-a20b94eea43f",
+      "type": "quantumOperatorNode",
+      "position": {
+        "x": 645,
+        "y": 135
+      },
+      "data": {
+        "label": "Comparison Operator",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q553988"
+        ],
+        "operator": "<"
+      },
+      "width": 320,
+      "height": 373,
+      "positionAbsolute": {
+        "x": 645,
+        "y": 135
+      },
+      "dragging": true
+    },
+    {
+      "id": "0b231067-85fc-4682-a7d2-ac68ff47726c",
+      "type": "quantumOperatorNode",
+      "position": {
+        "x": 1020,
+        "y": 135
+      },
+      "data": {
+        "label": "Min & Max Operator",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q618779"
+        ],
+        "operator": "min"
+      },
+      "width": 320,
+      "height": 373,
+      "positionAbsolute": {
+        "x": 1020,
+        "y": 135
+      },
+      "dragging": true
+    }
+  ],
+  "edges": [],
+  "viewport": {
+    "x": 175.5,
+    "y": 143.5,
+    "zoom": 1
+  }
+}

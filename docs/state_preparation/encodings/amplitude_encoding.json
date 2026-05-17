@@ -1,0 +1,100 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "name": "My Model",
+    "description": "This is a model that encodes the probability distribution p = [0.5,0.3,0.1,0.1] and bound = 0 via amplitude encoding.",
+    "author": "",
+    "id": "flow-1743632801764",
+    "timestamp": "2025-04-02T22:26:41.764Z"
+  },
+  "nodes": [
+    {
+      "id": "newNode0",
+      "type": "positionNode",
+      "position": {
+        "x": -15,
+        "y": 75
+      },
+      "data": {
+        "label": "Array",
+        "inputs": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q460668"
+        ],
+        "dataType": "Array",
+        "value": "[0.5,0.3,0.1,0.1]",
+        "outputIdentifier": "a"
+      },
+      "width": 320,
+      "height": 150,
+      "positionAbsolute": {
+        "x": -15,
+        "y": 75
+      },
+      "dragging": true
+    },
+    {
+      "id": "newNode1",
+      "type": "statePreparationNode",
+      "position": {
+        "x": 450,
+        "y": 0
+      },
+      "data": {
+        "label": "Encode Value",
+        "inputs": [
+          {
+            "id": "newNode0",
+            "outputIdentifier": "a",
+            "identifiers": [
+              "q460668"
+            ]
+          }
+        ],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q918576"
+        ],
+        "encodingType": "Amplitude Encoding",
+        "bound": "0",
+        "size": "",
+        "outputIdentifier": "b"
+      },
+      "width": 320,
+      "height": 373,
+      "positionAbsolute": {
+        "x": 450,
+        "y": 0
+      },
+      "dragging": true
+    }
+  ],
+  "edges": [
+    {
+      "source": "newNode0",
+      "sourceHandle": "classicalHandleDataType",
+      "target": "newNode1",
+      "targetHandle": "classicalHandleStatePreparationnewNode1",
+      "type": "classicalEdge",
+      "id": "d9d36e54-333e-4c8a-9002-3ce07ce33ced",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#F5A843"
+      }
+    }
+  ],
+  "viewport": {
+    "x": 27.5,
+    "y": 205,
+    "zoom": 1
+  }
+}

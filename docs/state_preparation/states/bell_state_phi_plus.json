@@ -1,0 +1,44 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "name": "My Model",
+    "description": "This is a model that creates the Bell state |phi^+>.",
+    "author": "",
+    "id": "flow-1743624401443",
+    "timestamp": "2025-04-02T20:06:41.443Z"
+  },
+  "nodes": [
+    {
+      "id": "newNode1",
+      "type": "statePreparationNode",
+      "position": {
+        "x": 375,
+        "y": 210
+      },
+      "data": {
+        "label": "Prepare State",
+        "inputs": [],
+        "implementation": "OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[2];\nh q[0];\ncx q[0], q[1];",
+        "implementationType": "openqasm2",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": "q102964",
+        "quantumStateName": "Bell State φ+",
+        "size": "2",
+        "outputIdentifier": "a"
+      },
+      "width": 320,
+      "height": 373,
+      "positionAbsolute": {
+        "x": 375,
+        "y": 210
+      }
+    }
+  ],
+  "edges": [],
+  "viewport": {
+    "x": -13.5,
+    "y": -16.5,
+    "zoom": 1
+  }
+}

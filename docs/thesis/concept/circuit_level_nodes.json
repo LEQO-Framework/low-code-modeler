@@ -1,0 +1,749 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "name": "My Model",
+    "description": "This is a model.",
+    "author": "",
+    "id": "flow-1750106588692",
+    "timestamp": "2025-06-16T20:43:08.692Z"
+  },
+  "nodes": [
+    {
+      "id": "433b2f8c-dfd1-4c2f-9727-333e71299356",
+      "type": "gateNode",
+      "position": {
+        "x": -60,
+        "y": 30
+      },
+      "data": {
+        "label": "Qubit",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q557628"
+        ],
+        "parameterType": "degree",
+        "parameter": "0"
+      },
+      "width": 100,
+      "height": 100,
+      "positionAbsolute": {
+        "x": -60,
+        "y": 30
+      },
+      "dragging": true
+    },
+    {
+      "id": "68425719-8111-4356-8ad6-542ffe1118f3",
+      "type": "gateNode",
+      "position": {
+        "x": -60,
+        "y": 150
+      },
+      "data": {
+        "label": "H",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q158365"
+        ],
+        "parameterType": "degree",
+        "parameter": "0"
+      },
+      "width": 100,
+      "height": 100,
+      "positionAbsolute": {
+        "x": -60,
+        "y": 150
+      },
+      "dragging": true
+    },
+    {
+      "id": "507e1d40-817b-4ada-a584-f104ed2c7ef3",
+      "type": "gateNode",
+      "position": {
+        "x": 75,
+        "y": 150
+      },
+      "data": {
+        "label": "X",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q428077"
+        ],
+        "parameterType": "degree",
+        "parameter": "0"
+      },
+      "width": 100,
+      "height": 100,
+      "positionAbsolute": {
+        "x": 75,
+        "y": 150
+      },
+      "dragging": true
+    },
+    {
+      "id": "109c696f-a7f2-4b31-a082-cb113b4b1368",
+      "type": "gateNode",
+      "position": {
+        "x": 210,
+        "y": 150
+      },
+      "data": {
+        "label": "Y",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q802038"
+        ],
+        "parameterType": "degree",
+        "parameter": "0"
+      },
+      "width": 100,
+      "height": 100,
+      "positionAbsolute": {
+        "x": 210,
+        "y": 150
+      },
+      "dragging": true
+    },
+    {
+      "id": "861d3efa-6ab0-4c74-a82e-da86e6b7b1c9",
+      "type": "gateNode",
+      "position": {
+        "x": 345,
+        "y": 150
+      },
+      "data": {
+        "label": "Z",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q737511"
+        ],
+        "parameterType": "degree",
+        "parameter": "0"
+      },
+      "width": 100,
+      "height": 100,
+      "positionAbsolute": {
+        "x": 345,
+        "y": 150
+      },
+      "dragging": true
+    },
+    {
+      "id": "9a533aed-1f9b-4704-8032-90c9fd25e350",
+      "type": "gateNode",
+      "position": {
+        "x": 480,
+        "y": 150
+      },
+      "data": {
+        "label": "S",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q207625"
+        ],
+        "parameterType": "degree",
+        "parameter": "0"
+      },
+      "width": 100,
+      "height": 100,
+      "positionAbsolute": {
+        "x": 480,
+        "y": 150
+      },
+      "dragging": true
+    },
+    {
+      "id": "3b0f9509-5b6d-4699-86e7-3f9e4bee9563",
+      "type": "gateNode",
+      "position": {
+        "x": -60,
+        "y": 270
+      },
+      "data": {
+        "label": "SX",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q896188"
+        ],
+        "parameterType": "degree",
+        "parameter": "0"
+      },
+      "width": 100,
+      "height": 100,
+      "positionAbsolute": {
+        "x": -60,
+        "y": 270
+      },
+      "dragging": true
+    },
+    {
+      "id": "bdc0aa01-0c96-41ab-93c2-a2328a40bdc8",
+      "type": "gateNode",
+      "position": {
+        "x": 75,
+        "y": 270
+      },
+      "data": {
+        "label": "SDG",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q523278"
+        ],
+        "parameterType": "degree",
+        "parameter": "0"
+      },
+      "width": 100,
+      "height": 100,
+      "positionAbsolute": {
+        "x": 75,
+        "y": 270
+      },
+      "dragging": true
+    },
+    {
+      "id": "eb40d743-4907-4aad-a024-583b2f151482",
+      "type": "gateNode",
+      "position": {
+        "x": 210,
+        "y": 270
+      },
+      "data": {
+        "label": "TDG",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q573170"
+        ],
+        "parameterType": "degree",
+        "parameter": "0"
+      },
+      "width": 100,
+      "height": 100,
+      "positionAbsolute": {
+        "x": 210,
+        "y": 270
+      },
+      "dragging": true
+    },
+    {
+      "id": "d6757323-8d6f-462e-995c-b280360d8eb5",
+      "type": "gateNode",
+      "position": {
+        "x": -60,
+        "y": 390
+      },
+      "data": {
+        "label": "P(λ)",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q182342"
+        ],
+        "parameterType": "degree",
+        "parameter": "0"
+      },
+      "width": 100,
+      "height": 100,
+      "positionAbsolute": {
+        "x": -60,
+        "y": 390
+      },
+      "dragging": true
+    },
+    {
+      "id": "236b81b9-0733-41f2-a772-1089cb4f513a",
+      "type": "gateNode",
+      "position": {
+        "x": 345,
+        "y": 390
+      },
+      "data": {
+        "label": "RZ(θ)",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q457473"
+        ],
+        "parameterType": "degree",
+        "parameter": "0"
+      },
+      "width": 100,
+      "height": 100,
+      "positionAbsolute": {
+        "x": 345,
+        "y": 390
+      },
+      "dragging": true
+    },
+    {
+      "id": "efd9bb25-399f-45c9-846d-96f174816b6f",
+      "type": "gateNode",
+      "position": {
+        "x": 75,
+        "y": 390
+      },
+      "data": {
+        "label": "RX(θ)",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q505544"
+        ],
+        "parameterType": "degree",
+        "parameter": "0"
+      },
+      "width": 100,
+      "height": 100,
+      "positionAbsolute": {
+        "x": 75,
+        "y": 390
+      },
+      "dragging": true
+    },
+    {
+      "id": "a740d662-34a3-488f-ab64-59f9f4ef095b",
+      "type": "gateNode",
+      "position": {
+        "x": 210,
+        "y": 390
+      },
+      "data": {
+        "label": "RY(θ)",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q611739"
+        ],
+        "parameterType": "degree",
+        "parameter": "0"
+      },
+      "width": 100,
+      "height": 100,
+      "positionAbsolute": {
+        "x": 210,
+        "y": 390
+      },
+      "dragging": true
+    },
+    {
+      "id": "93c6cf0f-9ba0-49cd-95c5-87aef78e405a",
+      "type": "gateNode",
+      "position": {
+        "x": 75,
+        "y": 510
+      },
+      "data": {
+        "label": "CNOT",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q719447",
+          "q837656"
+        ],
+        "parameterType": "degree",
+        "parameter": "0"
+      },
+      "width": 100,
+      "height": 100,
+      "positionAbsolute": {
+        "x": 75,
+        "y": 510
+      },
+      "dragging": true
+    },
+    {
+      "id": "596c0316-3ace-41ef-9877-ca89ea76a399",
+      "type": "gateNode",
+      "position": {
+        "x": 480,
+        "y": 510
+      },
+      "data": {
+        "label": "SWAP",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q687177"
+        ],
+        "parameterType": "degree",
+        "parameter": "0"
+      },
+      "width": 100,
+      "height": 100,
+      "positionAbsolute": {
+        "x": 480,
+        "y": 510
+      },
+      "dragging": true
+    },
+    {
+      "id": "589b309d-32e6-4aaa-909c-b0d571de71be",
+      "type": "gateNode",
+      "position": {
+        "x": 210,
+        "y": 510
+      },
+      "data": {
+        "label": "CY",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q663528"
+        ],
+        "parameterType": "degree",
+        "parameter": "0"
+      },
+      "width": 100,
+      "height": 100,
+      "positionAbsolute": {
+        "x": 210,
+        "y": 510
+      },
+      "dragging": true
+    },
+    {
+      "id": "fa55a257-b0b8-4155-97e5-8bfe17e95147",
+      "type": "gateNode",
+      "position": {
+        "x": 345,
+        "y": 510
+      },
+      "data": {
+        "label": "CZ",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q754829"
+        ],
+        "parameterType": "degree",
+        "parameter": "0"
+      },
+      "width": 100,
+      "height": 100,
+      "positionAbsolute": {
+        "x": 345,
+        "y": 510
+      },
+      "dragging": true
+    },
+    {
+      "id": "560f4530-ae10-4fc4-ad12-e574ed6e9295",
+      "type": "gateNode",
+      "position": {
+        "x": -60,
+        "y": 510
+      },
+      "data": {
+        "label": "CH",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q543095"
+        ],
+        "parameterType": "degree",
+        "parameter": "0"
+      },
+      "width": 100,
+      "height": 100,
+      "positionAbsolute": {
+        "x": -60,
+        "y": 510
+      },
+      "dragging": true
+    },
+    {
+      "id": "91a52924-bc67-41ce-b8d0-32fe615be8f4",
+      "type": "gateNode",
+      "position": {
+        "x": 75,
+        "y": 630
+      },
+      "data": {
+        "label": "CRX(θ)",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q834041"
+        ],
+        "parameterType": "degree",
+        "parameter": "0"
+      },
+      "width": 100,
+      "height": 100,
+      "positionAbsolute": {
+        "x": 75,
+        "y": 630
+      },
+      "dragging": true
+    },
+    {
+      "id": "28a1bd24-f803-4cc9-abe5-e231950238ae",
+      "type": "gateNode",
+      "position": {
+        "x": -60,
+        "y": 630
+      },
+      "data": {
+        "label": "CP(λ)",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q771245"
+        ],
+        "parameterType": "degree",
+        "parameter": "0"
+      },
+      "width": 100,
+      "height": 100,
+      "positionAbsolute": {
+        "x": -60,
+        "y": 630
+      },
+      "dragging": true
+    },
+    {
+      "id": "6cb9a178-9736-4fab-b201-7f2861c46969",
+      "type": "gateNode",
+      "position": {
+        "x": 210,
+        "y": 630
+      },
+      "data": {
+        "label": "CRY(θ)",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q826065"
+        ],
+        "parameterType": "degree",
+        "parameter": "0"
+      },
+      "width": 100,
+      "height": 100,
+      "positionAbsolute": {
+        "x": 210,
+        "y": 630
+      },
+      "dragging": true
+    },
+    {
+      "id": "dbad5ce8-e26c-4788-b3bf-35b29daa8b9a",
+      "type": "gateNode",
+      "position": {
+        "x": 345,
+        "y": 630
+      },
+      "data": {
+        "label": "CRZ(θ)",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q306253"
+        ],
+        "parameterType": "degree",
+        "parameter": "0"
+      },
+      "width": 100,
+      "height": 100,
+      "positionAbsolute": {
+        "x": 345,
+        "y": 630
+      },
+      "dragging": true
+    },
+    {
+      "id": "8449c2b1-69f0-4fef-b755-80875f078532",
+      "type": "gateNode",
+      "position": {
+        "x": 480,
+        "y": 630
+      },
+      "data": {
+        "label": "CU(θ,φ,λ,γ)",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q620056"
+        ],
+        "parameterType": "degree",
+        "theta": "0",
+        "phi": "0",
+        "lambda": "0",
+        "gamma": "0"
+      },
+      "width": 100,
+      "height": 100,
+      "positionAbsolute": {
+        "x": 480,
+        "y": 630
+      },
+      "dragging": true
+    },
+    {
+      "id": "f0d1f720-f8ad-455a-b6aa-6c08f4965c60",
+      "type": "gateNode",
+      "position": {
+        "x": -60,
+        "y": 750
+      },
+      "data": {
+        "label": "Toffoli",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q428673",
+          "q901955",
+          "q460177"
+        ],
+        "parameterType": "degree",
+        "parameter": "0"
+      },
+      "width": 100,
+      "height": 100,
+      "positionAbsolute": {
+        "x": -60,
+        "y": 750
+      },
+      "dragging": true
+    },
+    {
+      "id": "f3dde5f3-99e5-4352-b120-91c03ac44653",
+      "type": "gateNode",
+      "position": {
+        "x": 75,
+        "y": 750
+      },
+      "data": {
+        "label": "CSWAP",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q972613"
+        ],
+        "parameterType": "degree",
+        "parameter": "0"
+      },
+      "width": 100,
+      "height": 100,
+      "positionAbsolute": {
+        "x": 75,
+        "y": 750
+      },
+      "dragging": true
+    }
+  ],
+  "edges": [],
+  "viewport": {
+    "x": 139.41512755151766,
+    "y": 40.43244379883686,
+    "zoom": 0.7334704854632137
+  }
+}

@@ -1,0 +1,437 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "name": "My Model",
+    "description": "This is a model.",
+    "author": "",
+    "id": "flow-1745691772266",
+    "timestamp": "2025-04-26T18:22:52.266Z"
+  },
+  "nodes": [
+    {
+      "id": "newNode0",
+      "type": "ifElseNode",
+      "position": {
+        "x": 435,
+        "y": 270
+      },
+      "data": {
+        "label": "If-Then-Else",
+        "inputs": [
+          {
+            "id": "newNode1",
+            "identifiers": [
+              "q484388"
+            ]
+          },
+          {
+            "id": "newNode2",
+            "identifiers": [
+              "q882126"
+            ]
+          },
+          {
+            "id": "newNode4",
+            "identifiers": [
+              "q855496"
+            ]
+          },
+          {
+            "id": "newNode5",
+            "identifiers": [
+              "q224216"
+            ],
+            "outputIdentifier": "a"
+          },
+          {
+            "id": "newNode8",
+            "identifiers": [
+              "q902305"
+            ]
+          },
+          {
+            "id": "newNode9",
+            "identifiers": [
+              "q421396"
+            ],
+            "outputIdentifier": "b"
+          }
+        ],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q369492"
+        ],
+        "condition": "a == b"
+      },
+      "width": 1100,
+      "height": 1020,
+      "positionAbsolute": {
+        "x": 435,
+        "y": 270
+      },
+      "dragging": true
+    },
+    {
+      "id": "newNode1",
+      "type": "gateNode",
+      "position": {
+        "x": 465,
+        "y": 165
+      },
+      "data": {
+        "label": "H",
+        "inputs": [
+          {
+            "id": "newNode0",
+            "identifiers": [
+              "q369492"
+            ]
+          }
+        ],
+        "implementation": "OPENQASM 3.0;\ninclude \"stdgates.inc\";\n@leqo.input 0\nqubit[1] q;\nh q[0];\n@leqo.output 0\nlet output = q;",
+        "implementationType": "openqasm3",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q484388"
+        ],
+        "position": {
+          "x": 465,
+          "y": 165
+        }
+      },
+      "width": 100,
+      "height": 100,
+      "positionAbsolute": {
+        "x": 900,
+        "y": 435
+      },
+      "dragging": true,
+      "parentNode": "newNode0",
+      "extent": "parent"
+    },
+    {
+      "id": "newNode4",
+      "type": "gateNode",
+      "position": {
+        "x": -180,
+        "y": 735
+      },
+      "data": {
+        "label": "Qubit",
+        "inputs": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q855496"
+        ]
+      },
+      "width": 100,
+      "height": 100,
+      "positionAbsolute": {
+        "x": -180,
+        "y": 735
+      }
+    },
+    {
+      "id": "newNode5",
+      "type": "measurementNode",
+      "position": {
+        "x": -195,
+        "y": 210
+      },
+      "data": {
+        "label": "Measurement",
+        "inputs": [
+          {
+            "id": "newNode7",
+            "identifiers": [
+              "q849013"
+            ],
+            "outputIdentifier": "a"
+          }
+        ],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q224216"
+        ],
+        "indices": "",
+        "outputIdentifier": "a"
+      },
+      "width": 320,
+      "height": 290,
+      "positionAbsolute": {
+        "x": -195,
+        "y": 210
+      },
+      "dragging": true
+    },
+    {
+      "id": "newNode6",
+      "type": "gateNode",
+      "position": {
+        "x": -765,
+        "y": 255
+      },
+      "data": {
+        "label": "Qubit",
+        "inputs": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q343984"
+        ]
+      },
+      "width": 100,
+      "height": 100,
+      "positionAbsolute": {
+        "x": -765,
+        "y": 255
+      },
+      "dragging": true
+    },
+    {
+      "id": "newNode7",
+      "type": "gateNode",
+      "position": {
+        "x": -555,
+        "y": 255
+      },
+      "data": {
+        "label": "H",
+        "inputs": [
+          {
+            "id": "newNode6",
+            "identifiers": [
+              "q343984"
+            ]
+          }
+        ],
+        "implementation": "OPENQASM 3.0;\ninclude \"stdgates.inc\";\n@leqo.input 0\nqubit[1] q;\nh q[0];\n@leqo.output 0\nlet output = q;",
+        "implementationType": "openqasm3",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q849013"
+        ]
+      },
+      "width": 100,
+      "height": 100,
+      "positionAbsolute": {
+        "x": -555,
+        "y": 255
+      },
+      "dragging": true
+    },
+    {
+      "id": "newNode8",
+      "type": "gateNode",
+      "position": {
+        "x": 510,
+        "y": 630
+      },
+      "data": {
+        "label": "X",
+        "inputs": [
+          {
+            "id": "newNode0",
+            "identifiers": [
+              "q369492"
+            ]
+          }
+        ],
+        "implementation": "OPENQASM 3.0;\ninclude \"stdgates.inc\";\n@leqo.input 0\nqubit[1] q;\nx q[0];\n@leqo.output 0\nlet output = q;",
+        "implementationType": "openqasm3",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q902305"
+        ],
+        "position": {
+          "x": 510,
+          "y": 630
+        }
+      },
+      "width": 100,
+      "height": 100,
+      "positionAbsolute": {
+        "x": 945,
+        "y": 900
+      },
+      "dragging": true,
+      "parentNode": "newNode0",
+      "extent": "parent"
+    },
+    {
+      "id": "newNode9",
+      "type": "positionNode",
+      "position": {
+        "x": -270,
+        "y": 990
+      },
+      "data": {
+        "label": "bit",
+        "inputs": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q421396"
+        ],
+        "dataType": "bit",
+        "value": "",
+        "outputIdentifier": "b"
+      },
+      "width": 320,
+      "height": 150,
+      "positionAbsolute": {
+        "x": -270,
+        "y": 990
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source": "newNode9",
+      "sourceHandle": "classicalHandleDataType",
+      "target": "newNode0",
+      "targetHandle": "classicalHandleInputInitializationnewNode0-1",
+      "type": "classicalEdge",
+      "id": "03317d6e-fecd-4472-9249-b94ec795dbce",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#F5A843"
+      }
+    },
+    {
+      "source": "newNode8",
+      "sourceHandle": "quantumHandleGateOutput1newNode8",
+      "target": "newNode0",
+      "targetHandle": "quantumHandleDynamicOutputElsenewNode0-0",
+      "type": "quantumEdge",
+      "id": "317e9529-92f3-4380-99a4-edb450692d24",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD"
+      }
+    },
+    {
+      "source": "newNode0",
+      "sourceHandle": "quantumHandlesite-newNode0-0",
+      "target": "newNode8",
+      "targetHandle": "quantumHandleGateInput1newNode8",
+      "type": "quantumEdge",
+      "id": "7d0c6eed-d799-4112-8113-b16f38c77883",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD"
+      }
+    },
+    {
+      "source": "newNode7",
+      "sourceHandle": "quantumHandleGateOutput1newNode7",
+      "target": "newNode5",
+      "targetHandle": "quantumHandleMeasurementnewNode5",
+      "type": "quantumEdge",
+      "id": "74e5f22d-f725-4541-a2bd-aa87f3722af1",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD"
+      }
+    },
+    {
+      "source": "newNode6",
+      "sourceHandle": "quantumHandleGateOutput1newNode6",
+      "target": "newNode7",
+      "targetHandle": "quantumHandleGateInput1newNode7",
+      "type": "quantumEdge",
+      "id": "b5548610-5b8b-4d15-83c9-cfd9dfc5bb2a",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD"
+      }
+    },
+    {
+      "source": "newNode5",
+      "sourceHandle": "classicalHandlenewNode5",
+      "target": "newNode0",
+      "targetHandle": "classicalHandleInputInitializationnewNode0-0",
+      "type": "classicalEdge",
+      "id": "dc35400c-8184-4f1b-ba45-5b48f7a20982",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#F5A843"
+      }
+    },
+    {
+      "source": "newNode4",
+      "sourceHandle": "quantumHandleGateOutput1newNode4",
+      "target": "newNode0",
+      "targetHandle": "quantumHandleInputInitializationnewNode0-0",
+      "type": "quantumEdge",
+      "id": "6a3fbef3-b7f5-498d-a084-becafce552bd",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD"
+      }
+    },
+    {
+      "source": "newNode1",
+      "sourceHandle": "quantumHandleGateOutput1newNode1",
+      "target": "newNode0",
+      "targetHandle": "quantumHandleDynamicOutputnewNode0-0",
+      "type": "quantumEdge",
+      "id": "ca42ee43-d90c-40c8-9026-e9601f5d231e",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD"
+      }
+    },
+    {
+      "source": "newNode0",
+      "sourceHandle": "quantumHandleInputInitializationnewNode0-0",
+      "target": "newNode1",
+      "targetHandle": "quantumHandleGateInput1newNode1",
+      "type": "quantumEdge",
+      "id": "1dda7aed-bc6b-42a2-9822-aa0dc43551ac",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD"
+      }
+    }
+  ],
+  "viewport": {
+    "x": 257.90988923411794,
+    "y": -22.495357237561564,
+    "zoom": 0.6216954070156935
+  }
+}

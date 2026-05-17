@@ -1,0 +1,93 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "name": "My Model",
+    "description": "This is a model that measures one qubit without applying any operation.",
+    "author": "",
+    "id": "flow-1743632591406",
+    "timestamp": "2025-04-02T22:23:11.406Z"
+  },
+  "nodes": [
+    {
+      "id": "newNode0",
+      "type": "gateNode",
+      "position": {
+        "x": 135,
+        "y": 225
+      },
+      "data": {
+        "label": "Qubit",
+        "inputs": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q481825"
+        ]
+      },
+      "width": 150,
+      "height": 120,
+      "positionAbsolute": {
+        "x": 135,
+        "y": 225
+      }
+    },
+    {
+      "id": "newNode1",
+      "type": "measurementNode",
+      "position": {
+        "x": 450,
+        "y": 180
+      },
+      "data": {
+        "label": "Measurement",
+        "inputs": [
+          {
+            "id": "newNode0",
+            "identifiers": [
+              "q481825"
+            ]
+          }
+        ],
+        "implementation": "OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[1];\ncreg c[1];\nmeasure q[0] -> c[0];",
+        "implementationType": "openqasm2",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q176992"
+        ],
+        "indices": "",
+        "outputIdentifier": ""
+      },
+      "width": 320,
+      "height": 290,
+      "positionAbsolute": {
+        "x": 450,
+        "y": 180
+      },
+      "dragging": true
+    }
+  ],
+  "edges": [
+    {
+      "source": "newNode0",
+      "sourceHandle": "quantumHandleGateOutput1newNode0",
+      "target": "newNode1",
+      "targetHandle": "quantumHandleMeasurementnewNode1",
+      "type": "quantumEdge",
+      "id": "86dd5031-3be5-4282-aaa2-a46c1a806c73",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD"
+      }
+    }
+  ],
+  "viewport": {
+    "x": 10.5,
+    "y": 2,
+    "zoom": 1
+  }
+}

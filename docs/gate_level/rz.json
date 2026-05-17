@@ -1,0 +1,92 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "name": "My Model",
+    "description": "This is a model that applies a RZ gate with pi/2.",
+    "author": "",
+    "id": "flow-1743634129129",
+    "timestamp": "2025-04-02T22:48:49.130Z"
+  },
+  "nodes": [
+    {
+      "id": "newNode0",
+      "type": "gateNode",
+      "position": {
+        "x": 120,
+        "y": 210
+      },
+      "data": {
+        "label": "Qubit",
+        "inputs": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q850801"
+        ]
+      },
+      "width": 150,
+      "height": 120,
+      "positionAbsolute": {
+        "x": 120,
+        "y": 210
+      }
+    },
+    {
+      "id": "newNode1",
+      "type": "gateNode",
+      "position": {
+        "x": 360,
+        "y": 210
+      },
+      "data": {
+        "label": "RZ",
+        "inputs": [
+          {
+            "id": "newNode0",
+            "identifiers": [
+              "q850801"
+            ]
+          }
+        ],
+        "implementation": "OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[1];\nrz(pi/2) q[0];",
+        "implementationType": "openqasm2",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "parameter": "pi/2",
+        "identifiers": [
+          "q541766"
+        ]
+      },
+      "width": 150,
+      "height": 120,
+      "positionAbsolute": {
+        "x": 360,
+        "y": 210
+      },
+      "dragging": true
+    }
+  ],
+  "edges": [
+    {
+      "source": "newNode0",
+      "sourceHandle": "quantumHandleGateOutput1newNode0",
+      "target": "newNode1",
+      "targetHandle": "quantumHandleGateInput1newNode1",
+      "type": "quantumEdge",
+      "id": "04b23947-de4b-41b6-9e90-c2d536d7427d",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD"
+      }
+    }
+  ],
+  "viewport": {
+    "x": -56.5,
+    "y": 17,
+    "zoom": 1
+  }
+}

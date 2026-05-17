@@ -1,0 +1,115 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "name": "My Model",
+    "description": "This is a model.",
+    "author": "",
+    "id": "flow-1750112081970",
+    "timestamp": "2025-06-16T22:14:41.970Z"
+  },
+  "nodes": [
+    {
+      "id": "48adbbb7-1c2a-4f3f-a149-856523833716",
+      "type": "statePreparationNode",
+      "position": {
+        "x": -165,
+        "y": 120
+      },
+      "data": {
+        "label": "Encode Value",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q118759"
+        ],
+        "encodingType": "Amplitude Encoding",
+        "bound": 0,
+        "size": "",
+        "outputIdentifier": ""
+      },
+      "width": 320,
+      "height": 373,
+      "positionAbsolute": {
+        "x": -165,
+        "y": 120
+      },
+      "dragging": true
+    },
+    {
+      "id": "9ad97d51-12cd-45ce-91d3-3bba903110ea",
+      "type": "statePreparationNode",
+      "position": {
+        "x": 195,
+        "y": 120
+      },
+      "data": {
+        "label": "Prepare State",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q843320"
+        ],
+        "quantumStateName": "Bell State ϕ+",
+        "size": "2",
+        "outputIdentifier": "",
+        "outputs": [
+          {
+            "identifier": "",
+            "size": "2"
+          }
+        ],
+        "parameterType": "degree"
+      },
+      "width": 320,
+      "height": 373,
+      "positionAbsolute": {
+        "x": 195,
+        "y": 120
+      },
+      "dragging": true
+    },
+    {
+      "id": "297632f7-0450-4be9-8a70-2c4508016bd7",
+      "type": "measurementNode",
+      "position": {
+        "x": 555,
+        "y": 120
+      },
+      "data": {
+        "label": "Measurement",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q296702"
+        ],
+        "indices": "",
+        "outputIdentifier": ""
+      },
+      "width": 320,
+      "height": 400,
+      "positionAbsolute": {
+        "x": 555,
+        "y": 120
+      },
+      "dragging": true
+    }
+  ],
+  "edges": [],
+  "viewport": {
+    "x": 354.5,
+    "y": 102.5,
+    "zoom": 1
+  }
+}

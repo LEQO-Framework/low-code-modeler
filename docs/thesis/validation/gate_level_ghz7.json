@@ -1,0 +1,684 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "name": "My Model",
+    "description": "This is a model.",
+    "author": "",
+    "id": "flow-1750112462559",
+    "timestamp": "2025-06-16T22:21:02.559Z"
+  },
+  "nodes": [
+    {
+      "id": "a0acafad-bf15-4afe-8d6b-4c587ccca347",
+      "type": "gateNode",
+      "position": {
+        "x": -270,
+        "y": 495
+      },
+      "data": {
+        "label": "Qubit",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q558519"
+        ],
+        "parameter": "0"
+      },
+      "width": 100,
+      "height": 100,
+      "positionAbsolute": {
+        "x": -270,
+        "y": 495
+      },
+      "dragging": true
+    },
+    {
+      "id": "867d3c22-7d9c-4bf0-9038-acdec45ce877",
+      "type": "gateNode",
+      "position": {
+        "x": -270,
+        "y": -60
+      },
+      "data": {
+        "label": "Qubit",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q865920"
+        ],
+        "parameter": "0"
+      },
+      "width": 100,
+      "height": 100,
+      "positionAbsolute": {
+        "x": -270,
+        "y": -60
+      },
+      "dragging": true
+    },
+    {
+      "id": "d0128f10-05fb-484e-b699-5e1d5a1cdec1",
+      "type": "gateNode",
+      "position": {
+        "x": -270,
+        "y": 225
+      },
+      "data": {
+        "label": "Qubit",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q323326"
+        ],
+        "parameter": "0"
+      },
+      "width": 100,
+      "height": 100,
+      "positionAbsolute": {
+        "x": -270,
+        "y": 225
+      },
+      "dragging": true
+    },
+    {
+      "id": "190777bc-be61-4864-8b90-58dcfb6c2b30",
+      "type": "gateNode",
+      "position": {
+        "x": -270,
+        "y": 75
+      },
+      "data": {
+        "label": "Qubit",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q286330"
+        ],
+        "parameter": "0"
+      },
+      "width": 100,
+      "height": 100,
+      "positionAbsolute": {
+        "x": -270,
+        "y": 75
+      },
+      "dragging": true
+    },
+    {
+      "id": "c510f334-426d-418f-930c-8c7c41c42b47",
+      "type": "gateNode",
+      "position": {
+        "x": -270,
+        "y": 615
+      },
+      "data": {
+        "label": "Qubit",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q747748"
+        ],
+        "parameter": "0"
+      },
+      "width": 100,
+      "height": 100,
+      "positionAbsolute": {
+        "x": -270,
+        "y": 615
+      },
+      "dragging": true
+    },
+    {
+      "id": "cff1356b-2349-47c2-8a71-e508720a7231",
+      "type": "gateNode",
+      "position": {
+        "x": -270,
+        "y": 360
+      },
+      "data": {
+        "label": "Qubit",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q565318"
+        ],
+        "parameter": "0"
+      },
+      "width": 100,
+      "height": 100,
+      "positionAbsolute": {
+        "x": -270,
+        "y": 360
+      },
+      "dragging": true
+    },
+    {
+      "id": "54d32db8-d4da-4f31-81b1-5319ea98dbdf",
+      "type": "gateNode",
+      "position": {
+        "x": -270,
+        "y": 765
+      },
+      "data": {
+        "label": "Qubit",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q421343"
+        ],
+        "parameter": "0"
+      },
+      "width": 100,
+      "height": 100,
+      "positionAbsolute": {
+        "x": -270,
+        "y": 765
+      },
+      "dragging": true
+    },
+    {
+      "id": "3d102344-81dd-4d81-9e4a-f1a9ca2f927b",
+      "type": "gateNode",
+      "position": {
+        "x": -75,
+        "y": -60
+      },
+      "data": {
+        "label": "H",
+        "inputs": [
+          {
+            "id": "867d3c22-7d9c-4bf0-9038-acdec45ce877",
+            "identifiers": [
+              "q865920"
+            ]
+          }
+        ],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q192846"
+        ],
+        "parameter": "0"
+      },
+      "width": 100,
+      "height": 100,
+      "positionAbsolute": {
+        "x": -75,
+        "y": -60
+      },
+      "dragging": true
+    },
+    {
+      "id": "7aaf839e-c290-4639-ab19-ddfd75679b42",
+      "type": "gateNode",
+      "position": {
+        "x": 75,
+        "y": 45
+      },
+      "data": {
+        "label": "CNOT",
+        "inputs": [
+          {
+            "id": "3d102344-81dd-4d81-9e4a-f1a9ca2f927b",
+            "identifiers": [
+              "q192846"
+            ]
+          },
+          {
+            "id": "190777bc-be61-4864-8b90-58dcfb6c2b30",
+            "identifiers": [
+              "q286330"
+            ]
+          }
+        ],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q265557",
+          "q148294"
+        ],
+        "parameter": "0"
+      },
+      "width": 100,
+      "height": 100,
+      "positionAbsolute": {
+        "x": 75,
+        "y": 45
+      },
+      "dragging": true
+    },
+    {
+      "id": "d6ee0580-5cd5-4afb-b8d8-728bcc2f4c33",
+      "type": "gateNode",
+      "position": {
+        "x": 225,
+        "y": 195
+      },
+      "data": {
+        "label": "CNOT",
+        "inputs": [
+          {
+            "id": "d0128f10-05fb-484e-b699-5e1d5a1cdec1",
+            "identifiers": [
+              "q323326"
+            ]
+          },
+          {
+            "id": "7aaf839e-c290-4639-ab19-ddfd75679b42",
+            "identifiers": [
+              "q265557"
+            ]
+          }
+        ],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q896463",
+          "q512076"
+        ],
+        "parameter": "0"
+      },
+      "width": 100,
+      "height": 100,
+      "positionAbsolute": {
+        "x": 225,
+        "y": 195
+      },
+      "dragging": true
+    },
+    {
+      "id": "23f643e7-37b2-47d7-a825-5d0f2a127353",
+      "type": "gateNode",
+      "position": {
+        "x": 375,
+        "y": 330
+      },
+      "data": {
+        "label": "CNOT",
+        "inputs": [
+          {
+            "id": "cff1356b-2349-47c2-8a71-e508720a7231",
+            "identifiers": [
+              "q565318"
+            ]
+          },
+          {
+            "id": "d6ee0580-5cd5-4afb-b8d8-728bcc2f4c33",
+            "identifiers": [
+              "q896463"
+            ]
+          }
+        ],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q434645",
+          "q957533"
+        ],
+        "parameter": "0"
+      },
+      "width": 100,
+      "height": 100,
+      "positionAbsolute": {
+        "x": 375,
+        "y": 330
+      },
+      "dragging": true
+    },
+    {
+      "id": "09ae186d-d346-4766-9543-28b0f6d68e48",
+      "type": "gateNode",
+      "position": {
+        "x": 510,
+        "y": 450
+      },
+      "data": {
+        "label": "CNOT",
+        "inputs": [
+          {
+            "id": "a0acafad-bf15-4afe-8d6b-4c587ccca347",
+            "identifiers": [
+              "q558519"
+            ]
+          },
+          {
+            "id": "23f643e7-37b2-47d7-a825-5d0f2a127353",
+            "identifiers": [
+              "q434645"
+            ]
+          }
+        ],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q825593",
+          "q873714"
+        ],
+        "parameter": "0"
+      },
+      "width": 100,
+      "height": 100,
+      "positionAbsolute": {
+        "x": 510,
+        "y": 450
+      },
+      "dragging": true
+    },
+    {
+      "id": "ff049b1f-4609-43d7-aa59-3a29fd69e9b1",
+      "type": "gateNode",
+      "position": {
+        "x": 645,
+        "y": 585
+      },
+      "data": {
+        "label": "CNOT",
+        "inputs": [
+          {
+            "id": "09ae186d-d346-4766-9543-28b0f6d68e48",
+            "identifiers": [
+              "q825593"
+            ]
+          },
+          {
+            "id": "c510f334-426d-418f-930c-8c7c41c42b47",
+            "identifiers": [
+              "q747748"
+            ]
+          }
+        ],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q341409",
+          "q638660"
+        ],
+        "parameter": "0"
+      },
+      "width": 100,
+      "height": 100,
+      "positionAbsolute": {
+        "x": 645,
+        "y": 585
+      },
+      "dragging": true
+    },
+    {
+      "id": "b3237521-9108-476c-a142-07cc2b0b20ca",
+      "type": "gateNode",
+      "position": {
+        "x": 780,
+        "y": 735
+      },
+      "data": {
+        "label": "CNOT",
+        "inputs": [
+          {
+            "id": "ff049b1f-4609-43d7-aa59-3a29fd69e9b1",
+            "identifiers": [
+              "q341409"
+            ]
+          },
+          {
+            "id": "54d32db8-d4da-4f31-81b1-5319ea98dbdf",
+            "identifiers": [
+              "q421343"
+            ]
+          }
+        ],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q848013",
+          "q864123"
+        ],
+        "parameter": "0"
+      },
+      "width": 100,
+      "height": 100,
+      "positionAbsolute": {
+        "x": 780,
+        "y": 735
+      },
+      "dragging": true
+    }
+  ],
+  "edges": [
+    {
+      "source": "54d32db8-d4da-4f31-81b1-5319ea98dbdf",
+      "sourceHandle": "quantumHandleGateOutput054d32db8-d4da-4f31-81b1-5319ea98dbdf",
+      "target": "b3237521-9108-476c-a142-07cc2b0b20ca",
+      "targetHandle": "quantumHandleGateInput1b3237521-9108-476c-a142-07cc2b0b20ca",
+      "type": "quantumEdge",
+      "id": "03af58dd-178f-4d41-a6c0-0ed71f313f0b",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD"
+      }
+    },
+    {
+      "source": "ff049b1f-4609-43d7-aa59-3a29fd69e9b1",
+      "sourceHandle": "quantumHandleGateOutput1ff049b1f-4609-43d7-aa59-3a29fd69e9b1",
+      "target": "b3237521-9108-476c-a142-07cc2b0b20ca",
+      "targetHandle": "quantumHandleGateInput0b3237521-9108-476c-a142-07cc2b0b20ca",
+      "type": "quantumEdge",
+      "id": "a4d59135-5333-489c-b109-623907460919",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD"
+      }
+    },
+    {
+      "source": "c510f334-426d-418f-930c-8c7c41c42b47",
+      "sourceHandle": "quantumHandleGateOutput0c510f334-426d-418f-930c-8c7c41c42b47",
+      "target": "ff049b1f-4609-43d7-aa59-3a29fd69e9b1",
+      "targetHandle": "quantumHandleGateInput1ff049b1f-4609-43d7-aa59-3a29fd69e9b1",
+      "type": "quantumEdge",
+      "id": "67634f06-24ab-4b28-9acf-49ae275e8edc",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD"
+      }
+    },
+    {
+      "source": "09ae186d-d346-4766-9543-28b0f6d68e48",
+      "sourceHandle": "quantumHandleGateOutput109ae186d-d346-4766-9543-28b0f6d68e48",
+      "target": "ff049b1f-4609-43d7-aa59-3a29fd69e9b1",
+      "targetHandle": "quantumHandleGateInput0ff049b1f-4609-43d7-aa59-3a29fd69e9b1",
+      "type": "quantumEdge",
+      "id": "ed879d12-64ec-472d-82ea-4d81b879e361",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD"
+      }
+    },
+    {
+      "source": "23f643e7-37b2-47d7-a825-5d0f2a127353",
+      "sourceHandle": "quantumHandleGateOutput123f643e7-37b2-47d7-a825-5d0f2a127353",
+      "target": "09ae186d-d346-4766-9543-28b0f6d68e48",
+      "targetHandle": "quantumHandleGateInput009ae186d-d346-4766-9543-28b0f6d68e48",
+      "type": "quantumEdge",
+      "id": "f58025e3-9e00-49bf-b525-06fe5d407356",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD"
+      }
+    },
+    {
+      "source": "a0acafad-bf15-4afe-8d6b-4c587ccca347",
+      "sourceHandle": "quantumHandleGateOutput0a0acafad-bf15-4afe-8d6b-4c587ccca347",
+      "target": "09ae186d-d346-4766-9543-28b0f6d68e48",
+      "targetHandle": "quantumHandleGateInput109ae186d-d346-4766-9543-28b0f6d68e48",
+      "type": "quantumEdge",
+      "id": "e6b182a7-6a89-4e62-954a-d2672c47c905",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD"
+      }
+    },
+    {
+      "source": "d6ee0580-5cd5-4afb-b8d8-728bcc2f4c33",
+      "sourceHandle": "quantumHandleGateOutput1d6ee0580-5cd5-4afb-b8d8-728bcc2f4c33",
+      "target": "23f643e7-37b2-47d7-a825-5d0f2a127353",
+      "targetHandle": "quantumHandleGateInput023f643e7-37b2-47d7-a825-5d0f2a127353",
+      "type": "quantumEdge",
+      "id": "6e461fd4-3d88-486c-9809-bbc074bf770d",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD"
+      }
+    },
+    {
+      "source": "cff1356b-2349-47c2-8a71-e508720a7231",
+      "sourceHandle": "quantumHandleGateOutput0cff1356b-2349-47c2-8a71-e508720a7231",
+      "target": "23f643e7-37b2-47d7-a825-5d0f2a127353",
+      "targetHandle": "quantumHandleGateInput123f643e7-37b2-47d7-a825-5d0f2a127353",
+      "type": "quantumEdge",
+      "id": "de39df1c-88c0-40ef-8a6d-460359a156c0",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD"
+      }
+    },
+    {
+      "source": "7aaf839e-c290-4639-ab19-ddfd75679b42",
+      "sourceHandle": "quantumHandleGateOutput17aaf839e-c290-4639-ab19-ddfd75679b42",
+      "target": "d6ee0580-5cd5-4afb-b8d8-728bcc2f4c33",
+      "targetHandle": "quantumHandleGateInput0d6ee0580-5cd5-4afb-b8d8-728bcc2f4c33",
+      "type": "quantumEdge",
+      "id": "52f311df-45e1-43df-93dd-61a791c035b0",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD"
+      }
+    },
+    {
+      "source": "d0128f10-05fb-484e-b699-5e1d5a1cdec1",
+      "sourceHandle": "quantumHandleGateOutput0d0128f10-05fb-484e-b699-5e1d5a1cdec1",
+      "target": "d6ee0580-5cd5-4afb-b8d8-728bcc2f4c33",
+      "targetHandle": "quantumHandleGateInput1d6ee0580-5cd5-4afb-b8d8-728bcc2f4c33",
+      "type": "quantumEdge",
+      "id": "4cc5bea2-5d1a-40b4-8019-e1f817210fb9",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD"
+      }
+    },
+    {
+      "source": "190777bc-be61-4864-8b90-58dcfb6c2b30",
+      "sourceHandle": "quantumHandleGateOutput0190777bc-be61-4864-8b90-58dcfb6c2b30",
+      "target": "7aaf839e-c290-4639-ab19-ddfd75679b42",
+      "targetHandle": "quantumHandleGateInput17aaf839e-c290-4639-ab19-ddfd75679b42",
+      "type": "quantumEdge",
+      "id": "5509b905-edbb-4e41-b1e9-1ec6057db12e",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD"
+      }
+    },
+    {
+      "source": "3d102344-81dd-4d81-9e4a-f1a9ca2f927b",
+      "sourceHandle": "quantumHandleGateOutput03d102344-81dd-4d81-9e4a-f1a9ca2f927b",
+      "target": "7aaf839e-c290-4639-ab19-ddfd75679b42",
+      "targetHandle": "quantumHandleGateInput07aaf839e-c290-4639-ab19-ddfd75679b42",
+      "type": "quantumEdge",
+      "id": "3e4e4bf8-92bf-4ac3-8b87-d1790f64f58d",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD"
+      }
+    },
+    {
+      "source": "867d3c22-7d9c-4bf0-9038-acdec45ce877",
+      "sourceHandle": "quantumHandleGateOutput0867d3c22-7d9c-4bf0-9038-acdec45ce877",
+      "target": "3d102344-81dd-4d81-9e4a-f1a9ca2f927b",
+      "targetHandle": "quantumHandleGateInput03d102344-81dd-4d81-9e4a-f1a9ca2f927b",
+      "type": "quantumEdge",
+      "id": "e7beddd0-107c-45d0-ad36-927526eefe26",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD"
+      }
+    }
+  ],
+  "viewport": {
+    "x": 542.7816156337655,
+    "y": 309.3508124056856,
+    "zoom": 0.8174393960736589
+  }
+}

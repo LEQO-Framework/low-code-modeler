@@ -1,0 +1,173 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "name": "My Model",
+    "description": "This is a model.",
+    "author": "",
+    "id": "flow-1750196765717",
+    "timestamp": "2025-06-17T21:46:05.717Z"
+  },
+  "nodes": [
+    {
+      "id": "c1dcbbfb-b33e-4f37-bdd1-bf57d4020b7a",
+      "type": "dataTypeNode",
+      "position": {
+        "x": -90,
+        "y": 255
+      },
+      "data": {
+        "label": "Array",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q230852"
+        ],
+        "dataType": "Array",
+        "value": "[pi/4,pi/2]",
+        "outputIdentifier": "a",
+        "outputs": [
+          {
+            "identifier": "a",
+            "size": "2",
+            "type": "classical"
+          }
+        ],
+        "size": 2
+      },
+      "width": 450,
+      "height": 270,
+      "positionAbsolute": {
+        "x": -90,
+        "y": 255
+      },
+      "dragging": true
+    },
+    {
+      "id": "505608e0-0b17-4ca4-a5ef-7549145a444e",
+      "type": "statePreparationNode",
+      "position": {
+        "x": 465,
+        "y": 255
+      },
+      "data": {
+        "label": "Encode Value",
+        "inputs": [
+          {
+            "id": "c1dcbbfb-b33e-4f37-bdd1-bf57d4020b7a",
+            "outputIdentifier": "a",
+            "identifiers": [
+              "q230852"
+            ]
+          },
+          {
+            "id": "c1dcbbfb-b33e-4f37-bdd1-bf57d4020b7a",
+            "identifiers": [
+              "q230852"
+            ]
+          }
+        ],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q246919"
+        ],
+        "encodingType": "Amplitude Encoding",
+        "bound": "0.5",
+        "size": "",
+        "outputIdentifier": "b",
+        "outputs": [
+          {
+            "identifier": "b",
+            "size": "",
+            "type": "quantum"
+          }
+        ]
+      },
+      "width": 320,
+      "height": 373,
+      "positionAbsolute": {
+        "x": 465,
+        "y": 255
+      },
+      "dragging": true
+    },
+    {
+      "id": "f3c1490b-bf8c-4b1f-9cf7-2ac13b903fbc",
+      "type": "quantumOperatorNode",
+      "position": {
+        "x": 900,
+        "y": 255
+      },
+      "data": {
+        "label": "Min & Max Operator",
+        "inputs": [
+          {
+            "id": "505608e0-0b17-4ca4-a5ef-7549145a444e",
+            "identifiers": [
+              "q246919"
+            ],
+            "outputIdentifier": "b"
+          }
+        ],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q766316"
+        ],
+        "operator": "min"
+      },
+      "width": 320,
+      "height": 373,
+      "positionAbsolute": {
+        "x": 900,
+        "y": 255
+      },
+      "dragging": true
+    }
+  ],
+  "edges": [
+    {
+      "source": "505608e0-0b17-4ca4-a5ef-7549145a444e",
+      "sourceHandle": "quantumHandlestatePreparationNodeOutput0505608e0-0b17-4ca4-a5ef-7549145a444e",
+      "target": "f3c1490b-bf8c-4b1f-9cf7-2ac13b903fbc",
+      "targetHandle": "quantumHandleOperationInput0f3c1490b-bf8c-4b1f-9cf7-2ac13b903fbc",
+      "type": "quantumEdge",
+      "id": "e412ec85-fa5e-4cc2-9afb-914aa9b861cf",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD"
+      }
+    },
+    {
+      "source": "c1dcbbfb-b33e-4f37-bdd1-bf57d4020b7a",
+      "sourceHandle": "classicalHandleDataTypeOutput0c1dcbbfb-b33e-4f37-bdd1-bf57d4020b7a",
+      "target": "505608e0-0b17-4ca4-a5ef-7549145a444e",
+      "targetHandle": "classicalHandleStatePreparationInput0505608e0-0b17-4ca4-a5ef-7549145a444e",
+      "type": "classicalEdge",
+      "id": "b40a64e7-f8fb-41fb-b3ed-10383a2e2a70",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#F5A843"
+      }
+    }
+  ],
+  "viewport": {
+    "x": 2.462756036491669,
+    "y": -28.235404527615458,
+    "zoom": 0.8413269244157474
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "name": "My Model",
+    "description": "This is a model that performs a Hadamard on one qubit.",
+    "author": "",
+    "id": "flow-1743623225615",
+    "timestamp": "2025-04-02T19:47:05.615Z"
+  },
+  "nodes": [
+    {
+      "id": "newNode0",
+      "type": "statePreparationNode",
+      "position": {
+        "x": 240,
+        "y": 375
+      },
+      "data": {
+        "label": "Prepare State",
+        "inputs": [],
+        "implementation": "OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[1];\nh q[0];",
+        "implementationType": "openqasm2",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": "q102964",
+        "quantumStateName": "Uniform Superposition",
+        "size": 1,
+        "outputIdentifier": "a"
+      },
+      "width": 320,
+      "height": 373,
+      "positionAbsolute": {
+        "x": 240,
+        "y": 375
+      }
+    }
+  ],
+  "edges": [],
+  "viewport": {
+    "x": 16.5,
+    "y": -166.5,
+    "zoom": 1
+  }
+}

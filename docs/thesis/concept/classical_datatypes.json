@@ -1,0 +1,258 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "name": "My Model",
+    "description": "This is a model.",
+    "author": "",
+    "id": "flow-1750111872563",
+    "timestamp": "2025-06-16T22:11:12.563Z"
+  },
+  "nodes": [
+    {
+      "id": "a2675cb9-032a-4817-b3bc-2ba25562eab2",
+      "type": "dataTypeNode",
+      "position": {
+        "x": 960,
+        "y": 315
+      },
+      "data": {
+        "label": "bit",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q309760"
+        ],
+        "dataType": "bit",
+        "value": "",
+        "outputIdentifier": ""
+      },
+      "width": 450,
+      "height": 270,
+      "positionAbsolute": {
+        "x": 960,
+        "y": 315
+      },
+      "dragging": true
+    },
+    {
+      "id": "051d2997-462f-4281-aa52-37cc35509718",
+      "type": "dataTypeNode",
+      "position": {
+        "x": -60,
+        "y": 315
+      },
+      "data": {
+        "label": "angle",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q138853"
+        ],
+        "dataType": "angle",
+        "value": "",
+        "outputIdentifier": ""
+      },
+      "width": 450,
+      "height": 270,
+      "positionAbsolute": {
+        "x": -60,
+        "y": 315
+      },
+      "dragging": true
+    },
+    {
+      "id": "a568f3d1-30aa-43dd-a91b-24e6b28cac0a",
+      "type": "dataTypeNode",
+      "position": {
+        "x": -60,
+        "y": 630
+      },
+      "data": {
+        "label": "boolean",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q332941"
+        ],
+        "dataType": "boolean",
+        "value": "",
+        "outputIdentifier": ""
+      },
+      "width": 450,
+      "height": 270,
+      "positionAbsolute": {
+        "x": -60,
+        "y": 630
+      },
+      "dragging": true
+    },
+    {
+      "id": "da2d2719-d9ad-49fb-8d4f-0900c5a37bd7",
+      "type": "dataTypeNode",
+      "position": {
+        "x": 450,
+        "y": 630
+      },
+      "data": {
+        "label": "complex",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q703454"
+        ],
+        "dataType": "complex",
+        "value": "",
+        "outputIdentifier": ""
+      },
+      "width": 450,
+      "height": 270,
+      "positionAbsolute": {
+        "x": 450,
+        "y": 630
+      },
+      "dragging": true
+    },
+    {
+      "id": "4484ef50-880e-466c-89b6-7a51caf8b117",
+      "type": "dataTypeNode",
+      "position": {
+        "x": 960,
+        "y": 630
+      },
+      "data": {
+        "label": "duration",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q831830"
+        ],
+        "dataType": "duration",
+        "value": "",
+        "outputIdentifier": ""
+      },
+      "width": 450,
+      "height": 270,
+      "positionAbsolute": {
+        "x": 960,
+        "y": 630
+      },
+      "dragging": true
+    },
+    {
+      "id": "bb2a1212-5363-4846-9b79-54668ad12a99",
+      "type": "dataTypeNode",
+      "position": {
+        "x": 450,
+        "y": 960
+      },
+      "data": {
+        "label": "int",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q948244"
+        ],
+        "dataType": "int",
+        "value": "",
+        "outputIdentifier": ""
+      },
+      "width": 450,
+      "height": 270,
+      "positionAbsolute": {
+        "x": 450,
+        "y": 960
+      },
+      "dragging": true
+    },
+    {
+      "id": "62848da3-875b-4810-949c-e0647ae1f11f",
+      "type": "dataTypeNode",
+      "position": {
+        "x": -45,
+        "y": 960
+      },
+      "data": {
+        "label": "float",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q302804"
+        ],
+        "dataType": "float",
+        "value": "",
+        "outputIdentifier": ""
+      },
+      "width": 450,
+      "height": 270,
+      "positionAbsolute": {
+        "x": -45,
+        "y": 960
+      },
+      "dragging": true
+    },
+    {
+      "id": "0ee66c95-5fe7-40b9-bb93-6fd875a19f6b",
+      "type": "dataTypeNode",
+      "position": {
+        "x": 450,
+        "y": 315
+      },
+      "data": {
+        "label": "Array",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q284347"
+        ],
+        "dataType": "Array",
+        "value": "",
+        "outputIdentifier": ""
+      },
+      "width": 450,
+      "height": 270,
+      "positionAbsolute": {
+        "x": 450,
+        "y": 315
+      },
+      "dragging": true
+    }
+  ],
+  "edges": [],
+  "viewport": {
+    "x": 78.93532642904916,
+    "y": 5.734994309577928,
+    "zoom": 0.7448028744433628
+  }
+}

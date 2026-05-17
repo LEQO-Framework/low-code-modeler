@@ -1,0 +1,54 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "name": "My Model",
+    "description": "This is a model.",
+    "author": "",
+    "id": "flow-1750112517933",
+    "timestamp": "2025-06-16T22:21:57.933Z"
+  },
+  "nodes": [
+    {
+      "id": "ee6baf75-6fb4-435f-9d33-dcd823fbd242",
+      "type": "statePreparationNode",
+      "position": {
+        "x": 75,
+        "y": 480
+      },
+      "data": {
+        "label": "Prepare State",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q750883"
+        ],
+        "quantumStateName": "GHZ",
+        "size": 7,
+        "outputIdentifier": "a",
+        "outputs": [
+          {
+            "identifier": "a",
+            "size": "7"
+          }
+        ],
+        "parameterType": "degree"
+      },
+      "width": 320,
+      "height": 373,
+      "positionAbsolute": {
+        "x": 75,
+        "y": 480
+      }
+    }
+  ],
+  "edges": [],
+  "viewport": {
+    "x": 566.5,
+    "y": -76.5,
+    "zoom": 1
+  }
+}

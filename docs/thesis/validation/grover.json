@@ -1,0 +1,328 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "name": "My Model",
+    "description": "This is a model.",
+    "author": "",
+    "id": "flow-1750202962132",
+    "timestamp": "2025-06-17T23:29:22.132Z"
+  },
+  "nodes": [
+    {
+      "id": "91e63286-2dbc-4385-8bcf-9d82c59c19c9",
+      "type": "controlStructureNode",
+      "position": {
+        "x": 165,
+        "y": 330
+      },
+      "data": {
+        "label": "Repeat",
+        "inputs": [
+          {
+            "id": "ae6122db-65ae-40e7-994a-7939dba34bd4",
+            "identifiers": [
+              "q954679"
+            ],
+            "outputIdentifier": "a"
+          },
+          {
+            "id": "8ff81b2d-48d3-46b7-aa88-a38e3e1a5d62",
+            "outputIdentifier": "c",
+            "identifiers": [
+              "q373746"
+            ]
+          }
+        ],
+        "children": [
+          "032b0b8f-ab38-4161-9bf8-c826d7f9cbea",
+          "8ff81b2d-48d3-46b7-aa88-a38e3e1a5d62"
+        ],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q367895"
+        ],
+        "parameterType": "degree",
+        "condition": "6"
+      },
+      "width": 1300,
+      "height": 530,
+      "positionAbsolute": {
+        "x": 165,
+        "y": 330
+      }
+    },
+    {
+      "id": "032b0b8f-ab38-4161-9bf8-c826d7f9cbea",
+      "type": "algorithmNode",
+      "position": {
+        "x": 240,
+        "y": 90
+      },
+      "data": {
+        "label": "Oracle",
+        "inputs": [
+          {
+            "id": "91e63286-2dbc-4385-8bcf-9d82c59c19c9",
+            "identifiers": [
+              "q367895"
+            ]
+          }
+        ],
+        "children": [
+          "032b0b8f-ab38-4161-9bf8-c826d7f9cbea",
+          "8ff81b2d-48d3-46b7-aa88-a38e3e1a5d62"
+        ],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q716090"
+        ],
+        "position": {
+          "x": 315,
+          "y": 45
+        },
+        "scope": "if",
+        "parameterType": "degree",
+        "numberInputs": "1",
+        "numberOutputs": "1",
+        "outputIdentifier": "b",
+        "outputs": [
+          {
+            "identifier": "b",
+            "size": "",
+            "type": "quantum"
+          }
+        ]
+      },
+      "width": 320,
+      "height": 373,
+      "positionAbsolute": {
+        "x": 405,
+        "y": 420
+      },
+      "dragging": true,
+      "parentNode": "91e63286-2dbc-4385-8bcf-9d82c59c19c9",
+      "extent": "parent"
+    },
+    {
+      "id": "ae6122db-65ae-40e7-994a-7939dba34bd4",
+      "type": "statePreparationNode",
+      "position": {
+        "x": -405,
+        "y": 405
+      },
+      "data": {
+        "label": "Prepare State",
+        "inputs": [],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q954679"
+        ],
+        "quantumStateName": "Uniform Superposition",
+        "size": 6,
+        "outputIdentifier": "a",
+        "outputs": [
+          {
+            "identifier": "a",
+            "size": "6",
+            "type": "quantum"
+          }
+        ],
+        "parameterType": "degree"
+      },
+      "width": 320,
+      "height": 373,
+      "positionAbsolute": {
+        "x": -405,
+        "y": 405
+      },
+      "dragging": true
+    },
+    {
+      "id": "8ff81b2d-48d3-46b7-aa88-a38e3e1a5d62",
+      "type": "algorithmNode",
+      "position": {
+        "x": 690,
+        "y": 90
+      },
+      "data": {
+        "label": "Diffusion Operator",
+        "inputs": [
+          {
+            "id": "032b0b8f-ab38-4161-9bf8-c826d7f9cbea",
+            "identifiers": [
+              "q716090"
+            ],
+            "outputIdentifier": "b"
+          }
+        ],
+        "children": [
+          "032b0b8f-ab38-4161-9bf8-c826d7f9cbea",
+          "8ff81b2d-48d3-46b7-aa88-a38e3e1a5d62"
+        ],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q373746"
+        ],
+        "position": {
+          "x": 615,
+          "y": 75
+        },
+        "scope": "if",
+        "parameterType": "degree",
+        "numberInputs": "1",
+        "numberOutputs": "1",
+        "outputIdentifier": "c",
+        "outputs": [
+          {
+            "identifier": "c",
+            "size": "",
+            "type": "quantum"
+          }
+        ]
+      },
+      "width": 320,
+      "height": 373,
+      "positionAbsolute": {
+        "x": 855,
+        "y": 420
+      },
+      "dragging": true,
+      "parentNode": "91e63286-2dbc-4385-8bcf-9d82c59c19c9",
+      "extent": "parent"
+    },
+    {
+      "id": "be3efb7a-681a-4de3-af4a-51bab63cb365",
+      "type": "measurementNode",
+      "position": {
+        "x": 1680,
+        "y": 420
+      },
+      "data": {
+        "label": "Measurement",
+        "inputs": [
+          {
+            "id": "91e63286-2dbc-4385-8bcf-9d82c59c19c9",
+            "identifiers": [
+              "q367895"
+            ]
+          }
+        ],
+        "children": [],
+        "implementation": "",
+        "implementationType": "",
+        "uncomputeImplementationType": "",
+        "uncomputeImplementation": "",
+        "identifiers": [
+          "q238449"
+        ],
+        "indices": null,
+        "outputIdentifier": "d",
+        "parameterType": "degree",
+        "outputs": [
+          {
+            "identifier": "d",
+            "size": "",
+            "type": "classical"
+          }
+        ]
+      },
+      "width": 320,
+      "height": 440,
+      "positionAbsolute": {
+        "x": 1680,
+        "y": 420
+      },
+      "dragging": true
+    }
+  ],
+  "edges": [
+    {
+      "source": "91e63286-2dbc-4385-8bcf-9d82c59c19c9",
+      "sourceHandle": "quantumHandleOutputDynamic91e63286-2dbc-4385-8bcf-9d82c59c19c9-0",
+      "target": "be3efb7a-681a-4de3-af4a-51bab63cb365",
+      "targetHandle": "quantumHandleMeasurementInput0be3efb7a-681a-4de3-af4a-51bab63cb365",
+      "type": "quantumEdge",
+      "id": "ca2356f4-952a-4037-ab22-0105625914fc",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD"
+      }
+    },
+    {
+      "source": "8ff81b2d-48d3-46b7-aa88-a38e3e1a5d62",
+      "sourceHandle": "quantumHandlealgorithmNodeOutput08ff81b2d-48d3-46b7-aa88-a38e3e1a5d62",
+      "target": "91e63286-2dbc-4385-8bcf-9d82c59c19c9",
+      "targetHandle": "quantumHandleInputDynamic91e63286-2dbc-4385-8bcf-9d82c59c19c9-0",
+      "type": "quantumEdge",
+      "id": "cb13f9d6-68e6-4ead-b84e-186a9fa5bf48",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD"
+      }
+    },
+    {
+      "source": "032b0b8f-ab38-4161-9bf8-c826d7f9cbea",
+      "sourceHandle": "quantumHandlealgorithmNodeOutput0032b0b8f-ab38-4161-9bf8-c826d7f9cbea",
+      "target": "8ff81b2d-48d3-46b7-aa88-a38e3e1a5d62",
+      "targetHandle": "quantumHandleOperationInput08ff81b2d-48d3-46b7-aa88-a38e3e1a5d62",
+      "type": "quantumEdge",
+      "id": "0b2f9aec-cd87-4a86-9b88-6c9ca014df37",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD"
+      }
+    },
+    {
+      "source": "91e63286-2dbc-4385-8bcf-9d82c59c19c9",
+      "sourceHandle": "quantumHandleOutputInitialization91e63286-2dbc-4385-8bcf-9d82c59c19c9-0",
+      "target": "032b0b8f-ab38-4161-9bf8-c826d7f9cbea",
+      "targetHandle": "quantumHandleOperationInput0032b0b8f-ab38-4161-9bf8-c826d7f9cbea",
+      "type": "quantumEdge",
+      "id": "28ad010e-603d-4298-893a-829ef5b98cc1",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD"
+      }
+    },
+    {
+      "source": "ae6122db-65ae-40e7-994a-7939dba34bd4",
+      "sourceHandle": "quantumHandlestatePreparationNodeOutput0ae6122db-65ae-40e7-994a-7939dba34bd4",
+      "target": "91e63286-2dbc-4385-8bcf-9d82c59c19c9",
+      "targetHandle": "quantumHandleInputInitialization91e63286-2dbc-4385-8bcf-9d82c59c19c9-0",
+      "type": "quantumEdge",
+      "id": "1a663d84-3905-40e1-9176-707b1e1dc11d",
+      "markerEnd": {
+        "type": "arrowclosed",
+        "width": 20,
+        "height": 20,
+        "color": "#93C5FD"
+      }
+    }
+  ],
+  "viewport": {
+    "x": 217.5,
+    "y": 86,
+    "zoom": 0.5
+  }
+}

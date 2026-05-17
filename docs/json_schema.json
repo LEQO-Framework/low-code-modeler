@@ -1,0 +1,315 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$"
+        },
+        "name": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "author": {
+          "type": "string"
+        },
+        "optimizeWidth": {
+          "type": "boolean"
+        },
+        "optimizeDepth": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "version",
+        "name",
+        "id",
+        "description",
+        "timestamp",
+        "author",
+        "optimizeWidth",
+        "optimizeDepth"
+      ],
+      "dependentSchemas": {
+        "optimizeWidth": {
+          "oneOf": [
+            {
+              "properties": {
+                "optimizeWidth": {
+                  "const": true
+                },
+                "width": {
+                  "type": "string",
+                  "pattern": "^[0-9]+$"
+                }
+              },
+              "required": ["width"]
+            },
+            {
+              "properties": {
+                "optimizeWidth": {
+                  "const": false
+                }
+              },
+              "not": {
+                "required": ["width"]
+              }
+            }
+          ]
+        },
+        "optimizeDepth": {
+          "oneOf": [
+            {
+              "properties": {
+                "optimizeDepth": {
+                  "const": true
+                },
+                "depth": {
+                  "type": "string",
+                  "pattern": "^[0-9]+$"
+                }
+              },
+              "required": ["depth"]
+            },
+            {
+              "properties": {
+                "optimizeDepth": {
+                  "const": false
+                }
+              },
+              "not": {
+                "required": ["depth"]
+              }
+            }
+          ]
+        }
+      }
+    },
+    "nodes": {
+      "type": "array",
+      "uniqueItems": true,
+      "minItems": 1,
+      "items": {
+        "required": [
+          "id",
+          "type",
+          "width",
+          "height",
+          "dragging"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "type": {
+            "type": "string",
+            "enum": ["positionNode", "statePreparationNode", "gateNode", "operationNode", "ancillaNode", "classicalOutputOperationNode", "arithmeticOperatorNode", "measurementNode"]
+          },
+          "position": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "x",
+              "y"
+            ]
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string",
+                "minLength": 1
+              },
+              "inputs": {
+                "type": "array",
+                "items": {
+                  "required": [],
+                  "properties": {}
+                }
+              },
+              "implementation": {
+                "type": "string"
+              },
+              "implementationType": {
+                "type": "string"
+              },
+              "uncomputeImplementationType": {
+                "type": "string"
+              },
+              "uncomputeImplementation": {
+                "type": "string"
+              },
+              "dataType": {
+                "type": "string",
+                "minLength": 1
+              },
+              "value": {
+                "type": "string",
+                "minLength": 1
+              },
+              "outputIdentifier": {
+                "type": "string",
+                "minLength": 1
+              },
+              "identifier": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "label",
+              "inputs",
+              "implementation",
+              "implementationType",
+              "uncomputeImplementationType",
+              "uncomputeImplementation",
+              "dataType",
+              "value",
+              "outputIdentifier",
+              "identifier"
+            ]
+          },
+          "width": {
+            "type": "number"
+          },
+          "height": {
+            "type": "number"
+          },
+          "positionAbsolute": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "x",
+              "y"
+            ]
+          },
+          "dragging": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "edges": {
+      "type": "array",
+      "uniqueItems": true,
+      "minItems": 1,
+      "items": {
+        "required": [
+          "source",
+          "sourceHandle",
+          "target",
+          "targetHandle",
+          "type",
+          "id",
+          "selected"
+        ],
+        "properties": {
+          "source": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sourceHandle": {
+            "type": "string",
+            "minLength": 1
+          },
+          "target": {
+            "type": "string",
+            "minLength": 1
+          },
+          "targetHandle": {
+            "type": "string",
+            "minLength": 1
+          },
+          "type": {
+            "type": "string",
+            "minLength": 1
+          },
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "markerEnd": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "minLength": 1
+              },
+              "width": {
+                "type": "number"
+              },
+              "height": {
+                "type": "number"
+              },
+              "color": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "type",
+              "width",
+              "height",
+              "color"
+            ]
+          },
+          "selected": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "viewport": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "zoom": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "zoom"
+      ]
+    }
+  },
+  "required": [
+    "metadata",
+    "nodes",
+    "edges",
+    "viewport"
+  ]
+}
