@@ -3,6 +3,7 @@ import { Handle, Position, Node, Edge } from "reactflow";
 import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
 import OutputPort from "../utils/outputPort";
+import { cn } from "@/lib/utils";
 
 const selector = (state: {
   selectedNode: Node | null;
@@ -25,7 +26,7 @@ export const QubitNode = memo((node: Node) => {
   const [yError, setYError] = useState(false);
   const [outputs, setOutputs] = useState(node.data.outputs || []);
 
-  const { data } = node;
+  const { data, selected } = node;
   const xRef = useRef(null);
   const yRef = useRef(null);
 
@@ -69,7 +70,10 @@ export const QubitNode = memo((node: Node) => {
 
   return (
     <div className="grand-parent">
-      <div className="w-[350px] h-[170px] rounded-none bg-white  border border-solid border-gray-700 shadow-md">
+      <div className={cn(
+                        "w-[350px] h-[170px] rounded-none bg-white  border border-solid border-gray-700 shadow-md",
+                        selected && "border-blue-500"
+                      )}>
         <div className="w-full flex items-center" style={{ height: '52px' }}>
             <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
               <img src="qubitIcon.png" alt="icon" className="w-[40px] h-[40px] object-contain flex-shrink-0" />

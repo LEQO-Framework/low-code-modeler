@@ -23,7 +23,7 @@ const selector = (state: {
 });
 
 export const ControlStructureNode = memo((node: Node) => {
-  const {data} = node
+  const { data, selected } = node
   const [showingChildren, setShowingChildren] = useState(false);
   const { setNodes, updateNodeValue, setSelectedNode, edges } = useStore(selector, shallow);
   const updateNodeInternals = useUpdateNodeInternals();
@@ -77,7 +77,10 @@ export const ControlStructureNode = memo((node: Node) => {
   return (
     <div className="grand-parent overflow-visible"
       style={{ minWidth: "1700px", height: `${dynamicHeight}px`, position: "relative", zIndex: -100 }}>
-      <div className="rounded-none bg-white border border-solid border-gray-700 shadow-md w-full h-full flex items-center justify-center relative overflow-visible">
+      <div className={cn(
+                  "rounded-none bg-white border border-solid border-gray-700 shadow-md w-full h-full flex items-center justify-center relative overflow-visible",
+                  selected && "border-blue-500"
+                )}>
         <div className="rounded-none border border-solid border-gray-700 shadow-md w-full h-full flex flex-col items-center relative z-10 overflow-visible">
           <div className="w-full bg-purple-300 text-black text-center font-semibold py-1">
             <span className="text-sm">Repeat</span>

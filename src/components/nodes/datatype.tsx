@@ -5,6 +5,7 @@ import { shallow } from "zustand/shallow";
 import { findDuplicateOutputIdentifiers, isUniqueIdentifier } from "../utils/utils";
 import { AlertCircle, File } from "lucide-react";
 import OutputPort from "../utils/outputPort";
+import { cn } from "@/lib/utils";
 
 const selector = (state: {
   selectedNode: Node | null;
@@ -33,7 +34,7 @@ export const DataTypeNode = memo((node: Node) => {
 
   const { nodes, edges, updateNodeValue, setSelectedNode, setContainsPlaceholder } = useStore(selector, shallow);
   const [durationUnit, setDurationUnit] = useState(node.data.durationUnit || "s");
-  const { data } = node;
+  const { data, selected } = node;
 
   const changeValue = (e) => {
     const newValue = e.target.value;
@@ -227,7 +228,10 @@ export const DataTypeNode = memo((node: Node) => {
           </div>
         </div>
       )}
-      <div className="w-full h-full rounded-full bg-white  overflow-hidden border border-solid border-gray-700 shadow-md">
+      <div className={cn(
+                        "w-full h-full rounded-full bg-white  overflow-hidden border border-solid border-gray-700 shadow-md",
+                        selected && "border-blue-500"
+                      )}>
         <div className="w-full bg-orange-300 text-black text-center font-semibold py-1 truncate relative">
 
           <div className="w-full flex items-center" style={{ height: '52px', paddingLeft: '100px' }}>

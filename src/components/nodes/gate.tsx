@@ -2,6 +2,7 @@ import { memo, useEffect } from "react";
 import { Handle, Position, Node, Edge } from "reactflow";
 import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
+import { cn } from "@/lib/utils";
 
 const selector = (state: {
   selectedNode: Node | null;
@@ -18,7 +19,7 @@ const selector = (state: {
 });
 
 export const GateNode = memo((node: Node) => {
-  const { data } = node;
+  const { data, selected } = node;
   const isQubit = data.label === "Qubit Circuit";
   const isTwoQubit = data.label === "CNOT" || data.label === "SWAP" || data.label === "CZ" || data.label === "CY" || data.label === "CH" || data.label === "CP(λ)" || data.label === "CRX(θ)" || data.label === "CRY(θ)" || data.label === "CRZ(θ)" || data.label === "CU(θ,φ,λ,γ)";
   const isThreeQubit = data.label === "Toffoli" || data.label === "CSWAP";
@@ -51,7 +52,10 @@ export const GateNode = memo((node: Node) => {
 
   return (
     <div className="grand-parent overflow-visible">
-      <div className="w-[110px] h-[110px] border border-solid border-gray-700 shadow-md bg-blue-100 relative overflow-visible">
+      <div className={cn(
+                        "w-[110px] h-[110px] border border-solid border-gray-700 shadow-md bg-blue-100 relative overflow-visible",
+                        selected && "border-blue-500"
+                      )}>
 
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center font-bold z-0 text-xl">
           {experienceLevel === "pioneer" && (data.label === "Qubit Circuit" ? (

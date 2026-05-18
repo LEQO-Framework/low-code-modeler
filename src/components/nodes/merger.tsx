@@ -2,6 +2,7 @@ import { memo, useEffect, useState } from "react";
 import { Handle, Position, Node, Edge, useUpdateNodeInternals } from "reactflow";
 import { useStore }from "@/config/store";
 import { shallow } from "zustand/shallow";
+import { cn } from "@/lib/utils";
 
 const selector = (state: {
   selectedNode: Node | null;
@@ -20,7 +21,7 @@ const selector = (state: {
 });
 
 export const MergerNode = memo((node: Node) => {
-  const { data } = node;
+  const { data, selected } = node;
   let { edges, setEdges, setNewEdges, updateNodeValue } = useStore(selector, shallow);
   const [edgesGraph, setEdgesGraph] = useState(edges);
 
@@ -150,7 +151,10 @@ export const MergerNode = memo((node: Node) => {
   return (
     <div className="grand-parent">
       <div
-        className="w-[170px] bg-white rounded-none overflow-hidden border border-solid border-gray-700 shadow-md"
+        className={cn(
+                      "w-[170px] bg-white rounded-none overflow-hidden border border-solid border-gray-700 shadow-md",
+                      selected && "border-blue-500"
+                      )}
         style={{ height: `${nodeHeight}px` }}
       >
         <div className="w-full flex items-center" style={{ height: '52px' }}>
