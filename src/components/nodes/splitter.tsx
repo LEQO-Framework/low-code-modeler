@@ -3,6 +3,7 @@ import { Handle, Position, Node, Edge, useUpdateNodeInternals } from "reactflow"
 import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
 import { cn } from "@/lib/utils";
+import { nodesMap, edgesMap, ydoc, awareness, yProvider } from "@/yjs";
 
 const selector = (state: {
   selectedNode: Node | null;
@@ -22,6 +23,10 @@ const selector = (state: {
 
 export const SplitterNode = memo((node: Node) => {
   const { data, selected } = node;
+  console.log("selected", selected)
+  const highlightColor = awareness.getLocalState().cursor?.color || "#3B82F6"; // default highlighting color is blue-500 = #3B82F6
+  // TODO: if there is only one cursor: highlight color is default 
+  console.log("awareness", highlightColor);
   const { edges, setEdges, updateNodeValue, setNewEdges } = useStore(selector, shallow);
   const [edgesGraph, setEdgesGraph] = useState(edges);
 
@@ -152,11 +157,8 @@ export const SplitterNode = memo((node: Node) => {
   return (
     <div className="grand-parent">
       <div
-        className={cn(
-                      "w-[170px] bg-white rounded-none overflow-hidden border border-solid border-gray-700 shadow-md",
-                      selected && "border-blue-500"
-                    )}
-        style={{ height: `${nodeHeight}px` }}
+        className="w-[170px] bg-white rounded-none overflow-hidden border border-solid border-gray-700 shadow-md"
+        style={{ height: `${nodeHeight}px`, borderColor: selected ? highlightColor : undefined }}
       >
         <div className="w-full flex items-center" style={{ height: '52px' }}>
           <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
