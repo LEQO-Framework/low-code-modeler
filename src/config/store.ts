@@ -765,7 +765,7 @@ export const useStore = create<RFState>()(persist((set, get) => ({
     const target = get().nodes.find((node) => node.id === connection.target);
     console.log(nodeDataSource)
     console.log(target)
-    if (nodeDataSource.data.label == consts.qubitLabel && target.type === consts.SplitterNode) {
+    if (nodeDataSource.data?.label == consts.qubitLabel && target.type === consts.SplitterNode) {
       setTypeError("A qubit cannot be split into smaller units");
       return false;
     }
