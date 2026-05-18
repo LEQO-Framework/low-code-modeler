@@ -588,9 +588,10 @@ If none apply, return { "algorithms": [] }.
       awareness.getStates().forEach((state: any, clientId: number) => {
         if (state.cursor) {
           // Replace name with "Me" if this is your client
+          // --> maybe not??
           newCursors[clientId] = {
             ...state.cursor,
-            name: clientId === awareness.clientID ? "Me" : state.cursor.name
+            //name: clientId === awareness.clientID ? "Me" : state.cursor.name
           };
         }
       });
@@ -600,6 +601,8 @@ If none apply, return { "algorithms": [] }.
 
     awareness.on("change", updateCursors);
     updateCursors();
+
+    console.log("CURSORS", cursors)
 
     return () => awareness.off("change", updateCursors);
   }, []);
@@ -626,6 +629,8 @@ If none apply, return { "algorithms": [] }.
     awareness.setLocalStateField("locks", {
       nodeIds: []
     });
+
+    console.log("CURSORS", cursors)
 
   }, []);
 
@@ -1717,24 +1722,43 @@ If none apply, return { "algorithms": [] }.
           setNodes(newNode);
           nodesMap.set(newNode.id, newNode);
 
-          console.log(cursors)
-          Object.entries(cursors).map(([clientId, cursor]) => {
-            const displayName = Number(clientId) === myClientId ? "Me" : cursor.name;
+          // get user name (from cursors) for history
+          const userName = cursors[myClientId]?.name || "unknown";
+          historyArray.push([{
+            type: "node-added",
+            nodeId: newNode.id,
+            label: newNode.data?.label,
+            //user: Number(clientId) === myClientId ? "Me" : userName,
+            //user: userName,
+            userId: myClientId,
+            user: userName,
+            timestamp: Date.now(),
+          }]);
 
-            // Store name in a variable for history usage
-            const userName = cursor.name;
+          console.log("ADD NODE HISTORY", historyArray)
+          console.log("cursors", cursors)
+
+          // console.log(cursors)
+          // Object.entries(cursors).map(([clientId, cursor]) => {
+          //   const displayName = Number(clientId) === myClientId ? "Me" : cursor.name;
+
+          //   // Store name in a variable for history usage
+          //   const userName = cursor.name;
 
 
-            historyArray.push([{
-              type: "node-added",
-              nodeId: newNode.id,
-              label: newNode.data?.label,
-              user: Number(clientId) === myClientId ? "Me" : userName,
-              timestamp: Date.now(),
-            }]);
+          //   historyArray.push([{
+          //     type: "node-added",
+          //     nodeId: newNode.id,
+          //     label: newNode.data?.label,
+          //     //user: Number(clientId) === myClientId ? "Me" : userName,
+          //     //user: userName,
+          //     userId: myClientId,
+          //     user: userName,
+          //     timestamp: Date.now(),
+          //   }]);
 
-            console.log(historyArray)
-          });
+          //   console.log("ADD NODE HISTORY", historyArray)
+          // });
 
 
         }
@@ -2931,7 +2955,8 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
 
     // 🔁 Sync with React Flow
     onNodesChange(allowedChanges);
-
+    // get user name (from cursors) for history
+    const userName = cursors[myClientId]?.name || "unknown";
     // 🔥 Handle deletions
     allowedChanges.forEach((change) => {
       if (change.type === "remove" && hasId(change)) {
@@ -2951,9 +2976,11 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
         historyArray.push([{
           type: "node-deleted",
           nodeId,
-          user: myClientId,
+          userId: myClientId,
+          user: userName,
           timestamp: Date.now(),
         }]);
+        console.log("REMOVE NODE HISTORY", historyArray)
       }
     });
 
@@ -3030,21 +3057,39 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
 
     // 2. Save edge to Yjs shared map
     edgesMap.set(edge.id, edge);
-    Object.entries(cursors).map(([clientId, cursor]) => {
-      const displayName = Number(clientId) === myClientId ? "Me" : cursor.name;
+    // get user name (from cursors) for history
+    const userName = cursors[myClientId]?.name || "unknown";
 
-      // Store name in a variable for history usage
-      const userName = cursor.name;
-
-      historyArray.push([{
+    historyArray.push([{
         type: "edge-added",
         source: edge.source,
         target: edge.target,
         edgeId: edge.id,
-        user: cursor.name,
+        //user: cursor.name,
+        userId: myClientId,
+        user: userName,
         timestamp: Date.now(),
       }]);
-    });
+      console.log("ADD EDGE HISTORY", historyArray);
+    // für jeden Cursor? Nicht nur einmal??
+    // Object.entries(cursors).map(([clientId, cursor]) => {
+    //   const displayName = Number(clientId) === myClientId ? "Me" : cursor.name;
+
+    //   // Store name in a variable for history usage
+    //   //const userName = cursor.name;
+
+    //   historyArray.push([{
+    //     type: "edge-added",
+    //     source: edge.source,
+    //     target: edge.target,
+    //     edgeId: edge.id,
+    //     //user: cursor.name,
+    //     userId: myClientId,
+    //     user: userName,
+    //     timestamp: Date.now(),
+    //   }]);
+    //   console.log("ADD EDGE HISTORY", historyArray);
+    // });
 
 
   }, []);
@@ -3490,7 +3535,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
 
 
             <UserCountPanel provider={yProvider} roomName="demo" />
-            <VersioningPanel history={versioningHistory} experienceLevel={experienceLevel} />
+            <VersioningPanel history={versioningHistory} experienceLevel={experienceLevel} myClientID={myClientId} />
 
             <ExperienceModePanel
               expanded={expanded}
