@@ -8,8 +8,8 @@ interface HistoryPanelProps {
 }
 
 const VersioningPanel: React.FC<HistoryPanelProps> = ({ history, experienceLevel, myClientID }) => {
-  console.log(history)
-  console.log(myClientID)
+  //console.log(history)
+  //console.log(myClientID)
   return (
     <div
       className="absolute bottom-4 left-1/2 transform translate-x-[-80px] bg-gray-900 text-white px-4 py-2 rounded-lg shadow-lg w-64 flex flex-col overflow-y-auto z-50 text-lg"
@@ -23,8 +23,8 @@ const VersioningPanel: React.FC<HistoryPanelProps> = ({ history, experienceLevel
 
       {history.map((item, index) => {
         const displayName = Number(myClientID) === item.userId? "Me" : item.user;
-        console.log("USER ID", item.userId)
-        console.log("DISPLAY NAME", displayName)
+        //console.log("USER ID", item.userId)
+        //console.log("DISPLAY NAME", displayName)
         return (
           <div key={index} className="border-b border-gray-700 py-1">
             {item.type === "node-added" && (
@@ -32,9 +32,9 @@ const VersioningPanel: React.FC<HistoryPanelProps> = ({ history, experienceLevel
                 <strong>{displayName}</strong> added node {item.label}
               </>
             )}
-            {item.type === "node-removed" && (
+            {item.type === "node-deleted" && (
               <>
-                <strong>{displayName}</strong> removed node {item.nodeId}
+                <strong>{displayName}</strong> removed node {item.label}
               </>
             )}
             {item.type === "edge-added" && (
@@ -42,7 +42,7 @@ const VersioningPanel: React.FC<HistoryPanelProps> = ({ history, experienceLevel
                 <strong>{displayName}</strong> connected {item.source} → {item.target}
               </>
             )}
-            {item.type === "edge-removed" && (
+            {item.type === "edge-deleted" && (
               <>
                 <strong>{displayName}</strong> removed edge {item.edgeId}
               </>

@@ -1718,9 +1718,11 @@ If none apply, return { "algorithms": [] }.
             position,
             data: { label: label, inputs: [], children: [], implementation: "", implementationType: "", uncomputeImplementationType: "", uncomputeImplementation: "", completionGuaranteed: def?.completionGuaranteed ?? false, compactOptions: compactOptions }
           };
-
+          
+          
           setNodes(newNode);
           nodesMap.set(newNode.id, newNode);
+          console.log("nodes", nodes)
 
           // get user name (from cursors) for history
           const userName = cursors[myClientId]?.name || "unknown";
@@ -1735,7 +1737,7 @@ If none apply, return { "algorithms": [] }.
             timestamp: Date.now(),
           }]);
 
-          console.log("ADD NODE HISTORY", historyArray)
+          console.log("ADD NODE HISTORY", historyArray.toArray())
           console.log("cursors", cursors)
 
           // console.log(cursors)
@@ -2959,9 +2961,11 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
     const userName = cursors[myClientId]?.name || "unknown";
     // 🔥 Handle deletions
     allowedChanges.forEach((change) => {
-      if (change.type === "remove" && hasId(change)) {
+      if ((change.type === "remove" || change.type === "reset" ) && hasId(change)) {
+        console.log("NODES MAP", Array.from(nodesMap.values()))
         const nodeId = change.id;
-
+        const nodeLabel = Array.from(nodesMap.values()).find((node) => node.id === nodeId)?.data?.label || "unknown"
+        console.log(nodesMap);
         console.log("Node deleted:", nodeId);
 
         nodesMap.delete(nodeId);
@@ -2975,12 +2979,13 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
 
         historyArray.push([{
           type: "node-deleted",
-          nodeId,
+          nodeId: nodeId,
+          label: nodeLabel,
           userId: myClientId,
           user: userName,
           timestamp: Date.now(),
         }]);
-        console.log("REMOVE NODE HISTORY", historyArray)
+        console.log("REMOVE NODE HISTORY", historyArray.toArray())
       }
     });
 
@@ -3070,7 +3075,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
         user: userName,
         timestamp: Date.now(),
       }]);
-      console.log("ADD EDGE HISTORY", historyArray);
+      console.log("ADD EDGE HISTORY", historyArray.toArray());
     // für jeden Cursor? Nicht nur einmal??
     // Object.entries(cursors).map(([clientId, cursor]) => {
     //   const displayName = Number(clientId) === myClientId ? "Me" : cursor.name;
