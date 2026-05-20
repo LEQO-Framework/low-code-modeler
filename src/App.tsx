@@ -54,6 +54,7 @@ import { PatternSelectionModal } from "./components/modals/patternSelectionModal
 import { PatternImplementationSelectionModal } from "./components/modals/patternImplementationSelectionModal";
 import UserCountPanel from "./components/modals/userAwareness";
 import VersioningPanel from "./components/modals/versioningModal";
+import { EdgeChange } from "@xyflow/react";
 
 const selector = (state: {
   nodes: Node[];
@@ -161,11 +162,12 @@ function App() {
   } = useStore(useShallow(selector));
 
 
-
+  // TODO: don't use if no collab mode
   const addNode = () => {
     console.log("add node===============================================================")
     nodesMap.set(nodes[0].id, nodes[0]);
   };
+
   const [metadata, setMetadata] = React.useState<any>({
     version: "1.0.0",
     name: "My Model",
@@ -191,6 +193,16 @@ function App() {
 
     return () => historyArray.unobserve(update);
   }, []);
+
+  const [userName, setUserName] = useState<string>("Default Name");
+
+  const onUserNameChange = (newName) => {
+    console.log("newName", newName)
+    setUserName(newName);
+    //TODO Update username in cursors
+    awareness.setLocalStateField("cursor", {name: newName})
+    console.log("cursors", cursors)
+  };
 
   const [menu, setMenu] = useState(null);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
@@ -276,6 +288,77 @@ function App() {
       console.log("NEW INPUTS", targetNode.data.inputs)
     })
   };
+
+  const onEdgesChangeSync = useCallback((changes: EdgeChange[]) => {
+    console.log("Incoming edge changes:", changes);
+
+    // 🔒 Build global lock map
+    const states = awareness.getStates();
+    const lockMap = new Map<string, number>();
+
+    states.forEach((state: any, clientId: number) => {
+      if (state?.locks?.edgeIds) {
+        state.locks.edgeIds.forEach((edgeId: string) => {
+          lockMap.set(edgeId, clientId);
+        });
+      }
+    });
+
+    // 🚫 Filter unauthorized changes safely
+    const allowedChanges = changes.filter((change) => {
+      if (!hasId(change)) return true; // allow changes without id
+
+      const owner = lockMap.get(change.id);
+      return !owner || owner === myClientId;
+    });
+
+    if (allowedChanges.length === 0) {
+      console.log("All changes blocked due to locks");
+      return;
+    }
+
+    // 🧠 Apply changes locally
+    const updatedEdges = applyNodeChanges(allowedChanges, edgesI);
+    setEdgesI(updatedEdges);
+
+    // 🔁 Sync with React Flow
+    onEdgesChange(allowedChanges);
+    // get user name (from cursors) for history
+    //const userName = cursors[myClientId]?.name || "unknown";
+    // 🔥 Handle deletions
+    // TODO: fix from here on! (taken from onNodesChangeSync)
+    allowedChanges.forEach((change) => {
+      if ((change.type === "remove" || change.type === "reset" ) && hasId(change)) {
+        console.log("NODES MAP", Array.from(nodesMap.values()))
+        const nodeId = change.id;
+        const nodeLabel = Array.from(nodesMap.values()).find((node) => node.id === nodeId)?.data?.label || "unknown"
+        console.log(nodesMap);
+        console.log("Node deleted:", nodeId);
+
+        nodesMap.delete(nodeId);
+
+        // remove connected edges
+        edgesMap.forEach((edge: Edge, edgeId: string) => {
+          if (edge.source === nodeId || edge.target === nodeId) {
+            edgesMap.delete(edgeId);
+          }
+        });
+
+        historyArray.push([{
+          type: "node-deleted",
+          nodeId: nodeId,
+          label: nodeLabel,
+          userId: myClientId,
+          user: userName,
+          timestamp: Date.now(),
+        }]);
+        console.log("REMOVE NODE HISTORY", historyArray.toArray())
+        console.log("shared nodes", Array.from(nodesMap.values()))
+        console.log("shared edges",Array.from(edgesMap.values()))
+      }
+    });
+
+  }, [nodesI, awareness, myClientId]);
 
 
 
@@ -480,6 +563,8 @@ If none apply, return { "algorithms": [] }.
     setAncillaModelingOn(newValues.ancillaMode);
     setExperienceLevel(newValues.experienceLevel);
     setCompletionGuaranteed(newValues.completionGuaranteed);
+    setCollaborationMode(newValues.collaborationMode);
+    onUserNameChange(newValues.userName);
 
     setIsConfigOpen(false);
   };
@@ -529,6 +614,7 @@ If none apply, return { "algorithms": [] }.
   const [ancillaModelingOn, setAncillaModelingOn] = useState(false);
   const [experienceLevelOn, setExperienceLevelOn] = useState("explorer");
   const [compactVisualization, setCompactVisualization] = useState(false);
+  const [collaborationMode, setCollaborationMode] = useState(false);
   //const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
   const [toast, setToast] = useState<{
     message: React.ReactNode;
@@ -622,7 +708,7 @@ If none apply, return { "algorithms": [] }.
     awareness.setLocalStateField("cursor", {
       x: 0,
       y: 0,
-      color,
+      color: color,
       name: randomUsername
     });
 
@@ -635,7 +721,7 @@ If none apply, return { "algorithms": [] }.
   }, []);
 
 
-
+  
 
   const [runTour, setRunTour] = useState(false);
   const [joyrideStepId, setJoyRideStepId] = useState(0);
@@ -1725,7 +1811,7 @@ If none apply, return { "algorithms": [] }.
           console.log("nodes", nodes)
 
           // get user name (from cursors) for history
-          const userName = cursors[myClientId]?.name || "unknown";
+          //const userName = cursors[myClientId]?.name || "unknown";
           historyArray.push([{
             type: "node-added",
             nodeId: newNode.id,
@@ -1739,6 +1825,8 @@ If none apply, return { "algorithms": [] }.
 
           console.log("ADD NODE HISTORY", historyArray.toArray())
           console.log("cursors", cursors)
+          console.log("shared nodes", Array.from(nodesMap.values()))
+          console.log("shared edges",Array.from(edgesMap.values()))
 
           // console.log(cursors)
           // Object.entries(cursors).map(([clientId, cursor]) => {
@@ -2958,7 +3046,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
     // 🔁 Sync with React Flow
     onNodesChange(allowedChanges);
     // get user name (from cursors) for history
-    const userName = cursors[myClientId]?.name || "unknown";
+    //const clientUserName = cursors[myClientId]?.name || "unknown";
     // 🔥 Handle deletions
     allowedChanges.forEach((change) => {
       if ((change.type === "remove" || change.type === "reset" ) && hasId(change)) {
@@ -2986,13 +3074,17 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
           timestamp: Date.now(),
         }]);
         console.log("REMOVE NODE HISTORY", historyArray.toArray())
+        console.log("shared nodes", Array.from(nodesMap.values()))
+        console.log("shared edges",Array.from(edgesMap.values()))
       }
     });
 
   }, [nodesI, awareness, myClientId]);
+
+
   function hasId(
-    change: NodeChange
-  ): change is NodeChange & { id: string } {
+    change: NodeChange | EdgeChange
+  ): change is (NodeChange | EdgeChange) & { id: string } {
     return "id" in change;
   }
 
@@ -3063,7 +3155,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
     // 2. Save edge to Yjs shared map
     edgesMap.set(edge.id, edge);
     // get user name (from cursors) for history
-    const userName = cursors[myClientId]?.name || "unknown";
+    //const userName = cursors[myClientId]?.name || "unknown";
 
     historyArray.push([{
         type: "edge-added",
@@ -3076,6 +3168,8 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
         timestamp: Date.now(),
       }]);
       console.log("ADD EDGE HISTORY", historyArray.toArray());
+      console.log("shared nodes", Array.from(nodesMap.values()))
+      console.log("shared edges",Array.from(edgesMap.values()))
     // für jeden Cursor? Nicht nur einmal??
     // Object.entries(cursors).map(([clientId, cursor]) => {
     //   const displayName = Number(clientId) === myClientId ? "Me" : cursor.name;
@@ -3097,7 +3191,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
     // });
 
 
-  }, []);
+  }, [awareness, myClientId]);
 
   return (
     <>
@@ -3236,6 +3330,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
         compactVisualization={compactVisualization}
         completionGuaranteed={completionGuaranteed}
         experienceLevel={experienceLevel}
+        collaborationMode={collaborationMode}
         tempCamundaEndpoint={camundaEndpoint}
         tempNisqAnalyzerEndpoint={nisqAnalyzerEndpoint}
         tempOpenAIToken={openAIToken}
@@ -3248,6 +3343,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
         tempGithubRepositoryName={githubRepositoryName}
         tempGithubBranch={githubBranch}
         tempGithubToken={githubToken}
+        userName={userName}
       />
 
       <ManageTemplateModal
@@ -3414,14 +3510,14 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
             ref={ref}
             nodes={nodesI}
             edges={edgesI}
-            onNodesChange={onNodesChangeSync}
-            onEdgesChange={onEdgesChange}
+            onNodesChange={onNodesChangeSync} // TODO: onNodesChange if no collab mode
+            onEdgesChange={onEdgesChange} // TODO: onEdgesChangeSync for collab mode (deletion of edge)
             onNodeContextMenu={onNodeContextMenu}
             onNodeClick={(event: React.MouseEvent, node: Node) => {
               handleClick(event, node);
             }}
             onConnectEnd={onConnectEnd}
-            onConnect={onConnectSync}
+            onConnect={onConnectSync} // TODO: onConnect if no collab mode
             onPaneClick={onPaneClick}
             onClick={onClick}
             onDragOver={onDragOver}
@@ -3429,9 +3525,9 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
             onNodeDragStop={onNodeDragStop}
             onDrop={onDrop}
             onMouseMove={handleMouseMove}
-            onNodesDelete={onNodesDelete}
-            onEdgesDelete={onEdgesDelete}
-             onSelectionChange={onSelectionChange}
+            onNodesDelete={onNodesDelete} // TODO: weglassen oder onNodesDeleteSync erstellen?
+            onEdgesDelete={onEdgesDelete} // TODO: weglassen oder onEdgesDeleteSync erstellen?
+            onSelectionChange={onSelectionChange}
 
             fitView
             fitViewOptions={{ maxZoom: 1 }}
@@ -3557,6 +3653,10 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
               domainProfile={domainProfile}
               onDomainProfileChange={(event) => { setDomainProfile(event) }}
               domainProfileNames={allDomainProfiles.map((p) => p.name)}
+              collaborationMode={collaborationMode}
+              onCollaborationModeChange={() => setCollaborationMode(!collaborationMode)}
+              userName = {userName}
+              onUserNameChange = {onUserNameChange}
             />
 
             <MiniMap

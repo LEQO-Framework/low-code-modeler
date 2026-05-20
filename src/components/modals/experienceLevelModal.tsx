@@ -14,6 +14,10 @@ interface ExperienceModePanelProps {
   domainProfile: string;
   onDomainProfileChange: (profile: string) => void;
   domainProfileNames: string[];
+  onCollaborationModeChange: () => void;
+  collaborationMode: boolean;
+  userName: string;
+  onUserNameChange: (string) => void;
 }
 
 export default function ExperienceModePanel({
@@ -30,6 +34,10 @@ export default function ExperienceModePanel({
   domainProfile,
   onDomainProfileChange,
   domainProfileNames,
+  onCollaborationModeChange,
+  collaborationMode,
+  userName,
+  onUserNameChange,
 }: ExperienceModePanelProps) {
   return (
     <Panel position="top-left" className="p-2 z-50">
@@ -153,6 +161,32 @@ export default function ExperienceModePanel({
                     <option title="The backend has suitable implementations for all nodes available.">Yes</option>
                     <option title="The backend does not have suitable implementations for all nodes available.">No</option>
                   </select>
+                </td>
+              </tr>
+              <tr>
+                <td align="right">
+                  <span title="Collaboration Mode enables collaborative editing of diagrams among multiple users.">
+                    Collaboration Mode
+                  </span>
+                </td>
+                <td align="left" className="flex items-center gap-2">
+                  <button
+                    onClick={onCollaborationModeChange}
+                    className={`px-2 py-1 rounded text-white ${
+                      collaborationMode ? "bg-blue-600" : "bg-gray-400"
+                    }`}
+                  >
+                    <span title="Collaboration Mode enables collaborative editing of diagrams among multiple users.">
+                    {collaborationMode ? "On" : "Off"}
+                    </span>
+                  </button>
+                  <input
+                      className="qwm-input"
+                      type="text"
+                      value={userName}
+                      onChange={(e) => onUserNameChange(e.target.value)}
+                      disabled={!collaborationMode}
+                    />
                 </td>
               </tr>
             </tbody>
