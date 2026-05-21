@@ -267,7 +267,8 @@ export const StatePreparationNode = memo((node: Node) => {
       setQuantumStateName(node.data.quantumStateName);
       updateNodeInternals(node.id);
     }
-  }, [nodes, node.data.outputIdentifier, node.id]);
+  // }, [nodes, node.data.outputIdentifier, node.id]);
+  }, [node.data.outputIdentifier, node.id]); // temp fix: white screen during coillaboration mode when dropping stateprep node
   useEffect(() => {
     updateNodeInternals(node.id);
   }, [compact])

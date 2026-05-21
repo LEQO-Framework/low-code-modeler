@@ -171,7 +171,8 @@ export const DataTypeNode = memo((node: Node) => {
       updateNodeValue(node.id, "value", "true");
     }
     setOutputIdentifierError(isDuplicate && identifier !== "");
-  }, [nodes, node.id]);
+  // }, [nodes, node.id]);
+  }, [node.id]); // temp fix: white screen during coillaboration mode when dropping datatype node
 
 
 
