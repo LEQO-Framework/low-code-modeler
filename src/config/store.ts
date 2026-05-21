@@ -1479,7 +1479,7 @@ export const useStore = create<RFState>()(persist((set, get) => ({
       const updatedNode = get().nodes.find(n => n.id === nodeId);
 
 
-      if (updatedNode) nodesMap.set(nodeId, updatedNode);
+      // if (updatedNode) nodesMap.set(nodeId, updatedNode);
 
       console.log(updatedNodes)
 
@@ -1499,10 +1499,10 @@ export const useStore = create<RFState>()(persist((set, get) => ({
     console.log(get().nodes)
     console.log("pppppppppppppppppppppppppppppppppppppppp");
     console.log(updatedNode)
-    if (updatedNode) {
-      nodesMap.set(nodeId, updatedNode);
-      console.log("Updated Yjs node:", updatedNode);
-    }
+    // if (updatedNode) {
+    //   nodesMap.set(nodeId, updatedNode);
+    //   console.log("Updated Yjs node:", updatedNode);
+    // }
 
     console.log("History updated successfully.");
   },

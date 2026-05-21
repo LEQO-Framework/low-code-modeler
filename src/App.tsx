@@ -199,8 +199,8 @@ function App() {
   const onUserNameChange = (newName) => {
     console.log("newName", newName)
     setUserName(newName);
-    //TODO Update username in cursors
-    awareness.setLocalStateField("cursor", {name: newName})
+    const currentCursorState = awareness.getLocalState()?.cursor || {};
+    awareness.setLocalStateField("cursor", {...currentCursorState, name: newName}) //update only name
     console.log("cursors", cursors)
   };
 
@@ -563,7 +563,7 @@ If none apply, return { "algorithms": [] }.
     setAncillaModelingOn(newValues.ancillaMode);
     setExperienceLevel(newValues.experienceLevel);
     setCompletionGuaranteed(newValues.completionGuaranteed);
-    setCollaborationMode(newValues.collaborationMode);
+    setCollaborationModeOn(newValues.collaborationMode); // passt das?? lieber onToggleCollaborationMode?
     onUserNameChange(newValues.userName);
 
     setIsConfigOpen(false);
@@ -614,7 +614,7 @@ If none apply, return { "algorithms": [] }.
   const [ancillaModelingOn, setAncillaModelingOn] = useState(false);
   const [experienceLevelOn, setExperienceLevelOn] = useState("explorer");
   const [compactVisualization, setCompactVisualization] = useState(false);
-  const [collaborationMode, setCollaborationMode] = useState(false);
+  const [collaborationModeOn, setCollaborationModeOn] = useState(false);
   //const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
   const [toast, setToast] = useState<{
     message: React.ReactNode;
@@ -642,31 +642,111 @@ If none apply, return { "algorithms": [] }.
   }, [typeError, showToast, setTypeError]);
 
 
-  useEffect(() => {
-    console.log("rerun")
+  // EFFECT 1: Remote-to-Local (Yjs ➔ Zustand & nodesI)
+useEffect(() => {
+  if (!collaborationModeOn) return;
+
+  const updateFromRemote = () => {
+    const sharedNodes = Array.from(nodesMap.values());
+    const sharedEdges = Array.from(edgesMap.values());
+
+    // 1. Update the local rendering tracking arrays
+    setNodesI(sharedNodes);
+    setEdgesI(sharedEdges);
+
+    // 2. Forcefully inject remote changes into Zustand.
+    // We stringify check to prevent triggering an infinite state update loop.
+    const currentLocalState = useStore.getState();
+    
+    if (JSON.stringify(currentLocalState.nodes) !== JSON.stringify(sharedNodes) ||
+        JSON.stringify(currentLocalState.edges) !== JSON.stringify(sharedEdges)) {
+      
+      useStore.setState({
+        nodes: sharedNodes,
+        edges: sharedEdges,
+      });
+    }
+  };
+
+  // Listen to remote changes on the Yjs maps
+  nodesMap.observe(updateFromRemote);
+  edgesMap.observe(updateFromRemote);
+
+  // Run immediately on mount/enable to pull initial room state
+  updateFromRemote();
+
+  return () => {
+    nodesMap.unobserve(updateFromRemote);
+    edgesMap.unobserve(updateFromRemote);
+  };
+}, [collaborationModeOn]);
 
 
-    // observe remote changes
-    const nodesObserver = () => {
-      const sharedNodes = Array.from(nodesMap.values());
-      setNodesI(sharedNodes);
-      console.log(nodesI)
-    };
+// EFFECT 2: Local-to-Remote (Zustand ➔ Yjs)
+useEffect(() => {
+  if (!collaborationModeOn) return;
 
-    const edgesObserver = () => {
-      const sharedEdges = Array.from(edgesMap.values());
-      setEdgesI(sharedEdges);
-      console.log(edgesI)
-    };
+  // Bundle operations into a single transaction block
+  ydoc.transact(() => {
+    // A. Sync local Zustand nodes to the network map
+    nodes.forEach((node) => {
+      const remoteNode = nodesMap.get(node.id);
+      if (!remoteNode || JSON.stringify(remoteNode) !== JSON.stringify(node)) {
+        nodesMap.set(node.id, node);
+      }
+    });
 
-    nodesObserver();
-    edgesObserver()
-    nodesMap.observe(nodesObserver);
-    edgesMap.observe(edgesObserver);
-    return () => { nodesMap.unobserve(nodesObserver); edgesMap.unobserve(edgesObserver) };
+    // B. Handle local deletions (If it's in Yjs but missing from local Zustand, delete from Yjs)
+    nodesMap.forEach((_, id) => {
+      if (!nodes.some((n) => n.id === id)) {
+        nodesMap.delete(id);
+      }
+    });
 
-  }, []);
+    // C. Sync local Zustand edges to the network map
+    edges.forEach((edge) => {
+      const remoteEdge = edgesMap.get(edge.id);
+      if (!remoteEdge || JSON.stringify(remoteEdge) !== JSON.stringify(edge)) {
+        edgesMap.set(edge.id, edge);
+      }
+    });
 
+    // D. Handle edge deletions
+    edgesMap.forEach((_, id) => {
+      if (!edges.some((e) => e.id === id)) {
+        edgesMap.delete(id);
+      }
+    });
+  });
+}, [nodes, edges, collaborationModeOn]);
+
+  // useEffect(() => {
+  //   console.log("rerun")
+
+  //   if(!collaborationModeOn) return;
+
+  //   // observe remote changes
+  //   const nodesObserver = () => {
+  //     const sharedNodes = Array.from(nodesMap.values());
+  //     setNodesI(sharedNodes);
+  //     console.log(nodesI)
+  //   };
+
+  //   const edgesObserver = () => {
+  //     const sharedEdges = Array.from(edgesMap.values());
+  //     setEdgesI(sharedEdges);
+  //     console.log(edgesI)
+  //   };
+
+  //   nodesObserver();
+  //   edgesObserver()
+  //   nodesMap.observe(nodesObserver);
+  //   edgesMap.observe(edgesObserver);
+  //   return () => { nodesMap.unobserve(nodesObserver); edgesMap.unobserve(edgesObserver) };
+
+  // }, [collaborationModeOn]);
+
+  // needed? 
   useEffect(() => {
 
     const updateCursors = () => {
@@ -695,30 +775,34 @@ If none apply, return { "algorithms": [] }.
 
   useEffect(() => {
 
+    if(collaborationModeOn){
+          // Generate a random username
+          const randomNames = ["Alice", "Bob", "Charlie", "Dana", "Eve", "Frank", "Grace", "Hugo"];
+          const randomUsername = randomNames[Math.floor(Math.random() * randomNames.length)];
+          // Store local clientId
+          setMyClientId(awareness.clientID);
 
-    // Generate a random username
-    const randomNames = ["Alice", "Bob", "Charlie", "Dana", "Eve", "Frank", "Grace", "Hugo"];
-    const randomUsername = randomNames[Math.floor(Math.random() * randomNames.length)];
-    // Store local clientId
-    setMyClientId(awareness.clientID);
+          const color = "#" + Math.floor(Math.random() * 16777215).toString(16);
 
-    const color = "#" + Math.floor(Math.random() * 16777215).toString(16);
+          // Set initial cursor state with username
+          awareness.setLocalStateField("cursor", {
+            x: 0,
+            y: 0,
+            color: color,
+            name: randomUsername
+          });
 
-    // Set initial cursor state with username
-    awareness.setLocalStateField("cursor", {
-      x: 0,
-      y: 0,
-      color: color,
-      name: randomUsername
-    });
+          awareness.setLocalStateField("locks", {
+            nodeIds: []
+          });
 
-    awareness.setLocalStateField("locks", {
-      nodeIds: []
-    });
+          // set initial user name  
+          setUserName(randomUsername);
+          console.log("CURSORS", cursors)
+    }
 
-    console.log("CURSORS", cursors)
 
-  }, []);
+  }, [collaborationModeOn]);
 
 
   
@@ -1731,6 +1815,7 @@ If none apply, return { "algorithms": [] }.
   const onDrop = React.useCallback(
     (event: any) => {
       console.log("dropped")
+      console.log("collab mode", collaborationModeOn)
       const position = reactFlowInstance.screenToFlowPosition({
         x: event.clientX,
         y: event.clientY,
@@ -1807,48 +1892,52 @@ If none apply, return { "algorithms": [] }.
           
           
           setNodes(newNode);
-          nodesMap.set(newNode.id, newNode);
-          console.log("nodes", nodes)
+          if(collaborationModeOn){ //only add node to shared nodesMap if collaboration mode is on
+            console.log("ON DROP: collab mode on", collaborationModeOn)
+            nodesMap.set(newNode.id, newNode);
+            console.log("nodes", nodes)
 
-          // get user name (from cursors) for history
-          //const userName = cursors[myClientId]?.name || "unknown";
-          historyArray.push([{
-            type: "node-added",
-            nodeId: newNode.id,
-            label: newNode.data?.label,
-            //user: Number(clientId) === myClientId ? "Me" : userName,
-            //user: userName,
-            userId: myClientId,
-            user: userName,
-            timestamp: Date.now(),
-          }]);
+            // get user name (from cursors) for history
+            //const userName = cursors[myClientId]?.name || "unknown";
+            historyArray.push([{
+              type: "node-added",
+              nodeId: newNode.id,
+              label: newNode.data?.label,
+              //user: Number(clientId) === myClientId ? "Me" : userName,
+              //user: userName,
+              userId: myClientId,
+              user: userName,
+              timestamp: Date.now(),
+            }]);
 
-          console.log("ADD NODE HISTORY", historyArray.toArray())
-          console.log("cursors", cursors)
-          console.log("shared nodes", Array.from(nodesMap.values()))
-          console.log("shared edges",Array.from(edgesMap.values()))
+            console.log("ADD NODE HISTORY", historyArray.toArray())
+            console.log("cursors", cursors)
+            console.log("shared nodes", Array.from(nodesMap.values()))
+            console.log("shared edges",Array.from(edgesMap.values()))
 
-          // console.log(cursors)
-          // Object.entries(cursors).map(([clientId, cursor]) => {
-          //   const displayName = Number(clientId) === myClientId ? "Me" : cursor.name;
+            // console.log(cursors)
+            // Object.entries(cursors).map(([clientId, cursor]) => {
+            //   const displayName = Number(clientId) === myClientId ? "Me" : cursor.name;
 
-          //   // Store name in a variable for history usage
-          //   const userName = cursor.name;
+            //   // Store name in a variable for history usage
+            //   const userName = cursor.name;
 
 
-          //   historyArray.push([{
-          //     type: "node-added",
-          //     nodeId: newNode.id,
-          //     label: newNode.data?.label,
-          //     //user: Number(clientId) === myClientId ? "Me" : userName,
-          //     //user: userName,
-          //     userId: myClientId,
-          //     user: userName,
-          //     timestamp: Date.now(),
-          //   }]);
+            //   historyArray.push([{
+            //     type: "node-added",
+            //     nodeId: newNode.id,
+            //     label: newNode.data?.label,
+            //     //user: Number(clientId) === myClientId ? "Me" : userName,
+            //     //user: userName,
+            //     userId: myClientId,
+            //     user: userName,
+            //     timestamp: Date.now(),
+            //   }]);
 
-          //   console.log("ADD NODE HISTORY", historyArray)
-          // });
+            //   console.log("ADD NODE HISTORY", historyArray)
+            // });
+          }
+          
 
 
         }
@@ -1856,7 +1945,7 @@ If none apply, return { "algorithms": [] }.
 
       //setContextMenu((prev) => ({ ...prev, left: event.clientX, top: event.clientY,}));
     },
-    [reactFlowInstance, setNodes, currentCategories],
+    [reactFlowInstance, setNodes, currentCategories, collaborationModeOn],
   );
 
   const onNodesDelete = useCallback(() => {
@@ -2677,6 +2766,62 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     })
   }
 
+  const onToggleCollaborationMode = useCallback(() => {
+    const nextMode = !collaborationModeOn;
+    setCollaborationModeOn(nextMode);
+    console.log(nextMode, collaborationModeOn);
+    // if collaborationMode is now off: delete cursor of current client from list of cursors
+    if (nextMode) {
+      // collaboration mode has been turned on
+      // (re-)initialize cursor
+      // Sync room data immediately to overwrite offline state
+      useStore.setState({
+        nodes: Array.from(nodesMap.values()),
+        edges: Array.from(edgesMap.values())
+      });
+
+      // Generate a random username
+          const randomNames = ["Alice", "Bob", "Charlie", "Dana", "Eve", "Frank", "Grace", "Hugo"];
+          const randomUsername = randomNames[Math.floor(Math.random() * randomNames.length)];
+          // Store local clientId
+          setMyClientId(awareness.clientID);
+
+          const color = "#" + Math.floor(Math.random() * 16777215).toString(16);
+
+          // Set initial cursor state with username
+          awareness.setLocalStateField("cursor", {
+            x: 0,
+            y: 0,
+            color: color,
+            name: randomUsername
+          });
+
+          awareness.setLocalStateField("locks", {
+            nodeIds: []
+          });
+
+          // set initial user name  
+          setUserName(randomUsername);
+          console.log("CURSORS", cursors)
+
+          setNodesI(Array.from(nodesMap.values()));
+          setEdgesI(Array.from(edgesMap.values()));
+          
+    } else {
+      // collaboration mode has been turned off
+      // delete cursor from awareness state
+      awareness.setLocalStateField("cursor", null);
+      setCursors({});
+      setNodesI([]);
+      setEdgesI([]);
+      setUserName("");
+      // reset canvas
+      // overwriteFlow(initialDiagram);
+
+
+    }
+  }, [collaborationModeOn, userName]);
+
   const handleSaveAsSVG = () => {
     if (ref.current === null) {
       console.error("React Flow container reference is null.");
@@ -3156,11 +3301,16 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
     edgesMap.set(edge.id, edge);
     // get user name (from cursors) for history
     //const userName = cursors[myClientId]?.name || "unknown";
+    // get source and target node label
+    const sourceNode = nodes.find((n) => n.id === edge.source)?.data?.label || edge.source
+    const targetNode = nodes.find((n) => n.id === edge.target)?.data?.label || edge.target
+    // get target node label
+
 
     historyArray.push([{
         type: "edge-added",
-        source: edge.source,
-        target: edge.target,
+        source: sourceNode,
+        target: targetNode,
         edgeId: edge.id,
         //user: cursor.name,
         userId: myClientId,
@@ -3330,7 +3480,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
         compactVisualization={compactVisualization}
         completionGuaranteed={completionGuaranteed}
         experienceLevel={experienceLevel}
-        collaborationMode={collaborationMode}
+        collaborationMode={collaborationModeOn}
         tempCamundaEndpoint={camundaEndpoint}
         tempNisqAnalyzerEndpoint={nisqAnalyzerEndpoint}
         tempOpenAIToken={openAIToken}
@@ -3508,16 +3658,16 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
         >
           <ReactFlow
             ref={ref}
-            nodes={nodesI}
-            edges={edgesI}
-            onNodesChange={onNodesChangeSync} // TODO: onNodesChange if no collab mode
+            nodes={collaborationModeOn? nodesI : nodes}
+            edges={collaborationModeOn? edgesI: edges}
+            onNodesChange={collaborationModeOn? onNodesChangeSync : onNodesChange} // TODO: onNodesChange if no collab mode
             onEdgesChange={onEdgesChange} // TODO: onEdgesChangeSync for collab mode (deletion of edge)
             onNodeContextMenu={onNodeContextMenu}
             onNodeClick={(event: React.MouseEvent, node: Node) => {
               handleClick(event, node);
             }}
             onConnectEnd={onConnectEnd}
-            onConnect={onConnectSync} // TODO: onConnect if no collab mode
+            onConnect={collaborationModeOn? onConnectSync : onConnect} // TODO: onConnect if no collab mode
             onPaneClick={onPaneClick}
             onClick={onClick}
             onDragOver={onDragOver}
@@ -3565,8 +3715,9 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
               )}
             </>
           )}
+            
             <Controls />
-            {Object.entries(cursors).length> 1 && Object.entries(cursors).map(([clientId, cursor]) => {
+            {Object.entries(cursors).length> 1 && collaborationModeOn && Object.entries(cursors).map(([clientId, cursor]) => { // TODO: only if collaborationMode false
               const displayName = Number(clientId) === myClientId ? "Me" : cursor.name;
               return (
                 <div
@@ -3635,8 +3786,8 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
             )}
 
 
-            <UserCountPanel provider={yProvider} roomName="demo" />
-            <VersioningPanel history={versioningHistory} experienceLevel={experienceLevel} myClientID={myClientId} />
+            {collaborationModeOn && (<UserCountPanel provider={yProvider} roomName="demo" />)}
+            {collaborationModeOn && (<VersioningPanel history={versioningHistory} experienceLevel={experienceLevel} myClientID={myClientId} />)}
 
             <ExperienceModePanel
               expanded={expanded}
@@ -3653,8 +3804,8 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
               domainProfile={domainProfile}
               onDomainProfileChange={(event) => { setDomainProfile(event) }}
               domainProfileNames={allDomainProfiles.map((p) => p.name)}
-              collaborationMode={collaborationMode}
-              onCollaborationModeChange={() => setCollaborationMode(!collaborationMode)}
+              collaborationMode={collaborationModeOn}
+              onCollaborationModeChange={onToggleCollaborationMode}
               userName = {userName}
               onUserNameChange = {onUserNameChange}
             />
