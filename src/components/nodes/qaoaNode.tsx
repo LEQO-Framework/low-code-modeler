@@ -108,38 +108,10 @@ export const QAOANode = memo((node: Node) => {
           </div>
 
           {/* CONFIGURATION BODY */}
-          <div className="px-4 py-2 mt-2 flex flex-col gap-3">
-
-            {/* LEFT PORT: Classical Array Input (Graph Edges) */}
-            <div className="absolute left-0">
-                <div
-                className="relative p-2"
-                style={{
-                    backgroundColor: classicalConstructColor || "#fed7aa", 
-                    width: '120px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'flex-start',
-                    borderTopRightRadius: '20px',
-                    borderBottomRightRadius: '20px',
-                }}
-                >
-                <Handle
-                    type="target"
-                    id={`classicalHandleQAOAInput0${id}`}
-                    position={Position.Left}
-                    className="z-10 classical-circle-port-operation !bg-orange-400 !border-black -left-[6px]"
-                    style={{ width: 12, height: 12 }}
-                />
-                <div className="flex flex-col items-start w-full leading-tight pl-2">
-                    <span className="text-black text-[12px] font-medium">Edges</span>
-                    <span className="text-gray-600 text-[9px]">type: array</span>
-                </div>
-                </div>
-            </div>
+          <div className="px-4 py-2 mt-1 flex flex-col gap-3">
             
             {/* Problem Dropdown */}
-            <div className="mt-12 flex flex-col items-center justify-center w-full">
+            <div className="mt-1 flex flex-col items-center justify-center w-full">
               <label className="text-xs font-semibold text-gray-700 text-center mb-1">Problem:</label>
               <select
                 className="w-full p-1 text-sm text-center text-black border-2 border-blue-200 rounded-full outline-none focus:border-blue-400 transition-colors"
@@ -226,6 +198,35 @@ export const QAOANode = memo((node: Node) => {
                   handleChange("beta", e.target.value);
                 }}
               />
+            </div>
+
+            {/* CLASSICAL REGISTER INPUT PORT (Moved below configuration blocks) */}
+            <div className="relative left-0 w-full flex justify-start mt-2">
+              <div
+                className="relative p-2"
+                style={{
+                  backgroundColor: classicalConstructColor || "#fed7aa", 
+                  width: '120px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'flex-start',
+                  borderTopRightRadius: '20px',
+                  borderBottomRightRadius: '20px',
+                  marginLeft: '-16px' // counteracts parent wrapper's px-4 alignment
+                }}
+              >
+                <Handle
+                  type="target"
+                  id={`classicalHandleQAOAInput0${id}`}
+                  position={Position.Left}
+                  className="z-10 classical-circle-port-operation !bg-orange-400 !border-black -left-[6px]"
+                  style={{ width: 12, height: 12 }}
+                />
+                <div className="flex flex-col items-start w-full leading-tight pl-2">
+                  <span className="text-black text-[12px] font-medium">Edges</span>
+                  <span className="text-gray-600 text-[9px]">type: array</span>
+                </div>
+              </div>
             </div>
           </div>
 
