@@ -338,7 +338,7 @@ export const StatePreparationNode = memo((node: Node) => {
             height:
               ["Custom Encoding", "Basis Encoding", "Angle Encoding", "Amplitude Encoding", "Matrix Encoding", "Schmidt Decomposition"].includes(data.label)
                 ? !ancillaMode
-                  ? "300px"
+                  ? "340px"
                   : `${Math.max(dynamicHeight - 70, 200)}px`
                 : !ancillaMode
                   ? "370px"
@@ -472,12 +472,11 @@ export const StatePreparationNode = memo((node: Node) => {
                     <option value="Custom Encoding">Custom Encoding</option>
                     {!completionGuaranteed && (<option value="Matrix Encoding">Matrix Encoding</option>)}
                     {!completionGuaranteed && (<option value="Schmidt Decomposition">Schmidt Decomposition</option>)}
-
                   </select>
 
                   {node.data.encodingType !== "Basis Encoding" && node.data.encodingType !== "Angle Encoding" && (
                     <>
-                      <label className="text-sm text-black">Bound:</label>
+                      <label className="text-sm text-black block mt-2">Bound:</label>
                       <input
                         className="w-full p-1 mt-1 text-sm text-center text-black border-2 border-blue-300 rounded-full"
                         type="text"
@@ -489,25 +488,47 @@ export const StatePreparationNode = memo((node: Node) => {
                     </>
                   )}
 
+                  {node.data.encodingType === "Basis Encoding" && (
+                    <>
+                      <label className="text-sm text-black block mt-2">Decimal Precision:</label>
+                      <input
+                        className="w-full p-1 mt-1 text-sm text-center text-black border-2 border-blue-300 rounded-full"
+                        type="number"
+                        min="0"
+                        value={node.data.decimalPrecision ?? ""}
+                        onChange={(e) => handleStateChange(e, "decimalPrecision")}
+                        placeholder="e.g. 1"
+                      />
+                    </>
+                  )}
                 </>
               )}
+
               {(node.data.label === "Amplitude Encoding" || node.data.label === "Custom Encoding" || node.data.label === "Matrix Encoding" || node.data.label === "Schmidt Decomposition") && (
                 <>
+                  <label className="text-sm text-black block mt-2">Bound:</label>
+                  <input
+                    className="w-full p-1 mt-1 text-sm text-center text-black border-2 border-blue-300 rounded-full"
+                    type="text"
+                    id="bound"
+                    value={node.data.bound || bound}
+                    onChange={(e) => handleStateChange(e, "bound")}
+                    placeholder="Enter bound"
+                  />
+                </>
+              )}
 
-                  {node.data.encodingType !== "Basis Encoding" && node.data.encodingType !== "Angle Encoding" && (
-                    <>
-                      <label className="text-sm text-black">Bound:</label>
-                      <input
-                        className="w-full p-1 mt-1 text-sm text-center text-black border-2 border-blue-300 rounded-full"
-                        type="text"
-                        id="bound"
-                        value={node.data.bound || bound}
-                        onChange={(e) => handleStateChange(e, "bound")}
-                        placeholder="Enter bound"
-                      />
-                    </>
-                  )}
-
+              {node.data.label === "Basis Encoding" && (
+                <>
+                  <label className="text-sm text-black block mt-2">Decimal Precision:</label>
+                  <input
+                    className="w-full p-1 mt-1 text-sm text-center text-black border-2 border-blue-300 rounded-full"
+                    type="number"
+                    min="0"
+                    value={node.data.decimalPrecision ?? ""}
+                    onChange={(e) => handleStateChange(e, "decimalPrecision")}
+                    placeholder="e.g. 1"
+                  />
                 </>
               )}
 
