@@ -48,6 +48,9 @@ import { v4 as uuid } from "uuid";
 import DomainProfileModal, { DomainProfile } from "./components/modals/domainProfileModal";
 import { PatternSelectionModal } from "./components/modals/patternSelectionModal";
 import { PatternImplementationSelectionModal } from "./components/modals/patternImplementationSelectionModal";
+import PromptFlowModal from "./components/modals/promptFlowModal";
+import { generateFlow, sendToMistral } from "./generation";
+import { openQasmToFlow } from "./qasmConverter";
 
 const selector = (state: {
   nodes: Node[];
@@ -175,6 +178,9 @@ function App() {
   const [openAIToken, setOpenAIToken] = useState(
     import.meta.env.VITE_OPENAI_TOKEN
   );
+  const [mistralToken, setMistralToken] = useState(
+    import.meta.env.VITE_MISTRAL_TOKEN
+  );
   const [qunicornEndpoint, setQunicornEndpoint] = useState(
     import.meta.env.VITE_QUNICORN || "http://localhost:8080"
   );
@@ -262,9 +268,10 @@ function App() {
   const [errorJobMessage, setErrorJobMessage] = useState("");
   const [isPatternModalOpen, setIsPatternModalOpen] = useState(false);
   const [isPatternImplementationOpen, setIsPatternImplementationOpen] = useState(false);
+  const [isOpenQASMOpen, setIsOpenQASMOpen] = useState(false);
   const [selectedPatternId, setSelectedPatternId] = useState<string | null>(null);
 
-
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [isLoadJsonModalOpen, setIsLoadJsonModalOpen] = useState(false);
   const [isPaletteOpen, setIsPaletteOpen] = useState(true);
@@ -424,6 +431,7 @@ If none apply, return { "algorithms": [] }.
     setCamundaEndpoint(newValues.tempCamundaEndpoint);
     setNisqAnalyzerEndpoint(newValues.tempNisqAnalyzerEndpoint);
     setOpenAIToken(newValues.tempOpenAIToken);
+    setMistralToken(newValues.tempMistralToken);
     setQunicornEndpoint(newValues.tempQunicornEndpoint);
     setLowcodeBackendEndpoint(newValues.tempLowcodeBackendEndpoint);
     setPatternAtlasUiEndpoint(newValues.tempPatternAtlasUiEndpoint);
@@ -484,6 +492,7 @@ If none apply, return { "algorithms": [] }.
   const [status, setStatus] = useState("");
   const [modalStep, setModalStep] = useState(1);
   const [isQunicornOpen, setIsQunicornOpen] = useState(false);
+  const [isPromptModalOpen, setIsPromptModalOpen] = useState(false);
   const [loadingQunicorn, setLoadingQunicorn] = useState(true);
   const [statusQunicorn, setStatusQunicorn] = useState(null);
   const [ancillaModelingOn, setAncillaModelingOn] = useState(false);
@@ -864,7 +873,7 @@ If none apply, return { "algorithms": [] }.
       if (
         twoQubitGates.includes(label) ||
         ((node.type === "quantumOperatorNode" || node.type === "classicalOperatorNode") &&
-          !minMaxOperators.includes(operator))
+          !minMaxOperators.includes(operator) && operator !== "INVERT")
       ) {
         if (inputCount !== 2) {
           errors.push({
@@ -887,6 +896,14 @@ If none apply, return { "algorithms": [] }.
           });
         }
 
+      }
+
+      if (node.data.label === "Qubit" && (node.data.size === undefined || node.data.size === 0)) {
+        errors.push({
+          nodeId: node.id,
+          nodeType: node.type,
+          description: `Node "${node.id}" needs a size value.`,
+        });
       }
 
       if (threeQubitGates.includes(label)) {
@@ -1084,6 +1101,45 @@ If none apply, return { "algorithms": [] }.
         }
       }
 
+      if (node.data?.label === "QFT" || node.type === "qftNode") {
+        const qubitCount =
+          parseInt(node.data?.numberOutputs || "3");
+
+        const incoming = nodeConnections.get(node.id) || [];
+        const outgoing = outgoingConnections.get(node.id) || [];
+
+        for (let i = 0; i < qubitCount; i++) {
+          const handleId = `quantumHandleQFTInput${i}${node.id}`;
+
+          const isConnected = flow.edges?.some(
+            (e) => e.targetHandle === handleId
+          );
+
+          if (!isConnected) {
+            errors.push({
+              nodeId: node.id,
+              nodeType: node.type,
+              description: `QFT node "${node.id}" is missing connection on input ${i + 1}.`,
+            });
+          }
+        }
+
+        for (let i = 0; i < qubitCount; i++) {
+          const handleId = `qftOut${i}${node.id}`;
+
+          const isUsed = flow.edges?.some(
+            (e) => e.sourceHandle === handleId
+          );
+
+          if (!isUsed) {
+            warnings.push({
+              nodeId: node.id,
+              nodeType: node.type,
+              description: `QFT node "${node.id}" output ${i + 1}/${qubitCount} is not used.`,
+            });
+          }
+        }
+      }
       // Plugin Node Validation
       if (node.type === "pluginNode") {
         const dataInputs = node.data?.dataInputs || [];
@@ -1153,6 +1209,8 @@ If none apply, return { "algorithms": [] }.
           "Executing this flow will not produce meaningful results.",
       });
     }
+
+
 
 
     return { warnings, errors };
@@ -1373,6 +1431,7 @@ If none apply, return { "algorithms": [] }.
       setLoading(false);
     }
   };
+
 
   const pollStatus = async () => {
     const interval = setInterval(async () => {
@@ -2016,6 +2075,85 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     addUserTemplate(newTemplate);
   };
 
+   function handleOpenQASMClick() {
+    if (!reactFlowInstance) {
+      console.error("React Flow instance is not initialized.");
+      return;
+    }
+
+    function restoreFlow(flow) {
+      console.log("Restoring flow:", flow);
+      if (flow.nodes) {
+        reactFlowInstance.setNodes(
+          flow.nodes.map((node: Node) => ({
+            ...node,
+            data: {
+              ...node.data,
+            },
+          }))
+        );
+        console.log("Nodes restored.");
+      }
+      if (flow.edges) {
+        reactFlowInstance.setEdges(flow.edges || []);
+        console.log("Edges restored.");
+      }
+
+
+      const { x = 0, y = 0, zoom = 1 } = flow.viewport || {};
+      reactFlowInstance.setViewport({ x, y, zoom });
+
+      if (flow.metadata) {
+        setMetadata(flow.metadata);
+        console.log("Metadata restored:", flow.metadata);
+      }
+    }
+
+    const event = new CustomEvent("lcm-open", {
+      cancelable: true,
+      detail: {
+        restoreFlow
+      },
+    });
+    const defaultAction = document.dispatchEvent(event);
+    console.log(`defaultAction: ${defaultAction}`);
+    if (!defaultAction)
+      return;
+
+    const fileInput = document.createElement("input");
+    fileInput.type = "file";
+    fileInput.accept = "application/txt";
+
+    fileInput.onchange = (event) => {
+      const file = (event.target as HTMLInputElement)?.files?.[0];
+      if (!file) {
+        console.warn("No file selected.");
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const flow = openQasmToFlow(e.target?.result as string);
+          console.log(flow)
+
+          restoreFlow(flow);
+        } catch (error) {
+          console.error("Error parsing JSON file:", error);
+          alert("Invalid JSON file. Please ensure it is a valid flow file.");
+        }
+      };
+
+      reader.onerror = (err) => {
+        console.error("Error reading file:", err);
+        alert("Failed to read file. Please try again.");
+      };
+
+      reader.readAsText(file);
+    };
+
+    fileInput.click();
+  }
 
   function handleRestoreClick() {
     if (!reactFlowInstance) {
@@ -2798,6 +2936,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
           uploadDiagram={() => uploadToGitHub()}
           uploadPatternSolution={() => setIsPatternModalOpen(true)}
           openPatternSolution={() => setIsPatternImplementationOpen(true)}
+          openOpenQASM={handleOpenQASMClick}
 
           //uploadPatternSolution={() => registerAndUploadToGitHub()}
           onLoadJson={handleLoadJson}
@@ -2809,6 +2948,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
           startTour={() => { startTour(); }}
           onSaveAsTemplate={handleSaveAsTemplate}
           onManageTemplates={handleManageTemplates}
+          generateModel={() => setIsPromptModalOpen(true)}
         />
       </div>
       {<NewDiagramModal open={isLoadJsonModalOpen} onClose={cancelLoadJson} onConfirm={confirmNewDiagram} />}
@@ -2854,6 +2994,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
         tempGithubRepositoryName={githubRepositoryName}
         tempGithubBranch={githubBranch}
         tempGithubToken={githubToken}
+        tempMistralToken={mistralToken}
       />
 
       <ManageTemplateModal
@@ -2884,6 +3025,20 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
         progress={progress}
         chartData={chartData}
       />
+
+      <PromptFlowModal
+        open={isPromptModalOpen}
+        mistralToken={mistralToken}
+        onClose={(flow) => {
+          setIsPromptModalOpen(false);
+          if (flow) loadFlow(flow);
+          setIsPromptModalOpen(false);
+        }}
+        sendToMistral={sendToMistral}
+        generateFlow={generateFlow}
+      />
+
+
 
       {patternGraph && (
         <Modal
@@ -3101,7 +3256,6 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
             )}
 
 
-
             <ExperienceModePanel
               expanded={expanded}
               onToggleExpanded={() => setExpanded(!expanded)}
@@ -3170,7 +3324,6 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
               zoomable={true}
               pannable={true}
             />
-
 
             <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
           </ReactFlow>
