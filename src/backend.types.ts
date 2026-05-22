@@ -206,7 +206,7 @@ export interface components {
         CompileRequest: {
             metadata: components["schemas"]["MetaData"];
             /** Nodes */
-            nodes: (components["schemas"]["ImplementationNode"] | components["schemas"]["ArrayLiteralNode"] | components["schemas"]["QFTNode"] |components["schemas"]["EditableNode"] | components["schemas"]["QubitNode"] | components["schemas"]["EncodeValueNode"] | components["schemas"]["PrepareStateNode"] | components["schemas"]["SplitterNode"] | components["schemas"]["MergerNode"] | components["schemas"]["MeasurementNode"] | components["schemas"]["GateNode"] | components["schemas"]["ParameterizedGateNode"] | components["schemas"]["BitLiteralNode"] | components["schemas"]["BoolLiteralNode"] | components["schemas"]["IntLiteralNode"] | components["schemas"]["FloatLiteralNode"] | components["schemas"]["FileLiteralNode"] | components["schemas"]["StringLiteralNode"] | components["schemas"]["AncillaNode"] | components["schemas"]["IfThenElseNode"] | components["schemas"]["RepeatNode"] | components["schemas"]["OperatorNode"] | components["schemas"]["PluginNode"])[];
+            nodes: (components["schemas"]["ImplementationNode"] | components["schemas"]["ArrayLiteralNode"] | components["schemas"]["QFTNode"] | components["schemas"]["QAOANode"] | components["schemas"]["EditableNode"] | components["schemas"]["QubitNode"] | components["schemas"]["EncodeValueNode"] | components["schemas"]["PrepareStateNode"] | components["schemas"]["SplitterNode"] | components["schemas"]["MergerNode"] | components["schemas"]["MeasurementNode"] | components["schemas"]["GateNode"] | components["schemas"]["ParameterizedGateNode"] | components["schemas"]["BitLiteralNode"] | components["schemas"]["BoolLiteralNode"] | components["schemas"]["IntLiteralNode"] | components["schemas"]["FloatLiteralNode"] | components["schemas"]["FileLiteralNode"] | components["schemas"]["StringLiteralNode"] | components["schemas"]["AncillaNode"] | components["schemas"]["IfThenElseNode"] | components["schemas"]["RepeatNode"] | components["schemas"]["OperatorNode"] | components["schemas"]["PluginNode"])[];
             /** Edges */
             edges: components["schemas"]["Edge"][];
             compilation_target: string;
@@ -423,7 +423,7 @@ export interface components {
         /** NestedBlock */
         NestedBlock: {
             /** Nodes */
-            nodes: (components["schemas"]["ImplementationNode"] | components["schemas"]["QubitNode"] | components["schemas"]["ArrayLiteralNode"] | components["schemas"]["EncodeValueNode"] | components["schemas"]["PrepareStateNode"] | components["schemas"]["SplitterNode"] | components["schemas"]["MergerNode"] | components["schemas"]["MeasurementNode"] | components["schemas"]["GateNode"] | components["schemas"]["ParameterizedGateNode"] | components["schemas"]["BitLiteralNode"] | components["schemas"]["BoolLiteralNode"] | components["schemas"]["IntLiteralNode"] | components["schemas"]["FloatLiteralNode"] | components["schemas"]["AncillaNode"] | components["schemas"]["IfThenElseNode"] | components["schemas"]["RepeatNode"] | components["schemas"]["OperatorNode"])[];
+            nodes: (components["schemas"]["ImplementationNode"] | components["schemas"]["QubitNode"] | components["schemas"]["QAOANode"] | components["schemas"]["ArrayLiteralNode"] | components["schemas"]["EncodeValueNode"] | components["schemas"]["PrepareStateNode"] | components["schemas"]["SplitterNode"] | components["schemas"]["MergerNode"] | components["schemas"]["MeasurementNode"] | components["schemas"]["GateNode"] | components["schemas"]["ParameterizedGateNode"] | components["schemas"]["BitLiteralNode"] | components["schemas"]["BoolLiteralNode"] | components["schemas"]["IntLiteralNode"] | components["schemas"]["FloatLiteralNode"] | components["schemas"]["AncillaNode"] | components["schemas"]["IfThenElseNode"] | components["schemas"]["RepeatNode"] | components["schemas"]["OperatorNode"])[];
             /** Edges */
             edges: components["schemas"]["Edge"][];
         };
@@ -538,6 +538,32 @@ export interface components {
              * @default 1
              */
             size?: number;
+        };
+        /** QAOANode */
+        QAOANode: {
+            /** Id */
+            id: string;
+            /** Label */
+            label?: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "qaoa";
+            /** Layers */
+            p: number;
+            /** Problem */
+            problem: string;
+            /** Optimizer */
+            optimizer: string;
+            /** Edges string */
+            edges: string;
+            /** Gamma string */
+            gamma: string;
+            /** Beta string */
+            beta: string;
+            /** Output Identifier */
+            outputIdentifier: string;
         };
         /** RepeatNode */
         RepeatNode: {

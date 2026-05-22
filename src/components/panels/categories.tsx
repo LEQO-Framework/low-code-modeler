@@ -83,6 +83,23 @@ export const categories: Record<string, CategoryEntry> = {
           label: "Measurement", type: consts.MeasurementNode, icon: "PaletteIcon_Measurement.png", description: "Measures a quantum state and returns its classical information and collapsed quantum state.", completionGuaranteed: true, compactOptions: [true, false],
         },
       ],
+      "Oracles & Algorithms": [
+        {
+          label: "QAOA Ansatz",
+          type: consts.QAOANode,
+          icon: "PaletteIcon_QAOA.png",
+          description: "Generates a parameterized Quantum Approximate Optimization Algorithm (QAOA) circuit for a given graph.",
+          completionGuaranteed: false,
+          compactOptions: [false],
+          data: {
+            label: "QAOA Ansatz",
+            p: 1,
+            problem: "MaxCut",
+            optimizer: "COBYLA",
+            outputIdentifier: ""
+          }
+        }
+      ],
     },
   },
 
