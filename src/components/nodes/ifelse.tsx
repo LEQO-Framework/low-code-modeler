@@ -5,6 +5,7 @@ import { shallow } from "zustand/shallow";
 import { Input } from "antd";
 import { cn } from "@/lib/utils";
 import { Button } from "antd";
+import { awareness } from "@/yjs";
 
 
 const selector = (state: {
@@ -226,6 +227,45 @@ export const IfElseNode = memo((node: Node) => {
   const hexagonHeight = Math.max(250, 280 + totalHandles * 30);
   const hexagonTopOffset = -(hexagonHeight / 2) + 20;
 
+  const id = node.id;
+
+  const [remoteHighlightColor, setRemoteHighlightColor] = useState<string | null>(null);
+  const [selectingUserName, setSelectingUserName] = useState<string | null>(null); // technically not needed, could extend functionality to also show user name next to highlighted node
+
+  useEffect(() => {
+    const checkRemoteSelection = () => {
+      let foundColor: string | null = null;
+      let foundName: string | null = null;
+
+      // Loop through all active client states in the room
+      awareness.getStates().forEach((state: any, clientId: number) => {
+        // Skip your own client ID so you don't highlight it with your own color
+        // if (clientId === awareness.clientID) return;
+
+        // Check if a peer has selected this specific node ID
+        if (state.cursor && state.cursor.selectedNodeId === id) {
+          foundColor = state.cursor.color;
+          foundName = state.cursor.name;
+        }
+      });
+
+      setRemoteHighlightColor(foundColor);
+      setSelectingUserName(foundName);
+      console.log("COLOR", foundColor, foundName);
+    };
+
+    // Run once immediately on mount
+    checkRemoteSelection();
+
+    // 3. Listen to remote awareness updates
+    awareness.on("change", checkRemoteSelection);
+
+    // Clean up listener when the node unmounts
+    return () => {
+      awareness.off("change", checkRemoteSelection);
+    };
+  }, [id]); // Re-run if node ID changes
+
   return !collapsed ? (
     <div
       className="grand-parent overflow-visible"
@@ -245,10 +285,13 @@ export const IfElseNode = memo((node: Node) => {
         Else
       </div>
 
-      <div className={cn(
-                  "rounded-none bg-white border border-solid border-gray-700 relative w-full h-full relative flex items-center justify-center overflow-visible",
-                  selected && "border-blue-500"
-                )}>
+      <div className={"rounded-none bg-white border border-solid  relative w-full h-full relative flex items-center justify-center overflow-visible"}
+            style={{
+              borderColor: remoteHighlightColor ? remoteHighlightColor : (selected? "#3B82F6" : "#374151"),
+              boxShadow: remoteHighlightColor 
+                  ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}` // Glowing aura ring
+                  : undefined,
+                  }}>
         <div className="rounded-none border border-solid border-gray-700 w-full h-full flex flex-col items-center relative z-10 overflow-visible">
           <div className="w-full bg-purple-300 text-black text-center font-semibold py-1">
             <span className="text-sm">Then</span>

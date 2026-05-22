@@ -641,69 +641,78 @@ If none apply, return { "algorithms": [] }.
     }
   }, [typeError, showToast, setTypeError]);
 
+  const isSyncingFromRemote = useRef(false);
 
-  // EFFECT 1: Remote-to-Local (Yjs ➔ Zustand & nodesI)
-useEffect(() => {
-  if (!collaborationModeOn) return;
+  // EFFECT 1: Remote-to-Local (Yjs to Zustand & nodesI)
+  useEffect(() => {
+    if (!collaborationModeOn) return;
 
-  const updateFromRemote = () => {
-    const sharedNodes = Array.from(nodesMap.values());
-    const sharedEdges = Array.from(edgesMap.values());
+    const updateFromRemote = () => {
+      // set flag, so that this is ignored by effect 2
+      isSyncingFromRemote.current = true;
 
-    // 1. Update the local rendering tracking arrays
-    setNodesI(sharedNodes);
-    setEdgesI(sharedEdges);
+      const sharedNodes = Array.from(nodesMap.values());
+      const sharedEdges = Array.from(edgesMap.values());
 
-    // 2. Forcefully inject remote changes into Zustand.
-    // We stringify check to prevent triggering an infinite state update loop.
-    const currentLocalState = useStore.getState();
-    
-    if (JSON.stringify(currentLocalState.nodes) !== JSON.stringify(sharedNodes) ||
-        JSON.stringify(currentLocalState.edges) !== JSON.stringify(sharedEdges)) {
+      // Update the local rendering tracking arrays
+      setNodesI(sharedNodes);
+      setEdgesI(sharedEdges);
+
+      // Forcefully inject remote changes into Zustand.
+      // Stringify check to prevent triggering an infinite state update loop.
+      const currentLocalState = useStore.getState();
       
-      useStore.setState({
-        nodes: sharedNodes,
-        edges: sharedEdges,
-      });
-    }
-  };
+      if (JSON.stringify(currentLocalState.nodes) !== JSON.stringify(sharedNodes) ||
+          JSON.stringify(currentLocalState.edges) !== JSON.stringify(sharedEdges)) {
+        
+        useStore.setState({
+          nodes: sharedNodes,
+          edges: sharedEdges,
+        });
+      }
+      // reset flag
+      setTimeout(() => { isSyncingFromRemote.current = false; }, 50);
+    };
 
-  // Listen to remote changes on the Yjs maps
-  nodesMap.observe(updateFromRemote);
-  edgesMap.observe(updateFromRemote);
+    // Listen to remote changes on the Yjs maps
+    nodesMap.observe(updateFromRemote);
+    edgesMap.observe(updateFromRemote);
 
-  // Run immediately on mount/enable to pull initial room state
-  updateFromRemote();
+    // Run immediately on mount/enable to pull initial room state
+    updateFromRemote();
 
-  return () => {
-    nodesMap.unobserve(updateFromRemote);
-    edgesMap.unobserve(updateFromRemote);
-  };
-}, [collaborationModeOn]);
+    return () => {
+      nodesMap.unobserve(updateFromRemote);
+      edgesMap.unobserve(updateFromRemote);
+    };
+  }, [collaborationModeOn]);
 
 
-// EFFECT 2: Local-to-Remote (Zustand ➔ Yjs)
+// EFFECT 2: Local-to-Remote (Zustand to Yjs)
 useEffect(() => {
-  if (!collaborationModeOn) return;
+  if (!collaborationModeOn || isSyncingFromRemote.current) return;
 
   // Bundle operations into a single transaction block
   ydoc.transact(() => {
-    // A. Sync local Zustand nodes to the network map
+    // Sync local Zustand nodes to the network map
     nodes.forEach((node) => {
+      // remove selected property from local node, so it isn't broadcasted to other users (messes up highlighting of selected nodes)
+      const { selected, ...nodeData } = node;
+      
       const remoteNode = nodesMap.get(node.id);
-      if (!remoteNode || JSON.stringify(remoteNode) !== JSON.stringify(node)) {
-        nodesMap.set(node.id, node);
+      if (!remoteNode || JSON.stringify(remoteNode) !== JSON.stringify(nodeData)) {
+        nodesMap.set(node.id, nodeData);
       }
     });
 
-    // B. Handle local deletions (If it's in Yjs but missing from local Zustand, delete from Yjs)
+    // Handle local deletions (If it's in Yjs but missing from local Zustand, delete from Yjs)
     nodesMap.forEach((_, id) => {
       if (!nodes.some((n) => n.id === id)) {
         nodesMap.delete(id);
       }
     });
 
-    // C. Sync local Zustand edges to the network map
+    // Sync local Zustand edges to the network map
     edges.forEach((edge) => {
       const remoteEdge = edgesMap.get(edge.id);
       if (!remoteEdge || JSON.stringify(remoteEdge) !== JSON.stringify(edge)) {
@@ -711,7 +720,7 @@ useEffect(() => {
       }
     });
 
-    // D. Handle edge deletions
+    // Handle edge deletions
     edgesMap.forEach((_, id) => {
       if (!edges.some((e) => e.id === id)) {
         edgesMap.delete(id);
@@ -2493,6 +2502,8 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
 
   useKeyBindings({ undo, redo });
 
+  const [mySelectedNodeId, setMySelectedNodeId] = useState<string | null>(null);
+
   const handleClick = React.useCallback(
     (event: React.MouseEvent, node: Node) => {
       // Prevent the default action (if any)
@@ -2500,9 +2511,10 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
 
       // Set the selected node
       setSelectedNode(node);
+      setMySelectedNodeId(node.id);
 
     },
-    [setSelectedNode],
+    [setSelectedNode, setMySelectedNodeId],
   );
 
   const [modeledDiagram, setModeledDiagram] = useState(null);
@@ -2732,8 +2744,9 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     setMenu(null);
     setContextMenu((prev) => ({ ...prev, visible: false })); // contextMenu disappears when clicking on pane
     setSelectedNode(null);
+    setMySelectedNodeId(null);
     console.log("reset");
-  }, [setMenu, setContextMenu, setSelectedNode]);
+  }, [setMenu, setContextMenu, setSelectedNode, setMySelectedNodeId]);
 
   const onClick = useCallback(() => {
     setContextMenu((prev) => ({ ...prev, visible: false })); // contextMenu disappears when clicking anywhere in canvas (but not other panels)
@@ -3187,6 +3200,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
     // 🧠 Apply changes locally
     const updatedNodes = applyNodeChanges(allowedChanges, nodesI);
     setNodesI(updatedNodes);
+    updatedNodes.forEach(n => nodesMap.set(n.id, n)); // ???
 
     // 🔁 Sync with React Flow
     onNodesChange(allowedChanges);
@@ -3250,12 +3264,36 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
   };
 
   const onSelectionChange = useCallback(({ nodes }) => {
+    if(!collaborationModeOn) return;
+
     const lockedIds = nodes.map(n => n.id);
 
     awareness.setLocalStateField("locks", {
       nodeIds: lockedIds
     });
+    console.log("locked ids", lockedIds)
+    const mySelectedNode = nodes[0]; // Assuming single selection
+    setMySelectedNodeId(mySelectedNode? mySelectedNode.id : null);
+    console.log("my selected node id", mySelectedNode)
+
   }, []);
+
+  // broadcast selection via awareness
+  useEffect(() => {
+    if (!collaborationModeOn) return;
+
+    const currentCursor = awareness.getLocalState()?.cursor || {};
+    
+    // Only broadcast if the ID actually changed
+    if (currentCursor.selectedNodeId !== mySelectedNodeId) {
+      awareness.setLocalStateField("cursor", {
+        ...currentCursor,
+        selectedNodeId: mySelectedNodeId,
+        lastUpdate: Date.now() // Force an awareness "change" event
+      });
+    }
+    console.log("CURSOR SELECTED NODE", awareness.getLocalState()?.cursor)
+  }, [mySelectedNodeId, collaborationModeOn]);
 
   const onConnectSync = useCallback((params: Connection) => {
     console.log(params)
