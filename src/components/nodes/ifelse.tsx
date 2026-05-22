@@ -515,7 +515,7 @@ export const IfElseNode = memo((node: Node) => {
                     type="target"
                     id={handleId}
                     position={Position.Left}
-                    className={"z-10 circle-port-in !bg-blue-300 !border-black"}
+                    className={"z-10 circle-port-out !bg-blue-300 !border-black"}
                     style={{
                       top: `${100 + classicalHandles.length * 30 + i * 30}px`,
                       overflow: "visible",
@@ -567,7 +567,7 @@ export const IfElseNode = memo((node: Node) => {
                     type="target"
                     id={handleId}
                     position={Position.Left}
-                    className={"z-10 circle-port-in !bg-blue-300 !border-black"}
+                    className={"z-10 circle-port-out !bg-blue-300 !border-black"}
                     style={{
                       top: `calc(70% + ${30 * (classicalHandles.length + 1 + i)}px)`,
                       overflow: "visible",
