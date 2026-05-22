@@ -134,7 +134,7 @@ export const categories: Record<string, CategoryEntry> = {
           compactOptions: [false, true],
           data: {
             label: "MCMT Gate",
-            baseGate: "X",
+            baseGate: "x",
             numControls: 1,
             numTargets: 1,
             parameter: 0

@@ -253,10 +253,10 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                 return {
                     id: node.id,
                     type: "mcmt-gate",
-                    baseGate: node.data.baseGate?.toLowerCase() || "x",
+                    baseGate: (node.data.baseGate || "x").replace(/\(.*\)/, "").toLowerCase(),
                     numControls: parseInt(node.data.numControls) || 1,
                     numTargets: parseInt(node.data.numTargets) || 1,
-                    parameter: node.data.parameter ? parseFloat(node.data.parameter) : null
+                    parameter: node.data.parameter !== "" && node.data.parameter != null ? parseFloat(node.data.parameter) : null
                 };
 
             case consts.ControlStructureNode:

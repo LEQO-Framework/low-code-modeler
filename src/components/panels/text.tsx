@@ -19,7 +19,6 @@ const selector = (state: {
   setSelectedNode: state.setSelectedNode,
 });
 
-
 export const TextPanel = () => {
   const { selectedNode, updateNodeLabel, updateNodeValue, setSelectedNode, completionGuaranteed } = useStore(
     selector,
@@ -56,9 +55,10 @@ export const TextPanel = () => {
     "basis",
     "indices",
     "condition",
-    "clusteringAlgorithm"
+    "clusteringAlgorithm",
+    "numControls",
+    "numTargets"
   ];
-
 
   const normalizeDegrees = (deg) => {
     const normalized = deg % 360;
@@ -74,7 +74,6 @@ export const TextPanel = () => {
 
   const radToDeg = (rad) => normalizeDegrees((parseFloat(rad) * 180) / Math.PI);
 
-
   const safeEval = (expr) => {
     try {
       console.log(expr)
@@ -85,7 +84,6 @@ export const TextPanel = () => {
       return NaN;
     }
   };
-
 
   const handleParameterChange = (value) => {
     const evaluated = safeEval(value);
@@ -102,9 +100,9 @@ export const TextPanel = () => {
   };
 
   let validMinValue = 0;
-  if(selectedNode.type === 'splitterNode' || selectedNode.type === 'mergerNode') {
+  if (selectedNode?.type === 'splitterNode' || selectedNode?.type === 'mergerNode') {
     validMinValue = 2;
-  } else if (selectedNode.type === 'ifElseNode' || selectedNode.type === 'controlStructureNode') {
+  } else if (selectedNode?.type === 'ifElseNode' || selectedNode?.type === 'controlStructureNode' || selectedNode?.type === 'mcmt-gate') {
     validMinValue = 1;
   }
 
@@ -134,7 +132,6 @@ export const TextPanel = () => {
           updateNodeValue(selectedNode.id, field, value);
         }
       }
-
     }
   }
 
@@ -162,8 +159,6 @@ export const TextPanel = () => {
       reader.readAsText(file);
     }
   }
-
-
 
   return (
     <>
@@ -197,6 +192,49 @@ export const TextPanel = () => {
                 onChange={(e) => handleNumberChange("value", e.target.value)}
                 className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
                 placeholder="Enter a number"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* MCMT Gate Configs */}
+        {selectedNode?.type === "mcmt-gate" && (
+          <div className="p-2 mt-3">
+            <label className="block text-sm font-medium text-start text-gray-700" htmlFor="numControls">
+              Number of Controls
+            </label>
+            <div className="mt-1">
+              <input
+                type="number"
+                id="numControls"
+                name="numControls"
+                min="1"
+                value={selectedNode.data.numControls || 1}
+                onChange={(e) => {
+                    const val = Math.max(1, parseInt(e.target.value) || 1);
+                    handleNumberChange("numControls", val.toString());
+                }}
+                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
+                placeholder="Enter number of controls"
+              />
+            </div>
+
+            <label className="block text-sm font-medium text-start text-gray-700 mt-4" htmlFor="numTargets">
+              Number of Targets
+            </label>
+            <div className="mt-1">
+              <input
+                type="number"
+                id="numTargets"
+                name="numTargets"
+                min="1"
+                value={selectedNode.data.numTargets || 1}
+                onChange={(e) => {
+                    const val = Math.max(1, parseInt(e.target.value) || 1);
+                    handleNumberChange("numTargets", val.toString());
+                }}
+                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
+                placeholder="Enter number of targets"
               />
             </div>
           </div>
