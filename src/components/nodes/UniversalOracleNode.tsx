@@ -1,10 +1,11 @@
 import { memo, useState } from "react";
 import { Node, Handle, Position } from "reactflow";
-import { useStore } from "@/config/store"; 
+import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
-import OutputPort from "../utils/outputPort"; 
+import OutputPort from "../utils/outputPort";
+import { quantumConstructColor } from "@/constants";
 
 const selector = (state: any) => ({
   updateNodeValue: state.updateNodeValue,
@@ -20,7 +21,7 @@ export const UniversalOracleNode = memo((node: Node) => {
   const [numQubitsStr, setNumQubitsStr] = useState(String(data.numQubits || 3));
   const [mode, setMode] = useState(data.mode || "phase");
   const [targetStates, setTargetStates] = useState(data.targetStates || "");
-  
+
   const [outputs, setOutputs] = useState(data.outputs || []);
   const [outputIdentifierError, setOutputIdentifierError] = useState(false);
   const [sizeError, setSizeError] = useState(false);
@@ -38,7 +39,7 @@ export const UniversalOracleNode = memo((node: Node) => {
     <motion.div
       className="grand-parent"
       initial={false}
-      animate={{ width: 320, height: 480 }} 
+      animate={{ width: 320, height: 480 }}
       transition={{ duration: 0.3, ease: "easeInOut" }}
     >
       <div className="grand-parent">
@@ -64,44 +65,8 @@ export const UniversalOracleNode = memo((node: Node) => {
             </div>
           </div>
 
-          {/* QUANTUM INPUT PORT */}
-          <div className="mt-4 flex flex-col space-y-2">
-            <div
-              className={cn(
-                "relative p-2 flex items-center",
-                isConnected 
-                  ? ""
-                  : "border border-l-0 border-dashed border-gray-400"
-              )}
-              style={{
-                width: '140px',
-                backgroundColor: isConnected ? "rgba(105, 145, 210, 0.2)" : "#f9fafb"
-              }}
-            >
-              <Handle
-                type="target"
-                id={`quantumHandleInput0${id}`}
-                position={Position.Left}
-                className={cn(
-                  "z-10 !rounded-none !border-black -left-[7px]",
-                  isConnected ? "!bg-blue-400" : "!bg-gray-400"
-                )}
-                style={{ width: 12, height: 12 }}
-                isConnectable={!isConnected}
-              />
-              <div className="flex flex-col w-full text-center leading-tight">
-                <span className="text-black text-sm truncate">
-                  {node.data.inputs?.[0]?.outputIdentifier || "Register"}
-                </span>
-                <span className="text-[10px] text-gray-600">
-                  type: quantum register
-                </span>
-              </div>
-            </div>
-          </div>
-
           {/* CONFIGURATION BODY */}
-          <div className="px-4 py-1 mt-2">
+          <div className="px-4 py-1 mt-1">
             <div>
               <label className="text-xs font-semibold text-gray-700">Number of Qubits:</label>
               <input
@@ -151,6 +116,35 @@ export const UniversalOracleNode = memo((node: Node) => {
               <p className="text-[10px] text-gray-500 mt-1 text-center">
                 Max index: {(1 << (parseInt(numQubitsStr, 10) || 1)) - 1}
               </p>
+            </div>
+          </div>
+
+          {/* QUANTUM INPUT PORT */}
+          <div className="mt-4 flex flex-col space-y-2">
+            <div
+              className={cn(
+                "relative p-2 flex items-center")}
+              style={{ width: "140px", background: quantumConstructColor }}
+            >
+              <Handle
+                type="target"
+                id={`quantumHandleInput0${id}`}
+                position={Position.Left}
+                className={cn(
+                  "z-10 !rounded-none !border-dashed !border-gray-500 -left-[7px]",
+                  isConnected ? "!bg-blue-400" : "!bg-gray-200"
+                )}
+                style={{ width: 12, height: 12 }}
+                isConnectable={!isConnected}
+              />
+              <div className="flex flex-col w-full text-center leading-tight">
+                <span className="text-black text-sm truncate">
+                  {node.data.inputs?.[0]?.outputIdentifier || "Register"}
+                </span>
+                <span className="text-[10px] text-gray-600">
+                  type: quantum register
+                </span>
+              </div>
             </div>
           </div>
 

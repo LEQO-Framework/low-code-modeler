@@ -63,6 +63,27 @@ export const GroverDiffuserNode = memo((node: Node) => {
             </div>
           </div>
 
+          {/* CONFIGURATION BODY */}
+          <div className="px-4 py-1 mt-1">
+            <div>
+              <label className="text-xs font-semibold text-gray-700">Number of Qubits:</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                className="w-full p-1 mt-1 text-sm text-center text-black border-2 border-blue-200 rounded-full outline-none focus:border-blue-400 transition-colors"
+                value={numQubitsStr}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/[^0-9]/g, "");
+                  setNumQubitsStr(val);
+                  const parsed = parseInt(val, 10);
+                  if (!isNaN(parsed)) {
+                    handleChange("numQubits", parsed);
+                  }
+                }}
+              />
+            </div>
+          </div>
+
           {/* QUANTUM INPUT PORT */}
           <div className="mt-4 flex flex-col space-y-2">
             <div
@@ -89,27 +110,6 @@ export const GroverDiffuserNode = memo((node: Node) => {
                   type: quantum register
                 </span>
               </div>
-            </div>
-          </div>
-
-          {/* CONFIGURATION BODY */}
-          <div className="px-4 py-1 mt-4">
-            <div>
-              <label className="text-xs font-semibold text-gray-700">Number of Qubits:</label>
-              <input
-                type="text"
-                inputMode="numeric"
-                className="w-full p-1 mt-1 text-sm text-center text-black border-2 border-blue-200 rounded-full outline-none focus:border-blue-400 transition-colors"
-                value={numQubitsStr}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/[^0-9]/g, "");
-                  setNumQubitsStr(val);
-                  const parsed = parseInt(val, 10);
-                  if (!isNaN(parsed)) {
-                    handleChange("numQubits", parsed);
-                  }
-                }}
-              />
             </div>
           </div>
 
