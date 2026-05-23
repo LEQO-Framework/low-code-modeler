@@ -148,13 +148,13 @@ export const StatePreparationNode = memo((node: Node) => {
     if (num === 0 && node.data.label === "Prepare State") {
       setMissingSizeError(true);
     } else if (
-      quantumStateName === "GHZ") {
+      quantumStateName === "GHZ" || quantumStateName === "W-State") {
       const value = node.data.size;
       const num = Number(value);
 
       const isInvalid =
         value === "" ||
-        num < 3;
+        num < 2;
 
       setSizeError(isInvalid);
       setMissingSizeError(false);
@@ -377,7 +377,7 @@ export const StatePreparationNode = memo((node: Node) => {
                   top: !(outputIdentifierError || startsWithDigitError) ? '35px' : '80px',
                 }}
               >
-                Size must be at least 3.
+                Size must be at least 2.
               </div>
             </div>
           )}
