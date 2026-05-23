@@ -542,9 +542,8 @@ export const StatePreparationNode = memo((node: Node) => {
                     <option value="Custom State">Custom State</option>
                     <option value="GHZ">GHZ State</option>
                     <option value="Uniform Superposition">Uniform Superposition</option>
-                    {!completionGuaranteed && (
-                      <option value="W-State">W-State</option>
-                    )}
+                    <option value="W-State">W-State</option>
+                    
                   </select>
                 </>
               )}
