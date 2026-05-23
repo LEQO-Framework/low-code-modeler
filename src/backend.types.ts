@@ -302,6 +302,23 @@ export interface components {
              */
             gate: "cnot" | "toffoli" | "h" | "t" | "x" | "y" | "z" | "sx" | "s" | "tdg" | "sdg";
         };
+        ControlledUGateNode: {
+            /** Id */
+            id: string;
+            /** Label */
+            label?: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "controlled-u";
+            /**
+             * Gate
+             * @enum {string}
+             */
+            controlValue: number;
+            matrix: number[][];
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -366,6 +383,7 @@ export interface components {
             id: string;
             /** Label */
             label?: string | null;
+            basis?: string;
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
@@ -423,7 +441,7 @@ export interface components {
         /** NestedBlock */
         NestedBlock: {
             /** Nodes */
-            nodes: (components["schemas"]["ImplementationNode"] | components["schemas"]["QubitNode"] | components["schemas"]["ArrayLiteralNode"] | components["schemas"]["EncodeValueNode"] | components["schemas"]["PrepareStateNode"] | components["schemas"]["SplitterNode"] | components["schemas"]["MergerNode"] | components["schemas"]["MeasurementNode"] | components["schemas"]["GateNode"] | components["schemas"]["ParameterizedGateNode"] | components["schemas"]["BitLiteralNode"] | components["schemas"]["BoolLiteralNode"] | components["schemas"]["IntLiteralNode"] | components["schemas"]["FloatLiteralNode"] | components["schemas"]["AncillaNode"] | components["schemas"]["IfThenElseNode"] | components["schemas"]["RepeatNode"] | components["schemas"]["OperatorNode"])[];
+            nodes: (components["schemas"]["ImplementationNode"] | components["schemas"]["QubitNode"] | components["schemas"]["ControlledUGateNode"] | components["schemas"]["ArrayLiteralNode"] | components["schemas"]["EncodeValueNode"] | components["schemas"]["PrepareStateNode"] | components["schemas"]["SplitterNode"] | components["schemas"]["MergerNode"] | components["schemas"]["MeasurementNode"] | components["schemas"]["GateNode"] | components["schemas"]["ParameterizedGateNode"] | components["schemas"]["BitLiteralNode"] | components["schemas"]["BoolLiteralNode"] | components["schemas"]["IntLiteralNode"] | components["schemas"]["FloatLiteralNode"] | components["schemas"]["AncillaNode"] | components["schemas"]["IfThenElseNode"] | components["schemas"]["RepeatNode"] | components["schemas"]["OperatorNode"])[];
             /** Edges */
             edges: components["schemas"]["Edge"][];
         };

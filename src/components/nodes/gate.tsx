@@ -20,7 +20,7 @@ const selector = (state: {
 export const GateNode = memo((node: Node) => {
   const { data } = node;
   const isQubit = data.label === "Qubit Circuit";
-  const isTwoQubit = data.label === "CNOT" || data.label === "SWAP" || data.label === "CZ" || data.label === "CY" || data.label === "CH" || data.label === "CP(λ)" || data.label === "CRX(θ)" || data.label === "CRY(θ)" || data.label === "CRZ(θ)" || data.label === "CU(θ,φ,λ,γ)";
+  const isTwoQubit = data.label === "CU" || data.label === "CNOT" || data.label === "SWAP" || data.label === "CZ" || data.label === "CY" || data.label === "CH" || data.label === "CP(λ)" || data.label === "CRX(θ)" || data.label === "CRY(θ)" || data.label === "CRZ(θ)" || data.label === "CU(θ,φ,λ,γ)";
   const isThreeQubit = data.label === "Toffoli" || data.label === "CSWAP";
   const { edges, experienceLevel, updateNodeValue } = useStore(selector, shallow);
   console.log(experienceLevel)
@@ -30,6 +30,9 @@ export const GateNode = memo((node: Node) => {
       // Set default parameterType if not set
       if (!node.data.parameterType && node.data.type === GateNode) {
         updateNodeValue(node.id, "parameterType", "degree");
+      }
+      if (node.data.label === "CU" && node.data["controlValue"] === undefined) {
+        updateNodeValue(node.id, "controlValue", "0");
       }
 
       // Initialize multi-parameter gate fields if label is CU(θ,φ,λ,γ)
@@ -47,7 +50,7 @@ export const GateNode = memo((node: Node) => {
         }
       }
     }
-  }, [node, experienceLevel, data.label, node?.data, updateNodeValue, node?.id]);
+  }, [node, experienceLevel, data.label, node?.data, node?.id]);
 
   return (
     <div className="grand-parent overflow-visible">
@@ -105,7 +108,7 @@ export const GateNode = memo((node: Node) => {
           ))}
         </div>
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center font-bold z-0 text-xl">
-          {experienceLevel === "explorer" && data.label === "Qubit Circuit" &&(
+          {experienceLevel === "explorer" && data.label === "Qubit Circuit" && (
             "|0⟩"
           )}
         </div>
@@ -248,7 +251,7 @@ export const GateNode = memo((node: Node) => {
               style={{ width: "320px", height: "120px", marginLeft: "58px" }}
               className=""
             />
-          )   : data.label === "S" ? (
+          ) : data.label === "S" ? (
             <img
               src="sBeginner.png"
               alt="S gate"
@@ -269,7 +272,7 @@ export const GateNode = memo((node: Node) => {
               style={{ width: "320px", height: "120px", marginLeft: "58px" }}
               className=""
             />
-          ): (
+          ) : (
             ""
           ))}
         </div>

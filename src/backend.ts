@@ -165,6 +165,7 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
                 return {
                     id: node.id,
                     type: "measure",
+                    basis: node.data.basis || "Z",
                     indices: (node.data.indices || null)?.split(",").map(x => parseInt(x, 10)) ?? []
                 }
 
@@ -174,6 +175,14 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
                     return {
                         id: node.id,
                         type: "qubit"
+                    }
+                }
+                if (node.data.label === "CU"){
+                    return {
+                        id: node.id,
+                        type: "controlled-u",
+                        controlValue: Number(node.data.controlValue),
+                        matrix: JSON.parse(node.data.matrix)
                     }
                 }
                 else if (["RX(θ)", "RY(θ)", "RZ(θ)"].includes(node.data.label)) {
