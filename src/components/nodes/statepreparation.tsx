@@ -154,7 +154,7 @@ export const StatePreparationNode = memo((node: Node) => {
 
       const isInvalid =
         value === "" ||
-        num < 2;
+        num < 3;
 
       setSizeError(isInvalid);
       setMissingSizeError(false);
@@ -377,7 +377,7 @@ export const StatePreparationNode = memo((node: Node) => {
                   top: !(outputIdentifierError || startsWithDigitError) ? '35px' : '80px',
                 }}
               >
-                Size must be at least 2.
+                Size must be at least 3.
               </div>
             </div>
           )}
