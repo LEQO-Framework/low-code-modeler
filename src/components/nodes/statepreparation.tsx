@@ -148,7 +148,7 @@ export const StatePreparationNode = memo((node: Node) => {
     if (num === 0 && node.data.label === "Prepare State") {
       setMissingSizeError(true);
     } else if (
-      quantumStateName === "GHZ") {
+      quantumStateName === "GHZ" || quantumStateName === "W-State") {
       const value = node.data.size;
       const num = Number(value);
 
@@ -564,9 +564,8 @@ export const StatePreparationNode = memo((node: Node) => {
                     <option value="Custom State">Custom State</option>
                     <option value="GHZ">GHZ State</option>
                     <option value="Uniform Superposition">Uniform Superposition</option>
-                    {!completionGuaranteed && (
-                      <option value="W-State">W-State</option>
-                    )}
+                    <option value="W-State">W-State</option>
+                    
                   </select>
                 </>
               )}
