@@ -10,7 +10,51 @@ type BackendNode = CompileRequest["nodes"][0];
 type BackendEdge = CompileRequest["edges"][0];
 export type StatusResult = components["schemas"]["StatusBody"];
 
-export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[], edges: Edge[], compilation_target: string): Promise<Response> => {
+export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Node[], rawEdges: Edge[], compilation_target: string): Promise<Response> => {
+
+    // 1. Deep clone nodes to safely inject missing parentNodes based on visual geometry
+    const nodes = rawNodes.map(n => ({ ...n, data: { ...n.data } }));
+    
+    // --- GHOST EDGE SANITIZATION ---
+    const edges = rawEdges.filter(e => 
+        nodes.some(n => n.id === e.source) && 
+        nodes.some(n => n.id === e.target)
+    );
+    // 2. Pre-processing pass: Auto-assign parentNode and scope by checking bounding boxes
+    nodes.forEach(child => {
+        if (child.type === consts.IfElseNode || child.type === consts.ControlStructureNode) return;
+
+        const containers = nodes.filter(n => n.type === consts.IfElseNode || n.type === consts.ControlStructureNode);
+        for (const container of containers) {
+            const cx = container.positionAbsolute?.x ?? container.position?.x ?? 0;
+            const cy = container.positionAbsolute?.y ?? container.position?.y ?? 0;
+            const cw = container.width ?? 1100;
+            const ch = container.height ?? 900;
+
+            let nx = child.positionAbsolute?.x ?? child.position?.x ?? 0;
+            let ny = child.positionAbsolute?.y ?? child.position?.y ?? 0;
+
+            // We must add the container's absolute position to get the true screen coordinates.
+            if (child.parentNode === container.id && !child.positionAbsolute) {
+                nx += cx;
+                ny += cy;
+            }
+
+            const nodeCenterY = ny + (child.height ?? 50) / 2;
+            const nodeCenterX = nx + (child.width ?? 100) / 2;
+
+            // If visually inside OR already parented by React Flow
+            if (child.parentNode === container.id || (nodeCenterX > cx && nodeCenterX < cx + cw && nodeCenterY > cy && nodeCenterY < cy + ch)) {
+                child.parentNode = container.id;
+                
+                // Top half is Then ("if"), Bottom half is Else ("else") - ONLY FOR IF NODES
+                if (container.type === consts.IfElseNode) {
+                    child.data.scope = nodeCenterY < (cy + ch / 2) ? "if" : "else";
+                }
+                break;
+            }
+        }
+    });
 
     return await fetch(new URL("/compile", baseUrl), {
         method: "POST",
@@ -130,6 +174,7 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                 return {
                     id: node.id,
                     type: "measure",
+                    basis: node.data.basis || "Z",
                     indices: (node.data.indices || null)?.split(",").map(x => parseInt(x, 10)) ?? []
                 }
 
@@ -138,8 +183,15 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                 if (node.data.label === "Qubit" || node.data.label === "Qubit Circuit") {
                     return {
                         id: node.id,
-                        type: "qubit",
-                        width: node.data.size
+                        type: "qubit"
+                    }
+                }
+                if (node.data.label === "CU"){
+                    return {
+                        id: node.id,
+                        type: "controlled-u",
+                        controlValue: Number(node.data.controlValue),
+                        matrix: JSON.parse(node.data.matrix)
                     }
                 }
                 else if (["RX(θ)", "RY(θ)", "RZ(θ)"].includes(node.data.label)) {
@@ -164,7 +216,11 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                             "T": "t",
                             "X": "x",
                             "Y": "y",
-                            "Z": "z"
+                            "Z": "z",
+                            "S": "s",
+                            "SX": "sx",
+                            "SDG": "sdg",
+                            "TDG": "tdg"
                         }, node.data.label)
                     }
                 }
@@ -247,6 +303,13 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
 
             // Operators
             case consts.OperatorNode:
+                if(node.data.operator === "INVERT"){
+                    return {
+                    id: node.id,
+                    type: "operator",
+                    operator: "~"
+                }
+                }
                 return {
                     id: node.id,
                     type: "operator",
@@ -309,7 +372,7 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                 return {
                     id: node.id,
                     type: "repeat",
-                    iterations: node.data?.condition,
+                    iterations: parseInt(node.data?.condition || "1", 10),
                     block: {
                         nodes: nodes.filter(x => x.parentNode === node.id).map(x => mapNode(x)) as any,
                         edges: edges.filter(x => isEdgeWithin(x, node.id)).map(x => mapEdge(x))
@@ -331,14 +394,14 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                         nodes: thenNodes.map(mapNode) as any,
                         edges: edges.filter(e =>
                             e.source && e.target &&
-                            thenNodeIds.has(e.source) || thenNodeIds.has(e.target)
+                            (thenNodeIds.has(e.source) || thenNodeIds.has(e.target))
                         ).map(mapEdge)
                     },
                     elseBlock: {
                         nodes: elseNodes.map(mapNode) as any,
                         edges: edges.filter(e =>
                             e.source && e.target &&
-                            elseNodeIds.has(e.source) && elseNodeIds.has(e.target)
+                            (elseNodeIds.has(e.source) || elseNodeIds.has(e.target))
                         ).map(mapEdge)
                     }
                 };
@@ -405,37 +468,48 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
 
         const sourceNode = nodes.find(n => n.id === edge.source);
         const targetNode = nodes.find(n => n.id === edge.target);
-        if (sourceNode.parentNode === parentNode)
+        if (sourceNode?.parentNode === parentNode)
             return true;
 
 
-        return targetNode.parentNode === parentNode;
+        return targetNode?.parentNode === parentNode;
     }
 
     function getHandleIndex(nodeId: string, handleType: "source" | "target", handleId?: string): number {
         if (!handleId)
             throw new Error(`No handle id for node ${nodeId}`)
 
-        console.log(handleId)
+        let extractedIndex = -1;
+
         // Generic pattern to check if handleId ends with -<number>
         const endsWithIndexPattern = /-(\d+)$/;
         const indexMatch = handleId.match(endsWithIndexPattern);
 
         if (indexMatch) {
-            return parseInt(indexMatch[1], 10);
+            extractedIndex = parseInt(indexMatch[1], 10);
+        } else {
+            const pattern = new RegExp(`(\\d+)(?=${nodeId}$)`);
+            const match = handleId.match(pattern);
+
+            if (match) {
+                extractedIndex = parseInt(match[1], 10);
+            }
         }
 
-        const pattern = new RegExp(`(\\d+)(?=${nodeId}$)`);
-        const match = handleId.match(pattern);
-        console.log(nodeId);
-        console.log(handleId);
-        console.log(match)
-
-        if (match) {
-            return parseInt(match[1], 10);
+        if (extractedIndex === -1) {
+            throw new Error(`Could not extract handle index from ${handleType} handleId: ${handleId}`);
         }
 
-        throw new Error(`Could not extract handle index from ${handleType} handleId: ${handleId}`);
+        // --- PREVENT PORT COLLISIONS FOR CONTAINERS ---
+        const parentNode = nodes.find(n => n.id === nodeId);
+        if (parentNode && (parentNode.type === consts.IfElseNode || parentNode.type === consts.ControlStructureNode)) {
+            if (handleId.toLowerCase().includes("quantum")) {
+                const numClassical = parentNode.data.numberClassicalInputs || 1;
+                extractedIndex += numClassical;
+            }
+        }
+
+        return extractedIndex;
     }
 
 
@@ -464,7 +538,6 @@ export const startCompile = async (baseUrl: string, metadata: any, nodes: Node[]
                     size: inputNode?.data.size ? parseInt(inputNode.data.size, 10) : 1
                 };
             } else {
-                console.log("add edge")
                 return {
                     source: [edge.source, getHandleIndex(edge.source, "source", edge.sourceHandle)],
                     target: [edge.target, getHandleIndex(edge.target, "target", edge.targetHandle)],
