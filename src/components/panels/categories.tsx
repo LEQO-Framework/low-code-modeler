@@ -140,6 +140,7 @@ export const categories: Record<string, CategoryEntry> = {
             parameter: 0
           }
         },
+        { label: "CU", aliases: ["Controlled-U"], type: consts.GateNode, icon: ["CU_palette.png", "CU_palette_beginner.png"], description: "Controlled U: applies U if control is |1⟩.", completionGuaranteed: true, compactOptions: [true, false] },
         { label: "QFT", aliases: ["Quantum Fourier Transform"], type: consts.QFTNode, icon: ["QFT_palette.png", "QFT_palette.png"], description: "Applies the Quantum Fourier Transform.", completionGuaranteed: true, compactOptions: [true, false] },
         { label: "Inverse QFT", aliases: ["Inverse Quantum Fourier Transform"], type: consts.InverseQFTNode, icon: ["InverseQFT_palette.png", "InverseQFT_palette.png"], description: "Applies the Inverse of the Quantum Fourier Transform.", completionGuaranteed: true, compactOptions: [true, false] },
         { label: "Splitter", type: consts.SplitterNode, icon: "Splitter_palette.png", description: "Splits a quantum register into individual qubits.", completionGuaranteed: true, compactOptions: [true, false] },
@@ -176,7 +177,7 @@ export const categories: Record<string, CategoryEntry> = {
     content: {
       "Quantum Operators": [
         { label: consts.quantumLabel + consts.arithmeticOperatorLabel, type: consts.OperatorNode, icon: ["PaletteIcon_ArithmeticOperator.png", "PaletteIcon_Ancilla_ArithmeticOperator.png"], description: "Performs quantum arithmetic (add, subtract, etc.).", completionGuaranteed: true, compactOptions: [true, false] },
-        { label: consts.quantumLabel + consts.bitwiseOperatorLabel, type: consts.OperatorNode, icon: ["PaletteIcon_BitwiseOperator.png", "PaletteIcon_Ancilla_BitwiseOperator.png"], description: "Applies quantum bitwise operations.", completionGuaranteed: false, compactOptions: [true, false] },
+        { label: consts.quantumLabel + consts.bitwiseOperatorLabel, type: consts.OperatorNode, icon: ["PaletteIcon_BitwiseOperator.png", "PaletteIcon_Ancilla_BitwiseOperator.png"], description: "Applies quantum bitwise operations.", completionGuaranteed: true, compactOptions: [true, false] },
         { label: consts.quantumLabel + consts.comparisonOperatorLabel, type: consts.OperatorNode, icon: ["PaletteIcon_ComparisonOperator.png", "PaletteIcon_Ancilla_ComparisonOperator.png"], description: "Performs quantum comparisons (e.g., equality).", completionGuaranteed: false, compactOptions: [true, false] },
         { label: consts.quantumLabel + consts.minMaxOperatorLabel, type: consts.OperatorNode, icon: ["PaletteIcon_MinMaxOperator.png", "PaletteIcon_Ancilla_MinMaxOperator.png"], description: "Finds min or max between quantum values.", completionGuaranteed: false, compactOptions: [true, false] },
         // { label: "Grover", type: consts.OperatorNode, icon: ["PaletteIcon_Grover.png", "PaletteIcon_Ancilla_Grover.png"],description: "Applies Grover’s algorithm to amplify the probability of marked states in an unstructured search space.", completionGuaranteed: false, compactOptions: [true, false]}

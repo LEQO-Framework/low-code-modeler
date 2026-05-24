@@ -20,7 +20,7 @@ const selector = (state: {
 export const GateNode = memo((node: Node) => {
   const { data } = node;
   const isQubit = data.label === "Qubit Circuit";
-  const isTwoQubit = data.label === "CNOT" || data.label === "SWAP" || data.label === "CZ" || data.label === "CY" || data.label === "CH" || data.label === "CP(λ)" || data.label === "CRX(θ)" || data.label === "CRY(θ)" || data.label === "CRZ(θ)" || data.label === "CU(θ,φ,λ,γ)";
+  const isTwoQubit = data.label === "CU" || data.label === "CNOT" || data.label === "SWAP" || data.label === "CZ" || data.label === "CY" || data.label === "CH" || data.label === "CP(λ)" || data.label === "CRX(θ)" || data.label === "CRY(θ)" || data.label === "CRZ(θ)" || data.label === "CU(θ,φ,λ,γ)";
   const isThreeQubit = data.label === "Toffoli" || data.label === "CSWAP";
   const { edges, experienceLevel, updateNodeValue } = useStore(selector, shallow);
   console.log(experienceLevel)
@@ -30,6 +30,9 @@ export const GateNode = memo((node: Node) => {
       // Set default parameterType if not set
       if (!node.data.parameterType && node.data.type === GateNode) {
         updateNodeValue(node.id, "parameterType", "degree");
+      }
+      if (node.data.label === "CU" && node.data["controlValue"] === undefined) {
+        updateNodeValue(node.id, "controlValue", "0");
       }
 
       // Initialize multi-parameter gate fields if label is CU(θ,φ,λ,γ)
@@ -47,7 +50,7 @@ export const GateNode = memo((node: Node) => {
         }
       }
     }
-  }, [node, experienceLevel, data.label, node?.data, updateNodeValue, node?.id]);
+  }, [node, experienceLevel, data.label, node?.data, node?.id]);
 
   return (
     <div className="grand-parent overflow-visible">
@@ -78,6 +81,8 @@ export const GateNode = memo((node: Node) => {
             <img src="CRZ.png" alt="CRZ gate" className="w-12 h-22 object-fit object-center" />
           ) : data.label === "CU(θ,φ,λ,γ)" ? (
             <img src="CU.png" alt="CU gate" className="w-14 h-19 object-fit object-center translate-y-1" />
+          ) : data.label === "CU" ? (
+            <img src="CU.png" alt="CU gate" className="w-14 h-19 object-fit object-center translate-y-1" />
           ) : data.label === "CP(λ)" ? (
             <img src="CP.png" alt="CP gate" className="w-10 h-22 object-fit object-center" />
           ) : data.label === "RX(θ)" ? (
@@ -105,7 +110,7 @@ export const GateNode = memo((node: Node) => {
           ))}
         </div>
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center font-bold z-0 text-xl">
-          {experienceLevel === "explorer" && data.label === "Qubit Circuit" &&(
+          {experienceLevel === "explorer" && data.label === "Qubit Circuit" && (
             "|0⟩"
           )}
         </div>
@@ -181,8 +186,8 @@ export const GateNode = memo((node: Node) => {
               style={{ width: "80px", height: "100px", marginLeft: "70px" }}
               className=""
             />
-          ) : data.label === "CU(θ,φ,λ,γ)" ? (
-            <img src="CU.png" alt="CU gate" className="w-14 h-19 object-fit object-center translate-y-1" />
+          ) : data.label === "CU" ? (
+            <img src="CU_beginner.png" alt="CU gate" className="" style={{ width: "80px", height: "80px", marginLeft: "70px", marginTop: "10px" }}/>
           ) : data.label === "CP(λ)" ? (
             <img src="CP.png" alt="CP gate" className="w-10 h-22 object-fit object-center" />
           ) : data.label === "H" ? (
@@ -248,7 +253,7 @@ export const GateNode = memo((node: Node) => {
               style={{ width: "320px", height: "120px", marginLeft: "58px" }}
               className=""
             />
-          )   : data.label === "S" ? (
+          ) : data.label === "S" ? (
             <img
               src="sBeginner.png"
               alt="S gate"
@@ -269,7 +274,7 @@ export const GateNode = memo((node: Node) => {
               style={{ width: "320px", height: "120px", marginLeft: "58px" }}
               className=""
             />
-          ): (
+          ) : (
             ""
           ))}
         </div>

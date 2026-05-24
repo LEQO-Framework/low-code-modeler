@@ -43,6 +43,7 @@ interface ToolbarProps {
   onSaveAsTemplate: () => void;
   onManageTemplates: () => void;
   generateModel: () => void;
+  openOpenQASM: () => void;
 }
 
 const Toolbar: React.FC<ToolbarProps> = ({
@@ -62,7 +63,8 @@ const Toolbar: React.FC<ToolbarProps> = ({
   startTour,
   onSaveAsTemplate,
   onManageTemplates,
-  generateModel
+  generateModel, 
+  openOpenQASM
 }) => {
   const [saveIsOpen, setSaveIsOpen] = useState(false);
   return (
@@ -89,6 +91,10 @@ const Toolbar: React.FC<ToolbarProps> = ({
               <DropdownMenuItem onClick={openPatternSolution} title="Open a pattern solution">
                 <ImageIcon className="w-4 h-4 mr-2" />
                 <span>Pattern Solution</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={openOpenQASM} title="Open a pattern solution">
+                <ImageIcon className="w-4 h-4 mr-2" />
+                <span>OpenQASM</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
