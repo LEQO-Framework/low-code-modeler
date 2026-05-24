@@ -81,6 +81,8 @@ export const GateNode = memo((node: Node) => {
             <img src="CRZ.png" alt="CRZ gate" className="w-12 h-22 object-fit object-center" />
           ) : data.label === "CU(θ,φ,λ,γ)" ? (
             <img src="CU.png" alt="CU gate" className="w-14 h-19 object-fit object-center translate-y-1" />
+          ) : data.label === "CU" ? (
+            <img src="CU.png" alt="CU gate" className="w-14 h-19 object-fit object-center translate-y-1" />
           ) : data.label === "CP(λ)" ? (
             <img src="CP.png" alt="CP gate" className="w-10 h-22 object-fit object-center" />
           ) : data.label === "RX(θ)" ? (
@@ -184,8 +186,8 @@ export const GateNode = memo((node: Node) => {
               style={{ width: "80px", height: "100px", marginLeft: "70px" }}
               className=""
             />
-          ) : data.label === "CU(θ,φ,λ,γ)" ? (
-            <img src="CU.png" alt="CU gate" className="w-14 h-19 object-fit object-center translate-y-1" />
+          ) : data.label === "CU" ? (
+            <img src="CU_beginner.png" alt="CU gate" className="" style={{ width: "80px", height: "80px", marginLeft: "70px", marginTop: "10px" }}/>
           ) : data.label === "CP(λ)" ? (
             <img src="CP.png" alt="CP gate" className="w-10 h-22 object-fit object-center" />
           ) : data.label === "H" ? (
