@@ -249,6 +249,10 @@ export interface components {
              * @default 0
              */
             bounds?: number;
+            /**
+             * Precision
+             */
+            decimalPrecision?: number | null;
         };
         /** FileLiteralNode */
         FileLiteralNode: {

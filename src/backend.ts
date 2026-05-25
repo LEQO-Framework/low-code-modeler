@@ -131,8 +131,17 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
                         return {
                             id: node.id,
                             type: "encode",
-                            encoding: resolvedType as any,
-                            bounds: (resolvedType === "basis" || resolvedType === "angle") ? 0 : parseFloat(node.data.bound || "0")
+                            encoding: map({
+                                "Amplitude Encoding": "amplitude",
+                                "Angle Encoding": "angle",
+                                "Basis Encoding": "basis",
+                                "Custom Encoding": "custom",
+                                "Matrix Encoding": "matrix",
+                                "Schmidt Decomposition": "schmidt",
+                            }, node.data.encodingType),
+                            bounds: (node.data.encodingType === "Basis Encoding") ? 0 : parseFloat(node.data.bound),
+                            decimalPrecision: node.data.decimalPrecision !== undefined && node.data.decimalPrecision !== "" 
+                                ? parseInt(node.data.decimalPrecision, 10) : null
                         }
                     }
 
@@ -141,7 +150,9 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
                             id: node.id,
                             type: "encode",
                             encoding: "basis",
-                            bounds: 0
+                            bounds: 0,
+                            decimalPrecision: node.data.decimalPrecision !== undefined && node.data.decimalPrecision !== "" 
+                                ? parseInt(node.data.decimalPrecision, 10) : null
                         }
                     case "Angle Encoding":
                         return {
