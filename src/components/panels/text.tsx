@@ -19,36 +19,6 @@ const selector = (state: {
   setSelectedNode: state.setSelectedNode,
 });
 
-const BufferedInput = ({ value, onChange, placeholder, min }) => {
-  const [localValue, setLocalValue] = useState(value);
-
-  useEffect(() => {
-    setLocalValue(value);
-  }, [value]);
-
-  const handleBlur = () => {
-    const finalVal = localValue === "" ? "" : Math.max(min, parseInt(localValue) || min);
-    onChange(String(finalVal));
-  };
-
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter") handleBlur();
-  };
-
-  return (
-    <input
-      type="number"
-      min={min}
-      value={localValue}
-      onChange={(e) => setLocalValue(e.target.value)}
-      onBlur={handleBlur}
-      onKeyDown={handleKeyDown}
-      className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-      placeholder={placeholder}
-    />
-  );
-};
-
 export const TextPanel = () => {
   const { selectedNode, updateNodeLabel, updateNodeValue, setSelectedNode, completionGuaranteed } = useStore(
     selector,
@@ -140,27 +110,31 @@ export const TextPanel = () => {
 
   // Handle other changes based on node type
   function handleNumberChange(field: string, value: string) {
-    if (!selectedNode) return;
-
-    if (field === "parameterType") {
-      updateNodeValue(selectedNode.id, field, value);
-      handleParameterChange(selectedNode.data.parameter);
+    if (selectedNode) {
+      if (field === "parameterType") {
+        updateNodeValue(selectedNode.id, field, value);
+        handleParameterChange(selectedNode.data.parameter)
+      }
+      if (field === "implementation") {
+        setImplementationContent(value);
+      }
+      console.log(value);
+      console.log(field)
+      if (validFields.includes(field)) {
+        selectedNode.data[field] = value;
+        updateNodeValue(selectedNode.id, field, value);
+      }
+      // funktioniert nicht ganz richtig, man kann Eingabe nicht mit delete key löschen.
+      else if (!isNaN(Number(value))) {
+        if (Number(value) < validMinValue) {
+          selectedNode.data[field] = Number(validMinValue);
+          updateNodeValue(selectedNode.id, field, String(validMinValue));
+        } else {
+          selectedNode.data[field] = Number(value);
+          updateNodeValue(selectedNode.id, field, value);
+        }
+      }
     }
-    if (field === "implementation") {
-      setImplementationContent(value);
-    }
-
-    let finalValue: any = value;
-
-    if (validFields.includes(field)) {
-      finalValue = value;
-    } else if (!isNaN(Number(value)) && value !== "") {
-      finalValue = Number(value) < validMinValue ? validMinValue : Number(value);
-    } else if (value === "") {
-      finalValue = "";
-    }
-
-    updateNodeValue(selectedNode.id, field, String(finalValue));
   }
 
   function handleFileUpload(event: React.ChangeEvent<HTMLInputElement>, field: string) {
@@ -232,11 +206,18 @@ export const TextPanel = () => {
               Number of Controls
             </label>
             <div className="mt-1">
-              <BufferedInput
-                value={selectedNode.data.numControls ?? 1}
-                min={1}
+              <input
+                type="number"
+                id="numControls"
+                name="numControls"
+                min="1"
+                value={selectedNode.data.numControls || 1}
+                onChange={(e) => {
+                    const val = Math.max(1, parseInt(e.target.value) || 1);
+                    handleNumberChange("numControls", val.toString());
+                }}
+                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
                 placeholder="Enter number of controls"
-                onChange={(val) => handleNumberChange("numControls", val)}
               />
             </div>
 
@@ -244,11 +225,18 @@ export const TextPanel = () => {
               Number of Targets
             </label>
             <div className="mt-1">
-              <BufferedInput
-                value={selectedNode.data.numTargets ?? 1}
-                min={1}
+              <input
+                type="number"
+                id="numTargets"
+                name="numTargets"
+                min="1"
+                value={selectedNode.data.numTargets || 1}
+                onChange={(e) => {
+                    const val = Math.max(1, parseInt(e.target.value) || 1);
+                    handleNumberChange("numTargets", val.toString());
+                }}
+                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
                 placeholder="Enter number of targets"
-                onChange={(val) => handleNumberChange("numTargets", val)}
               />
             </div>
           </div>
