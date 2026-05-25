@@ -369,15 +369,15 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
                 return {
                     id: node.id,
                     type: "universal-oracle",
-                    numQubits: node.data.numQubits || 3,
-                    targetStates: node.data.targetStates || "",
+                    numQubits: node.data.inputs?.[0]?.size ? parseInt(node.data.inputs[0].size, 10) : 3,
+                    targetStates: node.data.targetStates ? node.data.targetStates.split(",").map((x: string) => parseInt(x.trim(), 10)).filter((n: number) => !isNaN(n)) : [],
                     mode: node.data.mode || "phase"
                 } as any;
             case consts.GroverDiffuserNode:
                 return {
                     id: node.id,
                     type: "grover-diffuser",
-                    numQubits: node.data.numQubits || 3
+                    numQubits: node.data.inputs?.[0]?.size ? parseInt(node.data.inputs[0].size, 10) : 3
                 } as any;
             case consts.GroverNode:
                 return {

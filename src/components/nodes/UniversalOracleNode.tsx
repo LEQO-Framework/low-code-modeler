@@ -1,10 +1,11 @@
-import { memo, useState } from "react";
+import { memo, useState, useEffect } from "react";
 import { Node, Handle, Position } from "reactflow";
-import { useStore } from "@/config/store";
+import { useStore } from "@/config/store"; 
 import { shallow } from "zustand/shallow";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
-import OutputPort from "../utils/outputPort";
+import OutputPort from "../utils/outputPort"; 
+import { AlertCircle } from "lucide-react";
 import { quantumConstructColor } from "@/constants";
 
 const selector = (state: any) => ({
@@ -18,13 +19,16 @@ export const UniversalOracleNode = memo((node: Node) => {
   const { id, data, selected } = node;
   const { updateNodeValue, nodes, edges, setSelectedNode } = useStore(selector, shallow);
 
-  const [numQubitsStr, setNumQubitsStr] = useState(String(data.numQubits || 3));
   const [mode, setMode] = useState(data.mode || "phase");
   const [targetStates, setTargetStates] = useState(data.targetStates || "");
+  const [formatError, setFormatError] = useState(false);
 
   const [outputs, setOutputs] = useState(data.outputs || []);
   const [outputIdentifierError, setOutputIdentifierError] = useState(false);
   const [sizeError, setSizeError] = useState(false);
+
+  const inferredQubits = node.data.inputs?.[0]?.size ? parseInt(node.data.inputs[0].size, 10) : 3;
+  const maxAllowedIndex = (1 << inferredQubits) - 1;
 
   const handleChange = (field: string, value: any) => {
     data[field] = value;
@@ -32,14 +36,29 @@ export const UniversalOracleNode = memo((node: Node) => {
     setSelectedNode(node);
   };
 
-  // Determine if the input port is actively connected
+  // Enforce index limit and parsing format validation
+  useEffect(() => {
+    if (!targetStates.trim()) {
+      setFormatError(false);
+      return;
+    }
+    const isValidFormat = /^\d+(?:\s*,\s*\d+)*$/.test(targetStates.trim());
+    if (!isValidFormat) {
+      setFormatError(true);
+      return;
+    }
+    const indices = targetStates.split(",").map(x => parseInt(x.trim(), 10));
+    const hasOutOfBounds = indices.some(idx => idx < 0 || idx > maxAllowedIndex);
+    setFormatError(hasOutOfBounds);
+  }, [targetStates, maxAllowedIndex]);
+
   const isConnected = edges.some(edge => edge.target === id && edge.targetHandle === `quantumHandleInput0${id}`);
 
   return (
     <motion.div
       className="grand-parent"
       initial={false}
-      animate={{ width: 320, height: 480 }}
+      animate={{ width: 320, height: 420 }} 
       transition={{ duration: 0.3, ease: "easeInOut" }}
     >
       <div className="grand-parent">
@@ -48,8 +67,18 @@ export const UniversalOracleNode = memo((node: Node) => {
             "w-[320px] bg-white border border-solid border-gray-700 shadow-md relative",
             selected && "border-blue-500"
           )}
-          style={{ height: "480px" }}
+          style={{ height: "420px" }}
         >
+          {/* VALIDATION ALERT */}
+          {formatError && (
+            <div className="absolute top-2 right-[-40px] group z-20">
+              <AlertCircle className="text-red-600 w-5 h-5" />
+              <div className="absolute top-5 left-[30px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[220px] whitespace-nowrap">
+                Invalid format or out-of-bounds state index.
+              </div>
+            </div>
+          )}
+
           {/* HEADER */}
           <div className="w-full flex items-center" style={{ height: '52px' }}>
             <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
@@ -65,28 +94,10 @@ export const UniversalOracleNode = memo((node: Node) => {
             </div>
           </div>
 
-          {/* CONFIGURATION BODY */}
+          {/* CONFIGURATION PROPERTIES */}
           <div className="px-4 py-1 mt-1">
             <div>
-              <label className="text-xs font-semibold text-gray-700">Number of Qubits:</label>
-              <input
-                type="text"
-                inputMode="numeric"
-                className="w-full p-1 mt-1 text-sm text-center text-black border-2 border-blue-200 rounded-full outline-none focus:border-blue-400 transition-colors"
-                value={numQubitsStr}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/[^0-9]/g, "");
-                  setNumQubitsStr(val);
-                  const parsed = parseInt(val, 10);
-                  if (!isNaN(parsed)) {
-                    handleChange("numQubits", parsed);
-                  }
-                }}
-              />
-            </div>
-
-            <div className="mt-3">
-              <label className="text-xs font-semibold text-gray-700">Oracle Mode:</label>
+              <label className="text-xs font-normal text-gray-700">Oracle Mode:</label>
               <select
                 className="w-full p-1 mt-1 bg-white rounded-full text-center text-sm text-black border-2 border-blue-200 outline-none focus:border-blue-400 transition-colors"
                 value={mode}
@@ -101,26 +112,28 @@ export const UniversalOracleNode = memo((node: Node) => {
             </div>
 
             <div className="mt-3">
-              <label className="text-xs font-semibold text-gray-700">Marked States (Comma-separated indices):</label>
+              <label className="text-xs font-normal text-gray-700">Marked States:</label>
               <input
                 type="text"
                 placeholder="e.g. 0, 3, 7"
-                className="w-full p-1 mt-1 text-sm text-center text-black border-2 border-blue-200 rounded-full outline-none focus:border-blue-400 transition-colors"
+                className={cn(
+                  "w-full p-1 mt-1 text-sm text-center text-black border-2 rounded-full outline-none transition-colors",
+                  formatError ? "border-red-400 focus:border-red-500" : "border-blue-200 focus:border-blue-400"
+                )}
                 value={targetStates}
                 onChange={(e) => {
-                  const val = e.target.value.replace(/[^0-9,\s]/g, ""); 
-                  setTargetStates(val);
-                  handleChange("targetStates", val);
+                  setTargetStates(e.target.value);
+                  handleChange("targetStates", e.target.value);
                 }}
               />
-              <p className="text-[10px] text-gray-500 mt-1 text-center">
-                Max index: {(1 << (parseInt(numQubitsStr, 10) || 1)) - 1}
+              <p className="text-[10px] text-gray-400 mt-1 text-center">
+                Maximum state index limit for current register size: {maxAllowedIndex}
               </p>
             </div>
           </div>
 
           {/* QUANTUM INPUT PORT */}
-          <div className="mt-4 flex flex-col space-y-2">
+          <div className="mt-2 flex flex-col space-y-2">
             <div
               className={cn(
                 "relative p-2 flex items-center")}
@@ -131,8 +144,8 @@ export const UniversalOracleNode = memo((node: Node) => {
                 id={`quantumHandleInput0${id}`}
                 position={Position.Left}
                 className={cn(
-                  "z-10 !rounded-none !border-dashed !border-gray-500 -left-[7px]",
-                  isConnected ? "!bg-blue-400" : "!bg-gray-200"
+                  "z-10 !rounded-none !border-gray-500 -left-[7px]",
+                  isConnected ? "!border-solid !border-black !bg-blue-400" : "!border-dashed !bg-gray-200"
                 )}
                 style={{ width: 12, height: 12 }}
                 isConnectable={!isConnected}
