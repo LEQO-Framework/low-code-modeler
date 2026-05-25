@@ -141,7 +141,7 @@ export const UniversalOracleNode = memo((node: Node) => {
                 }}
               />
               <p className="text-[10px] text-gray-400 mt-1 text-center">
-                Maximum state index limit for current register size: {maxAllowedIndex}
+                Maximum state index limit for size {inferredQubits} (2^{inferredQubits} - 1): {maxAllowedIndex}
               </p>
             </div>
           </div>
