@@ -252,8 +252,7 @@ export interface components {
             /**
              * Precision
              */
-            decimalPrecision?: number | null; 
-            errorTolerance?: number;
+            decimalPrecision?: number | null;
         };
         /** FileLiteralNode */
         FileLiteralNode: {
