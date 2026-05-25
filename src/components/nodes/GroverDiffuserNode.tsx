@@ -22,7 +22,7 @@ export const GroverDiffuserNode = memo((node: Node) => {
   const [outputIdentifierError, setOutputIdentifierError] = useState(false);
   const [sizeError, setSizeError] = useState(false);
 
-  const isConnected = edges.some(edge => edge.target === id && edge.targetHandle === `quantumHandleInput0${id}`);
+  const isConnected = edges.some(edge => edge.target === id);
 
   return (
     <motion.div
@@ -83,7 +83,7 @@ export const GroverDiffuserNode = memo((node: Node) => {
             </div>
           </div>
 
-          {/* 2. NATIVE OUTPUT PORT */}
+          {/* NATIVE OUTPUT PORT */}
           <div className="custom-node-port-out absolute bottom-4 right-0">
             <OutputPort
               node={node}

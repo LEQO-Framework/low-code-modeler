@@ -56,6 +56,28 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
         }
     });
 
+    function resolveRegisterSize(nodeId: string, visited = new Set<string>()): number {
+        if (visited.has(nodeId)) return 3;
+        visited.add(nodeId);
+
+        const incomingEdge = edges.find(e => e.target === nodeId);
+        
+        if (!incomingEdge) {
+            const selfNode = nodes.find(n => n.id === nodeId);
+            if (selfNode?.data?.size) return parseInt(selfNode.data.size, 10);
+            return 3; 
+        }
+
+        const sourceNode = nodes.find(n => n.id === incomingEdge.source);
+        if (!sourceNode) return 3;
+
+        if (sourceNode.data?.size) {
+            return parseInt(sourceNode.data.size, 10);
+        }
+
+        return resolveRegisterSize(sourceNode.id, visited);
+    }
+
     return await fetch(new URL("/compile", baseUrl), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -369,7 +391,7 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
                 return {
                     id: node.id,
                     type: "universal-oracle",
-                    numQubits: node.data.inputs?.[0]?.size ? parseInt(node.data.inputs[0].size, 10) : 3,
+                    numQubits: resolveRegisterSize(node.id),
                     targetStates: node.data.targetStates ? node.data.targetStates.split(",").map((x: string) => parseInt(x.trim(), 10)).filter((n: number) => !isNaN(n)) : [],
                     mode: node.data.mode || "phase"
                 } as any;
@@ -377,7 +399,7 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
                 return {
                     id: node.id,
                     type: "grover-diffuser",
-                    numQubits: node.data.inputs?.[0]?.size ? parseInt(node.data.inputs[0].size, 10) : 3
+                    numQubits: resolveRegisterSize(node.id)
                 } as any;
             case consts.GroverNode:
                 return {

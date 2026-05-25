@@ -27,7 +27,22 @@ export const UniversalOracleNode = memo((node: Node) => {
   const [outputIdentifierError, setOutputIdentifierError] = useState(false);
   const [sizeError, setSizeError] = useState(false);
 
-  const inferredQubits = node.data.inputs?.[0]?.size ? parseInt(node.data.inputs[0].size, 10) : 3;
+  const getRegisterSize = (currentNodeId: string, visited = new Set<string>()): number => {
+    if (visited.has(currentNodeId)) return 3;
+    visited.add(currentNodeId);
+    
+    const incomingEdge = edges.find(e => e.target === currentNodeId);
+    if (!incomingEdge) return 3; 
+    
+    const sourceNode = nodes.find(n => n.id === incomingEdge.source);
+    if (!sourceNode) return 3;
+    
+    if (sourceNode.data?.size) return parseInt(sourceNode.data.size, 10);
+    
+    return getRegisterSize(sourceNode.id, visited);
+  };
+
+  const inferredQubits = getRegisterSize(id);
   const maxAllowedIndex = (1 << inferredQubits) - 1;
 
   const handleChange = (field: string, value: any) => {
@@ -36,7 +51,6 @@ export const UniversalOracleNode = memo((node: Node) => {
     setSelectedNode(node);
   };
 
-  // Enforce index limit and parsing format validation
   useEffect(() => {
     if (!targetStates.trim()) {
       setFormatError(false);
@@ -52,7 +66,7 @@ export const UniversalOracleNode = memo((node: Node) => {
     setFormatError(hasOutOfBounds);
   }, [targetStates, maxAllowedIndex]);
 
-  const isConnected = edges.some(edge => edge.target === id && edge.targetHandle === `quantumHandleInput0${id}`);
+  const isConnected = edges.some(edge => edge.target === id);
 
   return (
     <motion.div
