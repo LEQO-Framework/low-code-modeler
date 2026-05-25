@@ -114,7 +114,9 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
                                 "Matrix Encoding": "matrix",
                                 "Schmidt Decomposition": "schmidt",
                             }, node.data.encodingType),
-                            bounds: (node.data.encodingType === "Basis Encoding") ? 0 : parseFloat(node.data.bound)
+                            bounds: (node.data.encodingType === "Basis Encoding") ? 0 : parseFloat(node.data.bound),
+                            decimalPrecision: node.data.decimalPrecision !== undefined && node.data.decimalPrecision !== "" 
+                                ? parseInt(node.data.decimalPrecision, 10) : null
                         }
 
                     case "Basis Encoding":
@@ -122,7 +124,9 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
                             id: node.id,
                             type: "encode",
                             encoding: "basis",
-                            bounds: 0
+                            bounds: 0,
+                            decimalPrecision: node.data.decimalPrecision !== undefined && node.data.decimalPrecision !== "" 
+                                ? parseInt(node.data.decimalPrecision, 10) : null
                         }
                     case "Angle Encoding":
                         return {
@@ -338,6 +342,15 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
                     //size: node.data.numberOutputs
                 }
 
+            case consts.MCMTGateNode:
+                return {
+                    id: node.id,
+                    type: "mcmt-gate",
+                    baseGate: (node.data.baseGate || "x").replace(/\(.*\)/, "").toLowerCase(),
+                    numControls: parseInt(node.data.numControls) || 1,
+                    numTargets: parseInt(node.data.numTargets) || 1,
+                    parameter: node.data.parameter !== "" && node.data.parameter != null ? parseFloat(node.data.parameter) : null
+                };
 
             case consts.QAOANode: {
                 const classicalInputEdge = edges.find(
@@ -528,7 +541,9 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
         if (!output) {
             console.log(edge)
             console.log(sourceNode.data.inputs)
-            const inputConnection = sourceNode.data.inputs?.[outputIndex];
+            const inputConnection = sourceNode.data.inputs?.find(
+                (i: any) => getHandleIndex(sourceNode.id, "target", i.targetHandle) === outputIndex
+            );
             console.log(inputConnection)
             if (inputConnection) {
                 const inputNode = nodes.find(n => n.id === inputConnection.id);
