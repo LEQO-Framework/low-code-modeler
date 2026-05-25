@@ -199,48 +199,7 @@ export const TextPanel = () => {
           </div>
         )}
 
-        {/* MCMT Gate Configs */}
-        {selectedNode?.type === "mcmt-gate" && (
-          <div className="p-2 mt-3">
-            <label className="block text-sm font-medium text-start text-gray-700" htmlFor="numControls">
-              Number of Controls
-            </label>
-            <div className="mt-1">
-              <input
-                type="number"
-                id="numControls"
-                name="numControls"
-                min="1"
-                value={selectedNode.data.numControls || 1}
-                onChange={(e) => {
-                    const val = Math.max(1, parseInt(e.target.value) || 1);
-                    handleNumberChange("numControls", val.toString());
-                }}
-                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                placeholder="Enter number of controls"
-              />
-            </div>
-
-            <label className="block text-sm font-medium text-start text-gray-700 mt-4" htmlFor="numTargets">
-              Number of Targets
-            </label>
-            <div className="mt-1">
-              <input
-                type="number"
-                id="numTargets"
-                name="numTargets"
-                min="1"
-                value={selectedNode.data.numTargets || 1}
-                onChange={(e) => {
-                    const val = Math.max(1, parseInt(e.target.value) || 1);
-                    handleNumberChange("numTargets", val.toString());
-                }}
-                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                placeholder="Enter number of targets"
-              />
-            </div>
-          </div>
-        )}
+        
 
         {selectedNode?.data.label === "Encode Value" && (
           <div className="p-2 mt-3">
