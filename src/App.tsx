@@ -51,6 +51,7 @@ import { PatternImplementationSelectionModal } from "./components/modals/pattern
 import PromptFlowModal from "./components/modals/promptFlowModal";
 import { generateFlow, sendToMistral } from "./generation";
 import { openQasmToFlow } from "./qasmConverter";
+import { generate, waitForJob } from "./generationBackend";
 
 const selector = (state: {
   nodes: Node[];
@@ -746,27 +747,56 @@ If none apply, return { "algorithms": [] }.
   const [historyLoading, setHistoryLoading] = useState(false);
 
   const fetchHistory = async () => {
-    setHistoryLoading(true);
-    try {
-      const response = await fetch(`${lowcodeBackendEndpoint}/results`, {
+  setHistoryLoading(true);
+
+  try {
+    const resultsRes = await fetch(`${lowcodeBackendEndpoint}/results`, {
         method: "GET",
         headers: { "Content-Type": "application/json" },
       });
 
-      if (!response.ok) {
-        console.error("Failed to fetch history:", response.statusText);
-        return;
-      }
+    const jobsRes = await fetch(`http://localhost:3000/jobs`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      });
 
-      const data: HistoryItem[] = await response.json();
-      console.log(data)
-      setHistory(data);
-    } catch (err) {
-      console.error("Error fetching history:", err);
-    } finally {
-      setHistoryLoading(false);
+    if (!resultsRes.ok || !jobsRes.ok) {
+      console.error("Failed to fetch history or jobs");
+      return;
     }
-  };
+
+    const results: HistoryItem[] = await resultsRes.json();
+    console.log(results)
+    const jobs = await jobsRes.json();
+
+    console.log("results:", results);
+    console.log("jobs:", jobs);
+
+    /**
+     * Merge generation jobs into history view
+     * (adapt depending on your job schema)
+     */
+    const generationItems: HistoryItem[] = jobs.map((job: any) => ({
+      uuid: job.id,
+      name: "Generation Job",
+      description: job.prompt,
+      status: job.status,
+      created: job.createdAt,
+      type: "generation",
+      links: {
+        result: job.result,
+      },
+    }));
+
+    // Merge both sources
+    setHistory([...results, ...generationItems]);
+
+  } catch (err) {
+    console.error("Error fetching history:", err);
+  } finally {
+    setHistoryLoading(false);
+  }
+};
 
   const openHistoryModal = async () => {
     await fetchHistory();
@@ -2326,7 +2356,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
       console.error("React Flow instance is not initialized.");
       return;
     }
-    console.log(flow.initialEdges)
+    console.log(flow)
     console.log(flow.nodes)
     if (flow.nodes) {
       reactFlowInstance.setNodes(
@@ -3029,13 +3059,17 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
       <PromptFlowModal
         open={isPromptModalOpen}
         mistralToken={mistralToken}
+        showToast={showToast}
         onClose={(flow) => {
           setIsPromptModalOpen(false);
           if (flow) loadFlow(flow);
           setIsPromptModalOpen(false);
+          
         }}
         sendToMistral={sendToMistral}
         generateFlow={generateFlow}
+        loadFlow={loadFlow}
+        lowcodeBackendEndpoint={lowcodeBackendEndpoint}
       />
 
 
@@ -3070,6 +3104,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
         open={isHistoryOpen}
         onClose={() => setHistoryOpen(false)}
         history={history}
+        loadFlow={loadFlow}
         onExecute={async (item) => {
           console.log(item);
           setHistoryOpen(false);
@@ -3325,7 +3360,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
               pannable={true}
             />
 
-         
+            <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
           </ReactFlow>
           {contextMenu.visible && contextMenu.nodeId && (
             <ContextMenu

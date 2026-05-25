@@ -272,7 +272,7 @@ export const IfElseNode = memo((node: Node) => {
                   <Handle
                     key={`classical-${index}`}
                     type="source"
-                    id={`sideClassicalHandleThen${index}${node.id}`}
+                    id={`classicalHandleSideThen${index}${node.id}`}
                     position={Position.Right}
                     className={"z-10 classical-circle-port-out !bg-orange-300 !border-black"}
                     style={{
@@ -296,7 +296,7 @@ export const IfElseNode = memo((node: Node) => {
                 <Handle
                   key={`quantum-${index}`}
                   type="source"
-                  id={`sideQuantumHandleThen${index}${node.id}`}
+                  id={`quantumHandleSideThen${index}${node.id}`}
                   position={Position.Right}
                   className={"z-10 circle-port-out !bg-blue-300 !border-black"}
                   style={{
@@ -317,7 +317,7 @@ export const IfElseNode = memo((node: Node) => {
                 <Handle
                   key={`side-classical-${handle}`}
                   type="source"
-                  id={`sideClassicalHandleElse${handle}${node.id}`}
+                  id={`classicalHandleSideElse${handle}${node.id}`}
                   position={Position.Right}
                   className={"z-10 classical-circle-port-hex-out !bg-orange-300 !border-black"}
                   style={{
@@ -341,7 +341,7 @@ export const IfElseNode = memo((node: Node) => {
                 <Handle
                   key={`side-quantum-${index}`}
                   type="source"
-                  id={`sideQuantumHandleElse${index}${node.id}`}
+                  id={`quantumHandleSideElse${index}${node.id}`}
                   position={Position.Right}
                   className={"z-10 circle-port-out !bg-blue-300 !border-black"}
                   style={{
@@ -488,7 +488,7 @@ export const IfElseNode = memo((node: Node) => {
                       type="target"
                       id={`classicalHandleDynamicOutput${index}${node.id}`}
                       position={Position.Left}
-                      className={"z-10 classical-circle-port-out !bg-orange-300 !border-black" }
+                      className={"z-10 classical-circle-port-in !bg-orange-300 !border-black" }
                       style={{
                         top: `${100 + i * 30}px`,
                         overflow: "visible",
@@ -523,6 +523,7 @@ export const IfElseNode = memo((node: Node) => {
                       left: "-6px",
                     }}
                     isConnectable={true}
+                    isValidConnection={() => true}
                   />
                 );
               })}
@@ -541,7 +542,7 @@ export const IfElseNode = memo((node: Node) => {
                     type="target"
                     id={handleId}
                     position={Position.Left}
-                    className={"z-10 classical-circle-port-out !bg-orange-300 !border-black"}
+                    className={"z-10 classical-circle-port-in !bg-orange-300 !border-black"}
                     style={{
                       top: `calc(70% + ${30 + i * 30}px)`,
                       overflow: "visible",
@@ -574,6 +575,7 @@ export const IfElseNode = memo((node: Node) => {
                       left: "-6px",
                     }}
                     isConnectable={true}
+                    isValidConnection={() => true}
                   />
                 );
               })}

@@ -1,4 +1,7 @@
 import { Mistral } from "@mistralai/mistralai";
+import { openQasmToFlow } from "./qasmConverter";
+import { generateOpenQASMFromFlow } from "./qasmUtils";
+import { startCompile } from "./backend";
 
 type ChatContent =
   | string
@@ -8,15 +11,12 @@ type ChatContent =
 
 function extractText(content: ChatContent): string {
   if (!content) return "";
-
   if (typeof content === "string") return content;
-
   if (Array.isArray(content)) {
     return content
       .map((c) => (typeof c === "string" ? c : c.text ?? ""))
       .join("");
   }
-
   return "";
 }
 
@@ -26,16 +26,111 @@ function safeJsonParse<T = any>(raw: string): T | null {
       .replace(/```json/g, "")
       .replace(/```/g, "")
       .trim();
-
     return JSON.parse(cleaned);
   } catch {
     return null;
   }
 }
 
-export async function sendToMistral(prompt: string, token) {
-  const mistral = new Mistral({ apiKey: token });
+// Deterministically converts the compact flows to circuit-lever flows
+async function convertCompactToCircuit(
+  flow: any,
+  lowcodeBackendEndpoint: string
+): Promise<any> {
+  console.log("Converting compact flow to circuit-level...");
 
+  // Step 1: Generate OpenQASM from the compact flow
+  /*const openQASMCode = await generateOpenQASMFromFlow(
+    flow.nodes || [],
+    flow.edges || [],
+    flow.metadata || {},
+    lowcodeBackendEndpoint
+  );
+  */
+  const openQASMCode = await startCompile(lowcodeBackendEndpoint, flow.metadata, flow.nodes, flow.edges, "qasm");
+  const response= await openQASMCode.json();
+  console.log("Generated OpenQASM:", openQASMCode);
+
+  const uuid = response["uuid"];
+      let location = response["result"];
+      const statusUrl = `${lowcodeBackendEndpoint}/status/${uuid}`;
+
+      console.log("Initial compile response:", response);
+
+      // Polling function returns a Promise
+      const pollStatus = () => {
+        return new Promise<void>((resolve, reject) => {
+          let attempts = 0;
+          const maxAttempts = 20;
+          const delay = 10000;
+
+          const check = async () => {
+            try {
+              const statusResponse = await fetch(statusUrl, {
+                method: "GET",
+                headers: { "Content-Type": "application/json" },
+              });
+
+              if (!statusResponse.ok) {
+                console.error("Status check failed:", statusResponse.status);
+                return reject("Status check failed");
+              }
+
+              const statusData = await statusResponse.json();
+              console.log("Current status:", statusData.status);
+              //setStatus(statusData.status);
+              location = statusData["result"];
+
+              if (statusData.status === "completed") {
+                //showToast("Result for model " + id + " is available.", "success");
+                console.log("Operation completed successfully.");
+                return resolve();
+              }
+
+              attempts++;
+              if (attempts < maxAttempts) {
+                setTimeout(check, delay);
+              } else {
+                console.error("Max polling attempts reached. Operation did not complete.");
+                //showToast("Max polling attempts for model " + id + " reached.", "error");
+                reject("Max polling attempts reached");
+              }
+            } catch (error) {
+              console.error("Error while polling status:", error);
+              reject(error);
+            }
+          };
+
+          check();
+        });
+      };
+
+      // Wait for polling to complete
+      await pollStatus();
+
+      console.log("Fetching final result from:", location);
+
+      const result = await fetch(location, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      // TODO: change for workflow
+      // TODO: add modals for service deployment
+      // TODO: add QRMS upload
+      const openqasmCode = await result.text();
+  
+  // Step 2: Convert OpenQASM back to a flow
+  const circuitFlow = openQasmToFlow(openqasmCode);
+  console.log("Converted circuit flow:", circuitFlow);
+
+  return circuitFlow;
+}
+
+
+
+export async function sendToMistral(prompt: string, token: string) {
+  const mistral = new Mistral({ apiKey: token });
   const result = await mistral.chat.complete({
     model: "mistral-small-latest",
     messages: [
@@ -74,7 +169,6 @@ For every quantum construct:
 If the user already specifies a parameter, DO NOT include it again as a select input.
 
 ---
-
 
 ## BELL STATES
 If user says "Bell state" WITHOUT specifying which one:
@@ -115,7 +209,7 @@ Return ONLY:
 
 ---
 
-##  GHZ STATES 
+##  GHZ STATES
 
 If user does NOT specify number of qubits:
 
@@ -150,7 +244,6 @@ Return ONLY:
 }
 
 ---
-
 ## GENERAL RULE
 
 Never ask for a parameter that is already explicitly present in the user prompt.
@@ -179,11 +272,15 @@ Always:
   return parsed;
 }
 
-export async function generateFlow(data: {
-  prompt: string;
-  inputs: Record<string, any>
-}, token: string) {
-
+export async function generateFlow(
+  data: {
+    prompt: string;
+    inputs: Record<string, any>;
+    generationMode: "compact" | "circuit";
+  },
+  token: string,
+  lowcodeBackendEndpoint?: string // Add this parameter
+): Promise<any> {
   const fetched_prompt = await fetch("/prompts/prompt_create_model_in_QLCM_Notation.txt");
   const systemPrompt = await fetched_prompt.text();
 
@@ -193,71 +290,48 @@ export async function generateFlow(data: {
     messages: [
       {
         role: "system",
-        content: systemPrompt
-        /*`
-You are a quantum workflow generator.
-
-Return ONLY valid JSON representing a flow graph.
-
-Example format:
-{
-"nodes": [],
-"edges": []
-}
-        `*/
-        ,
+        content: systemPrompt,
       },
       {
         role: "user",
-        content: `Prompt: ${data.prompt}, Inputs: ${JSON.stringify(data.inputs, null, 2)} `
-        /*`
-Prompt: ${data.prompt}
-
-Inputs:
-${JSON.stringify(data.inputs, null, 2)}
-        `*/
-        ,
+        content: `Prompt: ${data.prompt}, Inputs: ${JSON.stringify(data.inputs, null, 2)}`,
       },
     ],
   });
 
   const raw = extractText(result.choices[0].message.content);
-  console.log("qlcm notation model:", raw)
+  console.log("qlcm notation model:", raw);
   if (raw.length > 0) {
     const newJSONFlow = qlcmNotationToJSON(raw);
-
     const parsed = safeJsonParse(newJSONFlow);
-
 
     if (!parsed) {
       console.error("Invalid JSON from qlcmnToJSON:", newJSONFlow);
       return null;
     }
 
+    // If circuit-level is selected, convert the flow
+    if (data.generationMode === "circuit" && lowcodeBackendEndpoint) {
+      return await convertCompactToCircuit(parsed, lowcodeBackendEndpoint);
+    }
+
     return parsed;
   }
+  return null;
 }
 
-/*
-function qlcmNotationToJSON(qlcmNotation: string): string {
-    if (!qlcmNotation) return "";
 
 
-    return "";
-}
-*/
 function qlcmNotationToJSON(qlcmNotation: string): string {
   if (!qlcmNotation) return "";
 
   const blocks = parseQLCMNotation(qlcmNotation);
 
-  // --- FIX 1: Check for cycles ---
   if (hasCycle(blocks)) {
     console.error("Circular reference detected in blocks! Cannot parse model.");
     return "";
   }
 
-  // --- FIX 2: Validate inputs/outputs ---
   if (!validateBlocks(blocks)) {
     return "";
   }
@@ -266,22 +340,23 @@ function qlcmNotationToJSON(qlcmNotation: string): string {
   const nodes: any[] = [];
   const edges: any[] = [];
 
-  const generateId = () => `node-${Math.random().toString(36).substring(2, 9)}-${Date.now()}`;
+  //const generateId = () => `node-${Math.random().toString(36).substring(2, 9)}-${Date.now()}`;
+  const generateId = () => crypto.randomUUID();
+
 
   // Step 1: Create nodes
   for (const block of blocks) {
     const nodeId = generateId();
     nodeIdMap.set(block.id, nodeId);
 
-    const { type, label, identifiers, inputTypes, outputTypes, width, height, data } =
-      getNodeConfig(block, nodeId, blocks);
+    const nodeConfig = getNodeConfig(block, nodeId, blocks);
 
     const node = {
       id: nodeId,
-      type: type,
+      type: nodeConfig.type,
       position: { x: 0, y: 0 },
       data: {
-        label: label,
+        label: nodeConfig.label,
         inputs: [],
         children: [],
         implementation: "",
@@ -289,14 +364,14 @@ function qlcmNotationToJSON(qlcmNotation: string): string {
         uncomputeImplementationType: "",
         uncomputeImplementation: "",
         completionGuaranteed: true,
-        compactOptions: type === "statePreparationNode" ? [false] : [true, false],
-        identifiers: identifiers,
-        inputTypes: inputTypes,
-        outputTypes: outputTypes,
-        ...data,
+        compactOptions: nodeConfig.type === "statePreparationNode" ? [false] : [true, false],
+        identifiers: nodeConfig.identifiers,
+        inputTypes: nodeConfig.inputTypes,
+        outputTypes: nodeConfig.outputTypes,
+        ...nodeConfig.data,
       },
-      width: width,
-      height: height,
+      width: nodeConfig.width,
+      height: nodeConfig.height,
       positionAbsolute: { x: 0, y: 0 }
     };
     nodes.push(node);
@@ -319,33 +394,32 @@ function qlcmNotationToJSON(qlcmNotation: string): string {
       const sourceNode = nodes.find(n => n.id === sourceNodeId);
       if (!sourceNode) continue;
 
-      // Skip invalid inputs for BitEncoder (only Bit is allowed)
-      if (targetNode.type === "statePreparationNode" && sourceNode.type !== "dataTypeNode") {
+      // Skip invalid connections for state preparation
+      if (targetNode.data.label === "Basis Encoding" && sourceNode.type !== "dataTypeNode") {
         continue;
       }
 
-      // Find the source block
       const sourceBlock = blocks.find(b => b.id === inputBlockId);
       if (!sourceBlock) continue;
 
-      // Skip if the source block has no outputs
       if (!sourceBlock.outputs || sourceBlock.outputs.length === 0) {
         continue;
       }
 
-      // Find the output index of the current block in the source block's outputs
-      const outputIndex = sourceBlock.outputs.findIndex(outputId => outputId === block.id);
-      if (outputIndex === -1) {
+      // Check if this block is in the outputs of the source block
+      const isConnected = sourceBlock.outputs.includes(block.id);
+      if (!isConnected) {
         console.warn(`Block ${block.id} not found in outputs of ${sourceBlock.id}. Skipping edge.`);
         continue;
       }
 
-      const edgeId = generateId();
-      const isClassicalEdge =
-        (sourceNode.type === "dataTypeNode" && sourceNode.data.dataType === "bit") ||
-        (targetNode.type === "statePreparationNode");
+      const outputIndex = sourceBlock.outputs.indexOf(block.id);
 
-      // Determine source and target handles
+      const edgeId = generateId();
+
+      // Determine if this is a classical edge
+      const isClassicalEdge = isClassicalConnection(sourceNode, targetNode);
+
       const sourceHandle = getSourceHandle(sourceNode, isClassicalEdge, outputIndex);
       const targetHandle = getTargetHandle(targetNode, i, isClassicalEdge);
 
@@ -367,24 +441,23 @@ function qlcmNotationToJSON(qlcmNotation: string): string {
       };
       edges.push(edge);
 
-      // Add input to the target node's data
       const inputData: any = {
         id: sourceNodeId,
         edgeId: edgeId,
         identifiers: sourceNode.data.identifiers,
         targetHandle: targetHandle,
       };
+
       if (targetNode.type === "statePreparationNode") {
         inputData.outputIdentifier = "";
       }
+
       targetNode.data.inputs.push(inputData);
     }
   }
 
-  // Step 3: Assign positions
   assignPositions(nodes, edges);
 
-  // Step 4: Generate metadata
   const metadata = {
     version: "1.0.0",
     name: "My Model",
@@ -395,7 +468,6 @@ function qlcmNotationToJSON(qlcmNotation: string): string {
     timestamp: new Date().toISOString()
   };
 
-  // Step 5: Construct the final JSON
   const result = {
     metadata: metadata,
     nodes: nodes,
@@ -410,11 +482,39 @@ function qlcmNotationToJSON(qlcmNotation: string): string {
   return JSON.stringify(result, null, 2);
 }
 
+// helper function to determine if a connection is classical
+function isClassicalConnection(sourceNode: any, targetNode: any): boolean {
+  // Check if source is a classical data type
+  const sourceIsClassical =
+    sourceNode.type === "dataTypeNode" &&
+    (sourceNode.data.dataType === "bit" ||
+     sourceNode.data.dataType === "Number" ||
+     sourceNode.data.dataType === "Boolean" ||
+     sourceNode.data.dataType === "Array" ||
+     sourceNode.data.dataType === "File" ||
+     sourceNode.data.dataType === "String");
 
-// Helper: Get source handle for a node
+  // Check if target is a plugin node (like clustering)
+  const targetIsPlugin = targetNode.type === "pluginNode";
+
+  // Check if source is a plugin node
+  const sourceIsPlugin = sourceNode.type === "pluginNode";
+
+  // Check if target is a state preparation node
+  const targetIsStatePrep = targetNode.type === "statePreparationNode";
+
+  return sourceIsClassical || targetIsPlugin || sourceIsPlugin || targetIsStatePrep;
+}
+
 function getSourceHandle(node: any, isClassical: boolean, outputIndex: number = 0): string {
   if (isClassical) {
-    return `classicalHandle${node.type}Output${outputIndex}${node.id}`;
+    if (node.type === "dataTypeNode") {
+      return `classicalHandleDataTypeOutput${outputIndex}${node.id}`;
+    } else if (node.type === "pluginNode") {
+      return `classicalHandlePluginOutput${outputIndex}${node.id}`;
+    } else {
+      return `classicalHandle${node.type}Output${outputIndex}${node.id}`;
+    }
   } else {
     if (node.type === "measurementNode") {
       return `quantumHandleMeasurementOutput${outputIndex}${node.id}`;
@@ -422,16 +522,25 @@ function getSourceHandle(node: any, isClassical: boolean, outputIndex: number = 
       return `quantumHandleGateOutput${outputIndex}${node.id}`;
     } else if (node.type === "quantumOperatorNode") {
       return `quantumHandleOperationOutput${outputIndex}${node.id}`;
+    } else if (node.type === "statePreparationNode") {
+      return `quantumHandleStatePreparationOutput${outputIndex}${node.id}`;
     } else {
       return `quantumHandle${node.type}Output${outputIndex}${node.id}`;
     }
   }
 }
 
-// Helper: Get target handle for a node
 function getTargetHandle(node: any, inputIndex: number, isClassical: boolean): string {
   if (isClassical) {
-    return `classicalHandle${node.type}Input${inputIndex}${node.id}`;
+    if (node.type === "dataTypeNode") {
+      return `classicalHandleDataTypeInput${inputIndex}${node.id}`;
+    } else if (node.type === "pluginNode") {
+      return `classicalHandlePluginInput${inputIndex}${node.id}`;
+    } else if (node.type === "statePreparationNode") {
+      return `classicalHandleStatePreparationInput${inputIndex}${node.id}`;
+    } else {
+      return `classicalHandle${node.type}Input${inputIndex}${node.id}`;
+    }
   } else {
     if (node.type === "measurementNode") {
       return `quantumHandleMeasurementInput${inputIndex}${node.id}`;
@@ -439,34 +548,46 @@ function getTargetHandle(node: any, inputIndex: number, isClassical: boolean): s
       return `quantumHandleGateInput${inputIndex}${node.id}`;
     } else if (node.type === "quantumOperatorNode") {
       return `quantumHandleOperationInput${inputIndex}${node.id}`;
+    } else if (node.type === "statePreparationNode") {
+      return `quantumHandleStatePreparationInput${inputIndex}${node.id}`;
     } else {
       return `quantumHandle${node.type}Input${inputIndex}${node.id}`;
     }
   }
 }
 
-// Helper: Get node configuration based on block type
 function getNodeConfig(
-  block: { id: string; step: string; inputs: string[]; outputs: string[], state?: string, value?: string },
+  block: {
+    id: string;
+    step: string;
+    inputs: string[];
+    outputs: string[];
+    state?: string;
+    value?: string | number;
+    variant?: string;
+    inputs_classical?: string[];
+    inputs_quantum?: string[];
+    condition?: string;
+    then?: any[];
+    else?: any[];
+    number?: number;
+    repeat?: any[];
+  },
   nodeId: string,
-  allBlocks: Array<{ id: string; step: string; inputs: string[]; outputs: string[] }>
+  allBlocks: Array<{
+    id: string;
+    step: string;
+    inputs: string[];
+    outputs: string[];
+    state?: string;
+    value?: string | number;
+    variant?: string;
+  }>
 ) {
   const identifiers = [block.id.toLowerCase().replace(/[^a-z0-9]/g, '')];
-  console.log(block)
-  switch (block.step) {
-    case "String":
-      return {
-        type: "dataTypeNode",
-        dataType: "String",
-        label: "String",
-        identifiers,
-        inputTypes: [],
-        outputTypes: ["String"],
-        width: 110,
 
-        height: 110,
-        data: { parameter: "0", value: block.value }
-      };
+  switch (block.step) {
+    // --- Quantum Blocks ---
     case "Qubit":
       return {
         type: "gateNode",
@@ -476,7 +597,13 @@ function getNodeConfig(
         outputTypes: Array(block.outputs.length).fill("quantum register"),
         width: 110,
         height: 110,
-        data: { parameter: "0" }
+        data: {
+          parameter: "0",
+          numberQuantumInputs: 0,
+          numberQuantumOutputs: block.outputs.length,
+          numberClassicalInputs: 0,
+          numberClassicalOutputs: 0
+        }
       };
     case "Hadamard":
       return {
@@ -487,7 +614,30 @@ function getNodeConfig(
         outputTypes: Array(block.outputs.length).fill("quantum register"),
         width: 110,
         height: 110,
-        data: { parameter: "0" }
+        data: {
+          parameter: "0",
+          numberQuantumInputs: block.inputs.length,
+          numberQuantumOutputs: block.outputs.length,
+          numberClassicalInputs: 0,
+          numberClassicalOutputs: 0
+        }
+      };
+    case "Z":
+      return {
+        type: "gateNode",
+        label: "Z",
+        identifiers,
+        inputTypes: Array(block.inputs.length).fill("quantum register"),
+        outputTypes: Array(block.outputs.length).fill("quantum register"),
+        width: 110,
+        height: 110,
+        data: {
+          parameter: "0",
+          numberQuantumInputs: block.inputs.length,
+          numberQuantumOutputs: block.outputs.length,
+          numberClassicalInputs: 0,
+          numberClassicalOutputs: 0
+        }
       };
     case "CNOT":
       return {
@@ -498,38 +648,145 @@ function getNodeConfig(
         outputTypes: Array(block.outputs.length).fill("quantum register"),
         width: 110,
         height: 110,
-        data: { parameter: "0" }
+        data: {
+          parameter: "0",
+          numberQuantumInputs: block.inputs.length,
+          numberQuantumOutputs: block.outputs.length,
+          numberClassicalInputs: 0,
+          numberClassicalOutputs: 0
+        }
       };
+
+    // --- Classical Data Types ---
     case "Bit":
       return {
         type: "dataTypeNode",
-        label: "bit",
+        label: "Bit",
         identifiers,
         inputTypes: [],
         outputTypes: ["bit"],
         width: 450,
         height: 270,
-        data: { dataType: "bit", value: "0", outputIdentifier: "" }
-      };
-    case "BitEncoder":
-      return {
-        type: "statePreparationNode",
-        label: "Basis Encoding",
-        identifiers,
-        inputTypes: ["bit"],
-        outputTypes: ["quantum register"],
-        width: 320,
-        height: 373,
         data: {
-          encodingType: "Basis Encoding",
-          outputs: [{ identifier: "", size: "", type: "quantum" }],
-          outputIdentifier: ""
+          dataType: "bit",
+          value: block.value !== undefined ? block.value.toString() : "0",
+          outputIdentifier: "",
+          inputTypes: [],
+          outputTypes: { "0": "bit" },
+          numberQuantumInputs: 0,
+          numberQuantumOutputs: 0,
+          numberClassicalInputs: 0,
+          numberClassicalOutputs: 1
         }
       };
-    case "Addition":
-    case "Subtraction":
-    case "Division":
-    case "Multiplication":
+    case "Number":
+      return {
+        type: "dataTypeNode",
+        label: "Number",
+        identifiers,
+        inputTypes: [],
+        outputTypes: ["Number"],
+        width: 450,
+        height: 270,
+        data: {
+          dataType: "Number",
+          value: block.value !== undefined ? block.value.toString() : "",
+          outputIdentifier: "",
+          inputTypes: [],
+          outputTypes: { "0": "Number" },
+          numberQuantumInputs: 0,
+          numberQuantumOutputs: 0,
+          numberClassicalInputs: 0,
+          numberClassicalOutputs: 1
+        }
+      };
+    case "Boolean":
+      return {
+        type: "dataTypeNode",
+        label: "Boolean",
+        identifiers,
+        inputTypes: [],
+        outputTypes: ["Boolean"],
+        width: 450,
+        height: 270,
+        data: {
+          dataType: "Boolean",
+          value: block.value !== undefined ? block.value.toString() : "false",
+          outputIdentifier: "",
+          inputTypes: [],
+          outputTypes: { "0": "Boolean" },
+          numberQuantumInputs: 0,
+          numberQuantumOutputs: 0,
+          numberClassicalInputs: 0,
+          numberClassicalOutputs: 1
+        }
+      };
+    case "Array":
+      return {
+        type: "dataTypeNode",
+        label: "Array",
+        identifiers,
+        inputTypes: [],
+        outputTypes: ["Array"],
+        width: 450,
+        height: 270,
+        data: {
+          dataType: "Array",
+          value: block.value !== undefined ? block.value.toString() : "",
+          outputIdentifier: "",
+          inputTypes: [],
+          outputTypes: { "0": "Array" },
+          numberQuantumInputs: 0,
+          numberQuantumOutputs: 0,
+          numberClassicalInputs: 0,
+          numberClassicalOutputs: 1
+        }
+      };
+    case "String":
+      return {
+        type: "dataTypeNode",
+        label: "String",
+        identifiers,
+        inputTypes: [],
+        outputTypes: ["String"],
+        width: 450,
+        height: 270,
+        data: {
+          dataType: "String",
+          value: block.value !== undefined ? block.value.toString() : "",
+          outputIdentifier: "",
+          inputTypes: [],
+          outputTypes: { "0": "String" },
+          numberQuantumInputs: 0,
+          numberQuantumOutputs: 0,
+          numberClassicalInputs: 0,
+          numberClassicalOutputs: 1
+        }
+      };
+    case "File":
+      return {
+        type: "dataTypeNode",
+        label: "File",
+        identifiers,
+        inputTypes: [],
+        outputTypes: ["File"],
+        width: 450,
+        height: 270,
+        data: {
+          dataType: "File",
+          value: block.value !== undefined ? block.value.toString() : "",
+          outputIdentifier: "",
+          inputTypes: [],
+          outputTypes: { "0": "File" },
+          numberQuantumInputs: 0,
+          numberQuantumOutputs: 0,
+          numberClassicalInputs: 0,
+          numberClassicalOutputs: 1
+        }
+      };
+
+    // --- Operators ---
+    case "QuantumArithmeticOperator":
       return {
         type: "quantumOperatorNode",
         label: "Quantum Arithmetic Operator",
@@ -539,49 +796,34 @@ function getNodeConfig(
         width: 320,
         height: 375,
         data: {
-          operator: block.step === "Addition" ? "+" :
-            block.step === "Subtraction" ? "-" :
-              block.step === "Division" ? "/" : "*"
+          operator: block.variant === "Addition" ? "+" :
+                   block.variant === "Subtraction" ? "-" :
+                   block.variant === "Division" ? "/" : "*",
+          numberQuantumInputs: block.inputs.length,
+          numberQuantumOutputs: block.outputs.length,
+          numberClassicalInputs: 0,
+          numberClassicalOutputs: 0
         }
       };
-    case "PrepareState":
-      console.log(block)
-      const prepareState = (block as any).state || "Custom";
 
-      const stateMapping: Record<string, { name: string; size: string }> = {
-        BellPhiPlus: { name: "Bell State φ+", size: "2" },
-        BellPhiMinus: { name: "Bell State φ-", size: "2" },
-        BellPsiPlus: { name: "Bell State ψ+", size: "2" },
-        BellPsiMinus: { name: "Bell State ψ-", size: "2" },
-        UniformSuperposition: { name: "Uniform Superposition", size: block.value },
-        GHZ: { name: "GHZ", size: block.value },
-        W: { name: "W State", size: block.value },
-        One: { name: "|1⟩", size: block.value },
-        Plus: { name: "|+⟩", size: block.value },
-        Minus: { name: "|-⟩", size: block.value },
-        Custom: { name: "Custom State", size: block.value }
-      };
-
-      const mappedState = stateMapping[prepareState] || stateMapping.Custom;
-
+    // --- Encoding & Measurement ---
+    case "BasisEncoder":
       return {
         type: "statePreparationNode",
-        label: "Prepare State",
+        label: "Basis Encoding",
         identifiers,
-        inputTypes: Array(block.inputs.length).fill("quantum register"),
+        inputTypes: ["bit", "Number"],
         outputTypes: ["quantum register"],
         width: 320,
         height: 373,
         data: {
-          quantumStateName: mappedState.name,
-          size: mappedState.size,
+          encodingType: "Basis Encoding",
+          outputs: [{ identifier: "", size: "", type: "quantum" }],
           outputIdentifier: "",
-          outputs: [
-            {
-              identifier: "",
-              size: mappedState.size
-            }
-          ]
+          numberQuantumInputs: 0,
+          numberQuantumOutputs: 1,
+          numberClassicalInputs: 1,
+          numberClassicalOutputs: 0
         }
       };
     case "Measurement":
@@ -599,9 +841,210 @@ function getNodeConfig(
           outputs: [
             { identifier: "", size: "", type: "classical" },
             { identifier: "", size: "", type: "quantum" }
-          ]
+          ],
+          numberQuantumInputs: 1,
+          numberQuantumOutputs: 1,
+          numberClassicalInputs: 0,
+          numberClassicalOutputs: 1
         }
       };
+
+    // --- State Preparation ---
+    case "PrepareState":
+      const prepareState = block.state || "Custom";
+      const stateMapping: Record<string, { name: string; size: string }> = {
+        BellPhiPlus: { name: "Bell State φ+", size: "2" },
+        BellPhiMinus: { name: "Bell State φ-", size: "2" },
+        BellPsiPlus: { name: "Bell State ψ+", size: "2" },
+        BellPsiMinus: { name: "Bell State ψ-", size: "2" },
+        UniformSuperposition: { name: "Uniform Superposition", size: block.value ? block.value.toString() : "" },
+        GHZ: { name: "GHZ", size: block.value ? block.value.toString() : "" },
+        W: { name: "W State", size: block.value ? block.value.toString() : "" },
+        One: { name: "|1⟩", size: block.value ? block.value.toString() : "" },
+        Plus: { name: "|+⟩", size: block.value ? block.value.toString() : "" },
+        Minus: { name: "|-⟩", size: block.value ? block.value.toString() : "" },
+        Custom: { name: "Custom State", size: block.value ? block.value.toString() : "" }
+      };
+      const mappedState = stateMapping[prepareState] || stateMapping.Custom;
+      return {
+        type: "statePreparationNode",
+        label: "Prepare State",
+        identifiers,
+        inputTypes: Array(block.inputs.length).fill("quantum register"),
+        outputTypes: ["quantum register"],
+        width: 320,
+        height: 373,
+        data: {
+          quantumStateName: mappedState.name,
+          size: mappedState.size,
+          outputIdentifier: "",
+          outputs: [{ identifier: "", size: mappedState.size, type: "quantum" }],
+          numberQuantumInputs: block.inputs.length,
+          numberQuantumOutputs: 1,
+          numberClassicalInputs: 0,
+          numberClassicalOutputs: 0
+        }
+      };
+
+    // --- Clustering Blocks ---
+    case "QuantumClustering":
+      return {
+        type: "pluginNode",
+        label: "Quantum Clustering",
+        identifiers,
+        inputTypes: ["File", "Number"],
+        outputTypes: ["Array"],
+        width: 320,
+        height: 550,
+        data: {
+          label: "Quantum Clustering",
+          pluginName: "Quantum Clustering",
+          clusteringAlgorithm: "quantum-k-means",
+          identifiers,
+          inputTypes: ["File", "Number"],
+          outputTypes: { "0": "Array" },
+          dataInputs: [
+            {
+              parameter: "entityPointsUrl",
+              data_type: "entity/vector",
+              content_type: ["application/json", "text/csv"],
+              required: true
+            },
+            {
+              parameter: "numberOfClusters",
+              data_type: "int",
+              content_type: ["text/plain"],
+              required: true
+            }
+          ],
+          dataOutputs: [
+            {
+              name: "Cluster Labels",
+              data_type: "entity/label",
+              content_type: ["application/json"],
+              required: true
+            }
+          ],
+          inputs: [],
+          children: [],
+          implementation: "",
+          implementationType: "",
+          uncomputeImplementationType: "",
+          uncomputeImplementation: "",
+          completionGuaranteed: true,
+          numberQuantumInputs: 0,
+          numberQuantumOutputs: 0,
+          numberClassicalInputs: 2,
+          numberClassicalOutputs: 1
+        }
+      };
+    case "ClassicalClustering":
+      return {
+        type: "pluginNode",
+        label: "Classical Clustering",
+        identifiers,
+        inputTypes: ["File", "Number", "Number", "Number"],
+        outputTypes: ["Array"],
+        width: 320,
+        height: 550,
+        data: {
+          label: "Classical Clustering",
+          pluginName: "Classical Clustering",
+          clusteringAlgorithm: "k-means",
+          identifiers,
+          inputTypes: ["File", "Number", "Number", "Number"],
+          outputTypes: { "0": "Array" },
+          dataInputs: [
+            {
+              parameter: "entityPointsUrl",
+              data_type: "entity/vector",
+              content_type: ["application/json", "text/csv"],
+              required: true
+            },
+            {
+              parameter: "numberOfClusters",
+              data_type: "int",
+              content_type: ["text/plain"],
+              required: true
+            },
+            {
+              parameter: "relativeResidual",
+              data_type: "float",
+              content_type: ["text/plain"],
+              required: true
+            },
+            {
+              parameter: "maxIterations",
+              data_type: "int",
+              content_type: ["text/plain"],
+              required: true
+            }
+          ],
+          dataOutputs: [
+            {
+              name: "Cluster Labels",
+              data_type: "entity/label",
+              content_type: ["application/json"],
+              required: true
+            }
+          ],
+          inputs: [],
+          children: [],
+          implementation: "",
+          implementationType: "",
+          uncomputeImplementationType: "",
+          uncomputeImplementation: "",
+          completionGuaranteed: true,
+          numberQuantumInputs: 0,
+          numberQuantumOutputs: 0,
+          numberClassicalInputs: 4,
+          numberClassicalOutputs: 1
+        }
+      };
+
+    // --- Control Flow ---
+    case "If-Then-Else":
+      return {
+        type: "controlNode",
+        label: "If-Then-Else",
+        identifiers,
+        inputTypes: ["bit", "quantum register"],
+        outputTypes: ["quantum register"],
+        width: 320,
+        height: 400,
+        data: {
+          condition: block.condition || "",
+          identifiers,
+          inputTypes: ["bit", "quantum register"],
+          outputTypes: ["quantum register"],
+          numberQuantumInputs: 1,
+          numberQuantumOutputs: 1,
+          numberClassicalInputs: 1,
+          numberClassicalOutputs: 0
+        }
+      };
+    case "Repeat":
+      return {
+        type: "controlNode",
+        label: "Repeat",
+        identifiers,
+        inputTypes: ["bit", "quantum register"],
+        outputTypes: ["quantum register"],
+        width: 320,
+        height: 400,
+        data: {
+          number: block.number || 1,
+          identifiers,
+          inputTypes: ["bit", "quantum register"],
+          outputTypes: ["quantum register"],
+          numberQuantumInputs: 1,
+          numberQuantumOutputs: 1,
+          numberClassicalInputs: 1,
+          numberClassicalOutputs: 0
+        }
+      };
+
+    // --- Default ---
     default:
       return {
         type: "gateNode",
@@ -611,14 +1054,17 @@ function getNodeConfig(
         outputTypes: Array(block.outputs.length).fill("any"),
         width: 110,
         height: 110,
-        data: {}
+        data: {
+          numberQuantumInputs: block.inputs.length,
+          numberQuantumOutputs: block.outputs.length,
+          numberClassicalInputs: 0,
+          numberClassicalOutputs: 0
+        }
       };
   }
 }
 
-// Helper: Assign positions to nodes
 function assignPositions(nodes: any[], edges: any[]) {
-  // Step 1: Build adjacency list and in-degree map
   const adjacency: Record<string, string[]> = {};
   const inDegree: Record<string, number> = {};
   nodes.forEach(node => {
@@ -630,7 +1076,6 @@ function assignPositions(nodes: any[], edges: any[]) {
     inDegree[edge.target]++;
   });
 
-  // Step 2: Topological sort to assign depths
   const depth: Record<string, number> = {};
   const queue: string[] = [];
   nodes.forEach(node => {
@@ -651,7 +1096,6 @@ function assignPositions(nodes: any[], edges: any[]) {
     }
   }
 
-  // Step 3: Group nodes by depth (layer)
   const layers: Record<number, string[]> = {};
   nodes.forEach(node => {
     const d = depth[node.id];
@@ -659,14 +1103,12 @@ function assignPositions(nodes: any[], edges: any[]) {
     layers[d].push(node.id);
   });
 
-  // Step 4: Order nodes within each layer using barycenter heuristic
   const orderedLayers: string[][] = [];
   for (let d = 0; d < Object.keys(layers).length; d++) {
     if (!layers[d]) continue;
-    orderedLayers[d] = layers[d].slice(); // Copy
+    orderedLayers[d] = layers[d].slice();
   }
 
-  // Apply barycenter heuristic
   for (let d = 1; d < orderedLayers.length; d++) {
     const currentLayer = orderedLayers[d];
     const prevLayer = orderedLayers[d - 1];
@@ -689,11 +1131,11 @@ function assignPositions(nodes: any[], edges: any[]) {
     currentLayer.sort((a, b) => barycenters[a] - barycenters[b]);
   }
 
-  // Step 5: Assign x and y positions
-  const layerSpacing = 300; // Horizontal spacing between layers
-  const baseNodeSpacing = 20; // Minimum vertical spacing
+  // Increased layer spacing from 300 to 500 for better horizontal separation
+  const layerSpacing = 500;
+  // Increased base node spacing from 20 to 40 for better vertical separation
+  const baseNodeSpacing = 40;
 
-  // Calculate the maximum height in each layer
   const layerHeights: Record<number, number> = {};
   for (const d in layers) {
     const layer = layers[d];
@@ -705,18 +1147,22 @@ function assignPositions(nodes: any[], edges: any[]) {
     layerHeights[d] = maxHeight;
   }
 
-  // Assign positions with dynamic vertical spacing
   nodes.forEach(node => {
     const d = depth[node.id];
     const layer = orderedLayers[d];
     const indexInLayer = layer.indexOf(node.id);
 
-    // Calculate y position: sum of heights of previous nodes in the same layer + base spacing
     let y = 0;
     for (let i = 0; i < indexInLayer; i++) {
       const prevNodeId = layer[i];
       const prevNode = nodes.find(n => n.id === prevNodeId)!;
       y += prevNode.height + baseNodeSpacing;
+    }
+
+    // Add additional vertical spacing for data type nodes to prevent overlap
+    const nodeData = nodes.find(n => n.id === node.id);
+    if (nodeData && nodeData.type === "dataTypeNode") {
+      y += 20; // Extra spacing for data type nodes
     }
 
     node.position = {
@@ -727,59 +1173,191 @@ function assignPositions(nodes: any[], edges: any[]) {
   });
 }
 
-// Helper: Parse QLCM notation
 function parseQLCMNotation(qlcmNotation: string): Array<{
   id: string;
   step: string;
   inputs: string[];
   outputs: string[];
-  state: string,
-  value: string
+  state?: string;
+  value?: string | number;
+  variant?: string;
+  inputs_classical?: string[];
+  inputs_quantum?: string[];
+  condition?: string;
+  then?: any[];
+  else?: any[];
+  number?: number;
+  repeat?: any[];
 }> {
-  const blocks: Array<{ id: string; step: string; inputs: string[]; outputs: string[], state: string, value: string }> = [];
+  const blocks: Array<{
+    id: string;
+    step: string;
+    inputs: string[];
+    outputs: string[];
+    state?: string;
+    value?: string | number;
+    variant?: string;
+    inputs_classical?: string[];
+    inputs_quantum?: string[];
+    condition?: string;
+    then?: any[];
+    else?: any[];
+    number?: number;
+    repeat?: any[];
+  }> = [];
+
+  console.log("qlcmNotation:" + qlcmNotation);
+
   const innerContent = qlcmNotation.trim().slice(1, -1).trim();
-  const blockStrings = innerContent.split(/],\s*\[/).map(s => `[${s.trim()}]`);
+  if (!innerContent) return blocks;
 
-  for (const blockStr of blockStrings) {
-    const idMatch = blockStr.match(/id:\s*"([^"]+)"/);
-    const stepMatch = blockStr.match(/step:\s*"([^"]+)"/);
-    const inputsMatch = blockStr.match(/inputs:\s*\[([^\]]*)\]/);
-    const outputsMatch = blockStr.match(/outputs:\s*\[([^\]]*)\]/);
-
-    const id = idMatch ? idMatch[1] : "";
-    const step = stepMatch ? stepMatch[1] : "";
-    const inputs = inputsMatch
-      ? inputsMatch[1]
-        .split(',')
-        .map(s => s.trim().replace(/[\[\]"]/g, ''))
-        .filter(s => s) // Remove empty strings
-      : [];
-    const outputs = outputsMatch
-      ? outputsMatch[1]
-        .split(',')
-        .map(s => s.trim().replace(/[\[\]"]/g, ''))
-        .filter(s => s) // Remove empty strings
-      : [];
-    const stateMatch = blockStr.match(/state:\s*"([^"]+)"/);
-    const state = stateMatch ? stateMatch[1] : undefined;
-
-    const valueMatch = blockStr.match(/value:\s*"([^"]+)"/);
-    const value = valueMatch ? valueMatch[1] : undefined;
-
-    blocks.push({ id, step, inputs, outputs, state, value });
+  // Split blocks, handling nested structures
+  let depth = 0;
+  let start = 0;
+  for (let i = 0; i < innerContent.length; i++) {
+    if (innerContent[i] === '[') depth++;
+    if (innerContent[i] === ']') depth--;
+    if (depth === 0 && innerContent[i] === ',') {
+      const blockStr = innerContent.slice(start, i).trim();
+      if (blockStr) {
+        const parsedBlock = parseSingleBlock(`[${blockStr}]`);
+        if (parsedBlock) blocks.push(parsedBlock);
+      }
+      start = i + 1;
+    }
+  }
+  // Add the last block
+  const lastBlockStr = innerContent.slice(start).trim();
+  if (lastBlockStr) {
+    const parsedBlock = parseSingleBlock(`[${lastBlockStr}]`);
+    if (parsedBlock) blocks.push(parsedBlock);
   }
 
   return blocks;
 }
 
-// Helper: check if model has cycle
+function parseSingleBlock(blockStr: string): any {
+  const idMatch = blockStr.match(/id:\s*"([^"]+)"/);
+  const stepMatch = blockStr.match(/step:\s*"([^"]+)"/);
+  const inputsMatch = blockStr.match(/inputs:\s*\[([^\]]*)\]/);
+  const outputsMatch = blockStr.match(/outputs:\s*\[([^\]]*)\]/);
+  const stateMatch = blockStr.match(/state:\s*"([^"]+)"/);
+  const valueMatch = blockStr.match(/value:\s*"([^"]+)"|value:\s*([^\s,\[\]]+)/);
+  const variantMatch = blockStr.match(/variant:\s*"([^"]+)"/);
+  const inputsClassicalMatch = blockStr.match(/inputs_classical:\s*\[([^\]]*)\]/);
+  const inputsQuantumMatch = blockStr.match(/inputs_quantum:\s*\[([^\]]*)\]/);
+  const conditionMatch = blockStr.match(/condition:\s*"([^"]+)"/);
+  const numberMatch = blockStr.match(/number:\s*(\d+)/);
+
+  const id = idMatch ? idMatch[1] : "";
+  const step = stepMatch ? stepMatch[1] : "";
+
+  const inputs = inputsMatch
+    ? inputsMatch[1]
+      .split(',')
+      .map(s => s.trim().replace(/[\[\]"]/g, ''))
+      .filter(s => s)
+    : [];
+
+  const outputs = outputsMatch
+    ? outputsMatch[1]
+      .split(',')
+      .map(s => s.trim().replace(/[\[\]"]/g, ''))
+      .filter(s => s)
+    : [];
+
+  const state = stateMatch ? stateMatch[1] : undefined;
+
+  // Handle value (can be string or number)
+  let value: string | number | undefined;
+  if (valueMatch) {
+    value = valueMatch[1] ? valueMatch[1] : valueMatch[2];
+    // Try to parse as number if not a string
+    if (value && !isNaN(Number(value)) && !/^["']/.test(value)) {
+      value = Number(value);
+    }
+  }
+
+  const variant = variantMatch ? variantMatch[1] : undefined;
+
+  const inputs_classical = inputsClassicalMatch
+    ? inputsClassicalMatch[1]
+      .split(',')
+      .map(s => s.trim().replace(/[\[\]"]/g, ''))
+      .filter(s => s)
+    : [];
+
+  const inputs_quantum = inputsQuantumMatch
+    ? inputsQuantumMatch[1]
+      .split(',')
+      .map(s => s.trim().replace(/[\[\]"]/g, ''))
+      .filter(s => s)
+    : [];
+
+  const condition = conditionMatch ? conditionMatch[1] : undefined;
+  const number = numberMatch ? parseInt(numberMatch[1], 10) : undefined;
+
+  // Handle nested blocks (then/else/repeat)
+  let thenBlocks: any[] = [];
+  let elseBlocks: any[] = [];
+  let repeatBlocks: any[] = [];
+
+  // Use a more robust regex to capture nested blocks
+  const thenMatch = blockStr.match(/then:\s*\[([\s\S]*?)(?=\s*else:\s*\[|\s*\]\s*$)/);
+  if (thenMatch) {
+    try {
+      const thenContent = `[${thenMatch[1].trim()}]`;
+      thenBlocks = parseQLCMNotation(thenContent);
+    } catch (e) {
+      console.warn("Could not parse then blocks:", e);
+    }
+  }
+
+  const elseMatch = blockStr.match(/else:\s*\[([\s\S]*?)(?=\s*\]\s*$)/);
+  if (elseMatch) {
+    try {
+      const elseContent = `[${elseMatch[1].trim()}]`;
+      elseBlocks = parseQLCMNotation(elseContent);
+    } catch (e) {
+      console.warn("Could not parse else blocks:", e);
+    }
+  }
+
+  const repeatMatch = blockStr.match(/repeat:\s*\[([\s\S]*?)(?=\s*\]\s*$)/);
+  if (repeatMatch) {
+    try {
+      const repeatContent = `[${repeatMatch[1].trim()}]`;
+      repeatBlocks = parseQLCMNotation(repeatContent);
+    } catch (e) {
+      console.warn("Could not parse repeat blocks:", e);
+    }
+  }
+
+  return {
+    id,
+    step,
+    inputs,
+    outputs,
+    state,
+    value,
+    variant,
+    inputs_classical,
+    inputs_quantum,
+    condition,
+    number,
+    then: thenBlocks,
+    else: elseBlocks,
+    repeat: repeatBlocks
+  };
+}
+
 function hasCycle(blocks: Array<{ id: string; inputs: string[]; outputs: string[] }>): boolean {
   const visited = new Set<string>();
   const recursionStack = new Set<string>();
 
   function visit(blockId: string): boolean {
-    if (recursionStack.has(blockId)) return true; // Cycle detected
-    if (visited.has(blockId)) return false; // Already visited, no cycle here
+    if (recursionStack.has(blockId)) return true;
+    if (visited.has(blockId)) return false;
 
     visited.add(blockId);
     recursionStack.add(blockId);
@@ -787,7 +1365,6 @@ function hasCycle(blocks: Array<{ id: string; inputs: string[]; outputs: string[
     const block = blocks.find(b => b.id === blockId);
     if (!block) return false;
 
-    // Check all inputs for cycles
     for (const inputId of block.inputs) {
       if (visit(inputId)) return true;
     }
@@ -808,14 +1385,14 @@ function validateBlocks(blocks: Array<{ id: string; inputs: string[]; outputs: s
   for (const block of blocks) {
     // Check for self-references
     if (block.inputs.includes(block.id) || block.outputs.includes(block.id)) {
-      console.error(`Block ${block.id} references itself in inputs or outputs.`);
+      console.error(`❌ Block ${block.id} references itself in inputs or outputs.`);
       return false;
     }
 
     // Check for invalid input references
     for (const inputId of block.inputs) {
       if (!blockIds.has(inputId)) {
-        console.error(`Block ${block.id} references non-existent input: ${inputId}`);
+        console.error(`❌ Block ${block.id} references non-existent input: ${inputId}. Available blocks: ${Array.from(blockIds).join(", ")}`);
         return false;
       }
     }
@@ -823,7 +1400,7 @@ function validateBlocks(blocks: Array<{ id: string; inputs: string[]; outputs: s
     // Check for invalid output references
     for (const outputId of block.outputs) {
       if (!blockIds.has(outputId)) {
-        console.error(`Block ${block.id} references non-existent output: ${outputId}`);
+        console.error(`❌ Block ${block.id} references non-existent output: ${outputId}. Available blocks: ${Array.from(blockIds).join(", ")}`);
         return false;
       }
     }

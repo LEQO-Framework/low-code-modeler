@@ -780,8 +780,27 @@ export const useStore = create<RFState>()(persist((set, get) => ({
       }
     };
     console.log("!hasCycle", !hasCycle(target))
-    if(hasCycle(target)) { setTypeError("Cycles are not allowed, since the quantum output of an operation cannot be fed back as the input to a previous operation."); return false }
 
+    // --- BYPASS CYCLE CHECK FOR CONTROL FLOW CLOSURES ---
+    let isControlFlowEnd = false;
+    const sourceNodeForCycle = get().nodes.find(n => n.id === connection.source);
+
+    if (target?.type === "ifElseNode" || target?.type === "controlStructureNode") {
+        if (sourceNodeForCycle && sourceNodeForCycle.parentNode === target.id) {
+            isControlFlowEnd = true;
+        }
+        else if (
+            connection.targetHandle && 
+            (connection.targetHandle.includes("DynamicOutput") || connection.targetHandle.includes("InputDynamic"))
+        ) {
+            isControlFlowEnd = true;
+        }
+    }
+
+    if (!isControlFlowEnd && hasCycle(target)) { 
+        setTypeError("Cycles are not allowed, since the quantum output of an operation cannot be fed back as the input to a previous operation."); 
+        return false; 
+    }
     if (target.id === connection.source && target.type !== "splitterNode" && target.type !== "mergerNode") { console.log("source target"); return false };
 
     for (let node of currentNodes) {

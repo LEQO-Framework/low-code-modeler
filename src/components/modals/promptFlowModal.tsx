@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Modal from "./Modal";
+import { generate } from "@/generationBackend";
 
 type InputNode = {
   name: string;
@@ -7,30 +8,43 @@ type InputNode = {
   options?: string[];
 };
 
-export default function PromptFlowModal({
-  open,
-  onClose,
-  sendToMistral,
-  generateFlow,
-  mistralToken,
-}: {
+interface PromptFlowModalProps {
   open: boolean;
   onClose: (flow?: any) => void;
   sendToMistral: (prompt: string, token: string) => Promise<any>;
-  generateFlow: (data: any, token: string) => Promise<any>;
+  showToast: (text: any, type: any)=> void;
+  generateFlow: (
+    data: {
+      prompt: string;
+      inputs: Record<string, any>;
+      generationMode: "compact" | "circuit";
+    },
+    token: string,
+    lowcodeBackendEndpoint?: string
+  ) => Promise<any>;
   mistralToken: string;
-}) {
+  loadFlow: (flow: any) => void;
+  lowcodeBackendEndpoint: string;
+}
+
+export default function PromptFlowModal({
+  open,
+  onClose,
+  showToast,
+  sendToMistral,
+  generateFlow,
+  mistralToken,
+  loadFlow,
+  lowcodeBackendEndpoint,
+}: PromptFlowModalProps) {
   const [step, setStep] = useState(1);
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
-
   const [inputNodes, setInputNodes] = useState<InputNode[]>([]);
   const [nodeValues, setNodeValues] = useState<Record<string, any>>({});
-
   const [error, setError] = useState<string | null>(null);
-
-  // clarification support
   const [clarifyingQuestions, setClarifyingQuestions] = useState<string[]>([]);
+  const [generationMode, setGenerationMode] = useState<"compact" | "circuit">("compact");
 
   const handleSubmitPrompt = async () => {
     if (!prompt.trim()) return;
@@ -40,9 +54,8 @@ export default function PromptFlowModal({
     setClarifyingQuestions([]);
 
     try {
-      const result = await sendToMistral(prompt, mistralToken);
-
-      // handle clarification mode
+      //const result = await sendToMistral(prompt, mistralToken);
+/*
       if (result?.needs_clarification) {
         setStep(1);
         setInputNodes([]);
@@ -57,51 +70,26 @@ export default function PromptFlowModal({
         throw new Error("Invalid response format");
       }
 
-      if (extractedInputs.length === 0) {
-        setError("No input nodes detected. Try a more detailed prompt.");
-        setStep(1);
-        setInputNodes([]);
-        setNodeValues({});
-        return;
-      }
-
-      setInputNodes(extractedInputs);
-
       const initialValues: Record<string, any> = {};
       extractedInputs.forEach((node) => {
         initialValues[node.name] = "";
       });
 
+      setInputNodes(extractedInputs);
       setNodeValues(initialValues);
-      setStep(2);
-    } catch (err: any) {
-      console.error(err);
-      setError("Failed to process prompt. Check your API key or input.");
-    } finally {
-      setLoading(false);
-    }
-  };
+*/
+      console.log("Call now the other backend")
+      const test = await generate(prompt, generationMode);
+      showToast("Your model is now being generated.", "info");
 
-  const handleGenerateFlow = async () => {
-    setLoading(true);
-    setError(null);
+      console.log("Hier das Reuslt vom Bakcend")
+      console.log(test);
 
-    try {
-      const flow = await generateFlow(
-        {
-          prompt,
-          inputs: nodeValues,
-        },
-        mistralToken
-      );
-
-      if (!flow) throw new Error("No flow returned");
-
-      onClose(flow);
+      onClose();
       resetState();
     } catch (err: any) {
       console.error(err);
-      setError("Failed to generate flow.");
+      setError("Failed to process prompt. Check your API key or input.");
     } finally {
       setLoading(false);
     }
@@ -142,7 +130,6 @@ export default function PromptFlowModal({
               >
                 {loading ? "Processing..." : "Submit Prompt"}
               </button>
-
               <button className="btn btn-secondary" onClick={handleClose}>
                 Cancel
               </button>
@@ -155,7 +142,6 @@ export default function PromptFlowModal({
                 {error}
               </div>
             )}
-
             {clarifyingQuestions.length > 0 && (
               <div className="bg-yellow-100 text-yellow-900 p-3 rounded">
                 <p className="font-semibold mb-2">Clarify your request:</p>
@@ -166,7 +152,6 @@ export default function PromptFlowModal({
                 </ul>
               </div>
             )}
-
             <textarea
               className="w-full border rounded p-2"
               rows={5}
@@ -174,10 +159,23 @@ export default function PromptFlowModal({
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
             />
+            <div className="space-y-2">
+              <label className="block font-medium">
+                Generation Mode:
+                <select
+                  className="ml-2 border rounded p-1"
+                  value={generationMode}
+                  onChange={(e) => setGenerationMode(e.target.value as "compact" | "circuit")}
+                >
+                  <option value="compact">Compact</option>
+                  <option value="circuit">Circuit-Level</option>
+                </select>
+              </label>
+            </div>
           </div>
         </Modal>
       )}
-
+      {/* COMMENTED OUT: Second modal
       {open && step === 2 && (
         <Modal
           title="Provide Input Data (2/2)"
@@ -286,6 +284,7 @@ export default function PromptFlowModal({
           </div>
         </Modal>
       )}
+      */}
     </>
   );
 }
