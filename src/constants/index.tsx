@@ -17,6 +17,7 @@ export const DataTypeNode: string = "dataTypeNode";
 export const GateNode: string = "gateNode";
 export const QFTNode: string = "qftNode";
 export const InverseQFTNode: string = "inverseQftNode";
+export const MCMTGateNode: string = "mcmt-gate";
 export const AlgorithmNode: string = "algorithmNode";
 export const ClassicalAlgorithmNode: string = "classicalAlgorithmNode";
 export const StatePreparationNode: string = "statePreparationNode";
@@ -39,6 +40,7 @@ export const NodeTypes = [
   DataTypeNode,
   GateNode,
   AlgorithmNode,
+  MCMTGateNode,
   ClassicalAlgorithmNode,
   StatePreparationNode,
   MeasurementNode,
