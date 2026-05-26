@@ -25,14 +25,12 @@ export const QAOANode = memo((node: Node) => {
   const [problem, setProblem] = useState(data.problem || "MaxCut");
   const [optimizer, setOptimizer] = useState(data.optimizer || "COBYLA");
   
-  // Output Port State
   const [outputs, setOutputs] = useState(data.outputs || []);
   const [outputIdentifierError, setOutputIdentifierError] = useState(false);
   const [sizeError, setSizeError] = useState(false);
   const [startsWithDigitError, setStartsWithDigitError] = useState(false);
   const [paramError, setParamError] = useState(false);
 
-  // Validate Output Identifier & Sync Classical Parameter Lengths
   useEffect(() => {
     const identifier = data.outputIdentifier || "";
     const duplicates = findDuplicateOutputIdentifiers(nodes, id);
@@ -41,7 +39,9 @@ export const QAOANode = memo((node: Node) => {
 
     setOutputIdentifierError(isDuplicate && identifier !== "");
     setStartsWithDigitError(startsWithDigit);
-    
+  }, [nodes, id, data.outputIdentifier]);
+
+  useEffect(() => {
     const getConnectedValue = (handleId: string) => {
       const edge = edges.find((e: Edge) => e.target === id && e.targetHandle === handleId);
       if (!edge) return null;
@@ -56,11 +56,9 @@ export const QAOANode = memo((node: Node) => {
     const strBeta = rawBeta != null ? (Array.isArray(rawBeta) ? rawBeta.join(",") : String(rawBeta)) : "";
 
     if (data.gamma !== strGamma) {
-      data.gamma = strGamma;
       updateNodeValue(id, "gamma", strGamma);
     }
     if (data.beta !== strBeta) {
-      data.beta = strBeta;
       updateNodeValue(id, "beta", strBeta);
     }
 
@@ -77,9 +75,11 @@ export const QAOANode = memo((node: Node) => {
     const betaMismatch = rawBeta != null && strBeta !== "" && betaLen !== p;
 
     setParamError(gammaMismatch || betaMismatch);
-    
+  }, [edges, nodes, id, p, data.gamma, data.beta, updateNodeValue]);
+
+  useEffect(() => {
     updateNodeInternals(id);
-  }, [nodes, edges, data.outputIdentifier, id, updateNodeInternals, p, updateNodeValue, data]);
+  }, [id, p, updateNodeInternals]);
 
   const handleChange = (field: string, value: any) => {
     data[field] = value;
@@ -89,17 +89,13 @@ export const QAOANode = memo((node: Node) => {
 
   const dynamicHeight = 440; 
 
-  // Visual connection states for the handles
-  const isEdgesConnected = edges.some(e => e.target === id && e.targetHandle === `classicalHandleQAOAInput0${id}`);
-  const isGammaConnected = edges.some(e => e.target === id && e.targetHandle === `classicalHandleQAOAInput1${id}`);
-  const isBetaConnected = edges.some(e => e.target === id && e.targetHandle === `classicalHandleQAOAInput2${id}`);
-
   return (
     <motion.div
       className="grand-parent"
       initial={false}
       animate={{ width: 320, height: dynamicHeight }}
       transition={{ duration: 0.3, ease: "easeInOut" }}
+      onAnimationComplete={() => updateNodeInternals(id)}
     >
       <div className="grand-parent">
         <div
