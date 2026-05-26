@@ -176,7 +176,7 @@ export const categories: Record<string, CategoryEntry> = {
     description: ["Predefined quantum and classical operators, including oracles, arithmetic, bitwise, and comparison operations.", "Predefined quantum arithmetic operator."],
     content: {
       "Quantum Operators": {
-        "Oracles & Algorithms": [
+        "Algorithms & Oracles": [
         {
           label: "QAOA Ansatz",
           type: consts.QAOANode,
