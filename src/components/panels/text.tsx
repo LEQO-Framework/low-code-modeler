@@ -415,7 +415,7 @@ export const TextPanel = () => {
               </>
             )}
 
-            {!completionGuaranteed && (
+            {(
               <>
                 <label
                   className="block text-sm font-medium text-start text-gray-700 mt-2"
