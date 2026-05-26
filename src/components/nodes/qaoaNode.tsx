@@ -25,10 +25,6 @@ export const QAOANode = memo((node: Node) => {
   const [problem, setProblem] = useState(data.problem || "MaxCut");
   const [optimizer, setOptimizer] = useState(data.optimizer || "COBYLA");
   
-  // Gamma and Beta state
-  const [gamma, setGamma] = useState(data.gamma || "");
-  const [beta, setBeta] = useState(data.beta || "");
-  
   // Output Port State
   const [outputs, setOutputs] = useState(data.outputs || []);
   const [outputIdentifierError, setOutputIdentifierError] = useState(false);
@@ -36,9 +32,9 @@ export const QAOANode = memo((node: Node) => {
   const [startsWithDigitError, setStartsWithDigitError] = useState(false);
   const [paramError, setParamError] = useState(false);
 
-  // Validate Output Identifier & Parameter Lengths
+  // Validate Output Identifier & Sync Classical Parameter Lengths
   useEffect(() => {
-    const identifier = data.outputIdentifier;
+    const identifier = data.outputIdentifier || "";
     const duplicates = findDuplicateOutputIdentifiers(nodes, id);
     const isDuplicate = duplicates.has(identifier);
     const startsWithDigit = /^\d/.test(identifier);
@@ -46,16 +42,44 @@ export const QAOANode = memo((node: Node) => {
     setOutputIdentifierError(isDuplicate && identifier !== "");
     setStartsWithDigitError(startsWithDigit);
     
-    // Validate comma-separated length matching circuit layer count p
-    const parsedGammas = gamma.split(",").map(x => x.trim()).filter(Boolean);
-    const parsedBetas = beta.split(",").map(x => x.trim()).filter(Boolean);
-    
-    const gammaMismatch = gamma.trim() !== "" && parsedGammas.length !== p;
-    const betaMismatch = beta.trim() !== "" && parsedBetas.length !== p;
+    const getConnectedValue = (handleId: string) => {
+      const edge = edges.find((e: Edge) => e.target === id && e.targetHandle === handleId);
+      if (!edge) return null;
+      const sourceNode = nodes.find((n: Node) => n.id === edge.source);
+      return sourceNode ? sourceNode.data.value : null;
+    };
+
+    const rawGamma = getConnectedValue(`classicalHandleQAOAInput1${id}`);
+    const rawBeta = getConnectedValue(`classicalHandleQAOAInput2${id}`);
+
+    const strGamma = rawGamma != null ? (Array.isArray(rawGamma) ? rawGamma.join(",") : String(rawGamma)) : "";
+    const strBeta = rawBeta != null ? (Array.isArray(rawBeta) ? rawBeta.join(",") : String(rawBeta)) : "";
+
+    if (data.gamma !== strGamma) {
+      data.gamma = strGamma;
+      updateNodeValue(id, "gamma", strGamma);
+    }
+    if (data.beta !== strBeta) {
+      data.beta = strBeta;
+      updateNodeValue(id, "beta", strBeta);
+    }
+
+    const parseLength = (val: any) => {
+      if (val == null || val === "") return 0;
+      if (Array.isArray(val)) return val.length;
+      return String(val).split(",").filter((x: string) => x.trim() !== "").length;
+    };
+
+    const gammaLen = parseLength(rawGamma);
+    const betaLen = parseLength(rawBeta);
+
+    const gammaMismatch = rawGamma != null && strGamma !== "" && gammaLen !== p;
+    const betaMismatch = rawBeta != null && strBeta !== "" && betaLen !== p;
+
     setParamError(gammaMismatch || betaMismatch);
     
     updateNodeInternals(id);
-  }, [nodes, data.outputIdentifier, id, updateNodeInternals, gamma, beta, p]);
+  }, [nodes, edges, data.outputIdentifier, id, updateNodeInternals, p, updateNodeValue, data]);
 
   const handleChange = (field: string, value: any) => {
     data[field] = value;
@@ -63,7 +87,12 @@ export const QAOANode = memo((node: Node) => {
     setSelectedNode(node);
   };
 
-  const dynamicHeight = 570; 
+  const dynamicHeight = 440; 
+
+  // Visual connection states for the handles
+  const isEdgesConnected = edges.some(e => e.target === id && e.targetHandle === `classicalHandleQAOAInput0${id}`);
+  const isGammaConnected = edges.some(e => e.target === id && e.targetHandle === `classicalHandleQAOAInput1${id}`);
+  const isBetaConnected = edges.some(e => e.target === id && e.targetHandle === `classicalHandleQAOAInput2${id}`);
 
   return (
     <motion.div
@@ -87,7 +116,7 @@ export const QAOANode = memo((node: Node) => {
               <div className="absolute top-5 left-[30px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-2 rounded shadow min-w-[200px] flex flex-col gap-1">
                 {startsWithDigitError && <div>• Identifier starts with a number.</div>}
                 {outputIdentifierError && <div>• Identifier is not unique.</div>}
-                {paramError && <div>• Parameter count mismatch with layers (p).</div>}
+                {paramError && <div>• Parameter array length does not match layer count (p).</div>}
               </div>
             </div>
           )}
@@ -160,48 +189,10 @@ export const QAOANode = memo((node: Node) => {
               />
             </div>
 
-            {/* Gamma Input */}
-            <div className="flex flex-col items-center justify-center w-full">
-              <label className="text-xs font-semibold text-gray-700 text-center mb-1">Gamma (γ):</label>
-              <input
-                type="text"
-                placeholder="e.g. 0.5, 1.2"
-                className={cn(
-                  "w-full p-1 text-sm text-center text-black border-2 rounded-full outline-none transition-colors",
-                  gamma.trim() !== "" && gamma.split(",").map(x => x.trim()).filter(Boolean).length !== p
-                    ? "border-red-300 bg-red-50 focus:border-red-500"
-                    : "border-blue-200 focus:border-blue-400"
-                )}
-                value={gamma}
-                onChange={(e) => {
-                  setGamma(e.target.value);
-                  handleChange("gamma", e.target.value);
-                }}
-              />
-            </div>
+            {/* CLASSICAL REGISTER INPUT PORTS */}
+            <div className="relative left-0 w-full flex flex-col gap-2 justify-start mt-2">
 
-            {/* Beta Input */}
-            <div className="flex flex-col items-center justify-center w-full">
-              <label className="text-xs font-semibold text-gray-700 text-center mb-1">Beta (β):</label>
-              <input
-                type="text"
-                placeholder="e.g. 0.2, 0.8"
-                className={cn(
-                  "w-full p-1 text-sm text-center text-black border-2 rounded-full outline-none transition-colors",
-                  beta.trim() !== "" && beta.split(",").map(x => x.trim()).filter(Boolean).length !== p
-                    ? "border-red-300 bg-red-50 focus:border-red-500"
-                    : "border-blue-200 focus:border-blue-400"
-                )}
-                value={beta}
-                onChange={(e) => {
-                  setBeta(e.target.value);
-                  handleChange("beta", e.target.value);
-                }}
-              />
-            </div>
-
-            {/* CLASSICAL REGISTER INPUT PORT (Moved below configuration blocks) */}
-            <div className="relative left-0 w-full flex justify-start mt-2">
+              {/* Edges Port */}
               <div
                 className="relative p-2"
                 style={{
@@ -212,14 +203,14 @@ export const QAOANode = memo((node: Node) => {
                   justifyContent: 'flex-start',
                   borderTopRightRadius: '20px',
                   borderBottomRightRadius: '20px',
-                  marginLeft: '-16px' // counteracts parent wrapper's px-4 alignment
+                  marginLeft: '-16px'
                 }}
               >
                 <Handle
                   type="target"
                   id={`classicalHandleQAOAInput0${id}`}
                   position={Position.Left}
-                  className="z-10 classical-circle-port-operation !bg-orange-400 !border-black -left-[6px]"
+                  className="z-10 classical-circle-port-operation !bg-orange-300 !border-black -left-[6px]"
                   style={{ width: 12, height: 12 }}
                 />
                 <div className="flex flex-col items-start w-full leading-tight pl-2">
@@ -227,6 +218,61 @@ export const QAOANode = memo((node: Node) => {
                   <span className="text-gray-600 text-[9px]">type: array</span>
                 </div>
               </div>
+
+              {/* Gamma Port */}
+              <div
+                className="relative p-2"
+                style={{
+                  backgroundColor: classicalConstructColor || "#fed7aa", 
+                  width: '120px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'flex-start',
+                  borderTopRightRadius: '20px',
+                  borderBottomRightRadius: '20px',
+                  marginLeft: '-16px'
+                }}
+              >
+                <Handle
+                  type="target"
+                  id={`classicalHandleQAOAInput1${id}`}
+                  position={Position.Left}
+                  className="z-10 classical-circle-port-operation !bg-orange-300 !border-black -left-[6px]"
+                  style={{ width: 12, height: 12 }}
+                />
+                <div className="flex flex-col items-start w-full leading-tight pl-2">
+                  <span className="text-black text-[12px] font-medium">Gamma (γ)</span>
+                  <span className="text-gray-600 text-[9px]">type: array</span>
+                </div>
+              </div>
+
+              {/* Beta Port */}
+              <div
+                className="relative p-2"
+                style={{
+                  backgroundColor: classicalConstructColor || "#fed7aa", 
+                  width: '120px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'flex-start',
+                  borderTopRightRadius: '20px',
+                  borderBottomRightRadius: '20px',
+                  marginLeft: '-16px'
+                }}
+              >
+                <Handle
+                  type="target"
+                  id={`classicalHandleQAOAInput2${id}`}
+                  position={Position.Left}
+                  className="z-10 classical-circle-port-operation !bg-orange-300 !border-black -left-[6px]"
+                  style={{ width: 12, height: 12 }}
+                />
+                <div className="flex flex-col items-start w-full leading-tight pl-2">
+                  <span className="text-black text-[12px] font-medium">Beta (β)</span>
+                  <span className="text-gray-600 text-[9px]">type: array</span>
+                </div>
+              </div>
+
             </div>
           </div>
 
