@@ -18,6 +18,7 @@ import { SplitterNode } from "@/components/nodes/splitter";
 import { MergerNode } from "@/components/nodes/merger";
 import { ClassicalAlgorithmNode } from "@/components/nodes/classicalalgorithm";
 import { QubitNode } from "@/components/nodes/qubit";
+import { QAOANode } from "@/components/nodes/qaoaNode";
 import { ClassicalOperationNode } from "@/components/nodes/classicalOperation";
 import { GroupNode } from "@/components/nodes/group";
 import { EditableNode } from "@/components/nodes/editableNode";
@@ -50,6 +51,7 @@ export const nodesConfig = {
     editableNode: EditableNode,
     qftNode: QFTNode,
     inverseQftNode: InverseQFTNode,
+    [consts.QAOANode]: QAOANode,
     [consts.MCMTGateNode]: MCMTGateNode,
   } as any,
   edgesTypes: {
@@ -83,6 +85,7 @@ export const initialDiagram = {
     pluginNode: PluginNode,
     qftNode: QFTNode,
     inverseQftNode: InverseQFTNode,
+    [consts.QAOANode]: QAOANode,
     [consts.MCMTGateNode]: MCMTGateNode,
   } as any,
 };
