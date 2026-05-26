@@ -87,7 +87,9 @@ export const QAOANode = memo((node: Node) => {
     setSelectedNode(node);
   };
 
-  const dynamicHeight = 440; 
+  const dynamicHeight = 550; 
+  const classicalInputLabel =
+  problem === "Max2SAT" ? "Clauses" : "Edges";
 
   return (
     <motion.div
@@ -121,7 +123,7 @@ export const QAOANode = memo((node: Node) => {
           <div className="w-full flex items-center" style={{ height: '52px' }}>
             <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
               <img
-                src="PaletteIcon_QAOA.svg"
+                src="patterns/qaoa_icon.png"
                 alt="QAOA icon"
                 className="w-[40px] h-[40px] object-contain flex-shrink-0"
               />
@@ -210,8 +212,8 @@ export const QAOANode = memo((node: Node) => {
                   style={{ width: 12, height: 12, top: '50%', transform: 'translateY(-50%)' }}
                 />
                 <div className="flex flex-col items-start w-full leading-tight pl-2">
-                  <span className="text-black text-[12px] font-medium">Edges</span>
-                  <span className="text-gray-600 text-[9px]">type: array</span>
+                  <span className="text-black text-sm">{classicalInputLabel}</span>
+                  <span className="text-[10px] text-gray-600">type: array</span>
                 </div>
               </div>
 
@@ -237,8 +239,8 @@ export const QAOANode = memo((node: Node) => {
                   style={{ width: 12, height: 12, top: '50%', transform: 'translateY(-50%)' }}
                 />
                 <div className="flex flex-col items-start w-full leading-tight pl-2">
-                  <span className="text-black text-[12px] font-medium">Gamma (γ)</span>
-                  <span className="text-gray-600 text-[9px]">type: array</span>
+                  <span className="text-black text-sm">Gamma (γ)</span>
+                  <span className="text-[10px] text-gray-600">type: array</span>
                 </div>
               </div>
 
@@ -264,7 +266,7 @@ export const QAOANode = memo((node: Node) => {
                   style={{ width: 12, height: 12, top: '50%', transform: 'translateY(-50%)' }}
                 />
                 <div className="flex flex-col items-start w-full leading-tight pl-2">
-                  <span className="text-black text-[12px] font-medium">Beta (β)</span>
+                  <span className="text-black text-sm">Beta (β)</span>
                   <span className="text-gray-600 text-[9px]">type: array</span>
                 </div>
               </div>
@@ -273,7 +275,7 @@ export const QAOANode = memo((node: Node) => {
           </div>
 
           {/* RIGHT PORT: Quantum Output Register */}
-          <div className="custom-node-port-out absolute bottom-4 right-0">
+          <div className="custom-node-port-out absolute bottom-16 right-0 top-[400px]">
             <OutputPort
               node={node}
               index={0}
