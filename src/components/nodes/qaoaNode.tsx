@@ -207,7 +207,7 @@ export const QAOANode = memo((node: Node) => {
                   id={`classicalHandleQAOAInput0${id}`}
                   position={Position.Left}
                   className="z-10 classical-circle-port-operation !bg-orange-300 !border-black -left-[6px]"
-                  style={{ width: 12, height: 12 }}
+                  style={{ width: 12, height: 12, top: '50%', transform: 'translateY(-50%)' }}
                 />
                 <div className="flex flex-col items-start w-full leading-tight pl-2">
                   <span className="text-black text-[12px] font-medium">Edges</span>
@@ -234,7 +234,7 @@ export const QAOANode = memo((node: Node) => {
                   id={`classicalHandleQAOAInput1${id}`}
                   position={Position.Left}
                   className="z-10 classical-circle-port-operation !bg-orange-300 !border-black -left-[6px]"
-                  style={{ width: 12, height: 12 }}
+                  style={{ width: 12, height: 12, top: '50%', transform: 'translateY(-50%)' }}
                 />
                 <div className="flex flex-col items-start w-full leading-tight pl-2">
                   <span className="text-black text-[12px] font-medium">Gamma (γ)</span>
@@ -261,7 +261,7 @@ export const QAOANode = memo((node: Node) => {
                   id={`classicalHandleQAOAInput2${id}`}
                   position={Position.Left}
                   className="z-10 classical-circle-port-operation !bg-orange-300 !border-black -left-[6px]"
-                  style={{ width: 12, height: 12 }}
+                  style={{ width: 12, height: 12, top: '50%', transform: 'translateY(-50%)' }}
                 />
                 <div className="flex flex-col items-start w-full leading-tight pl-2">
                   <span className="text-black text-[12px] font-medium">Beta (β)</span>

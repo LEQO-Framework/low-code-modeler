@@ -90,23 +90,6 @@ export const categories: Record<string, CategoryEntry> = {
           label: "Measurement", type: consts.MeasurementNode, icon: "PaletteIcon_Measurement.png", description: "Measures a quantum state and returns its classical information and collapsed quantum state.", completionGuaranteed: true, compactOptions: [true, false],
         },
       ],
-      "Oracles & Algorithms": [
-        {
-          label: "QAOA Ansatz",
-          type: consts.QAOANode,
-          icon: "PaletteIcon_QAOA.png",
-          description: "Generates a parameterized Quantum Approximate Optimization Algorithm (QAOA) circuit for a given graph.",
-          completionGuaranteed: false,
-          compactOptions: [false],
-          data: {
-            label: "QAOA Ansatz",
-            p: 1,
-            problem: "MaxCut",
-            optimizer: "COBYLA",
-            outputIdentifier: ""
-          }
-        }
-      ],
     },
   },
 
@@ -190,9 +173,27 @@ export const categories: Record<string, CategoryEntry> = {
   },
 
   [consts.operator]: {
-    description: ["Predefined quantum and classical operators, including arithmetic, bitwise, and comparison operations.", "Predefined quantum arithmetic operator."],
+    description: ["Predefined quantum and classical operators, including oracles, arithmetic, bitwise, and comparison operations.", "Predefined quantum arithmetic operator."],
     content: {
-      "Quantum Operators": [
+      "Quantum Operators": {
+        "Oracles & Algorithms": [
+        {
+          label: "QAOA Ansatz",
+          type: consts.QAOANode,
+          icon: "PaletteIcon_QAOA.png",
+          description: "Generates a parameterized Quantum Approximate Optimization Algorithm (QAOA) circuit for a given graph.",
+          completionGuaranteed: false,
+          compactOptions: [false],
+          data: {
+            label: "QAOA Ansatz",
+            p: 1,
+            problem: "MaxCut",
+            optimizer: "COBYLA",
+            outputIdentifier: ""
+          }
+        },
+      ],
+      "Arithmetic & Logic": [
         { label: consts.quantumLabel + consts.arithmeticOperatorLabel, type: consts.OperatorNode, icon: ["PaletteIcon_ArithmeticOperator.png", "PaletteIcon_Ancilla_ArithmeticOperator.png"], description: "Performs quantum arithmetic (add, subtract, etc.).", completionGuaranteed: true, compactOptions: [true, false] },
         { label: consts.quantumLabel + consts.bitwiseOperatorLabel, type: consts.OperatorNode, icon: ["PaletteIcon_BitwiseOperator.png", "PaletteIcon_Ancilla_BitwiseOperator.png"], description: "Applies quantum bitwise operations.", completionGuaranteed: true, compactOptions: [true, false] },
         { label: consts.quantumLabel + consts.comparisonOperatorLabel, type: consts.OperatorNode, icon: ["PaletteIcon_ComparisonOperator.png", "PaletteIcon_Ancilla_ComparisonOperator.png"], description: "Performs quantum comparisons (e.g., equality).", completionGuaranteed: false, compactOptions: [true, false] },
@@ -201,7 +202,7 @@ export const categories: Record<string, CategoryEntry> = {
         // { label: "QFT", type: consts.OperatorNode, icon: ["PaletteIcon_QFT.png", "PaletteIcon_Ancilla_QFT.png"], description: "Applies the Quantum Fourier Transform to map quantum states into the frequency domain." completionGuaranteed: false, compactOptions: [true, false]},
         // { label: "QPE", type: consts.OperatorNode, icon: ["PaletteIcon_QPE.png", "PaletteIcon_Ancilla_QPE.png"], description: "Estimates the phase (eigenvalue) of a unitary operator given an eigenstate.", completionGuaranteed: false, compactOptions: [true, false] }
         // { label: "VQE", type: consts.OperatorNode, icon: ["PaletteIcon_VQE.png", "PaletteIcon_Ancilla_VQE.png"], description: "Hybrid quantum-classical algorithm that minimizes an energy expectation value using a parameterized quantum circuit.", completionGuaranteed: false, compactOptions: [true, false] }
-      ],
+      ]},
       "Classical Operators": [
         { label: consts.classicalLabel + consts.arithmeticOperatorLabel, type: consts.ClassicalOperatorNode, icon: "PaletteIcon_Classical_ArithmeticOperator.png", description: "Performs classical arithmetic operations.", completionGuaranteed: false, compactOptions: [true, false] },
         { label: consts.classicalLabel + consts.bitwiseOperatorLabel, type: consts.ClassicalOperatorNode, icon: "PaletteIcon_Classical_BitwiseOperator.png", description: "Applies classical bitwise logic (AND, OR, etc.).", completionGuaranteed: false, compactOptions: [true, false] },

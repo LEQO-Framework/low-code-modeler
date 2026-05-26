@@ -234,7 +234,7 @@ export const DataTypeNode = memo((node: Node) => {
           </div>
         </div>
       )}
-      <div className="w-full h-full rounded-full bg-white  overflow-hidden border border-solid border-gray-700 shadow-md">
+      <div className="w-full h-full rounded-full bg-white overflow-hidden border border-solid border-gray-700 shadow-md">
         <div className="w-full bg-orange-300 text-black text-center font-semibold py-1 truncate relative">
 
           <div className="w-full flex items-center" style={{ height: '52px', paddingLeft: '100px' }}>
