@@ -192,6 +192,14 @@ export const categories: Record<string, CategoryEntry> = {
             outputIdentifier: ""
           }
         },
+        {
+          label: "VQE",
+          type: consts.VQENode,
+          icon: "PaletteIcon_VQE.png",
+          description: "Calculates the ground state energy of a Hamiltonian using a hybrid quantum-classical approach.",
+          completionGuaranteed: false,
+          compactOptions: [true, false],
+        },
       ],
       "Arithmetic & Logic": [
         { label: consts.quantumLabel + consts.arithmeticOperatorLabel, type: consts.OperatorNode, icon: ["PaletteIcon_ArithmeticOperator.png", "PaletteIcon_Ancilla_ArithmeticOperator.png"], description: "Performs quantum arithmetic (add, subtract, etc.).", completionGuaranteed: true, compactOptions: [true, false] },

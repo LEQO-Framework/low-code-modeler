@@ -19,6 +19,7 @@ import { MergerNode } from "@/components/nodes/merger";
 import { ClassicalAlgorithmNode } from "@/components/nodes/classicalalgorithm";
 import { QubitNode } from "@/components/nodes/qubit";
 import { QAOANode } from "@/components/nodes/qaoaNode";
+import { VQENode as VQEComponent } from "@/components/nodes/vqeNode";
 import { ClassicalOperationNode } from "@/components/nodes/classicalOperation";
 import { GroupNode } from "@/components/nodes/group";
 import { EditableNode } from "@/components/nodes/editableNode";
@@ -53,6 +54,7 @@ export const nodesConfig = {
     inverseQftNode: InverseQFTNode,
     [consts.QAOANode]: QAOANode,
     [consts.MCMTGateNode]: MCMTGateNode,
+    vqeNode: VQEComponent,
   } as any,
   edgesTypes: {
     quantumEdge: QuantumEdge,
@@ -87,6 +89,7 @@ export const initialDiagram = {
     inverseQftNode: InverseQFTNode,
     [consts.QAOANode]: QAOANode,
     [consts.MCMTGateNode]: MCMTGateNode,
+    vqeNode: VQEComponent,
   } as any,
 };
 

@@ -380,6 +380,31 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
                 };
             }
 
+            case consts.VQENode: {
+                const paramEdge = edges.find(e => e.target === node.id && e.targetHandle === `classicalHandleVQEInput0${node.id}`);
+                const obsEdge = edges.find(e => e.target === node.id && e.targetHandle === `classicalHandleVQEInput1${node.id}`);
+
+                const getEdgeValue = (edge: Edge | undefined) => {
+                    if (!edge) return "";
+                    const sourceNode = nodes.find(n => n.id === edge.source);
+                    if (!sourceNode || !sourceNode.data.value) return "";
+                    return typeof sourceNode.data.value === 'string' 
+                        ? sourceNode.data.value 
+                        : JSON.stringify(sourceNode.data.value);
+                };
+
+                return {
+                    id: node.id,
+                    type: "vqe",
+                    numQubits: Number(node.data.numQubits) || 2,
+                    ansatz: node.data.ansatz || "HardwareEfficient",
+                    layers: Number(node.data.layers) || 1,
+                    parameters: getEdgeValue(paramEdge),
+                    observable: getEdgeValue(obsEdge),
+                    optimizer: node.data.optimizer || "ParameterShift",
+                    outputIdentifier: node.data.outputIdentifier || "vqe_reg",
+                };
+            }
 
             case consts.ControlStructureNode:
                 return {
@@ -590,6 +615,15 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
                 }
             } catch (e) {
                 console.warn("Failed to compute QAOA edge size", e);
+            }
+        }
+
+        if (sourceNode.type === consts.VQENode) {
+            try {
+                const numQubits = Number(sourceNode.data.numQubits) || 2;
+                output = output ? { ...output, size: numQubits } : { size: numQubits, identifier: sourceNode.data.outputIdentifier || "vqe_reg" };
+            } catch (e) {
+                console.warn("Failed to compute VQE edge size", e);
             }
         }
 

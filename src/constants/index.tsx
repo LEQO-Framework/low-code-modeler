@@ -25,6 +25,7 @@ export const MeasurementNode: string = "measurementNode";
 export const AncillaNode: string = "ancillaNode";
 export const QubitNode: string = "qubitNode";
 export const QAOANode = "qaoa";
+export const VQENode = "vqeNode";
 export const ControlStructureNode: string = "controlStructureNode";
 export const IfElseNode: string = "ifElseNode";
 export const ClassicalOutputOperationNode = "classicalOutputOperationNode";
@@ -48,6 +49,7 @@ export const NodeTypes = [
   AncillaNode,
   QubitNode,
   QAOANode,
+  VQENode,
   ControlStructureNode,
   IfElseNode,
   ClassicalOutputOperationNode,
