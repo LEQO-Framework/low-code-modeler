@@ -780,8 +780,27 @@ export const useStore = create<RFState>()(persist((set, get) => ({
       }
     };
     console.log("!hasCycle", !hasCycle(target))
-    if(hasCycle(target)) { setTypeError("Cycles are not allowed, since the quantum output of an operation cannot be fed back as the input to a previous operation."); return false }
 
+    // --- BYPASS CYCLE CHECK FOR CONTROL FLOW CLOSURES ---
+    let isControlFlowEnd = false;
+    const sourceNodeForCycle = get().nodes.find(n => n.id === connection.source);
+
+    if (target?.type === "ifElseNode" || target?.type === "controlStructureNode") {
+        if (sourceNodeForCycle && sourceNodeForCycle.parentNode === target.id) {
+            isControlFlowEnd = true;
+        }
+        else if (
+            connection.targetHandle && 
+            (connection.targetHandle.includes("DynamicOutput") || connection.targetHandle.includes("InputDynamic"))
+        ) {
+            isControlFlowEnd = true;
+        }
+    }
+
+    if (!isControlFlowEnd && hasCycle(target)) { 
+        setTypeError("Cycles are not allowed, since the quantum output of an operation cannot be fed back as the input to a previous operation."); 
+        return false; 
+    }
     if (target.id === connection.source && target.type !== "splitterNode" && target.type !== "mergerNode") { console.log("source target"); return false };
 
     for (let node of currentNodes) {
@@ -988,7 +1007,7 @@ export const useStore = create<RFState>()(persist((set, get) => ({
 
     // If the target node already has a locked type, new input must match
     // Skip this check for pluginNodes - each input can have its own type
-    if (targetNode.type !== "controlStructureNode" && targetNode.type !== "pluginNode" && lockedType !== "any" && sourceType !== "any" && sourceType !== lockedType) {
+    if (targetNode.type !== "controlStructureNode" && targetNode.type !== "qaoa" && targetNode.type !== "pluginNode" && lockedType !== "any" && sourceType !== "any" && sourceType !== lockedType) {
       const errorMsg = `Cannot connect: type "${sourceType}" does not match locked type "${lockedType}"`
       console.warn(errorMsg);
       setTypeError(errorMsg);

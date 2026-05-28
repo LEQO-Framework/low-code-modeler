@@ -79,10 +79,17 @@ export const DataTypeNode = memo((node: Node) => {
       const trimmed = newValue.trim();
       if (trimmed === "") return;
 
-      const arrayRegex = /^-?\d+(\.\d+)?(?:,-?\d+(\.\d+)?)*$/;
+      const commaSeparatedRegex = /^-?\d+(\.\d+)?(?:,-?\d+(\.\d+)?)*$/;
+      const isCommaSeparated = commaSeparatedRegex.test(trimmed);
 
-      if (!arrayRegex.test(trimmed)) {
-        setValueError("Array must be comma-separated numbers (e.g., 1,2,3)");
+      let is2DArray = false;
+      try {
+         const parsed = JSON.parse(trimmed.startsWith('[') ? trimmed : `[${trimmed}]`);
+         if (Array.isArray(parsed)) is2DArray = true;
+      } catch(e) {}
+
+      if (!isCommaSeparated && !is2DArray) {
+        setValueError("Array must be comma-separated numbers or a 2D array (e.g., [[0,1], [1,2]])");
         return;
       }
     }
@@ -227,7 +234,7 @@ export const DataTypeNode = memo((node: Node) => {
           </div>
         </div>
       )}
-      <div className="w-full h-full rounded-full bg-white  overflow-hidden border border-solid border-gray-700 shadow-md">
+      <div className="w-full h-full rounded-full bg-white overflow-hidden border border-solid border-gray-700 shadow-md">
         <div className="w-full bg-orange-300 text-black text-center font-semibold py-1 truncate relative">
 
           <div className="w-full flex items-center" style={{ height: '52px', paddingLeft: '100px' }}>

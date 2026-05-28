@@ -52,6 +52,7 @@ interface ToolbarProps {
   onGroupSelected: () => void;
   onLoadQasm: (qasm: string) => void;
   generateModel: () => void;
+  openOpenQASM: () => void;
 }
 
 const Toolbar: React.FC<ToolbarProps> = ({
@@ -72,7 +73,8 @@ const Toolbar: React.FC<ToolbarProps> = ({
   onManageTemplates,
   onGroupSelected,
   onLoadQasm,
-  generateModel
+  generateModel, 
+  openOpenQASM
 }) => {
   const [saveIsOpen, setSaveIsOpen] = useState(false);
 
@@ -116,6 +118,10 @@ const Toolbar: React.FC<ToolbarProps> = ({
               <DropdownMenuItem onClick={handleQasmUpload} title="Import QASM file as circuit">
                 <FileJson className="w-4 h-4 mr-2" />
                 <span>QASM File</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={openOpenQASM} title="Open a pattern solution">
+                <ImageIcon className="w-4 h-4 mr-2" />
+                <span>OpenQASM</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

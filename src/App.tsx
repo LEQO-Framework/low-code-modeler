@@ -55,6 +55,7 @@ import { qasmToNodes } from "./lib/qasmToNodes";
 
 import PromptFlowModal from "./components/modals/promptFlowModal";
 import { generateFlow, sendToMistral } from "./generation";
+import { openQasmToFlow } from "./qasmConverter";
 
 const selector = (state: {
   nodes: Node[];
@@ -268,10 +269,14 @@ function App() {
   const [errorJobMessage, setErrorJobMessage] = useState("");
   const [isPatternModalOpen, setIsPatternModalOpen] = useState(false);
   const [isPatternImplementationOpen, setIsPatternImplementationOpen] = useState(false);
+  const [isOpenQASMOpen, setIsOpenQASMOpen] = useState(false);
   const [selectedPatternId, setSelectedPatternId] = useState<string | null>(null);
   const [lassoMode, setLassoMode] = useState(false);
   
   const [mathMode, setMathMode] = useState(false);
+
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
   const [isLoadJsonModalOpen, setIsLoadJsonModalOpen] = useState(false);
   const [isPaletteOpen, setIsPaletteOpen] = useState(true);
   const [chartData, setChartData] = useState(null);
@@ -943,7 +948,7 @@ If none apply, return { "algorithms": [] }.
       if (
         twoQubitGates.includes(label) ||
         ((node.type === "quantumOperatorNode" || node.type === "classicalOperatorNode") &&
-          !minMaxOperators.includes(operator))
+          !minMaxOperators.includes(operator) && operator !== "INVERT")
       ) {
         if (inputCount !== 2) {
           errors.push({
@@ -1056,6 +1061,50 @@ If none apply, return { "algorithms": [] }.
           }
         }
 
+        // MCMT Gate validation
+       if (node.type === "mcmt-gate" || node.data?.label === "MCMT Gate" || node.type === "MCMTGateNode") {
+        const numControls = parseInt(node.data.numControls, 10) || 1;
+        const numTargets = parseInt(node.data.numTargets, 10) || 1;
+        const expectedInputsCount = numControls + numTargets;
+
+        const connectedEdges = edges.filter((edge) => edge.target === node.id);
+
+        const prefix = "quantumHandleInput";
+        const connectedIndices = new Set(
+          connectedEdges
+            .map((edge) => {
+              if (edge.targetHandle && edge.targetHandle.startsWith(prefix) && edge.targetHandle.endsWith(node.id)) {
+                const indexStr = edge.targetHandle.substring(
+                  prefix.length,
+                  edge.targetHandle.length - node.id.length
+                );
+                return parseInt(indexStr, 10);
+              }
+              return null;
+            })
+            .filter((idx) => idx !== null)
+        );
+
+        const missingIndices: number[] = [];
+        for (let i = 0; i < expectedInputsCount; i++) {
+          if (!connectedIndices.has(i)) {
+            missingIndices.push(i);
+          }
+        }
+
+        if (missingIndices.length > 0) {
+          const firstMissing = missingIndices[0];
+          const missingLabel = firstMissing < numControls 
+            ? `Control ${firstMissing}` 
+            : `Target ${firstMissing - numControls}`;
+
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `MCMT Gate block requires ${expectedInputsCount} connected inputs, but is missing an incoming wire at "${missingLabel}".`,
+          });
+        }
+      }
 
         const outgoing = outgoingConnections.get(node.id) || [];
         if (outgoing.length === 0) {
@@ -2226,6 +2275,85 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     addUserTemplate(newTemplate);
   };
 
+   function handleOpenQASMClick() {
+    if (!reactFlowInstance) {
+      console.error("React Flow instance is not initialized.");
+      return;
+    }
+
+    function restoreFlow(flow) {
+      console.log("Restoring flow:", flow);
+      if (flow.nodes) {
+        reactFlowInstance.setNodes(
+          flow.nodes.map((node: Node) => ({
+            ...node,
+            data: {
+              ...node.data,
+            },
+          }))
+        );
+        console.log("Nodes restored.");
+      }
+      if (flow.edges) {
+        reactFlowInstance.setEdges(flow.edges || []);
+        console.log("Edges restored.");
+      }
+
+
+      const { x = 0, y = 0, zoom = 1 } = flow.viewport || {};
+      reactFlowInstance.setViewport({ x, y, zoom });
+
+      if (flow.metadata) {
+        setMetadata(flow.metadata);
+        console.log("Metadata restored:", flow.metadata);
+      }
+    }
+
+    const event = new CustomEvent("lcm-open", {
+      cancelable: true,
+      detail: {
+        restoreFlow
+      },
+    });
+    const defaultAction = document.dispatchEvent(event);
+    console.log(`defaultAction: ${defaultAction}`);
+    if (!defaultAction)
+      return;
+
+    const fileInput = document.createElement("input");
+    fileInput.type = "file";
+    fileInput.accept = "application/txt";
+
+    fileInput.onchange = (event) => {
+      const file = (event.target as HTMLInputElement)?.files?.[0];
+      if (!file) {
+        console.warn("No file selected.");
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const flow = openQasmToFlow(e.target?.result as string);
+          console.log(flow)
+
+          restoreFlow(flow);
+        } catch (error) {
+          console.error("Error parsing JSON file:", error);
+          alert("Invalid JSON file. Please ensure it is a valid flow file.");
+        }
+      };
+
+      reader.onerror = (err) => {
+        console.error("Error reading file:", err);
+        alert("Failed to read file. Please try again.");
+      };
+
+      reader.readAsText(file);
+    };
+
+    fileInput.click();
+  }
 
   function handleRestoreClick() {
     if (!reactFlowInstance) {
@@ -3093,6 +3221,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
           uploadDiagram={() => uploadToGitHub()}
           uploadPatternSolution={() => setIsPatternModalOpen(true)}
           openPatternSolution={() => setIsPatternImplementationOpen(true)}
+          openOpenQASM={handleOpenQASMClick}
 
           //uploadPatternSolution={() => registerAndUploadToGitHub()}
           onLoadJson={handleLoadJson}
@@ -3190,6 +3319,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
         open={isPromptModalOpen}
         mistralToken={mistralToken}
         onClose={(flow) => {
+          setIsPromptModalOpen(false);
           if (flow) loadFlow(flow);
           setIsPromptModalOpen(false);
         }}
@@ -3481,7 +3611,6 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
             )}
 
 
-
             <ExperienceModePanel
               expanded={expanded}
               onToggleExpanded={() => setExpanded(!expanded)}
@@ -3553,7 +3682,6 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
               pannable={true}
             />
 
-            <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
           </ReactFlow>
           {contextMenu.visible && contextMenu.nodeId && (
             <ContextMenu
