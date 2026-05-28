@@ -43,7 +43,7 @@ export const GroverDiffuserNode = memo((node: Node) => {
           <div className="w-full flex items-center" style={{ height: '52px' }}>
             <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
               <img
-                src="PaletteIcon_Grover.svg"
+                src="diffusionIcon.png"
                 alt="Grover icon"
                 className="w-[40px] h-[40px] object-contain flex-shrink-0"
               />
@@ -66,8 +66,10 @@ export const GroverDiffuserNode = memo((node: Node) => {
                 id={`quantumHandleInput0${id}`}
                 position={Position.Left}
                 className={cn(
-                  "z-10 !rounded-none !border-gray-500 -left-[7px]",
-                  isConnected ? "!border-solid !border-black !bg-blue-400" : "!border-dashed !bg-gray-200"
+                  "z-10 circle-port-op !bg-blue-300 !border-gray-400 !absolute !top-1/2 !-translate-y-1/2 -left-[8px]",
+                  isConnected
+                    ? "!border-solid !border-black !bg-blue-400"
+                    : "!border-dashed !bg-gray-200"
                 )}
                 style={{ width: 12, height: 12 }}
                 isConnectable={!isConnected}

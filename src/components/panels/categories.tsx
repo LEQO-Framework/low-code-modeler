@@ -188,7 +188,7 @@ export const categories: Record<string, CategoryEntry> = {
         { 
           label: "Grover Oracle", 
           type: consts.UniversalOracleNode,
-          icon: "PaletteIcon_UniversalOracle.png",
+          icon: "PaletteIcon_Oracle.png",
           description: "Arbitrary Oracle defined by a Truth Table for Boolean or Phase evaluation.", 
           completionGuaranteed: true,
           compactOptions: [false, true]
@@ -204,7 +204,7 @@ export const categories: Record<string, CategoryEntry> = {
         { 
           label: "Grover's Search Algorithm", 
           type: consts.GroverNode,
-          icon: "PaletteIcon_GroverAlgorithm.png",
+          icon: "PaletteIcon_GroverAlg.png",
           description: "Complete Grover search with integrated Oracle and Diffuser.", 
           completionGuaranteed: true,
           compactOptions: [false, true]

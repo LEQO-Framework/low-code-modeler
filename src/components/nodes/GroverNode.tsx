@@ -50,7 +50,7 @@ export const GroverNode = memo((node: Node) => {
           <div className="w-full flex items-center" style={{ height: '52px' }}>
             <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
               <img
-                src="PaletteIcon_GroverAlg.svg"
+                src="groverIcon.png"
                 alt="Grover icon"
                 className="w-[40px] h-[40px] object-contain flex-shrink-0"
               />
