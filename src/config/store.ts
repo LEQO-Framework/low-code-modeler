@@ -1007,7 +1007,7 @@ export const useStore = create<RFState>()(persist((set, get) => ({
 
     // If the target node already has a locked type, new input must match
     // Skip this check for pluginNodes - each input can have its own type
-    if (targetNode.type !== "controlStructureNode" && targetNode.type !== "pluginNode" && lockedType !== "any" && sourceType !== "any" && sourceType !== lockedType) {
+    if (targetNode.type !== "controlStructureNode" && targetNode.type !== "qaoa" && targetNode.type !== "pluginNode" && lockedType !== "any" && sourceType !== "any" && sourceType !== lockedType) {
       const errorMsg = `Cannot connect: type "${sourceType}" does not match locked type "${lockedType}"`
       console.warn(errorMsg);
       setTypeError(errorMsg);
