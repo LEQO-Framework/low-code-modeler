@@ -56,6 +56,28 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
         }
     });
 
+    function resolveRegisterSize(nodeId: string, visited = new Set<string>()): number {
+        if (visited.has(nodeId)) return 3;
+        visited.add(nodeId);
+
+        const incomingEdge = edges.find(e => e.target === nodeId);
+        
+        if (!incomingEdge) {
+            const selfNode = nodes.find(n => n.id === nodeId);
+            if (selfNode?.data?.size) return parseInt(selfNode.data.size, 10);
+            return 3; 
+        }
+
+        const sourceNode = nodes.find(n => n.id === incomingEdge.source);
+        if (!sourceNode) return 3;
+
+        if (sourceNode.data?.size) {
+            return parseInt(sourceNode.data.size, 10);
+        }
+
+        return resolveRegisterSize(sourceNode.id, visited);
+    }
+
     return await fetch(new URL("/compile", baseUrl), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -102,7 +124,19 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
 
             case consts.StatePreparationNode:
                 switch (node.data.label) {
-                    case "Encode Value":
+                    case "Encode Value": {
+                        // Resilient mapping to support both the old labels and the new unmerged PR labels
+                        const rawType = node.data.encodingType;
+                        const encMap: Record<string, string> = {
+                            "Amplitude Encoding": "amplitude",
+                            "Angle Encoding": "angle",
+                            "Basis Encoding": "basis",
+                            "Custom Encoding": "custom",
+                            "Matrix Encoding": "matrix",
+                            "Schmidt Decomposition": "schmidt",
+                        };
+                        const resolvedType = encMap[rawType] || rawType;
+
                         return {
                             id: node.id,
                             type: "encode",
@@ -118,6 +152,7 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
                             decimalPrecision: node.data.decimalPrecision !== undefined && node.data.decimalPrecision !== "" 
                                 ? parseInt(node.data.decimalPrecision, 10) : null
                         }
+                    }
 
                     case "Basis Encoding":
                         return {
@@ -418,6 +453,37 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
                         ).map(mapEdge)
                     }
                 };
+            case "deutsch-jozsa":
+                return {
+                    id: node.id,
+                    type: "deutsch-jozsa",
+                    numQubits: node.data.numQubits || 3,
+                    oracleType: node.data.oracleType || "balanced",
+                    balancedMask: node.data.balancedMask || 5,
+                    constantValue: node.data.constantValue ?? 0,
+                } as any;
+            case consts.UniversalOracleNode:
+                return {
+                    id: node.id,
+                    type: "universal-oracle",
+                    numQubits: resolveRegisterSize(node.id),
+                    targetStates: node.data.targetStates ? node.data.targetStates.split(",").map((x: string) => parseInt(x.trim(), 10)).filter((n: number) => !isNaN(n)) : [],
+                    mode: node.data.mode || "phase"
+                } as any;
+            case consts.GroverDiffuserNode:
+                return {
+                    id: node.id,
+                    type: "grover-diffuser",
+                    numQubits: resolveRegisterSize(node.id)
+                } as any;
+            case consts.GroverNode:
+                return {
+                    id: node.id,
+                    type: "grover",
+                    numQubits: node.data.numQubits || 3,
+                    targetStates: node.data.targetStates || "",
+                    numIterations: node.data.numIterations || ""
+                } as any;
 
             case consts.PluginNode: {
                 const basePluginName = node.data.pluginName;

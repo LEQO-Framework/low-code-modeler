@@ -4,7 +4,11 @@ import QuantumEdge from "@/components/edges/customEdgeType";
 import { DataTypeNode, PluginNode } from "@/components/nodes";
 import { AlgorithmNode } from "@/components/nodes/algorithm";
 import { AncillaNode } from "@/components/nodes/ancilla";
-import { IfElseNode } from "@/components/nodes/ifelse";
+import {  IfElseNode } from "@/components/nodes/ifelse";
+import { DeutschJozsaNode as DeutschJozsaComponent } from "@/components/nodes/DeutschJozsaNode";
+import { UniversalOracleNode as UniversalOracleComponent } from "@/components/nodes/UniversalOracleNode";
+import { GroverDiffuserNode as GroverDiffuserComponent } from "@/components/nodes/GroverDiffuserNode";
+import { GroverNode as GroverComponent } from "@/components/nodes/GroverNode";
 import { DynamicNode } from "@/components/nodes/dynamically";
 import { GateNode } from "@/components/nodes/gate";
 import { MeasurementNode } from "@/components/nodes/measurement";
@@ -21,6 +25,7 @@ import { QubitNode } from "@/components/nodes/qubit";
 import { QAOANode } from "@/components/nodes/qaoaNode";
 import { ClassicalOperationNode } from "@/components/nodes/classicalOperation";
 import { GroupNode } from "@/components/nodes/group";
+import * as consts from "@/constants";
 import { EditableNode } from "@/components/nodes/editableNode";
 import { QFTNode } from "@/components/nodes/qft";
 import { InverseQFTNode } from "@/components/nodes/qftInverse";
@@ -47,6 +52,10 @@ export const nodesConfig = {
     qubitNode: QubitNode,
     classicalOperatorNode: ClassicalOperationNode,
     groupNode: GroupNode,
+    [consts.DeutschJozsaNode]: DeutschJozsaComponent,
+    [consts.UniversalOracleNode]: UniversalOracleComponent,
+    [consts.GroverDiffuserNode]: GroverDiffuserComponent,
+    [consts.GroverNode]: GroverComponent,
     pluginNode: PluginNode,
     editableNode: EditableNode,
     qftNode: QFTNode,
@@ -82,7 +91,12 @@ export const initialDiagram = {
     qubitNode: QubitNode,
     classicalOperatorNode: ClassicalOperationNode,
     groupNode: GroupNode,
+    [consts.DeutschJozsaNode]: DeutschJozsaComponent,
+    [consts.UniversalOracleNode]: UniversalOracleComponent,
+    [consts.GroverDiffuserNode]: GroverDiffuserComponent,
+    [consts.GroverNode]: GroverComponent,
     pluginNode: PluginNode,
+    editableNode: EditableNode,
     qftNode: QFTNode,
     inverseQftNode: InverseQFTNode,
     [consts.QAOANode]: QAOANode,

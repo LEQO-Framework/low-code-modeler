@@ -3369,7 +3369,6 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
               pannable={true}
             />
 
-            <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
           </ReactFlow>
           {contextMenu.visible && contextMenu.nodeId && (
             <ContextMenu

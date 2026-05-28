@@ -173,10 +173,42 @@ export const categories: Record<string, CategoryEntry> = {
   },
 
   [consts.operator]: {
-    description: ["Predefined quantum and classical operators, including oracles, arithmetic, bitwise, and comparison operations.", "Predefined quantum arithmetic operator."],
+    description: ["Predefined quantum and classical operators, including oracles, arithmetic, bitwise, and comparison operations.", "Predefined quantum operators."],
     content: {
       "Quantum Operators": {
-        "Algorithms & Oracles": [
+        "Oracles & Algorithms": [
+        {
+          label: "Deutsch-Jozsa", 
+          type: consts.DeutschJozsaNode,
+          icon: "PaletteIcon_DeutschJozsa.png",
+          description: "Evaluates if a hidden boolean function is constant or balanced.", 
+          completionGuaranteed: true,
+          compactOptions: [false,true]
+        },
+        { 
+          label: "Grover Oracle", 
+          type: consts.UniversalOracleNode,
+          icon: "PaletteIcon_Oracle.png",
+          description: "Arbitrary Oracle defined by a Truth Table for Boolean or Phase evaluation.", 
+          completionGuaranteed: true,
+          compactOptions: [false, true]
+        },
+        { 
+          label: "Grover Diffuser", 
+          type: consts.GroverDiffuserNode,
+          icon: "PaletteIcon_GroverDiffuser.png",
+          description: "Applies inversion about the mean for amplitude amplification.", 
+          completionGuaranteed: true,
+          compactOptions: [false, true]
+        },
+        { 
+          label: "Grover's Search Algorithm", 
+          type: consts.GroverNode,
+          icon: "PaletteIcon_GroverAlg.png",
+          description: "Complete Grover search with integrated Oracle and Diffuser.", 
+          completionGuaranteed: true,
+          compactOptions: [false, true]
+        },
         {
           label: "QAOA Ansatz",
           type: consts.QAOANode,
