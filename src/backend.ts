@@ -584,8 +584,10 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
                 
                 const flatArr = flattenArray(edgesArr);
                 if (flatArr.length > 0) {
-                    const numQubits = Math.max(...flatArr) + 1;
-                    // Override the size with the dynamically calculated qubit count
+                    const isDimacs = flatArr.some(x => x < 0) || (sourceNode.data.problem === "Max2SAT" && !flatArr.includes(0));
+                    const numQubits = isDimacs 
+                        ? Math.max(...flatArr.map(Math.abs)) 
+                        : Math.max(...flatArr) + 1;
                     output = output ? { ...output, size: numQubits } : { size: numQubits, identifier: sourceNode.data.outputIdentifier || "qaoa_reg" };
                 }
             } catch (e) {
