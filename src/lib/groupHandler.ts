@@ -28,8 +28,7 @@ export function groupSelectedNodes(nodes: Node[], edges: Edge[]): Node[] {
       && !n.parentNode  // ← Nodes die bereits in einer Gruppe sind ausschließen
   );
 
-  console.log("groupSelectedNodes – selected:", selected.length, selected.map(n => n.id));
-
+  
   if (selected.length < 2) return nodes;
 
   // Bounding Box
@@ -43,7 +42,7 @@ export function groupSelectedNodes(nodes: Node[], edges: Edge[]): Node[] {
 
   const groupId = uuid();
   const color   = GROUP_COLORS[colorIndex % GROUP_COLORS.length];
-  const label   = `Gruppe ${groupCounter}`;
+  const label   = `Group ${groupCounter}`;
   colorIndex++;
   groupCounter++;
 

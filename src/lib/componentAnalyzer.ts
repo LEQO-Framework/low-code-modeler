@@ -37,7 +37,7 @@ export function findConnectedComponents(
   allNodes?: Node[]
 ): Node[][] {
   const activeNodes = nodes.filter(
-    (n) => n.type !== "groupNode" && !n.hidden
+    (n) => n.type !== "groupNode"
   );
 
   if (activeNodes.length === 0) return [];
@@ -192,7 +192,7 @@ export async function analyzeComponents(
   compilationTarget: string
 ): Promise<DiracComponent[]> {
   const activeNodes = nodes.filter(
-    (n) => n.type !== "groupNode" && !n.hidden
+    (n) => n.type !== "groupNode"
   );
   if (activeNodes.length === 0) return [];
 

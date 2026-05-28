@@ -39,8 +39,7 @@ function getGroupType(childNodes: Node[]): GroupType {
   return "quantum";
 }
 
-function getGroupStyle(type: GroupType, locked: boolean) {
-  if (locked) return { color: "#d97706", borderRadius: "8px", borderStyle: "solid" };
+function getGroupStyle(type: GroupType) {
   switch (type) {
     case "quantum":   return { color: "#3b82f6", borderRadius: "8px",  borderStyle: "dashed" };
     case "classical": return { color: "#f97316", borderRadius: "20px", borderStyle: "dashed" };
@@ -183,8 +182,8 @@ export const GroupNode = memo((node: Node) => {
 
   const childNodes = nodes.filter((n) => n.parentNode === id);
   const groupType = getGroupType(childNodes);
-  const groupStyle = getGroupStyle(groupType, locked);
-  const color = locked ? "#d97706" : groupStyle.color;
+  const groupStyle = getGroupStyle(groupType);
+  const color = groupStyle.color;
   const borderRadius = groupStyle.borderRadius;
   const borderStyle = collapsed ? "solid" : groupStyle.borderStyle;
 
@@ -285,8 +284,8 @@ export const GroupNode = memo((node: Node) => {
   return (
     <>
       <NodeResizer
-        minWidth={collapsed ? 150 : EXPANDED_MIN_WIDTH}
-        minHeight={collapsed ? COLLAPSED_HEIGHT : EXPANDED_MIN_HEIGHT}
+        minWidth={collapsed ? 150 : Math.max(EXPANDED_MIN_WIDTH, (getChildBounds()?.width ?? EXPANDED_MIN_WIDTH))}
+        minHeight={collapsed ? COLLAPSED_HEIGHT : Math.max(EXPANDED_MIN_HEIGHT, (getChildBounds()?.height ?? EXPANDED_MIN_HEIGHT))}
         isVisible={selected && !collapsed}
         lineStyle={{ borderColor: color }}
         handleStyle={{ borderColor: color, backgroundColor: "white" }}
@@ -297,9 +296,12 @@ export const GroupNode = memo((node: Node) => {
           width: "100%", height: "100%",
           border: `2px ${borderStyle} ${color}`,
           borderRadius,
-          backgroundColor: locked ? "#fffbeb" : `${color}${collapsed ? "22" : "0d"}`,
+          backgroundColor: locked
+            ? `${color}33`  // transparenter im Lock-Zustand
+            : `${color}${collapsed ? "22" : "0d"}`,
+          opacity: locked ? 0.75 : 1,
           position: "relative",
-          transition: "height 0.2s ease, background-color 0.2s ease",
+          transition: "height 0.2s ease, background-color 0.2s ease, opacity 0.2s ease",
           boxSizing: "border-box", overflow: "visible",
         }}
       >
@@ -315,7 +317,22 @@ export const GroupNode = memo((node: Node) => {
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: "6px", flex: 1, minWidth: 0 }}>
-            <span style={{ color, fontSize: "11px", flexShrink: 0 }}>▣</span>
+            <span style={{
+                  color: "white",
+                  backgroundColor: color,
+                  fontSize: "9px",
+                  fontWeight: 700,
+                  width: "20px",
+                  height: "20px",
+                  borderRadius: "3px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                  letterSpacing: "-0.5px",
+                }}>
+                  {groupType === "quantum" ? "Q" : groupType === "classical" ? "C" : "Q+C"}
+            </span>
             {isEditingLabel ? (
               <input
                 autoFocus value={editableLabel}
@@ -366,12 +383,13 @@ export const GroupNode = memo((node: Node) => {
               flexShrink: 0, width: "20px", height: "20px",
               display: "flex", alignItems: "center", justifyContent: "center",
               borderRadius: "4px", fontSize: "11px",
-              backgroundColor: locked ? "#fef3c7" : `${color}33`,
-              color: locked ? "#d97706" : color,
-              border: `1px solid ${locked ? "#fcd34d" : `${color}66`}`,
+              backgroundColor: locked ? `${color}33` : `${color}22`,
+              color: color,
+              border: `1px solid ${color}66`,
               cursor: "pointer", lineHeight: 1, marginLeft: "2px",
+              opacity: locked ? 1 : 0.7,
             }}
-            title={locked ? "Gruppe entsperren" : "Gruppe sperren"}
+            title={locked ? "Unlock group" : "Lock group"}
           >{locked ? "🔒" : "🔓"}</button>
 
           <button onClick={handleUngroup}
@@ -398,9 +416,9 @@ export const GroupNode = memo((node: Node) => {
           isConnectable={true}
           style={{
             top: handleTop(h.index, h.total),
-            background: h.color,
-            border: "2px solid white",
-            width: 12, height: 12, zIndex: 10, borderRadius: 0,
+            backgroundColor: h.color,
+            border: "1px solid black",
+            width: 13, height: 13, zIndex: 10, borderRadius: 0,
           }}
         />
       ))}
@@ -415,9 +433,9 @@ export const GroupNode = memo((node: Node) => {
           isConnectable={true}
           style={{
             top: handleTop(h.index, h.total),
-            background: h.color,
-            border: "2px solid white",
-            width: 12, height: 12, zIndex: 10, borderRadius: 0,
+            backgroundColor: h.color,
+            border: "1px solid black",
+            width: 13, height: 13, zIndex: 10, borderRadius: 0,
           }}
         />
       ))}
@@ -426,13 +444,13 @@ export const GroupNode = memo((node: Node) => {
       {(collapsed || proxyInputs.length === 0) && (
         <Handle type="target" id={`groupInput0${id}`} position={Position.Left}
           isConnectable={true}
-          style={{ top: "50%", background: color, border: "2px solid white", width: 13, height: 16, zIndex: 10, borderRadius: 0 }}
+          style={{ top: "50%", backgroundColor: color, border: "1px solid black", width: 13, height: 13, zIndex: 10, borderRadius: 0 }}
         />
       )}
       {(collapsed || proxyOutputs.length === 0) && (
         <Handle type="source" id={`groupOutput0${id}`} position={Position.Right}
           isConnectable={true}
-          style={{ top: "50%", background: color, border: "2px solid white", width: 13, height: 16, zIndex: 10, borderRadius: 0 }}
+          style={{ top: "50%", backgroundColor: color, border: "1px solid black", width: 13, height: 13, zIndex: 10, borderRadius: 0 }}
         />
       )}
     </>

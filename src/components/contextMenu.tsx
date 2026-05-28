@@ -32,31 +32,75 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   onAction,
   styles = {}, // Default styles as an empty object
 }) => {
-  const { getNode, setNodes, addNodes, setEdges } = useReactFlow();
+  const { getNode, getNodes, getEdges, setNodes, addNodes, setEdges, addEdges } = useReactFlow();
   const type = getNode(id).type
   console.log("type", type)
   const [inputs, setInputs] = useState(getNode(id).data.inputs || []);
   const updateNodeInternals = useUpdateNodeInternals();
-  const duplicateNode = useCallback(() => { // duplicate node at slighlty shifted position
+
+  const duplicateNode = useCallback(() => {
     const node = getNode(id);
+    if (!node) return;
 
-    if (node) {
-      const randomId = uuid();
-      const position = {
-        x: node.position.x + 50,
-        y: node.position.y + 50,
-      };
+    const offset = { x: 50, y: 50 };
 
-      const duplicatedNode: Node = {
+    if (node.type === "groupNode") {
+      // Gruppe duplizieren: GroupNode + alle Kind-Nodes + interne Edges
+      const allNodes = getNodes();
+      const allEdges = getEdges();
+      const childNodes = allNodes.filter(n => n.parentNode === id);
+
+      // Neue IDs erstellen
+      const newGroupId = uuid();
+      const idMap = new Map<string, string>();
+      idMap.set(id, newGroupId);
+      childNodes.forEach(child => idMap.set(child.id, uuid()));
+
+      // GroupNode duplizieren
+      const newGroupNode: Node = {
         ...node,
-        id: randomId, // Ensure unique ID
-        position,
+        id: newGroupId,
+        position: { x: node.position.x + offset.x, y: node.position.y + offset.y },
+        selected: false,
       };
 
-      addNodes([duplicatedNode]);
-      if (onAction) onAction("duplicate", id);
+      // Kind-Nodes duplizieren
+      const newChildNodes: Node[] = childNodes.map(child => ({
+        ...child,
+        id: idMap.get(child.id)!,
+        parentNode: newGroupId,
+        selected: false,
+      }));
+
+      // Interne Edges duplizieren (beide Seiten innerhalb der Gruppe)
+      const internalEdges = allEdges.filter(
+        e => idMap.has(e.source) && idMap.has(e.target)
+      );
+      const newEdges = internalEdges.map(e => ({
+        ...e,
+        id: uuid(),
+        source: idMap.get(e.source)!,
+        target: idMap.get(e.target)!,
+        sourceHandle: e.sourceHandle?.replace(e.source, idMap.get(e.source)!),
+        targetHandle: e.targetHandle?.replace(e.target, idMap.get(e.target)!),
+        selected: false,
+      }));
+
+      addNodes([newGroupNode, ...newChildNodes]);
+      addEdges(newEdges);
+    } else {
+      // Normaler Node
+      const newNode: Node = {
+        ...node,
+        id: uuid(),
+        position: { x: node.position.x + offset.x, y: node.position.y + offset.y },
+        selected: false,
+      };
+      addNodes([newNode]);
     }
-  }, [id, getNode, addNodes, onAction]);
+
+    if (onAction) onAction("duplicate", id);
+  }, [id, getNode, getNodes, getEdges, addNodes, addEdges, onAction]);
 
   const deleteNode = useCallback(() => { // delete node
     setNodes((nodes) => nodes.filter((node) => node.id !== id));

@@ -270,7 +270,7 @@ function App() {
   const [isPatternImplementationOpen, setIsPatternImplementationOpen] = useState(false);
   const [selectedPatternId, setSelectedPatternId] = useState<string | null>(null);
   const [lassoMode, setLassoMode] = useState(false);
-
+  
   const [mathMode, setMathMode] = useState(false);
   const [isLoadJsonModalOpen, setIsLoadJsonModalOpen] = useState(false);
   const [isPaletteOpen, setIsPaletteOpen] = useState(true);
@@ -479,6 +479,9 @@ If none apply, return { "algorithms": [] }.
 
   const ref = useRef(null);
   const hasLoadedFromUrl = useRef(false);
+  const lastSelectedNodes = useRef<Node[]>([]);
+
+
 
   const onDragOver = React.useCallback(
     (event: React.DragEvent<HTMLDivElement>) => {
@@ -1650,34 +1653,47 @@ If none apply, return { "algorithms": [] }.
       }
     }, [nodes, setContextMenu]);
 
-    const onSelectionChange = useCallback(({ nodes: selectedNodes }: { nodes: Node[] }) => {
-      if (selectedNodes.length === 0) return;
+    
 
-        // Prüfe ob Nodes in einer Gruppe selektiert wurden
-        const groupedSelected = selectedNodes.filter((n) => n.parentNode);
-        if (groupedSelected.length === 0) return;  // ← Fehler hier, .size gibt es nicht bei Array
 
+      const onSelectionChange = useCallback(({ nodes: selectedNodes }: { nodes: Node[] }) => {
+        if (selectedNodes.length === 0) return;
+
+        // Selektierte top-level Nodes (GroupNodes + normale Nodes ohne Parent) merken
+        lastSelectedNodes.current = selectedNodes.filter(n => !n.parentNode);
+
+        // Kind-Nodes (keine GroupNodes) deselektieren
+        const groupedSelected = selectedNodes.filter(
+          (n) => n.parentNode && n.type !== "groupNode"
+        );
         if (groupedSelected.length === 0) return;
 
-        // Kind-Nodes deselektieren
         reactFlowInstance.setNodes((nds: Node[]) =>
           nds.map((n) => {
-            if (n.parentNode) {
+            if (n.parentNode && n.type !== "groupNode") {
               return { ...n, selected: false };
             }
             return n;
           })
         );
-    }, [reactFlowInstance]);
+      }, [reactFlowInstance]);
 
-    const onSelectionEnd = useCallback(() => {
-      if (!lassoMode) return;
-      const currentNodes = reactFlowInstance.getNodes();
-      const currentEdges = reactFlowInstance.getEdges();
-      const updatedNodes = groupSelectedNodes(currentNodes, currentEdges);
-      if (updatedNodes !== currentNodes) {
+      const onSelectionEnd = useCallback(() => {
+        if (!lassoMode) return;
+        const currentNodes = reactFlowInstance.getNodes();
+        const currentEdges = reactFlowInstance.getEdges();
+
+        // Selektierte Nodes aus ref verwenden
+        const selectedIds = new Set(lastSelectedNodes.current.map(n => n.id));
+        const nodesWithSelection = currentNodes.map(n => ({
+          ...n,
+          selected: selectedIds.has(n.id),
+        }));
+
+      const updatedNodes = groupSelectedNodes(nodesWithSelection, currentEdges);
+      if (updatedNodes !== nodesWithSelection) {
         reactFlowInstance.setNodes(updatedNodes);
-        setLassoMode(false); // Lasso nach Gruppierung deaktivieren
+        setLassoMode(false);
       }
     }, [lassoMode, reactFlowInstance]);
 
@@ -2592,20 +2608,27 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
   };
 
   const getCircuitSvg = (): Promise<string> => {
+    // Vor dem Screenshot zentrieren
+  reactFlowInstance.fitView({ padding: 0.1 });
+
   return new Promise((resolve, reject) => {
-    toSvg(ref.current, {
-      filter: (node) => {
-        if (!node) return false;
-        if (node.classList?.contains("react-flow__minimap")) return false;
-        if (node.classList?.contains("react-flow__controls")) return false;
-        if (node.classList?.contains("react-flow__panel")) return false;
-        if (typeof node.className === "string" && node.className.includes("react-flow__panel")) return false;
-        return true;
-      },
-    })
-      .then((dataUrl) => resolve(dataUrl))  // ← Data-URL direkt zurückgeben
-      .catch(reject);
-  });
+    setTimeout(() => {
+      toSvg(ref.current, {
+        filter: (node) => {
+          if (!node) return false;
+          if (node.classList?.contains("react-flow__minimap")) return false;
+          if (node.classList?.contains("react-flow__controls")) return false;
+          if (node.classList?.contains("react-flow__panel")) return false;
+          if (typeof node.className === "string" && node.className.includes("react-flow__panel")) return false;
+          if (node.classList?.contains("lasso-button")) return false;
+          if (typeof node.className === "string" && node.className.includes("lasso")) return false;
+          return true;
+        },
+      })
+        .then((dataUrl) => resolve(dataUrl))  // ← Data-URL direkt zurückgeben
+        .catch(reject);
+    }, 300);
+})
 };
 
   const getModel = useCallback(() => {
@@ -3373,6 +3396,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
 
             {/* Lasso Button – separat positioniert über den Controls */}
             <div
+              className="lasso-button"
               style={{
                 position: "absolute",
                 bottom: "130px",  // anbinden an Controls nicht möglich, daher Position separat festlegen
