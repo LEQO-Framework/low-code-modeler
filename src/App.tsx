@@ -1017,49 +1017,49 @@ If none apply, return { "algorithms": [] }.
         }
 
         // MCMT Gate validation
-       if (node.type === "mcmt-gate" || node.data?.label === "MCMT Gate" || node.type === "MCMTGateNode") {
-        const numControls = parseInt(node.data.numControls, 10) || 1;
-        const numTargets = parseInt(node.data.numTargets, 10) || 1;
-        const expectedInputsCount = numControls + numTargets;
+        if (node.type === "mcmt-gate" || node.data?.label === "MCMT Gate" || node.type === "MCMTGateNode") {
+          const numControls = parseInt(node.data.numControls, 10) || 1;
+          const numTargets = parseInt(node.data.numTargets, 10) || 1;
+          const expectedInputsCount = numControls + numTargets;
 
-        const connectedEdges = edges.filter((edge) => edge.target === node.id);
+          const connectedEdges = edges.filter((edge) => edge.target === node.id);
 
-        const prefix = "quantumHandleInput";
-        const connectedIndices = new Set(
-          connectedEdges
-            .map((edge) => {
-              if (edge.targetHandle && edge.targetHandle.startsWith(prefix) && edge.targetHandle.endsWith(node.id)) {
-                const indexStr = edge.targetHandle.substring(
-                  prefix.length,
-                  edge.targetHandle.length - node.id.length
-                );
-                return parseInt(indexStr, 10);
-              }
-              return null;
-            })
-            .filter((idx) => idx !== null)
-        );
+          const prefix = "quantumHandleInput";
+          const connectedIndices = new Set(
+            connectedEdges
+              .map((edge) => {
+                if (edge.targetHandle && edge.targetHandle.startsWith(prefix) && edge.targetHandle.endsWith(node.id)) {
+                  const indexStr = edge.targetHandle.substring(
+                    prefix.length,
+                    edge.targetHandle.length - node.id.length
+                  );
+                  return parseInt(indexStr, 10);
+                }
+                return null;
+              })
+              .filter((idx) => idx !== null)
+          );
 
-        const missingIndices: number[] = [];
-        for (let i = 0; i < expectedInputsCount; i++) {
-          if (!connectedIndices.has(i)) {
-            missingIndices.push(i);
+          const missingIndices: number[] = [];
+          for (let i = 0; i < expectedInputsCount; i++) {
+            if (!connectedIndices.has(i)) {
+              missingIndices.push(i);
+            }
+          }
+
+          if (missingIndices.length > 0) {
+            const firstMissing = missingIndices[0];
+            const missingLabel = firstMissing < numControls
+              ? `Control ${firstMissing}`
+              : `Target ${firstMissing - numControls}`;
+
+            errors.push({
+              nodeId: node.id,
+              nodeType: node.type,
+              description: `MCMT Gate block requires ${expectedInputsCount} connected inputs, but is missing an incoming wire at "${missingLabel}".`,
+            });
           }
         }
-
-        if (missingIndices.length > 0) {
-          const firstMissing = missingIndices[0];
-          const missingLabel = firstMissing < numControls 
-            ? `Control ${firstMissing}` 
-            : `Target ${firstMissing - numControls}`;
-
-          errors.push({
-            nodeId: node.id,
-            nodeType: node.type,
-            description: `MCMT Gate block requires ${expectedInputsCount} connected inputs, but is missing an incoming wire at "${missingLabel}".`,
-          });
-        }
-      }
 
         const outgoing = outgoingConnections.get(node.id) || [];
         if (outgoing.length === 0) {
@@ -2149,7 +2149,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     addUserTemplate(newTemplate);
   };
 
-   function handleOpenQASMClick() {
+  function handleOpenQASMClick() {
     if (!reactFlowInstance) {
       console.error("React Flow instance is not initialized.");
       return;
@@ -3403,9 +3403,9 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
               zoomable={true}
               pannable={true}
             />
-
             <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
           </ReactFlow>
+
           {contextMenu.visible && contextMenu.nodeId && (
             <ContextMenu
               id={contextMenu.nodeId}

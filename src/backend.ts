@@ -56,6 +56,28 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
         }
     });
 
+    function resolveRegisterSize(nodeId: string, visited = new Set<string>()): number {
+        if (visited.has(nodeId)) return 3;
+        visited.add(nodeId);
+
+        const incomingEdge = edges.find(e => e.target === nodeId);
+        
+        if (!incomingEdge) {
+            const selfNode = nodes.find(n => n.id === nodeId);
+            if (selfNode?.data?.size) return parseInt(selfNode.data.size, 10);
+            return 3; 
+        }
+
+        const sourceNode = nodes.find(n => n.id === incomingEdge.source);
+        if (!sourceNode) return 3;
+
+        if (sourceNode.data?.size) {
+            return parseInt(sourceNode.data.size, 10);
+        }
+
+        return resolveRegisterSize(sourceNode.id, visited);
+    }
+
     return await fetch(new URL("/compile", baseUrl), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -65,7 +87,16 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
                 ...metadata
             },
             nodes: [...nodes.filter(x => !x.parentNode).map(mapNode)],
-            edges: edges.filter(e => !isNestedEdge(e)).map(mapEdge),
+            edges: edges
+                .filter(e => !isNestedEdge(e))
+                .filter(e => {
+                    const targetNode = nodes.find(n => n.id === e.target);
+                    if (targetNode && targetNode.type === consts.QAOANode) {
+                        return false; 
+                    }
+                    return true;
+                })
+                .map(mapEdge),
             compilation_target: compilation_target
         } satisfies CompileRequest),
     });
@@ -93,7 +124,19 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
 
             case consts.StatePreparationNode:
                 switch (node.data.label) {
-                    case "Encode Value":
+                    case "Encode Value": {
+                        // Resilient mapping to support both the old labels and the new unmerged PR labels
+                        const rawType = node.data.encodingType;
+                        const encMap: Record<string, string> = {
+                            "Amplitude Encoding": "amplitude",
+                            "Angle Encoding": "angle",
+                            "Basis Encoding": "basis",
+                            "Custom Encoding": "custom",
+                            "Matrix Encoding": "matrix",
+                            "Schmidt Decomposition": "schmidt",
+                        };
+                        const resolvedType = encMap[rawType] || rawType;
+
                         return {
                             id: node.id,
                             type: "encode",
@@ -109,6 +152,7 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
                             decimalPrecision: node.data.decimalPrecision !== undefined && node.data.decimalPrecision !== "" 
                                 ? parseInt(node.data.decimalPrecision, 10) : null
                         }
+                    }
 
                     case "Basis Encoding":
                         return {
@@ -261,14 +305,31 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
                             value: node.data.value
                         }
 
-                    case "Array":
+                    case "Array": {
+                        const val = node.data.value;
+                        let parsedValue = val;
+
+                        if (typeof val === 'string') {
+                            try {
+                                parsedValue = JSON.parse(val);
+                            } catch (e) {
+                                parsedValue = val.split(",").map(Number);
+                            }
+                        }
+
+                        const flattenArray = (arr: any[]): any[] =>
+                            arr.reduce((acc, v) => acc.concat(Array.isArray(v) ? flattenArray(v) : v), []);
+
+                        if (Array.isArray(parsedValue)) {
+                            parsedValue = flattenArray(parsedValue);
+                        }
+
                         return {
                             id: node.id,
                             type: "array",
-                            value: Array.isArray(node.data.value)
-                                ? node.data.value.map(Number)
-                                : String(node.data.value).split(",").map(Number)
-                        }
+                            values: parsedValue
+                        };
+                    }
                 }
                 break;
 
@@ -326,6 +387,35 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
                     parameter: node.data.parameter !== "" && node.data.parameter != null ? parseFloat(node.data.parameter) : null
                 };
 
+            case consts.QAOANode: {
+                const classicalInputEdge = edges.find(
+                    (e) => e.target === node.id && e.targetHandle === `classicalHandleQAOAInput0${node.id}`
+                );
+
+                let edgesString = "[]";
+                if (classicalInputEdge) {
+                    const sourceNode = nodes.find((n) => n.id === classicalInputEdge.source);
+                    if (sourceNode && sourceNode.data.value) {
+                        edgesString = typeof sourceNode.data.value === 'string' 
+                            ? sourceNode.data.value 
+                            : JSON.stringify(sourceNode.data.value);
+                    }
+                }
+
+                return {
+                    id: node.id,
+                    type: "qaoa",
+                    p: Number(node.data.p) || 1,
+                    problem: node.data.problem || "MaxCut",
+                    optimizer: node.data.optimizer || "COBYLA",
+                    edges: edgesString,
+                    gamma: String(node.data.gamma || ""),
+                    beta: String(node.data.beta || ""),
+                    outputIdentifier: node.data.outputIdentifier || "qaoa_reg",
+                };
+            }
+
+
             case consts.ControlStructureNode:
                 return {
                     id: node.id,
@@ -363,6 +453,37 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
                         ).map(mapEdge)
                     }
                 };
+            case "deutsch-jozsa":
+                return {
+                    id: node.id,
+                    type: "deutsch-jozsa",
+                    numQubits: node.data.numQubits || 3,
+                    oracleType: node.data.oracleType || "balanced",
+                    balancedMask: node.data.balancedMask || 5,
+                    constantValue: node.data.constantValue ?? 0,
+                } as any;
+            case consts.UniversalOracleNode:
+                return {
+                    id: node.id,
+                    type: "universal-oracle",
+                    numQubits: resolveRegisterSize(node.id),
+                    targetStates: node.data.targetStates ? node.data.targetStates.split(",").map((x: string) => parseInt(x.trim(), 10)).filter((n: number) => !isNaN(n)) : [],
+                    mode: node.data.mode || "phase"
+                } as any;
+            case consts.GroverDiffuserNode:
+                return {
+                    id: node.id,
+                    type: "grover-diffuser",
+                    numQubits: resolveRegisterSize(node.id)
+                } as any;
+            case consts.GroverNode:
+                return {
+                    id: node.id,
+                    type: "grover",
+                    numQubits: node.data.numQubits || 3,
+                    targetStates: node.data.targetStates || "",
+                    numIterations: node.data.numIterations || ""
+                } as any;
 
             case consts.PluginNode: {
                 const basePluginName = node.data.pluginName;
@@ -499,19 +620,48 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
                 };
             } else {
                 return {
-                    source: [
-                        edge.source,
-                        getHandleIndex(edge.source, "source", edge.sourceHandle)
-                    ],
-                    target: [
-                        edge.target,
-                        getHandleIndex(edge.target, "target", edge.targetHandle)
-                    ],
+                    source: [edge.source, getHandleIndex(edge.source, "source", edge.sourceHandle)],
+                    target: [edge.target, getHandleIndex(edge.target, "target", edge.targetHandle)],
                     identifier: output?.identifier,
                     size: output?.size
                 }
             }
         }
+
+        if (sourceNode.type === consts.QAOANode) {
+            try {
+                const classicalInputEdge = edges.find(
+                    (e) => e.target === sourceNode.id && e.targetHandle === `classicalHandleQAOAInput0${sourceNode.id}`
+                );
+
+                let edgesString = sourceNode.data.edges || "[]";
+                if (classicalInputEdge) {
+                    const arrayNode = nodes.find((n) => n.id === classicalInputEdge.source);
+                    if (arrayNode && arrayNode.data.value) {
+                        edgesString = typeof arrayNode.data.value === 'string' 
+                            ? arrayNode.data.value 
+                            : JSON.stringify(arrayNode.data.value);
+                    }
+                }
+
+                const edgesArr = JSON.parse(edgesString);
+                const flattenArray = (arr: any[]): any[] =>
+                    arr.reduce((acc, v) => acc.concat(Array.isArray(v) ? flattenArray(v) : v), []);
+                
+                const flatArr = flattenArray(edgesArr);
+                if (flatArr.length > 0) {
+                    const isDimacs = flatArr.some(x => x < 0) || (sourceNode.data.problem === "Max2SAT" && !flatArr.includes(0));
+                    const numQubits = isDimacs 
+                        ? Math.max(...flatArr.map(Math.abs)) 
+                        : Math.max(...flatArr) + 1;
+                    output = output ? { ...output, size: numQubits } : { size: numQubits, identifier: sourceNode.data.outputIdentifier || "qaoa_reg" };
+                }
+            } catch (e) {
+                console.warn("Failed to compute QAOA edge size", e);
+            }
+        }
+
+        const parsedSize = parseInt(output?.size, 10);
         return {
             source: [
                 edge.source,
@@ -522,7 +672,7 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
                 getHandleIndex(edge.target, "target", edge.targetHandle)
             ],
             identifier: output.identifier,
-            size: parseInt(output.size, 10)
+            size: Number.isNaN(parsedSize) ? null : parsedSize
         }
     }
 }
