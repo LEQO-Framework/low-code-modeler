@@ -214,7 +214,7 @@ export const categories: Record<string, CategoryEntry> = {
           type: consts.QAOANode,
           icon: "PaletteIcon_QAOA.png",
           description: "Generates a parameterized Quantum Approximate Optimization Algorithm (QAOA) circuit for a given graph.",
-          completionGuaranteed: false,
+          completionGuaranteed: true,
           compactOptions: [false],
           data: {
             label: "QAOA Ansatz",
