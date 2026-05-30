@@ -2,40 +2,53 @@ type FlowJson = {
   metadata: any;
   nodes: any[];
   edges: any[];
-  viewport: {
-    x: number;
-    y: number;
-    zoom: number;
-  };
+  viewport: { x: number; y: number; zoom: number };
 };
 
 const GATE_LABELS: Record<string, string> = {
   x: "X",
-  z: "Z",
   y: "Y",
-  t: "T",
-  cy: "CY",
-  cz: "CZ",
+  z: "Z",
   h: "H",
   cx: "CNOT",
-  swap: "SWAP",
+  cnot: "CNOT",
   ccx: "Toffoli",
+  swap: "SWAP",
   measure: "Measurement",
 };
 
 const generateId = () => crypto.randomUUID();
 
-// ---------------------------------------------------
-// NODE FACTORIES
-// ---------------------------------------------------
 
-function createNode(
+function createQubitNode(id: string, x: number, y: number, q: string) {
+  return {
+    id,
+    type: "gateNode",
+    position: { x, y },
+    data: {
+      label: "Qubit Circuit",
+      inputs: [],
+      children: [],
+      identifiers: [q],
+      inputTypes: [],
+      outputTypes: [],
+      completionGuaranteed: true,
+      compactOptions: [true, false],
+      parameter: "0",
+    },
+    width: 110,
+    height: 110,
+    positionAbsolute: { x, y },
+  };
+}
+
+function createGateNode(
   id: string,
   label: string,
   x: number,
   y: number,
   identifiers: string[],
-  inputs: any[] = []
+  inputs: any[]
 ) {
   return {
     id,
@@ -45,15 +58,11 @@ function createNode(
       label,
       inputs,
       children: [],
-      implementation: "",
-      implementationType: "",
-      uncomputeImplementationType: "",
-      uncomputeImplementation: "",
-      completionGuaranteed: true,
-      compactOptions: [true, false],
       identifiers,
       inputTypes: Array(inputs.length).fill("any"),
       outputTypes: [],
+      completionGuaranteed: true,
+      compactOptions: [true, false],
       parameter: "0",
     },
     width: 110,
@@ -66,8 +75,8 @@ function createMergerNode(
   id: string,
   x: number,
   y: number,
-  inputs: any[],
-  identifiers: string[]
+  identifiers: string[],
+  inputs: any[]
 ) {
   return {
     id,
@@ -77,40 +86,32 @@ function createMergerNode(
       label: "Merger",
       inputs,
       children: [],
-      implementation: "",
-      implementationType: "",
-      uncomputeImplementationType: "",
-      uncomputeImplementation: "",
-      completionGuaranteed: true,
-      compactOptions: [true, false],
       identifiers,
       inputTypes: Array(inputs.length).fill("any"),
       outputTypes: [],
       numberInputs: inputs.length,
+      completionGuaranteed: true,
+      compactOptions: [true, false],
     },
     width: 170,
-    height: 205,
+    height: 165,
     positionAbsolute: { x, y },
   };
 }
 
-// ---------------------------------------------------
-// EDGE FACTORIES
-// ---------------------------------------------------
-
-function createGateEdge(
+function makeEdge(
   source: string,
   target: string,
-  sourceOutputIndex: number,
-  targetInputIndex: number
+  sHandle: string,
+  tHandle: string
 ) {
   return {
+    id: generateId(),
     source,
-    sourceHandle: `quantumHandleGateOutput${sourceOutputIndex}${source}`,
     target,
-    targetHandle: `quantumHandleGateInput${targetInputIndex}${target}`,
+    sourceHandle: sHandle,
+    targetHandle: tHandle,
     type: "quantumEdge",
-    id: generateId(),
     markerEnd: {
       type: "arrowclosed",
       width: 20,
@@ -121,346 +122,292 @@ function createGateEdge(
   };
 }
 
-function createGateToMergerEdge(
-  source: string,
-  mergerId: string,
-  sourceOutputIndex: number,
-  mergerInputIndex: number
-) {
-  return {
-    source,
-    sourceHandle: `quantumHandleGateOutput${sourceOutputIndex}${source}`,
-    target: mergerId,
-    targetHandle: `quantumHandleMergerInput${mergerInputIndex}${mergerId}`,
-    type: "quantumEdge",
-    id: generateId(),
-    markerEnd: {
-      type: "arrowclosed",
-      width: 20,
-      height: 20,
-      color: "#93C5FD",
-      hidden: false,
-    },
-  };
-}
 
-function createMergerToMeasurementEdge(
-  mergerId: string,
-  measurementId: string
-) {
-  return {
-    source: mergerId,
-    sourceHandle: `quantumHandleMergerOutput0${mergerId}`,
-    target: measurementId,
-    targetHandle: `quantumHandleMeasurementInput0${measurementId}`,
-    type: "quantumEdge",
-    id: generateId(),
-    markerEnd: {
-      type: "arrowclosed",
-      width: 20,
-      height: 20,
-      color: "#93C5FD",
-      hidden: false,
-    },
-  };
-}
+export function openQasmToFlow(qasm: string): FlowJson {
+  qasm = qasm.replace(/\r\n/g, "\n").replace(/\uFEFF/g, "");
 
-// ---------------------------------------------------
-// MAIN CONVERTER
-// ---------------------------------------------------
-
-export function openQasmToFlow(openqasm: string): FlowJson {
   const nodes: any[] = [];
   const edges: any[] = [];
 
-  openqasm = openqasm.replace(/\r\n/g, "\n").replace(/\uFEFF/g, "");
+  // Register
+  const qubitMatch = /qubit\[(\d+)\]\s+([a-zA-Z0-9_]+)\s*;/.exec(qasm);
+  if (!qubitMatch) throw new Error("No qubit register found");
 
-  // ---------------------------------------------------
-  // QUBITS
-  // ---------------------------------------------------
+  const n = Number(qubitMatch[1]);
+  const reg = qubitMatch[2];
+  const qLabel = (i: number) => `${reg}[${i}]`;
 
-  const qubitRegex = /qubit\s*\[\s*(\d+)\s*\]\s*([a-zA-Z0-9_]+)\s*;/g;
+  // Per-qubit wire state:
+  //   lastNodeId[q]   = id of the node that currently "owns" qubit q's wire
+  //   lastOutIdx[q]   = which output-slot index that qubit exits from that node
+  //   depth[q]        = column depth (for x-positioning)
+  const lastNodeId: (string | null)[] = Array(n).fill(null);
+  const lastOutIdx: number[] = Array(n).fill(0);
+  const depth: number[] = Array(n).fill(0);
 
-  const qubitMatches = [...openqasm.matchAll(qubitRegex)];
-
-  if (!qubitMatches.length) {
-    throw new Error("No qubit register found.");
+  // Qubit source nodes
+  for (let i = 0; i < n; i++) {
+    const id = generateId();
+    nodes.push(createQubitNode(id, -90, i * 180 - 90, qLabel(i)));
+    lastNodeId[i] = id;
+    lastOutIdx[i] = 0; // qubit nodes only have output slot 0
   }
 
-  const qubitCount = Number(qubitMatches[0][1]);
-
-  const qubitIdentifiers: string[] = [];
-  const lastNodePerQubit: (string | undefined)[] = [];
-  const lastOutputLanePerQubit: number[] = [];
-  const depthPerQubit: number[] = [];
-
-  for (let i = 0; i < qubitCount; i++) {
-    const nodeId = generateId();
-    const identifier = `q${i}`;
-
-    qubitIdentifiers.push(identifier);
-
-    const y = i * 180 - 90;
-
-    nodes.push(
-      createNode(nodeId, "Qubit Circuit", -90, y, [identifier])
-    );
-
-    lastNodePerQubit[i] = nodeId;
-    lastOutputLanePerQubit[i] = 0;
-    depthPerQubit[i] = 0;
-  }
-
-  // ---------------------------------------------------
-  // ALIASES
-  // ---------------------------------------------------
-
+  // 2. ALIAS MAP
+  //    let alias = reg[{0}] 
+  //    let alias = reg[{2,3}] 
+  //    let alias = otherAlias, copy
   const aliasMap: Record<string, number[]> = {};
 
-  const aliasRegex =
-    /let\s+([a-zA-Z0-9_]+)\s*=\s*[a-zA-Z0-9_]+\s*\[\s*\{([^}]+)\}\s*\]\s*;/g;
-
-  let aliasMatch;
-
-  while ((aliasMatch = aliasRegex.exec(openqasm)) !== null) {
-    const alias = aliasMatch[1];
-
-    aliasMap[alias] = aliasMatch[2]
-      .split(",")
-      .map(v => Number(v.trim()))
-      .filter(v => !Number.isNaN(v));
+  const directAliasRe =
+    /let\s+([a-zA-Z0-9_.]+)\s*=\s*([a-zA-Z0-9_]+)\s*\[\{([^}]+)\}\]\s*;/g;
+  let m: RegExpExecArray | null;
+  while ((m = directAliasRe.exec(qasm))) {
+    const aliasName = m[1];
+    const srcName = m[2];
+    const idxs = m[3].split(",").map(s => Number(s.trim()));
+    if (srcName === reg) {
+      aliasMap[aliasName] = idxs;
+    } else if (aliasMap[srcName]) {
+      aliasMap[aliasName] = idxs.map(i => aliasMap[srcName][i]);
+    }
   }
 
-  // ---------------------------------------------------
-  // GATES
-  // ---------------------------------------------------
+  // alias-of-alias without indexing:  let out = encoded;
+  const indirectAliasRe =
+    /let\s+([a-zA-Z0-9_.]+)\s*=\s*([a-zA-Z0-9_.]+)\s*;/g;
+  while ((m = indirectAliasRe.exec(qasm))) {
+    const [, dst, src] = m;
+    if (!aliasMap[dst] && aliasMap[src]) aliasMap[dst] = [...aliasMap[src]];
+  }
 
-  const gateRegex =
-    /\b([a-zA-Z]+)\s+([a-zA-Z0-9_]+)(?:\[(\d+)\])?(?:\s*,\s*([a-zA-Z0-9_]+)(?:\[(\d+)\])?)?(?:\s*,\s*([a-zA-Z0-9_]+)(?:\[(\d+)\])?)?\s*;/g;
+  // 3. RESOLVE alias name + local index, absolute qubit index
+  function resolveQubit(name: string, localIdx: number): number | undefined {
+    if (aliasMap[name] !== undefined) return aliasMap[name][localIdx];
+    if (name === reg) return localIdx;
+    return undefined;
+  }
 
-  let gateMatch;
 
-  while ((gateMatch = gateRegex.exec(openqasm)) !== null) {
-    const gate = gateMatch[1].toLowerCase();
+  // 4. SOURCE HANDLE for a qubit wire leaving a node
+  //
+  //    sourceHandle format:
+  //      gate/qubit node:  quantumHandleGateOutput{outIdx}{nodeId}
+  //      merger node:      quantumHandleMergerOutput{outIdx}{nodeId}
+  //
+  //    outIdx = the position slot in the node that this qubit uses
+  function sourceHandle(nodeId: string, outIdx: number): string {
+    const node = nodes.find(nd => nd.id === nodeId);
+    if (node?.type === "mergerNode") {
+      return `quantumHandleMergerOutput${outIdx}${nodeId}`;
+    }
+    return `quantumHandleGateOutput${outIdx}${nodeId}`;
+  }
 
-    if (gate === "measure") continue;
 
-    const alias1 = gateMatch[2];
-    const idx1 = gateMatch[3] ? Number(gateMatch[3]) : 0;
+  // 5. APPLY A GATE
+  //    operands: ordered list of [aliasName, localIdx]
+  function applyGate(gate: string, operands: Array<[string, number]>) {
+    // Resolve each operand to an absolute qubit index
+    const qIdxs: number[] = [];
+    for (const [name, li] of operands) {
+      const q = resolveQubit(name, li);
+      if (q === undefined) {
+        console.warn(`Cannot resolve qubit: ${name}[${li}]`);
+        return;
+      }
+      qIdxs.push(q);
+    }
 
-    const alias2 = gateMatch[4];
-    const idx2 = gateMatch[5] ? Number(gateMatch[5]) : 0;
+    const gateId = generateId();
+    const d = Math.max(...qIdxs.map(q => depth[q])) + 1;
+    const x = d * 300 - 180;
+    const y = ((Math.min(...qIdxs) + Math.max(...qIdxs)) / 2) * 180 - 90;
 
-    const alias3 = gateMatch[6];
-    const idx3 = gateMatch[7] ? Number(gateMatch[7]) : 0;
+    const inputs: any[] = [];
 
-    if (!aliasMap[alias1]) continue;
+    qIdxs.forEach((q, inputPos) => {
+      const prevNode = lastNodeId[q];
+      const prevOutIdx = lastOutIdx[q];
+      if (prevNode === null) return;
 
-    const q1 = aliasMap[alias1][idx1];
-    const q2 = alias2 ? aliasMap[alias2]?.[idx2] : undefined;
-    const q3 = alias3 ? aliasMap[alias3]?.[idx3] : undefined;
+      // target handle: which input slot of the NEW gate this qubit enters
+      const tHandle = `quantumHandleGateInput${inputPos}${gateId}`;
+      // source handle: which output slot of the PREVIOUS node this qubit exits
+      const sHandle = sourceHandle(prevNode, prevOutIdx);
 
-    const physicalQubits = [q1];
+      const e = makeEdge(prevNode, gateId, sHandle, tHandle);
+      edges.push(e);
 
-    if (q2 !== undefined) physicalQubits.push(q2);
-    if (q3 !== undefined) physicalQubits.push(q3);
-
-    const nodeId = generateId();
-
-    const gateDepth =
-      Math.max(...physicalQubits.map(q => depthPerQubit[q])) + 1;
-
-    const x = gateDepth * 300 - 180;
-
-    const minQ = Math.min(...physicalQubits);
-    const maxQ = Math.max(...physicalQubits);
-
-    const y = ((minQ + maxQ) / 2) * 180 - 90;
-
-    const inputNodes: any[] = [];
-
-    physicalQubits.forEach((q, i) => {
-      const prev = lastNodePerQubit[q];
-
-      if (!prev) return;
-
-      const edge = createGateEdge(
-        prev,
-        nodeId,
-        lastOutputLanePerQubit[q],
-        i
-      );
-
-      edges.push(edge);
-
-      inputNodes.push({
-        id: prev,
-        edgeId: edge.id,
-        identifiers: [qubitIdentifiers[q]],
-        targetHandle: `quantumHandleGateInput${i}${nodeId}`,
+      inputs.push({
+        id: prevNode,
+        edgeId: e.id,
+        identifiers: [qLabel(q)],
+        targetHandle: tHandle,
       });
+
+      // After this gate, qubit q exits at output slot = inputPos (same position)
+      lastNodeId[q] = gateId;
+      lastOutIdx[q] = inputPos;
+      depth[q] = d;
     });
 
     nodes.push(
-      createNode(
-        nodeId,
+      createGateNode(
+        gateId,
         GATE_LABELS[gate] || gate.toUpperCase(),
         x,
         y,
-        physicalQubits.map(q => qubitIdentifiers[q]),
-        inputNodes
+        qIdxs.map(q => qLabel(q)),
+        inputs
       )
     );
-
-    physicalQubits.forEach((q, i) => {
-      depthPerQubit[q] = gateDepth;
-      lastNodePerQubit[q] = nodeId;
-      lastOutputLanePerQubit[q] = i;
-    });
   }
 
-  // ---------------------------------------------------
-  // MEASUREMENTS
-  // ---------------------------------------------------
 
-  const measureRegex =
-    /bit\s*\[\s*(\d+)\s*\]\s*([a-zA-Z0-9_]+)\s*=\s*measure\s+([a-zA-Z0-9_]+)\s*\[\s*\{([^}]+)\}\s*\]\s*;/g;
+  // 6. PARSE GATE LINES (handle multi-line operands)
+  const noComments = qasm
+    .replace(/\/\*[\s\S]*?\*\//g, " ")
+    .replace(/\/\/[^\n]*/g, " ");
 
-  let m;
+  const gateLineRe =
+    /\b(x|y|z|h|cx|ccx|cnot|swap)\s+((?:[a-zA-Z0-9_.]+\s*\[\d+\]\s*,?\s*\n?\s*)+);/gi;
 
-  while ((m = measureRegex.exec(openqasm)) !== null) {
-    const resultName = m[2];
+  while ((m = gateLineRe.exec(noComments))) {
+    const gate = m[1].toLowerCase();
+    const operandStr = m[2];
+    const opRe = /([a-zA-Z0-9_.]+)\s*\[(\d+)\]/g;
+    const operands: Array<[string, number]> = [];
+    let om: RegExpExecArray | null;
+    while ((om = opRe.exec(operandStr))) {
+      operands.push([om[1], Number(om[2])]);
+    }
+    if (operands.length > 0) applyGate(gate, operands);
+  }
 
-    const indices = m[4]
+
+  // 7. PARSE MEASUREMENTS
+  //
+  //  Pattern:
+  //    bit[N] name = measure alias[{0,1}];
+  //
+  //  For each measurement we:
+  //    a) Create a MERGER collecting all measured qubit wires
+  //    b) Create a MEASUREMENT node with a single input from the merger
+  //       (edgeId = "" as per reference format, no edge added for meas <-merger)
+  //    c) Add real edges from each qubit's last node into the merger
+
+  const measRe =
+    /bit\[(\d+)\]\s+([a-zA-Z0-9_]+)\s*=\s*measure\s+([a-zA-Z0-9_.]+)\s*\[\{([^}]+)\}\]\s*;/g;
+
+  while ((m = measRe.exec(noComments))) {
+    const outputName = m[2];
+    const aliasName = m[3];
+    const localIdxs = m[4]
       .split(",")
-      .map(v => Number(v.trim()));
+      .map(s => s.trim())
+      .map(Number);
 
-    const physicalQubits = indices;
+    // Resolve to absolute qubit indices
+    const absIdxs: number[] = [];
+    for (const li of localIdxs) {
+      const q = resolveQubit(aliasName, li);
+      if (q !== undefined) absIdxs.push(q);
+    }
+    if (absIdxs.length === 0) continue;
 
-    const measurementId = generateId();
+    const maxDepth = Math.max(...depth);
+    const midY =
+      ((Math.min(...absIdxs) + Math.max(...absIdxs)) / 2) * 180 - 90;
 
-    const minQ = Math.min(...physicalQubits);
-    const maxQ = Math.max(...physicalQubits);
+    const mergerId = generateId();
+    const mergerX = (maxDepth + 2) * 300 - 180;
+    const mergerY = midY + 180; // place below midpoint like reference
 
-    const baseY = ((minQ + maxQ) / 2) * 180 - 90;
+    const mergerInputs: any[] = [];
 
-    const measurementX = 1320;
+    absIdxs.forEach((q, mergerInputPos) => {
+      const prevNode = lastNodeId[q];
+      const prevOutIdx = lastOutIdx[q];
+      if (prevNode === null) return;
 
-    let measurementInputId: string;
+      const tHandle = `quantumHandleMergerInput${mergerInputPos}${mergerId}`;
+      const sHandle = sourceHandle(prevNode, prevOutIdx);
 
-    // ---------------------------------------------------
-    // MULTI-QUBIT → MERGER
-    // ---------------------------------------------------
+      const e = makeEdge(prevNode, mergerId, sHandle, tHandle);
+      edges.push(e);
 
-    if (physicalQubits.length > 1) {
-      const mergerId = generateId();
-
-      const mergerInputs: any[] = [];
-
-      physicalQubits.forEach((q, i) => {
-        const prev = lastNodePerQubit[q];
-
-        if (!prev) return;
-
-        const edge = createGateToMergerEdge(
-          prev,
-          mergerId,
-          lastOutputLanePerQubit[q],
-          i
-        );
-
-        edges.push(edge);
-
-        mergerInputs.push({
-          id: prev,
-          edgeId: edge.id,
-          identifiers: [qubitIdentifiers[q]],
-          targetHandle: `quantumHandleMergerInput${i}${mergerId}`,
-        });
+      mergerInputs.push({
+        id: prevNode,
+        edgeId: e.id,
+        identifiers: [qLabel(q)],
+        targetHandle: tHandle,
       });
 
-      nodes.push(
-        createMergerNode(
-          mergerId,
-          measurementX - 480,
-          baseY,
-          mergerInputs,
-          physicalQubits.map(q => qubitIdentifiers[q])
-        )
-      );
+      // Merger absorbs the wire
+      lastNodeId[q] = mergerId;
+      lastOutIdx[q] = mergerInputPos;
+    });
 
-      measurementInputId = mergerId;
+    // Merger identifiers = all measured qubits
+    const mergerIdentifiers = absIdxs.map(q => qLabel(q));
+    nodes.push(
+      createMergerNode(mergerId, mergerX, mergerY, mergerIdentifiers, mergerInputs)
+    );
 
-      edges.push(
-        createMergerToMeasurementEdge(
-          mergerId,
-          measurementId
-        )
-      );
-    } else {
-      measurementInputId = lastNodePerQubit[physicalQubits[0]]!;
-    }
+    // Edge from merger to measurement
+    const measId = generateId();
+    const measX = mergerX + 350;
+    const measY = midY;
 
-    // ---------------------------------------------------
-    // MEASUREMENT NODE
-    // ---------------------------------------------------
+    const measTHandle = `quantumHandleMeasurementInput0${measId}`;
+    const measSHandle = `quantumHandleMergerOutput0${mergerId}`;
 
+    const measEdge = makeEdge(mergerId, measId, measSHandle, measTHandle);
+    edges.push(measEdge);
+
+    // Single input from merger, edgeId is "" per reference format
     nodes.push({
-      id: measurementId,
+      id: measId,
       type: "measurementNode",
-      position: { x: measurementX, y: baseY },
+      position: { x: measX, y: measY },
       data: {
         label: "Measurement",
         inputs: [
           {
-            id: measurementInputId,
+            id: mergerId,
             edgeId: "",
-            identifiers: physicalQubits.map(
-              q => qubitIdentifiers[q]
-            ),
-            targetHandle: `quantumHandleMeasurementInput0${measurementId}`,
+            identifiers: mergerIdentifiers,
+            targetHandle: measTHandle,
           },
         ],
-        identifiers: physicalQubits.map(
-          q => qubitIdentifiers[q]
-        ),
-        outputIdentifier: resultName,
-        indices: indices.join(","),
+        children: [],
+        identifiers: mergerIdentifiers,
+        outputIdentifier: outputName,
+        indices: localIdxs.join(","),
         inputTypes: ["quantum register"],
         outputTypes: ["array", "quantum register"],
-        children: [],
-        implementation: "",
-        implementationType: "",
         completionGuaranteed: true,
         compactOptions: [true, false],
       },
       width: 320,
       height: 440,
-      positionAbsolute: { x: measurementX, y: baseY },
-    });
-
-    physicalQubits.forEach(q => {
-      lastNodePerQubit[q] = measurementId;
-      lastOutputLanePerQubit[q] = 0;
+      positionAbsolute: { x: measX, y: measY },
     });
   }
 
   return {
     metadata: {
       version: "1.0.0",
-      name: "OpenQASM 3.1 Import",
-      description: "Generated from OpenQASM",
-      author: "",
+      name: "OpenQASM Import",
+      description: "Converted model from OpenQASM",
       id: `flow-${Date.now()}`,
+      author: "",
       timestamp: new Date().toISOString(),
       containsPlaceholder: false,
     },
     nodes,
     edges,
-    viewport: {
-      x: -155.23281447101772,
-      y: 354.3400046901496,
-      zoom: 0.5,
-    },
+    viewport: { x: 0, y: 0, zoom: 0.8 },
   };
 }
