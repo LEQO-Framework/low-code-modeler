@@ -72,7 +72,7 @@ interface ProxyHandle {
 function getProxyHandles(
   childNodes: Node[],
   edges: Edge[]
-): { inputs: ProxyHandle[]; outputs: ProxyHandle[] } {
+): { inputs: ProxyHandle[]; outputs: ProxyHandle[]; hasInputs: boolean } {
   const childIds = new Set(childNodes.map((n) => n.id));
 
   // Interne Edges (beide Seiten sind Kind-Nodes)
@@ -141,7 +141,7 @@ function getProxyHandles(
     if (nodeType === "gateNode" && child.data?.inputs?.length > 0)
                                                inputHandleId = `quantumHandleGateInput0${child.id}`;
     else if (nodeType === "measurementNode")   inputHandleId = `quantumHandleMeasurementInput0${child.id}`;
-    else if (nodeType === "statePreparationNode") inputHandleId = `quantumHandleStatePreparationInput0${child.id}`;
+    else if (nodeType === "statePreparationNode") inputHandleId = `classicalHandleStatePreparationInput0${child.id}`;
     else if (nodeType === "quantumOperatorNode")  inputHandleId = `quantumHandleQuantumOperatorInput0${child.id}`;
     else if (nodeType === "algorithmNode")     inputHandleId = `quantumHandleAlgorithmInput0${child.id}`;
     else if (nodeType === "uncomputeNode")     inputHandleId = `quantumHandleUncomputeInput0${child.id}`;
@@ -167,7 +167,10 @@ function getProxyHandles(
   inputs.forEach((h, i)  => { h.index = i; h.total = inputs.length; });
   outputs.forEach((h, i) => { h.index = i; h.total = outputs.length; });
 
-  return { inputs, outputs };
+  // hasInputs: true wenn tatsächlich unbesetzte Input-Proxy-Handles existieren
+  const hasInputs = inputs.length > 0;
+
+  return { inputs, outputs, hasInputs };
 }
 
 export const GroupNode = memo((node: Node) => {
@@ -188,9 +191,9 @@ export const GroupNode = memo((node: Node) => {
   const borderStyle = collapsed ? "solid" : groupStyle.borderStyle;
 
   // Proxy-Handles nur wenn aufgeklappt
-  const { inputs: proxyInputs, outputs: proxyOutputs } = !collapsed
+  const { inputs: proxyInputs, outputs: proxyOutputs, hasInputs: groupHasInputs } = !collapsed
     ? getProxyHandles(childNodes, getEdges())
-    : { inputs: [], outputs: [] };
+    : { inputs: [] as ProxyHandle[], outputs: [] as ProxyHandle[], hasInputs: false };
 
   const getChildBounds = useCallback(() => {
     const children = getNodes().filter((n) => n.parentNode === id);
@@ -318,10 +321,7 @@ export const GroupNode = memo((node: Node) => {
         >
           <div style={{ display: "flex", alignItems: "center", gap: "6px", flex: 1, minWidth: 0 }}>
             <span style={{
-                  color: "white",
                   backgroundColor: color,
-                  fontSize: "9px",
-                  fontWeight: 700,
                   width: "20px",
                   height: "20px",
                   borderRadius: "3px",
@@ -329,9 +329,23 @@ export const GroupNode = memo((node: Node) => {
                   alignItems: "center",
                   justifyContent: "center",
                   flexShrink: 0,
-                  letterSpacing: "-0.5px",
+                  overflow: "hidden",
                 }}>
-                  {groupType === "quantum" ? "Q" : groupType === "classical" ? "C" : "Q+C"}
+                  {groupType === "classical" ? (
+                    // Zahnrad (Classical)
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="3"/>
+                      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                    </svg>
+                  ) : (
+                    // Atom (Quantum / Mixed)
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="1"/>
+                      <ellipse cx="12" cy="12" rx="10" ry="4"/>
+                      <ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(60 12 12)"/>
+                      <ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(120 12 12)"/>
+                    </svg>
+                  )}
             </span>
             {isEditingLabel ? (
               <input
@@ -418,7 +432,8 @@ export const GroupNode = memo((node: Node) => {
             top: handleTop(h.index, h.total),
             backgroundColor: h.color,
             border: "1px solid black",
-            width: 13, height: 13, zIndex: 10, borderRadius: 0,
+            width: 13, height: 13, zIndex: 10,
+            borderRadius: h.color === "#F5A843" ? "50%" : 0,
           }}
         />
       ))}
@@ -435,22 +450,23 @@ export const GroupNode = memo((node: Node) => {
             top: handleTop(h.index, h.total),
             backgroundColor: h.color,
             border: "1px solid black",
-            width: 13, height: 13, zIndex: 10, borderRadius: 0,
+            width: 13, height: 13, zIndex: 10,
+            borderRadius: h.color === "#F5A843" ? "50%" : 0,
           }}
         />
       ))}
 
       {/* Fallback wenn keine Proxy-Handles */}
-      {(collapsed || proxyInputs.length === 0) && (
+      {(collapsed || proxyInputs.length === 0) && groupHasInputs && (
         <Handle type="target" id={`groupInput0${id}`} position={Position.Left}
           isConnectable={true}
-          style={{ top: "50%", backgroundColor: color, border: "1px solid black", width: 13, height: 13, zIndex: 10, borderRadius: 0 }}
+          style={{ top: "50%", backgroundColor: getHandleColor(`${groupType === "classical" ? "classical" : "quantum"}Handle`), border: "1px solid black", width: 13, height: 13, zIndex: 10, borderRadius: groupType === "classical" ? "50%" : 0 }}
         />
       )}
       {(collapsed || proxyOutputs.length === 0) && (
         <Handle type="source" id={`groupOutput0${id}`} position={Position.Right}
           isConnectable={true}
-          style={{ top: "50%", backgroundColor: color, border: "1px solid black", width: 13, height: 13, zIndex: 10, borderRadius: 0 }}
+          style={{ top: "50%", backgroundColor: getHandleColor(`${groupType === "classical" ? "classical" : "quantum"}Handle`), border: "1px solid black", width: 13, height: 13, zIndex: 10, borderRadius: groupType === "classical" ? "50%" : 0 }}
         />
       )}
     </>

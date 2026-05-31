@@ -153,7 +153,7 @@ export function QSphere({
     scene.background = new THREE.Color(0xfafafa);
 
     const camera = new THREE.PerspectiveCamera(40, W / H, 0.1, 100);
-    camera.position.set(0, 0, 3.2);
+    camera.position.set(0, 0, 4.2);
     camera.lookAt(0, 0, 0);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -253,20 +253,38 @@ export function QSphere({
       dot.position.copy(d.pos);
       pivot.add(dot);
 
-      // Label sprite for basis state
+      // Label sprite for basis state – larger, with background pill
       const canvas = document.createElement("canvas");
-      canvas.width = 256; canvas.height = 80;
+      canvas.width = 320; canvas.height = 100;
       const ctx = canvas.getContext("2d")!;
-      ctx.font = "bold 36px monospace";
-      ctx.fillStyle = "#1f2937";
+      // Background pill
+      const ph = 64, pw = 300, px = 10, py = 18, pr = 14;
+      ctx.beginPath();
+      ctx.moveTo(px + pr, py); ctx.lineTo(px + pw - pr, py);
+      ctx.quadraticCurveTo(px + pw, py, px + pw, py + pr);
+      ctx.lineTo(px + pw, py + ph - pr);
+      ctx.quadraticCurveTo(px + pw, py + ph, px + pw - pr, py + ph);
+      ctx.lineTo(px + pr, py + ph);
+      ctx.quadraticCurveTo(px, py + ph, px, py + ph - pr);
+      ctx.lineTo(px, py + pr);
+      ctx.quadraticCurveTo(px, py, px + pr, py);
+      ctx.closePath();
+      ctx.fillStyle = "rgba(255,255,255,0.88)";
+      ctx.fill();
+      ctx.strokeStyle = phaseToCSS(d.phase);
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      // Text
+      ctx.font = "bold 46px monospace";
+      ctx.fillStyle = "#111827";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(`|${d.label}⟩`, 128, 40);
+      ctx.fillText(`|${d.label}⟩`, 160, 50);
       const tex = new THREE.CanvasTexture(canvas);
       const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true }));
-      sprite.scale.set(0.32, 0.10, 1);
-      // Offset label slightly above dot
-      sprite.position.copy(d.pos.clone().multiplyScalar(1.12).add(new THREE.Vector3(0, 0.06, 0)));
+      sprite.scale.set(0.52, 0.16, 1);
+      // Offset label outside the dot
+      sprite.position.copy(d.pos.clone().multiplyScalar(1.22).add(new THREE.Vector3(0, 0.08, 0)));
       pivot.add(sprite);
     }
 
@@ -349,6 +367,36 @@ export function QSphere({
       </div>
 
       <div style={{ fontSize: 10, color: "#9ca3af" }}>Drag to rotate · Color = phase</div>
+
+      {/* Erklärungsbox */}
+      <div style={{
+        maxWidth: 320, width: "100%",
+        background: "#f8fafc",
+        border: "1px solid #e2e8f0",
+        borderRadius: 8,
+        padding: "10px 12px",
+        fontSize: 11,
+        color: "#475569",
+        lineHeight: 1.6,
+      }}>
+        <div style={{ fontWeight: 600, color: "#1e293b", marginBottom: 6, fontSize: 12 }}>
+          How to read the Q-Sphere
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <div style={{ display: "flex", gap: 8 }}>
+            <span style={{ minWidth: 14 }}>📍</span>
+            <span><b>Position:</b> Each dot is a basis state. North pole = |00…0⟩, south pole = |11…1⟩. States with the same number of 1s share the same latitude.</span>
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <span style={{ minWidth: 14 }}>⭕</span>
+            <span><b>Size:</b> Larger dot = higher measurement probability.</span>
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <span style={{ minWidth: 14 }}>🎨</span>
+            <span><b>Color:</b> Encodes the quantum phase of the amplitude. Same color = same phase. A phase difference causes interference.</span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

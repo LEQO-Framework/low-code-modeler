@@ -245,7 +245,8 @@ function ComponentsView({
             error={component.error}
             onGetCircuitSvg={onGetCircuitSvg}
             groupId={component.groupId}
-            nodes={nodes}
+            nodeIds={component.nodeIds}
+            nodes={component.nodes}
             onGetModel={onGetModel}
           />
         );
@@ -262,6 +263,7 @@ function ComponentSection({
   error,
   onGetCircuitSvg,
   groupId,
+  nodeIds,
   nodes,
   onGetModel,
 }: {
@@ -272,22 +274,35 @@ function ComponentSection({
   error: string | null;
   onGetCircuitSvg?: () => Promise<string>;
   groupId: string | null;
+  nodeIds?: string[];
   nodes: Node[];
   onGetModel?: () => object;
 }) {
   const [expanded, setExpanded] = useState(true);
   const { setNodes, getNodes } = useReactFlow();
 
-  // Gibt nur das SVG der Nodes dieser Gruppe zurück
-  const getGroupCircuitSvg = onGetCircuitSvg && groupId
+  // Gibt nur das SVG der Nodes dieses Circuits/dieser Gruppe zurück
+  const circuitNodeIds = new Set(nodeIds ?? nodes.map((n) => n.id));
+
+  const getGroupCircuitSvg = onGetCircuitSvg
     ? async (): Promise<string> => {
-        // Alle Nodes außer dieser Gruppe temporär ausblenden
-        setNodes((nds: Node[]) =>
-          nds.map((n) => {
-            if (n.id === groupId || n.parentNode === groupId) return n;
-            return { ...n, hidden: true };
-          })
-        );
+        if (groupId) {
+          // Gruppen-Fall: alle Nodes außer dieser Gruppe ausblenden
+          setNodes((nds: Node[]) =>
+            nds.map((n) => {
+              if (n.id === groupId || n.parentNode === groupId) return n;
+              return { ...n, hidden: true };
+            })
+          );
+        } else {
+          // Circuit-Fall (kein groupId): alle Nodes außer den Circuit-Nodes ausblenden
+          setNodes((nds: Node[]) =>
+            nds.map((n) => {
+              if (circuitNodeIds.has(n.id)) return n;
+              return { ...n, hidden: true };
+            })
+          );
+        }
         // Kurz warten damit React den neuen State rendert
         await new Promise((r) => setTimeout(r, 150));
         try {
@@ -299,7 +314,7 @@ function ComponentSection({
           );
         }
       }
-    : onGetCircuitSvg;
+    : undefined;
 
   return (
     <div style={{ border: `1.5px solid ${color}55`, borderRadius: "8px", overflow: "hidden" }}>
@@ -319,7 +334,7 @@ function ComponentSection({
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ color, fontSize: "12px" }}>▣</span>
+
           <span style={{ fontSize: "13px", fontWeight: 600, color }}>{label}</span>
           <span style={{ fontSize: "11px", color: `${color}99` }}>
             ({nodeCount} Node{nodeCount !== 1 ? "s" : ""})
@@ -402,10 +417,24 @@ function ExportAllButton({
             await new Promise((r) => setTimeout(r, 50));
           }
         } else {
+          // Circuit-Fall: nur Circuit-Nodes sichtbar lassen
+          const circuitIds = new Set(component.nodeIds ?? []);
+          if (circuitIds.size > 0) {
+            setNodes((nds: Node[]) =>
+              nds.map((n) => {
+                if (circuitIds.has(n.id)) return n;
+                return { ...n, hidden: true };
+              })
+            );
+            await new Promise((r) => setTimeout(r, 150));
+          }
           try {
             const svg = await onGetCircuitSvg();
             pngBase64 = await svgToPngBase64(svg);
-          } catch { /* ignore */ }
+          } catch { /* ignore */ } finally {
+            setNodes((nds: Node[]) => nds.map((n) => ({ ...n, hidden: false })));
+            await new Promise((r) => setTimeout(r, 50));
+          }
         }
 
         // LaTeX generieren

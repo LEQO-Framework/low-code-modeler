@@ -18,6 +18,8 @@ export interface DiracComponent {
   groupId: string | null;
   /** Gruppenfarbe */
   groupColor: string;
+  /** Originale Node-IDs (vor Transformation, für Canvas-Export) */
+  nodeIds: string[];
   /** Nodes dieser Komponente */
   nodes: Node[];
   /** QASM-Output vom Backend (null wenn Fehler) */
@@ -500,6 +502,7 @@ export async function analyzeComponents(
       label: info.label,
       groupId: info.groupId,
       color: info.color,
+      originalNodeIds: componentNodes.map(n => n.id),
       jobNodes: componentNodes.map(n => ({
         ...n,
         parentNode: undefined,
@@ -537,6 +540,7 @@ export async function analyzeComponents(
           groupLabel: job.label,
           groupId: job.groupId,
           groupColor: job.color,
+          nodeIds: job.originalNodeIds,
           nodes: job.jobNodes,
           qasm,
           error: null,
@@ -548,6 +552,7 @@ export async function analyzeComponents(
           groupLabel: job.label,
           groupId: job.groupId,
           groupColor: job.color,
+          nodeIds: job.originalNodeIds,
           nodes: job.jobNodes,
           qasm: null,
           error: e instanceof Error ? e.message : "Unknown error",
@@ -563,6 +568,7 @@ export async function analyzeComponents(
       groupLabel: null,
       groupId: null,
       groupColor: "#6366f1",
+      nodeIds: jobs[index]?.originalNodeIds ?? [],
       nodes: jobs[index]?.jobNodes ?? [],
       qasm: null,
       error: "Backend call failed",

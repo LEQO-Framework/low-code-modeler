@@ -2722,6 +2722,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
         if (node.classList?.contains("react-flow__controls")) return false;
         if (node.classList?.contains("react-flow__panel")) return false;
         if (typeof node.className === "string" && node.className.includes("react-flow__panel")) return false;
+        
 
         return true;
       }
@@ -2750,6 +2751,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
           if (typeof node.className === "string" && node.className.includes("react-flow__panel")) return false;
           if (node.classList?.contains("lasso-button")) return false;
           if (typeof node.className === "string" && node.className.includes("lasso")) return false;
+          if (node instanceof HTMLElement && node.style.display === "none") return false;
           return true;
         },
       })

@@ -281,15 +281,29 @@ function buildLatexExport(
     : "";
 
   // Zwischenschritte als align-Umgebung
+  // Hilfsfunktion: Matrix für ein Gate-Label finden
+  const getGateMatrix = (gateLabelLatex: string): string | null => {
+    for (const key of Object.keys(GATE_DESCRIPTIONS)) {
+      if (gateLabelLatex.includes(key)) {
+        return `${key} = ${GATE_DESCRIPTIONS[key].matrix}`;
+      }
+    }
+    return null;
+  };
+
   const stepsSection = stepsResult && stepsResult.steps.length > 0
     ? `\\section*{Mathematical Intermediate Steps}
 
-\\begin{align}
-  |\\psi_0\\rangle &= ${stepsResult.initial.latex} \\\\[6pt]
-${stepsResult.steps.map((step, idx) =>
-  `  &\\xrightarrow{${step.gateLabelLatex}} \\\\[2pt]\n  |\\psi_{${idx + 1}}\\rangle &= ${step.latex}`
-).join(' \\\\[6pt]\n')}
-\\end{align}
+${stepsResult.steps.map((step, idx) => {
+  const matrix = getGateMatrix(step.gateLabelLatex ?? step.gateLabel ?? "");
+  const matrixBlock = matrix
+    ? `\\textbf{Gate:} $${step.gateLabelLatex}$\n\\begin{equation}\n  ${matrix}\n\\end{equation}\n\n`
+    : `\\textbf{Gate:} $${step.gateLabelLatex}$\n\n`;
+  const prevState = idx === 0
+    ? `|\\psi_0\\rangle = ${stepsResult.initial.latex}`
+    : `|\\psi_{${idx}}\\rangle`;
+  return `${matrixBlock}\\begin{align}\n  ${prevState} &\\xrightarrow{${step.gateLabelLatex}} \\\\[2pt]\n  |\\psi_{${idx + 1}}\\rangle &= ${step.latex}\n\\end{align}`;
+}).join("\n\n")}
 
 `
     : "";
@@ -454,6 +468,8 @@ function ExportMenu({ latex, numQubits, terms, unicode, onGetCircuitSvg, stepsRe
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
   const [loadingSvg, setLoadingSvg] = useState(false);
+  const [loadingPdf, setLoadingPdf] = useState(false);
+  const [pdfError, setPdfError] = useState<string | null>(null);
 
   const copy = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -501,14 +517,63 @@ function ExportMenu({ latex, numQubits, terms, unicode, onGetCircuitSvg, stepsRe
     }
   };
 
+  const handleDownloadPdf = async () => {
+    setOpen(false);
+    setLoadingPdf(true);
+    setPdfError(null);
+    try {
+      // circuit.png einbetten wenn möglich
+      let pngBase64: string | undefined;
+      if (onGetCircuitSvg) {
+        try {
+          const svg = await onGetCircuitSvg();
+          pngBase64 = await svgToPngBase64(svg);
+        } catch {
+          pngBase64 = undefined;
+        }
+      }
+
+      const texContent = buildLatexExport(latex, numQubits, terms, pngBase64, stepsResult, aiExplanation);
+
+      // ytotech JSON API: resources-Array mit main.tex + optional circuit.png
+      const resources: object[] = [
+        { main: true, content: texContent },
+      ];
+      if (pngBase64) {
+        resources.push({ path: "circuit.png", file: pngBase64 });
+      }
+
+      const response = await fetch("https://latex.ytotech.com/builds/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ compiler: "pdflatex", resources }),
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`LaTeX compile error (${response.status}): ${errorText.slice(0, 300)}`);
+      }
+      const pdfBlob = await response.blob();
+      const url = URL.createObjectURL(pdfBlob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "dirac_export.pdf";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      setPdfError(e instanceof Error ? e.message : "PDF export failed");
+    } finally {
+      setLoadingPdf(false);
+    }
+  };
+
   return (
     <div className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
-        disabled={loadingSvg}
+        disabled={loadingSvg || loadingPdf}
         className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border border-gray-300 hover:bg-gray-100 text-gray-600 transition-colors disabled:opacity-50"
       >
-        {loadingSvg ? "⏳ Exportiere..." : "↑ Export"}
+        {loadingSvg ? "⏳ Exportiere..." : loadingPdf ? "⏳ PDF..." : "↑ Export"}
       </button>
 
       {open && (
@@ -550,6 +615,23 @@ function ExportMenu({ latex, numQubits, terms, unicode, onGetCircuitSvg, stepsRe
                 </span>
               </button>
             )}
+
+            <hr className="my-1 border-gray-100" />
+            <p className="px-3 py-1 text-gray-400" style={{ fontSize: "10px" }}>PDF EXPORT</p>
+
+            {/* PDF via LaTeX.Online */}
+            <button onClick={handleDownloadPdf} disabled={loadingPdf}
+              className="w-full text-left px-3 py-2 hover:bg-gray-50 text-gray-700 flex items-center gap-2 disabled:opacity-50">
+              <span>📄</span>
+              <span>
+                <span className="block">{loadingPdf ? "Compiling PDF..." : "Download PDF"}</span>
+                <span className="block text-gray-400" style={{ fontSize: "10px" }}>via LaTeX.Online · inkl. circuit.png · ~5–10s</span>
+              </span>
+            </button>
+
+            {pdfError && (
+              <div className="px-3 py-2 text-red-500 text-xs">{pdfError}</div>
+            )}
           </div>
         </>
       )}
@@ -569,12 +651,13 @@ interface QubitSelectorProps {
 
 function QubitSelector({ numQubits, selected, onChange }: QubitSelectorProps) {
   const allSelected = selected.length === numQubits;
-  const toggle = (q: number) => {
-    if (selected.includes(q)) {
-      if (selected.length === 1) return;
-      onChange(selected.filter((x) => x !== q));
+  const selectOne = (q: number) => {
+    // Wenn nur dieser eine bereits ausgewählt ist → alle auswählen
+    if (selected.length === 1 && selected[0] === q) {
+      onChange(Array.from({ length: numQubits }, (_, i) => i));
     } else {
-      onChange([...selected, q].sort((a, b) => a - b));
+      // Sonst: nur diesen einen auswählen
+      onChange([q]);
     }
   };
   const toggleAll = () => {
@@ -593,7 +676,7 @@ function QubitSelector({ numQubits, selected, onChange }: QubitSelectorProps) {
         Alle
       </button>
       {Array.from({ length: numQubits }, (_, i) => (
-        <button key={i} onClick={() => toggle(i)}
+        <button key={i} onClick={() => selectOne(i)}
           className={`text-xs px-2 py-0.5 rounded border font-mono transition-colors ${
             selected.includes(i) ? "bg-blue-500 text-white border-blue-500" : "bg-white text-gray-600 border-gray-300 hover:bg-gray-50"
           }`}
@@ -716,7 +799,37 @@ export function QasmDiracPanel(props: Props) {
       const stepsText = stepsResult.steps.map((s: any, i: number) =>
         `Step ${i + 1}: Apply ${s.gateLabel} → |ψ${i + 1}⟩ = ${s.unicode}`
       ).join("\n");
-      const prompt = `You are a quantum computing tutor. Explain the following quantum circuit computation in simple, clear English. For each step, explain what the gate does physically and mathematically, and why the state changes the way it does. Use LaTeX math notation with $...$ for inline math and $$...$$ for block equations.\n\nInitial state: |ψ₀⟩ = ${stepsResult.initial.unicode}\n\n${stepsText}\n\nPlease explain each step in 2-3 sentences. Focus on intuition and physical meaning. Include the matrix representation for each gate.`;
+
+      // Node-Kontext aus Model extrahieren
+      let nodeContextText = "";
+      if (props.onGetModel) {
+        try {
+          const model = props.onGetModel() as any;
+          const nodes = model?.nodes ?? [];
+          const relevantNodes = nodes.filter((n: any) =>
+            n.type === "statePreparationNode" || n.type === "dataTypeNode"
+          );
+          if (relevantNodes.length > 0) {
+            const contextParts = relevantNodes.map((n: any) => {
+              const d = n.data ?? {};
+              const parts: string[] = [];
+              if (d.label)           parts.push(`Node: "${d.label}"`);
+              if (d.encodingType)    parts.push(`Encoding: ${d.encodingType}`);
+              if (d.decimalPrecision !== undefined) parts.push(`Decimal Precision: ${d.decimalPrecision}`);
+              if (d.bound !== undefined) parts.push(`Bound: ${d.bound}`);
+              if (d.value !== undefined) parts.push(`Value: ${d.value}`);
+              if (d.inputs?.length)  parts.push(`Inputs: ${d.inputs.map((i: any) => i.label ?? i.id).join(", ")}`);
+              if (d.outputs?.length) parts.push(`Outputs: ${d.outputs.map((o: any) => o.label ?? o.id).join(", ")}`);
+              return parts.join(", ");
+            }).filter(Boolean).join("\n");
+            if (contextParts) {
+              nodeContextText = `\n\nNode configuration in this circuit:\n${contextParts}\n\nIf relevant, use this context to give a concrete explanation (e.g. "this circuit encodes the number X using Basis Encoding with Y qubits").`;
+            }
+          }
+        } catch { /* ignore model errors */ }
+      }
+
+      const prompt = `You are a quantum computing tutor. Explain the following quantum circuit computation in simple, clear English. For each step, explain what the gate does physically and mathematically, and why the state changes the way it does. Use LaTeX math notation with $...$ for inline math and $$...$$ for block equations.\n\nInitial state: |ψ₀⟩ = ${stepsResult.initial.unicode}\n\n${stepsText}${nodeContextText}\n\nPlease explain each step in 2-3 sentences. Focus on intuition and physical meaning. Include the matrix representation for each gate.`;
       const response = await fetch("https://api.mistral.ai/v1/chat/completions", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
