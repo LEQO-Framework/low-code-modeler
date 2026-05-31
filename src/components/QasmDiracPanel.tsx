@@ -154,8 +154,9 @@ function buildGateExplanationsSection(stepsResult?: DiracStepsResult): string {
   for (const step of stepsResult.steps) {
     // Gate-Label bereinigen (z.B. "H₀" → "H", "I₀ ⊗ CNOT₀,₂" → ["I", "CNOT"])
     const label = step.gateLabel ?? step.gateLabelLatex ?? "";
-    for (const key of Object.keys(GATE_DESCRIPTIONS)) {
-      if (label.includes(key)) usedGates.add(key);
+    const sortedKeys = Object.keys(GATE_DESCRIPTIONS).sort((a, b) => b.length - a.length);
+    for (const key of sortedKeys) {
+      if (label.includes(key)) { usedGates.add(key); break; }
     }
   }
 
@@ -283,7 +284,9 @@ function buildLatexExport(
   // Zwischenschritte als align-Umgebung
   // Hilfsfunktion: Matrix für ein Gate-Label finden
   const getGateMatrix = (gateLabelLatex: string): string | null => {
-    for (const key of Object.keys(GATE_DESCRIPTIONS)) {
+    // Längere Keys zuerst prüfen damit "CNOT" vor "T" und "NOT" gefunden wird
+    const sortedKeys = Object.keys(GATE_DESCRIPTIONS).sort((a, b) => b.length - a.length);
+    for (const key of sortedKeys) {
       if (gateLabelLatex.includes(key)) {
         return `${key} = ${GATE_DESCRIPTIONS[key].matrix}`;
       }
@@ -361,16 +364,15 @@ ${stepsResult.steps.map((step, idx) => {
   const tableSection = terms.length > 0
     ? `\\section*{Measurement Probabilities (Table)}
 
-\\begin{table}[h]
-  \\centering
+\\begin{center}
   \\begin{tabular}{|c|c|}
     \\hline
     \\textbf{Basis State} & \\textbf{Probability} \\\\
+    \\hline
 ${termLines}
     \\hline
   \\end{tabular}
-  \\caption{Measurement Probabilities of Basis States}
-\\end{table}
+\\end{center}
 
 `
     : "";
@@ -421,7 +423,7 @@ The quantum system state with ${numQubits} qubit${numQubits !== 1 ? "s" : ""} is
   |\\psi\\rangle = ${latex}
 \\end{equation}
 
-${stepsSection}${histogramSection}${tableSection}${gateExplanationsSection}${aiSection}\\end{document}
+${stepsSection}${histogramSection}${tableSection}${gateExplanationsSection ? "\\clearpage\n" + gateExplanationsSection : ""}${aiSection}\\end{document}
 `;
 }
 
@@ -879,6 +881,90 @@ export function QasmDiracPanel(props: Props) {
     return selectedqubits;
   }, [selectedqubits, numQubits]);
 
+  // ---------------------------------------------------------------------------
+  // Partielle Messung: Projektionsoperator, Wahrscheinlichkeit, kollabierter Zustand
+  // ---------------------------------------------------------------------------
+  const partialMeasurement = useMemo(() => {
+    if (!fullResult || effectiveSelected.length === 0) return null;
+    // Bei 1 Qubit: immer alle Qubits messen
+    const measuredQubits = numQubits === 1 ? [0] : effectiveSelected.length === numQubits ? [] : effectiveSelected;
+    if (measuredQubits.length === 0) return null;
+
+    // Für jedes mögliche Messergebnis (0 oder 1 pro gemessenem Qubit)
+    const results = [];
+    const numOutcomes = 1 << measuredQubits.length;
+
+    for (let outcome = 0; outcome < numOutcomes; outcome++) {
+      // Welche Terme passen zu diesem Messergebnis?
+      const matchingTerms = fullResult.terms.filter(term => {
+        for (let k = 0; k < measuredQubits.length; k++) {
+          const bit = parseInt(term.basisState[measuredQubits[k]] ?? "0");
+          const expectedBit = (outcome >> (measuredQubits.length - 1 - k)) & 1;
+          if (bit !== expectedBit) return false;
+        }
+        return true;
+      });
+
+      if (matchingTerms.length === 0) continue;
+
+      // P(outcome) = Summe der |amplitude|^2 der passenden Terme
+      const probability = matchingTerms.reduce((sum, t) =>
+        sum + t.amplitude.re * t.amplitude.re + t.amplitude.im * t.amplitude.im, 0
+      );
+
+      if (probability < 1e-10) continue;
+
+      // Kollabierter Zustand: normierte Terme
+      const collapsedTerms = matchingTerms.map(t => ({
+        ...t,
+        amplitude: {
+          re: t.amplitude.re / Math.sqrt(probability),
+          im: t.amplitude.im / Math.sqrt(probability),
+        }
+      }));
+
+      // Unicode-Darstellung des kollabierten Zustands
+      const formatAmplitude = (re: number, im: number): string => {
+        const absVal = Math.sqrt(re * re + im * im);
+        if (Math.abs(absVal - 1) < 0.001) return "";
+        if (Math.abs(im) < 0.001) {
+          const frac = Math.abs(re - 1/Math.sqrt(2)) < 0.001 ? "1/√2" :
+                       Math.abs(re - 1/Math.sqrt(3)) < 0.001 ? "1/√3" :
+                       Math.abs(re - 0.5) < 0.001 ? "1/2" :
+                       re.toFixed(3);
+          return frac + " ";
+        }
+        return `(${re.toFixed(2)}+${im.toFixed(2)}i) `;
+      };
+
+      const collapsedUnicode = collapsedTerms.map((t, i) => {
+        const amp = formatAmplitude(t.amplitude.re, t.amplitude.im);
+        const sign = i > 0 ? " + " : "";
+        return `${sign}${amp}|${t.basisState}⟩`;
+      }).join("");
+
+      // Outcome-Label z.B. "q0=1"
+      const outcomeLabel = measuredQubits.map((q, k) =>
+        `q${q}=${(outcome >> (measuredQubits.length - 1 - k)) & 1}`
+      ).join(", ");
+
+      const outcomeBits = outcome.toString(2).padStart(measuredQubits.length, "0");
+
+      results.push({
+        outcome,
+        outcomeBits,
+        outcomeLabel,
+        probability,
+        probabilityPercent: Math.round(probability * 10000) / 100,
+        collapsedUnicode,
+        matchingTerms,
+        collapsedTerms,
+      });
+    }
+
+    return results.length > 0 ? results : null;
+  }, [fullResult, effectiveSelected, numQubits]);
+
   const histogramData = useMemo((): HistogramBar[] => {
     if (!fullResult) return [];
     const allSelected = effectiveSelected.length === numQubits;
@@ -916,7 +1002,7 @@ export function QasmDiracPanel(props: Props) {
   }
 
   const terms = fullResult?.terms ?? [];
-  const isPartial = effectiveSelected.length < numQubits;
+  const isPartial = effectiveSelected.length < numQubits || numQubits === 1;
 
   return (
     <div className="rounded-xl border bg-white flex flex-col gap-3 p-4 max-h-[70vh] overflow-y-auto">
@@ -1069,13 +1155,13 @@ export function QasmDiracPanel(props: Props) {
         </div>
       )}
 
-      {/* Histogram + Qubit Selector */}
+      {/* Histogram + Qubit Selector + Partielle Messung */}
       {terms.length > 0 && showBasisStates && (
         <div className="flex-shrink-0 flex flex-col gap-2">
           {numQubits > 1 && (
             <div className="flex flex-col gap-1">
               <QubitSelector numQubits={numQubits} selected={effectiveSelected} onChange={setSelectedQubits} />
-              {isPartial && (
+              {isPartial && numQubits > 1 && (
                 <p className="text-xs text-blue-600">
                   Partial measurement: probabilities summed over unselected qubits
                 </p>
@@ -1083,9 +1169,58 @@ export function QasmDiracPanel(props: Props) {
             </div>
           )}
           <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-            Measurement Probabilities{isPartial && ` (q${effectiveSelected.join(", q")})`}
+            Measurement Probabilities{isPartial && numQubits > 1 && ` (q${effectiveSelected.join(", q")})`}
           </p>
           <Histogram data={histogramData} />
+
+          {/* Partielle Messung: Projektion + kollabierter Zustand */}
+          {isPartial && partialMeasurement && partialMeasurement.length > 0 && (
+            <div className="rounded-lg border border-indigo-100 bg-indigo-50/30 px-3 py-3 mt-1">
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">
+                {numQubits === 1 ? "Measurement" : `Partial Measurement · q${effectiveSelected.join(", q")}`}
+              </p>
+
+              {/* Projektionsoperator */}
+              <div className="mb-3 font-mono text-xs text-gray-600 overflow-x-auto">
+                <span className="text-gray-400">P</span>
+                <span className="text-gray-400 text-[10px] align-sub">
+                  {numQubits === 1 ? "q0" : effectiveSelected.map(q => `q${q}`).join(",")}
+                </span>
+                <span className="text-gray-600"> = </span>
+                {partialMeasurement.map((r, i) => (
+                  <span key={i}>
+                    {i > 0 && <span className="text-gray-400"> + </span>}
+                    <span className="text-indigo-600">|{r.outcomeBits}⟩⟨{r.outcomeBits}|</span>
+                    <span className="text-gray-400"> ⊗ </span>
+                    <span className="text-gray-600">I</span>
+                  </span>
+                ))}
+              </div>
+
+              {/* Ergebnisse */}
+              <div className="flex flex-col gap-3">
+                {partialMeasurement.map((r) => (
+                  <div key={r.outcome} className="rounded-md border border-indigo-100 bg-white px-3 py-2">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-xs font-semibold text-indigo-700">{r.outcomeLabel}</span>
+                      <span className="text-xs font-mono bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded text-indigo-600">
+                        P = {r.probabilityPercent}%
+                      </span>
+                    </div>
+                    <div className="font-mono text-xs text-gray-500 mb-1.5">
+                      <span>P({r.outcomeLabel}) = ‖P</span>
+                      <span className="text-[10px] align-sub">{r.outcomeBits}</span>
+                      <span>|ψ⟩‖² = {(r.probabilityPercent / 100).toFixed(3)}</span>
+                    </div>
+                    <div className="font-mono text-xs">
+                      <span className="text-gray-400">|ψ'⟩ = </span>
+                      <span className="text-gray-800">{r.collapsedUnicode}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
