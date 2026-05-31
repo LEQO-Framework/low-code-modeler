@@ -3589,6 +3589,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
                 message={toast.message}
                 type={toast.type}
                 onClose={() => setToast(null)}
+                rightOffset={isPanelOpen ? panelWidth + 16 : 24}
               />
             )}
 

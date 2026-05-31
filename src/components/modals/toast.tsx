@@ -6,9 +6,10 @@ interface ToastProps {
   type: "success" | "error" | "info";
   onClose: () => void;
   duration?: number;
+  rightOffset?: number;
 }
 
-export const Toast = ({ message, type, onClose, duration = 5000 }: ToastProps) => {
+export const Toast = ({ message, type, onClose, duration = 5000, rightOffset = 24 }: ToastProps) => {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
@@ -38,7 +39,8 @@ export const Toast = ({ message, type, onClose, duration = 5000 }: ToastProps) =
 
   return (
     <div
-      className={`fixed top-20 right-96 w-80 px-4 py-3 text-white rounded-lg shadow-lg ${bgColor} overflow-hidden z-[9999]`}
+      className={`fixed top-20 w-80 px-4 py-3 text-white rounded-lg shadow-lg ${bgColor} overflow-hidden z-[9999]`}
+      style={{ right: `${rightOffset}px`, transition: "right 0.3s ease" }}
     >
       <div className="flex justify-between items-center">
         <span>{message}</span>
