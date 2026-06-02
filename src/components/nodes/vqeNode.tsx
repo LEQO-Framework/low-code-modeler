@@ -58,7 +58,7 @@ export const VQENode = memo((node: Node) => {
 
     if (data.parameters !== strParams) updateNodeValue(id, "parameters", strParams);
     if (data.observable !== strObservable) updateNodeValue(id, "observable", strObservable);
-  }, [edges, nodes, id, updateNodeValue]);
+  }, [edges, nodes, id, updateNodeValue, data.parameters, data.observable]);
 
   useEffect(() => {
     updateNodeInternals(id);
