@@ -99,6 +99,11 @@ export default function PromptFlowModal({
     onClose();
   };
 
+  useEffect(() => {
+  if (!open) {
+    resetState();
+  }
+}, [open]);
   const bitOptions = ["0", "1"];
   const statePreparationOptions = [
     "BellPhiPlus",
@@ -118,7 +123,7 @@ export default function PromptFlowModal({
 
       {open && step === 1 && !missingValues.length && (
         <Modal
-          title="Generate Model with AI (1/2)"
+          title="Generate Model with AI"
           open={true}
           onClose={handleClose}
           className="max-w-2xl"

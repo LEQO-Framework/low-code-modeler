@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import Modal from "./Modal";
 import PromptFlowModal from "./promptFlowModal";
+import { RefreshCw } from "lucide-react";
 
 export interface HistoryItem {
   uuid: string;
@@ -30,7 +31,8 @@ interface HistoryModalProps {
   lowcodeBackendEndpoint: string;
   onAddMissingValues: (job: HistoryItem) => void;
   fetchHistory: () => Promise<void>;
-  onSubmitPrompt: (prompt: string, generationMode: "compact" | "circuit") => Promise<any>; // <-- Add this
+  onSubmitPrompt: (prompt: string, generationMode: "compact" | "circuit") => Promise<any>;
+  onRefresh: () => void | Promise<void>;
 }
 
 export const HistoryModal = ({
@@ -44,6 +46,7 @@ export const HistoryModal = ({
   onAddMissingValues,
   fetchHistory,
   onSubmitPrompt,
+  onRefresh
 }: HistoryModalProps) => {
   const [activeTab, setActiveTab] = useState<"generation" | "execution">("generation");
   const [selectedJob, setSelectedJob] = useState<HistoryItem | null>(null);
@@ -113,7 +116,16 @@ export const HistoryModal = ({
         }
       >
         <>
+          <div className="relative">
+            <button
+              className="btn btn-primary btn-sm absolute top-0 right-0"
+              onClick={onRefresh}
+            >
+              <RefreshCw size={16} />
+            </button>
+          </div>
           <div className="flex gap-2 mb-3 border-b pb-2">
+
             <button
               className={`px-3 py-1 ${activeTab === "generation" ? "font-bold underline" : ""}`}
               onClick={() => setActiveTab("generation")}
