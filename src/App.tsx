@@ -745,58 +745,45 @@ If none apply, return { "algorithms": [] }.
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [isHistoryOpen, setHistoryOpen] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [selectedJob, setSelectedJob] = useState<HistoryItem | null>(null);
 
   const fetchHistory = async () => {
-  setHistoryLoading(true);
-
-  try {
-    const resultsRes = await fetch(`${lowcodeBackendEndpoint}/results`, {
+    setHistoryLoading(true);
+    try {
+      const jobsRes = await fetch(`http://localhost:3000/jobs`, {
         method: "GET",
         headers: { "Content-Type": "application/json" },
       });
 
-    const jobsRes = await fetch(`http://localhost:3000/jobs`, {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-      });
+      if (!jobsRes.ok) {
+        console.error("Failed to fetch jobs");
+        return;
+      }
 
-    if (!resultsRes.ok || !jobsRes.ok) {
-      console.error("Failed to fetch history or jobs");
-      return;
+      const jobs = await jobsRes.json();
+      const generationItems: HistoryItem[] = jobs.map((job: any) => ({
+        uuid: job.id,
+        name: "Generation Job",
+        description: job.prompt,
+        status: job.status,
+        created: job.createdAt,
+        type: "generation",
+        result: job.result, // This is already a JSON string from the backend
+        validationScore: job.validationScore,
+        missingValues: job.missingValues,
+        links: {
+          request: `http://localhost:3000/job/${job.id}/request`,
+          result: `http://localhost:3000/job/${job.id}/result`,
+        },
+      }));
+
+      setHistory([...generationItems]);
+    } catch (err) {
+      console.error("Error fetching history:", err);
+    } finally {
+      setHistoryLoading(false);
     }
-
-    const results: HistoryItem[] = await resultsRes.json();
-    console.log(results)
-    const jobs = await jobsRes.json();
-
-    console.log("results:", results);
-    console.log("jobs:", jobs);
-
-    /**
-     * Merge generation jobs into history view
-     * (adapt depending on your job schema)
-     */
-    const generationItems: HistoryItem[] = jobs.map((job: any) => ({
-      uuid: job.id,
-      name: "Generation Job",
-      description: job.prompt,
-      status: job.status,
-      created: job.createdAt,
-      type: "generation",
-      links: {
-        result: job.result,
-      },
-    }));
-
-    // Merge both sources
-    setHistory([...results, ...generationItems]);
-
-  } catch (err) {
-    console.error("Error fetching history:", err);
-  } finally {
-    setHistoryLoading(false);
-  }
-};
+  };
 
   const openHistoryModal = async () => {
     await fetchHistory();
@@ -826,6 +813,7 @@ If none apply, return { "algorithms": [] }.
     warnings: ValidationItem[];
     errors: ValidationItem[];
   }
+
 
   function validateFlow(flow): ValidationResult {
     const warnings: ValidationItem[] = [];
@@ -2060,6 +2048,57 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     }
   }
 
+const handleGenerateModel = async (prompt: string, generationMode: "compact" | "circuit") => {
+  if (!prompt.trim()) return;
+
+  setLoading(true);
+  showToast("Your model is now being generated.", "info");
+
+  try {
+    // Send the prompt to your backend
+    const response = await fetch(`http://localhost:3000/generate`, { // <-- Use the correct endpoint
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        prompt,
+        generationMode,
+      }),
+    });
+
+      if (!response.ok) {
+        throw new Error("Failed to start model generation");
+      }
+
+      const newJob = await response.json();
+
+      // Add the new job to the history
+      const newHistoryItem: HistoryItem = {
+        uuid: newJob.id,
+        name: "Generation Job",
+        description: prompt,
+        status: newJob.status || "Pending",
+        created: new Date().toISOString(),
+        type: "generation",
+        result: null,
+        validationScore: 0,
+        missingValues: newJob.missingValues || [],
+        links: {
+          request: `http://localhost:3000/jobs/${newJob.id}/request`,
+          result: `http://localhost:3000/jobs/${newJob.id}/result`,
+        },
+      };
+
+      setHistory((prevHistory) => [newHistoryItem, ...prevHistory]);
+
+      showToast("Model generation started successfully!", "success");
+      return newJob;
+    } catch (err: any) {
+      showToast(`Failed to generate model: ${err.message}`, "error");
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
 
   async function handleSaveClick() {
     if (!reactFlowInstance) {
@@ -2572,6 +2611,15 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     })
   };
 
+  const handleAddMissingValues = (job: HistoryItem) => {
+    setSelectedJob(job);
+    setIsPromptModalOpen(true);
+  };
+
+  const handleClosePromptModal = () => {
+    setIsPromptModalOpen(false);
+    setSelectedJob(null);
+  };
 
 
   const onToggleAncilla = () => {
@@ -3102,18 +3150,32 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
 
       <PromptFlowModal
         open={isPromptModalOpen}
-        mistralToken={mistralToken}
+        onClose={handleClosePromptModal}
         showToast={showToast}
-        onClose={(flow) => {
-          setIsPromptModalOpen(false);
-          if (flow) loadFlow(flow);
-          setIsPromptModalOpen(false);
-          
-        }}
-        sendToMistral={sendToMistral}
-        generateFlow={generateFlow}
+        mistralToken={mistralToken}
         loadFlow={loadFlow}
         lowcodeBackendEndpoint={lowcodeBackendEndpoint}
+        jobId={selectedJob?.uuid}
+        missingValues={selectedJob?.missingValues || []}
+        onMissingValuesSubmitted={async (jobId: string, values: Array<{ id: string; value: any; type: string }>) => {
+          try {
+            const response = await fetch(`http://localhost:3000/job/${jobId}/submit-missing-values`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ missingValues: values }),
+            });
+            if (!response.ok) {
+              throw new Error("Failed to submit missing values");
+            }
+            showToast("Missing values submitted successfully! Model generation resumed.", "success");
+            await fetchHistory();
+            handleClosePromptModal();
+          } catch (error: any) {
+            console.error("Error submitting missing values:", error);
+            showToast(`Failed to submit missing values: ${error.message}`, "error");
+          }
+        }}
+        onSubmitPrompt={handleGenerateModel} 
       />
 
 
@@ -3149,6 +3211,10 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
         onClose={() => setHistoryOpen(false)}
         history={history}
         loadFlow={loadFlow}
+        showToast={showToast}
+        lowcodeBackendEndpoint={lowcodeBackendEndpoint}
+        onAddMissingValues={handleAddMissingValues}
+        fetchHistory={fetchHistory}
         onExecute={async (item) => {
           console.log(item);
           setHistoryOpen(false);
@@ -3163,15 +3229,12 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
 
             // If the model is a workflow
             if (compilationTarget === "workflow") {
-              //store the workflow data in your state
               setWorkflow(modelData);
               const resultResponse = await fetch(item.links.result);
               const workflow = await resultResponse.text();
 
-              // agentic subprocess is only a feature supported by camunda 8
               if (hasMultipleMappingsInFlow(modelData)) {
-                //sendWorkflowForDeployment(workflow);
-
+                // sendWorkflowForDeployment(workflow);
               }
               await deployWorkflowToCamunda("process-workflow", workflow, "");
 
@@ -3188,26 +3251,24 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
                 try {
                   const QUANTME_NAMESPACE_PULL = "http://quantil.org/quantme/pull";
                   await createServiceTemplates(item.links.serviceDeploymentModels, QUANTME_NAMESPACE_PULL);
-
                 } catch (err) {
-                  console.error("QRMS upload failed:", err);
+                  console.error("Service template creation failed:", err);
                 }
               }
-
               return;
             }
 
             setIsQunicornOpen(true);
             const resultResponse = await fetch(item.links.result);
             if (!resultResponse.ok) throw new Error("Failed to fetch QASM result");
-
             const qasmText = await resultResponse.text();
             setOpenQASMCode(qasmText);
-
           } catch (error) {
             console.error("Error handling execution:", error);
+            showToast(`Error executing model: ${error.message}`, "error");  // NEW: Show error toast
           }
         }}
+        onSubmitPrompt={handleGenerateModel}
       />
 
 

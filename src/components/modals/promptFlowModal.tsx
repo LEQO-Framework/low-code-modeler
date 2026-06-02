@@ -1,95 +1,88 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Modal from "./Modal";
-import { generate } from "@/generationBackend";
+import { Toast } from "./toast";
 
 type InputNode = {
   name: string;
-  type: "string" | "number" | "boolean" | "select";
+  type: "string" | "number" | "boolean" | "select" | "bit" | "statePreparation" | "file";
   options?: string[];
+  label: string;
+  id: string;
 };
 
 interface PromptFlowModalProps {
   open: boolean;
-  onClose: (flow?: any) => void;
-  sendToMistral: (prompt: string, token: string) => Promise<any>;
-  showToast: (text: any, type: any)=> void;
-  generateFlow: (
-    data: {
-      prompt: string;
-      inputs: Record<string, any>;
-      generationMode: "compact" | "circuit";
-    },
-    token: string,
-    lowcodeBackendEndpoint?: string
-  ) => Promise<any>;
+  onClose: () => void;
+  showToast: (message: React.ReactNode, type: "success" | "error" | "info") => void;
   mistralToken: string;
   loadFlow: (flow: any) => void;
   lowcodeBackendEndpoint: string;
+  jobId?: string;
+  missingValues?: any[];
+  onMissingValuesSubmitted: (jobId: string, values: Record<string, any>) => Promise<void>;
+  onSubmitPrompt: (prompt: string, generationMode: "compact" | "circuit") => Promise<any>;
 }
 
 export default function PromptFlowModal({
   open,
   onClose,
   showToast,
-  sendToMistral,
-  generateFlow,
   mistralToken,
   loadFlow,
   lowcodeBackendEndpoint,
+  jobId,
+  missingValues = [],
+  onMissingValuesSubmitted,
+  onSubmitPrompt,
 }: PromptFlowModalProps) {
   const [step, setStep] = useState(1);
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
-  const [inputNodes, setInputNodes] = useState<InputNode[]>([]);
-  const [nodeValues, setNodeValues] = useState<Record<string, any>>({});
-  const [error, setError] = useState<string | null>(null);
-  const [clarifyingQuestions, setClarifyingQuestions] = useState<string[]>([]);
   const [generationMode, setGenerationMode] = useState<"compact" | "circuit">("compact");
+  const [inputValues, setInputValues] = useState<Record<string, any>>({});
+  const [toast, setToast] = useState<{ message: React.ReactNode; type: "success" | "error" | "info" } | null>(null);
+
+  useEffect(() => {
+    if (missingValues.length > 0) {
+      const initialValues: Record<string, any> = {};
+      missingValues.forEach((input) => {
+        initialValues[input.id] = "";
+      });
+      setInputValues(initialValues);
+    }
+  }, [missingValues]);
 
   const handleSubmitPrompt = async () => {
     if (!prompt.trim()) return;
-
     setLoading(true);
-    setError(null);
-    setClarifyingQuestions([]);
-
     try {
-      //const result = await sendToMistral(prompt, mistralToken);
-/*
-      if (result?.needs_clarification) {
-        setStep(1);
-        setInputNodes([]);
-        setNodeValues({});
-        setClarifyingQuestions(result.questions || []);
-        return;
-      }
-
-      const extractedInputs: InputNode[] = result?.inputs || [];
-
-      if (!Array.isArray(extractedInputs)) {
-        throw new Error("Invalid response format");
-      }
-
-      const initialValues: Record<string, any> = {};
-      extractedInputs.forEach((node) => {
-        initialValues[node.name] = "";
-      });
-
-      setInputNodes(extractedInputs);
-      setNodeValues(initialValues);
-*/
-      console.log("Call now the other backend")
-      const test = await generate(prompt, generationMode);
-      showToast("Your model is now being generated.", "info");
-
-      console.log("Hier das Reuslt vom Bakcend")
-      console.log(test);
-
+      await onSubmitPrompt(prompt, generationMode);
       onClose();
-      resetState();
     } catch (err: any) {
-      console.error(err);
-      setError("Failed to process prompt. Check your API key or input.");
+      showToast(`Failed to generate model: ${err.message}`, "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmitMissingValues = async () => {
+    if (!jobId) return;
+    setLoading(true);
+    try {
+      // Convert inputValues object to an array of { id, value, type }
+      const missingValuesArray = Object.entries(inputValues).map(([id, value]) => {
+        // Find the type from the missingValues prop
+        const missingValue = missingValues.find((mv) => mv.id === id);
+        return {
+          id,
+          value,
+          type: missingValue?.type || "string", // Fallback to "string" if type not found
+        };
+      });
+      await onMissingValuesSubmitted(jobId, missingValuesArray);
+      onClose();
+    } catch (err: any) {
+      showToast(`Failed to submit missing values: ${err.message}`, "error");
     } finally {
       setLoading(false);
     }
@@ -98,10 +91,7 @@ export default function PromptFlowModal({
   const resetState = () => {
     setStep(1);
     setPrompt("");
-    setInputNodes([]);
-    setNodeValues({});
-    setError(null);
-    setClarifyingQuestions([]);
+    setInputValues({});
   };
 
   const handleClose = () => {
@@ -109,9 +99,24 @@ export default function PromptFlowModal({
     onClose();
   };
 
+  const bitOptions = ["0", "1"];
+  const statePreparationOptions = [
+    "BellPhiPlus",
+    "BellPhiMinus",
+    "BellPsiPlus",
+    "BellPsiMinus",
+    "UniformSuperposition",
+    "GHZ",
+    "W",
+  ];
+
   return (
     <>
-      {open && step === 1 && (
+      {toast && (
+        <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
+      )}
+
+      {open && step === 1 && !missingValues.length && (
         <Modal
           title="Generate Model with AI (1/2)"
           open={true}
@@ -120,13 +125,9 @@ export default function PromptFlowModal({
           footer={
             <div className="flex justify-end space-x-2">
               <button
-                className={`btn ${
-                  !prompt.trim() || loading
-                    ? "btn-disabled btn-secondary opacity-50 cursor-not-allowed"
-                    : "btn-primary"
-                }`}
+                className={`btn ${!prompt.trim() || loading ? "btn-disabled opacity-50 cursor-not-allowed" : "btn-primary"}`}
                 onClick={handleSubmitPrompt}
-                disabled={loading || !prompt.trim()}
+                disabled={!prompt.trim() || loading}
               >
                 {loading ? "Processing..." : "Submit Prompt"}
               </button>
@@ -137,21 +138,6 @@ export default function PromptFlowModal({
           }
         >
           <div className="space-y-4">
-            {error && (
-              <div className="bg-red-100 text-red-800 p-2 rounded whitespace-pre-line">
-                {error}
-              </div>
-            )}
-            {clarifyingQuestions.length > 0 && (
-              <div className="bg-yellow-100 text-yellow-900 p-3 rounded">
-                <p className="font-semibold mb-2">Clarify your request:</p>
-                <ul className="list-disc ml-5 space-y-1">
-                  {clarifyingQuestions.map((q, i) => (
-                    <li key={i}>{q}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
             <textarea
               className="w-full border rounded p-2"
               rows={5}
@@ -175,10 +161,10 @@ export default function PromptFlowModal({
           </div>
         </Modal>
       )}
-      {/* COMMENTED OUT: Second modal
-      {open && step === 2 && (
-        <Modal
-          title="Provide Input Data (2/2)"
+
+        {open && missingValues && missingValues.length > 0 && (
+          <Modal
+          title="Add Required Values"
           open={true}
           onClose={handleClose}
           className="max-w-2xl"
@@ -186,105 +172,69 @@ export default function PromptFlowModal({
             <div className="flex justify-end space-x-2">
               <button
                 className="btn btn-primary"
-                onClick={handleGenerateFlow}
-                disabled={
-                  loading ||
-                  inputNodes.length === 0 ||
-                  Object.keys(nodeValues).length === 0
-                }
+                onClick={handleSubmitMissingValues}
+                disabled={loading}
               >
-                {loading ? "Generating..." : "Generate Flow"}
+                {loading ? "Submitting..." : "Generate Model"}
               </button>
-
-              <button className="btn btn-secondary" onClick={() => setStep(1)}>
-                Back
+              <button className="btn btn-secondary" onClick={handleClose}>
+                Cancel
               </button>
             </div>
           }
         >
           <div className="space-y-4">
-            {error && (
-              <div className="bg-red-100 text-red-800 p-2 rounded">
-                {error}
-              </div>
-            )}
-
-            {inputNodes.map((node) => (
-              <div key={node.name}>
-                <label className="block font-medium mb-1">
-                  {node.name} ({node.type})
+            <p className="text-gray-600">
+              The following values are required to generate your model. Please provide them below.
+            </p>
+            {missingValues.map((input) => (
+              <div key={input.id} className="space-y-2">
+                <label className="block font-medium">
+                  {input.label} ({input.type})
                 </label>
-
-                {node.type === "string" && (
-                  <input
-                    type="text"
-                    className="w-full border p-2 rounded"
-                    value={nodeValues[node.name] || ""}
-                    onChange={(e) =>
-                      setNodeValues({
-                        ...nodeValues,
-                        [node.name]: e.target.value,
-                      })
-                    }
-                  />
-                )}
-
-                {node.type === "number" && (
-                  <input
-                    type="number"
-                    className="w-full border p-2 rounded"
-                    value={nodeValues[node.name] || ""}
-                    onChange={(e) =>
-                      setNodeValues({
-                        ...nodeValues,
-                        [node.name]: Number(e.target.value),
-                      })
-                    }
-                  />
-                )}
-
-                {node.type === "boolean" && (
+                {input.type === "bit" && (
                   <select
                     className="w-full border p-2 rounded"
-                    value={String(nodeValues[node.name])}
-                    onChange={(e) =>
-                      setNodeValues({
-                        ...nodeValues,
-                        [node.name]: e.target.value === "true",
-                      })
-                    }
+                    value={inputValues[input.id] || ""}
+                    onChange={(e) => setInputValues({ ...inputValues, [input.id]: e.target.value })}
                   >
-                    <option value="">Select</option>
-                    <option value="true">True</option>
-                    <option value="false">False</option>
-                  </select>
-                )}
-
-                {node.type === "select" && node.options && (
-                  <select
-                    className="w-full border p-2 rounded"
-                    value={nodeValues[node.name] || ""}
-                    onChange={(e) =>
-                      setNodeValues({
-                        ...nodeValues,
-                        [node.name]: e.target.value,
-                      })
-                    }
-                  >
-                    <option value="">Select</option>
-                    {node.options.map((opt) => (
+                    <option value="">Select a bit value</option>
+                    {bitOptions.map((opt) => (
                       <option key={opt} value={opt}>
                         {opt}
                       </option>
                     ))}
                   </select>
                 )}
+                {input.type === "statePreparation" && (
+                  <select
+                    className="w-full border p-2 rounded"
+                    value={inputValues[input.id] || ""}
+                    onChange={(e) => setInputValues({ ...inputValues, [input.id]: e.target.value })}
+                  >
+                    <option value="">Select a state</option>
+                    {statePreparationOptions.map((opt) => (
+                      <option key={opt} value={opt}>
+                        {opt}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                {(input.type === "number" || input.type === "file" || input.type === "string") && (
+                  <input
+                    type={input.type === "number" ? "number" : "text"}
+                    className="w-full border p-2 rounded"
+                    placeholder={`Enter ${input.type}`}
+                    value={inputValues[input.id] || ""}
+                    onChange={(e) => setInputValues({ ...inputValues, [input.id]: e.target.value })}
+                  />
+                )}
               </div>
             ))}
           </div>
         </Modal>
       )}
-      */}
     </>
   );
 }
+
