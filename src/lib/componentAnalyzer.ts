@@ -317,15 +317,23 @@ export async function analyzeComponents(
     if (targets.size > 1) groupsWithMultipleTargets.add(node.id);
   }
 
+  // Prüfen ob Gruppen im Canvas vorhanden sind
+  const hasGroups = nodes.some(n => n.type === "groupNode");
+
   let components: Node[][];
 
   if (groupsWithMultipleTargets.size === 0) {
     // Keine Aufteilung nötig – Komponenten derselben Gruppe zusammenführen
     const mergedComponents: Node[][] = [];
     const groupComponentMap = new Map<string, number>();
+
+    // Freistehende Circuits (kein parentNode) sammeln
+    const standaloneComponents: Node[][] = [];
+
     for (const component of rawComponents) {
       const parentIds = [...new Set(component.map(n => n.parentNode).filter(Boolean) as string[])];
       if (parentIds.length === 1) {
+        // Komponente gehört zu einer Gruppe → normal zusammenführen
         const groupId = parentIds[0];
         if (groupComponentMap.has(groupId)) {
           mergedComponents[groupComponentMap.get(groupId)!].push(...component);
@@ -334,9 +342,23 @@ export async function analyzeComponents(
           mergedComponents.push([...component]);
         }
       } else {
-        mergedComponents.push(component);
+        // Freistehende Komponente (kein parentNode)
+        if (!hasGroups) {
+          // Keine Gruppen im Canvas → alle freistehenden zusammenfassen
+          standaloneComponents.push(component);
+        } else {
+          // Gruppen vorhanden → freistehende bleiben separat
+          mergedComponents.push(component);
+        }
       }
     }
+
+    // Alle freistehenden als eine einzige Komponente zusammenführen (nur wenn keine Gruppen)
+    if (standaloneComponents.length > 0) {
+      const merged = standaloneComponents.flat();
+      mergedComponents.push(merged);
+    }
+
     components = mergedComponents;
   } else {
     // Aufteilen: für jede Split-Gruppe separate Sub-Komponenten erstellen

@@ -10,6 +10,7 @@ import { useStore } from "@/config/store";
 import { TextPanel, MetadataPanel } from "./panels";
 import { QasmDiracPanel } from "./QasmDiracPanel";
 import { analyzeComponents, type DiracComponent } from "@/lib/componentAnalyzer";
+import { qasmToNodes } from "@/lib/qasmToNodes";
 import JSZip from "jszip";
 
 const selector = (state: { selectedNode: Node | null; nodes: Node[]; edges: Edge[] }) => ({
@@ -29,6 +30,7 @@ interface CustomPanelProps {
   compilationTarget?: string;
   onSendToBackend?: () => void;
   onGetModel?: () => object;
+  qasmEditorMode?: boolean;
 }
 
 export const CustomPanel = ({
@@ -42,20 +44,36 @@ export const CustomPanel = ({
   compilationTarget = "qasm",
   onSendToBackend,
   onGetModel,
+  qasmEditorMode = false,
 }: CustomPanelProps) => {
   const { selectedNode, nodes, edges } = useStore(selector, shallow);
-  const { setNodes } = useReactFlow();
-  const [activeTab, setActiveTab] = useState<"properties" | "math">("properties");
+  const { setNodes, setEdges } = useReactFlow();
+  const [activeTab, setActiveTab] = useState<"properties" | "math" | "qasm">("properties");
   const [components, setComponents] = useState<DiracComponent[]>([]);
   const [analyzing, setAnalyzing] = useState(false);
   const [hasAnalyzedOnce, setHasAnalyzedOnce] = useState(false);
   const [waitingForQasm, setWaitingForQasm] = useState(false);
+  const [qasmEditorCode, setQasmEditorCode] = useState<string>("");
+  const [qasmApplyError, setQasmApplyError] = useState<string | null>(null);
+  const [qasmApplySuccess, setQasmApplySuccess] = useState(false);
 
-  // Wenn Math Mode ausgeschaltet → zurück zu Properties
+  // Wenn Math Mode ausgeschaltet → zurück zu Properties (außer QASM Editor ist aktiv)
   useEffect(() => {
-    if (!mathMode) setActiveTab("properties");
-    onWidthChange?.(mathMode ? 480 : 350);
-  }, [mathMode]);
+    if (!mathMode && activeTab === "math") setActiveTab("properties");
+    onWidthChange?.((mathMode || qasmEditorMode) ? 480 : 350);
+  }, [mathMode, qasmEditorMode]);
+
+  // QASM Editor mit aktuellem QASM synchronisieren
+  useEffect(() => {
+    if (qasmCode && qasmCode.trim()) {
+      setQasmEditorCode(qasmCode);
+    }
+  }, [qasmCode]);
+
+  // Wenn QASM Editor deaktiviert → zurück zu Properties wenn aktiv
+  useEffect(() => {
+    if (!qasmEditorMode && activeTab === "qasm") setActiveTab("properties");
+  }, [qasmEditorMode]);
 
   // Wenn neues QASM ankommt → Analyse zurücksetzen
   useEffect(() => {
@@ -111,7 +129,7 @@ export const CustomPanel = ({
     <div className="currentPanel-container bg-gray-100 h-full border-gray-200 border text-black flex flex-col">
 
       {/* Tab-Leiste */}
-      {mathMode && (
+      {(mathMode || qasmEditorMode) && (
         <div className="flex border-b border-gray-300 bg-white flex-shrink-0">
           <button
             onClick={() => setActiveTab("properties")}
@@ -123,16 +141,30 @@ export const CustomPanel = ({
           >
             Properties
           </button>
-          <button
-            onClick={() => handleTabSwitch("math")}
-            className={`flex-1 px-3 py-2 text-xs font-medium transition-colors ${
-              activeTab === "math"
-                ? "border-b-2 border-blue-500 text-blue-600 bg-white"
-                : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
-            }`}
-          >
-            Math Mode ⟩
-          </button>
+          {mathMode && (
+            <button
+              onClick={() => handleTabSwitch("math")}
+              className={`flex-1 px-3 py-2 text-xs font-medium transition-colors ${
+                activeTab === "math"
+                  ? "border-b-2 border-blue-500 text-blue-600 bg-white"
+                  : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              Math Mode ⟩
+            </button>
+          )}
+          {qasmEditorMode && (
+            <button
+              onClick={() => setActiveTab("qasm")}
+              className={`flex-1 px-3 py-2 text-xs font-medium transition-colors ${
+                activeTab === "qasm"
+                  ? "border-b-2 border-orange-500 text-orange-600 bg-white"
+                  : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              QASM
+            </button>
+          )}
         </div>
       )}
 
@@ -144,6 +176,80 @@ export const CustomPanel = ({
           ) : (
             <MetadataPanel metadata={metadata} onUpdateMetadata={handleChange} />
           )}
+        </div>
+      )}
+
+      {/* QASM Editor Tab */}
+      {activeTab === "qasm" && qasmEditorMode && (
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Toolbar */}
+          <div className="flex-shrink-0 flex items-center justify-between px-2 pt-2 pb-1 gap-2 flex-wrap">
+            <span className="text-xs text-gray-400">
+              {qasmCode?.trim() ? "QASM from backend" : "No QASM available yet"}
+            </span>
+            <div className="flex gap-1.5">
+              <button
+                onClick={onSendToBackend}
+                disabled={!qasmEditorCode.trim()}
+                className="text-xs px-2.5 py-1 rounded-full border border-blue-300 hover:bg-blue-50 text-blue-600 transition-colors disabled:opacity-40"
+                title="Send to backend"
+              >
+                ▶ Run
+              </button>
+              <button
+                onClick={() => {
+                  setQasmApplyError(null);
+                  setQasmApplySuccess(false);
+                  try {
+                    const { nodes: newNodes, edges: newEdges } = qasmToNodes(qasmEditorCode);
+                    if (newNodes.length === 0) {
+                      setQasmApplyError("No nodes could be parsed from QASM.");
+                      return;
+                    }
+                    setNodes(newNodes);
+                    setEdges(newEdges);
+                    setQasmApplySuccess(true);
+                    setTimeout(() => setQasmApplySuccess(false), 2000);
+                  } catch (e) {
+                    setQasmApplyError(e instanceof Error ? e.message : "Parse error");
+                  }
+                }}
+                disabled={!qasmEditorCode.trim()}
+                className="text-xs px-2.5 py-1 rounded-full border border-green-300 hover:bg-green-50 text-green-600 transition-colors disabled:opacity-40"
+                title="Apply QASM to canvas"
+              >
+                ↙ Apply to Canvas
+              </button>
+              <button
+                onClick={() => { setQasmEditorCode(qasmCode ?? ""); setQasmApplyError(null); }}
+                disabled={!qasmCode?.trim()}
+                className="text-xs px-2.5 py-1 rounded-full border border-gray-300 hover:bg-gray-50 text-gray-500 transition-colors disabled:opacity-40"
+                title="Reset to backend QASM"
+              >
+                ↺ Reset
+              </button>
+            </div>
+          </div>
+          {qasmApplyError && (
+            <div className="flex-shrink-0 mx-2 mb-1 px-2 py-1 rounded bg-red-50 border border-red-200 text-xs text-red-600">
+              ⚠ {qasmApplyError}
+            </div>
+          )}
+          {qasmApplySuccess && (
+            <div className="flex-shrink-0 mx-2 mb-1 px-2 py-1 rounded bg-green-50 border border-green-200 text-xs text-green-600">
+              ✓ Applied to canvas
+            </div>
+          )}
+          <div className="flex-1 overflow-hidden mx-2 mb-2 rounded border border-gray-200 bg-gray-900 relative">
+            <textarea
+              value={qasmEditorCode}
+              onChange={(e) => { setQasmEditorCode(e.target.value); setQasmApplyError(null); }}
+              spellCheck={false}
+              className="w-full h-full resize-none p-3 font-mono text-xs leading-relaxed bg-transparent text-gray-100 outline-none"
+              placeholder="// QASM code will appear here after backend call&#10;// You can also write QASM directly&#10;OPENQASM 2.0;&#10;qreg q[2];&#10;h q[0];&#10;cx q[0],q[1];"
+              style={{ caretColor: "white" }}
+            />
+          </div>
         </div>
       )}
 
@@ -221,6 +327,7 @@ function ComponentsView({
   onGetCircuitSvg?: () => Promise<string>;
   nodes: Node[];
   onGetModel?: () => object;
+  qasmEditorMode?: boolean;
 }) {
   return (
     <div className="flex flex-col gap-3">
@@ -277,6 +384,7 @@ function ComponentSection({
   nodeIds?: string[];
   nodes: Node[];
   onGetModel?: () => object;
+  qasmEditorMode?: boolean;
 }) {
   const [expanded, setExpanded] = useState(true);
   const { setNodes, getNodes } = useReactFlow();
@@ -379,6 +487,7 @@ function ExportAllButton({
   onGetCircuitSvg: () => Promise<string>;
   setNodes: (fn: (nds: Node[]) => Node[]) => void;
   onGetModel?: () => object;
+  qasmEditorMode?: boolean;
 }) {
   const [exporting, setExporting] = useState(false);
 

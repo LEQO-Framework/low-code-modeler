@@ -297,6 +297,10 @@ function buildLatexExport(
   const stepsSection = stepsResult && stepsResult.steps.length > 0
     ? `\\section*{Mathematical Intermediate Steps}
 
+\\textit{\\textbf{Notation:} A subscript on a gate label indicates which qubit it acts on. For example, $H_0$ means the Hadamard gate applied to qubit 0, and $I_1$ means the identity (no operation) on qubit 1.}
+
+\\vspace{6pt}
+
 ${stepsResult.steps.map((step, idx) => {
   const matrix = getGateMatrix(step.gateLabelLatex ?? step.gateLabel ?? "");
   const matrixBlock = matrix
@@ -1105,6 +1109,14 @@ export function QasmDiracPanel(props: Props) {
               {mistralLoading ? "Explaining..." : "Explain"}
             </button>
           </div>
+          {/* Notation-Hinweis */}
+          <div className="flex items-start gap-1.5 mb-2 px-2 py-1.5 rounded bg-blue-50 border border-blue-100">
+            <span className="text-blue-400 text-xs mt-0.5">ℹ</span>
+            <p className="text-xs text-blue-600 leading-relaxed">
+              <strong>Notation:</strong> H<sub>0</sub> means the H gate applied to qubit 0, I<sub>1</sub> means identity (no operation) on qubit 1. The subscript indicates which qubit the gate acts on.
+            </p>
+          </div>
+
           <div className="flex flex-col gap-0 font-mono text-sm">
             <div className="flex items-baseline gap-2 py-1">
               <span className="text-gray-400 text-xs min-w-[36px]">|ψ₀⟩</span>
@@ -1161,19 +1173,20 @@ export function QasmDiracPanel(props: Props) {
           {numQubits > 1 && (
             <div className="flex flex-col gap-1">
               <QubitSelector numQubits={numQubits} selected={effectiveSelected} onChange={setSelectedQubits} />
-              {isPartial && numQubits > 1 && (
-                <p className="text-xs text-blue-600">
-                  Partial measurement: probabilities summed over unselected qubits
-                </p>
-              )}
             </div>
           )}
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-            Measurement Probabilities{isPartial && numQubits > 1 && ` (q${effectiveSelected.join(", q")})`}
-          </p>
-          <Histogram data={histogramData} />
 
-          {/* Partielle Messung: Projektion + kollabierter Zustand */}
+          {/* Histogramm: nur wenn alle Qubits ausgewählt (und mehr als 1 Qubit) */}
+          {!isPartial && (
+            <>
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                Measurement Probabilities
+              </p>
+              <Histogram data={histogramData} />
+            </>
+          )}
+
+          {/* Partielle Messung: nur wenn einzelne Qubits ausgewählt ODER 1 Qubit */}
           {isPartial && partialMeasurement && partialMeasurement.length > 0 && (
             <div className="rounded-lg border border-indigo-100 bg-indigo-50/30 px-3 py-3 mt-1">
               <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">

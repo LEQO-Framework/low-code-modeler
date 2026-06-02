@@ -274,6 +274,7 @@ function App() {
   const [lassoMode, setLassoMode] = useState(false);
   
   const [mathMode, setMathMode] = useState(false);
+  const [qasmEditorMode, setQasmEditorMode] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -3631,6 +3632,8 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
               domainProfileNames={allDomainProfiles.map((p) => p.name)}
               mathMode={mathMode}
               onToggleMathMode={() => setMathMode((v) => !v)} 
+              qasmEditorMode={qasmEditorMode}
+              onToggleQasmEditorMode={() => setQasmEditorMode((v) => !v)}
             />
 
             <MiniMap
@@ -3771,6 +3774,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
             onGetCircuitSvg={getCircuitSvg}
             onSendToBackend={sendToBackend}
             onGetModel={getModel}
+            qasmEditorMode={qasmEditorMode}
           />
         )}
       </div>

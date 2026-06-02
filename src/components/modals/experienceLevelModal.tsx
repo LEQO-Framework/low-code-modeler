@@ -16,6 +16,8 @@ interface ExperienceModePanelProps {
   domainProfileNames: string[];
   mathMode: boolean;               // ← NEU
   onToggleMathMode: () => void;    // ← NEU
+  qasmEditorMode: boolean;
+  onToggleQasmEditorMode: () => void;
 }
 
 export default function ExperienceModePanel({
@@ -34,6 +36,8 @@ export default function ExperienceModePanel({
   domainProfileNames,
   mathMode,
   onToggleMathMode,
+  qasmEditorMode,
+  onToggleQasmEditorMode,
 }: ExperienceModePanelProps) {
   return (
     <Panel position="top-left" className="p-2 z-50">
@@ -161,6 +165,25 @@ export default function ExperienceModePanel({
                     }`}
                   >
                     {mathMode ? "On" : "Off"}
+                  </button>
+                </td>
+              </tr>
+
+              {/* QASM Editor Toggle */}
+              <tr>
+                <td align="right">
+                  <span title="Zeigt einen QASM-Code-Editor im Properties Panel an.">
+                    QASM Editor
+                  </span>
+                </td>
+                <td align="left">
+                  <button
+                    onClick={onToggleQasmEditorMode}
+                    className={`px-2 py-1 rounded text-white ${
+                      qasmEditorMode ? "bg-orange-500" : "bg-gray-400"
+                    }`}
+                  >
+                    {qasmEditorMode ? "On" : "Off"}
                   </button>
                 </td>
               </tr>
