@@ -13,6 +13,7 @@ type InputNode = {
 interface PromptFlowModalProps {
   open: boolean;
   onClose: () => void;
+  stepTest: number;
   showToast: (message: React.ReactNode, type: "success" | "error" | "info") => void;
   mistralToken: string;
   loadFlow: (flow: any) => void;
@@ -27,6 +28,7 @@ export default function PromptFlowModal({
   open,
   onClose,
   showToast,
+  stepTest,
   mistralToken,
   loadFlow,
   lowcodeBackendEndpoint,
@@ -114,14 +116,17 @@ export default function PromptFlowModal({
     "GHZ",
     "W",
   ];
-
+  console.log(stepTest)
+  console.log(missingValues)
+  console.log(missingValues.length >2)
+  console.log(stepTest=== 2 && missingValues && missingValues.length > 0 )
   return (
     <>
       {toast && (
         <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
       )}
 
-      {open && step === 1 && !missingValues.length && (
+      {open && stepTest === 1 && !missingValues.length && (
         <Modal
           title="Generate Model with AI"
           open={true}
@@ -167,7 +172,7 @@ export default function PromptFlowModal({
         </Modal>
       )}
 
-        {open && missingValues && missingValues.length > 0 && (
+        {open && stepTest=== 2&& missingValues && missingValues.length > 0 && (
           <Modal
           title="Add Required Values"
           open={true}
