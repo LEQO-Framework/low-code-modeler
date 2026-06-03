@@ -492,6 +492,7 @@ If none apply, return { "algorithms": [] }.
   const [modalStep, setModalStep] = useState(1);
   const [isQunicornOpen, setIsQunicornOpen] = useState(false);
   const [isPromptModalOpen, setIsPromptModalOpen] = useState(false);
+  const [stateTest, setStateTest] = useState(1);
   const [loadingQunicorn, setLoadingQunicorn] = useState(true);
   const [statusQunicorn, setStatusQunicorn] = useState(null);
   const [ancillaModelingOn, setAncillaModelingOn] = useState(false);
@@ -2505,12 +2506,15 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
 
   const handleAddMissingValues = (job: HistoryItem) => {
     setSelectedJob(job);
+    setStateTest(2);
     setIsPromptModalOpen(true);
+    
   };
 
   const handleClosePromptModal = () => {
     setIsPromptModalOpen(false);
     setSelectedJob(null);
+    setStateTest(1);
   };
 
 
@@ -3042,6 +3046,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
 
       <PromptFlowModal
         open={isPromptModalOpen}
+        stepTest={stateTest}
         onClose={handleClosePromptModal}
         showToast={showToast}
         mistralToken={mistralToken}

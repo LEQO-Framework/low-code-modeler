@@ -12,7 +12,12 @@ export interface HistoryItem {
   type?: "generation" | "execution";
   result?: string;
   validationScore?: number;
-  missingValues?: any[];
+  missingValues?: Array<{
+    id: string;
+    type: string;
+    label: string;
+    question?: string; // Add this line
+  }>;
   links?: {
     request?: string;
     result?: string;
