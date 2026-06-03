@@ -106,7 +106,7 @@ export const HistoryModal = ({
         title="History"
         open={open}
         onClose={onClose}
-        className="w-[900px] max-w-[95vw]"
+        className="w-full max-w-[95vw]"
         footer={
           <div className="flex justify-end">
             <button className="btn btn-secondary" onClick={onClose}>
