@@ -13,6 +13,7 @@ type InputNode = {
 interface PromptFlowModalProps {
   open: boolean;
   onClose: () => void;
+  stepTest: number;
   showToast: (message: React.ReactNode, type: "success" | "error" | "info") => void;
   mistralToken: string;
   loadFlow: (flow: any) => void;
@@ -27,6 +28,7 @@ export default function PromptFlowModal({
   open,
   onClose,
   showToast,
+  stepTest,
   mistralToken,
   loadFlow,
   lowcodeBackendEndpoint,
@@ -114,14 +116,17 @@ export default function PromptFlowModal({
     "GHZ",
     "W",
   ];
-
+  console.log(stepTest)
+  console.log(missingValues)
+  console.log(missingValues.length >2)
+  console.log(stepTest=== 2 && missingValues && missingValues.length > 0 )
   return (
     <>
       {toast && (
         <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
       )}
 
-      {open && step === 1 && !missingValues.length && (
+      {open && stepTest === 1 && !missingValues.length && (
         <Modal
           title="Generate Model with AI"
           open={true}
@@ -167,7 +172,7 @@ export default function PromptFlowModal({
         </Modal>
       )}
 
-        {open && missingValues && missingValues.length > 0 && (
+        {open && stepTest=== 2&& missingValues && missingValues.length > 0 && (
           <Modal
           title="Add Required Values"
           open={true}
@@ -192,51 +197,48 @@ export default function PromptFlowModal({
             <p className="text-gray-600">
               The following values are required to generate your model. Please provide them below.
             </p>
-            {missingValues.map((input) => (
-              <div key={input.id} className="space-y-2">
-                <label className="block font-medium">
-                  {input.label} ({input.type})
-                </label>
-                {input.type === "bit" && (
-                  <select
-                    className="w-full border p-2 rounded"
-                    value={inputValues[input.id] || ""}
-                    onChange={(e) => setInputValues({ ...inputValues, [input.id]: e.target.value })}
-                  >
-                    <option value="">Select a bit value</option>
-                    {bitOptions.map((opt) => (
-                      <option key={opt} value={opt}>
-                        {opt}
-                      </option>
-                    ))}
-                  </select>
-                )}
-                {input.type === "statePreparation" && (
-                  <select
-                    className="w-full border p-2 rounded"
-                    value={inputValues[input.id] || ""}
-                    onChange={(e) => setInputValues({ ...inputValues, [input.id]: e.target.value })}
-                  >
-                    <option value="">Select a state</option>
-                    {statePreparationOptions.map((opt) => (
-                      <option key={opt} value={opt}>
-                        {opt}
-                      </option>
-                    ))}
-                  </select>
-                )}
-                {(input.type === "number" || input.type === "file" || input.type === "string") && (
-                  <input
-                    type={input.type === "number" ? "number" : "text"}
-                    className="w-full border p-2 rounded"
-                    placeholder={`Enter ${input.type}`}
-                    value={inputValues[input.id] || ""}
-                    onChange={(e) => setInputValues({ ...inputValues, [input.id]: e.target.value })}
-                  />
-                )}
-              </div>
-            ))}
-          </div>
+              {missingValues.map((input) => (
+                <div key={input.id} className="space-y-2">
+                  <label className="block font-medium">
+                    {input.question || input.label} ({input.type})
+                  </label>
+                  {/* Rest of the input fields (select, input, etc.) */}
+                  {input.type === "bit" && (
+                    <select
+                      className="w-full border p-2 rounded"
+                      value={inputValues[input.id] || ""}
+                      onChange={(e) => setInputValues({ ...inputValues, [input.id]: e.target.value })}
+                    >
+                      <option value="">Select a bit value</option>
+                      {bitOptions.map((opt) => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ))}
+                    </select>
+                  )}
+                  {input.type === "statePreparation" && (
+                    <select
+                      className="w-full border p-2 rounded"
+                      value={inputValues[input.id] || ""}
+                      onChange={(e) => setInputValues({ ...inputValues, [input.id]: e.target.value })}
+                    >
+                      <option value="">Select a state</option>
+                      {statePreparationOptions.map((opt) => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ))}
+                    </select>
+                  )}
+                  {(input.type === "number" || input.type === "file" || input.type === "string") && (
+                    <input
+                      type={input.type === "number" ? "number" : "text"}
+                      className="w-full border p-2 rounded"
+                      placeholder={`Enter ${input.type}`}
+                      value={inputValues[input.id] || ""}
+                      onChange={(e) => setInputValues({ ...inputValues, [input.id]: e.target.value })}
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
         </Modal>
       )}
     </>
