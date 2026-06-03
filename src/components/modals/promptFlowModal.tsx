@@ -192,51 +192,48 @@ export default function PromptFlowModal({
             <p className="text-gray-600">
               The following values are required to generate your model. Please provide them below.
             </p>
-            {missingValues.map((input) => (
-              <div key={input.id} className="space-y-2">
-                <label className="block font-medium">
-                  {input.label} ({input.type})
-                </label>
-                {input.type === "bit" && (
-                  <select
-                    className="w-full border p-2 rounded"
-                    value={inputValues[input.id] || ""}
-                    onChange={(e) => setInputValues({ ...inputValues, [input.id]: e.target.value })}
-                  >
-                    <option value="">Select a bit value</option>
-                    {bitOptions.map((opt) => (
-                      <option key={opt} value={opt}>
-                        {opt}
-                      </option>
-                    ))}
-                  </select>
-                )}
-                {input.type === "statePreparation" && (
-                  <select
-                    className="w-full border p-2 rounded"
-                    value={inputValues[input.id] || ""}
-                    onChange={(e) => setInputValues({ ...inputValues, [input.id]: e.target.value })}
-                  >
-                    <option value="">Select a state</option>
-                    {statePreparationOptions.map((opt) => (
-                      <option key={opt} value={opt}>
-                        {opt}
-                      </option>
-                    ))}
-                  </select>
-                )}
-                {(input.type === "number" || input.type === "file" || input.type === "string") && (
-                  <input
-                    type={input.type === "number" ? "number" : "text"}
-                    className="w-full border p-2 rounded"
-                    placeholder={`Enter ${input.type}`}
-                    value={inputValues[input.id] || ""}
-                    onChange={(e) => setInputValues({ ...inputValues, [input.id]: e.target.value })}
-                  />
-                )}
-              </div>
-            ))}
-          </div>
+              {missingValues.map((input) => (
+                <div key={input.id} className="space-y-2">
+                  <label className="block font-medium">
+                    {input.question || input.label} ({input.type})
+                  </label>
+                  {/* Rest of the input fields (select, input, etc.) */}
+                  {input.type === "bit" && (
+                    <select
+                      className="w-full border p-2 rounded"
+                      value={inputValues[input.id] || ""}
+                      onChange={(e) => setInputValues({ ...inputValues, [input.id]: e.target.value })}
+                    >
+                      <option value="">Select a bit value</option>
+                      {bitOptions.map((opt) => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ))}
+                    </select>
+                  )}
+                  {input.type === "statePreparation" && (
+                    <select
+                      className="w-full border p-2 rounded"
+                      value={inputValues[input.id] || ""}
+                      onChange={(e) => setInputValues({ ...inputValues, [input.id]: e.target.value })}
+                    >
+                      <option value="">Select a state</option>
+                      {statePreparationOptions.map((opt) => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ))}
+                    </select>
+                  )}
+                  {(input.type === "number" || input.type === "file" || input.type === "string") && (
+                    <input
+                      type={input.type === "number" ? "number" : "text"}
+                      className="w-full border p-2 rounded"
+                      placeholder={`Enter ${input.type}`}
+                      value={inputValues[input.id] || ""}
+                      onChange={(e) => setInputValues({ ...inputValues, [input.id]: e.target.value })}
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
         </Modal>
       )}
     </>
