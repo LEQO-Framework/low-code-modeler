@@ -150,7 +150,7 @@ export const StatePreparationNode = memo((node: Node) => {
     if (num === 0 && node.data.label === "Prepare State") {
       setMissingSizeError(true);
     } else if (
-      quantumStateName === "GHZ") {
+      quantumStateName === "GHZ" || quantumStateName === "W-State") {
       const value = node.data.size;
       const num = Number(value);
 
@@ -383,7 +383,7 @@ export const StatePreparationNode = memo((node: Node) => {
             height:
               ["Custom Encoding", "Basis Encoding", "Angle Encoding", "Amplitude Encoding", "Matrix Encoding", "Schmidt Decomposition"].includes(data.label)
                 ? !ancillaMode
-                  ? "300px"
+                  ? "340px"
                   : `${Math.max(dynamicHeight - 70, 200)}px`
                 : !ancillaMode
                   ? "370px"
@@ -481,7 +481,17 @@ export const StatePreparationNode = memo((node: Node) => {
                 "Schmidt Decomposition"
               ].includes(data.label) && (
                   <img
-                    src={iconMap[data.label] ?? "amplitudeEncodingIcon.png"}
+                    src={
+                      data.label === "Prepare State"
+                        ? "prepareStateIcon.png"
+                        : data.label === "Encode Value"
+                          ? "encodeValueIcon.png"
+                          : data.label === "Basis Encoding"
+                            ? "basisEncodingIcon.png"
+                            : data.label === "Angle Encoding"
+                              ? "angleEncodingIcon.png"
+                              : "amplitudeEncodingIcon.png"
+                    }
                     alt={`${data.label} icon`}
                     className={
                       data.label === "Prepare State"
@@ -515,18 +525,18 @@ export const StatePreparationNode = memo((node: Node) => {
                     style={{ visibility: showingChildren ? "hidden" : "visible" }}
                     onChange={(e) => handleStateChange(e, "encodingType")}
                   >
-                    {!completionGuaranteed && (<option value="Amplitude Encoding">Amplitude Encoding</option>)}
-                    {!completionGuaranteed && (<option value="Angle Encoding">Angle Encoding</option>)}
-                    <option value="Basis Encoding">Basis Encoding</option>
-                    <option value="Custom Encoding">Custom Encoding</option>
-                    {!completionGuaranteed && (<option value="Matrix Encoding">Matrix Encoding</option>)}
-                    {!completionGuaranteed && (<option value="Schmidt Decomposition">Schmidt Decomposition</option>)}
+                    {!completionGuaranteed && (<option value="amplitude">Amplitude Encoding</option>)}
+                    {!completionGuaranteed && (<option value="angle">Angle Encoding</option>)}
+                    <option value="basis">Basis Encoding</option>
+                    <option value="custom">Custom Encoding</option>
+                    {!completionGuaranteed && (<option value="matrix">Matrix Encoding</option>)}
+                    {!completionGuaranteed && (<option value="schmidt">Schmidt Decomposition</option>)}
 
                   </select>
 
-                  {node.data.encodingType !== "Basis Encoding" && node.data.encodingType !== "Angle Encoding" && (
+                  {node.data.encodingType !== "basis" && node.data.encodingType !== "angle" && (
                     <>
-                      <label className="text-sm text-black">Bound:</label>
+                      <label className="text-sm text-black block mt-2">Bound:</label>
                       <input
                         className="w-full p-1 mt-1 text-sm text-center text-black border-2 border-blue-300 rounded-full"
                         type="text"
@@ -538,25 +548,47 @@ export const StatePreparationNode = memo((node: Node) => {
                     </>
                   )}
 
+                  {node.data.encodingType === "Basis Encoding" && (
+                    <>
+                      <label className="text-sm text-black block mt-2">Decimal Precision:</label>
+                      <input
+                        className="w-full p-1 mt-1 text-sm text-center text-black border-2 border-blue-300 rounded-full"
+                        type="number"
+                        min="0"
+                        value={node.data.decimalPrecision ?? ""}
+                        onChange={(e) => handleStateChange(e, "decimalPrecision")}
+                        placeholder="e.g. 1"
+                      />
+                    </>
+                  )}
                 </>
               )}
+
               {(node.data.label === "Amplitude Encoding" || node.data.label === "Custom Encoding" || node.data.label === "Matrix Encoding" || node.data.label === "Schmidt Decomposition") && (
                 <>
+                  <label className="text-sm text-black block mt-2">Bound:</label>
+                  <input
+                    className="w-full p-1 mt-1 text-sm text-center text-black border-2 border-blue-300 rounded-full"
+                    type="text"
+                    id="bound"
+                    value={node.data.bound || bound}
+                    onChange={(e) => handleStateChange(e, "bound")}
+                    placeholder="Enter bound"
+                  />
+                </>
+              )}
 
-                  {node.data.encodingType !== "Basis Encoding" && node.data.encodingType !== "Angle Encoding" && (
-                    <>
-                      <label className="text-sm text-black">Bound:</label>
-                      <input
-                        className="w-full p-1 mt-1 text-sm text-center text-black border-2 border-blue-300 rounded-full"
-                        type="text"
-                        id="bound"
-                        value={node.data.bound || bound}
-                        onChange={(e) => handleStateChange(e, "bound")}
-                        placeholder="Enter bound"
-                      />
-                    </>
-                  )}
-
+              {node.data.label === "Basis Encoding" && (
+                <>
+                  <label className="text-sm text-black block mt-2">Decimal Precision:</label>
+                  <input
+                    className="w-full p-1 mt-1 text-sm text-center text-black border-2 border-blue-300 rounded-full"
+                    type="number"
+                    min="0"
+                    value={node.data.decimalPrecision ?? ""}
+                    onChange={(e) => handleStateChange(e, "decimalPrecision")}
+                    placeholder="e.g. 1"
+                  />
                 </>
               )}
 
@@ -581,9 +613,8 @@ export const StatePreparationNode = memo((node: Node) => {
                     <option value="Custom State">Custom State</option>
                     <option value="GHZ">GHZ State</option>
                     <option value="Uniform Superposition">Uniform Superposition</option>
-                    {!completionGuaranteed && (
-                      <option value="W-State">W-State</option>
-                    )}
+                    <option value="W-State">W-State</option>
+                    
                   </select>
                 </>
               )}

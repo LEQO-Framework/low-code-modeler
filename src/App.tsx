@@ -55,6 +55,9 @@ import { PatternImplementationSelectionModal } from "./components/modals/pattern
 import UserCountPanel from "./components/modals/userAwareness";
 import VersioningPanel from "./components/modals/versioningModal";
 import { EdgeChange } from "@xyflow/react";
+import PromptFlowModal from "./components/modals/promptFlowModal";
+import { generateFlow, sendToMistral } from "./generation";
+import { openQasmToFlow } from "./qasmConverter";
 
 const selector = (state: {
   nodes: Node[];
@@ -200,7 +203,7 @@ function App() {
     console.log("newName", newName)
     setUserName(newName);
     const currentCursorState = awareness.getLocalState()?.cursor || {};
-    awareness.setLocalStateField("cursor", {...currentCursorState, name: newName}) //update only name
+    awareness.setLocalStateField("cursor", { ...currentCursorState, name: newName }) //update only name
     console.log("cursors", cursors)
   };
 
@@ -216,6 +219,9 @@ function App() {
 
   const [openAIToken, setOpenAIToken] = useState(
     import.meta.env.VITE_OPENAI_TOKEN
+  );
+  const [mistralToken, setMistralToken] = useState(
+    import.meta.env.VITE_MISTRAL_TOKEN
   );
   const [qunicornEndpoint, setQunicornEndpoint] = useState(
     import.meta.env.VITE_QUNICORN || "http://localhost:8080"
@@ -328,7 +334,7 @@ function App() {
     // 🔥 Handle deletions
     // TODO: fix from here on! (taken from onNodesChangeSync)
     allowedChanges.forEach((change) => {
-      if ((change.type === "remove" || change.type === "reset" ) && hasId(change)) {
+      if ((change.type === "remove" || change.type === "reset") && hasId(change)) {
         console.log("NODES MAP", Array.from(nodesMap.values()))
         const nodeId = change.id;
         const nodeLabel = Array.from(nodesMap.values()).find((node) => node.id === nodeId)?.data?.label || "unknown"
@@ -354,7 +360,7 @@ function App() {
         }]);
         console.log("REMOVE NODE HISTORY", historyArray.toArray())
         console.log("shared nodes", Array.from(nodesMap.values()))
-        console.log("shared edges",Array.from(edgesMap.values()))
+        console.log("shared edges", Array.from(edgesMap.values()))
       }
     });
 
@@ -385,9 +391,10 @@ function App() {
   const [errorJobMessage, setErrorJobMessage] = useState("");
   const [isPatternModalOpen, setIsPatternModalOpen] = useState(false);
   const [isPatternImplementationOpen, setIsPatternImplementationOpen] = useState(false);
+  const [isOpenQASMOpen, setIsOpenQASMOpen] = useState(false);
   const [selectedPatternId, setSelectedPatternId] = useState<string | null>(null);
 
-
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [isLoadJsonModalOpen, setIsLoadJsonModalOpen] = useState(false);
   const [isPaletteOpen, setIsPaletteOpen] = useState(true);
@@ -547,6 +554,7 @@ If none apply, return { "algorithms": [] }.
     setCamundaEndpoint(newValues.tempCamundaEndpoint);
     setNisqAnalyzerEndpoint(newValues.tempNisqAnalyzerEndpoint);
     setOpenAIToken(newValues.tempOpenAIToken);
+    setMistralToken(newValues.tempMistralToken);
     setQunicornEndpoint(newValues.tempQunicornEndpoint);
     setLowcodeBackendEndpoint(newValues.tempLowcodeBackendEndpoint);
     setPatternAtlasUiEndpoint(newValues.tempPatternAtlasUiEndpoint);
@@ -609,6 +617,7 @@ If none apply, return { "algorithms": [] }.
   const [status, setStatus] = useState("");
   const [modalStep, setModalStep] = useState(1);
   const [isQunicornOpen, setIsQunicornOpen] = useState(false);
+  const [isPromptModalOpen, setIsPromptModalOpen] = useState(false);
   const [loadingQunicorn, setLoadingQunicorn] = useState(true);
   const [statusQunicorn, setStatusQunicorn] = useState(null);
   const [ancillaModelingOn, setAncillaModelingOn] = useState(false);
@@ -651,8 +660,8 @@ If none apply, return { "algorithms": [] }.
       // set flag, so that this is ignored by effect 2
       isSyncingFromRemote.current = true;
 
-      const sharedNodes = Array.from(nodesMap.values());
-      const sharedEdges = Array.from(edgesMap.values());
+      const sharedNodes: any = Array.from(nodesMap.values());
+      const sharedEdges: any = Array.from(edgesMap.values());
 
       // Update the local rendering tracking arrays
       setNodesI(sharedNodes);
@@ -661,10 +670,10 @@ If none apply, return { "algorithms": [] }.
       // Forcefully inject remote changes into Zustand.
       // Stringify check to prevent triggering an infinite state update loop.
       const currentLocalState = useStore.getState();
-      
+
       if (JSON.stringify(currentLocalState.nodes) !== JSON.stringify(sharedNodes) ||
-          JSON.stringify(currentLocalState.edges) !== JSON.stringify(sharedEdges)) {
-        
+        JSON.stringify(currentLocalState.edges) !== JSON.stringify(sharedEdges)) {
+
         useStore.setState({
           nodes: sharedNodes,
           edges: sharedEdges,
@@ -688,46 +697,46 @@ If none apply, return { "algorithms": [] }.
   }, [collaborationModeOn]);
 
 
-// EFFECT 2: Local-to-Remote (Zustand to Yjs)
-useEffect(() => {
-  if (!collaborationModeOn || isSyncingFromRemote.current) return;
+  // EFFECT 2: Local-to-Remote (Zustand to Yjs)
+  useEffect(() => {
+    if (!collaborationModeOn || isSyncingFromRemote.current) return;
 
-  // Bundle operations into a single transaction block
-  ydoc.transact(() => {
-    // Sync local Zustand nodes to the network map
-    nodes.forEach((node) => {
-      // remove selected property from local node, so it isn't broadcasted to other users (messes up highlighting of selected nodes)
-      const { selected, ...nodeData } = node;
-      
-      const remoteNode = nodesMap.get(node.id);
-      if (!remoteNode || JSON.stringify(remoteNode) !== JSON.stringify(nodeData)) {
-        nodesMap.set(node.id, nodeData);
-      }
-    });
+    // Bundle operations into a single transaction block
+    ydoc.transact(() => {
+      // Sync local Zustand nodes to the network map
+      nodes.forEach((node) => {
+        // remove selected property from local node, so it isn't broadcasted to other users (messes up highlighting of selected nodes)
+        const { selected, ...nodeData } = node;
 
-    // Handle local deletions (If it's in Yjs but missing from local Zustand, delete from Yjs)
-    nodesMap.forEach((_, id) => {
-      if (!nodes.some((n) => n.id === id)) {
-        nodesMap.delete(id);
-      }
-    });
+        const remoteNode = nodesMap.get(node.id);
+        if (!remoteNode || JSON.stringify(remoteNode) !== JSON.stringify(nodeData)) {
+          nodesMap.set(node.id, nodeData);
+        }
+      });
 
-    // Sync local Zustand edges to the network map
-    edges.forEach((edge) => {
-      const remoteEdge = edgesMap.get(edge.id);
-      if (!remoteEdge || JSON.stringify(remoteEdge) !== JSON.stringify(edge)) {
-        edgesMap.set(edge.id, edge);
-      }
-    });
+      // Handle local deletions (If it's in Yjs but missing from local Zustand, delete from Yjs)
+      nodesMap.forEach((_, id) => {
+        if (!nodes.some((n) => n.id === id)) {
+          nodesMap.delete(id);
+        }
+      });
 
-    // Handle edge deletions
-    edgesMap.forEach((_, id) => {
-      if (!edges.some((e) => e.id === id)) {
-        edgesMap.delete(id);
-      }
+      // Sync local Zustand edges to the network map
+      edges.forEach((edge) => {
+        const remoteEdge = edgesMap.get(edge.id);
+        if (!remoteEdge || JSON.stringify(remoteEdge) !== JSON.stringify(edge)) {
+          edgesMap.set(edge.id, edge);
+        }
+      });
+
+      // Handle edge deletions
+      edgesMap.forEach((_, id) => {
+        if (!edges.some((e) => e.id === id)) {
+          edgesMap.delete(id);
+        }
+      });
     });
-  });
-}, [nodes, edges, collaborationModeOn]);
+  }, [nodes, edges, collaborationModeOn]);
 
   // useEffect(() => {
   //   console.log("rerun")
@@ -784,37 +793,37 @@ useEffect(() => {
 
   useEffect(() => {
 
-    if(collaborationModeOn){
-          // Generate a random username
-          const randomNames = ["Alice", "Bob", "Charlie", "Dana", "Eve", "Frank", "Grace", "Hugo"];
-          const randomUsername = randomNames[Math.floor(Math.random() * randomNames.length)];
-          // Store local clientId
-          setMyClientId(awareness.clientID);
+    if (collaborationModeOn) {
+      // Generate a random username
+      const randomNames = ["Alice", "Bob", "Charlie", "Dana", "Eve", "Frank", "Grace", "Hugo"];
+      const randomUsername = randomNames[Math.floor(Math.random() * randomNames.length)];
+      // Store local clientId
+      setMyClientId(awareness.clientID);
 
-          const color = "#" + Math.floor(Math.random() * 16777215).toString(16);
+      const color = "#" + Math.floor(Math.random() * 16777215).toString(16);
 
-          // Set initial cursor state with username
-          awareness.setLocalStateField("cursor", {
-            x: 0,
-            y: 0,
-            color: color,
-            name: randomUsername
-          });
+      // Set initial cursor state with username
+      awareness.setLocalStateField("cursor", {
+        x: 0,
+        y: 0,
+        color: color,
+        name: randomUsername
+      });
 
-          awareness.setLocalStateField("locks", {
-            nodeIds: []
-          });
+      awareness.setLocalStateField("locks", {
+        nodeIds: []
+      });
 
-          // set initial user name  
-          setUserName(randomUsername);
-          console.log("CURSORS", cursors)
+      // set initial user name  
+      setUserName(randomUsername);
+      console.log("CURSORS", cursors)
     }
 
 
   }, [collaborationModeOn]);
 
 
-  
+
 
   const [runTour, setRunTour] = useState(false);
   const [joyrideStepId, setJoyRideStepId] = useState(0);
@@ -1165,7 +1174,7 @@ useEffect(() => {
       if (
         twoQubitGates.includes(label) ||
         ((node.type === "quantumOperatorNode" || node.type === "classicalOperatorNode") &&
-          !minMaxOperators.includes(operator))
+          !minMaxOperators.includes(operator) && operator !== "INVERT")
       ) {
         if (inputCount !== 2) {
           errors.push({
@@ -1188,6 +1197,14 @@ useEffect(() => {
           });
         }
 
+      }
+
+      if (node.data.label === "Qubit" && (node.data.size === undefined || node.data.size === 0)) {
+        errors.push({
+          nodeId: node.id,
+          nodeType: node.type,
+          description: `Node "${node.id}" needs a size value.`,
+        });
       }
 
       if (threeQubitGates.includes(label)) {
@@ -1270,6 +1287,50 @@ useEffect(() => {
           }
         }
 
+        // MCMT Gate validation
+        if (node.type === "mcmt-gate" || node.data?.label === "MCMT Gate" || node.type === "MCMTGateNode") {
+          const numControls = parseInt(node.data.numControls, 10) || 1;
+          const numTargets = parseInt(node.data.numTargets, 10) || 1;
+          const expectedInputsCount = numControls + numTargets;
+
+          const connectedEdges = edges.filter((edge) => edge.target === node.id);
+
+          const prefix = "quantumHandleInput";
+          const connectedIndices = new Set(
+            connectedEdges
+              .map((edge) => {
+                if (edge.targetHandle && edge.targetHandle.startsWith(prefix) && edge.targetHandle.endsWith(node.id)) {
+                  const indexStr = edge.targetHandle.substring(
+                    prefix.length,
+                    edge.targetHandle.length - node.id.length
+                  );
+                  return parseInt(indexStr, 10);
+                }
+                return null;
+              })
+              .filter((idx) => idx !== null)
+          );
+
+          const missingIndices: number[] = [];
+          for (let i = 0; i < expectedInputsCount; i++) {
+            if (!connectedIndices.has(i)) {
+              missingIndices.push(i);
+            }
+          }
+
+          if (missingIndices.length > 0) {
+            const firstMissing = missingIndices[0];
+            const missingLabel = firstMissing < numControls
+              ? `Control ${firstMissing}`
+              : `Target ${firstMissing - numControls}`;
+
+            errors.push({
+              nodeId: node.id,
+              nodeType: node.type,
+              description: `MCMT Gate block requires ${expectedInputsCount} connected inputs, but is missing an incoming wire at "${missingLabel}".`,
+            });
+          }
+        }
 
         const outgoing = outgoingConnections.get(node.id) || [];
         if (outgoing.length === 0) {
@@ -1385,6 +1446,45 @@ useEffect(() => {
         }
       }
 
+      if (node.data?.label === "QFT" || node.type === "qftNode") {
+        const qubitCount =
+          parseInt(node.data?.numberOutputs || "3");
+
+        const incoming = nodeConnections.get(node.id) || [];
+        const outgoing = outgoingConnections.get(node.id) || [];
+
+        for (let i = 0; i < qubitCount; i++) {
+          const handleId = `quantumHandleQFTInput${i}${node.id}`;
+
+          const isConnected = flow.edges?.some(
+            (e) => e.targetHandle === handleId
+          );
+
+          if (!isConnected) {
+            errors.push({
+              nodeId: node.id,
+              nodeType: node.type,
+              description: `QFT node "${node.id}" is missing connection on input ${i + 1}.`,
+            });
+          }
+        }
+
+        for (let i = 0; i < qubitCount; i++) {
+          const handleId = `qftOut${i}${node.id}`;
+
+          const isUsed = flow.edges?.some(
+            (e) => e.sourceHandle === handleId
+          );
+
+          if (!isUsed) {
+            warnings.push({
+              nodeId: node.id,
+              nodeType: node.type,
+              description: `QFT node "${node.id}" output ${i + 1}/${qubitCount} is not used.`,
+            });
+          }
+        }
+      }
       // Plugin Node Validation
       if (node.type === "pluginNode") {
         const dataInputs = node.data?.dataInputs || [];
@@ -1454,6 +1554,8 @@ useEffect(() => {
           "Executing this flow will not produce meaningful results.",
       });
     }
+
+
 
 
     return { warnings, errors };
@@ -1674,6 +1776,7 @@ useEffect(() => {
       setLoading(false);
     }
   };
+
 
   const pollStatus = async () => {
     const interval = setInterval(async () => {
@@ -1898,10 +2001,10 @@ useEffect(() => {
             position,
             data: { label: label, inputs: [], children: [], implementation: "", implementationType: "", uncomputeImplementationType: "", uncomputeImplementation: "", completionGuaranteed: def?.completionGuaranteed ?? false, compactOptions: compactOptions }
           };
-          
-          
+
+
           setNodes(newNode);
-          if(collaborationModeOn){ //only add node to shared nodesMap if collaboration mode is on
+          if (collaborationModeOn) { //only add node to shared nodesMap if collaboration mode is on
             console.log("ON DROP: collab mode on", collaborationModeOn)
             nodesMap.set(newNode.id, newNode);
             console.log("nodes", nodes)
@@ -1922,7 +2025,7 @@ useEffect(() => {
             console.log("ADD NODE HISTORY", historyArray.toArray())
             console.log("cursors", cursors)
             console.log("shared nodes", Array.from(nodesMap.values()))
-            console.log("shared edges",Array.from(edgesMap.values()))
+            console.log("shared edges", Array.from(edgesMap.values()))
 
             // console.log(cursors)
             // Object.entries(cursors).map(([clientId, cursor]) => {
@@ -1946,7 +2049,7 @@ useEffect(() => {
             //   console.log("ADD NODE HISTORY", historyArray)
             // });
           }
-          
+
 
 
         }
@@ -2420,6 +2523,85 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     addUserTemplate(newTemplate);
   };
 
+  function handleOpenQASMClick() {
+    if (!reactFlowInstance) {
+      console.error("React Flow instance is not initialized.");
+      return;
+    }
+
+    function restoreFlow(flow) {
+      console.log("Restoring flow:", flow);
+      if (flow.nodes) {
+        reactFlowInstance.setNodes(
+          flow.nodes.map((node: Node) => ({
+            ...node,
+            data: {
+              ...node.data,
+            },
+          }))
+        );
+        console.log("Nodes restored.");
+      }
+      if (flow.edges) {
+        reactFlowInstance.setEdges(flow.edges || []);
+        console.log("Edges restored.");
+      }
+
+
+      const { x = 0, y = 0, zoom = 1 } = flow.viewport || {};
+      reactFlowInstance.setViewport({ x, y, zoom });
+
+      if (flow.metadata) {
+        setMetadata(flow.metadata);
+        console.log("Metadata restored:", flow.metadata);
+      }
+    }
+
+    const event = new CustomEvent("lcm-open", {
+      cancelable: true,
+      detail: {
+        restoreFlow
+      },
+    });
+    const defaultAction = document.dispatchEvent(event);
+    console.log(`defaultAction: ${defaultAction}`);
+    if (!defaultAction)
+      return;
+
+    const fileInput = document.createElement("input");
+    fileInput.type = "file";
+    fileInput.accept = "application/txt";
+
+    fileInput.onchange = (event) => {
+      const file = (event.target as HTMLInputElement)?.files?.[0];
+      if (!file) {
+        console.warn("No file selected.");
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const flow = openQasmToFlow(e.target?.result as string);
+          console.log(flow)
+
+          restoreFlow(flow);
+        } catch (error) {
+          console.error("Error parsing JSON file:", error);
+          alert("Invalid JSON file. Please ensure it is a valid flow file.");
+        }
+      };
+
+      reader.onerror = (err) => {
+        console.error("Error reading file:", err);
+        alert("Failed to read file. Please try again.");
+      };
+
+      reader.readAsText(file);
+    };
+
+    fileInput.click();
+  }
 
   function handleRestoreClick() {
     if (!reactFlowInstance) {
@@ -2794,32 +2976,32 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
       });
 
       // Generate a random username
-          const randomNames = ["Alice", "Bob", "Charlie", "Dana", "Eve", "Frank", "Grace", "Hugo"];
-          const randomUsername = randomNames[Math.floor(Math.random() * randomNames.length)];
-          // Store local clientId
-          setMyClientId(awareness.clientID);
+      const randomNames = ["Alice", "Bob", "Charlie", "Dana", "Eve", "Frank", "Grace", "Hugo"];
+      const randomUsername = randomNames[Math.floor(Math.random() * randomNames.length)];
+      // Store local clientId
+      setMyClientId(awareness.clientID);
 
-          const color = "#" + Math.floor(Math.random() * 16777215).toString(16);
+      const color = "#" + Math.floor(Math.random() * 16777215).toString(16);
 
-          // Set initial cursor state with username
-          awareness.setLocalStateField("cursor", {
-            x: 0,
-            y: 0,
-            color: color,
-            name: randomUsername
-          });
+      // Set initial cursor state with username
+      awareness.setLocalStateField("cursor", {
+        x: 0,
+        y: 0,
+        color: color,
+        name: randomUsername
+      });
 
-          awareness.setLocalStateField("locks", {
-            nodeIds: []
-          });
+      awareness.setLocalStateField("locks", {
+        nodeIds: []
+      });
 
-          // set initial user name  
-          setUserName(randomUsername);
-          console.log("CURSORS", cursors)
+      // set initial user name  
+      setUserName(randomUsername);
+      console.log("CURSORS", cursors)
 
-          setNodesI(Array.from(nodesMap.values()));
-          setEdgesI(Array.from(edgesMap.values()));
-          
+      setNodesI(Array.from(nodesMap.values()));
+      setEdgesI(Array.from(edgesMap.values()));
+
     } else {
       // collaboration mode has been turned off
       // delete cursor from awareness state
@@ -3208,7 +3390,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
     //const clientUserName = cursors[myClientId]?.name || "unknown";
     // 🔥 Handle deletions
     allowedChanges.forEach((change) => {
-      if ((change.type === "remove" || change.type === "reset" ) && hasId(change)) {
+      if ((change.type === "remove" || change.type === "reset") && hasId(change)) {
         console.log("NODES MAP", Array.from(nodesMap.values()))
         const nodeId = change.id;
         const nodeLabel = Array.from(nodesMap.values()).find((node) => node.id === nodeId)?.data?.label || "unknown"
@@ -3234,7 +3416,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
         }]);
         console.log("REMOVE NODE HISTORY", historyArray.toArray())
         console.log("shared nodes", Array.from(nodesMap.values()))
-        console.log("shared edges",Array.from(edgesMap.values()))
+        console.log("shared edges", Array.from(edgesMap.values()))
       }
     });
 
@@ -3264,7 +3446,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
   };
 
   const onSelectionChange = useCallback(({ nodes }) => {
-    if(!collaborationModeOn) return;
+    if (!collaborationModeOn) return;
 
     const lockedIds = nodes.map(n => n.id);
 
@@ -3273,7 +3455,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
     });
     console.log("locked ids", lockedIds)
     const mySelectedNode = nodes[0]; // Assuming single selection
-    setMySelectedNodeId(mySelectedNode? mySelectedNode.id : null);
+    setMySelectedNodeId(mySelectedNode ? mySelectedNode.id : null);
     console.log("my selected node id", mySelectedNode)
 
   }, []);
@@ -3283,7 +3465,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
     if (!collaborationModeOn) return;
 
     const currentCursor = awareness.getLocalState()?.cursor || {};
-    
+
     // Only broadcast if the ID actually changed
     if (currentCursor.selectedNodeId !== mySelectedNodeId) {
       awareness.setLocalStateField("cursor", {
@@ -3346,18 +3528,18 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
 
 
     historyArray.push([{
-        type: "edge-added",
-        source: sourceNode,
-        target: targetNode,
-        edgeId: edge.id,
-        //user: cursor.name,
-        userId: myClientId,
-        user: userName,
-        timestamp: Date.now(),
-      }]);
-      console.log("ADD EDGE HISTORY", historyArray.toArray());
-      console.log("shared nodes", Array.from(nodesMap.values()))
-      console.log("shared edges",Array.from(edgesMap.values()))
+      type: "edge-added",
+      source: sourceNode,
+      target: targetNode,
+      edgeId: edge.id,
+      //user: cursor.name,
+      userId: myClientId,
+      user: userName,
+      timestamp: Date.now(),
+    }]);
+    console.log("ADD EDGE HISTORY", historyArray.toArray());
+    console.log("shared nodes", Array.from(nodesMap.values()))
+    console.log("shared edges", Array.from(edgesMap.values()))
     // für jeden Cursor? Nicht nur einmal??
     // Object.entries(cursors).map(([clientId, cursor]) => {
     //   const displayName = Number(clientId) === myClientId ? "Me" : cursor.name;
@@ -3474,6 +3656,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
           uploadDiagram={() => uploadToGitHub()}
           uploadPatternSolution={() => setIsPatternModalOpen(true)}
           openPatternSolution={() => setIsPatternImplementationOpen(true)}
+          openOpenQASM={handleOpenQASMClick}
 
           //uploadPatternSolution={() => registerAndUploadToGitHub()}
           onLoadJson={handleLoadJson}
@@ -3485,6 +3668,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
           startTour={() => { startTour(); }}
           onSaveAsTemplate={handleSaveAsTemplate}
           onManageTemplates={handleManageTemplates}
+          generateModel={() => setIsPromptModalOpen(true)}
         />
       </div>
       {<NewDiagramModal open={isLoadJsonModalOpen} onClose={cancelLoadJson} onConfirm={confirmNewDiagram} />}
@@ -3532,6 +3716,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
         tempGithubBranch={githubBranch}
         tempGithubToken={githubToken}
         userName={userName}
+        tempMistralToken={mistralToken}
       />
 
       <ManageTemplateModal
@@ -3562,6 +3747,20 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
         progress={progress}
         chartData={chartData}
       />
+
+      <PromptFlowModal
+        open={isPromptModalOpen}
+        mistralToken={mistralToken}
+        onClose={(flow) => {
+          setIsPromptModalOpen(false);
+          if (flow) loadFlow(flow);
+          setIsPromptModalOpen(false);
+        }}
+        sendToMistral={sendToMistral}
+        generateFlow={generateFlow}
+      />
+
+
 
       {patternGraph && (
         <Modal
@@ -3696,16 +3895,16 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
         >
           <ReactFlow
             ref={ref}
-            nodes={collaborationModeOn? nodesI : nodes}
-            edges={collaborationModeOn? edgesI: edges}
-            onNodesChange={collaborationModeOn? onNodesChangeSync : onNodesChange} // TODO: onNodesChange if no collab mode
+            nodes={collaborationModeOn ? nodesI : nodes}
+            edges={collaborationModeOn ? edgesI : edges}
+            onNodesChange={collaborationModeOn ? onNodesChangeSync : onNodesChange} // TODO: onNodesChange if no collab mode
             onEdgesChange={onEdgesChange} // TODO: onEdgesChangeSync for collab mode (deletion of edge)
             onNodeContextMenu={onNodeContextMenu}
             onNodeClick={(event: React.MouseEvent, node: Node) => {
               handleClick(event, node);
             }}
             onConnectEnd={onConnectEnd}
-            onConnect={collaborationModeOn? onConnectSync : onConnect} // TODO: onConnect if no collab mode
+            onConnect={collaborationModeOn ? onConnectSync : onConnect} // TODO: onConnect if no collab mode
             onPaneClick={onPaneClick}
             onClick={onClick}
             onDragOver={onDragOver}
@@ -3753,9 +3952,9 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
               )}
             </>
           )}
-            
+
             <Controls />
-            {Object.entries(cursors).length> 1 && collaborationModeOn && Object.entries(cursors).map(([clientId, cursor]) => { // TODO: only if collaborationMode false
+            {Object.entries(cursors).length > 1 && collaborationModeOn && Object.entries(cursors).map(([clientId, cursor]) => { // TODO: only if collaborationMode false
               const displayName = Number(clientId) === myClientId ? "Me" : cursor.name;
               return (
                 <div
@@ -3844,8 +4043,8 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
               domainProfileNames={allDomainProfiles.map((p) => p.name)}
               collaborationMode={collaborationModeOn}
               onCollaborationModeChange={onToggleCollaborationMode}
-              userName = {userName}
-              onUserNameChange = {onUserNameChange}
+              userName={userName}
+              onUserNameChange={onUserNameChange}
             />
 
             <MiniMap
@@ -3899,10 +4098,9 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
               zoomable={true}
               pannable={true}
             />
-
-
             <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
           </ReactFlow>
+
           {contextMenu.visible && contextMenu.nodeId && (
             <ContextMenu
               id={contextMenu.nodeId}

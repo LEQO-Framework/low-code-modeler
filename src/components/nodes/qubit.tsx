@@ -52,7 +52,7 @@ export const QubitNode = memo((node: Node) => {
     setError(false);
     setX(value);
     node.data["size"] = value;
-    updateNodeValue(node.id, "value", value);
+    updateNodeValue(node.id, "size", value);
   };
 
 
