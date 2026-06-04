@@ -88,44 +88,66 @@ export const categories: Record<string, CategoryEntry> = {
   },
 
   [consts.circuitLevelNodes]: {
-    description: "Basic gates for quantum circuits.",
+    description: "Basic blocks for quantum circuits.",
     content: {
-      Qubits: [
+      "Qubit": [
         {
-          label: "Qubit Circuit", type: consts.GateNode, icon: "qubit.png", description: "Represents a single qubit used in the circuit.", completionGuaranteed: true, compactOptions: [true, false],
+          label: "Qubit Circuit",
+          type: consts.GateNode,
+          icon: ["qubit.png", "PaletteIcon_Qubit_Beginner.png"],
+          description: "Represents a single qubit used in the circuit.",
+          completionGuaranteed: true,
+          compactOptions: [true, false],
         },
       ],
-      "Circuit Blocks": [
-        { label: "H", aliases: ["Hadamard"], type: consts.GateNode, icon: ["hadamard.png", "PaletteIcon_Hadamard_Beginner.png"], description: "Hadamard gate: puts a qubit into superposition.", completionGuaranteed: true, compactOptions: [true, false] },
-        { label: "RX(θ)", type: consts.GateNode, icon: ["RX_palette.png", "PaletteIcon_RotateX_Beginner.png"], description: "Rotates qubit around X-axis by θ radians.", completionGuaranteed: true, compactOptions: [true, false] },
-        { label: "RY(θ)", type: consts.GateNode, icon: ["RY_palette.png", "PaletteIcon_RotateY_Beginner.png"], description: "Rotates qubit around Y-axis by θ radians.", completionGuaranteed: true, compactOptions: [true, false] },
-        { label: "RZ(θ)", type: consts.GateNode, icon: ["RZ_palette.png", "PaletteIcon_RotateZ_Beginner.png"], description: "Rotates qubit around Z-axis by θ radians.", completionGuaranteed: true, compactOptions: [true, false] },
-        { label: "T", aliases: ["π/4 Phase"], type: consts.GateNode, icon: ["t.png", "PaletteIcon_T_Beginner.png"], description: "T gate: a π/4 phase shift.", completionGuaranteed: true, compactOptions: [true, false] },
-        { label: "TDG", aliases: ["T†", "T-dagger"], type: consts.GateNode, icon: ["TDG_palette.png", "PaletteIcon_TDG_Beginner.png"], description: "T† gate: inverse of the T gate.", completionGuaranteed: true, compactOptions: [true, false] },
-        { label: "X", aliases: ["Pauli-X", "NOT"], type: consts.GateNode, icon: ["pauliX.png", "PaletteIcon_X_Beginner.png"], description: "Pauli-X gate: flips the state (like a NOT gate).", completionGuaranteed: true, compactOptions: [true, false] },
+
+      "Pauli Gates": [
+        { label: "X", aliases: ["Pauli-X", "NOT"], type: consts.GateNode, icon: ["pauliX.png", "PaletteIcon_X_Beginner.png"], description: "Pauli-X gate: flips the state.", completionGuaranteed: true, compactOptions: [true, false] },
         { label: "Y", aliases: ["Pauli-Y"], type: consts.GateNode, icon: ["pauliY.png", "PaletteIcon_Y_Beginner.png"], description: "Pauli-Y gate: flips and phases the qubit state.", completionGuaranteed: true, compactOptions: [true, false] },
-        { label: "Z", aliases: ["Pauli-Z"], type: consts.GateNode, icon: ["pauliZ.png", "PaletteIcon_Z_Beginner.png"], description: "Pauli-Z gate: adds a π phase shift to |1⟩ state.", completionGuaranteed: true, compactOptions: [true, false] },
-        { label: "S", aliases: ["π/2 Phase"], type: consts.GateNode, icon: ["S_palette.png", "PaletteIcon_S_Beginner.png"], description: "S gate: a π/2 phase shift.", completionGuaranteed: true, compactOptions: [true, false] },
-        { label: "SX", aliases: ["√X", "square root of X"], type: consts.GateNode, icon: ["SX_palette.png", "PaletteIcon_SX_Beginner.png"], description: "Square root of X gate (√X).", completionGuaranteed: true, compactOptions: [true, false] },
-        { label: "SDG", aliases: ["S†", "S-dagger"], type: consts.GateNode, icon: ["SDG_palette.png", "PaletteIcon_SDG_Beginner.png"], description: "S† gate: inverse of the S gate.", completionGuaranteed: true, compactOptions: [true, false] },
-        { label: "CNOT", aliases: ["Controlled-X"], type: consts.GateNode, icon: ["CNOT_palette.png", "PaletteIcon_CNOT_Beginner.png"], description: "Controlled-X gate: flips target qubit if control is |1⟩.", completionGuaranteed: true, compactOptions: [true, false] },
-        { label: "SWAP", type: consts.GateNode, icon: ["SWAP_palette.png", "PaletteIcon_SWAP_Beginner.png"], description: "Swaps the states of two qubits.", completionGuaranteed: true, compactOptions: [true, false] },
-        { label: "CY", aliases: ["Controlled-Y"], type: consts.GateNode, icon: ["CY_palette.png", "PaletteIcon_CY_Beginner.png"], description: "Controlled-Y gate.", completionGuaranteed: true, compactOptions: [true, false] },
-        { label: "CZ", aliases: ["Controlled-Z"], type: consts.GateNode, icon: ["CZ_palette.png", "PaletteIcon_CZ_Beginner.png"], description: "Controlled-Z gate.", completionGuaranteed: true, compactOptions: [true, false] },
-        { label: "CH", aliases: ["Controlled-Hadamard"], type: consts.GateNode, icon: ["CH_palette.png", "PaletteIcon_CH_Beginner.png"], description: "Controlled-Hadamard gate.", completionGuaranteed: true, compactOptions: [true, false] },
+        { label: "Z", aliases: ["Pauli-Z"], type: consts.GateNode, icon: ["pauliZ.png", "PaletteIcon_Z_Beginner.png"], description: "Pauli-Z gate: adds phase to |1⟩ state.", completionGuaranteed: true, compactOptions: [true, false] },
+      ],
+
+      "Basis Change": [
+        { label: "H", aliases: ["Hadamard"], type: consts.GateNode, icon: ["hadamard.png", "PaletteIcon_Hadamard_Beginner.png"], description: "Creates superposition.", completionGuaranteed: true, compactOptions: [true, false] },
+      ],
+
+      "Phase Gates": [
+        { label: "S", aliases: ["π/2 Phase"], type: consts.GateNode, icon: ["S_palette.png", "PaletteIcon_S_Beginner.png"], description: "S gate phase shift.", completionGuaranteed: true, compactOptions: [true, false] },
+        { label: "SDG", aliases: ["S†"], type: consts.GateNode, icon: ["SDG_palette.png", "PaletteIcon_SDG_Beginner.png"], description: "Inverse S gate.", completionGuaranteed: true, compactOptions: [true, false] },
+        { label: "T", aliases: ["π/4 Phase"], type: consts.GateNode, icon: ["t.png", "PaletteIcon_T_Beginner.png"], description: "T gate phase shift.", completionGuaranteed: true, compactOptions: [true, false] },
+        { label: "TDG", aliases: ["T†"], type: consts.GateNode, icon: ["TDG_palette.png", "PaletteIcon_TDG_Beginner.png"], description: "Inverse T gate.", completionGuaranteed: true, compactOptions: [true, false] },
+      ],
+
+      "Rotation Gates": [
+        { label: "RX(θ)", type: consts.GateNode, icon: ["RX_palette.png", "PaletteIcon_RotateX_Beginner.png"], description: "X-axis rotation.", completionGuaranteed: true, compactOptions: [true, false] },
+        { label: "RY(θ)", type: consts.GateNode, icon: ["RY_palette.png", "PaletteIcon_RotateY_Beginner.png"], description: "Y-axis rotation.", completionGuaranteed: true, compactOptions: [true, false] },
+        { label: "RZ(θ)", type: consts.GateNode, icon: ["RZ_palette.png", "PaletteIcon_RotateZ_Beginner.png"], description: "Z-axis rotation.", completionGuaranteed: true, compactOptions: [true, false] },
+      ],
+
+      "Two-Qubit Gates": [
+        { label: "CNOT", aliases: ["Controlled-X"], type: consts.GateNode, icon: ["CNOT_palette.png", "PaletteIcon_CNOT_Beginner.png"], description: "Controlled NOT.", completionGuaranteed: true, compactOptions: [true, false] },
+        { label: "CY", aliases: ["Controlled-Y"], type: consts.GateNode, icon: ["CY_palette.png", "PaletteIcon_CY_Beginner.png"], description: "Controlled Y gate.", completionGuaranteed: true, compactOptions: [true, false] },
+        { label: "CZ", aliases: ["Controlled-Z"], type: consts.GateNode, icon: ["CZ_palette.png", "PaletteIcon_CZ_Beginner.png"], description: "Controlled Z gate.", completionGuaranteed: true, compactOptions: [true, false] },
+        { label: "SWAP", type: consts.GateNode, icon: ["SWAP_palette.png", "PaletteIcon_SWAP_Beginner.png"], description: "Swaps qubits.", completionGuaranteed: true, compactOptions: [true, false] },
+        { label: "CH", aliases: ["Controlled-H"], type: consts.GateNode, icon: ["CH_palette.png", "PaletteIcon_CH_Beginner.png"], description: "Controlled Hadamard.", completionGuaranteed: true, compactOptions: [true, false] },
         { label: "CRX(θ)", aliases: ["Controlled-RX(θ)"], type: consts.GateNode, icon: ["CRX_palette.png", "PaletteIcon_CRX_Beginner.png"], description: "Controlled rotation by θ around X-axis.", completionGuaranteed: true, compactOptions: [true, false] },
         { label: "CRY(θ)", aliases: ["Controlled-RY(θ)"], type: consts.GateNode, icon: ["CRY_palette.png", "PaletteIcon_CRY_Beginner.png"], description: "Controlled rotation by θ around Y-axis.", completionGuaranteed: true, compactOptions: [true, false] },
         { label: "CRZ(θ)", aliases: ["Controlled-RZ(θ)"], type: consts.GateNode, icon: ["CRZ_palette.png", "PaletteIcon_CRZ_Beginner.png"], description: "Controlled rotation by θ around Z-axis.", completionGuaranteed: true, compactOptions: [true, false] },
+        { label: "CU", aliases: ["Controlled-U"], type: consts.GateNode, icon: ["CU_palette.png", "PaletteIcon_CU_Beginner.png"], description: "Controlled U: applies U if control is |1⟩.", completionGuaranteed: true, compactOptions: [true, false] },
+      ],
+      "Multi-Control Blocks": [
         { label: "Toffoli", aliases: ["CCNOT", "Controlled-Controlled-NOT"], type: consts.GateNode, icon: ["Toffoli_palette.png", "PaletteIcon_Toffoli_Beginner.png"], description: "CCNOT: flips target if both controls are |1⟩.", completionGuaranteed: true, compactOptions: [true, false] },
-        // { label: "Controlled-U", type: consts.GateNode, icon: ["Controlled-U_palette.png", "PaletteIcon_Controlled-U_Beginner.png"], description: "Controlled-U: applies U if control is |1⟩.", completionGuaranteed: true, compactOptions: [true, false] },
         { label: "CSWAP", aliases: ["Fredkin"], type: consts.GateNode, icon: ["CSWAP_palette.png", "PaletteIcon_CSWAP_Beginner.png"], description: "Controlled SWAP: swaps two qubits if control is |1⟩.", completionGuaranteed: true, compactOptions: [true, false] },
-        { label: "CU", aliases: ["Controlled-U"], type: consts.GateNode, icon: ["CU_palette.png", "CU_palette_beginner.png"], description: "Controlled U: applies U if control is |1⟩.", completionGuaranteed: true, compactOptions: [true, false] },
-        { label: "QFT", aliases: ["Quantum Fourier Transform"], type: consts.QFTNode, icon: ["QFT_palette.png", "QFT_palette.png"], description: "Applies the Quantum Fourier Transform.", completionGuaranteed: true, compactOptions: [true, false] },
-        { label: "Inverse QFT", aliases: ["Inverse Quantum Fourier Transform"], type: consts.InverseQFTNode, icon: ["InverseQFT_palette.png", "InverseQFT_palette.png"], description: "Applies the Inverse of the Quantum Fourier Transform.", completionGuaranteed: true, compactOptions: [true, false] },
-        { label: "Splitter", type: consts.SplitterNode, icon: "Splitter_palette.png", description: "Splits a quantum register into individual qubits.", completionGuaranteed: true, compactOptions: [true, false] },
-        { label: "Merger", type: consts.MergerNode, icon: "Merger_palette.png", description: "Merges multiple qubits into one register.", completionGuaranteed: true, compactOptions: [true, false] },
-      ]
+      ],
+      "Algorithmic Blocks": [
+        { label: "QFT", aliases: ["Quantum Fourier Transform"], type: consts.QFTNode, icon: ["QFT_palette.png"], description: "Quantum Fourier Transform.", completionGuaranteed: true, compactOptions: [true, false] },
+        { label: "Inverse QFT", aliases: ["IQFT"], type: consts.InverseQFTNode, icon: ["InverseQFT_palette.png"], description: "Inverse QFT.", completionGuaranteed: true, compactOptions: [true, false] },
+      ],
 
+      "Utilities": [
+        { label: "Splitter", type: consts.SplitterNode, icon: "Splitter_palette.png", description: "Splits register.", completionGuaranteed: true, compactOptions: [true, false] },
+        { label: "Merger", type: consts.MergerNode, icon: "Merger_palette.png", description: "Merges qubits.", completionGuaranteed: true, compactOptions: [true, false] },
+      ],
     },
   },
 
@@ -156,64 +178,65 @@ export const categories: Record<string, CategoryEntry> = {
     content: {
       "Quantum Operators": {
         "Oracles & Algorithms": [
-        {
-          label: "Deutsch-Jozsa", 
-          type: consts.DeutschJozsaNode,
-          icon: "PaletteIcon_DeutschJozsa.png",
-          description: "Evaluates if a hidden boolean function is constant or balanced.", 
-          completionGuaranteed: true,
-          compactOptions: [false,true]
-        },
-        { 
-          label: "Grover Oracle", 
-          type: consts.UniversalOracleNode,
-          icon: "PaletteIcon_Oracle.png",
-          description: "Arbitrary Oracle defined by a Truth Table for Boolean or Phase evaluation.", 
-          completionGuaranteed: true,
-          compactOptions: [false, true]
-        },
-        { 
-          label: "Grover Diffuser", 
-          type: consts.GroverDiffuserNode,
-          icon: "PaletteIcon_GroverDiffuser.png",
-          description: "Applies inversion about the mean for amplitude amplification.", 
-          completionGuaranteed: true,
-          compactOptions: [false, true]
-        },
-        { 
-          label: "Grover's Search Algorithm", 
-          type: consts.GroverNode,
-          icon: "PaletteIcon_GroverAlg.png",
-          description: "Complete Grover search with integrated Oracle and Diffuser.", 
-          completionGuaranteed: true,
-          compactOptions: [false, true]
-        },
-        {
-          label: "QAOA Ansatz",
-          type: consts.QAOANode,
-          icon: "PaletteIcon_QAOA.png",
-          description: "Generates a parameterized Quantum Approximate Optimization Algorithm (QAOA) circuit for a given graph.",
-          completionGuaranteed: true,
-          compactOptions: [false],
-          data: {
+          {
+            label: "Deutsch-Jozsa",
+            type: consts.DeutschJozsaNode,
+            icon: "PaletteIcon_DeutschJozsa.png",
+            description: "Evaluates if a hidden boolean function is constant or balanced.",
+            completionGuaranteed: true,
+            compactOptions: [false, true]
+          },
+          {
+            label: "Grover Oracle",
+            type: consts.UniversalOracleNode,
+            icon: "PaletteIcon_Oracle.png",
+            description: "Arbitrary Oracle defined by a Truth Table for Boolean or Phase evaluation.",
+            completionGuaranteed: true,
+            compactOptions: [false, true]
+          },
+          {
+            label: "Grover Diffuser",
+            type: consts.GroverDiffuserNode,
+            icon: "PaletteIcon_GroverDiffuser.png",
+            description: "Applies inversion about the mean for amplitude amplification.",
+            completionGuaranteed: true,
+            compactOptions: [false, true]
+          },
+          {
+            label: "Grover's Search Algorithm",
+            type: consts.GroverNode,
+            icon: "PaletteIcon_GroverAlg.png",
+            description: "Complete Grover search with integrated Oracle and Diffuser.",
+            completionGuaranteed: true,
+            compactOptions: [false, true]
+          },
+          {
             label: "QAOA Ansatz",
-            p: 1,
-            problem: "MaxCut",
-            optimizer: "COBYLA",
-            outputIdentifier: ""
-          }
-        },
-      ],
-      "Arithmetic & Logic": [
-        { label: consts.quantumLabel + consts.arithmeticOperatorLabel, type: consts.OperatorNode, icon: ["PaletteIcon_ArithmeticOperator.png", "PaletteIcon_Ancilla_ArithmeticOperator.png"], description: "Performs quantum arithmetic (add, subtract, etc.).", completionGuaranteed: true, compactOptions: [true, false] },
-        { label: consts.quantumLabel + consts.bitwiseOperatorLabel, type: consts.OperatorNode, icon: ["PaletteIcon_BitwiseOperator.png", "PaletteIcon_Ancilla_BitwiseOperator.png"], description: "Applies quantum bitwise operations.", completionGuaranteed: true, compactOptions: [true, false] },
-        { label: consts.quantumLabel + consts.comparisonOperatorLabel, type: consts.OperatorNode, icon: ["PaletteIcon_ComparisonOperator.png", "PaletteIcon_Ancilla_ComparisonOperator.png"], description: "Performs quantum comparisons (e.g., equality).", completionGuaranteed: false, compactOptions: [true, false] },
-        { label: consts.quantumLabel + consts.minMaxOperatorLabel, type: consts.OperatorNode, icon: ["PaletteIcon_MinMaxOperator.png", "PaletteIcon_Ancilla_MinMaxOperator.png"], description: "Finds min or max between quantum values.", completionGuaranteed: false, compactOptions: [true, false] },
-        // { label: "Grover", type: consts.OperatorNode, icon: ["PaletteIcon_Grover.png", "PaletteIcon_Ancilla_Grover.png"],description: "Applies Grover’s algorithm to amplify the probability of marked states in an unstructured search space.", completionGuaranteed: false, compactOptions: [true, false]}
-        // { label: "QFT", type: consts.OperatorNode, icon: ["PaletteIcon_QFT.png", "PaletteIcon_Ancilla_QFT.png"], description: "Applies the Quantum Fourier Transform to map quantum states into the frequency domain." completionGuaranteed: false, compactOptions: [true, false]},
-        // { label: "QPE", type: consts.OperatorNode, icon: ["PaletteIcon_QPE.png", "PaletteIcon_Ancilla_QPE.png"], description: "Estimates the phase (eigenvalue) of a unitary operator given an eigenstate.", completionGuaranteed: false, compactOptions: [true, false] }
-        // { label: "VQE", type: consts.OperatorNode, icon: ["PaletteIcon_VQE.png", "PaletteIcon_Ancilla_VQE.png"], description: "Hybrid quantum-classical algorithm that minimizes an energy expectation value using a parameterized quantum circuit.", completionGuaranteed: false, compactOptions: [true, false] }
-      ]},
+            type: consts.QAOANode,
+            icon: "PaletteIcon_QAOA.png",
+            description: "Generates a parameterized Quantum Approximate Optimization Algorithm (QAOA) circuit for a given graph.",
+            completionGuaranteed: true,
+            compactOptions: [false],
+            data: {
+              label: "QAOA Ansatz",
+              p: 1,
+              problem: "MaxCut",
+              optimizer: "COBYLA",
+              outputIdentifier: ""
+            }
+          },
+        ],
+        "Arithmetic & Logic": [
+          { label: consts.quantumLabel + consts.arithmeticOperatorLabel, type: consts.OperatorNode, icon: ["PaletteIcon_ArithmeticOperator.png", "PaletteIcon_Ancilla_ArithmeticOperator.png"], description: "Performs quantum arithmetic (add, subtract, etc.).", completionGuaranteed: true, compactOptions: [true, false] },
+          { label: consts.quantumLabel + consts.bitwiseOperatorLabel, type: consts.OperatorNode, icon: ["PaletteIcon_BitwiseOperator.png", "PaletteIcon_Ancilla_BitwiseOperator.png"], description: "Applies quantum bitwise operations.", completionGuaranteed: true, compactOptions: [true, false] },
+          { label: consts.quantumLabel + consts.comparisonOperatorLabel, type: consts.OperatorNode, icon: ["PaletteIcon_ComparisonOperator.png", "PaletteIcon_Ancilla_ComparisonOperator.png"], description: "Performs quantum comparisons (e.g., equality).", completionGuaranteed: false, compactOptions: [true, false] },
+          { label: consts.quantumLabel + consts.minMaxOperatorLabel, type: consts.OperatorNode, icon: ["PaletteIcon_MinMaxOperator.png", "PaletteIcon_Ancilla_MinMaxOperator.png"], description: "Finds min or max between quantum values.", completionGuaranteed: false, compactOptions: [true, false] },
+          // { label: "Grover", type: consts.OperatorNode, icon: ["PaletteIcon_Grover.png", "PaletteIcon_Ancilla_Grover.png"],description: "Applies Grover’s algorithm to amplify the probability of marked states in an unstructured search space.", completionGuaranteed: false, compactOptions: [true, false]}
+          // { label: "QFT", type: consts.OperatorNode, icon: ["PaletteIcon_QFT.png", "PaletteIcon_Ancilla_QFT.png"], description: "Applies the Quantum Fourier Transform to map quantum states into the frequency domain." completionGuaranteed: false, compactOptions: [true, false]},
+          // { label: "QPE", type: consts.OperatorNode, icon: ["PaletteIcon_QPE.png", "PaletteIcon_Ancilla_QPE.png"], description: "Estimates the phase (eigenvalue) of a unitary operator given an eigenstate.", completionGuaranteed: false, compactOptions: [true, false] }
+          // { label: "VQE", type: consts.OperatorNode, icon: ["PaletteIcon_VQE.png", "PaletteIcon_Ancilla_VQE.png"], description: "Hybrid quantum-classical algorithm that minimizes an energy expectation value using a parameterized quantum circuit.", completionGuaranteed: false, compactOptions: [true, false] }
+        ]
+      },
       "Classical Operators": [
         { label: consts.classicalLabel + consts.arithmeticOperatorLabel, type: consts.ClassicalOperatorNode, icon: "PaletteIcon_Classical_ArithmeticOperator.png", description: "Performs classical arithmetic operations.", completionGuaranteed: false, compactOptions: [true, false] },
         { label: consts.classicalLabel + consts.bitwiseOperatorLabel, type: consts.ClassicalOperatorNode, icon: "PaletteIcon_Classical_BitwiseOperator.png", description: "Applies classical bitwise logic (AND, OR, etc.).", completionGuaranteed: false, compactOptions: [true, false] },
