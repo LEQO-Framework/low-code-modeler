@@ -776,7 +776,30 @@ If none apply, return { "algorithms": [] }.
         },
       }));
 
-      setHistory([...generationItems]);
+      const response = await fetch(`${lowcodeBackendEndpoint}/results`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (!response.ok) {
+        console.error("Failed to fetch history:", response.statusText);
+        return;
+      }
+
+      const data: HistoryItem[] = await response.json();
+      console.log(data)
+      const executionItems: HistoryItem[] = data.map((job: any) => ({
+        uuid: job.uuid,
+        name: job.name,
+        description: job.description,
+        status: job.status,
+        created: job.created,
+        type: "execution",
+        links: job.links,
+      }));
+      console.log(data)
+
+      setHistory([...generationItems, ...executionItems]);
     } catch (err) {
       console.error("Error fetching history:", err);
     } finally {
@@ -2508,7 +2531,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     setSelectedJob(job);
     setStateTest(2);
     setIsPromptModalOpen(true);
-    
+
   };
 
   const handleClosePromptModal = () => {

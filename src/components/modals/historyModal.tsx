@@ -16,7 +16,7 @@ export interface HistoryItem {
     id: string;
     type: string;
     label: string;
-    question?: string; // Add this line
+    question?: string;
   }>;
   links?: {
     request?: string;
@@ -57,6 +57,12 @@ export const HistoryModal = ({
   const [selectedJob, setSelectedJob] = useState<HistoryItem | null>(null);
   const [isPromptModalOpen, setIsPromptModalOpen] = useState(false);
 
+  const [noMeasurementMap, setNoMeasurementMap] = useState<Record<string, boolean>>({});
+  const [loadingMap, setLoadingMap] = useState<Record<string, boolean>>({});
+  const [compilationTargets, setCompilationTargets] = useState<Record<string, string | null>>({});
+
+  const containsMeasurement = (qasm: string) => /\bmeasure\b/i.test(qasm);
+
   const createJsonLink = (data: any) => {
     if (!data) return null;
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
@@ -76,6 +82,18 @@ export const HistoryModal = ({
     }
   };
 
+  useEffect(() => {
+  const initLoading: Record<string, boolean> = {};
+  const initTargets: Record<string, string | null> = {};
+
+  history.forEach(item => {
+    initLoading[item.uuid] = false;
+    initTargets[item.uuid] = "circuit"; // or workflow based on backend
+  });
+
+  setLoadingMap(initLoading);
+  setCompilationTargets(initTargets);
+}, [history]);
   const handleMissingValuesSubmitted = async (jobId: string, values: Record<string, any>) => {
     try {
       const response = await fetch(`http://localhost:3000/job/${jobId}/submit-missing-values`, {
@@ -103,7 +121,7 @@ export const HistoryModal = ({
       showToast(`Failed to submit missing values: ${error.message}`, "error");
     }
   };
-
+console.log(history)
 
   return (
     <>
@@ -146,6 +164,104 @@ export const HistoryModal = ({
           </div>
 
           <div className="max-h-[70vh] overflow-y-auto overflow-x-auto">
+            {activeTab === "execution" && (<table className="min-w-full table-auto border border-gray-300">
+          <thead className="bg-gray-100">
+            <tr>
+              <th className="px-4 py-2 border">Name</th>
+              <th className="px-4 py-2 border">Description</th>
+              <th className="px-4 py-2 border">Model File</th>
+              <th className="px-4 py-2 border">Created</th>
+              <th className="px-4 py-2 border">Result Status</th>
+              <th className="px-4 py-2 border">Result File</th>
+              <th className="px-4 py-2 border">Execute</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {history.filter((item) => item.type === "execution").map((item, index) => {
+              const noMeasurement = noMeasurementMap[item.uuid];
+              const loading = loadingMap[item.uuid];
+              const target = compilationTargets[item.uuid];
+
+              return (
+                <tr key={item.uuid || index} className="hover:bg-gray-50">
+                  <td className="px-4 py-2 border">{item.name}</td>
+                  <td className="px-4 py-2 border max-w-xs">
+                    <div
+                      className="truncate"
+                      title={item.description}
+                    >
+                      {item.description}
+                    </div>
+                  </td>
+                  <td className="px-4 py-2 border">
+                    {item.links?.request ? (
+                      <span
+                        className="text-blue-600 underline cursor-pointer"
+                        onClick={() => window.open(item.links.request!, "_blank")}
+                      >
+                        Open
+                      </span>
+                    ) : (
+                      <span className="text-gray-400">—</span>
+                    )}
+                  </td>
+
+                  <td className="px-4 py-2 border">{new Date(item.created).toLocaleString()}</td>
+                  <td className="px-4 py-2 border">{item.status}</td>
+
+                  <td className="px-4 py-2 border">
+                    {item.links?.result ? (
+                      <span
+                        className="text-blue-600 underline cursor-pointer"
+                        onClick={() => window.open(item.links.result!, "_blank")}
+                      >
+                        Open
+                      </span>
+                    ) : (
+                      <span className="text-gray-400">—</span>
+                    )}
+                  </td>
+
+                  <td className="px-4 py-2 border text-center">
+                    {item.status.toLowerCase() === "failed" ? (
+                      <span className="text-gray-400">—</span>
+                    ) : loading ? (
+                      <span className="text-gray-400">…</span>
+                    ) : noMeasurement ? (
+                      <span
+                        className="text-yellow-600 cursor-help"
+                        title="This OpenQASM program contains no measurements. Execution would produce no meaningful results."
+                      >
+                        ⚠️
+                      </span>
+                    ) : (
+                      <button
+                        className="btn btn-primary"
+                        onClick={() => onExecute(item)}
+                        disabled={target === undefined}
+                      >
+                        {target === undefined
+                          ? "Loading..."
+                          : target === "workflow"
+                            ? "Deploy Workflow"
+                            : "Execute Circuit"}
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+
+            {history.length === 0 && (
+              <tr>
+                <td colSpan={10} className="text-center px-4 py-2">
+                  No history available
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>)}
             {activeTab === "generation" && (
               <table className="min-w-full table-auto border border-gray-300">
                 <thead className="bg-gray-100">
@@ -188,15 +304,6 @@ export const HistoryModal = ({
                             <>
                               <button
                                 className="btn btn-primary"
-                                onClick={() => {
-                                  const url = createJsonLink(item.result);
-                                  if (url) window.open(url, "_blank");
-                                }}
-                              >
-                                View Model
-                              </button>
-                              <button
-                                className="btn btn-secondary"
                                 onClick={() => handleLoadModel(item)}
                               >
                                 Load Model
