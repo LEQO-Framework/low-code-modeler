@@ -312,9 +312,10 @@ function App() {
 
     // 🚫 Filter unauthorized changes safely
     const allowedChanges = changes.filter((change) => {
-      if (!hasId(change)) return true; // allow changes without id
+      if (!hasId(change)) return true; // Always allow changes without an explicit ID
 
       const owner = lockMap.get(change.id);
+      // FIX: Ensure that if you are the owner, or if there is no owner, you can modify it
       return !owner || owner === myClientId;
     });
 
@@ -325,6 +326,7 @@ function App() {
 
     // 🧠 Apply changes locally
     const updatedEdges = applyNodeChanges(allowedChanges, edgesI);
+    const activeName = cursors[myClientId]?.name || userName || "unknown";
     setEdgesI(updatedEdges);
 
     // 🔁 Sync with React Flow
@@ -354,8 +356,8 @@ function App() {
           type: "node-deleted",
           nodeId: nodeId,
           label: nodeLabel,
-          userId: myClientId,
-          user: userName,
+          userId: activeName,
+          user: activeName,
           timestamp: Date.now(),
         }]);
         console.log("REMOVE NODE HISTORY", historyArray.toArray())
@@ -2003,7 +2005,9 @@ If none apply, return { "algorithms": [] }.
           };
 
 
+
           setNodes(newNode);
+           const activeName = cursors[myClientId]?.name || userName || "unknown";
           if (collaborationModeOn) { //only add node to shared nodesMap if collaboration mode is on
             console.log("ON DROP: collab mode on", collaborationModeOn)
             nodesMap.set(newNode.id, newNode);
@@ -2017,8 +2021,8 @@ If none apply, return { "algorithms": [] }.
               label: newNode.data?.label,
               //user: Number(clientId) === myClientId ? "Me" : userName,
               //user: userName,
-              userId: myClientId,
-              user: userName,
+              userId: activeName,
+              user: activeName,
               timestamp: Date.now(),
             }]);
 
@@ -2057,7 +2061,7 @@ If none apply, return { "algorithms": [] }.
 
       //setContextMenu((prev) => ({ ...prev, left: event.clientX, top: event.clientY,}));
     },
-    [reactFlowInstance, setNodes, currentCategories, collaborationModeOn],
+    [reactFlowInstance, setNodes, currentCategories, collaborationModeOn, cursors],
   );
 
   const onNodesDelete = useCallback(() => {
@@ -2686,18 +2690,23 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
 
   const [mySelectedNodeId, setMySelectedNodeId] = useState<string | null>(null);
 
-  const handleClick = React.useCallback(
-    (event: React.MouseEvent, node: Node) => {
-      // Prevent the default action (if any)
-      event.preventDefault();
 
-      // Set the selected node
-      setSelectedNode(node);
-      setMySelectedNodeId(node.id);
+  const handleClick = useCallback((event: React.MouseEvent, node: Node) => {
+    event.preventDefault();
 
-    },
-    [setSelectedNode, setMySelectedNodeId],
-  );
+    // Set the selected node
+    setSelectedNode(node);
+    setMySelectedNodeId(node.id);
+    if (!collaborationModeOn) return;
+
+    // Add the clicked node ID to your current local locks list
+    const currentLocks = awareness.getLocalState()?.locks?.nodeIds || [];
+    if (!currentLocks.includes(node.id)) {
+      awareness.setLocalStateField("locks", {
+        nodeIds: [...currentLocks, node.id]
+      });
+    }
+  }, [collaborationModeOn, setSelectedNode, setMySelectedNodeId]);
 
   const [modeledDiagram, setModeledDiagram] = useState(null);
 
@@ -2922,13 +2931,20 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
   }
     , [reactFlowInstance, helperLines, nodes, setContextMenu]);
 
+
   const onPaneClick = useCallback(() => {
+    if (!collaborationModeOn) return;
+
+    // Clear all your node locks when clicking the canvas background
+    awareness.setLocalStateField("locks", {
+      nodeIds: []
+    });
     setMenu(null);
     setContextMenu((prev) => ({ ...prev, visible: false })); // contextMenu disappears when clicking on pane
     setSelectedNode(null);
     setMySelectedNodeId(null);
     console.log("reset");
-  }, [setMenu, setContextMenu, setSelectedNode, setMySelectedNodeId]);
+  }, [collaborationModeOn]);
 
   const onClick = useCallback(() => {
     setContextMenu((prev) => ({ ...prev, visible: false })); // contextMenu disappears when clicking anywhere in canvas (but not other panels)
@@ -3351,6 +3367,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
 
   }
 
+
   const onNodesChangeSync = useCallback((changes: NodeChange[]) => {
     console.log("Incoming changes:", changes);
 
@@ -3388,7 +3405,8 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
     onNodesChange(allowedChanges);
     // get user name (from cursors) for history
     //const clientUserName = cursors[myClientId]?.name || "unknown";
-    // 🔥 Handle deletions
+    // Handle deletions
+    const activeName = cursors[myClientId]?.name || userName || "unknown";
     allowedChanges.forEach((change) => {
       if ((change.type === "remove" || change.type === "reset") && hasId(change)) {
         console.log("NODES MAP", Array.from(nodesMap.values()))
@@ -3411,7 +3429,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
           nodeId: nodeId,
           label: nodeLabel,
           userId: myClientId,
-          user: userName,
+          user: activeName,
           timestamp: Date.now(),
         }]);
         console.log("REMOVE NODE HISTORY", historyArray.toArray())
@@ -3420,7 +3438,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
       }
     });
 
-  }, [nodesI, awareness, myClientId]);
+  }, [nodesI, awareness, myClientId, cursors]);
 
 
   function hasId(
@@ -3561,7 +3579,9 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
     // });
 
 
-  }, [awareness, myClientId]);
+  }, [awareness, myClientId, cursors
+
+  ]);
 
   return (
     <>
