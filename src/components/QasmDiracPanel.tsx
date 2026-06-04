@@ -1006,7 +1006,7 @@ export function QasmDiracPanel(props: Props) {
   }
 
   const terms = fullResult?.terms ?? [];
-  const isPartial = effectiveSelected.length < numQubits || numQubits === 1;
+  const isPartial = effectiveSelected.length < numQubits;
 
   return (
     <div className="rounded-xl border bg-white flex flex-col gap-3 p-4 max-h-[70vh] overflow-y-auto">
@@ -1017,7 +1017,7 @@ export function QasmDiracPanel(props: Props) {
         <div className="flex items-center gap-2">
           {fullResult && (
             <span className="text-xs text-gray-400">
-             {numQubits} {numQubits === 1 ? "qubit" : "qubits"} · {terms.length} {terms.length === 1 ? "Term" : "Terms"}
+             {numQubits} {numQubits === 1 ? "Qubit" : "Qubits"} · {terms.length} {terms.length === 1 ? "Term" : "Terms"}
             </span>
           )}
           {terms.length > 0 && (

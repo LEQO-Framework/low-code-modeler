@@ -158,7 +158,7 @@ export const CustomPanel = ({
               onClick={() => setActiveTab("qasm")}
               className={`flex-1 px-3 py-2 text-xs font-medium transition-colors ${
                 activeTab === "qasm"
-                  ? "border-b-2 border-orange-500 text-orange-600 bg-white"
+                  ? "border-b-2 border-blue-500 text-blue-600 bg-white"
                   : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
               }`}
             >
@@ -185,17 +185,9 @@ export const CustomPanel = ({
           {/* Toolbar */}
           <div className="flex-shrink-0 flex items-center justify-between px-2 pt-2 pb-1 gap-2 flex-wrap">
             <span className="text-xs text-gray-400">
-              {qasmCode?.trim() ? "QASM from backend" : "No QASM available yet"}
+              {qasmCode?.trim() ? "OpenQASM" : "No OpenQASM available yet"}
             </span>
             <div className="flex gap-1.5">
-              <button
-                onClick={onSendToBackend}
-                disabled={!qasmEditorCode.trim()}
-                className="text-xs px-2.5 py-1 rounded-full border border-blue-300 hover:bg-blue-50 text-blue-600 transition-colors disabled:opacity-40"
-                title="Send to backend"
-              >
-                ▶ Run
-              </button>
               <button
                 onClick={() => {
                   setQasmApplyError(null);
@@ -209,24 +201,17 @@ export const CustomPanel = ({
                     setNodes(newNodes);
                     setEdges(newEdges);
                     setQasmApplySuccess(true);
+                    onSendToBackend()
                     setTimeout(() => setQasmApplySuccess(false), 2000);
                   } catch (e) {
                     setQasmApplyError(e instanceof Error ? e.message : "Parse error");
                   }
                 }}
                 disabled={!qasmEditorCode.trim()}
-                className="text-xs px-2.5 py-1 rounded-full border border-green-300 hover:bg-green-50 text-green-600 transition-colors disabled:opacity-40"
-                title="Apply QASM to canvas"
+                className="text-xs px-2.5 py-1 rounded-full border border-blue-300 hover:bg-blue-300 text-blue-600 transition-colors disabled:opacity-40"
+                title="Apply OpenQASM to canvas"
               >
                 ↙ Apply to Canvas
-              </button>
-              <button
-                onClick={() => { setQasmEditorCode(qasmCode ?? ""); setQasmApplyError(null); }}
-                disabled={!qasmCode?.trim()}
-                className="text-xs px-2.5 py-1 rounded-full border border-gray-300 hover:bg-gray-50 text-gray-500 transition-colors disabled:opacity-40"
-                title="Reset to backend QASM"
-              >
-                ↺ Reset
               </button>
             </div>
           </div>
@@ -240,14 +225,14 @@ export const CustomPanel = ({
               ✓ Applied to canvas
             </div>
           )}
-          <div className="flex-1 overflow-hidden mx-2 mb-2 rounded border border-gray-200 bg-gray-900 relative">
+          <div className="flex-1 overflow-hidden mx-2 mb-2 rounded border border-gray-200 relative">
             <textarea
               value={qasmEditorCode}
               onChange={(e) => { setQasmEditorCode(e.target.value); setQasmApplyError(null); }}
               spellCheck={false}
-              className="w-full h-full resize-none p-3 font-mono text-xs leading-relaxed bg-transparent text-gray-100 outline-none"
+              className="w-full h-full resize-none p-3 font-mono text-xs leading-relaxed bg-transparent text-black-100 outline-none"
               placeholder="// QASM code will appear here after backend call&#10;// You can also write QASM directly&#10;OPENQASM 2.0;&#10;qreg q[2];&#10;h q[0];&#10;cx q[0],q[1];"
-              style={{ caretColor: "white" }}
+              style={{ caretColor: "black" }}
             />
           </div>
         </div>
