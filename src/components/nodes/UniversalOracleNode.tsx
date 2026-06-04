@@ -7,17 +7,19 @@ import { motion } from "framer-motion";
 import OutputPort from "../utils/outputPort"; 
 import { AlertCircle } from "lucide-react";
 import { quantumConstructColor } from "@/constants";
+import { awareness } from "@/yjs"; // Ensure this import points to your Yjs awareness configuration
 
 const selector = (state: any) => ({
   updateNodeValue: state.updateNodeValue,
   nodes: state.nodes,
   edges: state.edges,
   setSelectedNode: state.setSelectedNode,
+  experienceLevel: state.experienceLevel
 });
 
 export const UniversalOracleNode = memo((node: Node) => {
   const { id, data, selected } = node;
-  const { updateNodeValue, nodes, edges, setSelectedNode } = useStore(selector, shallow);
+  const { updateNodeValue, nodes, edges, setSelectedNode, experienceLevel } = useStore(selector, shallow);
 
   const [mode, setMode] = useState(data.mode || "phase");
   const [targetStates, setTargetStates] = useState(data.targetStates || "");
@@ -26,6 +28,38 @@ export const UniversalOracleNode = memo((node: Node) => {
   const [outputs, setOutputs] = useState(data.outputs || []);
   const [outputIdentifierError, setOutputIdentifierError] = useState(false);
   const [sizeError, setSizeError] = useState(false);
+
+  // Dynamic user role tracking states
+  const [mixedView, setMixedView] = useState(false);
+  const [hasPioneerUser, setHasPioneerUser] = useState(false);
+  const [hasExplorerUser, setHasExplorerUser] = useState(false);
+
+  // Monitor room workspace users and roles
+  useEffect(() => {
+    const checkUserRoles = () => {
+      const states = awareness.getStates();
+      let hasPioneer = false;
+      let hasExplorer = false;
+
+      states.forEach((state: any) => {
+        if (state.cursor && state.cursor.role) {
+          if (state.cursor.role === "pioneer") hasPioneer = true;
+          if (state.cursor.role === "explorer") hasExplorer = true;
+        }
+      });
+
+      setHasPioneerUser(hasPioneer);
+      setHasExplorerUser(hasExplorer);
+      setMixedView(hasPioneer && hasExplorer);
+    };
+
+    checkUserRoles();
+    awareness.on("change", checkUserRoles);
+
+    return () => {
+      awareness.off("change", checkUserRoles);
+    };
+  }, []);
 
   const getRegisterSize = (currentNodeId: string, visited = new Set<string>()): number => {
     if (visited.has(currentNodeId)) return 3;
@@ -79,7 +113,8 @@ export const UniversalOracleNode = memo((node: Node) => {
         <div
           className={cn(
             "w-[320px] bg-white border border-solid border-gray-700 shadow-md relative",
-            selected && "border-blue-500"
+            selected && "border-blue-500",
+            mixedView && "border-purple-400"
           )}
           style={{ height: "420px" }}
         >
@@ -102,9 +137,21 @@ export const UniversalOracleNode = memo((node: Node) => {
                 className="w-[40px] h-[40px] object-contain flex-shrink-0"
               />
               <div className="h-full w-[1px] bg-black mx-2" />
-              <span className="font-semibold leading-none" style={{ paddingLeft: '60px' }}>
-                Universal Oracle
-              </span>
+              <div className="flex flex-col justify-center pl-2 leading-tight select-none w-full">
+                {mixedView ? (
+                  <span className="font-semibold text-xs text-blue-900 block">
+                    P: Universal Oracle / E: Mark the Target(s)
+                  </span>
+                ) : experienceLevel === "explorer" ? (
+                  <span className="font-semibold text-sm">
+                    Mark the Target(s)
+                  </span>
+                ) : (
+                  <span className="font-semibold text-sm">
+                    Universal Oracle
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 

@@ -809,7 +809,8 @@ If none apply, return { "algorithms": [] }.
         x: 0,
         y: 0,
         color: color,
-        name: randomUsername
+        name: randomUsername,
+        role: experienceLevel
       });
 
       awareness.setLocalStateField("locks", {
@@ -824,7 +825,20 @@ If none apply, return { "algorithms": [] }.
 
   }, [collaborationModeOn]);
 
+  // Sync local Zustand store changes to Yjs Awareness state fields
+  useEffect(() => {
+    if (!awareness) return;
 
+    const currentLocalState = awareness.getLocalState();
+    const existingCursor = currentLocalState?.cursor || {};
+
+    awareness.setLocalStateField("cursor", {
+      ...existingCursor,
+      // Normalize to lowercase strings to eliminate case mismatch in comparisons
+      role: experienceLevel?.toLowerCase(),
+      experienceLevel: experienceLevel?.toLowerCase(),
+    });
+  }, [experienceLevel]);
 
 
   const [runTour, setRunTour] = useState(false);
@@ -2007,7 +2021,7 @@ If none apply, return { "algorithms": [] }.
 
 
           setNodes(newNode);
-           const activeName = cursors[myClientId]?.name || userName || "unknown";
+          const activeName = cursors[myClientId]?.name || userName || "unknown";
           if (collaborationModeOn) { //only add node to shared nodesMap if collaboration mode is on
             console.log("ON DROP: collab mode on", collaborationModeOn)
             nodesMap.set(newNode.id, newNode);
@@ -3385,16 +3399,14 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
 
     // 🚫 Filter unauthorized changes safely
     const allowedChanges = changes.filter((change) => {
-      if (!hasId(change)) return true; // allow changes without id
+      if (!hasId(change)) return true;
+
+      // Always allow your own selection changes to proceed without lock blocks
+      if (change.type === 'select') return true;
 
       const owner = lockMap.get(change.id);
       return !owner || owner === myClientId;
     });
-
-    if (allowedChanges.length === 0) {
-      console.log("All changes blocked due to locks");
-      return;
-    }
 
     // 🧠 Apply changes locally
     const updatedNodes = applyNodeChanges(allowedChanges, nodesI);
