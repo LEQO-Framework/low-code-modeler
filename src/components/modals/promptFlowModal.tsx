@@ -4,10 +4,11 @@ import { Toast } from "./toast";
 
 type InputNode = {
   name: string;
-  type: "string" | "number" | "boolean" | "select" | "bit" | "statePreparation" | "file";
+  type: "string" | "number" | "boolean" | "select" | "bit" | "statePreparation" | "file" | "size";
   options?: string[];
   label: string;
   id: string;
+  isBellState?: boolean;
 };
 
 interface PromptFlowModalProps {
@@ -20,7 +21,7 @@ interface PromptFlowModalProps {
   lowcodeBackendEndpoint: string;
   jobId?: string;
   missingValues?: any[];
-  onMissingValuesSubmitted: (jobId: string, values: Record<string, any>) => Promise<void>;
+  onMissingValuesSubmitted: (jobId: string, values: Array<{ id: string; value: any; type: string }>) => Promise<void>;
   onSubmitPrompt: (prompt: string, generationMode: "compact" | "circuit") => Promise<any>;
 }
 
@@ -41,6 +42,8 @@ export default function PromptFlowModal({
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
   const [generationMode, setGenerationMode] = useState<"compact" | "circuit">("compact");
+  
+  // FIXED: State keys are now tracks as `${id}-${type}` to prevent cross-over wiping
   const [inputValues, setInputValues] = useState<Record<string, any>>({});
   const [toast, setToast] = useState<{ message: React.ReactNode; type: "success" | "error" | "info" } | null>(null);
 
@@ -48,7 +51,8 @@ export default function PromptFlowModal({
     if (missingValues.length > 0) {
       const initialValues: Record<string, any> = {};
       missingValues.forEach((input) => {
-        initialValues[input.id] = "";
+        // Compound state tracker key configuration
+        initialValues[`${input.id}-${input.type}`] = "";
       });
       setInputValues(initialValues);
     }
@@ -71,16 +75,16 @@ export default function PromptFlowModal({
     if (!jobId) return;
     setLoading(true);
     try {
-      // Convert inputValues object to an array of { id, value, type }
-      const missingValuesArray = Object.entries(inputValues).map(([id, value]) => {
-        // Find the type from the missingValues prop
-        const missingValue = missingValues.find((mv) => mv.id === id);
+      // FIXED: Safely unpack the compound UI key back to the structure the backend API expects
+      const missingValuesArray = Object.entries(inputValues).map(([compoundKey, value]) => {
+        const [id, type] = compoundKey.split("-");
         return {
           id,
           value,
-          type: missingValue?.type || "string", // Fallback to "string" if type not found
+          type: type || "string",
         };
       });
+      
       await onMissingValuesSubmitted(jobId, missingValuesArray);
       onClose();
     } catch (err: any) {
@@ -102,11 +106,13 @@ export default function PromptFlowModal({
   };
 
   useEffect(() => {
-  if (!open) {
-    resetState();
-  }
-}, [open]);
+    if (!open) {
+      resetState();
+    }
+  }, [open]);
+
   const bitOptions = ["0", "1"];
+  
   const statePreparationOptions = [
     "BellPhiPlus",
     "BellPhiMinus",
@@ -116,10 +122,21 @@ export default function PromptFlowModal({
     "GHZ",
     "W",
   ];
-  console.log(stepTest)
-  console.log(missingValues)
-  console.log(missingValues.length >2)
-  console.log(stepTest=== 2 && missingValues && missingValues.length > 0 )
+
+  const onlyBellOptions = [
+    "BellPhiPlus",
+    "BellPhiMinus",
+    "BellPsiPlus",
+    "BellPsiMinus",
+  ];
+
+  // Helper: Checks if a Bell State option is selected by using the specific compound key
+  const isCurrentlyBellSelected = (targetId: string): boolean => {
+    const chosenState = inputValues[`${targetId}-statePreparation`];
+    if (!chosenState) return false;
+    return onlyBellOptions.includes(chosenState);
+  };
+
   return (
     <>
       {toast && (
@@ -172,8 +189,8 @@ export default function PromptFlowModal({
         </Modal>
       )}
 
-        {open && stepTest=== 2&& missingValues && missingValues.length > 0 && (
-          <Modal
+      {open && stepTest === 2 && missingValues && missingValues.length > 0 && (
+        <Modal
           title="Add Required Values"
           open={true}
           onClose={handleClose}
@@ -197,17 +214,24 @@ export default function PromptFlowModal({
             <p className="text-gray-600">
               The following values are required to generate your model. Please provide them below.
             </p>
-              {missingValues.map((input) => (
-                <div key={input.id} className="space-y-2">
+            {missingValues.map((input) => {
+              const itemKey = `${input.id}-${input.type}`;
+
+              if (input.type === "size" && (input.isBellState || isCurrentlyBellSelected(input.id))) {
+                return null;
+              }
+
+              return (
+                <div key={itemKey} className="space-y-2">
                   <label className="block font-medium">
                     {input.question || input.label} ({input.type})
                   </label>
-                  {/* Rest of the input fields (select, input, etc.) */}
+                  
                   {input.type === "bit" && (
                     <select
                       className="w-full border p-2 rounded"
-                      value={inputValues[input.id] || ""}
-                      onChange={(e) => setInputValues({ ...inputValues, [input.id]: e.target.value })}
+                      value={inputValues[itemKey] || ""}
+                      onChange={(e) => setInputValues({ ...inputValues, [itemKey]: e.target.value })}
                     >
                       <option value="">Select a bit value</option>
                       {bitOptions.map((opt) => (
@@ -215,33 +239,51 @@ export default function PromptFlowModal({
                       ))}
                     </select>
                   )}
+
                   {input.type === "statePreparation" && (
                     <select
                       className="w-full border p-2 rounded"
-                      value={inputValues[input.id] || ""}
-                      onChange={(e) => setInputValues({ ...inputValues, [input.id]: e.target.value })}
+                      value={inputValues[itemKey] || ""}
+                      onChange={(e) => setInputValues({ ...inputValues, [itemKey]: e.target.value })}
                     >
                       <option value="">Select a state</option>
-                      {statePreparationOptions.map((opt) => (
-                        <option key={opt} value={opt}>{opt}</option>
-                      ))}
+                      {input.isBellState
+                        ? onlyBellOptions.map((opt) => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))
+                        : statePreparationOptions.map((opt) => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))
+                      }
                     </select>
                   )}
+
+                  {input.type === "size" && (
+                    <input
+                      type="number"
+                      min={1}
+                      className="w-full border p-2 rounded"
+                      placeholder="Enter number of qubits (e.g. 3)"
+                      value={inputValues[itemKey] || ""}
+                      onChange={(e) => setInputValues({ ...inputValues, [itemKey]: e.target.value })}
+                    />
+                  )}
+
                   {(input.type === "number" || input.type === "file" || input.type === "string") && (
                     <input
                       type={input.type === "number" ? "number" : "text"}
                       className="w-full border p-2 rounded"
                       placeholder={`Enter ${input.type}`}
-                      value={inputValues[input.id] || ""}
-                      onChange={(e) => setInputValues({ ...inputValues, [input.id]: e.target.value })}
+                      value={inputValues[itemKey] || ""}
+                      onChange={(e) => setInputValues({ ...inputValues, [itemKey]: e.target.value })}
                     />
                   )}
                 </div>
-              ))}
-            </div>
+              );
+            })}
+          </div>
         </Modal>
       )}
     </>
   );
 }
-
