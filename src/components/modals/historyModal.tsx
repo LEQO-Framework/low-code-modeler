@@ -227,7 +227,7 @@ export const HistoryModal = ({
           missingValues={selectedJob.missingValues || []}
           onMissingValuesSubmitted={handleMissingValuesSubmitted}
           onSubmitPrompt={onSubmitPrompt} // <-- Pass the prop from HistoryModalProps
-        />
+          stepTest={0}        />
       )}
     </>
   );
