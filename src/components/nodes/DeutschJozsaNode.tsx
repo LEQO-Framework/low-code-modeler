@@ -1,10 +1,10 @@
 import { memo, useState, useEffect } from "react";
 import { Node } from "reactflow";
-import { useStore } from "@/config/store"; 
+import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
-import OutputPort from "../utils/outputPort"; 
+import OutputPort from "../utils/outputPort";
 import { awareness } from "@/yjs";
 
 const selector = (state: any) => ({
@@ -23,7 +23,7 @@ export const DeutschJozsaNode = memo((node: Node) => {
   const [oracleType, setOracleType] = useState(data.oracleType || "balanced");
   const [balancedMaskStr, setBalancedMaskStr] = useState(String(data.balancedMask || 5));
   const [constantValue, setConstantValue] = useState(data.constantValue ?? 0);
-  
+
   const [outputs, setOutputs] = useState(data.outputs || []);
   const [outputIdentifierError, setOutputIdentifierError] = useState(false);
   const [sizeError, setSizeError] = useState(false);
@@ -73,6 +73,43 @@ export const DeutschJozsaNode = memo((node: Node) => {
     setSelectedNode(node);
   };
 
+  const [remoteHighlightColor, setRemoteHighlightColor] = useState<string | null>(null);
+  const [selectingUserName, setSelectingUserName] = useState<string | null>(null); // technically not needed, could extend functionality to also show user name next to highlighted node
+
+  useEffect(() => {
+    const checkRemoteSelection = () => {
+      let foundColor: string | null = null;
+      let foundName: string | null = null;
+
+      // Loop through all active client states in the room
+      awareness.getStates().forEach((state: any, clientId: number) => {
+        // Skip your own client ID so you don't highlight it with your own color
+        // if (clientId === awareness.clientID) return;
+
+        // Check if a peer has selected this specific node ID
+        if (state.cursor && state.cursor.selectedNodeId === id) {
+          foundColor = state.cursor.color;
+          foundName = state.cursor.name;
+        }
+      });
+
+      setRemoteHighlightColor(foundColor);
+      setSelectingUserName(foundName);
+      console.log("COLOR", foundColor, foundName);
+    };
+
+    // Run once immediately on mount
+    checkRemoteSelection();
+
+    // 3. Listen to remote awareness updates
+    awareness.on("change", checkRemoteSelection);
+
+    // Clean up listener when the node unmounts
+    return () => {
+      awareness.off("change", checkRemoteSelection);
+    };
+  }, [id]); // Re-run if node ID changes
+
   return (
     <motion.div
       className="grand-parent"
@@ -87,13 +124,18 @@ export const DeutschJozsaNode = memo((node: Node) => {
             selected && "border-blue-500",
             mixedView && "border-purple-400"
           )}
-          style={{ height: "400px" }}
-        >
+          style={{
+            borderColor: remoteHighlightColor ? remoteHighlightColor : (selected ? "#3B82F6" : "#374151"),
+            boxShadow: remoteHighlightColor
+              ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}` // Glowing aura ring
+              : undefined,
+            height: `400px`
+          }}>
           {/* HEADER */}
           <div className="w-full flex items-center" style={{ height: '52px' }}>
             <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
               <img
-                src="deutschJozsaIcon.png" 
+                src="deutschJozsaIcon.png"
                 alt="DJ icon"
                 className="w-[40px] h-[40px] object-contain flex-shrink-0"
               />
@@ -118,7 +160,7 @@ export const DeutschJozsaNode = memo((node: Node) => {
 
           {/* CONFIGURATION BODY */}
           <div className="px-4 py-1 mt-2">
-            
+
             {/* NUMBER OF QUBITS / INPUT SIZE */}
             <div>
               <label className="text-xs font-semibold text-gray-700">
