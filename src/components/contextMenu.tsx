@@ -6,6 +6,7 @@ import { v4 as uuid } from "uuid";
 import { Button } from "./ui";
 import { IPortData } from "@/components/nodes/model";
 import { MergerNode } from "@/constants";
+import { awareness } from "@/yjs";
 
 interface ContextMenuProps {
   id: string;
@@ -61,7 +62,25 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   const deleteNode = useCallback(() => { // delete node
     setNodes((nodes) => nodes.filter((node) => node.id !== id));
     setEdges((edges) => edges.filter((edge) => edge.source !== id));
-    if (onAction) onAction("delete", id);
+    const currentCursorState = awareness.getLocalState()?.cursor || {};
+    let findAny = false;
+    awareness.getStates().forEach((state: any, clientId: number) => {
+      // Skip your own client ID so you don't highlight it with your own color
+      // if (clientId === awareness.clientID) return;
+      console.log(state.cursor)
+
+
+      // Check if a peer has selected this specific node ID
+      if (state.cursor && state.cursor.mySelectedNodeId === node.id) {
+        findAny = true;
+        if (onAction) onAction("delete", id);
+        return;
+      }
+    });
+    if (!findAny) {
+      if (onAction) onAction("delete", id);
+    }
+    
   }, [id, setNodes, setEdges, onAction]);
 
   const incrementNodeDataField = useCallback((field: string, min_value: number) => { //TODO: richtiges Feld verwenden (bei merger: numberInputs) --> Feld als Argument übergeben?
@@ -91,7 +110,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
     );
     updateNodeInternals(id);
   }, [id, getNode, setNodes, onAction]);
-  
+
   const [submenuInputAddOpen, setSubmenuInputAddOpen] = useState(false);
   const [submenuInputRemoveOpen, setSubmenuInputRemoveOpen] = useState(false);
   const [submenuOutputAddOpen, setSubmenuOutputAddOpen] = useState(false);
@@ -109,7 +128,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
     useCallback((state) => state.nodeInternals.get(id), [id])
   );
 
-  
+
   const quantumInputs =
     Number(node.data["numberQuantumInputs"] ?? 0);
   const hasQuantumInputs = quantumInputs > minInput // what happens if node has no filed numQuantumInputs?
@@ -126,11 +145,11 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   console.log(getNode(id).data["numberQuantumInputs"])
   console.log(hasQuantumInputs)
   console.log(hasClassicalInputs)
-   useEffect(() => {
+  useEffect(() => {
     updateNodeInternals(node.id);
     console.log("update handles")
-   
-  }, [node.data["numberClassicalInputs"] ]);
+
+  }, [node.data["numberClassicalInputs"]]);
 
 
   const toggleSubmenuInputAdd = useCallback((e: React.MouseEvent) => {
@@ -534,9 +553,9 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
         </div>
       </div>
     );
-  } 
-  
-  
+  }
+
+
   else if (type === "splitterNode") {
     return (
       <div

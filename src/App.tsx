@@ -2704,23 +2704,49 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
 
   const [mySelectedNodeId, setMySelectedNodeId] = useState<string | null>(null);
 
+  // Iterate over all active collaborative tabs to see what nodes are currently targeted
+  const getActiveSelections = useCallback(() => {
+    const selections: { [clientId: number]: string } = {};
+
+    awareness.getStates().forEach((state: any, clientId: number) => {
+      if (state?.cursor?.mySelectedNodeId) {
+        selections[clientId] = state.cursor.mySelectedNodeId;
+      }
+    });
+
+    return selections;
+  }, [awareness]);
 
   const handleClick = useCallback((event: React.MouseEvent, node: Node) => {
-    event.preventDefault();
+    if (collaborationModeOn && awareness) {
+      const currentCursorState = awareness.getLocalState()?.cursor || {};
+      console.log(currentCursorState)
+      console.log(node.id);
+      let findAny = false;
+      awareness.getStates().forEach((state: any, clientId: number) => {
+        // Skip your own client ID so you don't highlight it with your own color
+        // if (clientId === awareness.clientID) return;
+        console.log(state.cursor)
 
-    // Set the selected node
-    setSelectedNode(node);
-    setMySelectedNodeId(node.id);
-    if (!collaborationModeOn) return;
 
-    // Add the clicked node ID to your current local locks list
-    const currentLocks = awareness.getLocalState()?.locks?.nodeIds || [];
-    if (!currentLocks.includes(node.id)) {
-      awareness.setLocalStateField("locks", {
-        nodeIds: [...currentLocks, node.id]
+        // Check if a peer has selected this specific node ID
+        if (state.cursor && state.cursor.mySelectedNodeId === node.id) {
+          findAny = true;
+          return;
+        }
       });
+      if (!findAny) {
+        // Write the currently selected node directly into this tab's unique Yjs cursor object
+        awareness.setLocalStateField("cursor", {
+          ...currentCursorState,
+          mySelectedNodeId: node.id
+        });
+      }
     }
-  }, [collaborationModeOn, setSelectedNode, setMySelectedNodeId]);
+
+    // Keep your normal single-user state if necessary
+    setSelectedNode(node);
+  }, [collaborationModeOn, awareness, setSelectedNode]);
 
   const [modeledDiagram, setModeledDiagram] = useState(null);
 
@@ -2843,7 +2869,25 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     console.log(node.position.x);
     console.log(helperLines)
     console.log(event.clientX)
+    if (collaborationModeOn) {
+      let findAny = false;
 
+      awareness.getStates().forEach((state: any, clientId: number) => {
+        // Skip your own client ID so you don't highlight it with your own color
+        // if (clientId === awareness.clientID) return;
+        console.log(state.cursor)
+
+
+        // Check if a peer has selected this specific node ID
+        if (state.cursor && state.cursor.mySelectedNodeId === node.id) {
+          findAny = true;
+          return;
+        }
+      });
+      if (!findAny) {
+        return;
+      }
+    }
     let verticalLine = null;
     let horizontalLine = null;
 
@@ -2948,11 +2992,13 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
 
   const onPaneClick = useCallback(() => {
     if (!collaborationModeOn) return;
+    let findAny = false;
+    const currentCursorState = awareness.getLocalState()?.cursor || {};
 
     // Clear all your node locks when clicking the canvas background
-    awareness.setLocalStateField("locks", {
-      nodeIds: []
-    });
+    //awareness.setLocalStateField("locks", {
+    //nodeIds: []
+    //});
     setMenu(null);
     setContextMenu((prev) => ({ ...prev, visible: false })); // contextMenu disappears when clicking on pane
     setSelectedNode(null);
@@ -3485,27 +3531,37 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
     });
     console.log("locked ids", lockedIds)
     const mySelectedNode = nodes[0]; // Assuming single selection
-    setMySelectedNodeId(mySelectedNode ? mySelectedNode.id : null);
+    //setMySelectedNodeId(mySelectedNode ? mySelectedNode.id : null);
     console.log("my selected node id", mySelectedNode)
 
   }, []);
 
   // broadcast selection via awareness
   useEffect(() => {
-    if (!collaborationModeOn) return;
+    if (collaborationModeOn) {
+      const randomNames = ["Alice", "Bob", "Charlie", "Dana", "Eve", "Frank", "Grace", "Hugo"];
+      const randomUsername = randomNames[Math.floor(Math.random() * randomNames.length)];
+      setMyClientId(awareness.clientID);
 
-    const currentCursor = awareness.getLocalState()?.cursor || {};
+      const color = "#" + Math.floor(Math.random() * 16777215).toString(16);
 
-    // Only broadcast if the ID actually changed
-    if (currentCursor.selectedNodeId !== mySelectedNodeId) {
+      // Initializing the cursor state with localized variables safely bounded to this specific tab instance
       awareness.setLocalStateField("cursor", {
-        ...currentCursor,
-        selectedNodeId: mySelectedNodeId,
-        lastUpdate: Date.now() // Force an awareness "change" event
+        x: 0,
+        y: 0,
+        color: color,
+        name: randomUsername,
+        role: experienceLevel,
+        mySelectedNodeId: null // <-- Track the selection cleanly inside the user's cursor scope
       });
+
+      awareness.setLocalStateField("locks", {
+        nodeIds: []
+      });
+
+      setUserName(randomUsername);
     }
-    console.log("CURSOR SELECTED NODE", awareness.getLocalState()?.cursor)
-  }, [mySelectedNodeId, collaborationModeOn]);
+  }, [collaborationModeOn]);
 
   const onConnectSync = useCallback((params: Connection) => {
     console.log(params)

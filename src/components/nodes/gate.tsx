@@ -80,9 +80,11 @@ export const GateNode = memo((node: Node) => {
       awareness.getStates().forEach((state: any, clientId: number) => {
         // Skip your own client ID so you don't highlight it with your own color
         // if (clientId === awareness.clientID) return;
+        console.log(state.cursor)
+        console.log(id)
 
         // Check if a peer has selected this specific node ID
-        if (state.cursor && state.cursor.selectedNodeId === id) {
+        if (state.cursor && state.cursor.mySelectedNodeId === id) {
           foundColor = state.cursor.color;
           foundName = state.cursor.name;
         }
