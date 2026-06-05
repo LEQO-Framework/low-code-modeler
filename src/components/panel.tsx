@@ -11,6 +11,7 @@ import { TextPanel, MetadataPanel } from "./panels";
 import { QasmDiracPanel } from "./QasmDiracPanel";
 import { analyzeComponents, type DiracComponent } from "@/lib/componentAnalyzer";
 import { qasmToNodes } from "@/lib/qasmToNodes";
+import { nodesToQasm } from "@/lib/nodesToQasm";
 import JSZip from "jszip";
 
 const selector = (state: { selectedNode: Node | null; nodes: Node[]; edges: Edge[] }) => ({
@@ -63,12 +64,23 @@ export const CustomPanel = ({
     onWidthChange?.((mathMode || qasmEditorMode) ? 480 : 350);
   }, [mathMode, qasmEditorMode]);
 
-  // QASM Editor mit aktuellem QASM synchronisieren
+  // QASM Editor mit Backend-QASM synchronisieren (hat Priorität)
   useEffect(() => {
     if (qasmCode && qasmCode.trim()) {
       setQasmEditorCode(qasmCode);
     }
   }, [qasmCode]);
+
+  // Canvas → QASM Editor Sync: automatisch wenn sich Nodes/Edges ändern
+  // Nur wenn noch kein Backend-QASM vorhanden ist
+  useEffect(() => {
+    if (qasmCode && qasmCode.trim()) return; // Backend-QASM hat Priorität
+    if (!qasmEditorMode) return;
+    const generated = nodesToQasm(nodes, edges);
+    if (generated) {
+      setQasmEditorCode(generated);
+    }
+  }, [nodes, edges, qasmEditorMode]);
 
   // Wenn QASM Editor deaktiviert → zurück zu Properties wenn aktiv
   useEffect(() => {

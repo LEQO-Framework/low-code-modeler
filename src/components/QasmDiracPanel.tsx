@@ -144,6 +144,61 @@ const GATE_DESCRIPTIONS: Record<string, { description: string; matrix: string; e
     matrix: "\\begin{pmatrix} 1 & 0 \\\\ 0 & 1 \\end{pmatrix}",
     effect: "$I|\\psi\\rangle = |\\psi\\rangle$",
   },
+  SX: {
+    description: "The SX gate (\\sqrt{X}) is the square root of the Pauli-X gate. It creates a superposition halfway between $|0\\rangle$ and $|1\\rangle$.",
+    matrix: "\\frac{1}{2}\\begin{pmatrix} 1+i & 1-i \\\\ 1-i & 1+i \\end{pmatrix}",
+    effect: "$\\sqrt{X}|0\\rangle = \\frac{1+i}{2}|0\\rangle + \\frac{1-i}{2}|1\\rangle$",
+  },
+  "S†": {
+    description: "The S-dagger gate (conjugate transpose of S) applies a $-\\frac{\\pi}{2}$ phase rotation.",
+    matrix: "\\begin{pmatrix} 1 & 0 \\\\ 0 & -i \\end{pmatrix}",
+    effect: "$S^\\dagger|0\\rangle = |0\\rangle$, \\quad $S^\\dagger|1\\rangle = -i|1\\rangle$",
+  },
+  "T†": {
+    description: "The T-dagger gate (conjugate transpose of T) applies a $-\\frac{\\pi}{4}$ phase rotation.",
+    matrix: "\\begin{pmatrix} 1 & 0 \\\\ 0 & e^{-i\\pi/4} \\end{pmatrix}",
+    effect: "$T^\\dagger|0\\rangle = |0\\rangle$, \\quad $T^\\dagger|1\\rangle = e^{-i\\pi/4}|1\\rangle$",
+  },
+  CY: {
+    description: "The CY (Controlled-Y) gate applies a Y gate to the target qubit if the control qubit is $|1\\rangle$.",
+    matrix: "\\begin{pmatrix} 1 & 0 & 0 & 0 \\\\ 0 & 1 & 0 & 0 \\\\ 0 & 0 & 0 & -i \\\\ 0 & 0 & i & 0 \\end{pmatrix}",
+    effect: "$\\text{CY}|10\\rangle = i|11\\rangle$, \\quad $\\text{CY}|11\\rangle = -i|10\\rangle$",
+  },
+  CH: {
+    description: "The CH (Controlled-H) gate applies a Hadamard gate to the target qubit if the control qubit is $|1\\rangle$.",
+    matrix: "\\begin{pmatrix} 1 & 0 & 0 & 0 \\\\ 0 & 1 & 0 & 0 \\\\ 0 & 0 & \\frac{1}{\\sqrt{2}} & \\frac{1}{\\sqrt{2}} \\\\ 0 & 0 & \\frac{1}{\\sqrt{2}} & -\\frac{1}{\\sqrt{2}} \\end{pmatrix}",
+    effect: "$\\text{CH}|10\\rangle = |1\\rangle|+\\rangle$, \\quad $\\text{CH}|11\\rangle = |1\\rangle|-\\rangle$",
+  },
+  CRX: {
+    description: "The CRX gate applies a controlled RX rotation to the target qubit.",
+    matrix: "\\begin{pmatrix} 1 & 0 & 0 & 0 \\\\ 0 & 1 & 0 & 0 \\\\ 0 & 0 & \\cos(\\theta/2) & -i\\sin(\\theta/2) \\\\ 0 & 0 & -i\\sin(\\theta/2) & \\cos(\\theta/2) \\end{pmatrix}",
+    effect: "$\\text{CRX}(\\theta)|10\\rangle = \\cos(\\theta/2)|10\\rangle - i\\sin(\\theta/2)|11\\rangle$",
+  },
+  CRY: {
+    description: "The CRY gate applies a controlled RY rotation to the target qubit.",
+    matrix: "\\begin{pmatrix} 1 & 0 & 0 & 0 \\\\ 0 & 1 & 0 & 0 \\\\ 0 & 0 & \\cos(\\theta/2) & -\\sin(\\theta/2) \\\\ 0 & 0 & \\sin(\\theta/2) & \\cos(\\theta/2) \\end{pmatrix}",
+    effect: "$\\text{CRY}(\\theta)|10\\rangle = \\cos(\\theta/2)|10\\rangle - \\sin(\\theta/2)|11\\rangle$",
+  },
+  CRZ: {
+    description: "The CRZ gate applies a controlled RZ rotation to the target qubit.",
+    matrix: "\\begin{pmatrix} 1 & 0 & 0 & 0 \\\\ 0 & 1 & 0 & 0 \\\\ 0 & 0 & e^{-i\\theta/2} & 0 \\\\ 0 & 0 & 0 & e^{i\\theta/2} \\end{pmatrix}",
+    effect: "$\\text{CRZ}(\\theta)|10\\rangle = e^{-i\\theta/2}|10\\rangle$, \\quad $\\text{CRZ}(\\theta)|11\\rangle = e^{i\\theta/2}|11\\rangle$",
+  },
+  CU: {
+    description: "The CU gate is a controlled unitary gate with parameters $(\\theta, \\phi, \\lambda, \\gamma)$.",
+    matrix: "\\begin{pmatrix} 1 & 0 & 0 & 0 \\\\ 0 & 1 & 0 & 0 \\\\ 0 & 0 & e^{i\\gamma}\\cos(\\theta/2) & -e^{i(\\gamma+\\lambda)}\\sin(\\theta/2) \\\\ 0 & 0 & e^{i(\\gamma+\\phi)}\\sin(\\theta/2) & e^{i(\\gamma+\\phi+\\lambda)}\\cos(\\theta/2) \\end{pmatrix}",
+    effect: "Applies a general unitary to target qubit conditioned on control qubit being $|1\\rangle$",
+  },
+  Toffoli: {
+    description: "The Toffoli gate (CCX) flips the target qubit if and only if both control qubits are $|1\\rangle$.",
+    matrix: "\\begin{pmatrix} 1&0&0&0&0&0&0&0 \\\\ 0&1&0&0&0&0&0&0 \\\\ 0&0&1&0&0&0&0&0 \\\\ 0&0&0&1&0&0&0&0 \\\\ 0&0&0&0&1&0&0&0 \\\\ 0&0&0&0&0&1&0&0 \\\\ 0&0&0&0&0&0&0&1 \\\\ 0&0&0&0&0&0&1&0 \\end{pmatrix}",
+    effect: "$\\text{Toffoli}|110\\rangle = |111\\rangle$, \\quad $\\text{Toffoli}|111\\rangle = |110\\rangle$",
+  },
+  CSWAP: {
+    description: "The CSWAP (Fredkin) gate swaps the two target qubits if the control qubit is $|1\\rangle$.",
+    matrix: "\\begin{pmatrix} 1&0&0&0&0&0&0&0 \\\\ 0&1&0&0&0&0&0&0 \\\\ 0&0&1&0&0&0&0&0 \\\\ 0&0&0&1&0&0&0&0 \\\\ 0&0&0&0&1&0&0&0 \\\\ 0&0&0&0&0&0&1&0 \\\\ 0&0&0&0&0&1&0&0 \\\\ 0&0&0&0&0&0&0&1 \\end{pmatrix}",
+    effect: "$\\text{CSWAP}|101\\rangle = |110\\rangle$, \\quad $\\text{CSWAP}|110\\rangle = |101\\rangle$",
+  },
 };
 
 function buildGateExplanationsSection(stepsResult?: DiracStepsResult): string {
@@ -296,10 +351,6 @@ function buildLatexExport(
 
   const stepsSection = stepsResult && stepsResult.steps.length > 0
     ? `\\section*{Mathematical Intermediate Steps}
-
-\\textit{\\textbf{Notation:} A subscript on a gate label indicates which qubit it acts on. For example, $H_0$ means the Hadamard gate applied to qubit 0, and $I_1$ means the identity (no operation) on qubit 1.}
-
-\\vspace{6pt}
 
 ${stepsResult.steps.map((step, idx) => {
   const matrix = getGateMatrix(step.gateLabelLatex ?? step.gateLabel ?? "");
@@ -1173,10 +1224,10 @@ export function QasmDiracPanel(props: Props) {
           {numQubits > 1 && (
             <div className="flex flex-col gap-1">
               <QubitSelector numQubits={numQubits} selected={effectiveSelected} onChange={setSelectedQubits} />
+
             </div>
           )}
-
-          {/* Histogramm: nur wenn alle Qubits ausgewählt (und mehr als 1 Qubit) */}
+          {/* Histogramm: nur wenn alle Qubits ausgewählt */}
           {!isPartial && (
             <>
               <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
@@ -1186,7 +1237,7 @@ export function QasmDiracPanel(props: Props) {
             </>
           )}
 
-          {/* Partielle Messung: nur wenn einzelne Qubits ausgewählt ODER 1 Qubit */}
+          {/* Partielle Messung: Projektion + kollabierter Zustand */}
           {isPartial && partialMeasurement && partialMeasurement.length > 0 && (
             <div className="rounded-lg border border-indigo-100 bg-indigo-50/30 px-3 py-3 mt-1">
               <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">

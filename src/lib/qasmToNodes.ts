@@ -7,13 +7,20 @@ import { Node, Edge } from "reactflow";
 import { v4 as uuid } from "uuid";
 
 const GATE_LABEL_MAP: Record<string, string> = {
+  // Single-qubit gates
   h: "H", x: "X", y: "Y", z: "Z",
   s: "S", t: "T", sdg: "S†", tdg: "T†",
-  cx: "CNOT", cnot: "CNOT", cz: "CZ", cy: "CY", ch: "CH",
-  swap: "SWAP", ccx: "Toffoli", cswap: "CSWAP",
+  sx: "SX", id: "I",
+  // Parametric single-qubit gates
   rx: "RX(θ)", ry: "RY(θ)", rz: "RZ(θ)",
-  u1: "U1(λ)", u2: "U2(φ,λ)", u3: "U3(θ,φ,λ)",
-  p: "P(λ)", cp: "CP(λ)", id: "I",
+  p: "P(λ)", u1: "U1(λ)", u2: "U2(φ,λ)", u3: "U3(θ,φ,λ)", u: "U3(θ,φ,λ)",
+  // Two-qubit gates
+  cx: "CNOT", cnot: "CNOT", cz: "CZ", cy: "CY", ch: "CH",
+  swap: "SWAP", cp: "CP(λ)",
+  crx: "CRX(θ)", cry: "CRY(θ)", crz: "CRZ(θ)",
+  cu: "CU", cu1: "U1(λ)", cu3: "U3(θ,φ,λ)",
+  // Three-qubit gates
+  ccx: "Toffoli", cswap: "CSWAP",
 };
 
 interface ParsedGate {

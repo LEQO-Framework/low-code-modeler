@@ -233,7 +233,7 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
                         matrix: JSON.parse(node.data.matrix)
                     }
                 }
-                else if (["RX(θ)", "RY(θ)", "RZ(θ)"].includes(node.data.label)) {
+                else if (["RX(θ)", "RY(θ)", "RZ(θ)", "P(λ)", "CP(λ)", "CRX(θ)", "CRY(θ)", "CRZ(θ)", "U1(λ)", "U2(φ,λ)", "U3(θ,φ,λ)"].includes(node.data.label)) {
                     return {
                         id: node.id,
                         type: "gate-with-param",
@@ -241,6 +241,14 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
                             "RX(θ)": "rx",
                             "RY(θ)": "ry",
                             "RZ(θ)": "rz",
+                            "P(λ)": "p",
+                            "CP(λ)": "cp",
+                            "CRX(θ)": "crx",
+                            "CRY(θ)": "cry",
+                            "CRZ(θ)": "crz",
+                            "U1(λ)": "u1",
+                            "U2(φ,λ)": "u2",
+                            "U3(θ,φ,λ)": "u3",
                         }, node.data.label),
                         parameter: parseFloat(node.data.parameter)
                     }
@@ -251,6 +259,7 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
                         gate: map({
                             "CNOT": "cnot",
                             "Toffoli": "toffoli",
+                            "CSWAP": "cswap",
                             "H": "h",
                             "T": "t",
                             "X": "x",
@@ -259,7 +268,14 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
                             "S": "s",
                             "SX": "sx",
                             "SDG": "sdg",
-                            "TDG": "tdg"
+                            "S†": "sdg",
+                            "TDG": "tdg",
+                            "T†": "tdg",
+                            "I": "id",
+                            "CZ": "cz",
+                            "CY": "cy",
+                            "CH": "ch",
+                            "SWAP": "swap",
                         }, node.data.label)
                     }
                 }

@@ -196,12 +196,23 @@ export const GroupNode = memo((node: Node) => {
     : { inputs: [] as ProxyHandle[], outputs: [] as ProxyHandle[], hasInputs: false };
 
   const getChildBounds = useCallback(() => {
-    const children = getNodes().filter((n) => n.parentNode === id);
+    const allNodes = getNodes();
+    const children = allNodes.filter((n) => n.parentNode === id);
     if (children.length === 0) return null;
+
+    // Für Untergruppen: style.width/height verwenden (echte Größe, nicht kollabierte)
+    const getNodeWidth  = (n: Node) => (n.type === "groupNode"
+      ? ((n.style?.width  as number) ?? n.width  ?? 100)
+      : (n.width  ?? 100));
+    const getNodeHeight = (n: Node) => (n.type === "groupNode"
+      ? ((n.style?.height as number) ?? n.height ?? 100)
+      : (n.height ?? 100));
+
     const minX = Math.min(...children.map((n) => n.position.x)) - 20;
     const minY = Math.min(...children.map((n) => n.position.y)) - 40;
-    const maxX = Math.max(...children.map((n) => n.position.x + (n.width  ?? 100))) + 20;
-    const maxY = Math.max(...children.map((n) => n.position.y + (n.height ?? 100))) + 20;
+    const maxX = Math.max(...children.map((n) => n.position.x + getNodeWidth(n)))  + 20;
+    const maxY = Math.max(...children.map((n) => n.position.y + getNodeHeight(n))) + 20;
+
     return {
       width:  Math.max(maxX - minX, EXPANDED_MIN_WIDTH),
       height: Math.max(maxY - minY, EXPANDED_MIN_HEIGHT),
@@ -210,9 +221,36 @@ export const GroupNode = memo((node: Node) => {
 
   const toggleCollapse = useCallback(() => {
     const newCollapsed = !collapsed;
-    setNodes((nds: Node[]) =>
-      nds.map((n) => {
-        if (n.parentNode === id) return { ...n, hidden: newCollapsed };
+    setNodes((nds: Node[]) => {
+      // Alle Nachfahren-IDs rekursiv sammeln
+      const getDescendants = (groupId: string): Set<string> => {
+        const result = new Set<string>();
+        const queue = [groupId];
+        while (queue.length > 0) {
+          const cur = queue.shift()!;
+          for (const n of nds) {
+            if (n.parentNode === cur) {
+              result.add(n.id);
+              if (n.type === "groupNode") queue.push(n.id);
+            }
+          }
+        }
+        return result;
+      };
+      const descendants = getDescendants(id);
+
+      return nds.map((n) => {
+        if (descendants.has(n.id)) {
+          if (newCollapsed) {
+            // Einklappen: alle Nachfahren verstecken
+            return { ...n, hidden: true };
+          } else {
+            // Aufklappen: nur sichtbar machen wenn der direkte Parent nicht collapsed ist
+            const parentNode = nds.find(p => p.id === n.parentNode);
+            const parentIsCollapsed = parentNode?.data?.collapsed === true && parentNode?.id !== id;
+            return { ...n, hidden: parentIsCollapsed };
+          }
+        }
         if (n.id === id) {
           const bounds = newCollapsed ? null : getChildBounds();
           return {
@@ -226,8 +264,8 @@ export const GroupNode = memo((node: Node) => {
           };
         }
         return n;
-      })
-    );
+      });
+    });
   }, [collapsed, id, setNodes, getChildBounds]);
 
   const handleToggleLock = useCallback((e: React.MouseEvent) => {

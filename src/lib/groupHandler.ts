@@ -19,23 +19,28 @@ let colorIndex = 0;
 let groupCounter = 1;
 
 export function groupSelectedNodes(nodes: Node[], edges: Edge[]): Node[] {
-  // Alle selektierten Nodes außer:
-  // - bestehenden Gruppen
-  // - Nodes die bereits in einer Gruppe sind (parentNode gesetzt)
+  // Alle selektierten Nodes:
+  // - inkl. bestehende Gruppen (für Obergruppen-Bildung)
+  // - nur Top-Level: keine Nodes deren Parent auch selektiert ist
   const selected = nodes.filter(
-    (n) => n.selected === true
-      && n.type !== "groupNode"
-      && !n.parentNode  // ← Nodes die bereits in einer Gruppe sind ausschließen
+    (n) => n.selected === true && !n.data?.locked
   );
 
-  
   if (selected.length < 2) return nodes;
 
-  // Bounding Box
-  const minX = Math.min(...selected.map((n) => n.positionAbsolute?.x ?? n.position.x)) - 30;
-  const minY = Math.min(...selected.map((n) => n.positionAbsolute?.y ?? n.position.y)) - 50;
-  const maxX = Math.max(...selected.map((n) => (n.positionAbsolute?.x ?? n.position.x) + (n.width ?? 150))) + 30;
-  const maxY = Math.max(...selected.map((n) => (n.positionAbsolute?.y ?? n.position.y) + (n.height ?? 100))) + 30;
+  // Nur Top-Level-Nodes: Nodes deren parentNode NICHT auch selektiert ist
+  const selectedIds = new Set(selected.map((n) => n.id));
+  const topLevel = selected.filter(
+    (n) => !n.parentNode || !selectedIds.has(n.parentNode)
+  );
+
+  if (topLevel.length < 2) return nodes;
+
+  // Bounding Box über absolute Positionen
+  const minX = Math.min(...topLevel.map((n) => n.positionAbsolute?.x ?? n.position.x)) - 30;
+  const minY = Math.min(...topLevel.map((n) => n.positionAbsolute?.y ?? n.position.y)) - 50;
+  const maxX = Math.max(...topLevel.map((n) => (n.positionAbsolute?.x ?? n.position.x) + ((n.style?.width as number) ?? n.width ?? 150))) + 30;
+  const maxY = Math.max(...topLevel.map((n) => (n.positionAbsolute?.y ?? n.position.y) + ((n.style?.height as number) ?? n.height ?? 100))) + 30;
 
   const groupWidth  = maxX - minX;
   const groupHeight = maxY - minY;
@@ -46,9 +51,9 @@ export function groupSelectedNodes(nodes: Node[], edges: Edge[]): Node[] {
   colorIndex++;
   groupCounter++;
 
-  const selectedIds = new Set(selected.map((n) => n.id));
+  const topLevelIds = new Set(topLevel.map((n) => n.id));
 
-  // GroupNode
+  // GroupNode (Obergruppe)
   const groupNode: Node = {
     id: groupId,
     type: "groupNode",
@@ -58,8 +63,8 @@ export function groupSelectedNodes(nodes: Node[], edges: Edge[]): Node[] {
       label,
       collapsed: false,
       color,
-      childCount: selected.length,
-      isGroup: true,   // ← markiert als Gruppencontainer
+      childCount: topLevel.length,
+      isGroup: true,
     },
     draggable: true,
     selectable: true,
@@ -67,15 +72,15 @@ export function groupSelectedNodes(nodes: Node[], edges: Edge[]): Node[] {
     zIndex: -1,
   };
 
-  // Kind-Nodes relativ zur Gruppe positionieren
+  // Nur Top-Level-Nodes zur Obergruppe zuweisen
   const updatedNodes = nodes.map((n) => {
-    if (!selectedIds.has(n.id)) return n;
+    if (!topLevelIds.has(n.id)) return n;
     const absX = n.positionAbsolute?.x ?? n.position.x;
     const absY = n.positionAbsolute?.y ?? n.position.y;
     return {
       ...n,
       parentNode: groupId,
-      extent: undefined,          // ← kein extent:parent
+      extent: undefined,
       position: {
         x: absX - minX,
         y: Math.max(40, absY - minY),
@@ -91,18 +96,38 @@ export function ungroupNodes(groupId: string, nodes: Node[]): Node[] {
   const groupNode = nodes.find((n) => n.id === groupId);
   if (!groupNode) return nodes;
 
+  // Falls die Gruppe selbst eine Obergruppe hat, Kind-Nodes zur Obergruppe verschieben
+  const parentOfGroup = groupNode.parentNode;
+
   return nodes
     .filter((n) => n.id !== groupId)
     .map((n) => {
       if (n.parentNode === groupId) {
+        const absX = (groupNode.positionAbsolute?.x ?? groupNode.position.x) + n.position.x;
+        const absY = (groupNode.positionAbsolute?.y ?? groupNode.position.y) + n.position.y;
+
+        if (parentOfGroup) {
+          // Kind-Nodes zur Obergruppe hochstufen
+          const parentNode = nodes.find(p => p.id === parentOfGroup);
+          const pgx = parentNode?.positionAbsolute?.x ?? parentNode?.position.x ?? 0;
+          const pgy = parentNode?.positionAbsolute?.y ?? parentNode?.position.y ?? 0;
+          return {
+            ...n,
+            parentNode: parentOfGroup,
+            extent: undefined,
+            position: {
+              x: absX - pgx,
+              y: Math.max(40, absY - pgy),
+            },
+            hidden: false,
+          };
+        }
+
         return {
           ...n,
           parentNode: undefined,
           extent: undefined,
-          position: {
-            x: n.position.x + groupNode.position.x,
-            y: n.position.y + groupNode.position.y,
-          },
+          position: { x: absX, y: absY },
           hidden: false,
         };
       }
