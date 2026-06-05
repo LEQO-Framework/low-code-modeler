@@ -1,11 +1,20 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { useReactFlow, Node, useStore, useUpdateNodeInternals } from "reactflow";
-import { FaTrash, FaCopy, FaPlus, FaMinus, FaReact, FaCaretRight } from "react-icons/fa";
+import {
+  useReactFlow,
+  Node,
+  useStore,
+  useUpdateNodeInternals,
+} from "reactflow";
+import {
+  FaTrash,
+  FaCopy,
+  FaPlus,
+  FaMinus,
+  FaReact,
+  FaCaretRight,
+} from "react-icons/fa";
 import { FaGear } from "react-icons/fa6";
 import { v4 as uuid } from "uuid";
-import { Button } from "./ui";
-import { IPortData } from "@/components/nodes/model";
-import { MergerNode } from "@/constants";
 import { awareness } from "@/yjs";
 
 interface ContextMenuProps {
@@ -14,15 +23,9 @@ interface ContextMenuProps {
   left: number;
   right?: number;
   bottom?: number;
-  onAction?: (action: string, nodeId: string) => void; // Optional callback for parent actions
-  styles?: React.CSSProperties; // Optional styles for customization
+  onAction?: (action: string, nodeId: string) => void;
+  styles?: React.CSSProperties;
 }
-
-const generateRandomId = () => {
-  return `${Math.random().toString(36).substr(2, 9)}-${Date.now()}`;
-};
-
-
 
 export const ContextMenu: React.FC<ContextMenuProps> = ({
   id,
@@ -31,90 +34,104 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   right,
   bottom,
   onAction,
-  styles = {}, // Default styles as an empty object
+  styles = {},
 }) => {
-  const { getNode, setNodes, addNodes, setEdges } = useReactFlow();
-  const type = getNode(id).type
-  console.log("type", type)
-  const [inputs, setInputs] = useState(getNode(id).data.inputs || []);
+  const { setNodes, setEdges, addNodes } = useReactFlow();
   const updateNodeInternals = useUpdateNodeInternals();
-  const duplicateNode = useCallback(() => { // duplicate node at slighlty shifted position
-    const node = getNode(id);
 
-    if (node) {
-      const randomId = uuid();
-      const position = {
-        x: node.position.x + 50,
-        y: node.position.y + 50,
-      };
+  // ✅ SAFE: single source of truth for node
+  const node = useStore(
+    useCallback((state) => state.nodeInternals.get(id), [id])
+  );
 
-      const duplicatedNode: Node = {
-        ...node,
-        id: randomId, // Ensure unique ID
-        position,
-      };
-
-      addNodes([duplicatedNode]);
-      if (onAction) onAction("duplicate", id);
-    }
-  }, [id, getNode, addNodes, onAction]);
-
-  const deleteNode = useCallback(() => { // delete node
-    setNodes((nodes) => nodes.filter((node) => node.id !== id));
-    setEdges((edges) => edges.filter((edge) => edge.source !== id));
-    const currentCursorState = awareness.getLocalState()?.cursor || {};
-    let findAny = false;
-    awareness.getStates().forEach((state: any, clientId: number) => {
-      // Skip your own client ID so you don't highlight it with your own color
-      // if (clientId === awareness.clientID) return;
-      console.log(state.cursor)
-
-
-      // Check if a peer has selected this specific node ID
-      if (state.cursor && state.cursor.mySelectedNodeId === node.id) {
-        findAny = true;
-        if (onAction) onAction("delete", id);
-        return;
-      }
-    });
-    if (!findAny) {
-      if (onAction) onAction("delete", id);
-    }
-    
-  }, [id, setNodes, setEdges, onAction]);
-
-  const incrementNodeDataField = useCallback((field: string, min_value: number) => { //TODO: richtiges Feld verwenden (bei merger: numberInputs) --> Feld als Argument übergeben?
-    const node = getNode(id);
-    //const field = "numberQuantumInputs";
-    console.log("[INCREMENT] field value", field, "field value type", typeof node.data[field])
-    setNodes((nodes) =>
-      nodes.map((n) =>
-        n.id === id
-          ? { ...n, data: { ...n.data, [field]: n.data[field] ? Number(n.data[field]) + 1 : min_value + 1 } }
-          : n
-      )
-    );
-    updateNodeInternals(id);
-  }, [id, getNode, setNodes, onAction]);
-
-
-  const decrementNodeDataField = useCallback((field: string, min_value: number) => {
-    const node = getNode(id);
-    console.log("[DECREMENT] field value", node.data[field], "field value type", typeof node.data[field])
-    setNodes((nodes) =>
-      nodes.map((n) =>
-        n.id === id
-          ? { ...n, data: { ...n.data, [field]: Number(n.data[field]) > min_value ? Number(n.data[field]) - 1 : min_value } }
-          : n
-      )
-    );
-    updateNodeInternals(id);
-  }, [id, getNode, setNodes, onAction]);
-
+  // ❗ Hooks MUST run before any return
   const [submenuInputAddOpen, setSubmenuInputAddOpen] = useState(false);
   const [submenuInputRemoveOpen, setSubmenuInputRemoveOpen] = useState(false);
   const [submenuOutputAddOpen, setSubmenuOutputAddOpen] = useState(false);
   const [submenuOutputRemoveOpen, setSubmenuOutputRemoveOpen] = useState(false);
+
+  const [inputs] = useState(() => node?.data?.inputs ?? []);
+
+  // 🚨 Safe early exit AFTER hooks
+  if (!node) return null;
+
+  const type = node.type;
+
+  const duplicateNode = useCallback(() => {
+    const randomId = uuid();
+
+    addNodes([
+      {
+        ...node,
+        id: randomId,
+        position: {
+          x: node.position.x + 50,
+          y: node.position.y + 50,
+        },
+      },
+    ]);
+
+    onAction?.("duplicate", id);
+  }, [node, id, addNodes, onAction]);
+
+  const deleteNode = useCallback(() => {
+    const myCursor = awareness.getLocalState()?.cursor;
+
+    // only allow owner
+    if (myCursor?.mySelectedNodeId !== id) return;
+
+    setNodes((nodes) => nodes.filter((n) => n.id !== id));
+    setEdges((edges) => edges.filter((e) => e.source !== id));
+
+    onAction?.("delete", id);
+  }, [id, setNodes, setEdges, onAction]);
+
+  const incrementNodeDataField = useCallback(
+    (field: string, min: number) => {
+      setNodes((nodes) =>
+        nodes.map((n) =>
+          n.id === id
+            ? {
+                ...n,
+                data: {
+                  ...n.data,
+                  [field]: Number(n.data?.[field] ?? min) + 1,
+                },
+              }
+            : n
+        )
+      );
+
+      updateNodeInternals(id);
+    },
+    [id, setNodes]
+  );
+
+  const decrementNodeDataField = useCallback(
+    (field: string, min: number) => {
+      setNodes((nodes) =>
+        nodes.map((n) =>
+          n.id === id
+            ? {
+                ...n,
+                data: {
+                  ...n.data,
+                  [field]: Math.max(Number(n.data?.[field] ?? min), min) - 1,
+                },
+              }
+            : n
+        )
+      );
+
+      updateNodeInternals(id);
+    },
+    [id, setNodes]
+  );
+
+  useEffect(() => {
+    updateNodeInternals(id);
+  }, [node?.data]);
+
   var minInput = 0;
   var minOutput = 0;
   if (type === "mergerNode" || type === "splitterNode") {
@@ -124,9 +141,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
     minInput = 1;
   }
 
-  const node = useStore(
-    useCallback((state) => state.nodeInternals.get(id), [id])
-  );
+  if (!node) return null;
 
 
   const quantumInputs =
@@ -141,8 +156,6 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   const hasQFTInputs = node.data["numberOutputs"] > minInput
 
   console.log("contextMenu")
-  console.log(getNode(id).type)
-  console.log(getNode(id).data["numberQuantumInputs"])
   console.log(hasQuantumInputs)
   console.log(hasClassicalInputs)
   useEffect(() => {

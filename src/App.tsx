@@ -2994,11 +2994,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     if (!collaborationModeOn) return;
     let findAny = false;
     const currentCursorState = awareness.getLocalState()?.cursor || {};
-
-    // Clear all your node locks when clicking the canvas background
-    //awareness.setLocalStateField("locks", {
-    //nodeIds: []
-    //});
+     
     setMenu(null);
     setContextMenu((prev) => ({ ...prev, visible: false })); // contextMenu disappears when clicking on pane
     setSelectedNode(null);
