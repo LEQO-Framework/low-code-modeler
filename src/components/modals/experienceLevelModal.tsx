@@ -180,7 +180,7 @@ export default function ExperienceModePanel({
                   <button
                     onClick={onToggleQasmEditorMode}
                     className={`px-2 py-1 rounded text-white ${
-                      qasmEditorMode ? "bg-orange-500" : "bg-gray-400"
+                      qasmEditorMode ? "bg-blue-600" : "bg-gray-400"
                     }`}
                   >
                     {qasmEditorMode ? "On" : "Off"}

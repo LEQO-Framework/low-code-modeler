@@ -90,7 +90,7 @@ export const HistoryModal = ({ open, onClose, history, onExecute }: HistoryModal
       title="History"
       open={open}
       onClose={onClose}
-      className="w-[900px] max-w-[95vw]"
+      className="w-full max-w-[95vw]"
       footer={
         <div className="flex justify-end">
           <button className="btn btn-secondary" onClick={onClose}>
@@ -103,7 +103,6 @@ export const HistoryModal = ({ open, onClose, history, onExecute }: HistoryModal
         <table className="min-w-full table-auto border border-gray-300">
           <thead className="bg-gray-100">
             <tr>
-              <th className="px-4 py-2 border">ID</th>
               <th className="px-4 py-2 border">Name</th>
               <th className="px-4 py-2 border">Description</th>
               <th className="px-4 py-2 border">Model File</th>
@@ -122,7 +121,6 @@ export const HistoryModal = ({ open, onClose, history, onExecute }: HistoryModal
 
               return (
                 <tr key={item.uuid || index} className="hover:bg-gray-50">
-                  <td className="px-4 py-2 border">{item.uuid}</td>
                   <td className="px-4 py-2 border">{item.name}</td>
                   <td className="px-4 py-2 border max-w-xs">
                     <div
