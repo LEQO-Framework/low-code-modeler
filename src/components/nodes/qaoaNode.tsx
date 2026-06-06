@@ -25,7 +25,7 @@ export const QAOANode = memo((node: Node) => {
   const [p, setP] = useState(data.p || 1);
   const [problem, setProblem] = useState(data.problem || "MaxCut");
   const [optimizer, setOptimizer] = useState(data.optimizer || "COBYLA");
-  
+
   const [outputs, setOutputs] = useState(data.outputs || []);
   const [outputIdentifierError, setOutputIdentifierError] = useState(false);
   const [sizeError, setSizeError] = useState(false);
@@ -88,11 +88,11 @@ export const QAOANode = memo((node: Node) => {
     setSelectedNode(node);
   };
 
-  const dynamicHeight = 550; 
+  const dynamicHeight = 550;
   const classicalInputLabel =
-  problem === "Max2SAT" ? "Clauses" : "Edges";
+    problem === "Max2SAT" ? "Clauses" : "Edges";
 
-  
+
   const [remoteHighlightColor, setRemoteHighlightColor] = useState<string | null>(null);
   const [selectingUserName, setSelectingUserName] = useState<string | null>(null); // technically not needed, could extend functionality to also show user name next to highlighted node
 
@@ -107,7 +107,7 @@ export const QAOANode = memo((node: Node) => {
         // if (clientId === awareness.clientID) return;
 
         // Check if a peer has selected this specific node ID
-        if (state.cursor && state.cursor.selectedNodeId === id) {
+        if (state.cursor && state.cursor.mySelectedNodeId === id) {
           foundColor = state.cursor.color;
           foundName = state.cursor.name;
         }
@@ -131,12 +131,9 @@ export const QAOANode = memo((node: Node) => {
   }, [id]); // Re-run if node ID changes
 
   return (
-    <motion.div
+    <div
       className="grand-parent"
-      initial={false}
-      animate={{ width: 320, height: dynamicHeight }}
-      transition={{ duration: 0.3, ease: "easeInOut" }}
-      onAnimationComplete={() => updateNodeInternals(id)}
+      style={{ width: 320, height: dynamicHeight }}
     >
       <div className="grand-parent">
         <div
@@ -181,7 +178,7 @@ export const QAOANode = memo((node: Node) => {
 
           {/* CONFIGURATION BODY */}
           <div className="px-4 py-2 mt-1 flex flex-col gap-3">
-            
+
             {/* Problem Dropdown */}
             <div className="mt-1 flex flex-col items-center justify-center w-full">
               <label className="text-xs font-semibold text-gray-700 text-center mb-1">Problem:</label>
@@ -239,7 +236,7 @@ export const QAOANode = memo((node: Node) => {
               <div
                 className="relative p-2"
                 style={{
-                  backgroundColor: classicalConstructColor || "#fed7aa", 
+                  backgroundColor: classicalConstructColor || "#fed7aa",
                   width: '120px',
                   display: 'flex',
                   alignItems: 'center',
@@ -266,7 +263,7 @@ export const QAOANode = memo((node: Node) => {
               <div
                 className="relative p-2"
                 style={{
-                  backgroundColor: classicalConstructColor || "#fed7aa", 
+                  backgroundColor: classicalConstructColor || "#fed7aa",
                   width: '120px',
                   display: 'flex',
                   alignItems: 'center',
@@ -293,7 +290,7 @@ export const QAOANode = memo((node: Node) => {
               <div
                 className="relative p-2"
                 style={{
-                  backgroundColor: classicalConstructColor || "#fed7aa", 
+                  backgroundColor: classicalConstructColor || "#fed7aa",
                   width: '120px',
                   display: 'flex',
                   alignItems: 'center',
@@ -342,6 +339,6 @@ export const QAOANode = memo((node: Node) => {
 
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 });

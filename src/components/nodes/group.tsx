@@ -383,14 +383,13 @@ export const GroupNode = memo((node: Node) => {
   }, [id]); // Re-run if node ID changes
 
   return !collapsed ? (
-    <motion.div
+    <div
       className="grand-parent"
       initial={false}
-      animate={{
+      style={{
         width: showingChildren ? 360 : 320,
         height: showingChildren ? 400 : 373,
       }}
-      transition={{ duration: 0.3, ease: "easeInOut" }}
     >
       <div className="grand-parent">
 
@@ -607,7 +606,7 @@ export const GroupNode = memo((node: Node) => {
           }}
         />
       </div>
-    </motion.div>
+    </div>
   ) : (
     <div className="absolute left-0 overflow-visible text-center" style={{ zIndex: 30 }}>
       <div style={{ position: "relative", width: "225px", overflow: "visible" }}>

@@ -166,10 +166,6 @@ function App() {
 
 
   // TODO: don't use if no collab mode
-  const addNode = () => {
-    console.log("add node===============================================================")
-    nodesMap.set(nodes[0].id, nodes[0]);
-  };
 
   const [metadata, setMetadata] = React.useState<any>({
     version: "1.0.0",
@@ -3748,7 +3744,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
           createDomainProfile={() => setDomainProfileOpen(true)}
           startQuantumAlgorithmSelection={startQuantumAlgorithmSelection}
           //sendToQunicorn={() => setIsQunicornOpen(true)}
-          openHistory={addNode}
+          openHistory={() => openHistoryModal()}
           startTour={() => { startTour(); }}
           onSaveAsTemplate={handleSaveAsTemplate}
           onManageTemplates={handleManageTemplates}

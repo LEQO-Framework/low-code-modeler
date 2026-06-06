@@ -2,7 +2,6 @@ import { memo, useEffect, useState } from "react";
 import { Handle, Position, Node, useUpdateNodeInternals } from "reactflow";
 import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
-import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { classicalConstructColor, quantumConstructColor } from "@/constants";
 import OutputPort from "../utils/outputPort";
@@ -273,7 +272,7 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
         // if (clientId === awareness.clientID) return;
 
         // Check if a peer has selected this specific node ID
-        if (state.cursor && state.cursor.selectedNodeId === id) {
+        if (state.cursor && state.cursor.mySelectedNodeId === id) {
           foundColor = state.cursor.color;
           foundName = state.cursor.name;
         }
@@ -297,19 +296,19 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
   }, [id]); // Re-run if node ID changes
 
   return (
-    <motion.div
+    <div
       className="grand-parent"
-      initial={false}
-      animate={{ width: 320, height: dynamicHeight }}
-      transition={{ duration: 0.3, ease: "easeInOut" }}
+      style={{ width: 320, height: dynamicHeight }}
     >
       <div
         className={"w-[320px] bg-white border border-solid border-gray-700 shadow-md overflow-hidden"}
-        style={{ height: `${dynamicHeight}px`, borderRadius: isQuantumPlugin ? "0px" : "40px",
-                 borderColor: remoteHighlightColor ? remoteHighlightColor : (selected? "#3B82F6" : "#374151"),
-                  boxShadow: remoteHighlightColor 
-                      ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}` // Glowing aura ring
-                      : undefined, }}
+        style={{
+          height: `${dynamicHeight}px`, borderRadius: isQuantumPlugin ? "0px" : "40px",
+          borderColor: remoteHighlightColor ? remoteHighlightColor : (selected ? "#3B82F6" : "#374151"),
+          boxShadow: remoteHighlightColor
+            ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}` // Glowing aura ring
+            : undefined,
+        }}
       >
         {/* Header */}
         <div className="w-full flex items-center" style={{ height: '52px' }}>
@@ -765,7 +764,7 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
           </div>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 });
 

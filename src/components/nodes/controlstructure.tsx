@@ -32,7 +32,7 @@ export const ControlStructureNode = memo((node: Node) => {
   const numberClassicalInputs = data.numberClassicalInputs || 1;
   const quantumHandles = Array.from({ length: numberQuantumInputs }, (_, index) => index);
   const classicalHandles = Array.from({ length: numberClassicalInputs }, (_, index) => index);
-  const [quantumOutputHandles, setQuantumOutputHandles] = useState([0]); 
+  const [quantumOutputHandles, setQuantumOutputHandles] = useState([0]);
   const [classicalOutputHandles, setClassicalOutputHandles] = useState([0]);
   const [condition, setCondition] = useState("");
 
@@ -61,9 +61,9 @@ export const ControlStructureNode = memo((node: Node) => {
 
     if (node.data.condition !== null) {
       //updateNodeValue(node.id, "condition", node.data.condition);
-      } else {
-        updateNodeValue(node.id, "condition", condition);
-      }
+    } else {
+      updateNodeValue(node.id, "condition", condition);
+    }
     setClassicalOutputHandles(connectedClassicalOutputs);
     setQuantumOutputHandles(connectedQuantumOutputs);
     updateNodeInternals(node.id);
@@ -91,7 +91,7 @@ export const ControlStructureNode = memo((node: Node) => {
         // if (clientId === awareness.clientID) return;
 
         // Check if a peer has selected this specific node ID
-        if (state.cursor && state.cursor.selectedNodeId === id) {
+        if (state.cursor && state.cursor.mySelectedNodeId === id) {
           foundColor = state.cursor.color;
           foundName = state.cursor.name;
         }
@@ -118,12 +118,12 @@ export const ControlStructureNode = memo((node: Node) => {
     <div className="grand-parent overflow-visible"
       style={{ minWidth: "1700px", height: `${dynamicHeight}px`, position: "relative", zIndex: -100 }}>
       <div className={"rounded-none bg-white border border-solid border-gray-700 shadow-md w-full h-full flex items-center justify-center relative overflow-visible"}
-            style={{
-              borderColor: remoteHighlightColor ? remoteHighlightColor : (selected? "#3B82F6" : "#374151"),
-              boxShadow: remoteHighlightColor 
-                  ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}` // Glowing aura ring
-                  : undefined,
-                  }}>
+        style={{
+          borderColor: remoteHighlightColor ? remoteHighlightColor : (selected ? "#3B82F6" : "#374151"),
+          boxShadow: remoteHighlightColor
+            ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}` // Glowing aura ring
+            : undefined,
+        }}>
         <div className="rounded-none border border-solid border-gray-700 shadow-md w-full h-full flex flex-col items-center relative z-10 overflow-visible">
           <div className="w-full bg-purple-300 text-black text-center font-semibold py-1">
             <span className="text-sm">Repeat</span>
@@ -186,7 +186,7 @@ export const ControlStructureNode = memo((node: Node) => {
                   className="mt-1 w-[80%] text-center"
                   style={{ fontSize: "12px", height: "22px" }}
                   value={node.data.condition || ""}
-                  onChange={(e) => {node.data["condition"] = e.target.value;updateNodeValue(node.id, "condition", e.target.value); setSelectedNode(node);}}
+                  onChange={(e) => { node.data["condition"] = e.target.value; updateNodeValue(node.id, "condition", e.target.value); setSelectedNode(node); }}
                 />
               </div>
 

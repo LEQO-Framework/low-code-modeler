@@ -85,7 +85,7 @@ export const QubitNode = memo((node: Node) => {
         // if (clientId === awareness.clientID) return;
 
         // Check if a peer has selected this specific node ID
-        if (state.cursor && state.cursor.selectedNodeId === id) {
+        if (state.cursor && state.cursor.mySelectedNodeId === id) {
           foundColor = state.cursor.color;
           foundName = state.cursor.name;
         }
@@ -111,17 +111,19 @@ export const QubitNode = memo((node: Node) => {
   return (
     <div className="grand-parent">
       <div className={"w-[350px] h-[170px] rounded-none bg-white  border border-solid border-gray-700 shadow-md"}
-            style={{borderColor: remoteHighlightColor ? remoteHighlightColor : (selected? "#3B82F6" : "#374151"),
-                  boxShadow: remoteHighlightColor 
-                      ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}` // Glowing aura ring
-                      : undefined, }}>
+        style={{
+          borderColor: remoteHighlightColor ? remoteHighlightColor : (selected ? "#3B82F6" : "#374151"),
+          boxShadow: remoteHighlightColor
+            ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}` // Glowing aura ring
+            : undefined,
+        }}>
         <div className="w-full flex items-center" style={{ height: '52px' }}>
-            <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
-              <img src="qubitIcon.png" alt="icon" className="w-[40px] h-[40px] object-contain flex-shrink-0" />
-              <div className="h-full w-[1px] bg-black mx-2" />
-              <span className="truncate font-semibold leading-none" style={{ paddingLeft: '75px' }}>{data.label}</span>
-            </div>
+          <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
+            <img src="qubitIcon.png" alt="icon" className="w-[40px] h-[40px] object-contain flex-shrink-0" />
+            <div className="h-full w-[1px] bg-black mx-2" />
+            <span className="truncate font-semibold leading-none" style={{ paddingLeft: '75px' }}>{data.label}</span>
           </div>
+        </div>
         <div className="custom-node-port-out">
           <OutputPort
             node={node}

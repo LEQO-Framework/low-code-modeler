@@ -3,7 +3,6 @@ import { cn } from "@/lib/utils";
 import { memo, useEffect, useState } from "react";
 import { Edge, Handle, Node, Position, getConnectedEdges, useUpdateNodeInternals } from "reactflow";
 import { shallow } from "zustand/shallow";
-import { motion } from "framer-motion";
 import OutputPort from "../utils/outputPort";
 import UncomputePort from "../utils/uncomputePort";
 import AncillaPort from "../utils/ancillaPort";
@@ -365,7 +364,7 @@ export const StatePreparationNode = memo((node: Node) => {
       let foundName: string | null = null;
 
       awareness.getStates().forEach((state: any, clientId: number) => {
-        if (state.cursor && state.cursor.selectedNodeId === id) {
+        if (state.cursor && state.cursor.mySelectedNodeId === id) {
           foundColor = state.cursor.color;
           foundName = state.cursor.name;
         }
@@ -391,11 +390,9 @@ export const StatePreparationNode = memo((node: Node) => {
   };
 
   return (
-    <motion.div
+    <div
       className="grand-parent"
-      initial={false}
-      animate={{ width: showingChildren ? 360 : 320, height: showingChildren ? 400 : 373 }}
-      transition={{ duration: 0.3, ease: "easeInOut" }}
+      style={{ width: showingChildren ? 360 : 320, height: showingChildren ? 400 : 373 }}
     >
       <div className="grand-parent">
         <div
@@ -412,10 +409,10 @@ export const StatePreparationNode = memo((node: Node) => {
                 : !ancillaMode
                   ? "370px"
                   : `${dynamicHeight}px`,
-            borderColor: remoteHighlightColor ? remoteHighlightColor : (selected? "#3B82F6" : "#374151"),
-            boxShadow: remoteHighlightColor 
-                ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}`
-                : undefined,
+            borderColor: remoteHighlightColor ? remoteHighlightColor : (selected ? "#3B82F6" : "#374151"),
+            boxShadow: remoteHighlightColor
+              ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}`
+              : undefined,
           }}
         >
           {outputIdentifierError && (
@@ -530,20 +527,20 @@ export const StatePreparationNode = memo((node: Node) => {
 
               <div className="flex flex-col justify-center pl-2 leading-tight select-none">
                 <div className="flex flex-col justify-center pl-2 leading-tight select-none">
-                {mixedView ? (
-                  <span className="font-semibold text-xs text-blue-900 block">
-                    P: {data.label} / E: {explorerLabelMap[data.label] || data.label}
-                  </span>
-                ) : experienceLevel === "explorer" ? (
-                  <span className="font-semibold text-sm">
-                    {explorerLabelMap[data.label] || data.label}
-                  </span>
-                ) : (
-                  <span className="font-semibold text-sm">
-                    {data.label}
-                  </span>
-                )}
-              </div>
+                  {mixedView ? (
+                    <span className="font-semibold text-xs text-blue-900 block">
+                      P: {data.label} / E: {explorerLabelMap[data.label] || data.label}
+                    </span>
+                  ) : experienceLevel === "explorer" ? (
+                    <span className="font-semibold text-sm">
+                      {explorerLabelMap[data.label] || data.label}
+                    </span>
+                  ) : (
+                    <span className="font-semibold text-sm">
+                      {data.label}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -773,7 +770,7 @@ export const StatePreparationNode = memo((node: Node) => {
                   active={true}
                 />
               )}
-              {(node.data.label === "Encode Value" || node.data.label === "Custom Encoding" || node.data.label === "Basis Encoding" || node.data.label === "Amplitude Encoding" || node.data.label === "Angle Encoding" || node.data.label ==="Matrix Encoding" ||node.data.label ==="Schmidt Decomposition") && (
+              {(node.data.label === "Encode Value" || node.data.label === "Custom Encoding" || node.data.label === "Basis Encoding" || node.data.label === "Amplitude Encoding" || node.data.label === "Angle Encoding" || node.data.label === "Matrix Encoding" || node.data.label === "Schmidt Decomposition") && (
                 <OutputPort
                   node={node}
                   index={0}
@@ -817,6 +814,6 @@ export const StatePreparationNode = memo((node: Node) => {
           )}
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 });

@@ -15,18 +15,20 @@ const selector = (state: {
   updateNodeValue: (nodeId: string, field: string, nodeVal: any) => void;
   setNodes: (node: Node) => void;
   setSelectedNode: (node: Node) => void;
+  experienceLevel: string;
 }) => ({
   selectedNode: state.selectedNode,
   edges: state.edges,
   nodes: state.nodes,
   setNodes: state.setNodes,
   updateNodeValue: state.updateNodeValue,
-  setSelectedNode: state.setSelectedNode
+  setSelectedNode: state.setSelectedNode,
+  experienceLevel: state.experienceLevel
 });
 
 export const MeasurementNode = memo((node: Node) => {
   const { data, selected } = node;
-  const { edges, nodes, updateNodeValue, setSelectedNode } = useStore(selector, shallow);
+  const { edges, nodes, updateNodeValue, setSelectedNode, experienceLevel } = useStore(selector, shallow);
   const alledges = getConnectedEdges([node], edges);
   const [y, setY] = useState("");
   const [classicalOutputIdentifierError, setClassicalOutputIdentifierError] = useState(false);
@@ -36,6 +38,9 @@ export const MeasurementNode = memo((node: Node) => {
   const [showingChildren, setShowingChildren] = useState(false);
   const [sizeError, setSizeError] = useState(false);
   const [classicalSizeError, setClassicalSizeError] = useState(false);
+    const [mixedView, setMixedView] = useState(false);
+  const [hasPioneerUser, setHasPioneerUser] = useState(false);
+  const [hasExplorerUser, setHasExplorerUser] = useState(false);
 
 
   const [inputs, setInputs] = useState(data.inputs || []);
@@ -119,7 +124,7 @@ export const MeasurementNode = memo((node: Node) => {
         // if (clientId === awareness.clientID) return;
 
         // Check if a peer has selected this specific node ID
-        if (state.cursor && state.cursor.selectedNodeId === id) {
+        if (state.cursor && state.cursor.mySelectedNodeId === id) {
           foundColor = state.cursor.color;
           foundName = state.cursor.name;
         }
@@ -146,12 +151,13 @@ export const MeasurementNode = memo((node: Node) => {
     <div className="grand-parent">
       <div
         className={"w-[320px] bg-white border border-solid shadow-md"}
-        style={{ height: `${dynamicHeight}px`,
-                  borderColor: remoteHighlightColor ? remoteHighlightColor : (selected? "#3B82F6" : "#374151"),
-                  boxShadow: remoteHighlightColor 
-                      ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}` // Glowing aura ring
-                      : undefined,
-              }}
+        style={{
+          height: `${dynamicHeight}px`,
+          borderColor: remoteHighlightColor ? remoteHighlightColor : (selected ? "#3B82F6" : "#374151"),
+          boxShadow: remoteHighlightColor
+            ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}` // Glowing aura ring
+            : undefined,
+        }}
       >
         {(outputIdentifierError || classicalOutputIdentifierError) && (
           <div className="absolute top-2 right-[-50px] group z-20">
@@ -188,7 +194,19 @@ export const MeasurementNode = memo((node: Node) => {
           <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
             <img src="measurementIcon2.png" alt="icon" className="w-[40px] h-[40px] object-contain flex-shrink-0" />
             <div className="h-full w-[1px] bg-black mx-2" />
-            <span className="truncate font-semibold leading-none" style={{ paddingLeft: '55px' }}>{data.label}</span>
+            <span className="truncate font-semibold leading-none">{mixedView ? (
+                  <span className="font-semibold text-xs text-blue-900 block">
+                    P: Measurement / E: Readout the Result
+                  </span>
+                ) : experienceLevel === "explorer" ? (
+                  <span className="font-semibold text-sm">
+                    Readout the Result
+                  </span>
+                ) : (
+                  <span className="font-semibold text-sm">
+                    Measurement
+                  </span>
+                )}</span>
           </div>
         </div>
         <div className="flex justify-center">

@@ -46,7 +46,7 @@ export const GroverNode = memo((node: Node) => {
         // if (clientId === awareness.clientID) return;
 
         // Check if a peer has selected this specific node ID
-        if (state.cursor && state.cursor.selectedNodeId === id) {
+          if (state.cursor && state.cursor.mySelectedNodeId === id) {
           foundColor = state.cursor.color;
           foundName = state.cursor.name;
         }
@@ -103,11 +103,9 @@ export const GroverNode = memo((node: Node) => {
   };
 
   return (
-    <motion.div
+    <div
       className="grand-parent"
-      initial={false}
-      animate={{ width: 320, height: 420 }}
-      transition={{ duration: 0.3, ease: "easeInOut" }}
+      style={{ width: 320, height: 420 }}
     >
       <div className="grand-parent">
         <div
@@ -245,6 +243,6 @@ export const GroverNode = memo((node: Node) => {
           </div>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 });

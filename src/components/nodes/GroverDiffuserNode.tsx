@@ -56,7 +56,7 @@ export const GroverDiffuserNode = memo((node: Node) => {
     };
   }, []);
 
-  
+
   const [remoteHighlightColor, setRemoteHighlightColor] = useState<string | null>(null);
   const [selectingUserName, setSelectingUserName] = useState<string | null>(null); // technically not needed, could extend functionality to also show user name next to highlighted node
 
@@ -71,7 +71,7 @@ export const GroverDiffuserNode = memo((node: Node) => {
         // if (clientId === awareness.clientID) return;
 
         // Check if a peer has selected this specific node ID
-        if (state.cursor && state.cursor.selectedNodeId === id) {
+        if (state.cursor && state.cursor.mySelectedNodeId === id) {
           foundColor = state.cursor.color;
           foundName = state.cursor.name;
         }
@@ -97,11 +97,9 @@ export const GroverDiffuserNode = memo((node: Node) => {
   const isConnected = edges.some(edge => edge.target === id);
 
   return (
-    <motion.div
+    <div
       className="grand-parent"
-      initial={false}
-      animate={{ width: 320, height: 250 }}
-      transition={{ duration: 0.3, ease: "easeInOut" }}
+      style={{ width: 320, height: 250 }}
     >
       <div className="grand-parent">
         <div
@@ -111,13 +109,13 @@ export const GroverDiffuserNode = memo((node: Node) => {
             mixedView && "border-purple-400"
           )}
           style={{
-          borderColor: remoteHighlightColor ? remoteHighlightColor : (selected ? "#3B82F6" : "#374151"),
-          boxShadow: remoteHighlightColor
-            ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}` // Glowing aura ring
-            : undefined,
-          height: `250px`
-        }}>
-        
+            borderColor: remoteHighlightColor ? remoteHighlightColor : (selected ? "#3B82F6" : "#374151"),
+            boxShadow: remoteHighlightColor
+              ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}` // Glowing aura ring
+              : undefined,
+            height: `250px`
+          }}>
+
           {/* HEADER */}
           <div className="w-full flex items-center" style={{ height: '52px' }}>
             <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
@@ -197,6 +195,6 @@ export const GroverDiffuserNode = memo((node: Node) => {
           </div>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 });

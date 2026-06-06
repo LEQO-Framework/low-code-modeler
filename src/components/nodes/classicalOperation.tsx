@@ -187,7 +187,7 @@ export const ClassicalOperationNode = memo((node: Node) => {
         // if (clientId === awareness.clientID) return;
 
         // Check if a peer has selected this specific node ID
-        if (state.cursor && state.cursor.selectedNodeId === id) {
+        if (state.cursor && state.cursor.mySelectedNodeId === id) {
           foundColor = state.cursor.color;
           foundName = state.cursor.name;
         }
@@ -211,11 +211,9 @@ export const ClassicalOperationNode = memo((node: Node) => {
   }, [id]); // Re-run if node ID changes
 
   return (
-    <motion.div
+    <div
       className="grand-parent"
-      initial={false}
-      animate={{ width: showingChildren ? 360 : 320, height: showingChildren ? 400 : 373 }}
-      transition={{ duration: 0.3, ease: "easeInOut" }}
+      style={{ width: showingChildren ? 360 : 320, height: showingChildren ? 400 : 373 }}
     >
       <div className="grand-parent">
         <div
@@ -386,6 +384,6 @@ export const ClassicalOperationNode = memo((node: Node) => {
           </div>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 });

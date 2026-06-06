@@ -1,6 +1,6 @@
 import { memo, useEffect, useState } from "react";
 import { Handle, Position, Node, Edge, useUpdateNodeInternals } from "reactflow";
-import { useStore }from "@/config/store";
+import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
 import { cn } from "@/lib/utils";
 import { awareness } from "@/yjs";
@@ -27,7 +27,7 @@ export const MergerNode = memo((node: Node) => {
   const [edgesGraph, setEdgesGraph] = useState(edges);
 
 
-  const numberInputs = data.numberInputs||2;
+  const numberInputs = data.numberInputs || 2;
   const numberOutputs = data.numberOutputs || 1;
 
   const handleCount = Math.max(numberInputs, 2);
@@ -76,7 +76,7 @@ export const MergerNode = memo((node: Node) => {
   useEffect(() => {
     updateNodeInternals(node.id);
     console.log(node.data.numberInputs)
-    if(node.data.numberInputs === undefined){
+    if (node.data.numberInputs === undefined) {
       console.log("set inputs")
       updateNodeValue(node.id, "numberInputs", "2");
     }
@@ -95,7 +95,7 @@ export const MergerNode = memo((node: Node) => {
 
         const index = parseInt(match[1], 10);
         console.log(index)
-        return index <= numberInputs-1;
+        return index <= numberInputs - 1;
       }
 
       return false;
@@ -106,11 +106,11 @@ export const MergerNode = memo((node: Node) => {
 
     if (edgesToRemove.length > 0) {
       // Compare old vs new, only update if different to avoid infinite loop
-      if(edgesToRemove.length !== edges.length){
+      if (edgesToRemove.length !== edges.length) {
         setNewEdges(edgesToRemove);
         setEdgesGraph(edgesToRemove);
       }
-      
+
     }
   }, [handleCount, numberInputs, node.id, edgesGraph]);
 
@@ -165,7 +165,7 @@ export const MergerNode = memo((node: Node) => {
         // if (clientId === awareness.clientID) return;
 
         // Check if a peer has selected this specific node ID
-        if (state.cursor && state.cursor.selectedNodeId === id) {
+        if (state.cursor && state.cursor.mySelectedNodeId === id) {
           foundColor = state.cursor.color;
           foundName = state.cursor.name;
         }
@@ -192,12 +192,13 @@ export const MergerNode = memo((node: Node) => {
     <div className="grand-parent">
       <div
         className={"w-[170px] bg-white rounded-none overflow-hidden border border-solid shadow-md"}
-        style={{ height: `${nodeHeight}px`,
-                 borderColor: remoteHighlightColor ? remoteHighlightColor : (selected? "#3B82F6" : "#374151"),
-                  boxShadow: remoteHighlightColor 
-                      ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}` // Glowing aura ring
-                      : undefined,
-              }}
+        style={{
+          height: `${nodeHeight}px`,
+          borderColor: remoteHighlightColor ? remoteHighlightColor : (selected ? "#3B82F6" : "#374151"),
+          boxShadow: remoteHighlightColor
+            ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}` // Glowing aura ring
+            : undefined,
+        }}
       >
         <div className="w-full flex items-center" style={{ height: '52px' }}>
           <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>

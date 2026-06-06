@@ -172,7 +172,7 @@ export const OperationNode = memo((node: Node) => {
         // if (clientId === awareness.clientID) return;
 
         // Check if a peer has selected this specific node ID
-        if (state.cursor && state.cursor.selectedNodeId === id) {
+        if (state.cursor && state.cursor.mySelectedNodeId === id) {
           foundColor = state.cursor.color;
           foundName = state.cursor.name;
         }
@@ -235,16 +235,17 @@ export const OperationNode = memo((node: Node) => {
         </div>
       )}
 
-        <div
-          className={"w-[320px] bg-white border border-solid shadow-md"}
-          style={{ height: !ancillaMode ? '375px' : `${dynamicHeight}px`,
-                 borderColor: remoteHighlightColor ? remoteHighlightColor : (selected? "#3B82F6" : "#374151"),
-                  boxShadow: remoteHighlightColor 
-                      ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}` // Glowing aura ring
-                      : undefined, 
-                }}
-        >
-          <div className="w-full flex items-center" style={{ height: '52px' }}>
+      <div
+        className={"w-[320px] bg-white border border-solid shadow-md"}
+        style={{
+          height: !ancillaMode ? '375px' : `${dynamicHeight}px`,
+          borderColor: remoteHighlightColor ? remoteHighlightColor : (selected ? "#3B82F6" : "#374151"),
+          boxShadow: remoteHighlightColor
+            ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}` // Glowing aura ring
+            : undefined,
+        }}
+      >
+        <div className="w-full flex items-center" style={{ height: '52px' }}>
           {node.data.implementation && (
             <img
               src="implementation-icon.png"

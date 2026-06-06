@@ -72,7 +72,7 @@ export const SplitterNode = memo((node: Node) => {
   const updateNodeInternals = useUpdateNodeInternals();
   useEffect(() => {
     updateNodeInternals(node.id);
-    if(node.data.numberOutputs === undefined){
+    if (node.data.numberOutputs === undefined) {
       console.log("set outputs")
       updateNodeValue(node.id, "numberOutputs", "2");
     }
@@ -89,7 +89,7 @@ export const SplitterNode = memo((node: Node) => {
       if (match && match[1]) {
 
         const index = parseInt(match[1], 10);
-        if(index >= 1){
+        if (index >= 1) {
           return false
         }
         console.log(index)
@@ -167,7 +167,7 @@ export const SplitterNode = memo((node: Node) => {
         // if (clientId === awareness.clientID) return;
 
         // Check if a peer has selected this specific node ID
-        if (state.cursor && state.cursor.selectedNodeId === id) {
+        if (state.cursor && state.cursor.mySelectedNodeId === id) {
           foundColor = state.cursor.color;
           foundName = state.cursor.name;
         }
@@ -194,11 +194,13 @@ export const SplitterNode = memo((node: Node) => {
     <div className="grand-parent">
       <div
         className="w-[170px] bg-white rounded-none overflow-hidden border border-solid shadow-md"
-        style={{ height: `${nodeHeight}px`, 
-                  borderColor: remoteHighlightColor ? remoteHighlightColor : (selected? "#3B82F6" : "#374151"),
-                  boxShadow: remoteHighlightColor 
-                      ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}` // Glowing aura ring
-                      : undefined, }}
+        style={{
+          height: `${nodeHeight}px`,
+          borderColor: remoteHighlightColor ? remoteHighlightColor : (selected ? "#3B82F6" : "#374151"),
+          boxShadow: remoteHighlightColor
+            ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}` // Glowing aura ring
+            : undefined,
+        }}
       >
         <div className="w-full flex items-center" style={{ height: '52px' }}>
           <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
