@@ -219,10 +219,11 @@ export const UniversalOracleNode = memo((node: Node) => {
                   "w-full p-1 mt-1 text-sm text-center text-black border-2 rounded-full outline-none transition-colors",
                   formatError ? "border-red-400 focus:border-red-500" : "border-blue-200 focus:border-blue-400"
                 )}
-                value={targetStates}
+                value={node.data.targetStates || targetStates}
                 onChange={(e) => {
                   setTargetStates(e.target.value);
-                  handleChange("targetStates", e.target.value);
+                  updateNodeValue(node.id, "targetStates", e.target.value)
+                  //handleChange("targetStates", e.target.value);
                 }}
               />
             </div>

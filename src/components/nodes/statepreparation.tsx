@@ -96,7 +96,6 @@ export const StatePreparationNode = memo((node: Node) => {
     edge => edge.target === node.id && edge.targetHandle === `ancillaHandlePrepareState0${node.id}`
   );
 
-  // Überwachen des Status aller aktiven Nutzer im Raum
   useEffect(() => {
     const checkUserRoles = () => {
       const states = awareness.getStates();
@@ -334,9 +333,20 @@ export const StatePreparationNode = memo((node: Node) => {
     setOutputs([...outputs, { id: newOutputId, label: `Output ${outputs.length + 1}`, value: "" }]);
   };
 
-  const handleOutputChange = (id, newValue) => {
-    setOutputs(outputs.map((output) => (output.id === id ? { ...output, value: newValue } : output)));
-  };
+  const handleOutputChange = (outputId: string, newValue: any) => {
+  // 1. Update the local React state array for immediate rendering
+  const updatedOutputs = outputs.map((output) => 
+    output.id === outputId ? { ...output, value: newValue } : output
+  );
+  setOutputs(updatedOutputs);
+
+  // 2. Sync it directly to the node object and the Zustand store
+  node.data.outputs = updatedOutputs;
+  updateNodeValue(node.id, "outputs", updatedOutputs);
+  
+  // 3. Keep the current selected node context aligned
+  setSelectedNode(node);
+};
 
   const handleOutputIdentifierChange = (e, field) => {
     const value = e.target.value;
@@ -630,7 +640,7 @@ export const StatePreparationNode = memo((node: Node) => {
                   >
                     Quantum State Name:
                   </label>
-                  {/* 🚀 ANGEPASST: Options zeigen im MixedView-Modus kombinierte Bezeichnungen */}
+
                   <select
                     style={{ visibility: showingChildren ? "hidden" : "visible" }}
                     className="w-full p-1 mt-1 bg-white text-center text-sm text-black border-2 border-blue-300 rounded-md"

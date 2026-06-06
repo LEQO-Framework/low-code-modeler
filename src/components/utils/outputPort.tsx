@@ -123,7 +123,6 @@ export default function OutputPort({
       if (node?.data?.outputTypes && node.data.outputTypes[index] != null) {
         outputType = node.data.outputTypes[index];
       }
-
     }
     else if (node.type.startsWith("editable")) {
       outputType = node.data.outputType || "any"; // default: "any", if outputType isn't defined
@@ -131,10 +130,8 @@ export default function OutputPort({
     else if (type === "classical") {
       outputType = "array";
     }
-    
 
-
-    console.log("OUTPUT PORT displayedOutputType", node.id, outputType)
+    console.log("OUTPUT PORT displayedOutputType", node.id, outputType);
 
     return outputType;
   }, [node.id, node.data.label, type, edges, nodes]);
@@ -142,8 +139,8 @@ export default function OutputPort({
   // update outputType if it changes
   useEffect(() => {
     if (node.data.outputTypes[index] !== displayedOutputType) {
-      const updatedOutputTypes = { ...node.data.outputTypes }
-      updatedOutputTypes[index] = displayedOutputType
+      const updatedOutputTypes = { ...node.data.outputTypes };
+      updatedOutputTypes[index] = displayedOutputType;
       updateNodeValue(node.id, "outputTypes", updatedOutputTypes);
       console.log("Updated node outputType in store:", node.id, displayedOutputType);
     }
@@ -172,13 +169,13 @@ export default function OutputPort({
       wasBellState.current = false;
     }
   }, [node.data.quantumStateName]);
+
   const rawType = displayedOutputType;
 
   const normalizedType =
     rawType === "String" || rawType === "File"
       ? rawType
       : rawType.toLowerCase();
-
 
   return (
     <div className="relative flex items-center justify-end space-x-0 mt-1">
@@ -215,19 +212,26 @@ export default function OutputPort({
               }`}
             value={outputIdentifier}
             onChange={(e) => {
+              const nextValue = e.target.value;
               const updatedOutputs = [...outputs];
-              if (!updatedOutputs[index]) updatedOutputs[index] = { identifier: "", size: "" };
+              
+              if (!updatedOutputs[index]) {
+                updatedOutputs[index] = { identifier: "", size: "" };
+              }
+              
               updatedOutputs[index] = {
                 ...updatedOutputs[index],
-                identifier: e.target.value,
+                identifier: nextValue,
                 type: isClassical ? "classical" : "quantum",
               };
 
-              // Ensure immutability by creating a new array
+              // Sync states locally and over global Zustand store room pipeline
               setOutputs(updatedOutputs);
               node.data.outputs = updatedOutputs;
               updateNodeValue(node.id, "outputs", updatedOutputs);
               setSelectedNode(node);
+
+              // Perform logic validation rules
               handleOutputIdentifierChange({
                 e,
                 node,
@@ -236,11 +240,6 @@ export default function OutputPort({
                 setSelectedNode,
                 setOutputIdentifierError,
               });
-
-              setOutputs(updatedOutputs);
-              node.data.outputs = updatedOutputs;
-              updateNodeValue(node.id, "outputs", updatedOutputs);
-              setSelectedNode(node);
             }}
           />
         </div>
@@ -257,15 +256,26 @@ export default function OutputPort({
                   ? `bg-white border-green-500 ${sizeRequired ? '' : 'border-dashed'}`
                   : `bg-white border-blue-500 ${sizeRequired ? '' : 'border-dashed'}`
               }`}
-            value={node.data.quantumStateName?.includes("Bell State") ? "2" : outputSize}
+            value={
+              node.data.quantumStateName?.includes("Bell State") 
+                ? "2" 
+                : (outputSize || node.data.outputs?.[index]?.size || "")
+            }
             readOnly={node.data.quantumStateName?.includes("Bell State")}
             onChange={(e) => {
+              const nextSizeValue = e.target.value;
               const updatedOutputs = [...outputs];
-              if (!updatedOutputs[index]) updatedOutputs[index] = { identifier: "", size: "" };
-              updatedOutputs[index] = { ...updatedOutputs[index], size: e.target.value };
+              
+              if (!updatedOutputs[index]) {
+                updatedOutputs[index] = { identifier: "", size: "" };
+              }
+              
+              updatedOutputs[index] = { ...updatedOutputs[index], size: nextSizeValue };
 
-              handleYChange(e.target.value, "size");
+              // Run size constraints handler validation
+              handleYChange(nextSizeValue, "size");
 
+              // Sync states and push updates across CRDT network layer
               setOutputs(updatedOutputs);
               node.data.outputs = updatedOutputs;
               updateNodeValue(node.id, "outputs", updatedOutputs);
