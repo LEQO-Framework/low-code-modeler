@@ -20,6 +20,7 @@ import { v4 as uuid } from "uuid";
 import * as consts from "../constants";
 import { Template } from "@/components/panels/categories";
 import { DomainProfile } from "@/components/modals/domainProfileModal";
+import { nodesMap } from "@/yjs";
 
 export type NodeData = {
   label: string;
@@ -544,8 +545,8 @@ export const useStore = create<RFState>()(persist((set, get) => ({
           const sourceNode = currentNodes.find((n) => n.id === removedEdge.source);
           console.log("target Node", targetNode);
 
-        if (targetNode) {
-          const targetNodeIndex = currentNodes.findIndex((n) => n.id === targetNode.id);
+          if (targetNode) {
+            const targetNodeIndex = currentNodes.findIndex((n) => n.id === targetNode.id);
 
             let targetData = {
               ...targetNode.data,
@@ -621,7 +622,7 @@ export const useStore = create<RFState>()(persist((set, get) => ({
       const node = get().nodes.find(n => n.id === nodeId);
       const sourceNode = get().nodes.find(n => n.id === connection.source);
       const targetNode = get().nodes.find(n => n.id === connection.target);
-      
+
       if (!node) return "any";
       if (node.type === consts.AlgorithmNode || node.type === consts.ClassicalAlgorithmNode) {
         return "any"
@@ -629,7 +630,7 @@ export const useStore = create<RFState>()(persist((set, get) => ({
       // TODO: figure out a better way to opt out of locked input types
       if (node.type === consts.PluginNode)
         return "any"
-      
+
       else if (node.type.includes("editable")) {
         // Ensure we have properties
         const inputTypes = node.data?.properties?.map((p: any) => p.type) || [];
@@ -639,7 +640,7 @@ export const useStore = create<RFState>()(persist((set, get) => ({
         // Extract the index from the targetHandle string
         // Example targetHandle: "classicalHandleInput0node123"
         let handleIndex = 0;
-        
+
         const match = connection.targetHandle.match(/^classicalHandleInput(\d)/);
         if (match) {
           handleIndex = parseInt(match[1], 10);
@@ -764,7 +765,7 @@ export const useStore = create<RFState>()(persist((set, get) => ({
     const target = get().nodes.find((node) => node.id === connection.target);
     console.log(nodeDataSource)
     console.log(target)
-    if(nodeDataSource.data.label == consts.qubitLabel && target.type === consts.SplitterNode) {
+    if (nodeDataSource.data?.label == consts.qubitLabel && target.type === consts.SplitterNode) {
       setTypeError("A qubit cannot be split into smaller units");
       return false;
     }
@@ -1496,6 +1497,12 @@ export const useStore = create<RFState>()(persist((set, get) => ({
       });
 
       console.log(updatedNodes)
+      const updatedNode = get().nodes.find(n => n.id === nodeId);
+
+
+      // if (updatedNode) nodesMap.set(nodeId, updatedNode);
+
+      console.log(updatedNodes)
 
       return {
         nodes: updatedNodes,
@@ -1509,6 +1516,14 @@ export const useStore = create<RFState>()(persist((set, get) => ({
     });
     console.log("History after update:", get().history);
     console.log("Current historyIndex:", get().historyIndex);
+    const updatedNode = get().nodes.find((n) => n.id === nodeId);
+    console.log(get().nodes)
+    console.log("pppppppppppppppppppppppppppppppppppppppp");
+    console.log(updatedNode)
+    // if (updatedNode) {
+    //   nodesMap.set(nodeId, updatedNode);
+    //   console.log("Updated Yjs node:", updatedNode);
+    // }
 
     console.log("History updated successfully.");
   },

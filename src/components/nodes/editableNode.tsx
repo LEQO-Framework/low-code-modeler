@@ -6,6 +6,7 @@ import OutputPort from "../utils/outputPort";
 import { cn } from "@/lib/utils";
 import { classicalConstructColor } from "@/constants";
 import { motion } from "framer-motion";
+import { awareness } from "@/yjs";
 
 const selector = (state: any) => ({
   selectedNode: state.selectedNode,
@@ -53,7 +54,7 @@ export const EditableNode = memo((node: Node) => {
     if (otherIndex !== -1) compareValue = allValues[otherIndex];
 
     if (!val || !compareValue) return "";
-    
+
 
     // Numeric comparison
     const numVal = parseFloat(val);
@@ -61,23 +62,24 @@ export const EditableNode = memo((node: Node) => {
     const dateVal = Date.parse(val);
     const dateCompare = Date.parse(compareValue);
     const isDate = !isNaN(dateVal) && !isNaN(dateCompare);
-    if(!isDate){
-    if (!isNaN(numVal) && !isNaN(numCompare)) {
-      switch (constraint) {
-        case "!=":
-          return numVal != numCompare ? "" : `Must be != ${value}`;
-        case "==":
-          return numVal == numCompare ? "" : `Must be == ${value}`;
-        case ">":
-          return numVal > numCompare ? "" : `Must be > ${value}`;
-        case "<":
-          return numVal < numCompare ? "" : `Must be < ${value}`;
-        case ">=":
-          return numVal >= numCompare ? "" : `Must be >= ${value}`;
-        case "<=":
-          return numVal <= numCompare ? "" : `Must be <= ${value}`;
+    if (!isDate) {
+      if (!isNaN(numVal) && !isNaN(numCompare)) {
+        switch (constraint) {
+          case "!=":
+            return numVal != numCompare ? "" : `Must be != ${value}`;
+          case "==":
+            return numVal == numCompare ? "" : `Must be == ${value}`;
+          case ">":
+            return numVal > numCompare ? "" : `Must be > ${value}`;
+          case "<":
+            return numVal < numCompare ? "" : `Must be < ${value}`;
+          case ">=":
+            return numVal >= numCompare ? "" : `Must be >= ${value}`;
+          case "<=":
+            return numVal <= numCompare ? "" : `Must be <= ${value}`;
+        }
       }
-    }}
+    }
 
     // Date comparison
 
@@ -133,18 +135,58 @@ export const EditableNode = memo((node: Node) => {
 
     const dynamicHeight = 100 + properties.length * 60 + 200;
 
+    const id = node.id;
+
+    const [remoteHighlightColor, setRemoteHighlightColor] = useState<string | null>(null);
+    const [selectingUserName, setSelectingUserName] = useState<string | null>(null); // technically not needed, could extend functionality to also show user name next to highlighted node
+
+    useEffect(() => {
+      const checkRemoteSelection = () => {
+        let foundColor: string | null = null;
+        let foundName: string | null = null;
+
+        // Loop through all active client states in the room
+        awareness.getStates().forEach((state: any, clientId: number) => {
+          // Skip your own client ID so you don't highlight it with your own color
+          // if (clientId === awareness.clientID) return;
+
+          // Check if a peer has selected this specific node ID
+          if (state.cursor && state.cursor.mySelectedNodeId === id) {
+            foundColor = state.cursor.color;
+            foundName = state.cursor.name;
+          }
+        });
+
+        setRemoteHighlightColor(foundColor);
+        setSelectingUserName(foundName);
+        console.log("COLOR", foundColor, foundName);
+      };
+
+      // Run once immediately on mount
+      checkRemoteSelection();
+
+      // 3. Listen to remote awareness updates
+      awareness.on("change", checkRemoteSelection);
+
+      // Clean up listener when the node unmounts
+      return () => {
+        awareness.off("change", checkRemoteSelection);
+      };
+    }, [id]); // Re-run if node ID changes
+
     return (
-      <motion.div
+      <div
         className="relative w-[450px]"
-        initial={false}
-        animate={{ height: dynamicHeight }}
+        style={{ height: dynamicHeight }}
       >
         <div
-          className={cn(
-            "relative w-full h-full rounded-[80px] bg-white shadow-md border border-gray-700",
-            selected && "border-blue-500"
-          )}
-        >
+          className={"relative w-full h-full rounded-[80px] bg-white shadow-md border"}
+          style={{
+            borderColor: remoteHighlightColor ? remoteHighlightColor : (selected ? "#3B82F6" : "#374151"),
+            boxShadow: remoteHighlightColor
+              ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}` // Glowing aura ring
+              : undefined,
+          }}>
           {/* Header */}
           <div className="absolute top-0 left-0 w-full h-[60px] rounded-t-[80px] overflow-hidden">
             <div className="w-full h-full bg-orange-300 flex items-center px-8">
@@ -172,8 +214,8 @@ export const EditableNode = memo((node: Node) => {
                       prop.type === "date"
                         ? "date"
                         : prop.type === "number"
-                        ? "number"
-                        : "text"
+                          ? "number"
+                          : "text"
                     }
                     value={propertyValues[index]}
                     onChange={(e) => {
@@ -235,7 +277,7 @@ export const EditableNode = memo((node: Node) => {
             />
           </div>
         </div>
-      </motion.div>
+      </div>
     );
   }
 
@@ -250,11 +292,9 @@ export const EditableNode = memo((node: Node) => {
   const dynamicHeight = 200 + numberInputs * 50 + numberOutputs * 130 + 100;
 
   return (
-    <motion.div
+    <div
       className="relative"
-      initial={false}
-      animate={{ width: 320, height: dynamicHeight }}
-      transition={{ duration: 0.3, ease: "easeInOut" }}
+      style={{ width: 320, height: dynamicHeight }}
     >
       <div
         className={cn(
@@ -265,19 +305,19 @@ export const EditableNode = memo((node: Node) => {
       >
         {/* Header */}
         {/* Header */}
-<div className="absolute top-[0px] left-0 w-full h-[60px] overflow-hidden z-10">
-  <div className="w-full h-full bg-blue-300 flex items-center px-2">
-    <img
-      src="classicalAlgorithmIcon.png"
-      alt="icon"
-      className="w-[42px] h-[42px] object-contain flex-shrink-0"
-    />
-    <div className="h-full w-[1px] bg-black mx-2" />
-    <span className="font-semibold leading-none cursor-pointer pl-6">
-      {label}
-    </span>
-  </div>
-</div>
+        <div className="absolute top-[0px] left-0 w-full h-[60px] overflow-hidden z-10">
+          <div className="w-full h-full bg-blue-300 flex items-center px-2">
+            <img
+              src="classicalAlgorithmIcon.png"
+              alt="icon"
+              className="w-[42px] h-[42px] object-contain flex-shrink-0"
+            />
+            <div className="h-full w-[1px] bg-black mx-2" />
+            <span className="font-semibold leading-none cursor-pointer pl-6">
+              {label}
+            </span>
+          </div>
+        </div>
 
 
         {/* Inputs */}
@@ -343,6 +383,6 @@ export const EditableNode = memo((node: Node) => {
           ))}
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 });

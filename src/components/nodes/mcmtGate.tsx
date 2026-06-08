@@ -84,11 +84,9 @@ export const MCMTGateNode = memo((node: Node<MCMTGateNodeData>) => {
   };
 
   return (
-    <motion.div
+    <div
       className="grand-parent"
-      initial={false}
-      animate={{ width: 320, height: dynamicHeight }}
-      transition={{ duration: 0.3, ease: "easeInOut" }}
+      style={{ width: 320, height: dynamicHeight }}
     >
       <div
         className={cn(
@@ -294,6 +292,6 @@ export const MCMTGateNode = memo((node: Node<MCMTGateNodeData>) => {
           })}
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 });

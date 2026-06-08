@@ -2,7 +2,7 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-A low-code modeler which allows modeling and executing quantum applications.
+A (collaborative) low-code modeler which allows modeling and executing quantum applications.
 
 ## Requirements
 
@@ -15,9 +15,10 @@ A low-code modeler which allows modeling and executing quantum applications.
 Make sure to start:
 
 1. **leqo-backend**: `cd leqo-backend && docker compose -f compose-dev.yaml up -d` (runs on port 8000)
-2. **Low Code Modeler**: `pnpm install && npm run dev` (runs on port 4242)
-3. **Configure**: Create `.env` with `VITE_LOW_CODE_BACKEND=http://localhost:8000`
-4. **Open**: http://localhost:4242
+2. **Configure**: Create `.env` with `VITE_LOW_CODE_BACKEND=http://localhost:8000`
+3. **Low-Code Modeler Collaboration Backend** : `cd backend && npm install && npm run dev` 
+4. **Low Code Modeler**: `pnpm install && npm run dev` (runs on port 4242)
+5. **Open**: http://localhost:4242
 
 ## Execution in Docker
 

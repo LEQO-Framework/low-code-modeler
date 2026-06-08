@@ -1,23 +1,25 @@
 import { memo, useState, useEffect } from "react";
 import { Node, Handle, Position } from "reactflow";
-import { useStore } from "@/config/store"; 
+import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
-import OutputPort from "../utils/outputPort"; 
+import OutputPort from "../utils/outputPort";
 import { AlertCircle } from "lucide-react";
 import { quantumConstructColor } from "@/constants";
+import { awareness } from "@/yjs"; // Ensure this import points to your Yjs awareness configuration
 
 const selector = (state: any) => ({
   updateNodeValue: state.updateNodeValue,
   nodes: state.nodes,
   edges: state.edges,
   setSelectedNode: state.setSelectedNode,
+  experienceLevel: state.experienceLevel
 });
 
 export const UniversalOracleNode = memo((node: Node) => {
   const { id, data, selected } = node;
-  const { updateNodeValue, nodes, edges, setSelectedNode } = useStore(selector, shallow);
+  const { updateNodeValue, nodes, edges, setSelectedNode, experienceLevel } = useStore(selector, shallow);
 
   const [mode, setMode] = useState(data.mode || "phase");
   const [targetStates, setTargetStates] = useState(data.targetStates || "");
@@ -27,18 +29,50 @@ export const UniversalOracleNode = memo((node: Node) => {
   const [outputIdentifierError, setOutputIdentifierError] = useState(false);
   const [sizeError, setSizeError] = useState(false);
 
+  // Dynamic user role tracking states
+  const [mixedView, setMixedView] = useState(false);
+  const [hasPioneerUser, setHasPioneerUser] = useState(false);
+  const [hasExplorerUser, setHasExplorerUser] = useState(false);
+
+  // Monitor room workspace users and roles
+  useEffect(() => {
+    const checkUserRoles = () => {
+      const states = awareness.getStates();
+      let hasPioneer = false;
+      let hasExplorer = false;
+
+      states.forEach((state: any) => {
+        if (state.cursor && state.cursor.role) {
+          if (state.cursor.role === "pioneer") hasPioneer = true;
+          if (state.cursor.role === "explorer") hasExplorer = true;
+        }
+      });
+
+      setHasPioneerUser(hasPioneer);
+      setHasExplorerUser(hasExplorer);
+      setMixedView(hasPioneer && hasExplorer);
+    };
+
+    checkUserRoles();
+    awareness.on("change", checkUserRoles);
+
+    return () => {
+      awareness.off("change", checkUserRoles);
+    };
+  }, []);
+
   const getRegisterSize = (currentNodeId: string, visited = new Set<string>()): number => {
     if (visited.has(currentNodeId)) return 3;
     visited.add(currentNodeId);
-    
+
     const incomingEdge = edges.find(e => e.target === currentNodeId);
-    if (!incomingEdge) return 3; 
-    
+    if (!incomingEdge) return 3;
+
     const sourceNode = nodes.find(n => n.id === incomingEdge.source);
     if (!sourceNode) return 3;
-    
+
     if (sourceNode.data?.size) return parseInt(sourceNode.data.size, 10);
-    
+
     return getRegisterSize(sourceNode.id, visited);
   };
 
@@ -67,22 +101,61 @@ export const UniversalOracleNode = memo((node: Node) => {
   }, [targetStates, maxAllowedIndex]);
 
   const isConnected = edges.some(edge => edge.target === id);
+  const [remoteHighlightColor, setRemoteHighlightColor] = useState<string | null>(null);
+  const [selectingUserName, setSelectingUserName] = useState<string | null>(null); // technically not needed, could extend functionality to also show user name next to highlighted node
 
+  useEffect(() => {
+    const checkRemoteSelection = () => {
+      let foundColor: string | null = null;
+      let foundName: string | null = null;
+
+      // Loop through all active client states in the room
+      awareness.getStates().forEach((state: any, clientId: number) => {
+        // Skip your own client ID so you don't highlight it with your own color
+        // if (clientId === awareness.clientID) return;
+
+        // Check if a peer has selected this specific node ID
+        if (state.cursor && state.cursor.mySelectedNodeId === id) {
+          foundColor = state.cursor.color;
+          foundName = state.cursor.name;
+        }
+      });
+
+      setRemoteHighlightColor(foundColor);
+      setSelectingUserName(foundName);
+      console.log("COLOR", foundColor, foundName);
+    };
+
+    // Run once immediately on mount
+    checkRemoteSelection();
+
+    // 3. Listen to remote awareness updates
+    awareness.on("change", checkRemoteSelection);
+
+    // Clean up listener when the node unmounts
+    return () => {
+      awareness.off("change", checkRemoteSelection);
+    };
+  }, [id]); // Re-run if node ID changes
   return (
-    <motion.div
+    <div
       className="grand-parent"
-      initial={false}
-      animate={{ width: 320, height: 420 }} 
-      transition={{ duration: 0.3, ease: "easeInOut" }}
+      style={{ width: 320, height: 420 }}
     >
       <div className="grand-parent">
         <div
           className={cn(
             "w-[320px] bg-white border border-solid border-gray-700 shadow-md relative",
-            selected && "border-blue-500"
+            selected && "border-blue-500",
+            mixedView && "border-purple-400"
           )}
-          style={{ height: "420px" }}
-        >
+          style={{
+            borderColor: remoteHighlightColor ? remoteHighlightColor : (selected ? "#3B82F6" : "#374151"),
+            boxShadow: remoteHighlightColor
+              ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}` // Glowing aura ring
+              : undefined,
+            height: `420px`
+          }}>
           {/* VALIDATION ALERT */}
           {formatError && (
             <div className="absolute top-2 right-[-40px] group z-20">
@@ -102,9 +175,21 @@ export const UniversalOracleNode = memo((node: Node) => {
                 className="w-[40px] h-[40px] object-contain flex-shrink-0"
               />
               <div className="h-full w-[1px] bg-black mx-2" />
-              <span className="font-semibold leading-none" style={{ paddingLeft: '60px' }}>
-                Universal Oracle
-              </span>
+              <div className="flex flex-col justify-center pl-2 leading-tight select-none w-full">
+                {mixedView ? (
+                  <span className="font-semibold text-xs text-blue-900 block">
+                    P: Universal Oracle / E: Mark the Target(s)
+                  </span>
+                ) : experienceLevel === "explorer" ? (
+                  <span className="font-semibold text-sm">
+                    Mark the Target(s)
+                  </span>
+                ) : (
+                  <span className="font-semibold text-sm">
+                    Universal Oracle
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 
@@ -134,10 +219,11 @@ export const UniversalOracleNode = memo((node: Node) => {
                   "w-full p-1 mt-1 text-sm text-center text-black border-2 rounded-full outline-none transition-colors",
                   formatError ? "border-red-400 focus:border-red-500" : "border-blue-200 focus:border-blue-400"
                 )}
-                value={targetStates}
+                value={node.data.targetStates || targetStates}
                 onChange={(e) => {
                   setTargetStates(e.target.value);
-                  handleChange("targetStates", e.target.value);
+                  updateNodeValue(node.id, "targetStates", e.target.value)
+                  //handleChange("targetStates", e.target.value);
                 }}
               />
             </div>
@@ -195,6 +281,6 @@ export const UniversalOracleNode = memo((node: Node) => {
           </div>
         </div>
       </div>
-    </motion.div>
+    </div >
   );
 });

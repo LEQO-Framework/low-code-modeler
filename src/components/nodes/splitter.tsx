@@ -2,6 +2,8 @@ import { memo, useEffect, useState } from "react";
 import { Handle, Position, Node, Edge, useUpdateNodeInternals } from "reactflow";
 import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
+import { cn } from "@/lib/utils";
+import { nodesMap, edgesMap, ydoc, awareness, yProvider } from "@/yjs";
 
 const selector = (state: {
   selectedNode: Node | null;
@@ -20,7 +22,8 @@ const selector = (state: {
 });
 
 export const SplitterNode = memo((node: Node) => {
-  const { data } = node;
+  const { data, selected } = node;
+  console.log("selected", selected)
   const { edges, setEdges, updateNodeValue, setNewEdges } = useStore(selector, shallow);
   const [edgesGraph, setEdgesGraph] = useState(edges);
 
@@ -69,7 +72,7 @@ export const SplitterNode = memo((node: Node) => {
   const updateNodeInternals = useUpdateNodeInternals();
   useEffect(() => {
     updateNodeInternals(node.id);
-    if(node.data.numberOutputs === undefined){
+    if (node.data.numberOutputs === undefined) {
       console.log("set outputs")
       updateNodeValue(node.id, "numberOutputs", "2");
     }
@@ -86,7 +89,7 @@ export const SplitterNode = memo((node: Node) => {
       if (match && match[1]) {
 
         const index = parseInt(match[1], 10);
-        if(index >= 1){
+        if (index >= 1) {
           return false
         }
         console.log(index)
@@ -148,11 +151,56 @@ export const SplitterNode = memo((node: Node) => {
 
   console.log(nodeHeight)
 
+  const id = node.id;
+
+  const [remoteHighlightColor, setRemoteHighlightColor] = useState<string | null>(null);
+  const [selectingUserName, setSelectingUserName] = useState<string | null>(null); // technically not needed, could extend functionality to also show user name next to highlighted node
+
+  useEffect(() => {
+    const checkRemoteSelection = () => {
+      let foundColor: string | null = null;
+      let foundName: string | null = null;
+
+      // Loop through all active client states in the room
+      awareness.getStates().forEach((state: any, clientId: number) => {
+        // Skip your own client ID so you don't highlight it with your own color
+        // if (clientId === awareness.clientID) return;
+
+        // Check if a peer has selected this specific node ID
+        if (state.cursor && state.cursor.mySelectedNodeId === id) {
+          foundColor = state.cursor.color;
+          foundName = state.cursor.name;
+        }
+      });
+
+      setRemoteHighlightColor(foundColor);
+      setSelectingUserName(foundName);
+      console.log("COLOR", foundColor, foundName);
+    };
+
+    // Run once immediately on mount
+    checkRemoteSelection();
+
+    // 3. Listen to remote awareness updates
+    awareness.on("change", checkRemoteSelection);
+
+    // Clean up listener when the node unmounts
+    return () => {
+      awareness.off("change", checkRemoteSelection);
+    };
+  }, [id]); // Re-run if node ID changes
+
   return (
     <div className="grand-parent">
       <div
-        className="w-[170px] bg-white rounded-none overflow-hidden border border-solid border-gray-700 shadow-md"
-        style={{ height: `${nodeHeight}px` }}
+        className="w-[170px] bg-white rounded-none overflow-hidden border border-solid shadow-md"
+        style={{
+          height: `${nodeHeight}px`,
+          borderColor: remoteHighlightColor ? remoteHighlightColor : (selected ? "#3B82F6" : "#374151"),
+          boxShadow: remoteHighlightColor
+            ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}` // Glowing aura ring
+            : undefined,
+        }}
       >
         <div className="w-full flex items-center" style={{ height: '52px' }}>
           <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
