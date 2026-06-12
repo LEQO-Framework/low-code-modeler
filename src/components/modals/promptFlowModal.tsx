@@ -43,18 +43,30 @@ export default function PromptFlowModal({
   const [loading, setLoading] = useState(false);
   const [generationMode, setGenerationMode] = useState<"compact" | "circuit">("compact");
   
-  // FIXED: State keys are now tracks as `${id}-${type}` to prevent cross-over wiping
   const [inputValues, setInputValues] = useState<Record<string, any>>({});
   const [toast, setToast] = useState<{ message: React.ReactNode; type: "success" | "error" | "info" } | null>(null);
+  const [inputErrors, setInputErrors] = useState<Record<string, string>>({});
+
+  // Validation helper for size inputs
+  const validateSizeInput = (value: string): { isValid: boolean; message: string } => {
+    if (!value) return { isValid: false, message: "Please enter a value." };
+    const num = Number(value);
+    if (isNaN(num)) return { isValid: false, message: "Must be a number." };
+    if (!Number.isInteger(num)) return { isValid: false, message: "Must be an integer." };
+    if (num <= 1) return { isValid: false, message: "Must be greater than 1." };
+    return { isValid: true, message: "" };
+  };
 
   useEffect(() => {
     if (missingValues.length > 0) {
       const initialValues: Record<string, any> = {};
+      const initialErrors: Record<string, string> = {};
       missingValues.forEach((input) => {
-        // Compound state tracker key configuration
         initialValues[`${input.id}-${input.type}`] = "";
+        initialErrors[`${input.id}-${input.type}`] = "";
       });
       setInputValues(initialValues);
+      setInputErrors(initialErrors);
     }
   }, [missingValues]);
 
@@ -75,7 +87,6 @@ export default function PromptFlowModal({
     if (!jobId) return;
     setLoading(true);
     try {
-      // FIXED: Safely unpack the compound UI key back to the structure the backend API expects
       const missingValuesArray = Object.entries(inputValues).map(([compoundKey, value]) => {
         const [id, type] = compoundKey.split("-");
         return {
@@ -98,6 +109,7 @@ export default function PromptFlowModal({
     setStep(1);
     setPrompt("");
     setInputValues({});
+    setInputErrors({});
   };
 
   const handleClose = () => {
@@ -200,7 +212,7 @@ export default function PromptFlowModal({
               <button
                 className="btn btn-primary"
                 onClick={handleSubmitMissingValues}
-                disabled={loading}
+                disabled={loading || Object.values(inputErrors).some((error) => error)}
               >
                 {loading ? "Submitting..." : "Generate Model"}
               </button>
@@ -208,8 +220,7 @@ export default function PromptFlowModal({
                 Cancel
               </button>
             </div>
-          }
-        >
+          }        >
           <div className="space-y-4">
             <p className="text-gray-600">
               The following values are required to generate your model. Please provide them below.
@@ -259,14 +270,31 @@ export default function PromptFlowModal({
                   )}
 
                   {input.type === "size" && (
-                    <input
-                      type="number"
-                      min={1}
-                      className="w-full border p-2 rounded"
-                      placeholder="Enter number of qubits (e.g. 3)"
-                      value={inputValues[itemKey] || ""}
-                      onChange={(e) => setInputValues({ ...inputValues, [itemKey]: e.target.value })}
-                    />
+                    <div className="space-y-1">
+                      <input
+                        type="number"
+                        min={2}
+                        step={1}
+                        className={`w-full border p-2 rounded ${
+                          inputErrors[itemKey] ? "border-red-500 bg-red-50" : "border-gray-300"
+                        }`}
+                        placeholder="Enter number of qubits (e.g. 3)"
+                        value={inputValues[itemKey] || ""}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          setInputValues({ ...inputValues, [itemKey]: value });
+                          const { isValid, message } = validateSizeInput(value);
+                          setInputErrors({ ...inputErrors, [itemKey]: isValid ? "" : message });
+                        }}
+                        onBlur={(e) => {
+                          const { isValid, message } = validateSizeInput(e.target.value);
+                          setInputErrors({ ...inputErrors, [itemKey]: isValid ? "" : message });
+                        }}
+                      />
+                      {inputErrors[itemKey] && (
+                        <p className="text-red-500 text-sm mt-1">{inputErrors[itemKey]}</p>
+                      )}
+                    </div>
                   )}
 
                   {(input.type === "number" || input.type === "file" || input.type === "string") && (
