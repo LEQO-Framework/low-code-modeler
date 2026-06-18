@@ -1754,8 +1754,35 @@ If none apply, return { "algorithms": [] }.
   if (sourceNode?.type === "groupNode" || targetNode?.type === "groupNode") {
     const edgeType = connection.sourceHandle?.includes("quantum") ? "quantumEdge" : "classicalEdge";
     const color = connection.sourceHandle?.includes("quantum") ? "#93C5FD" : "#F5A843";
+
+    // Falls source/target eine Gruppe ist, das eigentliche Kind-Node anhand des Handle-Suffix auflösen,
+    // damit die Edge direkt auf die Kind-Node zeigt statt auf die Gruppe selbst.
+    // Handle-IDs enden immer auf die Node-ID, z.B. "...StatePreparationInput0<nodeId>".
+    const resolveRealNodeId = (groupId: string | null | undefined, handleId: string | null | undefined): string | null => {
+      if (!handleId) return null;
+      const allNodes = reactFlowInstance.getNodes();
+      // Kandidaten: alle Nodes deren ID am Ende der Handle-ID steht
+      const candidates = allNodes.filter((n) => handleId.endsWith(n.id));
+      if (candidates.length === 0) return null;
+      // Längste Übereinstimmung wählen (vermeidet Teilstring-Fehltreffer bei ähnlichen IDs)
+      candidates.sort((a, b) => b.id.length - a.id.length);
+      return candidates[0].id;
+    };
+
+    let realSource = connection.source;
+    let realTarget = connection.target;
+
+    if (sourceNode?.type === "groupNode") {
+      realSource = resolveRealNodeId(sourceNode.id, connection.sourceHandle) ?? connection.source;
+    }
+    if (targetNode?.type === "groupNode") {
+      realTarget = resolveRealNodeId(targetNode.id, connection.targetHandle) ?? connection.target;
+    }
+
     reactFlowInstance.addEdges([{
       ...connection,
+      source: realSource,
+      target: realTarget,
       id: `edge-group-${Date.now()}`,
       type: edgeType,
       markerEnd: { type: "arrowclosed", width: 20, height: 20, color, hidden: false },
@@ -1829,9 +1856,31 @@ If none apply, return { "algorithms": [] }.
     [reactFlowInstance, setNodes, currentCategories],
   );
 
-  const onNodesDelete = useCallback(() => {
+  const onNodesDelete = useCallback((deletedNodes: Node[]) => {
     setContextMenu((prev) => ({ ...prev, visible: false })); // contextMenu disappears when node is deleted
-  }, [setContextMenu]);
+
+    // Handle-Bounds der Geschwister-Nodes neu berechnen lassen,
+    // damit Connects nach dem Löschen eines Nodes (z.B. innerhalb einer Gruppe) wieder funktionieren.
+    const deletedIds = new Set(deletedNodes.map((n) => n.id));
+    const affectedParentIds = new Set(
+      deletedNodes.map((n) => n.parentNode).filter(Boolean) as string[]
+    );
+
+    // Kurze Verzögerung damit React Flow den neuen Node/Edge-State zuerst übernimmt
+    requestAnimationFrame(() => {
+      const remainingNodes = reactFlowInstance.getNodes();
+      remainingNodes.forEach((node) => {
+        if (deletedIds.has(node.id)) return;
+        // Geschwister-Nodes (gleiche Gruppe) und die Gruppe selbst aktualisieren
+        if (
+          (node.parentNode && affectedParentIds.has(node.parentNode)) ||
+          affectedParentIds.has(node.id)
+        ) {
+          updateNodeInternals(node.id);
+        }
+      });
+    });
+  }, [setContextMenu, reactFlowInstance, updateNodeInternals]);
 
 
   const flowKey = "example-flow";
@@ -2781,7 +2830,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     console.log("Selected nodes:", selectedNodes.length);
     
     if (selectedNodes.length < 2) {
-      showToast("Mindestens 2 Nodes auswählen um zu gruppieren.", "info");
+      showToast("Select at least 2 nodes to group.", "info");
       return;
     }
    
@@ -2790,9 +2839,9 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     const updatedNodes = groupSelectedNodes(currentNodes, currentEdges);
     if (updatedNodes !== currentNodes) {
       reactFlowInstance.setNodes(updatedNodes);
-      showToast("Nodes gruppiert.", "success");
+      showToast("Nodes grouped.", "success");
     } else {
-      showToast("Mindestens 2 Nodes auswählen um zu gruppieren.", "info");
+      showToast("Select at least 2 nodes to group.", "info");
     }
   }, [reactFlowInstance, showToast]);
 
