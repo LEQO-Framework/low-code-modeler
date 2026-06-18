@@ -68,6 +68,18 @@ function SingleBlochSphere({ bloch, label }: { bloch: { x: number; y: number; z:
   };
   const stateFormula = `|ψ⟩ = cos(${thetaDeg}°/2)|0⟩ + e^(i·${phiDeg}°)·sin(${thetaDeg}°/2)|1⟩ ≈ ${fmt(cosHalfTheta)}|0⟩ + e^(i·${phiDeg}°)·${fmt(sinHalfTheta)}|1⟩`;
 
+  // Entanglement Persistence (von-Neumann-Entropie der reduzierten Dichtematrix dieses Qubits).
+  // Eigenwerte der reduzierten 2x2-Dichtematrix ergeben sich aus der Bloch-Vektor-Laenge r:
+  // lambda_{1,2} = (1 +/- r) / 2. S = -sum(lambda_i * log2(lambda_i)), in Bits (Standardkonvention
+  // der Quanteninformatik, analog Nielsen & Chuang). S=0 -> reiner/unverschraenkter Zustand,
+  // S=1 -> maximal gemischt (z.B. ein Qubit eines Bell-Paares).
+  const r = Math.min(1, Math.sqrt(bloch.x * bloch.x + bloch.y * bloch.y + bloch.z * bloch.z));
+  const lambda1 = (1 + r) / 2;
+  const lambda2 = (1 - r) / 2;
+  const log2safe = (p: number) => (p <= 1e-12 ? 0 : Math.log2(p));
+  const entropy = -(lambda1 * log2safe(lambda1) + lambda2 * log2safe(lambda2));
+  const entropyRounded = Math.round(entropy * 1000) / 1000;
+
   useEffect(() => {
     if (!mountRef.current) return;
     const W = 220, H = 220;
@@ -250,6 +262,12 @@ function SingleBlochSphere({ bloch, label }: { bloch: { x: number; y: number; z:
       </div>
       <div style={{ fontSize: 10.5, color: "#4b5563", textAlign: "center", maxWidth: 230, fontFamily: "monospace" }}>
         {stateFormula}
+      </div>
+      <div
+        style={{ fontSize: 10.5, color: "#6b7280" }}
+        title="Entanglement Persistence (von Neumann entropy of this qubit's reduced density matrix, in bits). 0 = pure/unentangled, 1 = maximally entangled with the rest of the system."
+      >
+        Entanglement Persistence: {entropyRounded.toFixed(3)} {entropyRounded < 0.01 ? "(pure)" : entropyRounded > 0.99 ? "(max. entangled)" : "(partially entangled)"}
       </div>
       <div style={{ fontSize: 10, color: "#9ca3af" }}>Drag · Shift+Drag Z-axis</div>
     </div>
