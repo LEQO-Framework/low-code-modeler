@@ -730,7 +730,7 @@ function QubitSelector({ numQubits, selected, onChange }: QubitSelectorProps) {
           allSelected ? "bg-blue-500 text-white border-blue-500" : "bg-white text-gray-600 border-gray-300 hover:bg-gray-50"
         }`}
       >
-        Alle
+        All
       </button>
       {Array.from({ length: numQubits }, (_, i) => (
         <button key={i} onClick={() => selectOne(i)}
@@ -843,6 +843,34 @@ export function QasmDiracPanel(props: Props) {
   const [mistralExplanation, setMistralExplanation] = useState<string | null>(null);
   const [mistralLoading, setMistralLoading] = useState(false);
 
+  /**
+   * Behebt Formatierungsfehler in der Mistral-Antwort, die KaTeX nicht rendern kann:
+   * - \begin{pmatrix}...\end{pmatrix} Blöcke, die nicht in $$...$$ eingeschlossen sind
+   * - \text{...} um Gate-Namen, was in $...$ oft nicht korrekt mit \otimes etc. zusammenspielt
+   */
+  const sanitizeMistralMath = (text: string): string => {
+    let result = text;
+
+    // Lose \begin{pmatrix}...\end{pmatrix} (und ähnliche Matrix-Envs) automatisch in $$...$$ einschließen,
+    // falls sie nicht bereits in $ oder $$ stehen.
+    const matrixEnvRegex = /(\\begin\{(?:p|b|v|V)?matrix\}[\s\S]*?\\end\{(?:p|b|v|V)?matrix\})/g;
+    result = result.replace(matrixEnvRegex, (match, group, offset, fullStr) => {
+      // Prüfen ob unmittelbar davor schon ein $ oder $$ steht
+      const before = fullStr.slice(Math.max(0, offset - 2), offset);
+      const after = fullStr.slice(offset + match.length, offset + match.length + 2);
+      if (before.includes("$") || after.includes("$")) {
+        return match; // bereits umschlossen, nichts tun
+      }
+      return `$$${match}$$`;
+    });
+
+    // \text{Toffoli} = $$...$$  →  Vorangestelltes "X =" außerhalb von $$ in die Formel hineinziehen,
+    // damit "Toffoli = " nicht als rohtext vor der Formel landet.
+    result = result.replace(/\\text\{([A-Za-z0-9†]+)\}\s*=\s*\$\$/g, "$$$1 = ");
+
+    return result;
+  };
+
   const explainWithMistral = async () => {
     if (!stepsResult || stepsResult.steps.length === 0) return;
     setMistralLoading(true);
@@ -854,7 +882,7 @@ export function QasmDiracPanel(props: Props) {
         return;
       }
       const stepsText = stepsResult.steps.map((s: any, i: number) =>
-        `Step ${i + 1}: Apply ${s.gateLabel} → |ψ${i + 1}⟩ = ${s.unicode}`
+        `Step ${i + 1}: Apply gate $${s.gateLabelLatex ?? s.gateLabel}$ → $|\\psi_{${i + 1}}\\rangle$ = ${s.unicode}`
       ).join("\n");
 
       // Node-Kontext aus Model extrahieren
@@ -886,15 +914,23 @@ export function QasmDiracPanel(props: Props) {
         } catch { /* ignore model errors */ }
       }
 
-      const prompt = `You are a quantum computing tutor. Explain the following quantum circuit computation in simple, clear English. For each step, explain what the gate does physically and mathematically, and why the state changes the way it does. Use LaTeX math notation with $...$ for inline math and $$...$$ for block equations.\n\nInitial state: |ψ₀⟩ = ${stepsResult.initial.unicode}\n\n${stepsText}${nodeContextText}\n\nPlease explain each step in 2-3 sentences. Focus on intuition and physical meaning. Include the matrix representation for each gate.`;
+      const numSteps = stepsResult.steps.length;
+      // Bei vielen Steps kürzer fassen und Matrizen nur einmal pro Gate-Typ zeigen,
+      // damit die Antwort innerhalb des Token-Budgets bleibt und nicht abgeschnitten wird.
+      const lengthGuidance = numSteps > 6
+        ? `This circuit has ${numSteps} steps. To stay within the response length limit: explain each step in 1-2 short sentences, and only include the matrix representation the FIRST time a given gate type appears (for repeated gate types, just refer back to it by name without repeating the matrix).`
+        : `Please explain each step in 2-3 sentences. Include the matrix representation for each gate.`;
+
+      const prompt = `You are a quantum computing tutor. Explain the following quantum circuit computation in simple, clear English. For each step, explain what the gate does physically and mathematically, and why the state changes the way it does.\n\nFormatting rules (follow these strictly):\n- Use LaTeX math notation with $...$ for inline math and $$...$$ for block equations.\n- Every math expression, including step headers, gate names, and tensor products (e.g. $I_0 \\otimes X_2$), MUST be wrapped in $...$. Never write LaTeX commands like \\otimes, \\text, or subscripts outside of $...$.\n- Do not use \\text{...} for gate names inside math mode; instead write the gate symbol directly, e.g. write $\\text{CNOT}_{2,3}$ as $CNOT_{2,3}$ using plain uppercase letters, not \\text.\n- Keep each step header on its own line in the format: ### Step N: Apply $<gate notation>$\n- IMPORTANT: make sure your response is complete and not cut off. Always finish with a brief concluding sentence about the final state.\n\nInitial state: $|\\psi_0\\rangle$ = ${stepsResult.initial.unicode}\n\n${stepsText}${nodeContextText}\n\n${lengthGuidance} Focus on intuition and physical meaning.`;
       const response = await fetch("https://api.mistral.ai/v1/chat/completions", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-        body: JSON.stringify({ model: "mistral-small-latest", messages: [{ role: "user", content: prompt }], max_tokens: 1000 }),
+        body: JSON.stringify({ model: "mistral-small-latest", messages: [{ role: "user", content: prompt }], max_tokens: 4000 }),
       });
       if (!response.ok) throw new Error(`Mistral API error: ${response.status}`);
       const data = await response.json();
-      setMistralExplanation(data.choices?.[0]?.message?.content ?? "No explanation received.");
+      const rawExplanation = data.choices?.[0]?.message?.content ?? "No explanation received.";
+      setMistralExplanation(sanitizeMistralMath(rawExplanation));
     } catch (e) {
       setMistralExplanation(`⚠ Error: ${e instanceof Error ? e.message : "Unknown error"}`);
     } finally {
@@ -1060,7 +1096,7 @@ export function QasmDiracPanel(props: Props) {
   const isPartial = effectiveSelected.length < numQubits;
 
   return (
-    <div className="rounded-xl border bg-white flex flex-col gap-3 p-4 max-h-[70vh] overflow-y-auto">
+    <div className="rounded-xl border bg-white flex flex-col gap-3 p-4">
 
       {/* Header */}
       <div className="flex items-center justify-between flex-shrink-0">

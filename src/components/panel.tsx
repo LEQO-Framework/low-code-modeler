@@ -252,7 +252,7 @@ export const CustomPanel = ({
 
       {/* Math Mode Tab */}
       {activeTab === "math" && mathMode && (
-        <div className="flex-1 overflow-y-auto flex flex-col">
+        <div className="flex-1 overflow-hidden flex flex-col">
 
           {/* Toolbar: Refresh + Export all */}
           <div className="flex-shrink-0 flex justify-between items-center px-2 pt-2 gap-2">
