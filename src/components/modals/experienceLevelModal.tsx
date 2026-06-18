@@ -153,7 +153,7 @@ export default function ExperienceModePanel({
               {/* Math Mode Toggle */}
               <tr>
                 <td align="right">
-                  <span title="Zeigt die Dirac-Notation des letzten QASM-Outputs im Properties Panel an.">
+                  <span title="Shows the Dirac notation of the latest QASM output in the Properties panel.">
                     Math Mode
                   </span>
                 </td>
@@ -172,7 +172,7 @@ export default function ExperienceModePanel({
               {/* QASM Editor Toggle */}
               <tr>
                 <td align="right">
-                  <span title="Zeigt einen QASM-Code-Editor im Properties Panel an.">
+                  <span title="Shows a QASM code editor in the Properties panel.">
                     QASM Editor
                   </span>
                 </td>
