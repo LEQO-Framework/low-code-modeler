@@ -103,10 +103,31 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   }, [id, getNode, getNodes, getEdges, addNodes, addEdges, onAction]);
 
   const deleteNode = useCallback(() => { // delete node
-    setNodes((nodes) => nodes.filter((node) => node.id !== id));
-    setEdges((edges) => edges.filter((edge) => edge.source !== id));
+    const allEdges = getEdges();
+    // Alle Edges entfernen, bei denen der Node Source ODER Target ist
+    const edgesToRemove = allEdges.filter(
+      (edge) => edge.source === id || edge.target === id
+    );
+    const removedEdgeIds = new Set(edgesToRemove.map((e) => e.id));
+
+    setNodes((nodes) =>
+      nodes
+        .filter((node) => node.id !== id)
+        .map((node) => {
+          // data.inputs der betroffenen Nachbar-Nodes bereinigen,
+          // damit verwaiste Handle-Referenzen den Connect nicht blockieren
+          const relevantRemoved = edgesToRemove.filter((e) => e.target === node.id);
+          if (relevantRemoved.length === 0) return node;
+          const updatedInputs = (node.data.inputs || []).filter(
+            (i: any) => !removedEdgeIds.has(i.edgeId ?? "")
+          );
+          return { ...node, data: { ...node.data, inputs: updatedInputs } };
+        })
+    );
+    setEdges((edges) => edges.filter((edge) => !removedEdgeIds.has(edge.id)));
+
     if (onAction) onAction("delete", id);
-  }, [id, setNodes, setEdges, onAction]);
+  }, [id, getEdges, setNodes, setEdges, onAction]);
 
   const incrementNodeDataField = useCallback((field: string, min_value: number) => { //TODO: richtiges Feld verwenden (bei merger: numberInputs) --> Feld als Argument übergeben?
     const node = getNode(id);
