@@ -179,7 +179,7 @@ export const GroupNode = memo((node: Node) => {
   const { setNodes, getNodes, getEdges } = useReactFlow();
 
   const [isEditingLabel, setIsEditingLabel] = useState(false);
-  const [editableLabel, setEditableLabel] = useState(data.label || "Gruppe");
+  const [editableLabel, setEditableLabel] = useState(data.label || "Group");
   const collapsed = data.collapsed === true;
   const locked = data.locked === true;
 
@@ -312,7 +312,7 @@ export const GroupNode = memo((node: Node) => {
 
   const handleLabelKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter")  handleLabelBlur();
-    if (e.key === "Escape") { setIsEditingLabel(false); setEditableLabel(data.label || "Gruppe"); }
+    if (e.key === "Escape") { setIsEditingLabel(false); setEditableLabel(data.label || "Group"); }
   };
 
   // Vertikale Position der Handles gleichmäßig verteilen
@@ -406,9 +406,9 @@ export const GroupNode = memo((node: Node) => {
                   whiteSpace: "nowrap", flex: 1, cursor: "text",
                 }}
                 onDoubleClick={() => setIsEditingLabel(true)}
-                title="Doppelklick zum Bearbeiten"
+                title="Double-click to edit"
               >
-                {data.label || "Gruppe"}
+                {data.label || "Group"}
               </span>
             )}
           </div>
@@ -427,7 +427,7 @@ export const GroupNode = memo((node: Node) => {
               backgroundColor: `${color}33`, color,
               border: `1px solid ${color}66`, cursor: "pointer", lineHeight: 1,
             }}
-            title={collapsed ? "Aufklappen" : "Einklappen"}
+            title={collapsed ? "Expand" : "Collapse"}
           >{collapsed ? "▸" : "▾"}</button>
 
           <button onClick={handleToggleLock}
@@ -453,7 +453,7 @@ export const GroupNode = memo((node: Node) => {
               border: "1px solid #fca5a5", cursor: "pointer",
               lineHeight: 1, marginLeft: "4px",
             }}
-            title="Gruppierung aufheben"
+            title="Ungroup"
           >×</button>
         </div>
       </div>

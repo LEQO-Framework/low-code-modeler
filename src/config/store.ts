@@ -471,12 +471,67 @@ export const useStore = create<RFState>()(persist((set, get) => ({
   },
 
   onNodesChange: (changes: NodeChange[]) => {
+    const removedNodeIds = new Set(
+      changes.filter((c) => c.type === "remove").map((c: any) => c.id as string)
+    );
+
     const currentNodes = applyNodeChanges(changes, get().nodes);
-    const currentEdges = get().edges;
-    console.log(currentNodes)
+
+    // Wenn Nodes gelöscht wurden: alle verbundenen Edges entfernen
+    // und data.inputs der betroffenen Nachbar-Nodes bereinigen (analog zu onEdgesChange)
+    let currentEdges = get().edges;
+    let nodesAfterCleanup = currentNodes;
+
+    if (removedNodeIds.size > 0) {
+      const edgesToRemove = currentEdges.filter(
+        (e) => removedNodeIds.has(e.source) || removedNodeIds.has(e.target)
+      );
+      const remainingEdges = currentEdges.filter(
+        (e) => !removedNodeIds.has(e.source) && !removedNodeIds.has(e.target)
+      );
+
+      // data.inputs der Ziel-Nodes bereinigen, analog zur Logik in onEdgesChange
+      nodesAfterCleanup = currentNodes.map((node) => {
+        const relevantRemovedEdges = edgesToRemove.filter((e) => e.target === node.id);
+        if (relevantRemovedEdges.length === 0) return node;
+
+        const removedEdgeIds = new Set(relevantRemovedEdges.map((e) => e.id));
+        const updatedInputs = (node.data.inputs || []).filter(
+          (i: any) => !removedEdgeIds.has(i.edgeId ?? "")
+        );
+
+        let targetData = { ...node.data, inputs: updatedInputs };
+
+        // revert inputTypes auf "any" falls anwendbar (analog zu onEdgesChange)
+        if (
+          (node.type === consts.AlgorithmNode ||
+            node.type === consts.ClassicalAlgorithmNode ||
+            node.type === consts.StatePreparationNode) ||
+          (node.type === consts.ClassicalOperatorNode &&
+            (node.data.label?.includes("Arithmetic") || node.data.label?.includes("Comparison")))
+        ) {
+          const hasNoFixedType =
+            node.data.encodingType === "Basis Encoding" ||
+            node.data.encodingType === "Custom Encoding";
+          const stillHasOtherEdge = remainingEdges.some((e) => e.target === node.id);
+          if (!stillHasOtherEdge && hasNoFixedType) {
+            targetData.inputTypes = ["any", "any"];
+            if (node.data.label?.includes("Arithmetic")) {
+              targetData.outputTypes = ["any"];
+            }
+          }
+        }
+
+        return { ...node, data: targetData };
+      });
+
+      currentEdges = remainingEdges;
+    }
+
+    console.log(nodesAfterCleanup)
     const newHistoryItem: HistoryItem = {
       nodes: [...get().nodes], // Copy the nodes array to avoid mutation
-      edges: [...currentEdges], // Copy the edges array to avoid mutation
+      edges: [...get().edges], // Copy the edges array to avoid mutation
     };
     console.log(changes);
     // Avoid unnecessary history updates if there are no changes
@@ -501,30 +556,16 @@ export const useStore = create<RFState>()(persist((set, get) => ({
     console.log("Current Edges:", currentEdges);
     console.log("New History Item:", newHistoryItem);
 
-    if (get().nodes.length < currentNodes) {
-      set({
-        selectedNode: null,
-        nodes: currentNodes,
-        edges: currentEdges,
-        history: [
-          ...get().history.slice(0, get().historyIndex + 1),
-          newHistoryItem,
-        ],
-        historyIndex: get().historyIndex + 1,
-      });
-    } else {
-
-      set({
-        selectedNode: null,
-        nodes: currentNodes,
-        edges: currentEdges,
-        history: [
-          ...get().history.slice(0, get().historyIndex + 1),
-          newHistoryItem,
-        ],
-        historyIndex: get().historyIndex + 1,
-      });
-    }
+    set({
+      selectedNode: null,
+      nodes: nodesAfterCleanup,
+      edges: currentEdges,
+      history: [
+        ...get().history.slice(0, get().historyIndex + 1),
+        newHistoryItem,
+      ],
+      historyIndex: get().historyIndex + 1,
+    });
     console.log("History after update:", get().history);
     console.log("Current historyIndex:", get().historyIndex);
   },
