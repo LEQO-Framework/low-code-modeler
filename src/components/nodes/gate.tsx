@@ -306,7 +306,7 @@ export const GateNode = memo((node: Node) => {
             position={Position.Left}
             className="!absolute !top-[50%] !left--4 z-10 circle-port-op !bg-blue-300 !border-black"
             isConnectableStart={false}
-            isConnectable={edges.filter(edge => edge.targetHandle === "quantumHandleGateOutput0" + node.id).length < 1}
+            isConnectable={edges.filter(edge => edge.targetHandle === "quantumHandleGateInput0" + node.id).length < 1}
           />
         )}
 
@@ -381,7 +381,7 @@ export const GateNode = memo((node: Node) => {
               position={Position.Right}
               className="!absolute !top-[25%] !right--15 z-10 circle-port-out !bg-blue-300 !border-black"
               isValidConnection={() => true}
-              isConnectable={edges.filter(edge => edge.sourceHandle === "quantumHandleGateOutput2" + node.id).length < 1}
+              isConnectable={edges.filter(edge => edge.sourceHandle === "quantumHandleGateOutput0" + node.id).length < 1}
             />
             <Handle
               type="source"
