@@ -576,18 +576,25 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
 
         let extractedIndex = -1;
 
-        // Generic pattern to check if handleId ends with -<number>
-        const endsWithIndexPattern = /-(\d+)$/;
-        const indexMatch = handleId.match(endsWithIndexPattern);
+        // PRIORITY 1: handle IDs always end with "<index><nodeId>" (e.g. "...Output0qubit-1").
+        // Extract the digits immediately preceding the known nodeId suffix. This must take
+        // priority over the generic "-<number>$" check below, because node IDs themselves can
+        // end in "-<digit>" (e.g. "qubit-1", "gate-h0"), which would otherwise be misread as
+        // the handle index instead of the actual index digit before the nodeId.
+        if (handleId.endsWith(nodeId)) {
+            const prefix = handleId.slice(0, handleId.length - nodeId.length);
+            const prefixMatch = prefix.match(/(\d+)$/);
+            if (prefixMatch) {
+                extractedIndex = parseInt(prefixMatch[1], 10);
+            }
+        }
 
-        if (indexMatch) {
-            extractedIndex = parseInt(indexMatch[1], 10);
-        } else {
-            const pattern = new RegExp(`(\\d+)(?=${nodeId}$)`);
-            const match = handleId.match(pattern);
-
-            if (match) {
-                extractedIndex = parseInt(match[1], 10);
+        // PRIORITY 2 (fallback): generic pattern to check if handleId ends with -<number>
+        if (extractedIndex === -1) {
+            const endsWithIndexPattern = /-(\d+)$/;
+            const indexMatch = handleId.match(endsWithIndexPattern);
+            if (indexMatch) {
+                extractedIndex = parseInt(indexMatch[1], 10);
             }
         }
 
@@ -678,6 +685,42 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
         }
 
         const parsedSize = parseInt(output?.size, 10);
+
+        // Fallback-Identifier generieren, falls der User keinen eigenen Namen vergeben hat.
+        // NUR für klassische Operator-Nodes relevant (Arithmetic/Bitwise/Comparison/Min&Max) -
+        // Quanten-Gates (z.B. H, CNOT) brauchen/erwarten hier KEINEN künstlichen Identifier,
+        // da dort identifier ohnehin nicht zur Disambiguierung verwendet wird.
+        const isClassicalOperatorNode = sourceNode.type === consts.ClassicalOperatorNode;
+
+        const getDefaultIdentifier = (): string => {
+            const OPERATOR_NAME_MAP: Record<string, string> = {
+                "+": "sum",
+                "-": "diff",
+                "*": "product",
+                "/": "quotient",
+                "**": "power",
+                "|": "or",
+                "&": "and",
+                "^": "xor",
+                "~": "invert",
+                "<": "lt",
+                ">": "gt",
+                "<=": "lte",
+                ">=": "gte",
+                "==": "eq",
+                "!=": "neq",
+                "min": "min",
+                "max": "max",
+            };
+            const opName = OPERATOR_NAME_MAP[sourceNode.data?.operator] ?? "result";
+            // Volle Node-ID anhängen (nicht gekürzt), um Kollisionen zwischen ähnlichen IDs zu vermeiden.
+            return `${opName}_out_${sourceNode.id}`;
+        };
+
+        const identifier = (output.identifier && output.identifier.trim() !== "")
+            ? output.identifier
+            : (isClassicalOperatorNode ? getDefaultIdentifier() : output.identifier);
+
         return {
             source: [
                 edge.source,
@@ -687,7 +730,7 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
                 edge.target,
                 getHandleIndex(edge.target, "target", edge.targetHandle)
             ],
-            identifier: output.identifier,
+            identifier: identifier,
             size: Number.isNaN(parsedSize) ? null : parsedSize
         }
     }
