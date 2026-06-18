@@ -138,7 +138,7 @@ function getComponentGroupInfo(
     const groupNode = allNodes.find((n) => n.id === groupId);
     if (groupNode) {
       return {
-        label: groupNode.data?.label || "Gruppe",
+        label: groupNode.data?.label || "Group",
         color: groupNode.data?.color || "#6366f1",
         groupId,
       };
@@ -330,55 +330,47 @@ export async function analyzeComponents(
     // Freistehende Circuits (kein parentNode) sammeln
     const standaloneComponents: Node[][] = [];
 
-    // Hilfsfunktion: Finde die oberste Gruppe eines Nodes (root group)
-    const getRootGroupId = (nodeId: string): string | null => {
-      let current = nodes.find(n => n.id === nodeId);
-      let rootGroupId: string | null = null;
+    // Hilfsfunktion: oberste (Root-)Gruppe eines Nodes finden, indem die parentNode-Kette hochgegangen wird
+    const getRootGroupId = (n: Node): string | null => {
+      let current: Node | undefined = n;
+      let rootId: string | null = null;
       while (current?.parentNode) {
-        rootGroupId = current.parentNode;
-        current = nodes.find(n => n.id === current!.parentNode);
+        rootId = current.parentNode;
+        current = nodes.find(x => x.id === current!.parentNode);
       }
-      return rootGroupId;
+      return rootId;
     };
 
     for (const component of rawComponents) {
       const parentIds = [...new Set(component.map(n => n.parentNode).filter(Boolean) as string[])];
 
-      if (parentIds.length === 1) {
-        // Direkte Kind-Nodes einer einzelnen Gruppe
-        const groupId = parentIds[0];
-        // Prüfe ob diese Gruppe selbst in einer Obergruppe ist
-        const rootId = getRootGroupId(component[0]?.id ?? "") ?? groupId;
-        const effectiveGroupId = rootId;
-        if (groupComponentMap.has(effectiveGroupId)) {
-          mergedComponents[groupComponentMap.get(effectiveGroupId)!].push(...component);
-        } else {
-          groupComponentMap.set(effectiveGroupId, mergedComponents.length);
-          mergedComponents.push([...component]);
-        }
-      } else if (parentIds.length > 1) {
-        // Nodes mit verschiedenen parentNodes → prüfe ob alle dieselbe Obergruppe haben
-        const rootIds = new Set(component.map(n => getRootGroupId(n.id) ?? n.parentNode ?? "").filter(Boolean));
-        if (rootIds.size === 1) {
-          // Alle in derselben Obergruppe → zusammenfassen
-          const rootGroupId = [...rootIds][0];
-          if (groupComponentMap.has(rootGroupId)) {
-            mergedComponents[groupComponentMap.get(rootGroupId)!].push(...component);
-          } else {
-            groupComponentMap.set(rootGroupId, mergedComponents.length);
-            mergedComponents.push([...component]);
-          }
-        } else {
-          // Verschiedene Obergruppen → separat
-          mergedComponents.push(component);
-        }
-      } else {
-        // Freistehende Komponente (kein parentNode)
+      if (parentIds.length === 0) {
+        // Echt freistehende Komponente (kein parentNode bei irgendeinem Node)
         if (!hasGroups) {
           standaloneComponents.push(component);
         } else {
           mergedComponents.push(component);
         }
+        continue;
+      }
+
+      // Root-Gruppe(n) der Komponente bestimmen (berücksichtigt verschachtelte Gruppen)
+      const rootGroupIds = new Set(
+        component.map(n => getRootGroupId(n)).filter(Boolean) as string[]
+      );
+
+      if (rootGroupIds.size === 1) {
+        // Alle Nodes der Komponente gehören (direkt oder über Verschachtelung) zur selben Root-Gruppe
+        const rootGroupId = [...rootGroupIds][0];
+        if (groupComponentMap.has(rootGroupId)) {
+          mergedComponents[groupComponentMap.get(rootGroupId)!].push(...component);
+        } else {
+          groupComponentMap.set(rootGroupId, mergedComponents.length);
+          mergedComponents.push([...component]);
+        }
+      } else {
+        // Komponente verteilt sich über mehrere unabhängige Root-Gruppen → separat behandeln
+        mergedComponents.push(component);
       }
     }
 
@@ -519,35 +511,11 @@ export async function analyzeComponents(
   };
 
   // Label und Farbe für eine Komponente bestimmen
-  // Hilfsfunktion: Oberste Gruppe eines Nodes finden
-  const findRootGroup = (nodeId: string): Node | null => {
-    let current = nodes.find(n => n.id === nodeId);
-    let rootGroup: Node | null = null;
-    while (current?.parentNode) {
-      const parent = nodes.find(n => n.id === current!.parentNode);
-      if (parent?.type === "groupNode") rootGroup = parent;
-      current = parent;
-    }
-    return rootGroup;
-  };
-
   const getComponentInfo = (componentNodes: Node[]) => {
     const parentIds = new Set(componentNodes.map(n => n.parentNode).filter(Boolean) as string[]);
 
-    // Prüfe ob alle Nodes dieselbe Obergruppe haben
-    const rootGroups = new Set(componentNodes.map(n => findRootGroup(n.id)?.id).filter(Boolean));
-
-    if (rootGroups.size === 1) {
-      // Alle in derselben Obergruppe → Obergruppe als Label verwenden
-      const rootGroupId = [...rootGroups][0]!;
-      const rootGroupNode = nodes.find(n => n.id === rootGroupId);
-      return {
-        label: rootGroupNode?.data?.label || "Group",
-        color: rootGroupNode?.data?.color || "#6366f1",
-        groupId: rootGroupId,
-      };
-    } else if (parentIds.size === 1) {
-      // Alle Nodes in derselben direkten Gruppe
+    if (parentIds.size === 1) {
+      // Alle Nodes in derselben Gruppe
       const groupId = [...parentIds][0];
       const groupNode = nodes.find(n => n.id === groupId);
       return {
@@ -556,7 +524,7 @@ export async function analyzeComponents(
         groupId,
       };
     } else if (parentIds.size > 1) {
-      // Nodes aus mehreren Gruppen ohne gemeinsame Obergruppe
+      // Nodes aus mehreren Gruppen → zusammengesetzter Name
       const groupNames = [...parentIds].map(gid => {
         const g = nodes.find(n => n.id === gid);
         return g?.data?.label || "Group";
