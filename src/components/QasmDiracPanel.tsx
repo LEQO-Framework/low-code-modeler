@@ -630,7 +630,7 @@ function ExportMenu({ latex, numQubits, terms, unicode, onGetCircuitSvg, stepsRe
         disabled={loadingSvg || loadingPdf}
         className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border border-gray-300 hover:bg-gray-100 text-gray-600 transition-colors disabled:opacity-50"
       >
-        {loadingSvg ? "⏳ Exportiere..." : loadingPdf ? "⏳ PDF..." : "↑ Export"}
+        {loadingSvg ? "⏳ Exporting..." : loadingPdf ? "⏳ PDF..." : "↑ Export"}
       </button>
 
       {open && (
@@ -1095,16 +1095,38 @@ export function QasmDiracPanel(props: Props) {
   const terms = fullResult?.terms ?? [];
   const isPartial = effectiveSelected.length < numQubits;
 
+  // Vereinfachtes Verschraenkungs-Kriterium: mehr als 1 Term in der Dirac-Summe bei >= 2 Qubits.
+  // Naeherung - erkennt nicht zuverlaessig Faelle, bei denen mehrere Terme dennoch einen
+  // separablen Zustand bilden (z.B. nach Basiswechsel), ist fuer die UI-Anzeige aber ausreichend.
+  const isEntangled = numQubits >= 2 && terms.length > 1;
+  const showEntanglementBadge = numQubits >= 2 && terms.length > 0;
+
   return (
     <div className="rounded-xl border bg-white flex flex-col gap-3 p-4">
 
       {/* Header */}
-      <div className="flex items-center justify-between flex-shrink-0">
+      <div className="flex items-start justify-between flex-shrink-0 gap-2 flex-wrap">
         <h3 className="text-base font-semibold text-gray-800">{title}</h3>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap justify-end">
           {fullResult && (
             <span className="text-xs text-gray-400">
              {numQubits} {numQubits === 1 ? "Qubit" : "Qubits"} · {terms.length} {terms.length === 1 ? "Term" : "Terms"}
+            </span>
+          )}
+          {showEntanglementBadge && (
+            <span
+              className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                isEntangled
+                  ? "bg-purple-100 text-purple-700"
+                  : "bg-green-100 text-green-700"
+              }`}
+              title={
+                isEntangled
+                  ? "More than one term in the superposition across multiple qubits (approximate heuristic)."
+                  : "Single term — state factors into independent qubits (approximate heuristic)."
+              }
+            >
+              {isEntangled ? "🔗 Entangled" : "✓ Separable"}
             </span>
           )}
           {terms.length > 0 && (
