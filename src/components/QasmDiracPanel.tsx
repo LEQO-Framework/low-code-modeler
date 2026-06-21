@@ -8,11 +8,49 @@ import { qasmToDirac, qasmToDiracSteps, type DiracStepsResult } from "./utils/qa
 import type { Complex } from "@/lib/diracFormatter";
 import { statevectorToDirac } from "@/lib/diracFormatter";
 import JSZip from "jszip";
-import { BlochSphere, BlochSphereMulti } from "./BlochSphere";
+import { BlochSphere, BlochSphereMulti, getEntanglementPersistence, isStateFullySeparable, getMultiQubitPersistence } from "./BlochSphere";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
+
+/**
+ * Extrahiert aus dem rohen QASM die globalen leqo_reg-Qubit-Indizes des Inputs der
+ * (letzten) measurementNode im Schaltkreis. Wird genutzt um in der Dirac-Notation einen
+ * Hinweis zu zeigen, in welchen Qubits das eigentliche Ergebnis (z.B. eine Summe) kodiert ist,
+ * statt dass der User das selbst aus dem vollen Registerzustand herausrechnen muss.
+ *
+ * Vorgehen: den Block zwischen "@leqo.input 0" und der zugehörigen
+ * "let <var> = leqo_reg[{a, b, c}];"-Zeile innerhalb des measure-Knoten-Abschnitts (erkennbar an
+ * "measure ...;") finden und die Indizes extrahieren. Liefert null, falls keine Measurement-Node
+ * im QASM gefunden wird oder die Struktur nicht dem erwarteten Muster entspricht.
+ */
+function extractMeasurementResultIndices(qasmText: string): number[] | null {
+  if (!qasmText) return null;
+
+  // Alle Node-Abschnitte durchgehen und den (letzten) finden, der eine "measure"-Anweisung enthält.
+  const sectionRegex = /\/\* Start node ([\w-]+) \*\/([\s\S]*?)\/\* End node \1 \*\//g;
+  let match: RegExpExecArray | null;
+  let lastMeasureSection: string | null = null;
+
+  while ((match = sectionRegex.exec(qasmText)) !== null) {
+    const section = match[2];
+    if (/\bmeasure\b/.test(section)) {
+      lastMeasureSection = section;
+    }
+  }
+
+  if (!lastMeasureSection) return null;
+
+  // Innerhalb dieses Abschnitts: die erste direkte "let <var> = leqo_reg[{a, b, c}];" Zuweisung
+  // vor der "measure"-Zeile ist das Input-Register der Messung.
+  const directRegex = /let\s+(\S+)\s*=\s*leqo_reg\[\{([^}]*)\}\];/;
+  const directMatch = lastMeasureSection.match(directRegex);
+  if (!directMatch) return null;
+
+  const indices = directMatch[2].split(",").map((s) => parseInt(s.trim(), 10));
+  return indices.every((n) => !Number.isNaN(n)) ? indices : null;
+}
 
 type QasmProps = {
   qasm: string;
@@ -316,6 +354,51 @@ function buildLatexExport(
   stepsResult?: DiracStepsResult,
   aiExplanation?: string
 ): string {
+  // Statevector einmal rekonstruieren, für Separabilitäts- und Persistence-Berechnung genutzt.
+  const statevectorArr = Array.from({ length: 1 << numQubits }, (_, i) => {
+    const term = terms.find((t) => parseInt(t.basisState, 2) === i);
+    return term ? term.amplitude : { re: 0, im: 0 };
+  });
+
+  // Exakte Separabilitätsprüfung (keine Heuristik): vollständig separabel, wenn JEDES Qubit
+  // einen reinen reduzierten Zustand hat (Bloch-Vektor-Länge 1 für jede Qubit-Bipartition).
+  const isEntangledExport = numQubits >= 2 && !isStateFullySeparable(statevectorArr, numQubits);
+
+  const persistenceExport: number | null = numQubits === 1
+    ? getEntanglementPersistence(statevectorArr, numQubits, 0)
+    : isEntangledExport
+    ? getMultiQubitPersistence(terms, numQubits)
+    : 0;
+
+  const entanglementSection = `\\section*{Entanglement Properties}
+
+\\textbf{Definitions.}
+
+\\emph{Separable:} A multi-qubit quantum state is called \\emph{separable} if it can be
+written as a tensor product of the individual qubit states, i.e.\\
+$|\\psi\\rangle = |\\psi_1\\rangle \\otimes |\\psi_2\\rangle \\otimes \\dots \\otimes |\\psi_n\\rangle$.
+In this case, each qubit can be fully described by its own, independent quantum state.
+
+\\emph{Entangled:} A multi-qubit quantum state is called \\emph{entangled} if no such
+tensor-product decomposition exists. The qubits cannot be described independently of one
+another: measuring one qubit instantaneously affects the possible outcomes of measuring the
+others, even if the qubits are physically separated.
+
+\\textbf{Status for this circuit:} This ${numQubits}-qubit state is
+\\textbf{${isEntangledExport ? "entangled" : "separable"}}${
+    numQubits >= 2 && !isEntangledExport
+      ? " (it factors into a product of single-qubit states)"
+      : ""
+  }.
+
+${persistenceExport !== null
+  ? numQubits === 1
+    ? `\\textbf{Entanglement Persistence:} $S = ${persistenceExport.toFixed(3)}$ (von Neumann entropy of the qubit's reduced density matrix, in bits). $S = 0$ corresponds to a pure, unentangled state; $S = 1$ corresponds to a maximally mixed/entangled qubit.\n\n`
+    : `\\textbf{Entanglement Persistence:} $P = ${persistenceExport.toFixed(3)}$ (persistency of entanglement: the minimum number of local qubit measurements required until the remaining state is guaranteed to be fully separable).\n\n`
+  : numQubits >= 2
+  ? `\\textbf{Entanglement Persistence:} not computable -- this state does not match any of the recognized standard patterns (GHZ-like states, Bell-state variants, W-states).\n\n`
+  : ""}`;
+
   const termLines = terms
     .map((t) => {
       const p = prob(t.amplitude.re, t.amplitude.im);
@@ -478,7 +561,7 @@ The quantum system state with ${numQubits} qubit${numQubits !== 1 ? "s" : ""} is
   |\\psi\\rangle = ${latex}
 \\end{equation}
 
-${stepsSection}${histogramSection}${tableSection}${gateExplanationsSection ? "\\clearpage\n" + gateExplanationsSection : ""}${aiSection}\\end{document}
+${entanglementSection}${stepsSection}${histogramSection}${tableSection}${gateExplanationsSection ? "\\clearpage\n" + gateExplanationsSection : ""}${aiSection}\\end{document}
 `;
 }
 
@@ -839,6 +922,7 @@ export function QasmDiracPanel(props: Props) {
   const [showBasisStates, setShowBasisStates] = useState(true);
   const [showSteps, setShowSteps] = useState(false);
   const [showBloch, setShowBloch] = useState(false);
+  const [showProperties, setShowProperties] = useState(false);
   const [blochQubit, setBlochQubit] = useState(0);
   const [mistralExplanation, setMistralExplanation] = useState<string | null>(null);
   const [mistralLoading, setMistralLoading] = useState(false);
@@ -956,6 +1040,41 @@ export function QasmDiracPanel(props: Props) {
   }, [fullResult, props]);
 
   const numQubits = fullResult?.numQubits ?? ("numQubits" in props ? props.numQubits : 0);
+
+  // Globale Qubit-Indizes, in denen laut QASM das tatsächliche Measurement-Ergebnis liegt
+  // (z.B. die Summe eines Additionsknotens), und das daraus direkt berechnete Teilergebnis.
+  // Wird nur als Hinweis angezeigt, verändert nicht die eigentliche Qubit-Auswahl.
+  const measurementResultIndices = useMemo(() => {
+    if (!("qasm" in props) || !props.qasm) return null;
+    return extractMeasurementResultIndices(props.qasm);
+  }, [props]);
+
+  const measurementResultHint = useMemo(() => {
+    if (!measurementResultIndices || !fullResult) return null;
+    if (measurementResultIndices.length === 0) return null;
+    // Nur sinnvoll als Hinweis, wenn es tatsächlich eine ECHTE Teilmenge aller Qubits ist
+    if (measurementResultIndices.length >= fullResult.numQubits) return null;
+
+    // Eindeutigkeit prüfen: alle Terme müssen an diesen Indizes denselben Bitstring haben,
+    // sonst gibt es kein deterministisches Einzelergebnis zum Anzeigen.
+    const bitsForTerm = (basisState: string) =>
+      measurementResultIndices.map((i) => basisState[i]).join("");
+
+    const distinctOutcomes = new Set(fullResult.terms.map((t) => bitsForTerm(t.basisState)));
+    if (distinctOutcomes.size !== 1) return null;
+
+    const bits = [...distinctOutcomes][0];
+    // measurementResultIndices ist aufsteigend sortiert, d.h. bits[0] entspricht dem Qubit mit
+    // dem KLEINSTEN Index (z.B. sum[0], das niedrigstwertige Bit bei Addier-Schaltkreisen).
+    // Für die Dezimalwert-Interpretation muss daher umgekehrt werden, da parseInt(..., 2) das
+    // höchstwertige Bit zuerst erwartet.
+    const decimal = parseInt(bits.split("").reverse().join(""), 2);
+    return {
+      indices: measurementResultIndices,
+      bits,
+      decimal,
+    };
+  }, [measurementResultIndices, fullResult]);
 
   const [selectedqubits, setSelectedQubits] = useState<number[]>([]);
 
@@ -1095,11 +1214,18 @@ export function QasmDiracPanel(props: Props) {
   const terms = fullResult?.terms ?? [];
   const isPartial = effectiveSelected.length < numQubits;
 
-  // Vereinfachtes Verschraenkungs-Kriterium: mehr als 1 Term in der Dirac-Summe bei >= 2 Qubits.
-  // Naeherung - erkennt nicht zuverlaessig Faelle, bei denen mehrere Terme dennoch einen
-  // separablen Zustand bilden (z.B. nach Basiswechsel), ist fuer die UI-Anzeige aber ausreichend.
-  const isEntangled = numQubits >= 2 && terms.length > 1;
-  const showEntanglementBadge = numQubits >= 2 && terms.length > 0;
+  // Exakte Separabilitätsprüfung (keine Heuristik mehr): vollständig separabel, wenn JEDES
+  // Qubit einen reinen reduzierten Zustand hat (Bloch-Vektor-Länge 1 für jede Bipartition).
+  // Deckt z.B. den Fall ab, dass zwei unabhängige H-Gates ohne CNOT 4 Terme erzeugen, der
+  // Zustand aber trotzdem ein reines Tensorprodukt (separabel) ist.
+  const isEntangled = useMemo(() => {
+    if (numQubits < 2 || terms.length === 0) return false;
+    const statevectorArr = Array.from({ length: 1 << numQubits }, (_, i) => {
+      const term = terms.find((t: any) => parseInt(t.basisState, 2) === i);
+      return term ? term.amplitude : { re: 0, im: 0 };
+    });
+    return !isStateFullySeparable(statevectorArr, numQubits);
+  }, [terms, numQubits]);
 
   return (
     <div className="rounded-xl border bg-white flex flex-col gap-3 p-4">
@@ -1111,22 +1237,6 @@ export function QasmDiracPanel(props: Props) {
           {fullResult && (
             <span className="text-xs text-gray-400">
              {numQubits} {numQubits === 1 ? "Qubit" : "Qubits"} · {terms.length} {terms.length === 1 ? "Term" : "Terms"}
-            </span>
-          )}
-          {showEntanglementBadge && (
-            <span
-              className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                isEntangled
-                  ? "bg-purple-100 text-purple-700"
-                  : "bg-green-100 text-green-700"
-              }`}
-              title={
-                isEntangled
-                  ? "More than one term in the superposition across multiple qubits (approximate heuristic)."
-                  : "Single term — state factors into independent qubits (approximate heuristic)."
-              }
-            >
-              {isEntangled ? "🔗 Entangled" : "✓ Separable"}
             </span>
           )}
           {terms.length > 0 && (
@@ -1164,6 +1274,19 @@ export function QasmDiracPanel(props: Props) {
               Bloch
             </button>
           )}
+          {fullResult && numQubits > 0 && (
+            <button
+              onClick={() => setShowProperties((v) => !v)}
+              className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                showProperties
+                  ? "bg-teal-50 border-teal-300 text-teal-600"
+                  : "border-gray-300 hover:bg-gray-100 text-gray-600"
+              }`}
+            >
+              <span>{showProperties ? "▾" : "▸"}</span>
+              Properties
+            </button>
+          )}
           {fullResult && terms.length > 0 && (
             <ExportMenu
               latex={fullResult.latex}
@@ -1196,6 +1319,25 @@ export function QasmDiracPanel(props: Props) {
           |ψ⟩ = {unicodeStr}
         </span>
       </div>
+
+      {/* Hinweis: in welchen Qubits laut Measurement-Node das eigentliche Ergebnis kodiert ist,
+          nur sichtbar wenn aktuell "All" ausgewählt ist (sonst hat der User die Auswahl bereits
+          selbst getroffen und der Hinweis wäre redundant). */}
+      {!isPartial && measurementResultHint && (
+        <div className="flex-shrink-0 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 flex items-center gap-2 flex-wrap">
+          <span className="text-emerald-600">💡</span>
+          <span className="text-xs text-emerald-800">
+            Result is encoded in qubit{measurementResultHint.indices.length > 1 ? "s" : ""}{" "}
+            <span className="font-mono font-semibold">
+              q{measurementResultHint.indices.join(", q")}
+            </span>
+            :{" "}
+            <span className="font-mono font-semibold">
+              |{measurementResultHint.bits}⟩ = {measurementResultHint.decimal}₁₀
+            </span>
+          </span>
+        </div>
+      )}
 
       {/* Zwischenschritte */}
       {showSteps && stepsResult && stepsResult.steps.length > 0 && (
@@ -1361,6 +1503,69 @@ export function QasmDiracPanel(props: Props) {
           />
         </div>
       )}
+
+      {/* Properties Tab */}
+      {showProperties && fullResult && numQubits > 0 && (() => {
+        const statevectorArr = Array.from({ length: 1 << numQubits }, (_, i) => {
+          const term = fullResult.terms.find(t => parseInt(t.basisState, 2) === i);
+          return term ? term.amplitude : { re: 0, im: 0 };
+        });
+
+        // Persistence: bei 1 Qubit die exakte von-Neumann-Entropie. Bei mehreren Qubits:
+        // 0 falls vollständig separabel, sonst Mustererkennung (GHZ/Bell/W-State) - liefert
+        // null ("not computable") falls kein bekanntes Muster zutrifft.
+        const persistence: number | null = numQubits === 1
+          ? getEntanglementPersistence(statevectorArr, numQubits, 0)
+          : isEntangled
+          ? getMultiQubitPersistence(fullResult.terms, numQubits)
+          : 0;
+
+        return (
+          <div className="flex-shrink-0 rounded-lg border border-teal-100 bg-teal-50/20 px-3 py-3">
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">
+              Properties
+            </p>
+            <table className="w-full text-xs border-collapse">
+              <tbody>
+                <tr className="border-b border-teal-100">
+                  <td className="py-1.5 pr-2 font-medium text-gray-600">Property</td>
+                  <td className="py-1.5"></td>
+                </tr>
+                <tr className="border-b border-teal-100">
+                  <td className="py-1.5 pr-2 text-gray-700">Bloch Sphere Representation</td>
+                  <td className="py-1.5 text-gray-500">
+                    {numQubits === 1 ? "✓ available" : "— (only for single qubits)"}
+                  </td>
+                </tr>
+                <tr className="border-b border-teal-100">
+                  <td className="py-1.5 pr-2 text-gray-700">Entangled</td>
+                  <td className="py-1.5">
+                    {isEntangled ? (
+                      <span className="text-purple-600 font-semibold">✓</span>
+                    ) : (
+                      <span className="text-green-600 font-semibold">✗</span>
+                    )}
+                  </td>
+                </tr>
+                <tr>
+                  <td className="py-1.5 pr-2 text-gray-700">
+                    Persistence
+                    {numQubits >= 2 && (
+                      <span
+                        className="text-gray-400 cursor-help"
+                        title="For 2+ qubits, only known patterns (GHZ-like states, all Bell-state variants, W-states) are recognized exactly. Other entangled states show 'not computable'."
+                      > ⓘ</span>
+                    )}
+                  </td>
+                  <td className="py-1.5 font-mono text-gray-700">
+                    {persistence !== null ? persistence.toFixed(3) : "not computable"}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        );
+      })()}
     </div>
   );
 }
