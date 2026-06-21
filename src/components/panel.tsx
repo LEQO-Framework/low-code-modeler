@@ -13,11 +13,13 @@ import { analyzeComponents, type DiracComponent } from "@/lib/componentAnalyzer"
 import { qasmToNodes } from "@/lib/qasmToNodes";
 import { nodesToQasm } from "@/lib/nodesToQasm";
 import JSZip from "jszip";
+import { getEntanglementPersistence, isStateFullySeparable, getMultiQubitPersistence } from "./BlochSphere";
 
-const selector = (state: { selectedNode: Node | null; nodes: Node[]; edges: Edge[] }) => ({
+const selector = (state: { selectedNode: Node | null; nodes: Node[]; edges: Edge[]; updateNodeValue: (nodeId: string, field: string, value: any) => void }) => ({
   selectedNode: state.selectedNode,
   nodes: state.nodes,
   edges: state.edges,
+  updateNodeValue: state.updateNodeValue,
 });
 
 interface CustomPanelProps {
@@ -47,7 +49,7 @@ export const CustomPanel = ({
   onGetModel,
   qasmEditorMode = false,
 }: CustomPanelProps) => {
-  const { selectedNode, nodes, edges } = useStore(selector, shallow);
+  const { selectedNode, nodes, edges, updateNodeValue } = useStore(selector, shallow);
   const { setNodes, setEdges } = useReactFlow();
   const [activeTab, setActiveTab] = useState<"properties" | "math" | "qasm">("properties");
   const [components, setComponents] = useState<DiracComponent[]>([]);
@@ -633,6 +635,50 @@ function buildLatexForComponent(
     ? `\\section*{Measurement Probabilities (Table)}\n\\begin{table}[h]\n  \\centering\n  \\begin{tabular}{|c|c|}\n    \\hline\n    \\textbf{Basis State} & \\textbf{Probability} \\\\\n${termLines}\n    \\hline\n  \\end{tabular}\n\\end{table}\n\n`
     : "";
 
+  // Statevector einmal rekonstruieren, für Separabilitäts- und Persistence-Berechnung genutzt.
+  const statevectorArrForProperties = Array.from({ length: 1 << numQubits }, (_, i) => {
+    const term = terms.find((t: any) => parseInt(t.basisState, 2) === i);
+    return term ? term.amplitude : { re: 0, im: 0 };
+  });
+
+  // Exakte Separabilitätsprüfung (keine Heuristik): vollständig separabel, wenn JEDES Qubit
+  // einen reinen reduzierten Zustand hat (Bloch-Vektor-Länge 1 für jede Qubit-Bipartition).
+  const isEntangledComponent = numQubits >= 2 && !isStateFullySeparable(statevectorArrForProperties, numQubits);
+  const persistenceComponent: number | null = numQubits === 1
+    ? getEntanglementPersistence(statevectorArrForProperties, numQubits, 0)
+    : isEntangledComponent
+    ? getMultiQubitPersistence(terms, numQubits)
+    : 0;
+
+  const entanglementSection = `\\section*{Entanglement Properties}
+
+\\textbf{Definitions.}
+
+\\emph{Separable:} A multi-qubit quantum state is called \\emph{separable} if it can be
+written as a tensor product of the individual qubit states, i.e.\\
+$|\\psi\\rangle = |\\psi_1\\rangle \\otimes |\\psi_2\\rangle \\otimes \\dots \\otimes |\\psi_n\\rangle$.
+In this case, each qubit can be fully described by its own, independent quantum state.
+
+\\emph{Entangled:} A multi-qubit quantum state is called \\emph{entangled} if no such
+tensor-product decomposition exists. The qubits cannot be described independently of one
+another: measuring one qubit instantaneously affects the possible outcomes of measuring the
+others, even if the qubits are physically separated.
+
+\\textbf{Status for this circuit:} This ${numQubits}-qubit state is
+\\textbf{${isEntangledComponent ? "entangled" : "separable"}}${
+    numQubits >= 2 && !isEntangledComponent
+      ? " (it factors into a product of single-qubit states)"
+      : ""
+  }.
+
+${persistenceComponent !== null
+  ? numQubits === 1
+    ? `\\textbf{Entanglement Persistence:} $S = ${persistenceComponent.toFixed(3)}$ (von Neumann entropy of the qubit's reduced density matrix, in bits). $S = 0$ corresponds to a pure, unentangled state; $S = 1$ corresponds to a maximally mixed/entangled qubit.\n\n`
+    : `\\textbf{Entanglement Persistence:} $P = ${persistenceComponent.toFixed(3)}$ (persistency of entanglement: the minimum number of local qubit measurements required until the remaining state is guaranteed to be fully separable).\n\n`
+  : numQubits >= 2
+  ? `\\textbf{Entanglement Persistence:} not computable -- this state does not match any of the recognized standard patterns (GHZ-like states, Bell-state variants, W-states).\n\n`
+  : ""}`;
+
   // Gate-Erklärungen
   const GATE_INFO: Record<string, { desc: string; matrix: string; effect: string }> = {
     H: { desc: "The Hadamard gate creates an equal superposition.", matrix: "\\frac{1}{\\sqrt{2}}\\begin{pmatrix}1&1\\\\1&-1\\end{pmatrix}", effect: "$H|0\\rangle=|+\\rangle,\\;H|1\\rangle=|-\\rangle$" },
@@ -687,7 +733,7 @@ The quantum system state with ${numQubits} qubit${numQubits !== 1 ? "s" : ""} is
   |\\psi\\rangle = ${latex}
 \\end{equation}
 
-${stepsSection}${histogramSection}${tableSection}${gateSection}\\end{document}
+${stepsSection}${histogramSection}${tableSection}${entanglementSection}${gateSection}\\end{document}
 `;
 }
 

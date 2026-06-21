@@ -13,7 +13,7 @@ interface BlochSphereProps {
   qubitIndex?: number;
 }
 
-function getBlochVector(
+export function getBlochVector(
   statevector: { re: number; im: number }[],
   numQubits: number,
   qubitIndex: number
@@ -41,6 +41,110 @@ function getBlochVector(
     y: rho00 - rho11,
     z: -2 * rho01_im,
   };
+}
+
+/**
+ * Entanglement Persistence (von-Neumann-Entropie der reduzierten Dichtematrix) für ein
+ * einzelnes Qubit. Dieselbe Berechnung wie unter jeder Bloch-Sphäre angezeigt, hier als
+ * eigenständige Funktion exportiert, damit sie auch außerhalb (z.B. im Properties-Tab)
+ * ohne Duplikation genutzt werden kann.
+ */
+export function getEntanglementPersistence(
+  statevector: { re: number; im: number }[],
+  numQubits: number,
+  qubitIndex: number
+): number {
+  const bloch = getBlochVector(statevector, numQubits, qubitIndex);
+  const r = Math.min(1, Math.sqrt(bloch.x * bloch.x + bloch.y * bloch.y + bloch.z * bloch.z));
+  const lambda1 = (1 + r) / 2;
+  const lambda2 = (1 - r) / 2;
+  const log2safe = (p: number) => (p <= 1e-12 ? 0 : Math.log2(p));
+  const entropy = -(lambda1 * log2safe(lambda1) + lambda2 * log2safe(lambda2));
+  return Math.round(entropy * 1000) / 1000;
+}
+
+/**
+ * Exakte Prüfung, ob ein n-Qubit-Zustand VOLLSTÄNDIG separabel ist, d.h. sich als
+ * |psi_1> ⊗ |psi_2> ⊗ ... ⊗ |psi_n> schreiben lässt (jedes Qubit unabhängig von allen anderen).
+ *
+ * Methode: für jedes einzelne Qubit wird die Bipartition "dieses Qubit vs. der Rest" geprüft.
+ * Ein Qubit ist genau dann unverschränkt mit dem Rest des Systems, wenn sein Bloch-Vektor
+ * Länge 1 hat (reiner Zustand der reduzierten Dichtematrix, Schmidt-Rang 1 für diese
+ * Bipartition). Ist das für JEDES Qubit der Fall, ist der Gesamtzustand vollständig separabel.
+ * Sobald auch nur ein einziges Qubit eine Bloch-Vektor-Länge < 1 hat, ist es mit mindestens
+ * einem anderen Qubit verschränkt, und der Gesamtzustand gilt als entangled.
+ *
+ * Das ist exakt (keine Heuristik) und deckt insbesondere den Fall ab, dass ein Zustand mit
+ * mehreren Termen in der Dirac-Summe trotzdem ein reines Tensorprodukt sein kann
+ * (z.B. zwei unabhängige H-Gates ohne CNOT: 4 Terme, aber vollständig separabel).
+ */
+export function isStateFullySeparable(
+  statevector: { re: number; im: number }[],
+  numQubits: number
+): boolean {
+  if (numQubits < 2) return true; // ein einzelnes Qubit ist per Definition nicht "verschränkt"
+  const EPSILON = 1e-6;
+  for (let q = 0; q < numQubits; q++) {
+    const bloch = getBlochVector(statevector, numQubits, q);
+    const r = Math.sqrt(bloch.x * bloch.x + bloch.y * bloch.y + bloch.z * bloch.z);
+    if (r < 1 - EPSILON) return false;
+  }
+  return true;
+}
+
+/**
+ * Entanglement Persistence für n-Qubit-Zustände ("persistency of entanglement", Briegel &
+ * Raussendorf 2001): die minimale Anzahl lokaler Messungen, bis der Restzustand garantiert
+ * vollständig separabel ist. Eine allgemeine, exakte Berechnung ist algorithmisch aufwändig
+ * (Suche über alle Qubit-Teilmengen und alle möglichen Messergebnisse). Stattdessen werden
+ * hier die bekannten Standardfälle per Muster erkannt, für die der Wert in der Literatur
+ * bekannt ist - in allen anderen Fällen wird null (= nicht berechenbar) zurückgegeben, statt
+ * einen falschen Wert vorzutäuschen.
+ *
+ * Erkannte Muster (terms = alle Basiszustände mit Amplitude != 0):
+ * - Separabel (0 lokale Messungen nötig): bereits über isStateFullySeparable abgedeckt.
+ * - GHZ-artig (inkl. aller 4 Bell-Zustands-Varianten bei n=2): genau 2 Terme mit gleichem
+ *   Betrag, deren Basiszustände sich in JEDEM Qubit unterscheiden (bitweises Komplement,
+ *   beliebige relative Phase) -> Persistence = 1.
+ * - W-Zustand: genau n Terme mit gleichem Betrag, jeder Term hat Hamming-Gewicht 1 (genau
+ *   ein Qubit auf |1>) -> Persistence = n-1.
+ */
+export function getMultiQubitPersistence(
+  terms: { basisState: string; amplitude: { re: number; im: number } }[],
+  numQubits: number
+): number | null {
+  if (numQubits < 2) return null; // Einzelqubit-Fall wird separat über getEntanglementPersistence behandelt
+
+  const EPSILON = 1e-6;
+  const nonzero = terms.filter(
+    (t) => Math.hypot(t.amplitude.re, t.amplitude.im) > 1e-9
+  );
+
+  const sameMagnitude = (list: typeof nonzero): boolean => {
+    if (list.length === 0) return false;
+    const ref = Math.hypot(list[0].amplitude.re, list[0].amplitude.im);
+    return list.every((t) => Math.abs(Math.hypot(t.amplitude.re, t.amplitude.im) - ref) < EPSILON);
+  };
+
+  // GHZ-artiges Muster (deckt alle Bell-Varianten bei n=2 mit ab)
+  if (nonzero.length === 2 && sameMagnitude(nonzero)) {
+    const [a, b] = nonzero;
+    let isComplement = true;
+    for (let i = 0; i < numQubits; i++) {
+      if (a.basisState[i] === b.basisState[i]) { isComplement = false; break; }
+    }
+    if (isComplement) return 1;
+  }
+
+  // W-Zustands-Muster
+  if (nonzero.length === numQubits && sameMagnitude(nonzero)) {
+    const isWPattern = nonzero.every(
+      (t) => t.basisState.split("").filter((c) => c === "1").length === 1
+    );
+    if (isWPattern) return numQubits - 1;
+  }
+
+  return null; // kein bekanntes Muster -> nicht berechenbar
 }
 
 function SingleBlochSphere({ bloch, label }: { bloch: { x: number; y: number; z: number }; label: string }) {

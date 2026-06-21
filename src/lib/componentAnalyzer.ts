@@ -679,3 +679,4 @@ async function pollForResult(
 
   throw new Error("Timeout: Backend hat nicht rechtzeitig geantwortet");
 }
+
