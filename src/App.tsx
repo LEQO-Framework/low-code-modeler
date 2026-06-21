@@ -3286,7 +3286,6 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
           onSaveAsTemplate={handleSaveAsTemplate}
           onManageTemplates={handleManageTemplates}
           onGroupSelected={handleGroupSelected}
-          onLoadQasm={handleLoadQasm}
           generateModel={() => setIsPromptModalOpen(true)}
         />
       </div>
