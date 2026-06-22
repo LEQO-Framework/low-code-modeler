@@ -1922,11 +1922,11 @@ If none apply, return { "algorithms": [] }.
           if (typeof type === "undefined" || !type) {
             return;
           }
-          const def = findNodeDefinition(type, label, categories);
-          console.log("found node", def)
+          const def = findNodeDefinition(type, label, currentCategories);
+          console.log("found node", def) //PROBLEM: Domain Profiles! Knoten dropped aber nicht sichtbar?!
 
           const getId = () => crypto.randomUUID();
-          const compactOptions = def.compactOptions;
+          const compactOptions = def.compactOptions; 
 
           const position = reactFlowInstance.project({
             x: event.clientX - reactFlowBounds.left,
@@ -1936,7 +1936,16 @@ If none apply, return { "algorithms": [] }.
             id: getId(),
             type,
             position,
-            data: { label: label, inputs: [], children: [], implementation: "", implementationType: "", uncomputeImplementationType: "", uncomputeImplementation: "", completionGuaranteed: def?.completionGuaranteed ?? false, compactOptions: compactOptions }
+            data: { label: label, inputs: [], children: [], implementation: "", implementationType: "", uncomputeImplementationType: "", uncomputeImplementation: "", completionGuaranteed: def?.completionGuaranteed ?? false, compactOptions: compactOptions,
+              // editableNode data if it exists
+            ...(def.properties && { properties: def.properties }),
+            ...(def.constraints && { constraints: def.constraints }),
+            ...(def.mapping && { mapping: def.mapping }),
+            ...(def.description && { description: def.description }),
+            ...(def.outputType && { outputType: def.outputType }),
+            ...(def.icon && { icon: def.icon }),
+            ...(def.isDataType && {isDataType: def.isDataType}),
+            }
           };
 
 
@@ -1965,36 +1974,16 @@ If none apply, return { "algorithms": [] }.
             console.log("cursors", cursors)
             console.log("shared nodes", Array.from(nodesMap.values()))
             console.log("shared edges", Array.from(edgesMap.values()))
-
-            // console.log(cursors)
-            // Object.entries(cursors).map(([clientId, cursor]) => {
-            //   const displayName = Number(clientId) === myClientId ? "Me" : cursor.name;
-
-            //   // Store name in a variable for history usage
-            //   const userName = cursor.name;
-
-
-            //   historyArray.push([{
-            //     type: "node-added",
-            //     nodeId: newNode.id,
-            //     label: newNode.data?.label,
-            //     //user: Number(clientId) === myClientId ? "Me" : userName,
-            //     //user: userName,
-            //     userId: myClientId,
-            //     user: userName,
-            //     timestamp: Date.now(),
-            //   }]);
-
-            //   console.log("ADD NODE HISTORY", historyArray)
-            // });
           }
 
+          console.log("nodes", nodes)
 
 
         }
       }
 
       //setContextMenu((prev) => ({ ...prev, left: event.clientX, top: event.clientY,}));
+
     },
     [reactFlowInstance, setNodes, currentCategories, collaborationModeOn, cursors],
   );
