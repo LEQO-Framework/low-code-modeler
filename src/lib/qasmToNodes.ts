@@ -3,7 +3,7 @@
  * Platzierung: src/lib/qasmToNodes.ts
  */
 
-import { Node, Edge } from "reactflow";
+import { Node, Edge, MarkerType } from "reactflow";
 import { v4 as uuid } from "uuid";
 
 const GATE_LABEL_MAP: Record<string, string> = {
@@ -183,7 +183,7 @@ export function qasmToNodes(qasm: string): { nodes: Node[]; edges: Edge[] } {
           sourceHandle: prevHandle,
           targetHandle: `quantumHandleGateInput${i}${id}`,
           type: "quantumEdge",
-          markerEnd: { type: "arrowclosed", width: 20, height: 20, color: "#93C5FD", hidden: true },
+          markerEnd: { type: MarkerType.ArrowClosed, width: 20, height: 20, color: "#93C5FD" },
         });
       }
       // Dieser Gate-Node wird zum neuen "letzten Node" für diesen Qubit
