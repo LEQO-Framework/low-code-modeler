@@ -1064,26 +1064,34 @@ export function QasmDiracPanel(props: Props) {
     if (distinctOutcomes.size !== 1) return null;
 
     const bits = [...distinctOutcomes][0];
-    // measurementResultIndices ist aufsteigend sortiert, d.h. bits[0] entspricht dem Qubit mit
-    // dem KLEINSTEN Index (z.B. sum[0], das niedrigstwertige Bit bei Addier-Schaltkreisen).
-    // Für die Dezimalwert-Interpretation muss daher umgekehrt werden, da parseInt(..., 2) das
-    // höchstwertige Bit zuerst erwartet.
-    const decimal = parseInt(bits.split("").reverse().join(""), 2);
+    // measurementResultIndices ist aufsteigend sortiert, d.h. bits[0] = LSB (niedrigstwertigstes
+    // Qubit zuerst, wie im Addier-Schaltkreis üblich). Für die Anzeige und die Dezimalumwandlung
+    // wird in die intuitive MSB-first-Reihenfolge umgekehrt, damit Bitstring und Dezimalwert
+    // konsistent sind: |011⟩ = 3₁₀ statt (irreführend) |110⟩ = 3₁₀.
+    const bitsDisplay = bits.split("").reverse().join("");
+    const decimal = parseInt(bitsDisplay, 2);
     return {
       indices: measurementResultIndices,
-      bits,
+      bits: bitsDisplay,
       decimal,
     };
   }, [measurementResultIndices, fullResult]);
 
   const [selectedqubits, setSelectedQubits] = useState<number[]>([]);
 
-  // Wenn numQubits sich ändert (neues QASM geladen), alle qubits auswählen
+  // Wenn numQubits sich ändert (neues QASM geladen): Measurement-Ergebnis-Indizes
+  // vorauswählen falls vorhanden (z.B. Additions-Schaltkreis -> direkt Summe anzeigen),
+  // sonst alle Qubits auswählen.
   useEffect(() => {
     if (numQubits > 0) {
-      setSelectedQubits(Array.from({ length: numQubits }, (_, i) => i));
+      if (measurementResultIndices && measurementResultIndices.length > 0
+          && measurementResultIndices.length < numQubits) {
+        setSelectedQubits(measurementResultIndices);
+      } else {
+        setSelectedQubits(Array.from({ length: numQubits }, (_, i) => i));
+      }
     }
-  }, [numQubits]);
+  }, [numQubits, measurementResultIndices]);
 
   const effectiveSelected = useMemo(() => {
     if (selectedqubits.length === 0 || selectedqubits.some((q) => q >= numQubits))
@@ -1533,17 +1541,19 @@ export function QasmDiracPanel(props: Props) {
                 </tr>
                 <tr className="border-b border-teal-100">
                   <td className="py-1.5 pr-2 text-gray-700">Bloch Sphere Representation</td>
-                  <td className="py-1.5 text-gray-500">
-                    {numQubits === 1 ? "✓ available" : "— (only for single qubits)"}
+                  <td className="py-1.5 text-gray-700">
+                    {numQubits === 1
+                      ? <span className="font-semibold">✓</span>
+                      : <span className="font-semibold text-gray-400">✗ <span className="font-normal text-gray-400 text-xs">(only for single qubits)</span></span>}
                   </td>
                 </tr>
                 <tr className="border-b border-teal-100">
                   <td className="py-1.5 pr-2 text-gray-700">Entangled</td>
                   <td className="py-1.5">
                     {isEntangled ? (
-                      <span className="text-purple-600 font-semibold">✓</span>
+                      <span className="font-semibold">✓</span>
                     ) : (
-                      <span className="text-green-600 font-semibold">✗</span>
+                      <span className="font-semibold">✗</span>
                     )}
                   </td>
                 </tr>
@@ -1553,12 +1563,12 @@ export function QasmDiracPanel(props: Props) {
                     {numQubits >= 2 && (
                       <span
                         className="text-gray-400 cursor-help"
-                        title="For 2+ qubits, only known patterns (GHZ-like states, all Bell-state variants, W-states) are recognized exactly. Other entangled states show 'not computable'."
+                        title="Minimum number of qubits that must be measured to guarantee full separability of the remaining state. Recognized for GHZ-like states (incl. all Bell variants) and W-states. Other states show 'not computable'."
                       > ⓘ</span>
                     )}
                   </td>
                   <td className="py-1.5 font-mono text-gray-700">
-                    {persistence !== null ? persistence.toFixed(3) : "not computable"}
+                    {persistence !== null ? persistence : "not computable"}
                   </td>
                 </tr>
               </tbody>

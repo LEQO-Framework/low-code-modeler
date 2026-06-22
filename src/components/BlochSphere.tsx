@@ -83,7 +83,7 @@ export function isStateFullySeparable(
   numQubits: number
 ): boolean {
   if (numQubits < 2) return true; // ein einzelnes Qubit ist per Definition nicht "verschränkt"
-  const EPSILON = 1e-6;
+  const EPSILON = 1e-4; // etwas großzügiger wegen numerischer Artefakte aus der Statevector-Simulation
   for (let q = 0; q < numQubits; q++) {
     const bloch = getBlochVector(statevector, numQubits, q);
     const r = Math.sqrt(bloch.x * bloch.x + bloch.y * bloch.y + bloch.z * bloch.z);
@@ -116,8 +116,10 @@ export function getMultiQubitPersistence(
   if (numQubits < 2) return null; // Einzelqubit-Fall wird separat über getEntanglementPersistence behandelt
 
   const EPSILON = 1e-6;
+  // Numerische Artefakte: Terme mit Amplitude < 1% der maximalen Amplitude ignorieren
+  const maxMag = Math.max(...terms.map(t => Math.hypot(t.amplitude.re, t.amplitude.im)));
   const nonzero = terms.filter(
-    (t) => Math.hypot(t.amplitude.re, t.amplitude.im) > 1e-9
+    (t) => Math.hypot(t.amplitude.re, t.amplitude.im) > Math.max(1e-9, maxMag * 0.01)
   );
 
   const sameMagnitude = (list: typeof nonzero): boolean => {
@@ -162,6 +164,17 @@ function SingleBlochSphere({ bloch, label }: { bloch: { x: number; y: number; z:
   const thetaDeg = Math.round(theta * 180 / Math.PI);
   const phiDeg = Math.round(((phi * 180 / Math.PI) + 360) % 360);
 
+  // π-Darstellung: rundet auf bekannte Vielfache von π/4 (0°, 45°, 90°, 135°, 180°, 225°, 270°, 315°, 360°)
+  const toPiStr = (deg: number): string => {
+    const known: Record<number, string> = {
+      0: "0", 45: "π/4", 90: "π/2", 135: "3π/4",
+      180: "π", 225: "5π/4", 270: "3π/2", 315: "7π/4", 360: "2π"
+    };
+    return known[deg] ?? null as any;
+  };
+  const thetaPi = toPiStr(thetaDeg);
+  const phiPi   = toPiStr(phiDeg);
+
   // Symbolische Zustandsformel mit eingesetzten Winkeln:
   // |psi> = cos(theta/2)|0> + e^{i*phi}*sin(theta/2)|1>
   const cosHalfTheta = Math.cos(theta / 2);
@@ -170,6 +183,8 @@ function SingleBlochSphere({ bloch, label }: { bloch: { x: number; y: number; z:
     const rounded = Math.round(n * 1000) / 1000;
     return (rounded >= 0 ? "" : "") + rounded.toFixed(3).replace(/\.?0+$/, "").replace(/^$/, "0");
   };
+  const thetaLabel = thetaPi ? `${thetaDeg}° (${thetaPi})` : `${thetaDeg}°`;
+  const phiLabel   = phiPi   ? `${phiDeg}° (${phiPi})`   : `${phiDeg}°`;
   const stateFormula = `|ψ⟩ = cos(${thetaDeg}°/2)|0⟩ + e^(i·${phiDeg}°)·sin(${thetaDeg}°/2)|1⟩ ≈ ${fmt(cosHalfTheta)}|0⟩ + e^(i·${phiDeg}°)·${fmt(sinHalfTheta)}|1⟩`;
 
   // Entanglement Persistence (von-Neumann-Entropie der reduzierten Dichtematrix dieses Qubits).
@@ -361,8 +376,8 @@ function SingleBlochSphere({ bloch, label }: { bloch: { x: number; y: number; z:
         style={{ width: 220, height: 220, cursor: "grab", borderRadius: 8, overflow: "hidden", border: "1px solid #e5e7eb" }}
       />
       <div style={{ display: "flex", gap: 12, fontSize: 11, color: "#6b7280" }}>
-        <span>θ = {thetaDeg}°</span>
-        <span>φ = {phiDeg}°</span>
+        <span>θ = {thetaLabel}</span>
+        <span>φ = {phiLabel}</span>
       </div>
       <div style={{ fontSize: 10.5, color: "#4b5563", textAlign: "center", maxWidth: 230, fontFamily: "monospace" }}>
         {stateFormula}
