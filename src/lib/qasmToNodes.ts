@@ -7,20 +7,14 @@ import { Node, Edge } from "reactflow";
 import { v4 as uuid } from "uuid";
 
 const GATE_LABEL_MAP: Record<string, string> = {
-  // Single-qubit gates
   h: "H", x: "X", y: "Y", z: "Z",
   s: "S", t: "T", sdg: "S†", tdg: "T†",
-  sx: "SX", id: "I",
-  // Parametric single-qubit gates
-  rx: "RX(θ)", ry: "RY(θ)", rz: "RZ(θ)",
-  p: "P(λ)", u1: "U1(λ)", u2: "U2(φ,λ)", u3: "U3(θ,φ,λ)", u: "U3(θ,φ,λ)",
-  // Two-qubit gates
   cx: "CNOT", cnot: "CNOT", cz: "CZ", cy: "CY", ch: "CH",
-  swap: "SWAP", cp: "CP(λ)",
+  swap: "SWAP", ccx: "Toffoli", cswap: "CSWAP",
+  rx: "RX(θ)", ry: "RY(θ)", rz: "RZ(θ)",
   crx: "CRX(θ)", cry: "CRY(θ)", crz: "CRZ(θ)",
-  cu: "CU", cu1: "U1(λ)", cu3: "U3(θ,φ,λ)",
-  // Three-qubit gates
-  ccx: "Toffoli", cswap: "CSWAP",
+  u1: "U1(λ)", u2: "U2(φ,λ)", u3: "U3(θ,φ,λ)",
+  p: "P(λ)", cp: "CP(λ)", id: "I",
 };
 
 interface ParsedGate {
@@ -121,6 +115,7 @@ export function qasmToNodes(qasm: string): { nodes: Node[]; edges: Edge[] } {
   const START_Y = 80;
 
   const lastNodePerQubit = new Map<number, string>();
+  const lastHandlePerQubit = new Map<number, string>(); // letzter Output-Handle pro Qubit
   const columnPerQubit = new Map<number, number>();
   const nodes: Node[] = [];
   const edges: Edge[] = [];
@@ -128,6 +123,7 @@ export function qasmToNodes(qasm: string): { nodes: Node[]; edges: Edge[] } {
   // Qubit-Start-Nodes (|0⟩)
   for (let i = 0; i < totalQubits; i++) {
     const id = uuid();
+    const outputHandle = `quantumHandleGateOutput0${id}`;
     nodes.push({
       id,
       type: "gateNode",
@@ -140,21 +136,27 @@ export function qasmToNodes(qasm: string): { nodes: Node[]; edges: Edge[] } {
       },
     });
     lastNodePerQubit.set(i, id);
+    lastHandlePerQubit.set(i, outputHandle);
     columnPerQubit.set(i, 1);
   }
 
-  // Gate-Nodes
+  // Gate-Nodes: ein einziger Node pro Gate, der alle beteiligten Qubits referenziert.
+  // Die Spalte richtet sich nach dem am weitesten fortgeschrittenen beteiligten Qubit,
+  // damit Gates nicht überlappen.
   for (const gate of gates) {
     const id = uuid();
     const col = Math.max(...gate.qubits.map(q => columnPerQubit.get(q) ?? 1));
-    const row = gate.qubits[0];
+    // Vertikale Position: Mittelpunkt aller beteiligten Qubits
+    const minQ = Math.min(...gate.qubits);
+    const maxQ = Math.max(...gate.qubits);
+    const centerY = START_Y + ((minQ + maxQ) / 2) * SPACING_Y;
 
     nodes.push({
       id,
       type: "gateNode",
       position: {
         x: START_X + col * SPACING_X,
-        y: START_Y + row * SPACING_Y,
+        y: centerY,
       },
       data: {
         label: gate.label,
@@ -168,22 +170,25 @@ export function qasmToNodes(qasm: string): { nodes: Node[]; edges: Edge[] } {
       },
     });
 
-    // Edges
+    // Eine Edge pro beteiligtem Qubit, vom letzten Node dieses Qubits zum neuen Gate-Node
     for (let i = 0; i < gate.qubits.length; i++) {
       const q = gate.qubits[i];
       const prevId = lastNodePerQubit.get(q);
+      const prevHandle = lastHandlePerQubit.get(q) ?? `quantumHandleGateOutput0${prevId}`;
       if (prevId) {
         edges.push({
           id: uuid(),
           source: prevId,
           target: id,
-          sourceHandle: `quantumHandleGateOutput0${prevId}`,
+          sourceHandle: prevHandle,
           targetHandle: `quantumHandleGateInput${i}${id}`,
           type: "quantumEdge",
           markerEnd: { type: "arrowclosed", width: 20, height: 20, color: "#93C5FD", hidden: true },
         });
       }
+      // Dieser Gate-Node wird zum neuen "letzten Node" für diesen Qubit
       lastNodePerQubit.set(q, id);
+      lastHandlePerQubit.set(q, `quantumHandleGateOutput${i}${id}`);
       columnPerQubit.set(q, col + 1);
     }
   }
