@@ -133,6 +133,14 @@ export function qasmToNodes(qasm: string): { nodes: Node[]; edges: Edge[] } {
         inputs: [],
         identifiers: [`q${i}`],
         parameter: "0",
+        inputTypes: [],
+        outputTypes: ["quantum register"],
+        children: [],
+        implementation: "",
+        implementationType: "",
+        uncomputeImplementationType: "",
+        uncomputeImplementation: "",
+        completionGuaranteed: true,
       },
     });
     lastNodePerQubit.set(i, id);
@@ -140,13 +148,10 @@ export function qasmToNodes(qasm: string): { nodes: Node[]; edges: Edge[] } {
     columnPerQubit.set(i, 1);
   }
 
-  // Gate-Nodes: ein einziger Node pro Gate, der alle beteiligten Qubits referenziert.
-  // Die Spalte richtet sich nach dem am weitesten fortgeschrittenen beteiligten Qubit,
-  // damit Gates nicht überlappen.
+  // Gate-Nodes
   for (const gate of gates) {
     const id = uuid();
     const col = Math.max(...gate.qubits.map(q => columnPerQubit.get(q) ?? 1));
-    // Vertikale Position: Mittelpunkt aller beteiligten Qubits
     const minQ = Math.min(...gate.qubits);
     const maxQ = Math.max(...gate.qubits);
     const centerY = START_Y + ((minQ + maxQ) / 2) * SPACING_Y;
@@ -167,6 +172,14 @@ export function qasmToNodes(qasm: string): { nodes: Node[]; edges: Edge[] } {
         })),
         identifiers: gate.qubits.map(q => `q${q}`),
         parameter: gate.params ?? "0",
+        inputTypes: gate.qubits.map(() => "quantum register"),
+        outputTypes: gate.qubits.map(() => "quantum register"),
+        children: [],
+        implementation: "",
+        implementationType: "",
+        uncomputeImplementationType: "",
+        uncomputeImplementation: "",
+        completionGuaranteed: true,
       },
     });
 
