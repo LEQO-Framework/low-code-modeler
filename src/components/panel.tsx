@@ -423,6 +423,48 @@ function ComponentSection({
       }
     : undefined;
 
+  // Wenn der Nutzer auf einen Step-Zustand klickt, die verantwortliche Node im Canvas
+  // selektieren und nach 1.5s die Selektion wieder aufheben (kurzes Flash).
+  const handleStepClick = (nodeId: string) => {
+    setNodes((nds: Node[]) =>
+      nds.map((n) => ({
+        ...n,
+        selected: n.id === nodeId,
+        className: n.id === nodeId
+          ? (n.className ? n.className + " !ring-4 !ring-blue-500 !ring-offset-2 !shadow-lg !shadow-blue-400/60" : "!ring-4 !ring-blue-500 !ring-offset-2 !shadow-lg !shadow-blue-400/60")
+          : n.className?.replace("!ring-4 !ring-blue-500 !ring-offset-2 !shadow-lg !shadow-blue-400/60", "").trim(),
+      }))
+    );
+    // DOM-Fallback: direkt auf das React-Flow-Node-Element stylen,
+    // da Tailwind-Klassen durch React-Flow-Wrapper-Styles überschrieben werden können.
+    setTimeout(() => {
+      const el = document.querySelector(`[data-id="${nodeId}"]`) as HTMLElement | null;
+      if (el) {
+        el.style.transition = "box-shadow 0.15s ease-in-out, outline 0.15s ease-in-out";
+        el.style.outline = "3px solid #3b82f6";
+        el.style.outlineOffset = "3px";
+        el.style.boxShadow = "0 0 0 6px rgba(59,130,246,0.35), 0 0 20px rgba(59,130,246,0.25)";
+        el.style.zIndex = "999";
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        setTimeout(() => {
+          el.style.outline = "";
+          el.style.outlineOffset = "";
+          el.style.boxShadow = "";
+          el.style.zIndex = "";
+        }, 1500);
+      }
+    }, 50);
+    setTimeout(() => {
+      setNodes((nds: Node[]) =>
+        nds.map((n) => ({
+          ...n,
+          selected: false,
+          className: n.className?.replace("!ring-4 !ring-blue-500 !ring-offset-2 !shadow-lg !shadow-blue-400/60", "").trim(),
+        }))
+      );
+    }, 1500);
+  };
+
   return (
     <div style={{ border: `1.5px solid ${color}55`, borderRadius: "8px", overflow: "hidden" }}>
       <button
@@ -462,6 +504,7 @@ function ComponentSection({
               title={label}
               onGetCircuitSvg={getGroupCircuitSvg}
               onGetModel={onGetModel}
+              onStepClick={handleStepClick}
             />
           ) : (
             <div className="text-xs text-gray-400 px-2 py-1">No QASM available.</div>
