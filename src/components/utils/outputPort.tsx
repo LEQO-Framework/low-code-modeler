@@ -125,7 +125,21 @@ export default function OutputPort({
       }
     }
     else if (node.type.startsWith("editable")) {
-      outputType = node.data.outputType || "any"; // default: "any", if outputType isn't defined
+      outputType = "any";
+      const nodeOutputType = node.data?.outputType;
+      if (nodeOutputType) {
+        if (Array.isArray(nodeOutputType)) {
+          // node.data.outputType is an array
+          if (index >= 0 && index < nodeOutputType.length) {
+            outputType = nodeOutputType[index];
+          }
+        } else if (typeof nodeOutputType === "string" && index === 0) {
+          // node.data.outputType is a string
+          outputType = nodeOutputType;
+        } else {
+          console.log("ERROR: index is", index, "but node.data.outputType is", nodeOutputType)
+        }
+      }
     }
     else if (type === "classical") {
       outputType = "array";
@@ -171,6 +185,7 @@ export default function OutputPort({
   }, [node.data.quantumStateName]);
 
   const rawType = displayedOutputType;
+  console.log("raw type", rawType)
 
   const normalizedType =
     rawType === "String" || rawType === "File"
