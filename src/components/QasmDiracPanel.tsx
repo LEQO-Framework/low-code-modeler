@@ -59,6 +59,8 @@ type QasmProps = {
   title?: string;
   onGetCircuitSvg?: () => Promise<string>;
   onGetModel?: () => object;
+  /** Callback wenn Nutzer auf einen Step-Zustand klickt: liefert die LEQO-Node-UUID */
+  onStepClick?: (nodeId: string) => void;
 };
 
 type StatevectorProps = {
@@ -68,6 +70,7 @@ type StatevectorProps = {
   title?: string;
   onGetCircuitSvg?: () => Promise<string>;
   onGetModel?: () => object;
+  onStepClick?: (nodeId: string) => void;
 };
 
 type Props = QasmProps | StatevectorProps;
@@ -919,6 +922,7 @@ function Histogram({ data }: { data: HistogramBar[] }) {
 
 export function QasmDiracPanel(props: Props) {
   const title = props.title ?? "Dirac Representation";
+  const onStepClick = props.onStepClick;
   const [showBasisStates, setShowBasisStates] = useState(true);
   const [showSteps, setShowSteps] = useState(false);
   const [showBloch, setShowBloch] = useState(false);
@@ -1022,15 +1026,28 @@ export function QasmDiracPanel(props: Props) {
     }
   };
 
+  const MAX_QUBITS = 12; // 2^12 = 4096 Terme, darüber Speicher/Performance-Probleme
+
   const fullResult = useMemo(() => {
-    if ("qasm" in props && props.qasm) return qasmToDirac(props.qasm);
-    return null;
+    if (!("qasm" in props) || !props.qasm) return null;
+    try {
+      const result = qasmToDirac(props.qasm);
+      if (result.numQubits > MAX_QUBITS) return null;
+      return result;
+    } catch {
+      return null;
+    }
   }, [props]);
 
   const stepsResult = useMemo(() => {
-    if ("qasm" in props && props.qasm) return qasmToDiracSteps(props.qasm);
-    return null;
-  }, [props]);
+    if (!("qasm" in props) || !props.qasm) return null;
+    if (!fullResult) return null; // nicht simulieren wenn Qubit-Limit überschritten
+    try {
+      return qasmToDiracSteps(props.qasm);
+    } catch {
+      return null;
+    }
+  }, [props, fullResult]);
 
   const unicodeStr = useMemo(() => {
     if (fullResult) return fullResult.unicode;
@@ -1212,9 +1229,20 @@ export function QasmDiracPanel(props: Props) {
   }, [fullResult, effectiveSelected, numQubits]);
 
   if (!unicodeStr) {
+    // Prüfen ob ein QASM vorhanden ist aber das Qubit-Limit überschritten wurde
+    const hasQasm = "qasm" in props && !!props.qasm;
+    const tooManyQubits = hasQasm && !fullResult;
     return (
-      <div className="rounded-xl border p-4 text-sm text-gray-400">
-        No QASM code available.
+      <div className="rounded-xl border bg-white flex flex-col gap-3 p-4">
+        <h3 className="text-base font-semibold text-gray-800">{title}</h3>
+        {tooManyQubits ? (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+            ⚠ This circuit has too many qubits for local Math Mode simulation (max. {MAX_QUBITS}).
+            The backend result is still computed — only the local visualization is disabled.
+          </div>
+        ) : (
+          <div className="text-sm text-gray-400">No QASM code available.</div>
+        )}
       </div>
     );
   }
@@ -1382,24 +1410,33 @@ export function QasmDiracPanel(props: Props) {
               <span className="text-gray-500 text-xs">=</span>
               <span className="text-gray-800 whitespace-nowrap">{stepsResult.initial.unicode}</span>
             </div>
-            {stepsResult.steps.map((step, idx) => (
-              <div key={idx} className="flex flex-col">
-                <div className="flex items-center gap-1.5 py-0.5 pl-10">
-                  <span className="text-blue-400 text-xs">──</span>
-                  <span className="text-blue-600 text-xs font-sans font-medium bg-blue-50 border border-blue-100 px-1.5 py-0.5 rounded whitespace-nowrap">
-                    {step.gateLabel}
-                  </span>
-                  <span className="text-blue-400 text-xs">──→</span>
+            {stepsResult.steps.map((step, idx) => {
+              const isClickable = !!onStepClick && !!step.nodeId;
+              return (
+                <div key={idx} className="flex flex-col">
+                  <div className="flex items-center gap-1.5 py-0.5 pl-10">
+                    <span className="text-blue-400 text-xs">──</span>
+                    <span
+                      className={`text-blue-600 text-xs font-sans font-medium bg-blue-50 border border-blue-100 px-1.5 py-0.5 rounded whitespace-nowrap transition-colors ${
+                        isClickable ? "cursor-pointer hover:bg-blue-200 hover:border-blue-400" : ""
+                      }`}
+                      title={isClickable ? "Im Canvas markieren" : undefined}
+                      onClick={() => isClickable && onStepClick!(step.nodeId!)}
+                    >
+                      {step.gateLabel}
+                    </span>
+                    <span className="text-blue-400 text-xs">──→</span>
+                  </div>
+                  <div className="flex items-baseline gap-2 py-1">
+                    <span className="text-gray-400 text-xs min-w-[36px]">
+                      |ψ{'₀₁₂₃₄₅₆₇₈₉'[idx + 1] ?? (idx + 1)}⟩
+                    </span>
+                    <span className="text-gray-500 text-xs">=</span>
+                    <span className="text-gray-800 whitespace-nowrap">{step.unicode}</span>
+                  </div>
                 </div>
-                <div className="flex items-baseline gap-2 py-1">
-                  <span className="text-gray-400 text-xs min-w-[36px]">
-                    |ψ{'₀₁₂₃₄₅₆₇₈₉'[idx + 1] ?? (idx + 1)}⟩
-                  </span>
-                  <span className="text-gray-500 text-xs">=</span>
-                  <span className="text-gray-800 whitespace-nowrap">{step.unicode}</span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Mistral AI Erklärung */}
