@@ -271,6 +271,7 @@ interface ParsedGate {
   name: string;
   qubits: number[];   // Qubit-Indizes (global, aufgelöst)
   params: number[];   // Numerische Parameter
+  nodeId: string | null; // LEQO-Node-UUID aus /* Start node <uuid> */ Kommentar
 }
 
 /** Einfacher Ausdruck-Evaluator für QASM-Parameter (pi, *, /, +, -) */
@@ -433,7 +434,18 @@ export function parseQasm(qasm: string): {
   // ---------------------------------------------------------------------------
   // Zweiter Pass: Gates parsen
   // ---------------------------------------------------------------------------
+  // Aktuelle LEQO-Node-UUID: wird beim Lesen von /* Start node <uuid> */ gesetzt
+  // und bei /* End node <uuid> */ zurückgesetzt. Alle Gates zwischen diesen
+  // Kommentaren gehören zur selben Node im Canvas.
+  let currentNodeId: string | null = null;
+
   for (const line of lines) {
+    // LEQO Node-Grenzen tracken – BEVOR wir Skip-Checks machen
+    const startMatch = line.match(/\/\*\s*Start node\s+([\w-]+)\s*\*\//);
+    if (startMatch) { currentNodeId = startMatch[1]; continue; }
+    const endMatch = line.match(/\/\*\s*End node\s+([\w-]+)\s*\*\//);
+    if (endMatch) { currentNodeId = null; continue; }
+
     // Zeilen überspringen die keine Gate-Aufrufe sind
     if (
       line.startsWith('OPENQASM') ||
@@ -459,7 +471,7 @@ export function parseQasm(qasm: string): {
       const measureMatch = line.match(/measure\s+(\S+)\s*(?:->|\[)/);
       if (measureMatch) {
         const q = resolveQubit(measureMatch[1]);
-        if (q !== null) gates.push({ name: 'measure', qubits: [q], params: [] });
+        if (q !== null) gates.push({ name: 'measure', qubits: [q], params: [], nodeId: currentNodeId });
       }
       continue;
     }
@@ -478,7 +490,7 @@ export function parseQasm(qasm: string): {
 
     if (rawQubits.length === 0) continue;
 
-    gates.push({ name: rawName, qubits: rawQubits, params: rawParams });
+    gates.push({ name: rawName, qubits: rawQubits, params: rawParams, nodeId: currentNodeId });
   }
 
   return { numQubits: totalQubits, gates, warnings };
@@ -805,6 +817,8 @@ export interface DiracStep {
   unicode: string;
   /** Dirac-Notation nach diesem Schritt (latex) */
   latex: string;
+  /** LEQO-Node-UUID des verantwortlichen Schaltkreis-Elements, null bei unbekannt */
+  nodeId: string | null;
 }
 
 export interface DiracStepsResult {
@@ -1063,6 +1077,7 @@ export function qasmToDiracSteps(qasm: string): DiracStepsResult {
       gateLabelLatex: formatGateLabelLatex(gate, numQubits),
       unicode: stepResult.unicode,
       latex: stepResult.latex,
+      nodeId: gate.nodeId,
     });
   }
 
