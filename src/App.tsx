@@ -379,6 +379,7 @@ function App() {
   const [githubBranch, setGithubBranch] = useState(import.meta.env.VITE_GITHUB_REPO_BRANCH);
   const [githubToken, setGithubToken] = useState(import.meta.env.VITE_GITHUB_TOKEN);
   const [openqasmCode, setOpenQASMCode] = useState("");
+  const [showResultModal, setShowResultModal] = useState(false);
 
   const [selectedDevice, setSelectedDevice] = useState("aer_simulator");
   const [provider, setProvider] = useState("IBM");
@@ -1038,6 +1039,7 @@ If none apply, return { "algorithms": [] }.
       console.log("Received OpenQASM code:", openqasmCode);
 
       setOpenQASMCode(openqasmCode);
+      setShowResultModal(true);
       setTimeout(() => {
         setStatus("completed");
         setLoading(false);
@@ -1405,7 +1407,14 @@ If none apply, return { "algorithms": [] }.
       if (node.type === "ifElseNode") {
         const hasClassical = connectedSources.some((srcId) => {
           const sourceNode: any = nodesById.get(srcId);
-          return sourceNode?.type === "dataTypeNode";
+          // A measurement result and an operator output are classical data too,
+          // not only a dataTypeNode literal. Needed for measurement-driven ifs
+          // like the teleportation corrections (if m == 1 -> X / Z).
+          return (
+            sourceNode?.type === "dataTypeNode" ||
+            sourceNode?.type === "measurementNode" ||
+            sourceNode?.type === "operatorNode"
+          );
         });
         if (!hasClassical) {
           errors.push({
@@ -3771,6 +3780,14 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
         setCompilationTarget={setCompilationTarget}
         sendToBackend={sendToBackend}
       />
+      <Modal
+        title={compilationTarget === "qiskit" ? "Generated Qiskit" : "Generated Code"}
+        open={showResultModal}
+        onClose={() => setShowResultModal(false)}
+        className="w-[80vw] max-w-4xl"
+      >
+        <pre className="text-sm overflow-auto max-h-[70vh] whitespace-pre-wrap bg-gray-50 p-3 rounded border">{openqasmCode}</pre>
+      </Modal>
 
       <ConfigModal
         open={isConfigOpen}
