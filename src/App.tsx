@@ -291,81 +291,6 @@ function App() {
     })
   };
 
-  const onEdgesChangeSync = useCallback((changes: EdgeChange[]) => {
-    console.log("Incoming edge changes:", changes);
-
-    // 🔒 Build global lock map
-    const states = awareness.getStates();
-    const lockMap = new Map<string, number>();
-
-    states.forEach((state: any, clientId: number) => {
-      if (state?.locks?.edgeIds) {
-        state.locks.edgeIds.forEach((edgeId: string) => {
-          lockMap.set(edgeId, clientId);
-        });
-      }
-    });
-
-    // 🚫 Filter unauthorized changes safely
-    const allowedChanges = changes.filter((change) => {
-      if (!hasId(change)) return true; // Always allow changes without an explicit ID
-
-      const owner = lockMap.get(change.id);
-      // FIX: Ensure that if you are the owner, or if there is no owner, you can modify it
-      return !owner || owner === myClientId;
-    });
-
-    if (allowedChanges.length === 0) {
-      console.log("All changes blocked due to locks");
-      return;
-    }
-
-    // 🧠 Apply changes locally
-    const updatedEdges = applyNodeChanges(allowedChanges, edgesI);
-    const activeName = cursors[myClientId]?.name || userName || "unknown";
-    setEdgesI(updatedEdges);
-
-    // 🔁 Sync with React Flow
-    onEdgesChange(allowedChanges);
-    // get user name (from cursors) for history
-    //const userName = cursors[myClientId]?.name || "unknown";
-    // 🔥 Handle deletions
-    // TODO: fix from here on! (taken from onNodesChangeSync)
-    allowedChanges.forEach((change) => {
-      if ((change.type === "remove" || change.type === "reset") && hasId(change)) {
-        console.log("NODES MAP", Array.from(nodesMap.values()))
-        const nodeId = change.id;
-        const nodeLabel = Array.from(nodesMap.values()).find((node) => node.id === nodeId)?.data?.label || "unknown"
-        console.log(nodesMap);
-        console.log("Node deleted:", nodeId);
-
-        nodesMap.delete(nodeId);
-
-        // remove connected edges
-        edgesMap.forEach((edge: Edge, edgeId: string) => {
-          if (edge.source === nodeId || edge.target === nodeId) {
-            edgesMap.delete(edgeId);
-          }
-        });
-
-        historyArray.push([{
-          type: "node-deleted",
-          nodeId: nodeId,
-          label: nodeLabel,
-          userId: activeName,
-          user: activeName,
-          timestamp: Date.now(),
-        }]);
-        console.log("REMOVE NODE HISTORY", historyArray.toArray())
-        console.log("shared nodes", Array.from(nodesMap.values()))
-        console.log("shared edges", Array.from(edgesMap.values()))
-      }
-    });
-
-  }, [nodesI, awareness, myClientId]);
-
-
-
   const handleAction = (action: string, nodeId: string) => {
     console.log(`Action: ${action} on Node: ${nodeId}`);
     setContextMenu((prev) => ({ ...prev, visible: false }));
@@ -1994,8 +1919,8 @@ If none apply, return { "algorithms": [] }.
           const type = event.dataTransfer.getData("application/reactflow");
           const dataType = event.dataTransfer.getData("application/reactflow/dataType");
           const label = event.dataTransfer.getData("application/reactflow/label");
-          console.log(type)
-          console.log(dataType)
+          console.log("type", type)
+          console.log("dataType", dataType)
 
           //let position2 = reactFlowInstance.screenToFlowPosition();
 
@@ -2006,11 +1931,11 @@ If none apply, return { "algorithms": [] }.
           if (typeof type === "undefined" || !type) {
             return;
           }
-          const def = findNodeDefinition(type, label, categories);
-          console.log(def)
+          const def = findNodeDefinition(type, label, currentCategories);
+          console.log("found node", def) //PROBLEM: Domain Profiles! Knoten dropped aber nicht sichtbar?!
 
           const getId = () => crypto.randomUUID();
-          const compactOptions = def.compactOptions;
+          const compactOptions = def.compactOptions; 
 
           const position = reactFlowInstance.project({
             x: event.clientX - reactFlowBounds.left,
@@ -2020,7 +1945,16 @@ If none apply, return { "algorithms": [] }.
             id: getId(),
             type,
             position,
-            data: { label: label, inputs: [], children: [], implementation: "", implementationType: "", uncomputeImplementationType: "", uncomputeImplementation: "", completionGuaranteed: def?.completionGuaranteed ?? false, compactOptions: compactOptions }
+            data: { label: label, inputs: [], children: [], implementation: "", implementationType: "", uncomputeImplementationType: "", uncomputeImplementation: "", completionGuaranteed: def?.completionGuaranteed ?? false, compactOptions: compactOptions,
+              // editableNode data if it exists
+            ...(def.properties && { properties: def.properties }),
+            ...(def.constraints && { constraints: def.constraints }),
+            ...(def.mapping && { mapping: def.mapping }),
+            ...(def.description && { description: def.description }),
+            ...(def.outputType && { outputType: def.outputType }),
+            ...(def.icon && { icon: def.icon }),
+            ...(def.isDataType && {isDataType: def.isDataType}),
+            }
           };
 
 
@@ -2049,36 +1983,16 @@ If none apply, return { "algorithms": [] }.
             console.log("cursors", cursors)
             console.log("shared nodes", Array.from(nodesMap.values()))
             console.log("shared edges", Array.from(edgesMap.values()))
-
-            // console.log(cursors)
-            // Object.entries(cursors).map(([clientId, cursor]) => {
-            //   const displayName = Number(clientId) === myClientId ? "Me" : cursor.name;
-
-            //   // Store name in a variable for history usage
-            //   const userName = cursor.name;
-
-
-            //   historyArray.push([{
-            //     type: "node-added",
-            //     nodeId: newNode.id,
-            //     label: newNode.data?.label,
-            //     //user: Number(clientId) === myClientId ? "Me" : userName,
-            //     //user: userName,
-            //     userId: myClientId,
-            //     user: userName,
-            //     timestamp: Date.now(),
-            //   }]);
-
-            //   console.log("ADD NODE HISTORY", historyArray)
-            // });
           }
 
+          console.log("nodes", nodes)
 
 
         }
       }
 
       //setContextMenu((prev) => ({ ...prev, left: event.clientX, top: event.clientY,}));
+
     },
     [reactFlowInstance, setNodes, currentCategories, collaborationModeOn, cursors],
   );
