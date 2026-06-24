@@ -1420,7 +1420,7 @@ export function QasmDiracPanel(props: Props) {
                       className={`text-blue-600 text-xs font-sans font-medium bg-blue-50 border border-blue-100 px-1.5 py-0.5 rounded whitespace-nowrap transition-colors ${
                         isClickable ? "cursor-pointer hover:bg-blue-200 hover:border-blue-400" : ""
                       }`}
-                      title={isClickable ? "Im Canvas markieren" : undefined}
+                      title={isClickable ? "Select in Canvas" : undefined}
                       onClick={() => isClickable && onStepClick!(step.nodeId!)}
                     >
                       {step.gateLabel}

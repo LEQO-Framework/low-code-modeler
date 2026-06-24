@@ -114,11 +114,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
               <DropdownMenuItem onClick={openPatternSolution} title="Open a pattern solution">
                 <ImageIcon className="w-4 h-4 mr-2" />
                 <span>Pattern Solution</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleQasmUpload} title="Import QASM file as circuit">
-                <FileJson className="w-4 h-4 mr-2" />
-                <span>QASM File</span>
-              </DropdownMenuItem>
+              </DropdownMenuItem>            
               <DropdownMenuItem onClick={openOpenQASM} title="Open a pattern solution">
                 <ImageIcon className="w-4 h-4 mr-2" />
                 <span>OpenQASM</span>
