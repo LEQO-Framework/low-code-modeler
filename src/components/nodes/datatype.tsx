@@ -5,6 +5,8 @@ import { shallow } from "zustand/shallow";
 import { findDuplicateOutputIdentifiers, isUniqueIdentifier } from "../utils/utils";
 import { AlertCircle, File } from "lucide-react";
 import OutputPort from "../utils/outputPort";
+import { cn } from "@/lib/utils";
+import { awareness } from "@/yjs";
 
 const selector = (state: {
   selectedNode: Node | null;
@@ -33,7 +35,7 @@ export const DataTypeNode = memo((node: Node) => {
 
   const { nodes, edges, updateNodeValue, setSelectedNode, setContainsPlaceholder } = useStore(selector, shallow);
   const [durationUnit, setDurationUnit] = useState(node.data.durationUnit || "s");
-  const { data } = node;
+  const { data, selected } = node;
 
   const changeValue = (e) => {
     const newValue = e.target.value;
@@ -55,8 +57,8 @@ export const DataTypeNode = memo((node: Node) => {
       containsLetters(n.data?.value || "")
     );
     if (data.dataType === "boolean") {
-        setContainsPlaceholder(false);
-        return;
+      setContainsPlaceholder(false);
+      return;
     }
 
     if (data.dataType === "Number") {
@@ -79,10 +81,17 @@ export const DataTypeNode = memo((node: Node) => {
       const trimmed = newValue.trim();
       if (trimmed === "") return;
 
-      const arrayRegex = /^-?\d+(\.\d+)?(?:,-?\d+(\.\d+)?)*$/;
+      const commaSeparatedRegex = /^-?\d+(\.\d+)?(?:,-?\d+(\.\d+)?)*$/;
+      const isCommaSeparated = commaSeparatedRegex.test(trimmed);
 
-      if (!arrayRegex.test(trimmed)) {
-        setValueError("Array must be comma-separated numbers (e.g., 1,2,3)");
+      let is2DArray = false;
+      try {
+        const parsed = JSON.parse(trimmed.startsWith('[') ? trimmed : `[${trimmed}]`);
+        if (Array.isArray(parsed)) is2DArray = true;
+      } catch (e) { }
+
+      if (!isCommaSeparated && !is2DArray) {
+        setValueError("Array must be comma-separated numbers or a 2D array (e.g., [[0,1], [1,2]])");
         return;
       }
     }
@@ -170,7 +179,8 @@ export const DataTypeNode = memo((node: Node) => {
       updateNodeValue(node.id, "value", "true");
     }
     setOutputIdentifierError(isDuplicate && identifier !== "");
-  }, [nodes, node.id]);
+    // }, [nodes, node.id]);
+  }, [node.id]); // temp fix: white screen during coillaboration mode when dropping datatype node
 
 
 
@@ -201,6 +211,45 @@ export const DataTypeNode = memo((node: Node) => {
     "File": { width: 45, height: 45 },
   };
 
+  const id = node.id;
+
+  const [remoteHighlightColor, setRemoteHighlightColor] = useState<string | null>(null);
+  const [selectingUserName, setSelectingUserName] = useState<string | null>(null); // technically not needed, could extend functionality to also show user name next to highlighted node
+
+  useEffect(() => {
+    const checkRemoteSelection = () => {
+      let foundColor: string | null = null;
+      let foundName: string | null = null;
+
+      // Loop through all active client states in the room
+      awareness.getStates().forEach((state: any, clientId: number) => {
+        // Skip your own client ID so you don't highlight it with your own color
+        // if (clientId === awareness.clientID) return;
+
+        // Check if a peer has selected this specific node ID
+        if (state.cursor && state.cursor.mySelectedNodeId === id) {
+          foundColor = state.cursor.color;
+          foundName = state.cursor.name;
+        }
+      });
+
+      setRemoteHighlightColor(foundColor);
+      setSelectingUserName(foundName);
+      console.log("COLOR", foundColor, foundName);
+    };
+
+    // Run once immediately on mount
+    checkRemoteSelection();
+
+    // 3. Listen to remote awareness updates
+    awareness.on("change", checkRemoteSelection);
+
+    // Clean up listener when the node unmounts
+    return () => {
+      awareness.off("change", checkRemoteSelection);
+    };
+  }, [id]); // Re-run if node ID changes
+
   return (
     <div className="relative w-[450px] h-[270px] classical-node">
       {outputIdentifierError && (
@@ -227,7 +276,13 @@ export const DataTypeNode = memo((node: Node) => {
           </div>
         </div>
       )}
-      <div className="w-full h-full rounded-full bg-white  overflow-hidden border border-solid border-gray-700 shadow-md">
+      <div className={"w-full h-full rounded-full bg-white  overflow-hidden border border-solid shadow-md"}
+        style={{
+          borderColor: remoteHighlightColor ? remoteHighlightColor : (selected ? "#3B82F6" : "#374151"),
+          boxShadow: remoteHighlightColor
+            ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}` // Glowing aura ring
+            : undefined,
+        }}>
         <div className="w-full bg-orange-300 text-black text-center font-semibold py-1 truncate relative">
 
           <div className="w-full flex items-center" style={{ height: '52px', paddingLeft: '100px' }}>

@@ -4,6 +4,7 @@ import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
 import * as consts from "../../constants";
 import { DomainProfile } from "../modals/domainProfileModal";
+import { Label } from "recharts";
 
 const selector = (state: {
   ancillaMode: boolean;
@@ -46,6 +47,13 @@ export const AddNodePanel = () => {
     shallow
   );
 
+  const isControlledGate = (label: string) =>
+    ["CNOT", "CZ", "CY", "CH", "SWAP", "CU", "CP(λ)", "CRX(θ)", "CRY(θ)", "CRZ(θ)"]
+      .includes(label);
+  const multiControlledGate = (label: string) =>
+    [ "Toffoli", "CSWAP"]
+      .includes(label);
+
 
   // select correct categories (based on domainProfile)
   const categories = useMemo(() => {
@@ -58,7 +66,6 @@ export const AddNodePanel = () => {
     } else {
       baseCategories = staticCategories;
     }
-    console.log(baseCategories);
     // no user templates: only return standard templates (baseCategories)
     if (userTemplates.length === 0) return baseCategories;
 
@@ -94,7 +101,7 @@ export const AddNodePanel = () => {
   }, [defaultOpenSubcategories]);
 
   // Define mock inputs/outputs for ML plugins (until Plugin Runner metadata is available)
-  const getMockPluginMetadata = (node:any, pluginName: string) => {
+  const getMockPluginMetadata = (node: any, pluginName: string) => {
     switch (pluginName) {
       case 'Classical Clustering':
         return {
@@ -410,7 +417,7 @@ export const AddNodePanel = () => {
               content_type: ['text/plain'],
               required: true,
             },
-             {
+            {
               parameter: 'testDataUrl',
               data_type: 'entity/vector',
               content_type: ['application/json', 'text/csv'],
@@ -538,7 +545,7 @@ export const AddNodePanel = () => {
               content_type: ['text/plain'],
               required: true,
             },
-             {
+            {
               parameter: 'qnnName',
               data_type: 'string',
               content_type: ['text/plain'],
@@ -612,7 +619,7 @@ export const AddNodePanel = () => {
     // For plugin nodes, store additional metadata
     if (node.type === consts.PluginNode) {
       const pluginName = node.label;
-      const mockMetadata = getMockPluginMetadata(node,pluginName);
+      const mockMetadata = getMockPluginMetadata(node, pluginName);
       const pluginData = {
         name: pluginName,
         mockDataInputs: mockMetadata.dataInputs,
@@ -735,13 +742,17 @@ export const AddNodePanel = () => {
                       : node.icon
                   }
                   alt={typeof node.label === "string" ? node.label : ""}
-                  className={`object-contain ${node.type === consts.GateNode
-                    ? "w-[120px] h-[140px]"
-                    : node.type === consts.SplitterNode || node.type === consts.MergerNode
-                      ? "w-[190px] h-[190px]"
-                      : node.type === consts.templates
-                        ? "w-[120px] h-[120px]"
-                        : "w-70 h-70"
+                  className={`object-contain ${node.type === consts.GateNode && isControlledGate(node.label)
+                      ? "w-[180px] h-[200px]"
+                      : node.type === consts.GateNode && multiControlledGate(node.label)
+                      ? "w-[190px] h-[270px]"
+                      : node.type === consts.GateNode
+                        ? "w-[120px] h-[140px]"
+                        : node.type === consts.SplitterNode || node.type === consts.MergerNode
+                          ? "w-[190px] h-[190px]"
+                          : node.type === consts.templates
+                            ? "w-[120px] h-[120px]"
+                            : "w-70 h-70"
                     }`}
                 />
               ) : (

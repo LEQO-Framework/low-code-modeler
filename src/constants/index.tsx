@@ -15,12 +15,20 @@ export enum HistoryAction {
 // supported modeling constructs
 export const DataTypeNode: string = "dataTypeNode";
 export const GateNode: string = "gateNode";
+export const QFTNode: string = "qftNode";
+export const InverseQFTNode: string = "inverseQftNode";
+export const MCMTGateNode: string = "mcmt-gate";
 export const AlgorithmNode: string = "algorithmNode";
 export const ClassicalAlgorithmNode: string = "classicalAlgorithmNode";
+export const DeutschJozsaNode: string = "deutsch-jozsa";
+export const UniversalOracleNode: string = "universal-oracle";
+export const GroverDiffuserNode: string = "grover-diffuser";
+export const GroverNode: string = "grover";
 export const StatePreparationNode: string = "statePreparationNode";
 export const MeasurementNode: string = "measurementNode";
 export const AncillaNode: string = "ancillaNode";
 export const QubitNode: string = "qubitNode";
+export const QAOANode = "qaoa";
 export const ControlStructureNode: string = "controlStructureNode";
 export const IfElseNode: string = "ifElseNode";
 export const ClassicalOutputOperationNode = "classicalOutputOperationNode";
@@ -37,11 +45,17 @@ export const NodeTypes = [
   DataTypeNode,
   GateNode,
   AlgorithmNode,
+  MCMTGateNode,
   ClassicalAlgorithmNode,
+  DeutschJozsaNode,
+  UniversalOracleNode,
+  GroverDiffuserNode,
+  GroverNode,
   StatePreparationNode,
   MeasurementNode,
   AncillaNode,
   QubitNode,
+  QAOANode,
   ControlStructureNode,
   IfElseNode,
   ClassicalOutputOperationNode,

@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { classicalConstructColor } from "@/constants";
 import { findDuplicateOutputIdentifier, findDuplicateOutputIdentifiersInsideNode } from "../utils/utils";
 import { AlertCircle } from "lucide-react";
+import { awareness } from "@/yjs";
 
 const selector = (state: any) => ({
   selectedNode: state.selectedNode,
@@ -110,15 +111,52 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
   const extraHeightPerVariable = 130;
   const dynamicHeight = baseHeight + 2 * 40 + 3 * 50 + numberInputs * 50 + numberOutputs * extraHeightPerVariable;
 
+  const id = node.id;
+
+  const [remoteHighlightColor, setRemoteHighlightColor] = useState<string | null>(null);
+  const [selectingUserName, setSelectingUserName] = useState<string | null>(null); // technically not needed, could extend functionality to also show user name next to highlighted node
+
+  useEffect(() => {
+    const checkRemoteSelection = () => {
+      let foundColor: string | null = null;
+      let foundName: string | null = null;
+
+      // Loop through all active client states in the room
+      awareness.getStates().forEach((state: any, clientId: number) => {
+        // Skip your own client ID so you don't highlight it with your own color
+        // if (clientId === awareness.clientID) return;
+
+        // Check if a peer has selected this specific node ID
+        if (state.cursor && state.cursor.mySelectedNodeId === id) {
+          foundColor = state.cursor.color;
+          foundName = state.cursor.name;
+        }
+      });
+
+      setRemoteHighlightColor(foundColor);
+      setSelectingUserName(foundName);
+      console.log("COLOR", foundColor, foundName);
+    };
+
+    // Run once immediately on mount
+    checkRemoteSelection();
+
+    // 3. Listen to remote awareness updates
+    awareness.on("change", checkRemoteSelection);
+
+    // Clean up listener when the node unmounts
+    return () => {
+      awareness.off("change", checkRemoteSelection);
+    };
+  }, [id]); // Re-run if node ID changes
+
   return (
-    <motion.div
+    <div
       className="relative"
-      initial={false}
-      animate={{
+      style={{
         width: 320,
         height: dynamicHeight,
       }}
-      transition={{ duration: 0.3, ease: "easeInOut" }}
     >
       <div
         className={cn(
@@ -238,6 +276,6 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
         </div>
 
       </div>
-    </motion.div>
+    </div>
   );
 });
