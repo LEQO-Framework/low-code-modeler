@@ -89,6 +89,9 @@ importers:
       workbox-window:
         specifier: ^6.5.4
         version: 6.6.1
+      yjs:
+        specifier: ^13.6.31
+        version: 13.6.31
       zustand:
         specifier: ^4.5.6
         version: 4.5.6(@types/react@18.3.18)(react@18.3.1)
