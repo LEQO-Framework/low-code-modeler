@@ -138,6 +138,21 @@ export const categories: Record<string, CategoryEntry> = {
       "Multi-Control Blocks": [
         { label: "Toffoli", aliases: ["CCNOT", "Controlled-Controlled-NOT"], type: consts.GateNode, icon: ["Toffoli_palette.png", "PaletteIcon_Toffoli_Beginner.png"], description: "CCNOT: flips target if both controls are |1⟩.", completionGuaranteed: true, compactOptions: [true, false] },
         { label: "CSWAP", aliases: ["Fredkin"], type: consts.GateNode, icon: ["CSWAP_palette.png", "PaletteIcon_CSWAP_Beginner.png"], description: "Controlled SWAP: swaps two qubits if control is |1⟩.", completionGuaranteed: true, compactOptions: [true, false] },
+        {
+          label: "MCMT Gate",
+          type: consts.MCMTGateNode,
+          icon: "PaletteIcon_MCMT.png",
+          description: "Multi-Controlled Multi-Target Gate. Applies a base gate to multiple targets using multiple controls.",
+          completionGuaranteed: true,
+          compactOptions: [false, true],
+          data: {
+            label: "MCMT Gate",
+            baseGate: "x",
+            numControls: 1,
+            numTargets: 1,
+            parameter: 0
+          }
+        },
       ],
 
       "Algorithmic Blocks": [
