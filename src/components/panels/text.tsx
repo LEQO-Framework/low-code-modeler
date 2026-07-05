@@ -1,9 +1,151 @@
 import { useStore } from "@/config/store";
-import { AlgorithmNode, ClassicalAlgorithmNode, parameterized_one_qubit, parameterized_two_qubit, multi_parameterized_two_qubit, OperatorNode, minMaxOperatorLabel, comparisonOperatorLabel, ClassicalOperatorNode, bitwiseOperatorLabel, controlStructureNodes, ControlStructureNode, IfElseNode } from "@/constants";
+import {
+  AlgorithmNode,
+  AncillaNode,
+  ClassicalAlgorithmNode,
+  ClassicalOperatorNode,
+  ClassicalOutputOperationNode,
+  ControlStructureNode,
+  DataTypeNode,
+  DeutschJozsaNode,
+  EditableNode,
+  GateNode,
+  GroverDiffuserNode,
+  GroverNode,
+  GroupNode,
+  IfElseNode,
+  InverseQFTNode,
+  MCMTGateNode,
+  MeasurementNode,
+  MergerNode,
+  OperatorNode,
+  PluginNode,
+  QAOANode,
+  QFTNode,
+  QubitNode,
+  SplitterNode,
+  StatePreparationNode,
+  UniversalOracleNode,
+  parameterized_one_qubit,
+  parameterized_two_qubit,
+  multi_parameterized_two_qubit,
+  minMaxOperatorLabel,
+  comparisonOperatorLabel,
+  bitwiseOperatorLabel,
+  controlStructureNodes,
+  multi_qubit_gates,
+  non_parameterized_one_qubit,
+  non_parameterized_two_qubit,
+  NodeTypes,
+  qubitLabel
+} from "@/constants";
 import { ArrowLeft } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Node } from "reactflow";
 import { shallow } from "zustand/shallow";
+
+const NODE_EXPLANATIONS: Record<string, string> = {
+  [QFTNode]: "Applies the Quantum Fourier Transform to the quantum register.",
+  [InverseQFTNode]: "Applies the inverse Quantum Fourier Transform.",
+
+  [MCMTGateNode]: "Applies a multi-controlled, multi-target gate. Set the number of control and target qubits in the 'Number of Controls' and 'Number of Targets' fields. Also select the applied matrix in the 'U' field.",
+
+  [AlgorithmNode]: "A custom quantum algorithm. Upload a QASM file below.",
+  [ClassicalAlgorithmNode]: "A custom classical algorithm. Upload a QASM file below.",
+
+  [DeutschJozsaNode]: "Implements the Deutsch-Jozsa algorithm. Select the input size and differenciate between balanced and constant functions.",
+  [UniversalOracleNode]: "Implements an universal oracle. Differentiate between Qubit flips and phase flips. Select the states which should be marked.",
+  [GroverDiffuserNode]: "TODO: Explain GroverDiffuserNode here",
+  [GroverNode]: "Implements Grover's quantum search algorithm. Select the amount of qubits and which elements should be searched.",
+  [QAOANode]: "QAOA for solving optimization problems. Select the problem, add classical input data, configurable the optimizer and set the amount of layers.",
+
+  [MeasurementNode]: "Measures a quantum register in specified basis.",
+  [AncillaNode]: "TODO: Explain AncillaNode here, not yet implemented",
+  [QubitNode]: "Creates a quantum register. Set the number of qubits in 'Size'.",
+
+  [SplitterNode]: "Splits a quantum register into two quantum registers. Upload QASM file to define the split.",
+  [MergerNode]: "Merges two quantum registers into one quantum register. Upload QASM file to define the merge.",
+
+  [OperatorNode]: "Set an operator which gets applied to the qubit(s).",
+
+  [ClassicalOutputOperationNode]: "TODO: Explain ClassicalOutputOperationNode here, not yet implemented",
+  [IfElseNode]: "TODO: Explain IfElseNode here, not yet implemented",
+  [ControlStructureNode]: "TODO: Explain ControlStructureNode here, not yet implemented",
+  [ClassicalOperatorNode]: "TODO: Explain ClassicalOperatorNode here, not yet implemented",
+  [GroupNode]: "TODO: Explain GroupNode here, not yet implemented",
+  [PluginNode]: "TODO: Explain PluginNode here, not yet implemented",
+  [EditableNode]: "TODO: Explain EditableNode here, not yet implemented",
+};
+
+const GATE_EXPLANATIONS: Record<string, string> = {
+  [parameterized_one_qubit[0]]: "X-axis rotation by an angle (rad or deg).",
+  [parameterized_one_qubit[1]]: "Y-axis rotation by an angle (rad or deg).",
+  [parameterized_one_qubit[2]]: "Z-axis rotation by an angle (rad or deg).",
+
+  [parameterized_one_qubit[3]]: "Applies a phase shift of an angle (rad or deg) to the |1⟩ state.",
+  [parameterized_two_qubit[0]]: "If control qubit is in state |1⟩, applies a phase shift of an angle (rad or deg) to the |1⟩ state.",
+
+  [parameterized_two_qubit[1]]: "If control qubit is in state |1⟩, apply X-axis rotation by an angle (rad or deg).",
+  [parameterized_two_qubit[2]]: "If control qubit is in state |1⟩, apply Y-axis rotation by an angle (rad or deg).",
+  [parameterized_two_qubit[3]]: "If control qubit is in state |1⟩, apply Z-axis rotation by an angle (rad or deg).",
+  ["CU"]: "If control qubit is in state |1⟩, apply the U-gate. Set the matrix for the U-gate in the 'Matrix' field.",
+
+  [non_parameterized_one_qubit[0]]: "Creates superposition by applying a Hadamard transform.",
+  [non_parameterized_one_qubit[1]]: "Applies a π/4 phase shift.",
+  [non_parameterized_one_qubit[2]]: "Flips |0⟩ and |1⟩ states.",
+  [non_parameterized_one_qubit[3]]: "Applies a π rotation around the Y-axis.",
+  [non_parameterized_one_qubit[4]]: "Applies a π phase flip to the |1⟩ state.",
+  [non_parameterized_one_qubit[5]]: "Applies a π/2 phase shift to the |1⟩ state.",
+  [non_parameterized_one_qubit[6]]: "Creates superposition by applying a π/2 rotation around the X-axis.",
+  [non_parameterized_one_qubit[7]]: "Inverse S gate; removes a π/2 phase shift.",
+  [non_parameterized_one_qubit[8]]: "Inverse T gate; removes a π/4 phase shift.",
+
+  [non_parameterized_two_qubit[0]]: "If control qubit is in state |1⟩, flips |0⟩ and |1⟩ states of the target qubit.",
+  [non_parameterized_two_qubit[1]]: "Swaps the states of two qubits.",
+  [non_parameterized_two_qubit[2]]: "If control qubit is in state |1⟩, applies a π rotation around the Y-axis to the target qubit.",
+  [non_parameterized_two_qubit[3]]: "If control qubit is in state |1⟩, applies a π phase flip to the |1⟩ state of the target qubit.",
+  [non_parameterized_two_qubit[4]]: "If control qubit is in state |1⟩, applies the H gate to the target qubit.",
+
+  [multi_qubit_gates[0]]: "If both control qubits are in state |1⟩, flips |0⟩ and |1⟩ states of the target qubit.",
+  [multi_qubit_gates[1]]: "If control qubit is in state |1⟩, swaps the states of the two target qubits.",
+  [qubitLabel]: "Represents an individual qubit in the circuit."
+};
+
+const DATA_TYPE_EXPLANATIONS: Record<string, string> = {
+  ["bit"]: "Binary value (0 or 1).",
+  ["boolean"]: "True or false value.",
+  ["Number"]: "Numeric value.",
+  ["Array"]: "List of values, seperated by a comma.",
+  ["File"]: "Data loaded from a file. Specify the file path in the 'Value' field.",
+  ["String"]: "Text data."
+}
+
+const STATE_PREPERATION_EXPLANATIONS: Record<string, string> = {
+  ["Basis Encoding"]: "Encodes numeric data with configurable decimal precision.",
+  ["Custom Encoding"]: "Encodes data using a defined value range (bounds).",
+  ["Angle Encoding"]: "Encodes data as quantum phase shifts.",
+  ["Prepare State"]: "Select a quantum state to be generated. Specify the size if it is not a Bell state."
+}
+
+const getNodeExplanation = (selectedNode: Node | null) => {
+  if (!selectedNode) {
+    return "";
+  }
+
+  if (selectedNode.type === GateNode) {
+    return GATE_EXPLANATIONS[selectedNode.data.label] ?? "Error: No explanation available for gate node: " + selectedNode.data.label;
+  }
+
+  if (selectedNode.type === DataTypeNode) {
+    return DATA_TYPE_EXPLANATIONS[selectedNode.data.label] ?? "Error: No explanation available for data type node: " + selectedNode.data.label;
+  }
+
+  if (selectedNode.type === StatePreparationNode) {
+    return STATE_PREPERATION_EXPLANATIONS[selectedNode.data.label] ?? "Error: No explanation available for state preperation node: " + selectedNode.data.label;
+  }
+
+  return NODE_EXPLANATIONS[selectedNode.type] ?? "Error: No explanation available for node type: " + selectedNode.type;
+};
 
 const selector = (state: {
   selectedNode: Node | null;
@@ -176,6 +318,21 @@ export const TextPanel = () => {
           <h2 className="flex-grow text-center">Properties Panel</h2>
         </div>
         <hr />
+
+        {selectedNode && (
+          <div className="p-2 mt-3">
+            <label
+              className="block text-sm font-medium text-start text-gray-700"
+              htmlFor="nodeExplanation"
+            >
+              Explanation
+            </label>
+
+            <div className="mt-1 min-h-28 border border-gray-300 rounded-md sm:text-sm p-2 bg-gray-50 text-gray-700">
+              {getNodeExplanation(selectedNode)}
+            </div>
+          </div>
+        )}
 
         {selectedNode?.type === "positionNode" && (
           <div className="p-2 mt-3">
