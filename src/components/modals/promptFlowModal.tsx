@@ -48,12 +48,16 @@ export default function PromptFlowModal({
   const [inputErrors, setInputErrors] = useState<Record<string, string>>({});
 
   // Validation helper for size inputs
-  const validateSizeInput = (value: string): { isValid: boolean; message: string } => {
+  const validateSizeInput = (
+    value: string,
+    isBellState: boolean = false
+  ): { isValid: boolean; message: string } => {
     if (!value) return { isValid: false, message: "Please enter a value." };
     const num = Number(value);
     if (isNaN(num)) return { isValid: false, message: "Must be a number." };
     if (!Number.isInteger(num)) return { isValid: false, message: "Must be an integer." };
-    if (num <= 1) return { isValid: false, message: "Must be greater than 1." };
+    if (isBellState && num !== 2) return { isValid: false, message: "Bell states must have size 2." };
+    if (num < 1) return { isValid: false, message: "Must be at least 1." }; // Allow 1 for uniform superpositions
     return { isValid: true, message: "" };
   };
 
@@ -273,21 +277,24 @@ export default function PromptFlowModal({
                     <div className="space-y-1">
                       <input
                         type="number"
-                        min={2}
+                        min={1} // Allow 1 as the minimum
                         step={1}
                         className={`w-full border p-2 rounded ${
                           inputErrors[itemKey] ? "border-red-500 bg-red-50" : "border-gray-300"
                         }`}
-                        placeholder="Enter number of qubits (e.g. 3)"
+                        placeholder="Enter number of qubits (e.g. 1, 2, 3)"
                         value={inputValues[itemKey] || ""}
                         onChange={(e) => {
                           const value = e.target.value;
                           setInputValues({ ...inputValues, [itemKey]: value });
-                          const { isValid, message } = validateSizeInput(value);
+                          // Pass the isBellState flag from the input block
+                          const isBellState = input.isBellState || isCurrentlyBellSelected(input.id);
+                          const { isValid, message } = validateSizeInput(value, isBellState);
                           setInputErrors({ ...inputErrors, [itemKey]: isValid ? "" : message });
                         }}
                         onBlur={(e) => {
-                          const { isValid, message } = validateSizeInput(e.target.value);
+                          const isBellState = input.isBellState || isCurrentlyBellSelected(input.id);
+                          const { isValid, message } = validateSizeInput(e.target.value, isBellState);
                           setInputErrors({ ...inputErrors, [itemKey]: isValid ? "" : message });
                         }}
                       />
