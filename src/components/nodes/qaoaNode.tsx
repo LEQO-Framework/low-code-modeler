@@ -8,6 +8,7 @@ import OutputPort from "../utils/outputPort";
 import { AlertCircle } from "lucide-react";
 import { findDuplicateOutputIdentifiers } from "../utils/utils";
 import { classicalConstructColor } from "@/constants";
+import { awareness } from "@/yjs";
 
 const selector = (state: any) => ({
   updateNodeValue: state.updateNodeValue,
@@ -24,7 +25,7 @@ export const QAOANode = memo((node: Node) => {
   const [p, setP] = useState(data.p || 1);
   const [problem, setProblem] = useState(data.problem || "MaxCut");
   const [optimizer, setOptimizer] = useState(data.optimizer || "COBYLA");
-  
+
   const [outputs, setOutputs] = useState(data.outputs || []);
   const [outputIdentifierError, setOutputIdentifierError] = useState(false);
   const [sizeError, setSizeError] = useState(false);
@@ -75,7 +76,7 @@ export const QAOANode = memo((node: Node) => {
     const betaMismatch = rawBeta != null && strBeta !== "" && betaLen !== p;
 
     setParamError(gammaMismatch || betaMismatch);
-  }, [edges, nodes, id, p, data.gamma, data.beta, updateNodeValue]);
+  }, [edges, id, p, data.gamma, data.beta, updateNodeValue]);
 
   useEffect(() => {
     updateNodeInternals(id);
@@ -87,17 +88,52 @@ export const QAOANode = memo((node: Node) => {
     setSelectedNode(node);
   };
 
-  const dynamicHeight = 550; 
+  const dynamicHeight = 550;
   const classicalInputLabel =
-  problem === "Max2SAT" ? "Clauses" : "Edges";
+    problem === "Max2SAT" ? "Clauses" : "Edges";
+
+
+  const [remoteHighlightColor, setRemoteHighlightColor] = useState<string | null>(null);
+  const [selectingUserName, setSelectingUserName] = useState<string | null>(null); // technically not needed, could extend functionality to also show user name next to highlighted node
+
+  useEffect(() => {
+    const checkRemoteSelection = () => {
+      let foundColor: string | null = null;
+      let foundName: string | null = null;
+
+      // Loop through all active client states in the room
+      awareness.getStates().forEach((state: any, clientId: number) => {
+        // Skip your own client ID so you don't highlight it with your own color
+        // if (clientId === awareness.clientID) return;
+
+        // Check if a peer has selected this specific node ID
+        if (state.cursor && state.cursor.mySelectedNodeId === id) {
+          foundColor = state.cursor.color;
+          foundName = state.cursor.name;
+        }
+      });
+
+      setRemoteHighlightColor(foundColor);
+      setSelectingUserName(foundName);
+      console.log("COLOR", foundColor, foundName);
+    };
+
+    // Run once immediately on mount
+    checkRemoteSelection();
+
+    // 3. Listen to remote awareness updates
+    awareness.on("change", checkRemoteSelection);
+
+    // Clean up listener when the node unmounts
+    return () => {
+      awareness.off("change", checkRemoteSelection);
+    };
+  }, [id]); // Re-run if node ID changes
 
   return (
-    <motion.div
+    <div
       className="grand-parent"
-      initial={false}
-      animate={{ width: 320, height: dynamicHeight }}
-      transition={{ duration: 0.3, ease: "easeInOut" }}
-      onAnimationComplete={() => updateNodeInternals(id)}
+      style={{ width: 320, height: dynamicHeight }}
     >
       <div className="grand-parent">
         <div
@@ -105,7 +141,13 @@ export const QAOANode = memo((node: Node) => {
             "w-[320px] bg-white border border-solid border-gray-700 shadow-md relative flex flex-col",
             selected && "border-blue-500"
           )}
-          style={{ height: `${dynamicHeight}px` }}
+          style={{
+            borderColor: remoteHighlightColor ? remoteHighlightColor : (selected ? "#3B82F6" : "#374151"),
+            boxShadow: remoteHighlightColor
+              ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}` // Glowing aura ring
+              : undefined,
+            height: `${dynamicHeight}px`
+          }}
         >
           {/* Error Alerts Multi-Panel */}
           {(outputIdentifierError || startsWithDigitError || paramError) && (
@@ -136,7 +178,7 @@ export const QAOANode = memo((node: Node) => {
 
           {/* CONFIGURATION BODY */}
           <div className="px-4 py-2 mt-1 flex flex-col gap-3">
-            
+
             {/* Problem Dropdown */}
             <div className="mt-1 flex flex-col items-center justify-center w-full">
               <label className="text-xs font-semibold text-gray-700 text-center mb-1">Problem:</label>
@@ -194,7 +236,7 @@ export const QAOANode = memo((node: Node) => {
               <div
                 className="relative p-2"
                 style={{
-                  backgroundColor: classicalConstructColor || "#fed7aa", 
+                  backgroundColor: classicalConstructColor || "#fed7aa",
                   width: '120px',
                   display: 'flex',
                   alignItems: 'center',
@@ -221,7 +263,7 @@ export const QAOANode = memo((node: Node) => {
               <div
                 className="relative p-2"
                 style={{
-                  backgroundColor: classicalConstructColor || "#fed7aa", 
+                  backgroundColor: classicalConstructColor || "#fed7aa",
                   width: '120px',
                   display: 'flex',
                   alignItems: 'center',
@@ -248,7 +290,7 @@ export const QAOANode = memo((node: Node) => {
               <div
                 className="relative p-2"
                 style={{
-                  backgroundColor: classicalConstructColor || "#fed7aa", 
+                  backgroundColor: classicalConstructColor || "#fed7aa",
                   width: '120px',
                   display: 'flex',
                   alignItems: 'center',
@@ -297,6 +339,6 @@ export const QAOANode = memo((node: Node) => {
 
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 });

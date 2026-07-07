@@ -1,4 +1,4 @@
-import { memo, useState } from "react";
+import { memo, useState, useEffect } from "react";
 import { Node, Handle, Position } from "reactflow";
 import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
@@ -6,39 +6,116 @@ import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import OutputPort from "../utils/outputPort";
 import { quantumConstructColor } from "@/constants";
+import { awareness } from "@/yjs"; // Imported the room awareness configuration
 
 const selector = (state: any) => ({
   updateNodeValue: state.updateNodeValue,
   nodes: state.nodes,
   edges: state.edges,
   setSelectedNode: state.setSelectedNode,
+  experienceLevel: state.experienceLevel
 });
 
 export const GroverDiffuserNode = memo((node: Node) => {
   const { id, data, selected } = node;
-  const { updateNodeValue, nodes, edges, setSelectedNode } = useStore(selector, shallow);
+  const { updateNodeValue, nodes, edges, setSelectedNode, experienceLevel } = useStore(selector, shallow);
 
   const [outputs, setOutputs] = useState(data.outputs || []);
   const [outputIdentifierError, setOutputIdentifierError] = useState(false);
   const [sizeError, setSizeError] = useState(false);
 
+  // Added context state tracking for room collaborative view states
+  const [mixedView, setMixedView] = useState(false);
+  const [hasPioneerUser, setHasPioneerUser] = useState(false);
+  const [hasExplorerUser, setHasExplorerUser] = useState(false);
+
+  // Monitor awareness states for active users and their selected roles
+  useEffect(() => {
+    const checkUserRoles = () => {
+      const states = awareness.getStates();
+      let hasPioneer = false;
+      let hasExplorer = false;
+
+      states.forEach((state: any) => {
+        if (state.cursor && state.cursor.role) {
+          if (state.cursor.role === "pioneer") hasPioneer = true;
+          if (state.cursor.role === "explorer") hasExplorer = true;
+        }
+      });
+
+      setHasPioneerUser(hasPioneer);
+      setHasExplorerUser(hasExplorer);
+      setMixedView(hasPioneer && hasExplorer);
+    };
+
+    checkUserRoles();
+    awareness.on("change", checkUserRoles);
+
+    return () => {
+      awareness.off("change", checkUserRoles);
+    };
+  }, []);
+
+
+  const [remoteHighlightColor, setRemoteHighlightColor] = useState<string | null>(null);
+  const [selectingUserName, setSelectingUserName] = useState<string | null>(null); // technically not needed, could extend functionality to also show user name next to highlighted node
+
+  useEffect(() => {
+    const checkRemoteSelection = () => {
+      let foundColor: string | null = null;
+      let foundName: string | null = null;
+
+      // Loop through all active client states in the room
+      awareness.getStates().forEach((state: any, clientId: number) => {
+        // Skip your own client ID so you don't highlight it with your own color
+        // if (clientId === awareness.clientID) return;
+
+        // Check if a peer has selected this specific node ID
+        if (state.cursor && state.cursor.mySelectedNodeId === id) {
+          foundColor = state.cursor.color;
+          foundName = state.cursor.name;
+        }
+      });
+
+      setRemoteHighlightColor(foundColor);
+      setSelectingUserName(foundName);
+      console.log("COLOR", foundColor, foundName);
+    };
+
+    // Run once immediately on mount
+    checkRemoteSelection();
+
+    // 3. Listen to remote awareness updates
+    awareness.on("change", checkRemoteSelection);
+
+    // Clean up listener when the node unmounts
+    return () => {
+      awareness.off("change", checkRemoteSelection);
+    };
+  }, [id]); // Re-run if node ID changes
+
   const isConnected = edges.some(edge => edge.target === id);
 
   return (
-    <motion.div
+    <div
       className="grand-parent"
-      initial={false}
-      animate={{ width: 320, height: 250 }}
-      transition={{ duration: 0.3, ease: "easeInOut" }}
+      style={{ width: 320, height: 250 }}
     >
       <div className="grand-parent">
         <div
           className={cn(
             "w-[320px] bg-white border border-solid border-gray-700 shadow-md relative",
-            selected && "border-blue-500"
+            selected && "border-blue-500",
+            mixedView && "border-purple-400"
           )}
-          style={{ height: "250px" }}
-        >
+          style={{
+            borderColor: remoteHighlightColor ? remoteHighlightColor : (selected ? "#3B82F6" : "#374151"),
+            boxShadow: remoteHighlightColor
+              ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}` // Glowing aura ring
+              : undefined,
+            height: `250px`
+          }}>
+
           {/* HEADER */}
           <div className="w-full flex items-center" style={{ height: '52px' }}>
             <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
@@ -48,9 +125,21 @@ export const GroverDiffuserNode = memo((node: Node) => {
                 className="w-[40px] h-[40px] object-contain flex-shrink-0"
               />
               <div className="h-full w-[1px] bg-black mx-2" />
-              <span className="font-semibold leading-none" style={{ paddingLeft: '60px' }}>
-                Grover Diffuser
-              </span>
+              <div className="flex flex-col justify-center pl-2 leading-tight select-none w-full">
+                {mixedView ? (
+                  <span className="font-semibold text-xs text-blue-900 block">
+                    P: Grover Diffuser / E: Emphasize Marked Target(s)
+                  </span>
+                ) : experienceLevel === "explorer" ? (
+                  <span className="font-semibold text-sm">
+                    Emphasize Marked Target(s)
+                  </span>
+                ) : (
+                  <span className="font-semibold text-sm">
+                    Grover Diffuser
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 
@@ -106,6 +195,6 @@ export const GroverDiffuserNode = memo((node: Node) => {
           </div>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 });

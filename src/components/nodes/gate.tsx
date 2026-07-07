@@ -1,7 +1,9 @@
-import { memo, useEffect } from "react";
+import { memo, useEffect, useState } from "react";
 import { Handle, Position, Node, Edge } from "reactflow";
 import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
+import { cn } from "@/lib/utils";
+import { awareness } from "@/yjs";
 
 const selector = (state: {
   selectedNode: Node | null;
@@ -18,7 +20,7 @@ const selector = (state: {
 });
 
 export const GateNode = memo((node: Node) => {
-  const { data } = node;
+  const { data, selected } = node;
   const isQubit = data.label === "Qubit Circuit";
   const isTwoQubit = data.label === "CU" || data.label === "CNOT" || data.label === "SWAP" || data.label === "CZ" || data.label === "CY" || data.label === "CH" || data.label === "CP(λ)" || data.label === "CRX(θ)" || data.label === "CRY(θ)" || data.label === "CRZ(θ)" || data.label === "CU(θ,φ,λ,γ)";
   const isThreeQubit = data.label === "Toffoli" || data.label === "CSWAP";
@@ -64,15 +66,58 @@ export const GateNode = memo((node: Node) => {
       ? baseSize
       : baseSize * handleCount
 
+  const id = node.id;
+
+  const [remoteHighlightColor, setRemoteHighlightColor] = useState<string | null>(null);
+  const [selectingUserName, setSelectingUserName] = useState<string | null>(null); // technically not needed, could extend functionality to also show user name next to highlighted node
+
+  useEffect(() => {
+    const checkRemoteSelection = () => {
+      let foundColor: string | null = null;
+      let foundName: string | null = null;
+
+      // Loop through all active client states in the room
+      awareness.getStates().forEach((state: any, clientId: number) => {
+        // Skip your own client ID so you don't highlight it with your own color
+        // if (clientId === awareness.clientID) return;
+        console.log(state.cursor)
+        console.log(id)
+
+        // Check if a peer has selected this specific node ID
+        if (state.cursor && state.cursor.mySelectedNodeId === id) {
+          foundColor = state.cursor.color;
+          foundName = state.cursor.name;
+        }
+      });
+
+      setRemoteHighlightColor(foundColor);
+      setSelectingUserName(foundName);
+      console.log("COLOR", foundColor, foundName);
+    };
+
+    // Run once immediately on mount
+    checkRemoteSelection();
+
+    // 3. Listen to remote awareness updates
+    awareness.on("change", checkRemoteSelection);
+
+    // Clean up listener when the node unmounts
+    return () => {
+      awareness.off("change", checkRemoteSelection);
+    };
+  }, [id]); // Re-run if node ID changes
+
   return (
     <div className="grand-parent overflow-visible">
-      <div
-        className="border border-solid border-gray-700 shadow-md bg-blue-100 relative overflow-visible"
+      <div className={"w-[110px] h-[110px] border border-solid shadow-md bg-blue-100 relative overflow-visible"}
         style={{
+          borderColor: remoteHighlightColor ? remoteHighlightColor : (selected ? "#3B82F6" : "#374151"),
+          boxShadow: remoteHighlightColor
+            ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}` // Glowing aura ring
+            : undefined,
           width: `${baseSize}px`,
           height: `${dynamicSize}px`
-        }}
-      >
+        }}>
 
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center font-bold z-0 text-xl">
           {experienceLevel === "pioneer" && (data.label === "Qubit Circuit" ? (

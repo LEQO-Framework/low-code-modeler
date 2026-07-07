@@ -53,7 +53,6 @@ export const AddNodePanel = () => {
   const multiControlledGate = (label: string) =>
     [ "Toffoli", "CSWAP"]
       .includes(label);
-      console.log(Label)
 
 
   // select correct categories (based on domainProfile)
@@ -67,7 +66,6 @@ export const AddNodePanel = () => {
     } else {
       baseCategories = staticCategories;
     }
-    console.log(baseCategories);
     // no user templates: only return standard templates (baseCategories)
     if (userTemplates.length === 0) return baseCategories;
 
