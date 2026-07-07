@@ -55,7 +55,7 @@ const NODE_EXPLANATIONS: Record<string, string> = {
 
   [DeutschJozsaNode]: "Implements the Deutsch-Jozsa algorithm. Select the input size and differenciate between balanced and constant functions.",
   [UniversalOracleNode]: "Implements an universal oracle. Differentiate between Qubit flips and phase flips. Select the states which should be marked.",
-  [GroverDiffuserNode]: "TODO: Explain GroverDiffuserNode here",
+  [GroverDiffuserNode]: "Implements Grover's diffuse operator. Reflects the state amplitudes about their mean.",
   [GroverNode]: "Implements Grover's quantum search algorithm. Select the amount of qubits and which elements should be searched.",
   [QAOANode]: "QAOA for solving optimization problems. Select the problem, add classical input data, configurable the optimizer and set the amount of layers.",
 
