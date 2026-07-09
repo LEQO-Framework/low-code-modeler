@@ -45,36 +45,71 @@ import { Node } from "reactflow";
 import { shallow } from "zustand/shallow";
 
 const NODE_EXPLANATIONS: Record<string, string> = {
-  [QFTNode]: "Applies the Quantum Fourier Transform to the quantum register.",
-  [InverseQFTNode]: "Applies the inverse Quantum Fourier Transform.",
+  [QFTNode]:
+    "Applies the Quantum Fourier Transform (QFT), which converts a quantum state into its frequency representation. It is commonly used in algorithms such as phase estimation and factoring.",
 
-  [MCMTGateNode]: "Applies a multi-controlled, multi-target gate. Set the number of control and target qubits in the 'Number of Controls' and 'Number of Targets' fields. Also select the applied matrix in the 'U' field.",
+  [InverseQFTNode]:
+    "Applies the inverse Quantum Fourier Transform (QFT), converting a state back from its frequency representation.",
 
-  [AlgorithmNode]: "A custom quantum algorithm. Upload a QASM file below.",
-  [ClassicalAlgorithmNode]: "A custom classical algorithm. Upload a QASM file below.",
+  [MCMTGateNode]:
+    "Applies a gate to one or more target qubits only if all control qubits are in the |1⟩ state. Configure the number of control and target qubits and select the gate matrix.",
 
-  [DeutschJozsaNode]: "Implements the Deutsch-Jozsa algorithm. Select the input size and differenciate between balanced and constant functions.",
-  [UniversalOracleNode]: "Implements an universal oracle. Differentiate between Qubit flips and phase flips. Select the states which should be marked.",
-  [GroverDiffuserNode]: "Implements Grover's diffuse operator. Reflects the state amplitudes about their mean.",
-  [GroverNode]: "Implements Grover's quantum search algorithm. Select the amount of qubits and which elements should be searched.",
-  [QAOANode]: "QAOA for solving optimization problems. Select the problem, add classical input data, configurable the optimizer and set the amount of layers.",
+  [AlgorithmNode]:
+    "Runs a custom quantum algorithm defined in a QASM file.",
 
-  [MeasurementNode]: "Measures a quantum register in specified basis.",
-  [AncillaNode]: "TODO: Explain AncillaNode here, not yet implemented",
-  [QubitNode]: "Creates a quantum register. Set the number of qubits in 'Size'.",
+  [ClassicalAlgorithmNode]:
+    "Runs a custom classical algorithm defined in a QASM file.",
 
-  [SplitterNode]: "Splits a quantum register into two quantum registers. Upload QASM file to define the split.",
-  [MergerNode]: "Merges two quantum registers into one quantum register. Upload QASM file to define the merge.",
+  [DeutschJozsaNode]:
+    "Implements the Deutsch-Jozsa algorithm, which determines whether a function always returns the same value or returns different values for half of its inputs. Select the input size and the function type.",
 
-  [OperatorNode]: "Set an operator which gets applied to the qubit(s).",
+  [UniversalOracleNode]:
+    "Marks selected quantum states for use in quantum algorithms such as Grover's search. Choose whether to flip qubits or apply phase flips, then select the states to mark.",
 
-  [ClassicalOutputOperationNode]: "TODO: Explain ClassicalOutputOperationNode here, not yet implemented",
-  [IfElseNode]: "TODO: Explain IfElseNode here, not yet implemented",
-  [ControlStructureNode]: "TODO: Explain ControlStructureNode here, not yet implemented",
-  [ClassicalOperatorNode]: "TODO: Explain ClassicalOperatorNode here, not yet implemented",
-  [GroupNode]: "TODO: Explain GroupNode here, not yet implemented",
-  [PluginNode]: "TODO: Explain PluginNode here, not yet implemented",
-  [EditableNode]: "TODO: Explain EditableNode here, not yet implemented",
+  [GroverDiffuserNode]:
+    "Applies Grover's diffusion operator, increasing the probability of measuring the marked states during Grover's search algorithm.",
+
+  [GroverNode]:
+    "Implements Grover's search algorithm, which searches an unsorted set of elements faster than a classical algorithm. Select the number of qubits and the elements to search for.",
+
+  [QAOANode]:
+    "Implements the Quantum Approximate Optimization Algorithm (QAOA), which finds approximate solutions to optimization problems. Select the problem, provide the input data, choose an optimizer, and set the number of layers.",
+
+  [MeasurementNode]:
+    "Measures a quantum register, converting its quantum state into classical measurement results. Select the measurement basis if required.",
+
+  [AncillaNode]:
+    "Creates one or more ancilla qubits. Ancilla qubits are temporary helper qubits used during quantum computations.",
+
+  [QubitNode]:
+    "Creates a quantum register. Set the number of qubits in the register.",
+
+  [SplitterNode]:
+    "Splits a quantum register into separate registers according to a QASM definition.",
+
+  [MergerNode]:
+    "Merges quantum registers into a single register according to a QASM definition.",
+
+  [OperatorNode]:
+    "Applies one or more quantum gates to the selected qubits.",
+
+  [ClassicalOutputOperationNode]:
+    "Performs an operation on classical measurement results before passing them to the next node.",
+
+  [IfElseNode]:
+    "Executes different branches depending on whether a specified condition is true or false.",
+
+  [ControlStructureNode]:
+    "Controls the execution flow of the workflow, such as repeating or conditionally executing nodes.",
+
+  [ClassicalOperatorNode]:
+    "Performs classical operations on the input and returns classical output.",
+
+  [PluginNode]:
+    "Executes functionality provided by the plugin.",
+
+  [EditableNode]:
+    "A customizable node that can be configured to perform user-defined operations."
 };
 
 const GATE_EXPLANATIONS: Record<string, string> = {
@@ -115,17 +150,23 @@ const DATA_TYPE_EXPLANATIONS: Record<string, string> = {
   ["bit"]: "Binary value (0 or 1).",
   ["boolean"]: "True or false value.",
   ["Number"]: "Numeric value.",
-  ["Array"]: "List of values, seperated by a comma.",
+  ["Array"]: "List of values, separated by a comma.",
   ["File"]: "Data loaded from a file. Specify the file path in the 'Value' field.",
   ["String"]: "Text data."
 }
 
 const STATE_PREPERATION_EXPLANATIONS: Record<string, string> = {
-  ["Basis Encoding"]: "Encodes numeric data with configurable decimal precision.",
-  ["Custom Encoding"]: "Encodes data using a defined value range (bounds).",
-  ["Angle Encoding"]: "Encodes data as quantum phase shifts.",
-  ["Prepare State"]: "Select a quantum state to be generated. Specify the size if it is not a Bell state."
-}
+  ["Basis Encoding"]:
+    "Encodes classical data into computational basis states by mapping binary values to qubit basis states. Numeric values can be converted to binary using the selected precision.",
+
+  ["Custom Encoding"]:
+    "Maps classical values to quantum states using a user-defined implementation.",
+
+  ["Angle Encoding"]:
+     "Encodes an array of classical values into a quantum state using rotation gates. For each input value xi, the corresponding qubit is rotated by RY(2xi).",
+  ["Prepare State"]:
+    "Initializes the quantum register in a predefined quantum state, such as a basis state, Bell state, GHZ state or W state. Specify size if the state is not a Bell state."
+};
 
 const getNodeExplanation = (selectedNode: Node | null) => {
   if (!selectedNode) {
