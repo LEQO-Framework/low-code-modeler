@@ -31,7 +31,7 @@ import Modal, { NewDiagramModal } from "./Modal";
 import './index.css';
 import { Placement } from 'react-joyride';
 import { startCompile } from "./backend";
-import { ancillaConstructColor, classicalConstructColor, ClassicalOperatorNode, controlFlowConstructColor, grover, hadamard_test_imaginary_part, hadamard_test_real_part, qaoa, quantum_types, quantumConstructColor, swap_test, quantum_k_means, custom_template, TEMPLATE_STORAGE_KEY, templates } from "./constants";
+import { ancillaConstructColor, classicalConstructColor, ClassicalOperatorNode, controlFlowConstructColor, grover, hadamard_test_imaginary_part, hadamard_test_real_part, qaoa, quantum_types, quantumConstructColor, swap_test, quantum_k_means, custom_template, TEMPLATE_STORAGE_KEY, templates, PluginNode } from "./constants";
 import Joyride from 'react-joyride';
 import { ConfigModal } from "./components/modals/configModal";
 import { QunicornModal } from "./components/modals/qunicornModal";
@@ -1870,132 +1870,227 @@ If none apply, return { "algorithms": [] }.
     }
   }, [domainProfile, allDomainProfiles]);
 
-  const onDrop = React.useCallback(
-    (event: any) => {
-      console.log("dropped")
-      console.log("collab mode", collaborationModeOn)
-      const position = reactFlowInstance.screenToFlowPosition({
-        x: event.clientX,
-        y: event.clientY,
-      })
-      const label = event.dataTransfer.getData("application/reactflow/label");
-      console.log(position);
+const onDrop = React.useCallback(
+  (event: any) => {
+    console.log("dropped");
+    console.log("collab mode", collaborationModeOn);
 
+    event.preventDefault();
 
-      if (label == qaoa) {
-        loadFlow(qaoa_algorithm)
-      } else if (label == swap_test) {
-        loadFlow(swap_test_algorithm);
-      }
-      else if (label == hadamard_test_imaginary_part) {
-        loadFlow(hadamard_test_imaginary_part_algorithm);
-      }
-      else if (label == hadamard_test_real_part) {
-        loadFlow(hadamard_test_real_part_algorithm);
-      }
-      else if (label == grover) {
-        loadFlow(grover_algorithm);
-      }
-      else if (label == quantum_k_means) {
-        loadFlow(quantum_k_means_algorithm);
-      }
-      else if (label.startsWith(custom_template)) {
-        const userTemplateFlowData = JSON.parse(event.dataTransfer.getData("application/reactflow/templateFlowData"));
-        console.log("USER TEMPLATE")
-        console.log(userTemplateFlowData)
-        if (userTemplateFlowData) {
-          loadFlow(userTemplateFlowData);
-        }
-        else {
-          console.error(`User Template ${label} not found.`)
-        }
-      }
-      else {
-        console.log("current categories", currentCategories)
-        //handleOnDrop(event, reactFlowWrapper, reactFlowInstance, setNodes, currentCategories);
-        event.preventDefault();
-        if (reactFlowWrapper) {
-          const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
-          const type = event.dataTransfer.getData("application/reactflow");
-          const dataType = event.dataTransfer.getData("application/reactflow/dataType");
-          const label = event.dataTransfer.getData("application/reactflow/label");
-          console.log("type", type)
-          console.log("dataType", dataType)
+    const label = event.dataTransfer.getData("application/reactflow/label");
 
-          //let position2 = reactFlowInstance.screenToFlowPosition();
+    if (label == qaoa) {
+      loadFlow(qaoa_algorithm);
+      return;
+    } else if (label == swap_test) {
+      loadFlow(swap_test_algorithm);
+      return;
+    } else if (label == hadamard_test_imaginary_part) {
+      loadFlow(hadamard_test_imaginary_part_algorithm);
+      return;
+    } else if (label == hadamard_test_real_part) {
+      loadFlow(hadamard_test_real_part_algorithm);
+      return;
+    } else if (label == grover) {
+      loadFlow(grover_algorithm);
+      return;
+    } else if (label == quantum_k_means) {
+      loadFlow(quantum_k_means_algorithm);
+      return;
+    } else if (label.startsWith(custom_template)) {
+      const userTemplateFlowData = JSON.parse(
+        event.dataTransfer.getData(
+          "application/reactflow/templateFlowData"
+        )
+      );
 
-          //console.log(position2)
-
-
-          // check if the dropped element is valid
-          if (typeof type === "undefined" || !type) {
-            return;
-          }
-          const def = findNodeDefinition(type, label, currentCategories);
-          console.log("found node", def) //PROBLEM: Domain Profiles! Knoten dropped aber nicht sichtbar?!
-
-          const getId = () => crypto.randomUUID();
-          const compactOptions = def.compactOptions; 
-
-          const position = reactFlowInstance.project({
-            x: event.clientX - reactFlowBounds.left,
-            y: event.clientY - reactFlowBounds.top,
-          });
-          const newNode = {
-            id: getId(),
-            type,
-            position,
-            data: { label: label, inputs: [], children: [], implementation: "", implementationType: "", uncomputeImplementationType: "", uncomputeImplementation: "", completionGuaranteed: def?.completionGuaranteed ?? false, compactOptions: compactOptions,
-              // editableNode data if it exists
-            ...(def.properties && { properties: def.properties }),
-            ...(def.constraints && { constraints: def.constraints }),
-            ...(def.mapping && { mapping: def.mapping }),
-            ...(def.description && { description: def.description }),
-            ...(def.outputType && { outputType: def.outputType }),
-            ...(def.icon && { icon: def.icon }),
-            ...(def.isDataType && {isDataType: def.isDataType}),
-            }
-          };
-
-
-
-          setNodes(newNode);
-          const activeName = cursors[myClientId]?.name || userName || "unknown";
-          if (collaborationModeOn) { //only add node to shared nodesMap if collaboration mode is on
-            console.log("ON DROP: collab mode on", collaborationModeOn)
-            nodesMap.set(newNode.id, newNode);
-            console.log("nodes", nodes)
-
-            // get user name (from cursors) for history
-            //const userName = cursors[myClientId]?.name || "unknown";
-            historyArray.push([{
-              type: "node-added",
-              nodeId: newNode.id,
-              label: newNode.data?.label,
-              //user: Number(clientId) === myClientId ? "Me" : userName,
-              //user: userName,
-              userId: activeName,
-              user: activeName,
-              timestamp: Date.now(),
-            }]);
-
-            console.log("ADD NODE HISTORY", historyArray.toArray())
-            console.log("cursors", cursors)
-            console.log("shared nodes", Array.from(nodesMap.values()))
-            console.log("shared edges", Array.from(edgesMap.values()))
-          }
-
-          console.log("nodes", nodes)
-
-
-        }
+      if (userTemplateFlowData) {
+        loadFlow(userTemplateFlowData);
+      } else {
+        console.error(`User Template ${label} not found.`);
       }
 
-      //setContextMenu((prev) => ({ ...prev, left: event.clientX, top: event.clientY,}));
+      return;
+    }
 
-    },
-    [reactFlowInstance, setNodes, currentCategories, collaborationModeOn, cursors],
-  );
+    console.log("current categories", currentCategories);
+
+    if (!reactFlowWrapper) return;
+
+    const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
+
+    const type = event.dataTransfer.getData("application/reactflow");
+    const dataType = event.dataTransfer.getData(
+      "application/reactflow/dataType"
+    );
+
+    if (!type) {
+      return;
+    }
+
+    const def = findNodeDefinition(type, label, currentCategories);
+
+    console.log("found node", def);
+
+    const getId = () => crypto.randomUUID();
+
+    const compactOptions = def?.compactOptions ?? [];
+
+    const position = reactFlowInstance.project({
+      x: event.clientX - reactFlowBounds.left,
+      y: event.clientY - reactFlowBounds.top,
+    });
+
+
+    // ================================
+    // GET PLUGIN METADATA HERE
+    // ================================
+    const pluginDataRaw = event.dataTransfer.getData(
+      "application/reactflow/pluginData"
+    );
+
+    const pluginData = pluginDataRaw
+      ? JSON.parse(pluginDataRaw)
+      : null;
+
+
+    console.log("PLUGIN DATA FROM DROP", pluginData);
+
+
+    const newNode = {
+      id: getId(),
+      type,
+      position,
+
+      data: {
+        label,
+
+        inputs: [],
+        outputs: [],
+
+        children: [],
+
+        implementation: "",
+        implementationType: "",
+        uncomputeImplementationType: "",
+        uncomputeImplementation: "",
+
+        completionGuaranteed:
+          def?.completionGuaranteed ?? false,
+
+        compactOptions,
+
+
+        // =====================================
+        // PLUGIN NODE DATA
+        // =====================================
+        ...(type === PluginNode && {
+          pluginName: pluginData?.name,
+
+          dataInputs:
+            pluginData?.mockDataInputs ?? [],
+
+          dataOutputs:
+            pluginData?.mockDataOutputs ?? [],
+        }),
+
+
+        ...(def?.properties && {
+          properties: def.properties,
+        }),
+
+        ...(def?.constraints && {
+          constraints: def.constraints,
+        }),
+
+        ...(def?.mapping && {
+          mapping: def.mapping,
+        }),
+
+        ...(def?.description && {
+          description: def.description,
+        }),
+
+        ...(def?.outputType && {
+          outputType: def.outputType,
+        }),
+
+        ...(def?.icon && {
+          icon: def.icon,
+        }),
+
+        ...(def?.isDataType && {
+          isDataType: def.isDataType,
+        }),
+      },
+    };
+
+
+    console.log("CREATED NODE", newNode);
+
+
+    setNodes(newNode);
+
+
+    const activeName =
+      cursors[myClientId]?.name ||
+      userName ||
+      "unknown";
+
+
+    if (collaborationModeOn) {
+
+      console.log(
+        "ON DROP: collab mode on",
+        collaborationModeOn
+      );
+
+      nodesMap.set(
+        newNode.id,
+        newNode
+      );
+
+
+      historyArray.push([
+        {
+          type: "node-added",
+          nodeId: newNode.id,
+          label: newNode.data?.label,
+          userId: activeName,
+          user: activeName,
+          timestamp: Date.now(),
+        },
+      ]);
+
+
+      console.log(
+        "ADD NODE HISTORY",
+        historyArray.toArray()
+      );
+
+      console.log(
+        "shared nodes",
+        Array.from(nodesMap.values())
+      );
+
+      console.log(
+        "shared edges",
+        Array.from(edgesMap.values())
+      );
+    }
+
+
+    console.log("nodes", nodes);
+
+  },
+  [
+    reactFlowInstance,
+    setNodes,
+    currentCategories,
+    collaborationModeOn,
+    cursors,
+  ]
+);
 
   const onNodesDelete = useCallback(() => {
     setContextMenu((prev) => ({ ...prev, visible: false })); // contextMenu disappears when node is deleted
