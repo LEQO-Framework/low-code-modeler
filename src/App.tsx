@@ -1431,6 +1431,262 @@ If none apply, return { "algorithms": [] }.
           }
         }
       }
+
+            // Universal Oracle Validation
+      if (node.type === "oracleNode" || node.data?.label === "Universal Oracle") {
+        const connectedInput = connectedSources.length > 0;
+
+        if (!connectedInput) {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Universal Oracle "${node.id}" requires a quantum register input.`,
+          });
+        }
+
+        const mode = node.data?.mode;
+        if (mode && !["boolean", "phase"].includes(mode)) {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Universal Oracle "${node.id}" has invalid mode "${mode}".`,
+          });
+        }
+
+        const targetStates = node.data?.targetStates;
+
+        if (!targetStates || targetStates.trim() === "") {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Universal Oracle "${node.id}" requires at least one marked state.`,
+          });
+        } 
+        else if (!/^\d+(?:\s*,\s*\d+)*$/.test(targetStates.trim())) {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Universal Oracle "${node.id}" marked states must be comma-separated integers.`,
+          });
+        }
+        else {
+
+          // Find input register size
+          let registerSize = 3;
+
+          const source = connectedSources
+            .map(src => nodesById.get(src))
+            .find(n => n?.data?.size);
+
+          if (source?.data?.size) {
+            registerSize = parseInt(source.data.size, 10);
+          }
+
+          const maxState = (1 << registerSize) - 1;
+
+          const invalidState = targetStates
+            .split(",")
+            .map((x:string)=>parseInt(x.trim(),10))
+            .some((x:number)=>x < 0 || x > maxState);
+
+
+          if (invalidState) {
+            errors.push({
+              nodeId: node.id,
+              nodeType: node.type,
+              description:
+                `Universal Oracle "${node.id}" contains marked states outside register range 0-${maxState}.`,
+            });
+          }
+        }
+
+
+        const outgoing = outgoingConnections.get(node.id) || [];
+        if (outgoing.length === 0) {
+          warnings.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description:
+              `Universal Oracle "${node.id}" output is not connected.`,
+          });
+        }
+      }
+
+
+
+      // Deutsch-Jozsa Validation
+      if (
+        node.type === "deutsch-jozsa" ||
+        node.data?.label === "Deutsch-Jozsa Algorithm"
+      ) {
+
+        const numQubits = parseInt(node.data?.numQubits,10);
+
+        if (!numQubits || numQubits <= 0) {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description:
+              `Deutsch-Jozsa node "${node.id}" requires a valid number of qubits.`,
+          });
+        }
+
+
+        const oracleType = node.data?.oracleType;
+
+        if (!["balanced","constant"].includes(oracleType)) {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description:
+              `Deutsch-Jozsa node "${node.id}" has invalid oracle type "${oracleType}".`,
+          });
+        }
+
+
+        if (oracleType === "balanced") {
+
+          const mask = parseInt(node.data?.balancedMask,10);
+
+          if (isNaN(mask)) {
+            errors.push({
+              nodeId: node.id,
+              nodeType: node.type,
+              description:
+                `Deutsch-Jozsa balanced oracle requires a mask value.`,
+            });
+          }
+          else if (numQubits && mask >= (1 << numQubits)) {
+            errors.push({
+              nodeId: node.id,
+              nodeType: node.type,
+              description:
+                `Deutsch-Jozsa balanced mask ${mask} exceeds ${numQubits}-qubit input range.`,
+            });
+          }
+        }
+
+
+        if (
+          oracleType === "constant" &&
+          ![0,1].includes(Number(node.data?.constantValue))
+        ) {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description:
+              `Deutsch-Jozsa constant value must be either 0 or 1.`,
+          });
+        }
+
+
+        const outgoing = outgoingConnections.get(node.id) || [];
+
+        if(outgoing.length===0){
+          warnings.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description:
+              `Deutsch-Jozsa node "${node.id}" output is not connected.`,
+          });
+        }
+      }
+
+
+      if(node.type === "universal-oracle") {
+        const markedStates = node.data?.markedStates;
+
+        if(!markedStates || markedStates.trim()===""){
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description:
+              `Grover node "${node.id}" requires marked states.`,
+          });
+        }
+
+      }
+      // Grover Algorithm Validation
+      if (
+        node.type === "grover" ||
+        node.data?.label === "Grover Algorithm"
+      ) {
+
+        const numQubits = parseInt(node.data?.numQubits,10);
+
+        if(!numQubits || numQubits <=0){
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description:
+              `Grover node "${node.id}" requires a valid number of qubits.`,
+          });
+        }
+
+
+        const iterations = Number(node.data?.iterations);
+
+        if(iterations !== undefined && iterations <=0){
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description:
+              `Grover iteration count must be greater than zero.`,
+          });
+        }
+
+
+        const markedStates = node.data?.markedStates;
+
+        if(!markedStates || markedStates.trim()===""){
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description:
+              `Grover node "${node.id}" requires marked states.`,
+          });
+        }
+        else if(!/^\d+(?:\s*,\s*\d+)*$/.test(markedStates)){
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description:
+              `Grover marked states must be comma-separated integers.`,
+          });
+        }
+        else if(numQubits){
+
+          const maxState=(1<<numQubits)-1;
+
+          const invalid =
+            markedStates
+            .split(",")
+            .map((x:string)=>parseInt(x.trim(),10))
+            .some((x:number)=>x>maxState);
+
+
+          if(invalid){
+            errors.push({
+              nodeId:node.id,
+              nodeType:node.type,
+              description:
+                `Grover marked states exceed the ${numQubits}-qubit range (0-${maxState}).`,
+            });
+          }
+        }
+
+
+        const outgoing = outgoingConnections.get(node.id)||[];
+
+        if(outgoing.length===0){
+          warnings.push({
+            nodeId:node.id,
+            nodeType:node.type,
+            description:
+              `Grover node "${node.id}" output is not connected.`,
+          });
+        }
+      }
       // Plugin Node Validation
       if (node.type === "pluginNode") {
         const dataInputs = node.data?.dataInputs || [];
@@ -1500,6 +1756,7 @@ If none apply, return { "algorithms": [] }.
           "Executing this flow will not produce meaningful results.",
       });
     }
+    
 
 
 
