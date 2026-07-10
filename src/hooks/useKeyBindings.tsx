@@ -22,7 +22,7 @@ export default function useKeyBindings({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const key = e.key?.toLowerCase();
-      const ctrlOrMeta = e.ctrlKey || e.metaKey; // CtrlKKey Windows/Linux, MetaKey Mac
+      const ctrlOrMeta = e.ctrlKey || e.metaKey; // CtrlKey Windows/Linux, MetaKey Mac
 
       switch (true) {
         case ctrlOrMeta && key === "z": {
