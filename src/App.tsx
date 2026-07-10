@@ -529,6 +529,8 @@ If none apply, return { "algorithms": [] }.
 
   const ref = useRef(null);
   const hasLoadedFromUrl = useRef(false);
+  const copiedSelectionRef = useRef<{ nodes: Node[]; edges: Edge[] } | null>(null);
+  const pasteCountRef = useRef(0);
 
   const onDragOver = React.useCallback(
     (event: React.DragEvent<HTMLDivElement>) => {
@@ -2971,7 +2973,145 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     fileInput.click();
   }
 
-  useKeyBindings({ undo, redo });
+  const clearCurrentSelection = useCallback(() => {
+    if (!reactFlowInstance) {
+      return;
+    }
+
+    reactFlowInstance.setNodes((currentNodes: Node[]) =>
+      currentNodes.map((node) => ({
+        ...node,
+        selected: false,
+      }))
+    );
+    setSelectedNode(null);
+  }, [reactFlowInstance, setSelectedNode]);
+
+  const copySelectedNodes = useCallback(() => {
+    if (!reactFlowInstance) {
+      return;
+    }
+
+    const selectedNodes = (reactFlowInstance.getNodes() as Node[]).filter((node) => node.selected);
+    if (!selectedNodes.length) {
+      return;
+    }
+
+    const selectedNodeIds = new Set(selectedNodes.map((node) => node.id));
+    const selectedEdges = (reactFlowInstance.getEdges() as Edge[]).filter(
+      (edge) => selectedNodeIds.has(edge.source) && selectedNodeIds.has(edge.target)
+    );
+
+    copiedSelectionRef.current = {
+      nodes: structuredClone(selectedNodes),
+      edges: structuredClone(selectedEdges),
+    };
+    pasteCountRef.current = 0;
+  }, [reactFlowInstance]);
+
+  const pasteCopiedNodes = useCallback(() => {
+    if (!reactFlowInstance || !copiedSelectionRef.current?.nodes?.length) {
+      return;
+    }
+
+    const copiedSelection = copiedSelectionRef.current;
+    pasteCountRef.current += 1;
+
+    const offset = 40 * pasteCountRef.current;
+    const idMap = new Map<string, string>();
+
+    const newNodes = copiedSelection.nodes.map((node) => {
+      const newId = uuidv4();
+      idMap.set(node.id, newId);
+
+      return {
+        ...node,
+        id: newId,
+        selected: true,
+        position: {
+          x: node.position.x + offset,
+          y: node.position.y + offset,
+        },
+      };
+    });
+
+    const newEdges = copiedSelection.edges
+      .map((edge) => {
+        const source = idMap.get(edge.source);
+        const target = idMap.get(edge.target);
+
+        if (!source || !target) {
+          return null;
+        }
+
+        return {
+          ...edge,
+          id: uuidv4(),
+          source,
+          target,
+          selected: false,
+        };
+      })
+      .filter(Boolean) as Edge[];
+
+    reactFlowInstance.setNodes((currentNodes: Node[]) =>
+      currentNodes.map((node) => ({
+        ...node,
+        selected: false,
+      }))
+    );
+
+    reactFlowInstance.addNodes(newNodes);
+    if (newEdges.length) {
+      reactFlowInstance.addEdges(newEdges);
+    }
+  }, [reactFlowInstance]);
+
+  const cutSelectedNodes = useCallback(() => {
+    if (!reactFlowInstance) {
+      return;
+    }
+
+    copySelectedNodes();
+    const selectedNodes = (reactFlowInstance.getNodes() as Node[]).filter((node) => node.selected);
+    if (!selectedNodes.length) {
+      return;
+    }
+
+    reactFlowInstance.deleteElements({
+      nodes: selectedNodes.map((node) => ({ id: node.id })),
+    });
+    setSelectedNode(null);
+  }, [copySelectedNodes, reactFlowInstance, setSelectedNode]);
+
+  const selectAllNodes = useCallback(() => {
+    if (!reactFlowInstance) {
+      return;
+    }
+
+    reactFlowInstance.setNodes((currentNodes: Node[]) =>
+      currentNodes.map((node) => ({
+        ...node,
+        selected: true,
+      }))
+    );
+  }, [reactFlowInstance]);
+
+  const duplicateSelectedNodes = useCallback(() => {
+    copySelectedNodes();
+    pasteCopiedNodes();
+  }, [copySelectedNodes, pasteCopiedNodes]);
+
+  useKeyBindings({
+    undo,
+    redo,
+    copy: copySelectedNodes,
+    paste: pasteCopiedNodes,
+    cut: cutSelectedNodes,
+    selectAll: selectAllNodes,
+    duplicate: duplicateSelectedNodes,
+    clearSelection: clearCurrentSelection,
+  });
 
   const [mySelectedNodeId, setMySelectedNodeId] = useState<string | null>(null);
 
