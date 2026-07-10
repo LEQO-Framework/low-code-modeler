@@ -1,10 +1,9 @@
 import { memo, useState, useEffect } from "react";
 import { Node } from "reactflow";
-import { useStore } from "@/config/store"; 
+import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
 import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
-import OutputPort from "../utils/outputPort"; 
+import OutputPort from "../utils/outputPort";
 import { awareness } from "@/yjs"; // Imported the room awareness configuration
 
 const selector = (state: any) => ({
@@ -12,16 +11,17 @@ const selector = (state: any) => ({
   nodes: state.nodes,
   edges: state.edges,
   setSelectedNode: state.setSelectedNode,
+  setContainsPlaceholder: state.setContainsPlaceholder
 });
 
 export const GroverNode = memo((node: Node) => {
   const { id, data, selected } = node;
-  const { updateNodeValue, nodes, edges, setSelectedNode } = useStore(selector, shallow);
+  const { updateNodeValue, nodes, edges, setSelectedNode, setContainsPlaceholder } = useStore(selector, shallow);
 
   const [numQubitsStr, setNumQubitsStr] = useState(String(data.numQubits || 3));
   const [targetStates, setTargetStates] = useState(data.targetStates || "");
   const [iterationsStr, setIterationsStr] = useState(data.numIterations ? String(data.numIterations) : "");
-  
+
   const [outputs, setOutputs] = useState(data.outputs || []);
   const [outputIdentifierError, setOutputIdentifierError] = useState(false);
   const [sizeError, setSizeError] = useState(false);
@@ -31,7 +31,7 @@ export const GroverNode = memo((node: Node) => {
   const [hasPioneerUser, setHasPioneerUser] = useState(false);
   const [hasExplorerUser, setHasExplorerUser] = useState(false);
 
-  
+
   const [remoteHighlightColor, setRemoteHighlightColor] = useState<string | null>(null);
   const [selectingUserName, setSelectingUserName] = useState<string | null>(null); // technically not needed, could extend functionality to also show user name next to highlighted node
 
@@ -46,7 +46,7 @@ export const GroverNode = memo((node: Node) => {
         // if (clientId === awareness.clientID) return;
 
         // Check if a peer has selected this specific node ID
-          if (state.cursor && state.cursor.mySelectedNodeId === id) {
+        if (state.cursor && state.cursor.mySelectedNodeId === id) {
           foundColor = state.cursor.color;
           foundName = state.cursor.name;
         }
@@ -121,7 +121,7 @@ export const GroverNode = memo((node: Node) => {
               : undefined,
             height: `420px`
           }}>
-        
+
           {/* HEADER */}
           <div className="w-full flex items-center" style={{ height: '52px' }}>
             <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
@@ -151,7 +151,7 @@ export const GroverNode = memo((node: Node) => {
 
           {/* CONFIGURATION BODY */}
           <div className="px-4 py-1 mt-3">
-            
+
             {/* QUBITS / ELEMENTS FIELD */}
             <div>
               <label className="text-xs font-semibold text-gray-700">
@@ -196,9 +196,11 @@ export const GroverNode = memo((node: Node) => {
                 className="w-full p-1 mt-1 text-sm text-center text-black border-2 border-blue-200 rounded-full outline-none focus:border-blue-400 transition-colors"
                 value={targetStates}
                 onChange={(e) => {
-                  const val = e.target.value.replace(/[^0-9,\s]/g, "");
+                  const val = e.target.value.replace(/[^a-zA-Z0-9,\s]/g, "");
                   setTargetStates(val);
                   handleChange("targetStates", val);
+                   const hasLetters = /[a-zA-Z]/.test(val);
+  setContainsPlaceholder(hasLetters);
                 }}
               />
               <p className="text-[10px] text-gray-500 mt-1 text-center">

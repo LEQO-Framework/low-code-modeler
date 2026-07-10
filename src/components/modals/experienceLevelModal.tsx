@@ -92,7 +92,7 @@ export default function ExperienceModePanel({
                 <td align="left">
                   <select
                     value={experienceLevel}
-                    onChange={(e) => onExperienceLevelChange(e.target.value)}
+                    onChange={(e) => {onExperienceLevelChange(e.target.value); if(experienceLevel === "pioneer"){onCompletionGuaranteedChange(true)}}}
                     className="mt-1 px-2 py-1 border rounded"
                   >
                     <option value="explorer" title="New to quantum computing, curious and starting the journey.">
@@ -116,7 +116,7 @@ export default function ExperienceModePanel({
                   <button
                     onClick={onCompactVisualizationChange}
                     className={`px-2 py-1 rounded text-white ${
-                      compactVisualization ? "bg-blue-600" : "bg-gray-400"
+                      (compactVisualization|| experienceLevel === "pioneer") ? "bg-blue-600" : "bg-gray-400"
                     }`}
                   >
                     <span title="Compact Visualization reduces visual space by compressing nodes. Recommended for advanced users.">
