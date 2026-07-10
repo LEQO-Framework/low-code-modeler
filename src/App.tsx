@@ -491,8 +491,8 @@ If none apply, return { "algorithms": [] }.
 
     setCompact(newValues.compactVisualization);
     setCompactVisualization(newValues.compactVisualization);
-    setAncillaMode(newValues.ancillaMode);
-    setAncillaModelingOn(newValues.ancillaMode);
+    //setAncillaMode(newValues.ancillaMode);
+    //setAncillaModelingOn(newValues.ancillaMode);
     setExperienceLevel(newValues.experienceLevel);
     setCompletionGuaranteed(newValues.completionGuaranteed);
     setCollaborationModeOn(newValues.collaborationMode); // passt das?? lieber onToggleCollaborationMode?
@@ -3005,6 +3005,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
 
 
   const onPaneClick = useCallback(() => {
+    setSelectedNode(null);
     if (!collaborationModeOn) return;
     let findAny = false;
     const currentCursorState = awareness.getLocalState()?.cursor || {};
@@ -3028,8 +3029,8 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     setExperienceLevelOn(event);
     const bool_value = (experienceLevel === "pioneer") ? false : true; // if previous experience level was pioneer...
     setCompactVisualization(bool_value)
-    setAncillaMode(bool_value)
-    setAncillaModelingOn(bool_value)
+    //setAncillaMode(bool_value)
+    //setAncillaModelingOn(bool_value)
     //updateNodeInternals since ancilla mode changes number of handles
     nodes.forEach((node) => {
       updateNodeInternals(node.id);
@@ -3039,12 +3040,12 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
 
 
   const onToggleAncilla = () => {
-    setAncillaModelingOn(!ancillaModelingOn);
-    setAncillaMode(!ancillaModelingOn);
+    //setAncillaModelingOn(!ancillaModelingOn);
+    //setAncillaMode(!ancillaModelingOn);
     //updateNodeInternals since ancilla mode changes number of handles
-    nodes.forEach((node) => {
-      updateNodeInternals(node.id);
-    })
+    //nodes.forEach((node) => {
+      //updateNodeInternals(node.id);
+    //})
   }
 
   const onToggleCollaborationMode = useCallback(() => {

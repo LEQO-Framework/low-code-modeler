@@ -105,25 +105,6 @@ export default function ExperienceModePanel({
                 </td>
               </tr>
 
-              <tr>
-                <td align="right">
-                  <span title="Ancilla qubits are helper qubits used for intermediate calculations. Turning Ancilla Mode on allows use of additional helper qubits, which can reduce circuit depth but increases qubit count.">
-                    Ancilla Modeling
-                  </span>
-                </td>
-                <td align="left">
-                  <button
-                    onClick={onToggleAncilla}
-                    className={`px-2 py-1 rounded text-white ${
-                      ancillaModelingOn ? "bg-blue-600" : "bg-gray-400"
-                    }`}
-                  >
-                    <span title="Ancilla qubits are helper qubits used for intermediate calculations. Turning Ancilla Mode on allows use of additional helper qubits, which can reduce circuit depth but increases qubit count.">
-                    {ancillaModelingOn ? "On" : "Off"}
-                    </span>
-                  </button>
-                </td>
-              </tr>
 
               <tr>
                 <td align="right">
@@ -197,7 +178,6 @@ export default function ExperienceModePanel({
             <thead>
               <tr className="bg-gray-100">
                 <th className="border px-3 py-2 text-left">Experience Level</th>
-                <th className="border px-3 py-2 text-left">Ancilla Mode</th>
                 <th className="border px-3 py-2 text-left">Compact Visualization</th>
               </tr>
             </thead>
@@ -205,11 +185,9 @@ export default function ExperienceModePanel({
               <tr>
                 <td className="border px-3 py-2">Explorer</td>
                 <td className="border px-3 py-2">Off</td>
-                <td className="border px-3 py-2">Off</td>
               </tr>
               <tr>
                 <td className="border px-3 py-2">Pioneer</td>
-                <td className="border px-3 py-2">On</td>
                 <td className="border px-3 py-2">On</td>
               </tr>
             </tbody>
