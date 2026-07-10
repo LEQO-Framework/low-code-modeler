@@ -4,7 +4,7 @@
  */
 
 import { useMemo, useState, useEffect, useRef } from "react";
-import { qasmToDirac, qasmToDiracSteps, type DiracStepsResult } from "./utils/qasmToDirac";
+import { qasmToDirac, qasmToDiracSteps, normalizeQasm, type DiracStepsResult } from "./utils/qasmToDirac";
 import type { Complex } from "@/lib/diracFormatter";
 import { statevectorToDirac } from "@/lib/diracFormatter";
 import JSZip from "jszip";
@@ -59,8 +59,6 @@ type QasmProps = {
   title?: string;
   onGetCircuitSvg?: () => Promise<string>;
   onGetModel?: () => object;
-  /** Callback wenn Nutzer auf einen Step-Zustand klickt: liefert die LEQO-Node-UUID */
-  onStepClick?: (nodeId: string) => void;
 };
 
 type StatevectorProps = {
@@ -70,7 +68,6 @@ type StatevectorProps = {
   title?: string;
   onGetCircuitSvg?: () => Promise<string>;
   onGetModel?: () => object;
-  onStepClick?: (nodeId: string) => void;
 };
 
 type Props = QasmProps | StatevectorProps;
@@ -578,12 +575,15 @@ function downloadTex(content: string) {
   URL.revokeObjectURL(url);
 }
 
-async function downloadZip(texContent: string, pngBase64: string, modelJson?: object) {
+async function downloadZip(texContent: string, pngBase64: string, modelJson?: object, qasmContent?: string) {
   const zip = new JSZip();
   zip.file("main.tex", texContent);
   zip.file("circuit.png", pngBase64, { base64: true });
   if (modelJson) {
     zip.file("model.json", JSON.stringify(modelJson, null, 2));
+  }
+  if (qasmContent) {
+    zip.file("circuit.qasm", qasmContent);
   }
   const blob = await zip.generateAsync({ type: "blob" });
   const url = URL.createObjectURL(blob);
@@ -594,11 +594,21 @@ async function downloadZip(texContent: string, pngBase64: string, modelJson?: ob
   URL.revokeObjectURL(url);
 }
 
+function downloadQasmFile(content: string) {
+  const blob = new Blob([content], { type: "text/plain" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "circuit.qasm";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 // ---------------------------------------------------------------------------
 // Export-Menü
 // ---------------------------------------------------------------------------
 
-function ExportMenu({ latex, numQubits, terms, unicode, onGetCircuitSvg, stepsResult, onGetModel, aiExplanation}: {
+function ExportMenu({ latex, numQubits, terms, unicode, onGetCircuitSvg, stepsResult, onGetModel, aiExplanation, qasm}: {
   latex: string;
   numQubits: number;
   terms: any[];
@@ -607,6 +617,7 @@ function ExportMenu({ latex, numQubits, terms, unicode, onGetCircuitSvg, stepsRe
   stepsResult?: DiracStepsResult;
   onGetModel?: () => object;
   aiExplanation?: string;
+  qasm?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
@@ -630,7 +641,8 @@ function ExportMenu({ latex, numQubits, terms, unicode, onGetCircuitSvg, stepsRe
         const pngBase64 = await svgToPngBase64(svg);
         const texContent = buildLatexExport(latex, numQubits, terms, pngBase64, stepsResult, aiExplanation);
         const modelJson = onGetModel?.();
-        await downloadZip(texContent, pngBase64, modelJson);
+        const normalizedQasm = qasm ? normalizeQasm(qasm) : undefined;
+        await downloadZip(texContent, pngBase64, modelJson, normalizedQasm);
       } catch (e) {
         console.error("Export failed:", e);
         downloadTex(buildLatexExport(latex, numQubits, terms, undefined, stepsResult, aiExplanation));
@@ -747,14 +759,14 @@ function ExportMenu({ latex, numQubits, terms, unicode, onGetCircuitSvg, stepsRe
               </span>
             </button>
 
-            {/* .zip mit .tex + circuit.png */}
+            {/* .zip mit .tex + circuit.png + circuit.qasm */}
             {onGetCircuitSvg && (
               <button onClick={() => handleDownloadTex(true)}
                 className="w-full text-left px-3 py-2 hover:bg-gray-50 text-gray-700 flex items-center gap-2">
                 <span>↓</span>
                 <span>
                   <span className="block">dirac_export.zip</span>
-                  <span className="block text-gray-400" style={{ fontSize: "10px" }}>main.tex + circuit.png + model.json</span>
+                  <span className="block text-gray-400" style={{ fontSize: "10px" }}>main.tex + circuit.png + circuit.qasm + model.json</span>
                 </span>
               </button>
             )}
@@ -922,7 +934,6 @@ function Histogram({ data }: { data: HistogramBar[] }) {
 
 export function QasmDiracPanel(props: Props) {
   const title = props.title ?? "Dirac Representation";
-  const onStepClick = props.onStepClick;
   const [showBasisStates, setShowBasisStates] = useState(true);
   const [showSteps, setShowSteps] = useState(false);
   const [showBloch, setShowBloch] = useState(false);
@@ -1026,28 +1037,15 @@ export function QasmDiracPanel(props: Props) {
     }
   };
 
-  const MAX_QUBITS = 12; // 2^12 = 4096 Terme, darüber Speicher/Performance-Probleme
-
   const fullResult = useMemo(() => {
-    if (!("qasm" in props) || !props.qasm) return null;
-    try {
-      const result = qasmToDirac(props.qasm);
-      if (result.numQubits > MAX_QUBITS) return null;
-      return result;
-    } catch {
-      return null;
-    }
+    if ("qasm" in props && props.qasm) return qasmToDirac(props.qasm);
+    return null;
   }, [props]);
 
   const stepsResult = useMemo(() => {
-    if (!("qasm" in props) || !props.qasm) return null;
-    if (!fullResult) return null; // nicht simulieren wenn Qubit-Limit überschritten
-    try {
-      return qasmToDiracSteps(props.qasm);
-    } catch {
-      return null;
-    }
-  }, [props, fullResult]);
+    if ("qasm" in props && props.qasm) return qasmToDiracSteps(props.qasm);
+    return null;
+  }, [props]);
 
   const unicodeStr = useMemo(() => {
     if (fullResult) return fullResult.unicode;
@@ -1229,20 +1227,9 @@ export function QasmDiracPanel(props: Props) {
   }, [fullResult, effectiveSelected, numQubits]);
 
   if (!unicodeStr) {
-    // Prüfen ob ein QASM vorhanden ist aber das Qubit-Limit überschritten wurde
-    const hasQasm = "qasm" in props && !!props.qasm;
-    const tooManyQubits = hasQasm && !fullResult;
     return (
-      <div className="rounded-xl border bg-white flex flex-col gap-3 p-4">
-        <h3 className="text-base font-semibold text-gray-800">{title}</h3>
-        {tooManyQubits ? (
-          <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
-            ⚠ This circuit has too many qubits for local Math Mode simulation (max. {MAX_QUBITS}).
-            The backend result is still computed — only the local visualization is disabled.
-          </div>
-        ) : (
-          <div className="text-sm text-gray-400">No QASM code available.</div>
-        )}
+      <div className="rounded-xl border p-4 text-sm text-gray-400">
+        No QASM code available.
       </div>
     );
   }
@@ -1333,6 +1320,7 @@ export function QasmDiracPanel(props: Props) {
               stepsResult={stepsResult ?? undefined}
               onGetModel={props.onGetModel}
               aiExplanation={mistralExplanation ?? undefined}
+              qasm={"qasm" in props ? props.qasm : undefined}
             />
           )}
         </div>
@@ -1410,33 +1398,24 @@ export function QasmDiracPanel(props: Props) {
               <span className="text-gray-500 text-xs">=</span>
               <span className="text-gray-800 whitespace-nowrap">{stepsResult.initial.unicode}</span>
             </div>
-            {stepsResult.steps.map((step, idx) => {
-              const isClickable = !!onStepClick && !!step.nodeId;
-              return (
-                <div key={idx} className="flex flex-col">
-                  <div className="flex items-center gap-1.5 py-0.5 pl-10">
-                    <span className="text-blue-400 text-xs">──</span>
-                    <span
-                      className={`text-blue-600 text-xs font-sans font-medium bg-blue-50 border border-blue-100 px-1.5 py-0.5 rounded whitespace-nowrap transition-colors ${
-                        isClickable ? "cursor-pointer hover:bg-blue-200 hover:border-blue-400" : ""
-                      }`}
-                      title={isClickable ? "Select in Canvas" : undefined}
-                      onClick={() => isClickable && onStepClick!(step.nodeId!)}
-                    >
-                      {step.gateLabel}
-                    </span>
-                    <span className="text-blue-400 text-xs">──→</span>
-                  </div>
-                  <div className="flex items-baseline gap-2 py-1">
-                    <span className="text-gray-400 text-xs min-w-[36px]">
-                      |ψ{'₀₁₂₃₄₅₆₇₈₉'[idx + 1] ?? (idx + 1)}⟩
-                    </span>
-                    <span className="text-gray-500 text-xs">=</span>
-                    <span className="text-gray-800 whitespace-nowrap">{step.unicode}</span>
-                  </div>
+            {stepsResult.steps.map((step, idx) => (
+              <div key={idx} className="flex flex-col">
+                <div className="flex items-center gap-1.5 py-0.5 pl-10">
+                  <span className="text-blue-400 text-xs">──</span>
+                  <span className="text-blue-600 text-xs font-sans font-medium bg-blue-50 border border-blue-100 px-1.5 py-0.5 rounded whitespace-nowrap">
+                    {step.gateLabel}
+                  </span>
+                  <span className="text-blue-400 text-xs">──→</span>
                 </div>
-              );
-            })}
+                <div className="flex items-baseline gap-2 py-1">
+                  <span className="text-gray-400 text-xs min-w-[36px]">
+                    |ψ{'₀₁₂₃₄₅₆₇₈₉'[idx + 1] ?? (idx + 1)}⟩
+                  </span>
+                  <span className="text-gray-500 text-xs">=</span>
+                  <span className="text-gray-800 whitespace-nowrap">{step.unicode}</span>
+                </div>
+              </div>
+            ))}
           </div>
 
           {/* Mistral AI Erklärung */}

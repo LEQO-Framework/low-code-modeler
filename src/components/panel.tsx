@@ -423,8 +423,6 @@ function ComponentSection({
       }
     : undefined;
 
-  // Wenn der Nutzer auf einen Step-Zustand klickt, die verantwortliche Node im Canvas
-  // selektieren und nach 1.5s die Selektion wieder aufheben (kurzes Flash).
   const handleStepClick = (nodeId: string) => {
     setNodes((nds: Node[]) =>
       nds.map((n) => ({
@@ -435,8 +433,6 @@ function ComponentSection({
           : n.className?.replace("!ring-4 !ring-blue-500 !ring-offset-2 !shadow-lg !shadow-blue-400/60", "").trim(),
       }))
     );
-    // DOM-Fallback: direkt auf das React-Flow-Node-Element stylen,
-    // da Tailwind-Klassen durch React-Flow-Wrapper-Styles überschrieben werden können.
     setTimeout(() => {
       const el = document.querySelector(`[data-id="${nodeId}"]`) as HTMLElement | null;
       if (el) {
@@ -590,7 +586,7 @@ function ExportAllButton({
 
         // LaTeX generieren
         if (component.qasm) {
-          const { qasmToDirac, qasmToDiracSteps } = await import("./utils/qasmToDirac");
+          const { qasmToDirac, qasmToDiracSteps, normalizeQasm } = await import("./utils/qasmToDirac");
           const result = qasmToDirac(component.qasm);
           const stepsResult = qasmToDiracSteps(component.qasm);
 
@@ -607,6 +603,7 @@ function ExportAllButton({
           if (pngBase64) {
             zip.file(`${safeName}/circuit.png`, pngBase64, { base64: true });
           }
+          zip.file(`${safeName}/circuit.qasm`, normalizeQasm(component.qasm));
         }
       }
 

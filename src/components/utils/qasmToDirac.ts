@@ -271,7 +271,6 @@ interface ParsedGate {
   name: string;
   qubits: number[];   // Qubit-Indizes (global, aufgelöst)
   params: number[];   // Numerische Parameter
-  nodeId: string | null; // LEQO-Node-UUID aus /* Start node <uuid> */ Kommentar
 }
 
 /** Einfacher Ausdruck-Evaluator für QASM-Parameter (pi, *, /, +, -) */
@@ -434,18 +433,7 @@ export function parseQasm(qasm: string): {
   // ---------------------------------------------------------------------------
   // Zweiter Pass: Gates parsen
   // ---------------------------------------------------------------------------
-  // Aktuelle LEQO-Node-UUID: wird beim Lesen von /* Start node <uuid> */ gesetzt
-  // und bei /* End node <uuid> */ zurückgesetzt. Alle Gates zwischen diesen
-  // Kommentaren gehören zur selben Node im Canvas.
-  let currentNodeId: string | null = null;
-
   for (const line of lines) {
-    // LEQO Node-Grenzen tracken – BEVOR wir Skip-Checks machen
-    const startMatch = line.match(/\/\*\s*Start node\s+([\w-]+)\s*\*\//);
-    if (startMatch) { currentNodeId = startMatch[1]; continue; }
-    const endMatch = line.match(/\/\*\s*End node\s+([\w-]+)\s*\*\//);
-    if (endMatch) { currentNodeId = null; continue; }
-
     // Zeilen überspringen die keine Gate-Aufrufe sind
     if (
       line.startsWith('OPENQASM') ||
@@ -471,7 +459,7 @@ export function parseQasm(qasm: string): {
       const measureMatch = line.match(/measure\s+(\S+)\s*(?:->|\[)/);
       if (measureMatch) {
         const q = resolveQubit(measureMatch[1]);
-        if (q !== null) gates.push({ name: 'measure', qubits: [q], params: [], nodeId: currentNodeId });
+        if (q !== null) gates.push({ name: 'measure', qubits: [q], params: [] });
       }
       continue;
     }
@@ -490,7 +478,7 @@ export function parseQasm(qasm: string): {
 
     if (rawQubits.length === 0) continue;
 
-    gates.push({ name: rawName, qubits: rawQubits, params: rawParams, nodeId: currentNodeId });
+    gates.push({ name: rawName, qubits: rawQubits, params: rawParams });
   }
 
   return { numQubits: totalQubits, gates, warnings };
@@ -817,8 +805,6 @@ export interface DiracStep {
   unicode: string;
   /** Dirac-Notation nach diesem Schritt (latex) */
   latex: string;
-  /** LEQO-Node-UUID des verantwortlichen Schaltkreis-Elements, null bei unbekannt */
-  nodeId: string | null;
 }
 
 export interface DiracStepsResult {
@@ -1077,7 +1063,6 @@ export function qasmToDiracSteps(qasm: string): DiracStepsResult {
       gateLabelLatex: formatGateLabelLatex(gate, numQubits),
       unicode: stepResult.unicode,
       latex: stepResult.latex,
-      nodeId: gate.nodeId,
     });
   }
 
@@ -1087,4 +1072,53 @@ export function qasmToDiracSteps(qasm: string): DiracStepsResult {
     numQubits,
     warnings: [...parseWarnings, ...simWarnings],
   };
+}
+
+// ---------------------------------------------------------------------------
+// QASM-Normalisierung: LEQO-spezifischen Code in Standard-OpenQASM 3.0 umschreiben
+// ---------------------------------------------------------------------------
+
+function formatParam(p: number): string {
+  const PI = Math.PI;
+  const tol = 1e-6;
+  const fracs: [number, string][] = [
+    [0, "0"], [PI, "pi"], [-PI, "-pi"],
+    [PI / 2, "pi/2"], [-PI / 2, "-pi/2"],
+    [PI / 4, "pi/4"], [-PI / 4, "-pi/4"],
+    [3 * PI / 4, "3*pi/4"], [-3 * PI / 4, "-3*pi/4"],
+    [3 * PI / 2, "3*pi/2"], [-3 * PI / 2, "-3*pi/2"],
+  ];
+  for (const [val, label] of fracs) {
+    if (Math.abs(p - val) < tol) return label;
+  }
+  return p.toFixed(10).replace(/\.?0+$/, "");
+}
+
+function gateNameForQasm(name: string): string {
+  const map: Record<string, string> = { cnot: "cx", toffoli: "ccx" };
+  return map[name.toLowerCase()] ?? name.toLowerCase();
+}
+
+/**
+ * Normalisiert LEQO-spezifischen QASM-Code zu Standard-OpenQASM 3.0.
+ * Löst das globale Register und alle Aliasse auf; gibt nur qubit[n] q;
+ * und direkte Gate-Aufrufe auf q[i] zurück.
+ */
+export function normalizeQasm(qasm: string): string {
+  const { numQubits, gates } = parseQasm(qasm);
+  const gateLines = gates.map(gate => {
+    const name   = gateNameForQasm(gate.name);
+    const qubits = gate.qubits.map(q => `q[${q}]`).join(", ");
+    const params = gate.params.length > 0
+      ? `(${gate.params.map(formatParam).join(", ")})`
+      : "";
+    return `${name}${params} ${qubits};`;
+  });
+  return [
+    "OPENQASM 3.0;",
+    'include "stdgates.inc";',
+    `qubit[${numQubits}] q;`,
+    "",
+    ...gateLines,
+  ].join("\n");
 }
