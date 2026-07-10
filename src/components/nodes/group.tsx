@@ -3,10 +3,11 @@
  * Platzierung: src/components/nodes/group.tsx
  */
 
-import { memo, useState, useCallback } from "react";
+import { memo, useState, useCallback, useEffect } from "react";
 import { NodeResizer, Handle, Position, Node, Edge, useReactFlow } from "reactflow";
 import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
+import { awareness } from "@/yjs";
 
 const selector = (state: {
   nodes: Node[];
@@ -322,6 +323,33 @@ export const GroupNode = memo((node: Node) => {
     return `${15 + step * (index + 1)}%`;
   };
 
+  // Remote-Highlight: zeigt an, ob ein anderer Nutzer diese Node gerade ausgewählt hat
+  const [remoteHighlightColor, setRemoteHighlightColor] = useState<string | null>(null);
+  const [selectingUserName, setSelectingUserName] = useState<string | null>(null);
+
+  useEffect(() => {
+    const checkRemoteSelection = () => {
+      let foundColor: string | null = null;
+      let foundName: string | null = null;
+
+      awareness.getStates().forEach((state: any) => {
+        if (state.cursor && state.cursor.selectedNodeId === id) {
+          foundColor = state.cursor.color;
+          foundName = state.cursor.name;
+        }
+      });
+
+      setRemoteHighlightColor(foundColor);
+      setSelectingUserName(foundName);
+    };
+
+    checkRemoteSelection();
+    awareness.on("change", checkRemoteSelection);
+    return () => {
+      awareness.off("change", checkRemoteSelection);
+    };
+  }, [id]);
+
   return (
     <>
       <NodeResizer
@@ -335,7 +363,7 @@ export const GroupNode = memo((node: Node) => {
       <div
         style={{
           width: "100%", height: "100%",
-          border: `2px ${borderStyle} ${color}`,
+          border: remoteHighlightColor ? `2px solid ${remoteHighlightColor}` : `2px ${borderStyle} ${color}`,
           borderRadius,
           backgroundColor: locked
             ? `${color}33`  // transparenter im Lock-Zustand
@@ -344,6 +372,9 @@ export const GroupNode = memo((node: Node) => {
           position: "relative",
           transition: "height 0.2s ease, background-color 0.2s ease, opacity 0.2s ease",
           boxSizing: "border-box", overflow: "visible",
+          boxShadow: remoteHighlightColor
+            ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}`
+            : undefined,
         }}
       >
         {/* Header */}

@@ -21,7 +21,7 @@ export const SendRequestModal = ({
   sendToBackend,
 }: SendRequestModalProps) => {
   useEffect(() => {
-    if ((containsPlaceholder || containsWorkflowNodes) && compilationTarget === "qasm") {
+    if ((containsPlaceholder||containsWorkflowNodes) && (compilationTarget === "qasm" || compilationTarget === "qiskit")) {
       setCompilationTarget("workflow");
     }
   }, [containsPlaceholder, containsWorkflowNodes, compilationTarget, setCompilationTarget]);
@@ -58,6 +58,10 @@ export const SendRequestModal = ({
                 : containsWorkflowNodes
                 ? "(not available, Machine Learning, File or String node present)"
                 : ""}
+            </option>
+            <option value="qiskit" disabled={containsPlaceholder||containsWorkflowNodes}>
+              Qiskit {containsPlaceholder ? "(not available, placeholder present)" : ""}
+              {containsWorkflowNodes ? "(not available, Machine Learning, File or String node present)" : ""}
             </option>
           </select>
         </div>

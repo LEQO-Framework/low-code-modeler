@@ -7,6 +7,7 @@ interface ConfigModalProps {
   experienceLevel: string;
   compactVisualization: boolean;
   completionGuaranteed: boolean;
+  collaborationMode: boolean;
   onClose: () => void;
   onSave: (values: {
     ancillaMode: boolean;
@@ -25,6 +26,8 @@ interface ConfigModalProps {
     tempGithubRepositoryName: string;
     tempGithubBranch: string;
     tempGithubToken: string;
+    collaborationMode: boolean;
+    userName: string;
     tempMistralToken: string;
   }) => void;
   activeTab: string;
@@ -42,6 +45,7 @@ interface ConfigModalProps {
   tempGithubRepositoryName: string;
   tempGithubBranch: string;
   tempGithubToken: string;
+  userName: string;
   tempMistralToken: string;
 }
 
@@ -55,6 +59,7 @@ export const ConfigModal = ({
   experienceLevel,
   compactVisualization,
   completionGuaranteed,
+  collaborationMode,
   tempCamundaEndpoint,
   tempNisqAnalyzerEndpoint,
   tempQunicornEndpoint,
@@ -67,6 +72,7 @@ export const ConfigModal = ({
   tempGithubRepositoryName,
   tempGithubBranch,
   tempGithubToken,
+  userName,
   tempMistralToken
 }: ConfigModalProps) => {
   // Local state copies
@@ -76,6 +82,8 @@ export const ConfigModal = ({
     useState(completionGuaranteed);
   const [localCompactVisualization, setLocalCompactVisualization] =
     useState(compactVisualization);
+  const [localCollaborationMode, setLocalCollaborationMode] = useState(collaborationMode);
+  const [localUserName, setLocalUserName] = useState(userName);
 
   const [localNisq, setLocalNisq] = useState(tempNisqAnalyzerEndpoint);
   const [localCamunda, setLocalCamunda] = useState(tempCamundaEndpoint);
@@ -98,6 +106,8 @@ export const ConfigModal = ({
       setLocalExperienceLevel(experienceLevel);
       setLocalCompletionGuaranteed(completionGuaranteed);
       setLocalCompactVisualization(compactVisualization);
+      setLocalCollaborationMode(collaborationMode);
+      setLocalUserName(userName);
       setLocalOpenAIToken(tempOpenAIToken);
       setLocalMistralToken(tempMistralToken);
 
@@ -115,6 +125,7 @@ export const ConfigModal = ({
   }, [open]);
 
   const handleSave = () => {
+    console.log("userName", localUserName)
     onSave({
       ancillaMode: localAncillaMode,
       experienceLevel: localExperienceLevel,
@@ -132,6 +143,8 @@ export const ConfigModal = ({
       tempGithubRepositoryName: localGitRepo,
       tempGithubBranch: localGitBranch,
       tempGithubToken: localGitToken,
+      collaborationMode: localCollaborationMode,
+      userName: localUserName,
       tempMistralToken: localMistralToken
     });
     onClose();
@@ -190,6 +203,38 @@ export const ConfigModal = ({
                       className="w-4 h-4"
                     />
                     <span className="ml-2">{localAncillaMode ? "On" : "Off"}</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            <h3 className="labels mt-4">Collaboration Mode</h3>
+            <table className="config-table">
+              <tbody>
+                <tr>
+                  <td align="right">Collaboration Mode:</td>
+                  <td align="left">
+                     <input
+                      type="checkbox"
+                      checked={localCollaborationMode}
+                      onChange={(e) => setLocalCollaborationMode(e.target.checked)}
+                      className="w-4 h-4"
+                    />
+                    <span className="ml-2">
+                      {localCollaborationMode ? "On" : "Off"}
+                    </span>
+                  </td>
+                </tr>
+                <tr>
+                  <td align="right">User Name:</td>
+                  <td align="left">
+                    <input
+                      className="qwm-input"
+                      type="text"
+                      value={localUserName}
+                      onChange={(e) => setLocalUserName(e.target.value)}
+                      disabled={!localCollaborationMode}
+                    />
                   </td>
                 </tr>
               </tbody>

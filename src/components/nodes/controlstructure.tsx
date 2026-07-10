@@ -5,6 +5,7 @@ import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
 import { Button, Input } from "antd";
 import { cn } from "@/lib/utils";
+import { awareness } from "@/yjs";
 
 const selector = (state: {
   selectedNode: Node | null;
@@ -23,7 +24,7 @@ const selector = (state: {
 });
 
 export const ControlStructureNode = memo((node: Node) => {
-  const {data} = node
+  const { data, selected } = node
   const [showingChildren, setShowingChildren] = useState(false);
   const { setNodes, updateNodeValue, setSelectedNode, edges } = useStore(selector, shallow);
   const updateNodeInternals = useUpdateNodeInternals();
@@ -31,7 +32,7 @@ export const ControlStructureNode = memo((node: Node) => {
   const numberClassicalInputs = data.numberClassicalInputs || 1;
   const quantumHandles = Array.from({ length: numberQuantumInputs }, (_, index) => index);
   const classicalHandles = Array.from({ length: numberClassicalInputs }, (_, index) => index);
-  const [quantumOutputHandles, setQuantumOutputHandles] = useState([0]); 
+  const [quantumOutputHandles, setQuantumOutputHandles] = useState([0]);
   const [classicalOutputHandles, setClassicalOutputHandles] = useState([0]);
   const [condition, setCondition] = useState("");
 
@@ -60,9 +61,9 @@ export const ControlStructureNode = memo((node: Node) => {
 
     if (node.data.condition !== null) {
       //updateNodeValue(node.id, "condition", node.data.condition);
-      } else {
-        updateNodeValue(node.id, "condition", condition);
-      }
+    } else {
+      updateNodeValue(node.id, "condition", condition);
+    }
     setClassicalOutputHandles(connectedClassicalOutputs);
     setQuantumOutputHandles(connectedQuantumOutputs);
     updateNodeInternals(node.id);
@@ -74,10 +75,55 @@ export const ControlStructureNode = memo((node: Node) => {
   const hexagonHeight = Math.max(250, 180 + totalHandles * 30);
   const hexagonTopOffset = -(hexagonHeight / 2) + 20;
 
+  const id = node.id;
+
+  const [remoteHighlightColor, setRemoteHighlightColor] = useState<string | null>(null);
+  const [selectingUserName, setSelectingUserName] = useState<string | null>(null); // technically not needed, could extend functionality to also show user name next to highlighted node
+
+  useEffect(() => {
+    const checkRemoteSelection = () => {
+      let foundColor: string | null = null;
+      let foundName: string | null = null;
+
+      // Loop through all active client states in the room
+      awareness.getStates().forEach((state: any, clientId: number) => {
+        // Skip your own client ID so you don't highlight it with your own color
+        // if (clientId === awareness.clientID) return;
+
+        // Check if a peer has selected this specific node ID
+        if (state.cursor && state.cursor.mySelectedNodeId === id) {
+          foundColor = state.cursor.color;
+          foundName = state.cursor.name;
+        }
+      });
+
+      setRemoteHighlightColor(foundColor);
+      setSelectingUserName(foundName);
+      console.log("COLOR", foundColor, foundName);
+    };
+
+    // Run once immediately on mount
+    checkRemoteSelection();
+
+    // 3. Listen to remote awareness updates
+    awareness.on("change", checkRemoteSelection);
+
+    // Clean up listener when the node unmounts
+    return () => {
+      awareness.off("change", checkRemoteSelection);
+    };
+  }, [id]); // Re-run if node ID changes
+
   return (
     <div className="grand-parent overflow-visible"
       style={{ minWidth: "1700px", height: `${dynamicHeight}px`, position: "relative", zIndex: -100 }}>
-      <div className="rounded-none bg-white border border-solid border-gray-700 shadow-md w-full h-full flex items-center justify-center relative overflow-visible">
+      <div className={"rounded-none bg-white border border-solid border-gray-700 shadow-md w-full h-full flex items-center justify-center relative overflow-visible"}
+        style={{
+          borderColor: remoteHighlightColor ? remoteHighlightColor : (selected ? "#3B82F6" : "#374151"),
+          boxShadow: remoteHighlightColor
+            ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}` // Glowing aura ring
+            : undefined,
+        }}>
         <div className="rounded-none border border-solid border-gray-700 shadow-md w-full h-full flex flex-col items-center relative z-10 overflow-visible">
           <div className="w-full bg-purple-300 text-black text-center font-semibold py-1">
             <span className="text-sm">Repeat</span>
@@ -140,7 +186,7 @@ export const ControlStructureNode = memo((node: Node) => {
                   className="mt-1 w-[80%] text-center"
                   style={{ fontSize: "12px", height: "22px" }}
                   value={node.data.condition || ""}
-                  onChange={(e) => {node.data["condition"] = e.target.value;updateNodeValue(node.id, "condition", e.target.value); setSelectedNode(node);}}
+                  onChange={(e) => { node.data["condition"] = e.target.value; updateNodeValue(node.id, "condition", e.target.value); setSelectedNode(node); }}
                 />
               </div>
 

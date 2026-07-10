@@ -12,16 +12,19 @@ import ReactFlow, {
   useUpdateNodeInternals,
   SelectionMode,
   Connection,
+  MarkerType,
+  applyNodeChanges,
+  NodeChange,
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { v4 as uuidv4 } from 'uuid';
-
+import { nodesMap, edgesMap, ydoc, awareness, yProvider } from "@/yjs";
 import { ContextMenu, CustomPanel, Palette } from "./components";
 import Toolbar from "./components/toolbar";
 import { nodesConfig, tutorial } from "./config/site";
 import { useStore } from "./config/store";
 import { useShallow } from "zustand/react/shallow";
-import { handleDragOver, handleOnDrop } from "./lib/utils";
+import { findNodeDefinition, handleDragOver, handleOnDrop } from "./lib/utils";
 import useKeyBindings from "./hooks/useKeyBindings";
 import { toSvg } from "html-to-image";
 import { initialDiagram } from "./config/site";
@@ -29,7 +32,7 @@ import Modal, { NewDiagramModal } from "./Modal";
 import './index.css';
 import { Placement } from 'react-joyride';
 import { startCompile } from "./backend";
-import { ancillaConstructColor, classicalConstructColor, ClassicalOperatorNode, controlFlowConstructColor, grover, hadamard_test_imaginary_part, hadamard_test_real_part, qaoa, quantum_types, quantumConstructColor, swap_test, quantum_k_means, custom_template, TEMPLATE_STORAGE_KEY, templates } from "./constants";
+import { ancillaConstructColor, classicalConstructColor, ClassicalOperatorNode, controlFlowConstructColor, grover, hadamard_test_imaginary_part, hadamard_test_real_part, qaoa, quantum_types, quantumConstructColor, swap_test, quantum_k_means, custom_template, TEMPLATE_STORAGE_KEY, templates, PluginNode } from "./constants";
 import Joyride from 'react-joyride';
 import { ConfigModal } from "./components/modals/configModal";
 import { QunicornModal } from "./components/modals/qunicornModal";
@@ -52,7 +55,9 @@ import { PatternSelectionModal } from "./components/modals/patternSelectionModal
 import { PatternImplementationSelectionModal } from "./components/modals/patternImplementationSelectionModal";
 import { groupSelectedNodes, ungroupNodes, handleNodeDropOnGroup } from "./lib/groupHandler";
 import { qasmToNodes } from "./lib/qasmToNodes";
-
+import UserCountPanel from "./components/modals/userAwareness";
+import VersioningPanel from "./components/modals/versioningModal";
+import { EdgeChange } from "@xyflow/react";
 import PromptFlowModal from "./components/modals/promptFlowModal";
 import { generateFlow, sendToMistral } from "./generation";
 import { openQasmToFlow } from "./qasmConverter";
@@ -163,6 +168,7 @@ function App() {
   } = useStore(useShallow(selector));
 
 
+  // TODO: don't use if no collab mode
 
   const [metadata, setMetadata] = React.useState<any>({
     version: "1.0.0",
@@ -170,6 +176,36 @@ function App() {
     description: "This is a model.",
     author: ""
   });
+
+
+  const historyArray = ydoc.getArray<any>("history");
+  const [versioningHistory, setVersioningHistory] = useState<any[]>([]);
+
+
+  const [nodesI, setNodesI] = useState<Node[]>([]);
+  const [edgesI, setEdgesI] = useState<Edge[]>([]);
+  useEffect(() => {
+    const update = () => {
+      setVersioningHistory([...historyArray.toArray()]);
+      console.log(versioningHistory)
+    };
+
+    historyArray.observe(update);
+    update();
+
+    return () => historyArray.unobserve(update);
+  }, []);
+
+  const [userName, setUserName] = useState<string>("Default Name");
+
+  const onUserNameChange = (newName) => {
+    console.log("newName", newName)
+    setUserName(newName);
+    const currentCursorState = awareness.getLocalState()?.cursor || {};
+    awareness.setLocalStateField("cursor", { ...currentCursorState, name: newName }) //update only name
+    console.log("cursors", cursors)
+  };
+
   const [menu, setMenu] = useState(null);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [isManageTemplatesOpen, setIsManageTemplatesOpen] = useState(false);
@@ -216,6 +252,16 @@ function App() {
     left: 0,
   });
 
+
+  const [cursors, setCursors] = useState<{
+    [clientId: number]: {
+      name: string; x: number, y: number, color: string
+    }
+  }>({});
+  const [myClientId, setMyClientId] = useState<number | null>(null);
+
+
+
   const onNodeContextMenu = useCallback(
     (event: React.MouseEvent, node: Node) => {
       event.preventDefault();
@@ -245,7 +291,6 @@ function App() {
   });
   };
 
-
   const handleAction = (action: string, nodeId: string) => {
     console.log(`Action: ${action} on Node: ${nodeId}`);
     setContextMenu((prev) => ({ ...prev, visible: false }));
@@ -259,6 +304,7 @@ function App() {
   const [githubBranch, setGithubBranch] = useState(import.meta.env.VITE_GITHUB_REPO_BRANCH);
   const [githubToken, setGithubToken] = useState(import.meta.env.VITE_GITHUB_TOKEN);
   const [openqasmCode, setOpenQASMCode] = useState("");
+  const [showResultModal, setShowResultModal] = useState(false);
 
   const [selectedDevice, setSelectedDevice] = useState("aer_simulator");
   const [provider, setProvider] = useState("IBM");
@@ -453,6 +499,8 @@ If none apply, return { "algorithms": [] }.
     setAncillaModelingOn(newValues.ancillaMode);
     setExperienceLevel(newValues.experienceLevel);
     setCompletionGuaranteed(newValues.completionGuaranteed);
+    setCollaborationModeOn(newValues.collaborationMode); // passt das?? lieber onToggleCollaborationMode?
+    onUserNameChange(newValues.userName);
 
     setIsConfigOpen(false);
   };
@@ -506,6 +554,7 @@ If none apply, return { "algorithms": [] }.
   const [ancillaModelingOn, setAncillaModelingOn] = useState(false);
   const [experienceLevelOn, setExperienceLevelOn] = useState("explorer");
   const [compactVisualization, setCompactVisualization] = useState(false);
+  const [collaborationModeOn, setCollaborationModeOn] = useState(false);
   //const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
   const [toast, setToast] = useState<{
     message: React.ReactNode;
@@ -531,6 +580,195 @@ If none apply, return { "algorithms": [] }.
       showToast(typeError, "error");
     }
   }, [typeError, showToast, setTypeError]);
+
+  const isSyncingFromRemote = useRef(false);
+
+  // EFFECT 1: Remote-to-Local (Yjs to Zustand & nodesI)
+  useEffect(() => {
+    if (!collaborationModeOn) return;
+
+    const updateFromRemote = () => {
+      // set flag, so that this is ignored by effect 2
+      isSyncingFromRemote.current = true;
+
+      const sharedNodes: any = Array.from(nodesMap.values());
+      const sharedEdges: any = Array.from(edgesMap.values());
+
+      // Update the local rendering tracking arrays
+      setNodesI(sharedNodes);
+      setEdgesI(sharedEdges);
+
+      // Forcefully inject remote changes into Zustand.
+      // Stringify check to prevent triggering an infinite state update loop.
+      const currentLocalState = useStore.getState();
+
+      if (JSON.stringify(currentLocalState.nodes) !== JSON.stringify(sharedNodes) ||
+        JSON.stringify(currentLocalState.edges) !== JSON.stringify(sharedEdges)) {
+
+        useStore.setState({
+          nodes: sharedNodes,
+          edges: sharedEdges,
+        });
+      }
+      // reset flag
+      setTimeout(() => { isSyncingFromRemote.current = false; }, 50);
+    };
+
+    // Listen to remote changes on the Yjs maps
+    nodesMap.observe(updateFromRemote);
+    edgesMap.observe(updateFromRemote);
+
+    // Run immediately on mount/enable to pull initial room state
+    updateFromRemote();
+
+    return () => {
+      nodesMap.unobserve(updateFromRemote);
+      edgesMap.unobserve(updateFromRemote);
+    };
+  }, [collaborationModeOn]);
+
+
+  // EFFECT 2: Local-to-Remote (Zustand to Yjs)
+  useEffect(() => {
+    if (!collaborationModeOn || isSyncingFromRemote.current) return;
+
+    // Bundle operations into a single transaction block
+    ydoc.transact(() => {
+      // Sync local Zustand nodes to the network map
+      nodes.forEach((node) => {
+        // remove selected property from local node, so it isn't broadcasted to other users (messes up highlighting of selected nodes)
+        const { selected, ...nodeData } = node;
+
+        const remoteNode = nodesMap.get(node.id);
+        if (!remoteNode || JSON.stringify(remoteNode) !== JSON.stringify(nodeData)) {
+          nodesMap.set(node.id, nodeData);
+        }
+      });
+
+      // Handle local deletions (If it's in Yjs but missing from local Zustand, delete from Yjs)
+      nodesMap.forEach((_, id) => {
+        if (!nodes.some((n) => n.id === id)) {
+          nodesMap.delete(id);
+        }
+      });
+
+      // Sync local Zustand edges to the network map
+      edges.forEach((edge) => {
+        const remoteEdge = edgesMap.get(edge.id);
+        if (!remoteEdge || JSON.stringify(remoteEdge) !== JSON.stringify(edge)) {
+          edgesMap.set(edge.id, edge);
+        }
+      });
+
+      // Handle edge deletions
+      edgesMap.forEach((_, id) => {
+        if (!edges.some((e) => e.id === id)) {
+          edgesMap.delete(id);
+        }
+      });
+    });
+  }, [nodes, edges, collaborationModeOn]);
+
+  // useEffect(() => {
+  //   console.log("rerun")
+
+  //   if(!collaborationModeOn) return;
+
+  //   // observe remote changes
+  //   const nodesObserver = () => {
+  //     const sharedNodes = Array.from(nodesMap.values());
+  //     setNodesI(sharedNodes);
+  //     console.log(nodesI)
+  //   };
+
+  //   const edgesObserver = () => {
+  //     const sharedEdges = Array.from(edgesMap.values());
+  //     setEdgesI(sharedEdges);
+  //     console.log(edgesI)
+  //   };
+
+  //   nodesObserver();
+  //   edgesObserver()
+  //   nodesMap.observe(nodesObserver);
+  //   edgesMap.observe(edgesObserver);
+  //   return () => { nodesMap.unobserve(nodesObserver); edgesMap.unobserve(edgesObserver) };
+
+  // }, [collaborationModeOn]);
+
+  // needed? 
+  useEffect(() => {
+
+    const updateCursors = () => {
+      const newCursors: typeof cursors = {};
+      awareness.getStates().forEach((state: any, clientId: number) => {
+        if (state.cursor) {
+          // Replace name with "Me" if this is your client
+          // --> maybe not??
+          newCursors[clientId] = {
+            ...state.cursor,
+            //name: clientId === awareness.clientID ? "Me" : state.cursor.name
+          };
+        }
+      });
+      setCursors(newCursors);
+    };
+
+
+    awareness.on("change", updateCursors);
+    updateCursors();
+
+    console.log("CURSORS", cursors)
+
+    return () => awareness.off("change", updateCursors);
+  }, []);
+
+  useEffect(() => {
+
+    if (collaborationModeOn) {
+      // Generate a random username
+      const randomNames = ["Alice", "Bob", "Charlie", "Dana", "Eve", "Frank", "Grace", "Hugo"];
+      const randomUsername = randomNames[Math.floor(Math.random() * randomNames.length)];
+      // Store local clientId
+      setMyClientId(awareness.clientID);
+
+      const color = "#" + Math.floor(Math.random() * 16777215).toString(16);
+
+      // Set initial cursor state with username
+      awareness.setLocalStateField("cursor", {
+        x: 0,
+        y: 0,
+        color: color,
+        name: randomUsername,
+        role: experienceLevel
+      });
+
+      awareness.setLocalStateField("locks", {
+        nodeIds: []
+      });
+
+      // set initial user name  
+      setUserName(randomUsername);
+      console.log("CURSORS", cursors)
+    }
+
+
+  }, [collaborationModeOn]);
+
+  // Sync local Zustand store changes to Yjs Awareness state fields
+  useEffect(() => {
+    if (!awareness) return;
+
+    const currentLocalState = awareness.getLocalState();
+    const existingCursor = currentLocalState?.cursor || {};
+
+    awareness.setLocalStateField("cursor", {
+      ...existingCursor,
+      // Normalize to lowercase strings to eliminate case mismatch in comparisons
+      role: experienceLevel?.toLowerCase(),
+      experienceLevel: experienceLevel?.toLowerCase(),
+    });
+  }, [experienceLevel]);
+
 
   const [runTour, setRunTour] = useState(false);
   const [joyrideStepId, setJoyRideStepId] = useState(0);
@@ -801,6 +1039,7 @@ If none apply, return { "algorithms": [] }.
       console.log("Received OpenQASM code:", openqasmCode);
 
       setOpenQASMCode(openqasmCode);
+      setShowResultModal(true);
       setTimeout(() => {
         setStatus("completed");
         setLoading(false);
@@ -1168,7 +1407,14 @@ If none apply, return { "algorithms": [] }.
       if (node.type === "ifElseNode") {
         const hasClassical = connectedSources.some((srcId) => {
           const sourceNode: any = nodesById.get(srcId);
-          return sourceNode?.type === "dataTypeNode";
+          // A measurement result and an operator output are classical data too,
+          // not only a dataTypeNode literal. Needed for measurement-driven ifs
+          // like the teleportation corrections (if m == 1 -> X / Z).
+          return (
+            sourceNode?.type === "dataTypeNode" ||
+            sourceNode?.type === "measurementNode" ||
+            sourceNode?.type === "operatorNode"
+          );
         });
         if (!hasClassical) {
           errors.push({
@@ -1716,17 +1962,24 @@ If none apply, return { "algorithms": [] }.
         const groupedSelected = selectedNodes.filter(
           (n) => n.parentNode && n.type !== "groupNode"
         );
-        if (groupedSelected.length === 0) return;
+        if (groupedSelected.length > 0) {
+          reactFlowInstance.setNodes((nds: Node[]) =>
+            nds.map((n) => {
+              if (n.parentNode && n.type !== "groupNode") {
+                return { ...n, selected: false };
+              }
+              return n;
+            })
+          );
+        }
 
-        reactFlowInstance.setNodes((nds: Node[]) =>
-          nds.map((n) => {
-            if (n.parentNode && n.type !== "groupNode") {
-              return { ...n, selected: false };
-            }
-            return n;
-          })
-        );
-      }, [reactFlowInstance]);
+        // Collaboration: Sperren für ausgewählte Nodes broadcasten
+        if (collaborationModeOn) {
+          const lockedIds = selectedNodes.map((n) => n.id);
+          awareness.setLocalStateField("locks", { nodeIds: lockedIds });
+          console.log("locked ids", lockedIds);
+        }
+      }, [reactFlowInstance, collaborationModeOn]);
 
       const onSelectionEnd = useCallback(() => {
         if (!lassoMode) return;
@@ -1807,54 +2060,227 @@ If none apply, return { "algorithms": [] }.
     }
   }, [domainProfile, allDomainProfiles]);
 
-  const onDrop = React.useCallback(
-    (event: any) => {
-      console.log("dropped")
-      const position = reactFlowInstance.screenToFlowPosition({
-        x: event.clientX,
-        y: event.clientY,
-      })
-      const label = event.dataTransfer.getData("application/reactflow/label");
-      console.log(position);
+const onDrop = React.useCallback(
+  (event: any) => {
+    console.log("dropped");
+    console.log("collab mode", collaborationModeOn);
 
+    event.preventDefault();
 
-      if (label == qaoa) {
-        loadFlow(qaoa_algorithm)
-      } else if (label == swap_test) {
-        loadFlow(swap_test_algorithm);
-      }
-      else if (label == hadamard_test_imaginary_part) {
-        loadFlow(hadamard_test_imaginary_part_algorithm);
-      }
-      else if (label == hadamard_test_real_part) {
-        loadFlow(hadamard_test_real_part_algorithm);
-      }
-      else if (label == grover) {
-        loadFlow(grover_algorithm);
-      }
-      else if (label == quantum_k_means) {
-        loadFlow(quantum_k_means_algorithm);
-      }
-      else if (label.startsWith(custom_template)) {
-        const userTemplateFlowData = JSON.parse(event.dataTransfer.getData("application/reactflow/templateFlowData"));
-        console.log("USER TEMPLATE")
-        console.log(userTemplateFlowData)
-        if (userTemplateFlowData) {
-          loadFlow(userTemplateFlowData);
-        }
-        else {
-          console.error(`User Template ${label} not found.`)
-        }
-      }
-      else {
-        console.log("current categories", currentCategories)
-        handleOnDrop(event, reactFlowWrapper, reactFlowInstance, setNodes, currentCategories);
+    const label = event.dataTransfer.getData("application/reactflow/label");
+
+    if (label == qaoa) {
+      loadFlow(qaoa_algorithm);
+      return;
+    } else if (label == swap_test) {
+      loadFlow(swap_test_algorithm);
+      return;
+    } else if (label == hadamard_test_imaginary_part) {
+      loadFlow(hadamard_test_imaginary_part_algorithm);
+      return;
+    } else if (label == hadamard_test_real_part) {
+      loadFlow(hadamard_test_real_part_algorithm);
+      return;
+    } else if (label == grover) {
+      loadFlow(grover_algorithm);
+      return;
+    } else if (label == quantum_k_means) {
+      loadFlow(quantum_k_means_algorithm);
+      return;
+    } else if (label.startsWith(custom_template)) {
+      const userTemplateFlowData = JSON.parse(
+        event.dataTransfer.getData(
+          "application/reactflow/templateFlowData"
+        )
+      );
+
+      if (userTemplateFlowData) {
+        loadFlow(userTemplateFlowData);
+      } else {
+        console.error(`User Template ${label} not found.`);
       }
 
-      //setContextMenu((prev) => ({ ...prev, left: event.clientX, top: event.clientY,}));
-    },
-    [reactFlowInstance, setNodes, currentCategories],
-  );
+      return;
+    }
+
+    console.log("current categories", currentCategories);
+
+    if (!reactFlowWrapper) return;
+
+    const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
+
+    const type = event.dataTransfer.getData("application/reactflow");
+    const dataType = event.dataTransfer.getData(
+      "application/reactflow/dataType"
+    );
+
+    if (!type) {
+      return;
+    }
+
+    const def = findNodeDefinition(type, label, currentCategories);
+
+    console.log("found node", def);
+
+    const getId = () => crypto.randomUUID();
+
+    const compactOptions = def?.compactOptions ?? [];
+
+    const position = reactFlowInstance.project({
+      x: event.clientX - reactFlowBounds.left,
+      y: event.clientY - reactFlowBounds.top,
+    });
+
+
+    // ================================
+    // GET PLUGIN METADATA HERE
+    // ================================
+    const pluginDataRaw = event.dataTransfer.getData(
+      "application/reactflow/pluginData"
+    );
+
+    const pluginData = pluginDataRaw
+      ? JSON.parse(pluginDataRaw)
+      : null;
+
+
+    console.log("PLUGIN DATA FROM DROP", pluginData);
+
+
+    const newNode = {
+      id: getId(),
+      type,
+      position,
+
+      data: {
+        label,
+
+        inputs: [],
+        outputs: [],
+
+        children: [],
+
+        implementation: "",
+        implementationType: "",
+        uncomputeImplementationType: "",
+        uncomputeImplementation: "",
+
+        completionGuaranteed:
+          def?.completionGuaranteed ?? false,
+
+        compactOptions,
+
+
+        // =====================================
+        // PLUGIN NODE DATA
+        // =====================================
+        ...(type === PluginNode && {
+          pluginName: pluginData?.name,
+
+          dataInputs:
+            pluginData?.mockDataInputs ?? [],
+
+          dataOutputs:
+            pluginData?.mockDataOutputs ?? [],
+        }),
+
+
+        ...(def?.properties && {
+          properties: def.properties,
+        }),
+
+        ...(def?.constraints && {
+          constraints: def.constraints,
+        }),
+
+        ...(def?.mapping && {
+          mapping: def.mapping,
+        }),
+
+        ...(def?.description && {
+          description: def.description,
+        }),
+
+        ...(def?.outputType && {
+          outputType: def.outputType,
+        }),
+
+        ...(def?.icon && {
+          icon: def.icon,
+        }),
+
+        ...(def?.isDataType && {
+          isDataType: def.isDataType,
+        }),
+      },
+    };
+
+
+    console.log("CREATED NODE", newNode);
+
+
+    setNodes(newNode);
+
+
+    const activeName =
+      cursors[myClientId]?.name ||
+      userName ||
+      "unknown";
+
+
+    if (collaborationModeOn) {
+
+      console.log(
+        "ON DROP: collab mode on",
+        collaborationModeOn
+      );
+
+      nodesMap.set(
+        newNode.id,
+        newNode
+      );
+
+
+      historyArray.push([
+        {
+          type: "node-added",
+          nodeId: newNode.id,
+          label: newNode.data?.label,
+          userId: activeName,
+          user: activeName,
+          timestamp: Date.now(),
+        },
+      ]);
+
+
+      console.log(
+        "ADD NODE HISTORY",
+        historyArray.toArray()
+      );
+
+      console.log(
+        "shared nodes",
+        Array.from(nodesMap.values())
+      );
+
+      console.log(
+        "shared edges",
+        Array.from(edgesMap.values())
+      );
+    }
+
+
+    console.log("nodes", nodes);
+
+  },
+  [
+    reactFlowInstance,
+    setNodes,
+    currentCategories,
+    collaborationModeOn,
+    cursors,
+  ]
+);
 
   const onNodesDelete = useCallback((deletedNodes: Node[]) => {
     setContextMenu((prev) => ({ ...prev, visible: false })); // contextMenu disappears when node is deleted
@@ -1969,6 +2395,22 @@ If none apply, return { "algorithms": [] }.
       return { success: false };
     }
   }
+
+  const handleMouseMove = (event: React.MouseEvent) => {
+    if (!awareness) return;
+
+    const bounds = reactFlowWrapper.current?.getBoundingClientRect();
+    if (!bounds) return;
+
+    const x = event.clientX - bounds.left;
+    const y = event.clientY - bounds.top;
+
+    awareness.setLocalStateField("cursor", {
+      ...awareness.getLocalState()?.cursor,
+      x,
+      y
+    });
+  };
 
   async function registerAndUploadToGitHub(patternId, patternName, overwriteImplementationId, solutionId) {
     const flowId = `flow-${Date.now()}`;
@@ -2486,17 +2928,51 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
 
   useKeyBindings({ undo, redo });
 
-  const handleClick = React.useCallback(
-    (event: React.MouseEvent, node: Node) => {
-      // Prevent the default action (if any)
-      event.preventDefault();
+  const [mySelectedNodeId, setMySelectedNodeId] = useState<string | null>(null);
 
-      // Set the selected node
-      setSelectedNode(node);
+  // Iterate over all active collaborative tabs to see what nodes are currently targeted
+  const getActiveSelections = useCallback(() => {
+    const selections: { [clientId: number]: string } = {};
 
-    },
-    [setSelectedNode],
-  );
+    awareness.getStates().forEach((state: any, clientId: number) => {
+      if (state?.cursor?.mySelectedNodeId) {
+        selections[clientId] = state.cursor.mySelectedNodeId;
+      }
+    });
+
+    return selections;
+  }, [awareness]);
+
+  const handleClick = useCallback((event: React.MouseEvent, node: Node) => {
+    if (collaborationModeOn && awareness) {
+      const currentCursorState = awareness.getLocalState()?.cursor || {};
+      console.log(currentCursorState)
+      console.log(node.id);
+      let findAny = false;
+      awareness.getStates().forEach((state: any, clientId: number) => {
+        // Skip your own client ID so you don't highlight it with your own color
+        // if (clientId === awareness.clientID) return;
+        console.log(state.cursor)
+
+
+        // Check if a peer has selected this specific node ID
+        if (state.cursor && state.cursor.mySelectedNodeId === node.id) {
+          findAny = true;
+          return;
+        }
+      });
+      if (!findAny) {
+        // Write the currently selected node directly into this tab's unique Yjs cursor object
+        awareness.setLocalStateField("cursor", {
+          ...currentCursorState,
+          mySelectedNodeId: node.id
+        });
+      }
+    }
+
+    // Keep your normal single-user state if necessary
+    setSelectedNode(node);
+  }, [collaborationModeOn, awareness, setSelectedNode]);
 
   const [modeledDiagram, setModeledDiagram] = useState(null);
 
@@ -2619,7 +3095,25 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     console.log(node.position.x);
     console.log(helperLines)
     console.log(event.clientX)
+    if (collaborationModeOn) {
+      let findAny = false;
 
+      awareness.getStates().forEach((state: any, clientId: number) => {
+        // Skip your own client ID so you don't highlight it with your own color
+        // if (clientId === awareness.clientID) return;
+        console.log(state.cursor)
+
+
+        // Check if a peer has selected this specific node ID
+        if (state.cursor && state.cursor.mySelectedNodeId === node.id) {
+          findAny = true;
+          return;
+        }
+      });
+      if (!findAny) {
+        return;
+      }
+    }
     let verticalLine = null;
     let horizontalLine = null;
 
@@ -2721,12 +3215,18 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
   }
     , [reactFlowInstance, helperLines, nodes, setContextMenu]);
 
+
   const onPaneClick = useCallback(() => {
+    if (!collaborationModeOn) return;
+    let findAny = false;
+    const currentCursorState = awareness.getLocalState()?.cursor || {};
+     
     setMenu(null);
     setContextMenu((prev) => ({ ...prev, visible: false })); // contextMenu disappears when clicking on pane
     setSelectedNode(null);
+    setMySelectedNodeId(null);
     console.log("reset");
-  }, [setMenu, setContextMenu, setSelectedNode]);
+  }, [collaborationModeOn]);
 
   const onClick = useCallback(() => {
     setContextMenu((prev) => ({ ...prev, visible: false })); // contextMenu disappears when clicking anywhere in canvas (but not other panels)
@@ -2758,6 +3258,62 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
       updateNodeInternals(node.id);
     })
   }
+
+  const onToggleCollaborationMode = useCallback(() => {
+    const nextMode = !collaborationModeOn;
+    setCollaborationModeOn(nextMode);
+    console.log(nextMode, collaborationModeOn);
+    // if collaborationMode is now off: delete cursor of current client from list of cursors
+    if (nextMode) {
+      // collaboration mode has been turned on
+      // (re-)initialize cursor
+      // Sync room data immediately to overwrite offline state
+      useStore.setState({
+        nodes: Array.from(nodesMap.values()),
+        edges: Array.from(edgesMap.values())
+      });
+
+      // Generate a random username
+      const randomNames = ["Alice", "Bob", "Charlie", "Dana", "Eve", "Frank", "Grace", "Hugo"];
+      const randomUsername = randomNames[Math.floor(Math.random() * randomNames.length)];
+      // Store local clientId
+      setMyClientId(awareness.clientID);
+
+      const color = "#" + Math.floor(Math.random() * 16777215).toString(16);
+
+      // Set initial cursor state with username
+      awareness.setLocalStateField("cursor", {
+        x: 0,
+        y: 0,
+        color: color,
+        name: randomUsername
+      });
+
+      awareness.setLocalStateField("locks", {
+        nodeIds: []
+      });
+
+      // set initial user name  
+      setUserName(randomUsername);
+      console.log("CURSORS", cursors)
+
+      setNodesI(Array.from(nodesMap.values()));
+      setEdgesI(Array.from(edgesMap.values()));
+
+    } else {
+      // collaboration mode has been turned off
+      // delete cursor from awareness state
+      awareness.setLocalStateField("cursor", null);
+      setCursors({});
+      setNodesI([]);
+      setEdgesI([]);
+      setUserName("");
+      // reset canvas
+      // overwriteFlow(initialDiagram);
+
+
+    }
+  }, [collaborationModeOn, userName]);
 
   const handleSaveAsSVG = () => {
     if (ref.current === null) {
@@ -3180,6 +3736,215 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
 
   }
 
+
+  const onNodesChangeSync = useCallback((changes: NodeChange[]) => {
+    console.log("Incoming changes:", changes);
+
+    // 🔒 Build global lock map
+    const states = awareness.getStates();
+    const lockMap = new Map<string, number>();
+
+    states.forEach((state: any, clientId: number) => {
+      if (state?.locks?.nodeIds) {
+        state.locks.nodeIds.forEach((nodeId: string) => {
+          lockMap.set(nodeId, clientId);
+        });
+      }
+    });
+
+    // 🚫 Filter unauthorized changes safely
+    const allowedChanges = changes.filter((change) => {
+      if (!hasId(change)) return true;
+
+      // Always allow your own selection changes to proceed without lock blocks
+      if (change.type === 'select') return true;
+
+      const owner = lockMap.get(change.id);
+      return !owner || owner === myClientId;
+    });
+
+    // 🧠 Apply changes locally
+    const updatedNodes = applyNodeChanges(allowedChanges, nodesI);
+    setNodesI(updatedNodes);
+    updatedNodes.forEach(n => nodesMap.set(n.id, n)); // ???
+
+    // 🔁 Sync with React Flow
+    onNodesChange(allowedChanges);
+    // get user name (from cursors) for history
+    //const clientUserName = cursors[myClientId]?.name || "unknown";
+    // Handle deletions
+    const activeName = cursors[myClientId]?.name || userName || "unknown";
+    allowedChanges.forEach((change) => {
+      if ((change.type === "remove" || change.type === "reset") && hasId(change)) {
+        console.log("NODES MAP", Array.from(nodesMap.values()))
+        const nodeId = change.id;
+        const nodeLabel = Array.from(nodesMap.values()).find((node) => node.id === nodeId)?.data?.label || "unknown"
+        console.log(nodesMap);
+        console.log("Node deleted:", nodeId);
+
+        nodesMap.delete(nodeId);
+
+        // remove connected edges
+        edgesMap.forEach((edge: Edge, edgeId: string) => {
+          if (edge.source === nodeId || edge.target === nodeId) {
+            edgesMap.delete(edgeId);
+          }
+        });
+
+        historyArray.push([{
+          type: "node-deleted",
+          nodeId: nodeId,
+          label: nodeLabel,
+          userId: myClientId,
+          user: activeName,
+          timestamp: Date.now(),
+        }]);
+        console.log("REMOVE NODE HISTORY", historyArray.toArray())
+        console.log("shared nodes", Array.from(nodesMap.values()))
+        console.log("shared edges", Array.from(edgesMap.values()))
+      }
+    });
+
+  }, [nodesI, awareness, myClientId, cursors]);
+
+
+  function hasId(
+    change: NodeChange | EdgeChange
+  ): change is (NodeChange | EdgeChange) & { id: string } {
+    return "id" in change;
+  }
+
+  const getGlobalLocks = () => {
+    const states = awareness.getStates();
+
+    const lockMap = new Map<string, number>();
+
+    states.forEach((state, clientId) => {
+      if (state?.locks?.nodeIds) {
+        state.locks.nodeIds.forEach((nodeId: string) => {
+          lockMap.set(nodeId, clientId);
+        });
+      }
+    });
+
+    return lockMap;
+  };
+
+  // broadcast selection via awareness
+  useEffect(() => {
+    if (collaborationModeOn) {
+      const randomNames = ["Alice", "Bob", "Charlie", "Dana", "Eve", "Frank", "Grace", "Hugo"];
+      const randomUsername = randomNames[Math.floor(Math.random() * randomNames.length)];
+      setMyClientId(awareness.clientID);
+
+      const color = "#" + Math.floor(Math.random() * 16777215).toString(16);
+
+      // Initializing the cursor state with localized variables safely bounded to this specific tab instance
+      awareness.setLocalStateField("cursor", {
+        x: 0,
+        y: 0,
+        color: color,
+        name: randomUsername,
+        role: experienceLevel,
+        mySelectedNodeId: null // <-- Track the selection cleanly inside the user's cursor scope
+      });
+
+      awareness.setLocalStateField("locks", {
+        nodeIds: []
+      });
+
+      setUserName(randomUsername);
+    }
+  }, [collaborationModeOn]);
+
+  const onConnectSync = useCallback((params: Connection) => {
+    console.log(params)
+    let type = "classicalEdge";
+    let color = "#F5A843"; // default classical color
+
+    // Quantum edge
+    if (
+      (params.sourceHandle.includes("quantumHandle") || params.sourceHandle.includes("sideQuantumHandle")) &&
+      params.targetHandle.includes("quantumHandle")
+    ) {
+      type = "quantumEdge";
+      color = "#93C5FD";
+    }
+
+    // Ancilla edge
+    if (
+      (params.sourceHandle.includes("ancilla") || params.sourceHandle.includes("dirtyAncilla")) &&
+      (params.targetHandle.includes("ancilla") || params.targetHandle.includes("dirtyAncilla"))
+    ) {
+      type = "ancillaEdge";
+      color = "#86EFAC";
+    }
+
+    const edge: Edge = {
+      ...params,
+      id: uuid(),
+      type,
+      markerEnd: {
+        type: MarkerType.ArrowClosed,
+        width: 20,
+        height: 20,
+        color: color,
+      },
+      style: { stroke: color },
+    };
+
+
+    // 1. Update local Zustand store (your existing store logic)
+    onConnect(params);
+
+    // 2. Save edge to Yjs shared map
+    edgesMap.set(edge.id, edge);
+    // get user name (from cursors) for history
+    //const userName = cursors[myClientId]?.name || "unknown";
+    // get source and target node label
+    const sourceNode = nodes.find((n) => n.id === edge.source)?.data?.label || edge.source
+    const targetNode = nodes.find((n) => n.id === edge.target)?.data?.label || edge.target
+    // get target node label
+
+
+    historyArray.push([{
+      type: "edge-added",
+      source: sourceNode,
+      target: targetNode,
+      edgeId: edge.id,
+      //user: cursor.name,
+      userId: myClientId,
+      user: userName,
+      timestamp: Date.now(),
+    }]);
+    console.log("ADD EDGE HISTORY", historyArray.toArray());
+    console.log("shared nodes", Array.from(nodesMap.values()))
+    console.log("shared edges", Array.from(edgesMap.values()))
+    // für jeden Cursor? Nicht nur einmal??
+    // Object.entries(cursors).map(([clientId, cursor]) => {
+    //   const displayName = Number(clientId) === myClientId ? "Me" : cursor.name;
+
+    //   // Store name in a variable for history usage
+    //   //const userName = cursor.name;
+
+    //   historyArray.push([{
+    //     type: "edge-added",
+    //     source: edge.source,
+    //     target: edge.target,
+    //     edgeId: edge.id,
+    //     //user: cursor.name,
+    //     userId: myClientId,
+    //     user: userName,
+    //     timestamp: Date.now(),
+    //   }]);
+    //   console.log("ADD EDGE HISTORY", historyArray);
+    // });
+
+
+  }, [awareness, myClientId, cursors
+
+  ]);
+
   return (
     <>
       <Joyride
@@ -3282,7 +4047,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
           createDomainProfile={() => setDomainProfileOpen(true)}
           startQuantumAlgorithmSelection={startQuantumAlgorithmSelection}
           //sendToQunicorn={() => setIsQunicornOpen(true)}
-          openHistory={openHistoryModal}
+          openHistory={() => openHistoryModal()}
           startTour={() => { startTour(); }}
           onSaveAsTemplate={handleSaveAsTemplate}
           onManageTemplates={handleManageTemplates}
@@ -3307,11 +4072,17 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
     compilationTarget={compilationTarget}
     containsPlaceholder={containsPlaceholder}
         containsWorkflowNodes={containsWorkflowNodes}
-    setCompilationTarget={setCompilationTarget}
-    sendToBackend={sendToBackend}
-    
-  
-        />
+        setCompilationTarget={setCompilationTarget}
+        sendToBackend={sendToBackend}
+      />
+      <Modal
+        title={compilationTarget === "qiskit" ? "Generated Qiskit" : "Generated Code"}
+        open={showResultModal}
+        onClose={() => setShowResultModal(false)}
+        className="w-[80vw] max-w-4xl"
+      >
+        <pre className="text-sm overflow-auto max-h-[70vh] whitespace-pre-wrap bg-gray-50 p-3 rounded border">{openqasmCode}</pre>
+      </Modal>
 
       <ConfigModal
         open={isConfigOpen}
@@ -3323,6 +4094,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
         compactVisualization={compactVisualization}
         completionGuaranteed={completionGuaranteed}
         experienceLevel={experienceLevel}
+        collaborationMode={collaborationModeOn}
         tempCamundaEndpoint={camundaEndpoint}
         tempNisqAnalyzerEndpoint={nisqAnalyzerEndpoint}
         tempOpenAIToken={openAIToken}
@@ -3335,6 +4107,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
         tempGithubRepositoryName={githubRepositoryName}
         tempGithubBranch={githubBranch}
         tempGithubToken={githubToken}
+        userName={userName}
         tempMistralToken={mistralToken}
       />
 
@@ -3511,13 +4284,13 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
         >
           <ReactFlow
             ref={ref}
-            nodes={nodes}
-            edges={edges}
+            nodes={collaborationModeOn ? nodesI : nodes}
+            edges={collaborationModeOn ? edgesI : edges}
             selectionOnDrag={lassoMode}        // ← Lasso nur wenn aktiv
             panOnDrag={!lassoMode}             // ← Panning deaktivieren wenn Lasso aktiv
             selectionMode={SelectionMode.Partial} // ← Nodes die teilweise im Lasso sind auch
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
+            onNodesChange={collaborationModeOn ? onNodesChangeSync : onNodesChange} // TODO: onNodesChange if no collab mode
+            onEdgesChange={onEdgesChange} // TODO: onEdgesChangeSync for collab mode (deletion of edge)
             onSelectionEnd={onSelectionEnd}
             onNodeContextMenu={onNodeContextMenu}
             onNodeClick={(event: React.MouseEvent, node: Node) => {
@@ -3525,15 +4298,16 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
             }}
             onSelectionChange={onSelectionChange}
             onConnectEnd={onConnectEnd}
-            onConnect={handleConnect}
+            onConnect={collaborationModeOn ? onConnectSync : onConnect} // TODO: onConnect if no collab mode
             onPaneClick={onPaneClick}
             onClick={onClick}
             onDragOver={onDragOver}
             onNodeDrag={onNodeDrag}
             onNodeDragStop={onNodeDragStop}
             onDrop={onDrop}
-            onNodesDelete={onNodesDelete}
-            onEdgesDelete={onEdgesDelete}
+            onMouseMove={handleMouseMove}
+            onNodesDelete={onNodesDelete} // TODO: weglassen oder onNodesDeleteSync erstellen?
+            onEdgesDelete={onEdgesDelete} // TODO: weglassen oder onEdgesDeleteSync erstellen?
 
             fitView
             fitViewOptions={{ maxZoom: 1 }}
@@ -3572,8 +4346,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
             </>
           )}
 
-
-                 {/* Controls */} 
+            {/* Controls */}
             <Controls />
 
             {/* Lasso Button – separat positioniert über den Controls */}
@@ -3635,7 +4408,49 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
                 {lassoMode ? "Cancel grouping" : "Group selection"}
               </span>
             </div>
-            
+
+            {Object.entries(cursors).length > 1 && collaborationModeOn && Object.entries(cursors).map(([clientId, cursor]) => { // TODO: only if collaborationMode false
+              const displayName = Number(clientId) === myClientId ? "Me" : cursor.name;
+              return (
+                <div
+                  key={clientId}
+                  style={{
+                    position: "absolute",
+                    left: cursor.x,
+                    top: cursor.y,
+                    pointerEvents: "none",
+                    transform: "translate(-50%, -50%)",
+                    zIndex: 999,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                  }}
+                >
+                  <div
+                    style={{
+                      marginBottom: 4,
+                      fontSize: 12,
+                      color: "#fff",
+                      backgroundColor: cursor.color,
+                      padding: "1px 4px",
+                      borderRadius: 4,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {displayName}
+                  </div>
+                  <div
+                    style={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: "50%",
+                      backgroundColor: cursor.color,
+                      transition: "left 0.05s linear, top 0.05s linear",
+                    }}
+                  />
+                </div>
+              );
+            })}
             {toast && (
               <Toast
                 message={toast.message}
@@ -3664,6 +4479,9 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
             )}
 
 
+            {collaborationModeOn && (<UserCountPanel provider={yProvider} roomName="demo" />)}
+            {collaborationModeOn && (<VersioningPanel history={versioningHistory} experienceLevel={experienceLevel} myClientID={myClientId} />)}
+
             <ExperienceModePanel
               expanded={expanded}
               onToggleExpanded={() => setExpanded(!expanded)}
@@ -3683,6 +4501,10 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
               onToggleMathMode={() => setMathMode((v) => !v)} 
               qasmEditorMode={qasmEditorMode}
               onToggleQasmEditorMode={() => setQasmEditorMode((v) => !v)}
+              collaborationMode={collaborationModeOn}
+              onCollaborationModeChange={onToggleCollaborationMode}
+              userName={userName}
+              onUserNameChange={onUserNameChange}
             />
 
             <MiniMap
