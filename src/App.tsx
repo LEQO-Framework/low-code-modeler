@@ -3025,13 +3025,16 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
       idMap.set(node.id, newId);
 
       return {
-        ...node,
         id: newId,
-        selected: true,
+        type: node.type,
+        data: structuredClone(node.data),
         position: {
           x: node.position.x + offset,
           y: node.position.y + offset,
         },
+        selected: true,
+        selectable: true,
+        draggable: true,
       };
     });
 
@@ -3045,7 +3048,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
         }
 
         return {
-          ...edge,
+          ...structuredClone(edge),
           id: uuidv4(),
           source,
           target,
