@@ -222,9 +222,16 @@ export const QAOANode = memo((node: Node) => {
                 className="w-full p-1 text-sm text-center text-black border-2 border-blue-200 rounded-full outline-none focus:border-blue-400 transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 value={p}
                 onChange={(e) => {
-                  const val = parseInt(e.target.value, 10) || 1;
-                  setP(val);
-                  handleChange("p", val);
+                  const value = parseInt(e.target.value, 10) || 1;
+                  if (value < 1 || Number.isNaN(value)) {
+                    setP(1);
+                    handleChange("p", 1);
+                    return;
+                  }
+
+                  setP(value);
+                  handleChange("p", value);
+
                 }}
               />
             </div>

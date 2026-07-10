@@ -491,8 +491,8 @@ If none apply, return { "algorithms": [] }.
 
     setCompact(newValues.compactVisualization);
     setCompactVisualization(newValues.compactVisualization);
-    setAncillaMode(newValues.ancillaMode);
-    setAncillaModelingOn(newValues.ancillaMode);
+    //setAncillaMode(newValues.ancillaMode);
+    //setAncillaModelingOn(newValues.ancillaMode);
     setExperienceLevel(newValues.experienceLevel);
     setCompletionGuaranteed(newValues.completionGuaranteed);
     setCollaborationModeOn(newValues.collaborationMode); // passt das?? lieber onToggleCollaborationMode?
@@ -1431,6 +1431,262 @@ If none apply, return { "algorithms": [] }.
           }
         }
       }
+
+      // Universal Oracle Validation
+      if (node.type === "oracleNode" || node.data?.label === "Universal Oracle") {
+        const connectedInput = connectedSources.length > 0;
+
+        if (!connectedInput) {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Universal Oracle "${node.id}" requires a quantum register input.`,
+          });
+        }
+
+        const mode = node.data?.mode;
+        if (mode && !["boolean", "phase"].includes(mode)) {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Universal Oracle "${node.id}" has invalid mode "${mode}".`,
+          });
+        }
+
+        const targetStates = node.data?.targetStates;
+
+        if (!targetStates || targetStates.trim() === "") {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Universal Oracle "${node.id}" requires at least one marked state.`,
+          });
+        }
+        else if (!/^\d+(?:\s*,\s*\d+)*$/.test(targetStates.trim())) {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Universal Oracle "${node.id}" marked states must be comma-separated integers.`,
+          });
+        }
+        else {
+
+          // Find input register size
+          let registerSize = 3;
+
+          const source = connectedSources
+            .map(src => nodesById.get(src))
+            .find(n => n?.data?.size);
+
+          if (source?.data?.size) {
+            registerSize = parseInt(source.data.size, 10);
+          }
+
+          const maxState = (1 << registerSize) - 1;
+
+          const invalidState = targetStates
+            .split(",")
+            .map((x: string) => parseInt(x.trim(), 10))
+            .some((x: number) => x < 0 || x > maxState);
+
+
+          if (invalidState) {
+            errors.push({
+              nodeId: node.id,
+              nodeType: node.type,
+              description:
+                `Universal Oracle "${node.id}" contains marked states outside register range 0-${maxState}.`,
+            });
+          }
+        }
+
+
+        const outgoing = outgoingConnections.get(node.id) || [];
+        if (outgoing.length === 0) {
+          warnings.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description:
+              `Universal Oracle "${node.id}" output is not connected.`,
+          });
+        }
+      }
+
+
+
+      // Deutsch-Jozsa Validation
+      if (
+        node.type === "deutsch-jozsa" ||
+        node.data?.label === "Deutsch-Jozsa Algorithm"
+      ) {
+
+        const numQubits = parseInt(node.data?.numQubits, 10);
+
+        if (!numQubits || numQubits <= 0) {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description:
+              `Deutsch-Jozsa node "${node.id}" requires a valid number of qubits.`,
+          });
+        }
+
+
+        const oracleType = node.data?.oracleType;
+
+        if (!["balanced", "constant"].includes(oracleType)) {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description:
+              `Deutsch-Jozsa node "${node.id}" has invalid oracle type "${oracleType}".`,
+          });
+        }
+
+
+        if (oracleType === "balanced") {
+
+          const mask = parseInt(node.data?.balancedMask, 10);
+
+          if (isNaN(mask)) {
+            errors.push({
+              nodeId: node.id,
+              nodeType: node.type,
+              description:
+                `Deutsch-Jozsa balanced oracle requires a mask value.`,
+            });
+          }
+          else if (numQubits && mask >= (1 << numQubits)) {
+            errors.push({
+              nodeId: node.id,
+              nodeType: node.type,
+              description:
+                `Deutsch-Jozsa balanced mask ${mask} exceeds ${numQubits}-qubit input range.`,
+            });
+          }
+        }
+
+
+        if (
+          oracleType === "constant" &&
+          ![0, 1].includes(Number(node.data?.constantValue))
+        ) {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description:
+              `Deutsch-Jozsa constant value must be either 0 or 1.`,
+          });
+        }
+
+
+        const outgoing = outgoingConnections.get(node.id) || [];
+
+        if (outgoing.length === 0) {
+          warnings.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description:
+              `Deutsch-Jozsa node "${node.id}" output is not connected.`,
+          });
+        }
+      }
+
+
+      if (node.type === "universal-oracle") {
+        const markedStates = node.data?.markedStates;
+
+        if (!markedStates || markedStates.trim() === "") {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description:
+              `Grover node "${node.id}" requires marked states.`,
+          });
+        }
+
+      }
+      // Grover Algorithm Validation
+      if (
+        node.type === "grover" ||
+        node.data?.label === "Grover Algorithm"
+      ) {
+
+        const numQubits = parseInt(node.data?.numQubits, 10);
+
+        if (!numQubits || numQubits <= 0) {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description:
+              `Grover node "${node.id}" requires a valid number of qubits.`,
+          });
+        }
+
+
+        const iterations = Number(node.data?.iterations);
+
+        if (iterations !== undefined && iterations <= 0) {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description:
+              `Grover iteration count must be greater than zero.`,
+          });
+        }
+
+
+        const markedStates = node.data?.markedStates;
+
+        if (!markedStates || markedStates.trim() === "") {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description:
+              `Grover node "${node.id}" requires marked states.`,
+          });
+        }
+        else if (!/^\d+(?:\s*,\s*\d+)*$/.test(markedStates)) {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description:
+              `Grover marked states must be comma-separated integers.`,
+          });
+        }
+        else if (numQubits) {
+
+          const maxState = (1 << numQubits) - 1;
+
+          const invalid =
+            markedStates
+              .split(",")
+              .map((x: string) => parseInt(x.trim(), 10))
+              .some((x: number) => x > maxState);
+
+
+          if (invalid) {
+            errors.push({
+              nodeId: node.id,
+              nodeType: node.type,
+              description:
+                `Grover marked states exceed the ${numQubits}-qubit range (0-${maxState}).`,
+            });
+          }
+        }
+
+
+        const outgoing = outgoingConnections.get(node.id) || [];
+
+        if (outgoing.length === 0) {
+          warnings.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description:
+              `Grover node "${node.id}" output is not connected.`,
+          });
+        }
+      }
       // Plugin Node Validation
       if (node.type === "pluginNode") {
         const dataInputs = node.data?.dataInputs || [];
@@ -1500,6 +1756,7 @@ If none apply, return { "algorithms": [] }.
           "Executing this flow will not produce meaningful results.",
       });
     }
+
 
 
 
@@ -1870,227 +2127,227 @@ If none apply, return { "algorithms": [] }.
     }
   }, [domainProfile, allDomainProfiles]);
 
-const onDrop = React.useCallback(
-  (event: any) => {
-    console.log("dropped");
-    console.log("collab mode", collaborationModeOn);
+  const onDrop = React.useCallback(
+    (event: any) => {
+      console.log("dropped");
+      console.log("collab mode", collaborationModeOn);
 
-    event.preventDefault();
+      event.preventDefault();
 
-    const label = event.dataTransfer.getData("application/reactflow/label");
+      const label = event.dataTransfer.getData("application/reactflow/label");
 
-    if (label == qaoa) {
-      loadFlow(qaoa_algorithm);
-      return;
-    } else if (label == swap_test) {
-      loadFlow(swap_test_algorithm);
-      return;
-    } else if (label == hadamard_test_imaginary_part) {
-      loadFlow(hadamard_test_imaginary_part_algorithm);
-      return;
-    } else if (label == hadamard_test_real_part) {
-      loadFlow(hadamard_test_real_part_algorithm);
-      return;
-    } else if (label == grover) {
-      loadFlow(grover_algorithm);
-      return;
-    } else if (label == quantum_k_means) {
-      loadFlow(quantum_k_means_algorithm);
-      return;
-    } else if (label.startsWith(custom_template)) {
-      const userTemplateFlowData = JSON.parse(
-        event.dataTransfer.getData(
-          "application/reactflow/templateFlowData"
-        )
-      );
+      if (label == qaoa) {
+        loadFlow(qaoa_algorithm);
+        return;
+      } else if (label == swap_test) {
+        loadFlow(swap_test_algorithm);
+        return;
+      } else if (label == hadamard_test_imaginary_part) {
+        loadFlow(hadamard_test_imaginary_part_algorithm);
+        return;
+      } else if (label == hadamard_test_real_part) {
+        loadFlow(hadamard_test_real_part_algorithm);
+        return;
+      } else if (label == grover) {
+        loadFlow(grover_algorithm);
+        return;
+      } else if (label == quantum_k_means) {
+        loadFlow(quantum_k_means_algorithm);
+        return;
+      } else if (label.startsWith(custom_template)) {
+        const userTemplateFlowData = JSON.parse(
+          event.dataTransfer.getData(
+            "application/reactflow/templateFlowData"
+          )
+        );
 
-      if (userTemplateFlowData) {
-        loadFlow(userTemplateFlowData);
-      } else {
-        console.error(`User Template ${label} not found.`);
+        if (userTemplateFlowData) {
+          loadFlow(userTemplateFlowData);
+        } else {
+          console.error(`User Template ${label} not found.`);
+        }
+
+        return;
       }
 
-      return;
-    }
+      console.log("current categories", currentCategories);
 
-    console.log("current categories", currentCategories);
+      if (!reactFlowWrapper) return;
 
-    if (!reactFlowWrapper) return;
+      const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
 
-    const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
-
-    const type = event.dataTransfer.getData("application/reactflow");
-    const dataType = event.dataTransfer.getData(
-      "application/reactflow/dataType"
-    );
-
-    if (!type) {
-      return;
-    }
-
-    const def = findNodeDefinition(type, label, currentCategories);
-
-    console.log("found node", def);
-
-    const getId = () => crypto.randomUUID();
-
-    const compactOptions = def?.compactOptions ?? [];
-
-    const position = reactFlowInstance.project({
-      x: event.clientX - reactFlowBounds.left,
-      y: event.clientY - reactFlowBounds.top,
-    });
-
-
-    // ================================
-    // GET PLUGIN METADATA HERE
-    // ================================
-    const pluginDataRaw = event.dataTransfer.getData(
-      "application/reactflow/pluginData"
-    );
-
-    const pluginData = pluginDataRaw
-      ? JSON.parse(pluginDataRaw)
-      : null;
-
-
-    console.log("PLUGIN DATA FROM DROP", pluginData);
-
-
-    const newNode = {
-      id: getId(),
-      type,
-      position,
-
-      data: {
-        label,
-
-        inputs: [],
-        outputs: [],
-
-        children: [],
-
-        implementation: "",
-        implementationType: "",
-        uncomputeImplementationType: "",
-        uncomputeImplementation: "",
-
-        completionGuaranteed:
-          def?.completionGuaranteed ?? false,
-
-        compactOptions,
-
-
-        // =====================================
-        // PLUGIN NODE DATA
-        // =====================================
-        ...(type === PluginNode && {
-          pluginName: pluginData?.name,
-
-          dataInputs:
-            pluginData?.mockDataInputs ?? [],
-
-          dataOutputs:
-            pluginData?.mockDataOutputs ?? [],
-        }),
-
-
-        ...(def?.properties && {
-          properties: def.properties,
-        }),
-
-        ...(def?.constraints && {
-          constraints: def.constraints,
-        }),
-
-        ...(def?.mapping && {
-          mapping: def.mapping,
-        }),
-
-        ...(def?.description && {
-          description: def.description,
-        }),
-
-        ...(def?.outputType && {
-          outputType: def.outputType,
-        }),
-
-        ...(def?.icon && {
-          icon: def.icon,
-        }),
-
-        ...(def?.isDataType && {
-          isDataType: def.isDataType,
-        }),
-      },
-    };
-
-
-    console.log("CREATED NODE", newNode);
-
-
-    setNodes(newNode);
-
-
-    const activeName =
-      cursors[myClientId]?.name ||
-      userName ||
-      "unknown";
-
-
-    if (collaborationModeOn) {
-
-      console.log(
-        "ON DROP: collab mode on",
-        collaborationModeOn
+      const type = event.dataTransfer.getData("application/reactflow");
+      const dataType = event.dataTransfer.getData(
+        "application/reactflow/dataType"
       );
 
-      nodesMap.set(
-        newNode.id,
-        newNode
+      if (!type) {
+        return;
+      }
+
+      const def = findNodeDefinition(type, label, currentCategories);
+
+      console.log("found node", def);
+
+      const getId = () => crypto.randomUUID();
+
+      const compactOptions = def?.compactOptions ?? [];
+
+      const position = reactFlowInstance.project({
+        x: event.clientX - reactFlowBounds.left,
+        y: event.clientY - reactFlowBounds.top,
+      });
+
+
+      // ================================
+      // GET PLUGIN METADATA HERE
+      // ================================
+      const pluginDataRaw = event.dataTransfer.getData(
+        "application/reactflow/pluginData"
       );
 
+      const pluginData = pluginDataRaw
+        ? JSON.parse(pluginDataRaw)
+        : null;
 
-      historyArray.push([
-        {
-          type: "node-added",
-          nodeId: newNode.id,
-          label: newNode.data?.label,
-          userId: activeName,
-          user: activeName,
-          timestamp: Date.now(),
+
+      console.log("PLUGIN DATA FROM DROP", pluginData);
+
+
+      const newNode = {
+        id: getId(),
+        type,
+        position,
+
+        data: {
+          label,
+
+          inputs: [],
+          outputs: [],
+
+          children: [],
+
+          implementation: "",
+          implementationType: "",
+          uncomputeImplementationType: "",
+          uncomputeImplementation: "",
+
+          completionGuaranteed:
+            def?.completionGuaranteed ?? false,
+
+          compactOptions,
+
+
+          // =====================================
+          // PLUGIN NODE DATA
+          // =====================================
+          ...(type === PluginNode && {
+            pluginName: pluginData?.name,
+
+            dataInputs:
+              pluginData?.mockDataInputs ?? [],
+
+            dataOutputs:
+              pluginData?.mockDataOutputs ?? [],
+          }),
+
+
+          ...(def?.properties && {
+            properties: def.properties,
+          }),
+
+          ...(def?.constraints && {
+            constraints: def.constraints,
+          }),
+
+          ...(def?.mapping && {
+            mapping: def.mapping,
+          }),
+
+          ...(def?.description && {
+            description: def.description,
+          }),
+
+          ...(def?.outputType && {
+            outputType: def.outputType,
+          }),
+
+          ...(def?.icon && {
+            icon: def.icon,
+          }),
+
+          ...(def?.isDataType && {
+            isDataType: def.isDataType,
+          }),
         },
-      ]);
+      };
 
 
-      console.log(
-        "ADD NODE HISTORY",
-        historyArray.toArray()
-      );
-
-      console.log(
-        "shared nodes",
-        Array.from(nodesMap.values())
-      );
-
-      console.log(
-        "shared edges",
-        Array.from(edgesMap.values())
-      );
-    }
+      console.log("CREATED NODE", newNode);
 
 
-    console.log("nodes", nodes);
+      setNodes(newNode);
 
-  },
-  [
-    reactFlowInstance,
-    setNodes,
-    currentCategories,
-    collaborationModeOn,
-    cursors,
-  ]
-);
+
+      const activeName =
+        cursors[myClientId]?.name ||
+        userName ||
+        "unknown";
+
+
+      if (collaborationModeOn) {
+
+        console.log(
+          "ON DROP: collab mode on",
+          collaborationModeOn
+        );
+
+        nodesMap.set(
+          newNode.id,
+          newNode
+        );
+
+
+        historyArray.push([
+          {
+            type: "node-added",
+            nodeId: newNode.id,
+            label: newNode.data?.label,
+            userId: activeName,
+            user: activeName,
+            timestamp: Date.now(),
+          },
+        ]);
+
+
+        console.log(
+          "ADD NODE HISTORY",
+          historyArray.toArray()
+        );
+
+        console.log(
+          "shared nodes",
+          Array.from(nodesMap.values())
+        );
+
+        console.log(
+          "shared edges",
+          Array.from(edgesMap.values())
+        );
+      }
+
+
+      console.log("nodes", nodes);
+
+    },
+    [
+      reactFlowInstance,
+      setNodes,
+      currentCategories,
+      collaborationModeOn,
+      cursors,
+    ]
+  );
 
   const onNodesDelete = useCallback(() => {
     setContextMenu((prev) => ({ ...prev, visible: false })); // contextMenu disappears when node is deleted
@@ -3005,10 +3262,17 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
 
 
   const onPaneClick = useCallback(() => {
+    setSelectedNode(null);
+    for (const node of nodes) {
+      updateNodeValue(node.id, "selected", "false");
+    }
+
+
+
     if (!collaborationModeOn) return;
     let findAny = false;
     const currentCursorState = awareness.getLocalState()?.cursor || {};
-     
+
     setMenu(null);
     setContextMenu((prev) => ({ ...prev, visible: false })); // contextMenu disappears when clicking on pane
     setSelectedNode(null);
@@ -3028,8 +3292,8 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     setExperienceLevelOn(event);
     const bool_value = (experienceLevel === "pioneer") ? false : true; // if previous experience level was pioneer...
     setCompactVisualization(bool_value)
-    setAncillaMode(bool_value)
-    setAncillaModelingOn(bool_value)
+    //setAncillaMode(bool_value)
+    //setAncillaModelingOn(bool_value)
     //updateNodeInternals since ancilla mode changes number of handles
     nodes.forEach((node) => {
       updateNodeInternals(node.id);
@@ -3039,12 +3303,12 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
 
 
   const onToggleAncilla = () => {
-    setAncillaModelingOn(!ancillaModelingOn);
-    setAncillaMode(!ancillaModelingOn);
+    //setAncillaModelingOn(!ancillaModelingOn);
+    //setAncillaMode(!ancillaModelingOn);
     //updateNodeInternals since ancilla mode changes number of handles
-    nodes.forEach((node) => {
-      updateNodeInternals(node.id);
-    })
+    //nodes.forEach((node) => {
+    //updateNodeInternals(node.id);
+    //})
   }
 
   const onToggleCollaborationMode = useCallback(() => {
@@ -3789,14 +4053,6 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
         setCompilationTarget={setCompilationTarget}
         sendToBackend={sendToBackend}
       />
-      <Modal
-        title={compilationTarget === "qiskit" ? "Generated Qiskit" : "Generated Code"}
-        open={showResultModal}
-        onClose={() => setShowResultModal(false)}
-        className="w-[80vw] max-w-4xl"
-      >
-        <pre className="text-sm overflow-auto max-h-[70vh] whitespace-pre-wrap bg-gray-50 p-3 rounded border">{openqasmCode}</pre>
-      </Modal>
 
       <ConfigModal
         open={isConfigOpen}
@@ -4247,6 +4503,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
             {isPanelOpen && <CustomPanel metadata={metadata} onUpdateMetadata={setMetadata} />}
           </div>
         </div>
+
 
 
       </main>
