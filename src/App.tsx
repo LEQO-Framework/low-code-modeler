@@ -1432,7 +1432,7 @@ If none apply, return { "algorithms": [] }.
         }
       }
 
-            // Universal Oracle Validation
+      // Universal Oracle Validation
       if (node.type === "oracleNode" || node.data?.label === "Universal Oracle") {
         const connectedInput = connectedSources.length > 0;
 
@@ -1461,7 +1461,7 @@ If none apply, return { "algorithms": [] }.
             nodeType: node.type,
             description: `Universal Oracle "${node.id}" requires at least one marked state.`,
           });
-        } 
+        }
         else if (!/^\d+(?:\s*,\s*\d+)*$/.test(targetStates.trim())) {
           errors.push({
             nodeId: node.id,
@@ -1486,8 +1486,8 @@ If none apply, return { "algorithms": [] }.
 
           const invalidState = targetStates
             .split(",")
-            .map((x:string)=>parseInt(x.trim(),10))
-            .some((x:number)=>x < 0 || x > maxState);
+            .map((x: string) => parseInt(x.trim(), 10))
+            .some((x: number) => x < 0 || x > maxState);
 
 
           if (invalidState) {
@@ -1520,7 +1520,7 @@ If none apply, return { "algorithms": [] }.
         node.data?.label === "Deutsch-Jozsa Algorithm"
       ) {
 
-        const numQubits = parseInt(node.data?.numQubits,10);
+        const numQubits = parseInt(node.data?.numQubits, 10);
 
         if (!numQubits || numQubits <= 0) {
           errors.push({
@@ -1534,7 +1534,7 @@ If none apply, return { "algorithms": [] }.
 
         const oracleType = node.data?.oracleType;
 
-        if (!["balanced","constant"].includes(oracleType)) {
+        if (!["balanced", "constant"].includes(oracleType)) {
           errors.push({
             nodeId: node.id,
             nodeType: node.type,
@@ -1546,7 +1546,7 @@ If none apply, return { "algorithms": [] }.
 
         if (oracleType === "balanced") {
 
-          const mask = parseInt(node.data?.balancedMask,10);
+          const mask = parseInt(node.data?.balancedMask, 10);
 
           if (isNaN(mask)) {
             errors.push({
@@ -1569,7 +1569,7 @@ If none apply, return { "algorithms": [] }.
 
         if (
           oracleType === "constant" &&
-          ![0,1].includes(Number(node.data?.constantValue))
+          ![0, 1].includes(Number(node.data?.constantValue))
         ) {
           errors.push({
             nodeId: node.id,
@@ -1582,7 +1582,7 @@ If none apply, return { "algorithms": [] }.
 
         const outgoing = outgoingConnections.get(node.id) || [];
 
-        if(outgoing.length===0){
+        if (outgoing.length === 0) {
           warnings.push({
             nodeId: node.id,
             nodeType: node.type,
@@ -1593,10 +1593,10 @@ If none apply, return { "algorithms": [] }.
       }
 
 
-      if(node.type === "universal-oracle") {
+      if (node.type === "universal-oracle") {
         const markedStates = node.data?.markedStates;
 
-        if(!markedStates || markedStates.trim()===""){
+        if (!markedStates || markedStates.trim() === "") {
           errors.push({
             nodeId: node.id,
             nodeType: node.type,
@@ -1612,9 +1612,9 @@ If none apply, return { "algorithms": [] }.
         node.data?.label === "Grover Algorithm"
       ) {
 
-        const numQubits = parseInt(node.data?.numQubits,10);
+        const numQubits = parseInt(node.data?.numQubits, 10);
 
-        if(!numQubits || numQubits <=0){
+        if (!numQubits || numQubits <= 0) {
           errors.push({
             nodeId: node.id,
             nodeType: node.type,
@@ -1626,7 +1626,7 @@ If none apply, return { "algorithms": [] }.
 
         const iterations = Number(node.data?.iterations);
 
-        if(iterations !== undefined && iterations <=0){
+        if (iterations !== undefined && iterations <= 0) {
           errors.push({
             nodeId: node.id,
             nodeType: node.type,
@@ -1638,7 +1638,7 @@ If none apply, return { "algorithms": [] }.
 
         const markedStates = node.data?.markedStates;
 
-        if(!markedStates || markedStates.trim()===""){
+        if (!markedStates || markedStates.trim() === "") {
           errors.push({
             nodeId: node.id,
             nodeType: node.type,
@@ -1646,7 +1646,7 @@ If none apply, return { "algorithms": [] }.
               `Grover node "${node.id}" requires marked states.`,
           });
         }
-        else if(!/^\d+(?:\s*,\s*\d+)*$/.test(markedStates)){
+        else if (!/^\d+(?:\s*,\s*\d+)*$/.test(markedStates)) {
           errors.push({
             nodeId: node.id,
             nodeType: node.type,
@@ -1654,21 +1654,21 @@ If none apply, return { "algorithms": [] }.
               `Grover marked states must be comma-separated integers.`,
           });
         }
-        else if(numQubits){
+        else if (numQubits) {
 
-          const maxState=(1<<numQubits)-1;
+          const maxState = (1 << numQubits) - 1;
 
           const invalid =
             markedStates
-            .split(",")
-            .map((x:string)=>parseInt(x.trim(),10))
-            .some((x:number)=>x>maxState);
+              .split(",")
+              .map((x: string) => parseInt(x.trim(), 10))
+              .some((x: number) => x > maxState);
 
 
-          if(invalid){
+          if (invalid) {
             errors.push({
-              nodeId:node.id,
-              nodeType:node.type,
+              nodeId: node.id,
+              nodeType: node.type,
               description:
                 `Grover marked states exceed the ${numQubits}-qubit range (0-${maxState}).`,
             });
@@ -1676,12 +1676,12 @@ If none apply, return { "algorithms": [] }.
         }
 
 
-        const outgoing = outgoingConnections.get(node.id)||[];
+        const outgoing = outgoingConnections.get(node.id) || [];
 
-        if(outgoing.length===0){
+        if (outgoing.length === 0) {
           warnings.push({
-            nodeId:node.id,
-            nodeType:node.type,
+            nodeId: node.id,
+            nodeType: node.type,
             description:
               `Grover node "${node.id}" output is not connected.`,
           });
@@ -1756,7 +1756,7 @@ If none apply, return { "algorithms": [] }.
           "Executing this flow will not produce meaningful results.",
       });
     }
-    
+
 
 
 
@@ -4460,7 +4460,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
               zoomable={true}
               pannable={true}
             />
-    
+            <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
           </ReactFlow>
 
           {contextMenu.visible && contextMenu.nodeId && (
@@ -4503,6 +4503,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
             {isPanelOpen && <CustomPanel metadata={metadata} onUpdateMetadata={setMetadata} />}
           </div>
         </div>
+
 
 
       </main>
