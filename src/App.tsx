@@ -4402,6 +4402,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
             ref={ref}
             nodes={collaborationModeOn ? nodesI : nodes}
             edges={collaborationModeOn ? edgesI : edges}
+            deleteKeyCode={["Backspace", "Delete"]}
             onNodesChange={collaborationModeOn ? onNodesChangeSync : onNodesChange} // TODO: onNodesChange if no collab mode
             onEdgesChange={onEdgesChange} // TODO: onEdgesChangeSync for collab mode (deletion of edge)
             onNodeContextMenu={onNodeContextMenu}

@@ -65,7 +65,7 @@ The central *canvas area* serves as the main workspace for diagram construction.
 - Locking the canvas via controls located at the bottom left
 - Keyboard shortcuts:
 
-   - *Delete* to remove selected nodes
+   - *Delete* / *Backspace* to remove selected nodes
    - *Arrow keys* to move selected nodes
    - *Shift + Arrow keys* to move selected nodes with larger steps
    - Hold *Shift* while selecting to select multiple nodes
