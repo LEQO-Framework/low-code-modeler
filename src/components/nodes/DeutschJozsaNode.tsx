@@ -3,9 +3,9 @@ import { Node } from "reactflow";
 import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
 import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
 import OutputPort from "../utils/outputPort";
 import { awareness } from "@/yjs";
+import { AlertCircle } from "lucide-react";
 
 const selector = (state: any) => ({
   updateNodeValue: state.updateNodeValue,
@@ -32,6 +32,18 @@ export const DeutschJozsaNode = memo((node: Node) => {
   const [mixedView, setMixedView] = useState(false);
   const [hasPioneerUser, setHasPioneerUser] = useState(false);
   const [hasExplorerUser, setHasExplorerUser] = useState(false);
+  const [missingQubitsError, setMissingQubitsError] = useState(false);
+const [missingMaskError, setMissingMaskError] = useState(false);
+
+useEffect(() => {
+  setMissingQubitsError(numQubitsStr.trim() === "");
+
+  if (oracleType === "balanced") {
+    setMissingMaskError(balancedMaskStr.trim() === "");
+  } else {
+    setMissingMaskError(false);
+  }
+}, [numQubitsStr, balancedMaskStr, oracleType]);
 
   // Monitor awareness states for active users and their selected roles/experience levels
   useEffect(() => {
@@ -113,7 +125,6 @@ export const DeutschJozsaNode = memo((node: Node) => {
   return (
     <div
       className="grand-parent"
-      initial={false}
       style={{ width: 320, height: 400 }}
     >
       <div className="grand-parent">
@@ -130,6 +141,28 @@ export const DeutschJozsaNode = memo((node: Node) => {
               : undefined,
             height: `400px`
           }}>
+          {missingQubitsError && (
+  <div className="absolute top-2 right-[-40px] group z-20">
+    <AlertCircle className="text-red-600 w-5 h-5" />
+    <div className="absolute top-5 left-[30px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[180px] whitespace-nowrap">
+      Number of qubits is required.
+    </div>
+  </div>
+)}
+
+{missingMaskError && (
+  <div className="absolute top-2 right-[-40px] group z-20">
+    <AlertCircle className="text-red-600 w-5 h-5" />
+    <div
+      className="absolute left-[30px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[180px] whitespace-nowrap"
+      style={{
+        top: missingQubitsError ? "50px" : "35px",
+      }}
+    >
+      Balanced mask is required.
+    </div>
+  </div>
+)}
           {/* HEADER */}
           <div className="w-full flex items-center" style={{ height: '52px' }}>
             <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>

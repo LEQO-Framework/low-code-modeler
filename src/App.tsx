@@ -3796,14 +3796,6 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
         setCompilationTarget={setCompilationTarget}
         sendToBackend={sendToBackend}
       />
-      <Modal
-        title={compilationTarget === "qiskit" ? "Generated Qiskit" : "Generated Code"}
-        open={showResultModal}
-        onClose={() => setShowResultModal(false)}
-        className="w-[80vw] max-w-4xl"
-      >
-        <pre className="text-sm overflow-auto max-h-[70vh] whitespace-pre-wrap bg-gray-50 p-3 rounded border">{openqasmCode}</pre>
-      </Modal>
 
       <ConfigModal
         open={isConfigOpen}

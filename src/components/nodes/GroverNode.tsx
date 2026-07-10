@@ -4,7 +4,8 @@ import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
 import { cn } from "@/lib/utils";
 import OutputPort from "../utils/outputPort";
-import { awareness } from "@/yjs"; // Imported the room awareness configuration
+import { awareness } from "@/yjs";
+import { AlertCircle } from "lucide-react";
 
 const selector = (state: any) => ({
   updateNodeValue: state.updateNodeValue,
@@ -31,6 +32,12 @@ export const GroverNode = memo((node: Node) => {
   const [hasPioneerUser, setHasPioneerUser] = useState(false);
   const [hasExplorerUser, setHasExplorerUser] = useState(false);
 
+  const [missingQubitsError, setMissingQubitsError] = useState(false);
+  const [missingTargetStatesError, setMissingTargetStatesError] = useState(false);
+  useEffect(() => {
+    setMissingQubitsError(numQubitsStr.trim() === "");
+    setMissingTargetStatesError(targetStates.trim() === "");
+  }, [numQubitsStr, targetStates]);
 
   const [remoteHighlightColor, setRemoteHighlightColor] = useState<string | null>(null);
   const [selectingUserName, setSelectingUserName] = useState<string | null>(null); // technically not needed, could extend functionality to also show user name next to highlighted node
@@ -121,6 +128,28 @@ export const GroverNode = memo((node: Node) => {
               : undefined,
             height: `420px`
           }}>
+            {missingQubitsError && (
+  <div className="absolute top-2 right-[-40px] group z-20">
+    <AlertCircle className="text-red-600 w-5 h-5" />
+    <div className="absolute top-5 left-[30px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
+      Number of qubits is required.
+    </div>
+  </div>
+)}
+
+{missingTargetStatesError && (
+  <div className="absolute top-2 right-[-40px] group z-20">
+    <AlertCircle className="text-red-600 w-5 h-5" />
+    <div
+      className="absolute left-[30px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap"
+      style={{
+        top: missingQubitsError ? "50px" : "35px",
+      }}
+    >
+      Marked states are required.
+    </div>
+  </div>
+)}
 
           {/* HEADER */}
           <div className="w-full flex items-center" style={{ height: '52px' }}>
@@ -199,8 +228,8 @@ export const GroverNode = memo((node: Node) => {
                   const val = e.target.value.replace(/[^a-zA-Z0-9,\s]/g, "");
                   setTargetStates(val);
                   handleChange("targetStates", val);
-                   const hasLetters = /[a-zA-Z]/.test(val);
-  setContainsPlaceholder(hasLetters);
+                  const hasLetters = /[a-zA-Z]/.test(val);
+                  setContainsPlaceholder(hasLetters);
                 }}
               />
               <p className="text-[10px] text-gray-500 mt-1 text-center">

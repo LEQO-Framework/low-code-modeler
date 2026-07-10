@@ -163,7 +163,12 @@ const STATE_PREPERATION_EXPLANATIONS: Record<string, string> = {
     "Maps classical values to quantum states using a user-defined implementation.",
 
   ["Angle Encoding"]:
-     "Encodes an array of classical values into a quantum state using rotation gates. For each input value xi, the corresponding qubit is rotated by RY(2xi).",
+    "Encodes an array of classical values into a quantum state using rotation gates. For each input value xi, the corresponding qubit is rotated by RY(2xi).",
+  ["Amplitude Encoding"]:
+    "Encodes an array of numbers using less qubits than basis encoding but requires more depth.",
+  ["Matrix Encoding"]:
+    "Encodes a non-unitary matrix into a unitary matrix."
+  ,
   ["Prepare State"]:
     "Initializes the quantum register in a predefined quantum state, such as a basis state, Bell state, GHZ state or W state. Specify size if the state is not a Bell state."
 };
@@ -397,7 +402,7 @@ export const TextPanel = () => {
           </div>
         )}
 
-        
+
 
         {selectedNode?.data.label === "Encode Value" && (
           <div className="p-2 mt-3">
