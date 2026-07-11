@@ -579,6 +579,16 @@ If none apply, return { "algorithms": [] }.
 
   const isSyncingFromRemote = useRef(false);
 
+  const stripTransientNodeState = useCallback((node: Node) => {
+    const { selected, dragging, positionAbsolute, ...rest } = node as Node & {
+      selected?: boolean;
+      dragging?: boolean;
+      positionAbsolute?: { x: number; y: number };
+    };
+
+    return rest;
+  }, []);
+
   // EFFECT 1: Remote-to-Local (Yjs to Zustand & nodesI)
   useEffect(() => {
     if (!collaborationModeOn) return;
@@ -587,7 +597,22 @@ If none apply, return { "algorithms": [] }.
       // set flag, so that this is ignored by effect 2
       isSyncingFromRemote.current = true;
 
-      const sharedNodes: any = Array.from(nodesMap.values());
+      const localNodes = useStore.getState().nodes;
+      const localNodesById = new Map<string, Node>(localNodes.map((node: Node) => [node.id, node]));
+
+      const sharedNodes: any = Array.from(nodesMap.values()).map((sharedNode: any) => {
+        const localNode = localNodesById.get(sharedNode.id);
+
+        if (!localNode) {
+          return sharedNode;
+        }
+
+        return {
+          ...sharedNode,
+          selected: localNode.selected,
+          dragging: localNode.dragging,
+        };
+      });
       const sharedEdges: any = Array.from(edgesMap.values());
 
       // Update the local rendering tracking arrays
@@ -632,8 +657,8 @@ If none apply, return { "algorithms": [] }.
     ydoc.transact(() => {
       // Sync local Zustand nodes to the network map
       nodes.forEach((node) => {
-        // remove selected property from local node, so it isn't broadcasted to other users (messes up highlighting of selected nodes)
-        const { selected, ...nodeData } = node;
+        // Keep transient React Flow interaction state local.
+        const nodeData = stripTransientNodeState(node);
 
         const remoteNode = nodesMap.get(node.id);
         if (!remoteNode || JSON.stringify(remoteNode) !== JSON.stringify(nodeData)) {
@@ -2221,6 +2246,10 @@ If none apply, return { "algorithms": [] }.
         id: getId(),
         type,
         position,
+
+        selected: false,
+        selectable: true,
+        draggable: true,
 
         data: {
           label,
@@ -3872,10 +3901,18 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
       return !owner || owner === myClientId;
     });
 
-    // 🧠 Apply changes locally
-    const updatedNodes = applyNodeChanges(allowedChanges, nodesI);
+    // 🧠 Apply changes against the latest React Flow node snapshot.
+    const currentNodes = reactFlowInstance?.getNodes?.() ?? nodesI;
+    const updatedNodes = applyNodeChanges(allowedChanges, currentNodes);
+    console.log(
+      "SELECTION STATES AFTER CHANGE",
+      updatedNodes
+        .filter(n => n.selected)
+        .map(n => n.id)
+    );
+
     setNodesI(updatedNodes);
-    updatedNodes.forEach(n => nodesMap.set(n.id, n)); // ???
+    updatedNodes.forEach((node) => nodesMap.set(node.id, stripTransientNodeState(node)));
 
     // 🔁 Sync with React Flow
     onNodesChange(allowedChanges);
