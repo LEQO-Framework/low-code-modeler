@@ -4460,6 +4460,8 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
             onEdgesDelete={onEdgesDelete} // TODO: weglassen oder onEdgesDeleteSync erstellen?
             onSelectionChange={onSelectionChange}
 
+            multiSelectionKeyCode="Shift"
+            selectionKeyCode="Shift"
             fitView
             fitViewOptions={{ maxZoom: 1 }}
             onInit={setReactFlowInstance}
