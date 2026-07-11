@@ -1622,7 +1622,7 @@ If none apply, return { "algorithms": [] }.
 
 
       if (node.type === "universal-oracle") {
-        const markedStates = node.data?.markedStates;
+        const markedStates = node.data?.targetStates;
 
         if (!markedStates || markedStates.trim() === "") {
           errors.push({
@@ -1664,7 +1664,7 @@ If none apply, return { "algorithms": [] }.
         }
 
 
-        const markedStates = node.data?.markedStates;
+        const markedStates = node.data?.targetStates;
 
         if (!markedStates || markedStates.trim() === "") {
           errors.push({
