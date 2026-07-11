@@ -56,6 +56,7 @@ import UserCountPanel from "./components/modals/userAwareness";
 import VersioningPanel from "./components/modals/versioningModal";
 import { EdgeChange } from "@xyflow/react";
 import PromptFlowModal from "./components/modals/promptFlowModal";
+import ShortcutHelpModal from "./components/modals/shortcutHelpModal";
 import { generateFlow, sendToMistral } from "./generation";
 import { openQasmToFlow } from "./qasmConverter";
 
@@ -4460,6 +4461,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
           )}
 
             <Controls />
+            <ShortcutHelpModal />
             {Object.entries(cursors).length > 1 && collaborationModeOn && Object.entries(cursors).map(([clientId, cursor]) => { // TODO: only if collaborationMode false
               const displayName = Number(clientId) === myClientId ? "Me" : cursor.name;
               return (
