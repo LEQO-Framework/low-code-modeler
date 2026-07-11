@@ -56,6 +56,7 @@ import UserCountPanel from "./components/modals/userAwareness";
 import VersioningPanel from "./components/modals/versioningModal";
 import { EdgeChange } from "@xyflow/react";
 import PromptFlowModal from "./components/modals/promptFlowModal";
+import ShortcutHelpModal from "./components/modals/shortcutHelpModal";
 import { generateFlow, sendToMistral } from "./generation";
 import { openQasmToFlow } from "./qasmConverter";
 
@@ -529,6 +530,8 @@ If none apply, return { "algorithms": [] }.
 
   const ref = useRef(null);
   const hasLoadedFromUrl = useRef(false);
+  const copiedSelectionRef = useRef<{ nodes: Node[]; edges: Edge[] } | null>(null);
+  const pasteCountRef = useRef(0);
 
   const onDragOver = React.useCallback(
     (event: React.DragEvent<HTMLDivElement>) => {
@@ -576,6 +579,16 @@ If none apply, return { "algorithms": [] }.
 
   const isSyncingFromRemote = useRef(false);
 
+  const stripTransientNodeState = useCallback((node: Node) => {
+    const { selected, dragging, positionAbsolute, ...rest } = node as Node & {
+      selected?: boolean;
+      dragging?: boolean;
+      positionAbsolute?: { x: number; y: number };
+    };
+
+    return rest;
+  }, []);
+
   // EFFECT 1: Remote-to-Local (Yjs to Zustand & nodesI)
   useEffect(() => {
     if (!collaborationModeOn) return;
@@ -584,7 +597,22 @@ If none apply, return { "algorithms": [] }.
       // set flag, so that this is ignored by effect 2
       isSyncingFromRemote.current = true;
 
-      const sharedNodes: any = Array.from(nodesMap.values());
+      const localNodes = useStore.getState().nodes;
+      const localNodesById = new Map<string, Node>(localNodes.map((node: Node) => [node.id, node]));
+
+      const sharedNodes: any = Array.from(nodesMap.values()).map((sharedNode: any) => {
+        const localNode = localNodesById.get(sharedNode.id);
+
+        if (!localNode) {
+          return sharedNode;
+        }
+
+        return {
+          ...sharedNode,
+          selected: localNode.selected,
+          dragging: localNode.dragging,
+        };
+      });
       const sharedEdges: any = Array.from(edgesMap.values());
 
       // Update the local rendering tracking arrays
@@ -629,8 +657,8 @@ If none apply, return { "algorithms": [] }.
     ydoc.transact(() => {
       // Sync local Zustand nodes to the network map
       nodes.forEach((node) => {
-        // remove selected property from local node, so it isn't broadcasted to other users (messes up highlighting of selected nodes)
-        const { selected, ...nodeData } = node;
+        // Keep transient React Flow interaction state local.
+        const nodeData = stripTransientNodeState(node);
 
         const remoteNode = nodesMap.get(node.id);
         if (!remoteNode || JSON.stringify(remoteNode) !== JSON.stringify(nodeData)) {
@@ -1594,7 +1622,7 @@ If none apply, return { "algorithms": [] }.
 
 
       if (node.type === "universal-oracle") {
-        const markedStates = node.data?.markedStates;
+        const markedStates = node.data?.targetStates;
 
         if (!markedStates || markedStates.trim() === "") {
           errors.push({
@@ -1636,7 +1664,7 @@ If none apply, return { "algorithms": [] }.
         }
 
 
-        const markedStates = node.data?.markedStates;
+        const markedStates = node.data?.targetStates;
 
         if (!markedStates || markedStates.trim() === "") {
           errors.push({
@@ -2218,6 +2246,10 @@ If none apply, return { "algorithms": [] }.
         id: getId(),
         type,
         position,
+
+        selected: false,
+        selectable: true,
+        draggable: true,
 
         data: {
           label,
@@ -2971,7 +3003,148 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     fileInput.click();
   }
 
-  useKeyBindings({ undo, redo });
+  const clearCurrentSelection = useCallback(() => {
+    if (!reactFlowInstance) {
+      return;
+    }
+
+    reactFlowInstance.setNodes((currentNodes: Node[]) =>
+      currentNodes.map((node) => ({
+        ...node,
+        selected: false,
+      }))
+    );
+    setSelectedNode(null);
+  }, [reactFlowInstance, setSelectedNode]);
+
+  const copySelectedNodes = useCallback(() => {
+    if (!reactFlowInstance) {
+      return;
+    }
+
+    const selectedNodes = (reactFlowInstance.getNodes() as Node[]).filter((node) => node.selected);
+    if (!selectedNodes.length) {
+      return;
+    }
+
+    const selectedNodeIds = new Set(selectedNodes.map((node) => node.id));
+    const selectedEdges = (reactFlowInstance.getEdges() as Edge[]).filter(
+      (edge) => selectedNodeIds.has(edge.source) && selectedNodeIds.has(edge.target)
+    );
+
+    copiedSelectionRef.current = {
+      nodes: structuredClone(selectedNodes),
+      edges: structuredClone(selectedEdges),
+    };
+    pasteCountRef.current = 0;
+  }, [reactFlowInstance]);
+
+  const pasteCopiedNodes = useCallback(() => {
+    if (!reactFlowInstance || !copiedSelectionRef.current?.nodes?.length) {
+      return;
+    }
+
+    const copiedSelection = copiedSelectionRef.current;
+    pasteCountRef.current += 1;
+
+    const offset = 40 * pasteCountRef.current;
+    const idMap = new Map<string, string>();
+
+    const newNodes = copiedSelection.nodes.map((node) => {
+      const newId = uuidv4();
+      idMap.set(node.id, newId);
+
+      return {
+        id: newId,
+        type: node.type,
+        data: structuredClone(node.data),
+        position: {
+          x: node.position.x + offset,
+          y: node.position.y + offset,
+        },
+        selected: true,
+        selectable: true,
+        draggable: true,
+      };
+    });
+
+    const newEdges = copiedSelection.edges
+      .map((edge) => {
+        const source = idMap.get(edge.source);
+        const target = idMap.get(edge.target);
+
+        if (!source || !target) {
+          return null;
+        }
+
+        return {
+          ...structuredClone(edge),
+          id: uuidv4(),
+          source,
+          target,
+          selected: false,
+        };
+      })
+      .filter(Boolean) as Edge[];
+
+    reactFlowInstance.setNodes((currentNodes: Node[]) =>
+      currentNodes.map((node) => ({
+        ...node,
+        selected: false,
+      }))
+    );
+
+    reactFlowInstance.addNodes(newNodes);
+    if (newEdges.length) {
+      reactFlowInstance.addEdges(newEdges);
+    }
+  }, [reactFlowInstance]);
+
+  const cutSelectedNodes = useCallback(() => {
+    if (!reactFlowInstance) {
+      return;
+    }
+
+    copySelectedNodes();
+    const selectedNodes = (reactFlowInstance.getNodes() as Node[]).filter((node) => node.selected);
+    if (!selectedNodes.length) {
+      return;
+    }
+
+    reactFlowInstance.deleteElements({
+      nodes: selectedNodes.map((node) => ({ id: node.id })),
+    });
+    setSelectedNode(null);
+  }, [copySelectedNodes, reactFlowInstance, setSelectedNode]);
+
+  const selectAllNodes = useCallback(() => {
+    if (!reactFlowInstance) {
+      return;
+    }
+
+    reactFlowInstance.setNodes((currentNodes: Node[]) =>
+      currentNodes.map((node) => ({
+        ...node,
+        selected: true,
+      }))
+    );
+  }, [reactFlowInstance]);
+
+  const duplicateSelectedNodes = useCallback(() => {
+    copySelectedNodes();
+    pasteCopiedNodes();
+  }, [copySelectedNodes, pasteCopiedNodes]);
+
+  useKeyBindings({
+    undo,
+    redo,
+    copy: copySelectedNodes,
+    paste: pasteCopiedNodes,
+    cut: cutSelectedNodes,
+    selectAll: selectAllNodes,
+    duplicate: duplicateSelectedNodes,
+    clearSelection: clearCurrentSelection,
+  });
 
   const [mySelectedNodeId, setMySelectedNodeId] = useState<string | null>(null);
 
@@ -3728,10 +3901,18 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
       return !owner || owner === myClientId;
     });
 
-    // 🧠 Apply changes locally
-    const updatedNodes = applyNodeChanges(allowedChanges, nodesI);
+    // 🧠 Apply changes against the latest React Flow node snapshot.
+    const currentNodes = reactFlowInstance?.getNodes?.() ?? nodesI;
+    const updatedNodes = applyNodeChanges(allowedChanges, currentNodes);
+    console.log(
+      "SELECTION STATES AFTER CHANGE",
+      updatedNodes
+        .filter(n => n.selected)
+        .map(n => n.id)
+    );
+
     setNodesI(updatedNodes);
-    updatedNodes.forEach(n => nodesMap.set(n.id, n)); // ???
+    updatedNodes.forEach((node) => nodesMap.set(node.id, stripTransientNodeState(node)));
 
     // 🔁 Sync with React Flow
     onNodesChange(allowedChanges);
@@ -4259,24 +4440,35 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
             ref={ref}
             nodes={collaborationModeOn ? nodesI : nodes}
             edges={collaborationModeOn ? edgesI : edges}
+
+            // Selection
+            deleteKeyCode={["Backspace", "Delete"]}
+            multiSelectionKeyCode="Shift"
+            selectionKeyCode="Shift"
+
+            // Node events
             onNodesChange={collaborationModeOn ? onNodesChangeSync : onNodesChange} // TODO: onNodesChange if no collab mode
-            onEdgesChange={onEdgesChange} // TODO: onEdgesChangeSync for collab mode (deletion of edge)
             onNodeContextMenu={onNodeContextMenu}
             onNodeClick={(event: React.MouseEvent, node: Node) => {
               handleClick(event, node);
             }}
-            onConnectEnd={onConnectEnd}
-            onConnect={collaborationModeOn ? onConnectSync : onConnect} // TODO: onConnect if no collab mode
-            onPaneClick={onPaneClick}
-            onClick={onClick}
-            onDragOver={onDragOver}
             onNodeDrag={onNodeDrag}
             onNodeDragStop={onNodeDragStop}
-            onDrop={onDrop}
-            onMouseMove={handleMouseMove}
-            onNodesDelete={onNodesDelete} // TODO: weglassen oder onNodesDeleteSync erstellen?
-            onEdgesDelete={onEdgesDelete} // TODO: weglassen oder onEdgesDeleteSync erstellen?
+            onNodesDelete={onNodesDelete} // TODO: weglassen oder onNodesDeleteSync erstellen?            
             onSelectionChange={onSelectionChange}
+            
+            // Edge events
+            onEdgesChange={onEdgesChange} // TODO: onEdgesChangeSync for collab mode (deletion of edge)
+            onEdgesDelete={onEdgesDelete} // TODO: weglassen oder onEdgesDeleteSync erstellen?
+            onConnect={collaborationModeOn ? onConnectSync : onConnect} // TODO: onConnect if no collab mode
+            onConnectEnd={onConnectEnd}
+
+            // Canva
+            onPaneClick={onPaneClick}
+            onDrop={onDrop}
+            onDragOver={onDragOver}
+            onMouseMove={handleMouseMove}
+            onClick={onClick}
 
             fitView
             fitViewOptions={{ maxZoom: 1 }}
@@ -4316,6 +4508,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
           )}
 
             <Controls />
+            <ShortcutHelpModal />
             {Object.entries(cursors).length > 1 && collaborationModeOn && Object.entries(cursors).map(([clientId, cursor]) => { // TODO: only if collaborationMode false
               const displayName = Number(clientId) === myClientId ? "Me" : cursor.name;
               return (
