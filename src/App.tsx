@@ -4440,28 +4440,36 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
             ref={ref}
             nodes={collaborationModeOn ? nodesI : nodes}
             edges={collaborationModeOn ? edgesI : edges}
+
+            // Selection
             deleteKeyCode={["Backspace", "Delete"]}
+            multiSelectionKeyCode="Shift"
+            selectionKeyCode="Shift"
+
+            // Node events
             onNodesChange={collaborationModeOn ? onNodesChangeSync : onNodesChange} // TODO: onNodesChange if no collab mode
-            onEdgesChange={onEdgesChange} // TODO: onEdgesChangeSync for collab mode (deletion of edge)
             onNodeContextMenu={onNodeContextMenu}
             onNodeClick={(event: React.MouseEvent, node: Node) => {
               handleClick(event, node);
             }}
-            onConnectEnd={onConnectEnd}
-            onConnect={collaborationModeOn ? onConnectSync : onConnect} // TODO: onConnect if no collab mode
-            onPaneClick={onPaneClick}
-            onClick={onClick}
-            onDragOver={onDragOver}
             onNodeDrag={onNodeDrag}
             onNodeDragStop={onNodeDragStop}
-            onDrop={onDrop}
-            onMouseMove={handleMouseMove}
-            onNodesDelete={onNodesDelete} // TODO: weglassen oder onNodesDeleteSync erstellen?
-            onEdgesDelete={onEdgesDelete} // TODO: weglassen oder onEdgesDeleteSync erstellen?
+            onNodesDelete={onNodesDelete} // TODO: weglassen oder onNodesDeleteSync erstellen?            
             onSelectionChange={onSelectionChange}
+            
+            // Edge events
+            onEdgesChange={onEdgesChange} // TODO: onEdgesChangeSync for collab mode (deletion of edge)
+            onEdgesDelete={onEdgesDelete} // TODO: weglassen oder onEdgesDeleteSync erstellen?
+            onConnect={collaborationModeOn ? onConnectSync : onConnect} // TODO: onConnect if no collab mode
+            onConnectEnd={onConnectEnd}
 
-            multiSelectionKeyCode="Shift"
-            selectionKeyCode="Shift"
+            // Canva
+            onPaneClick={onPaneClick}
+            onDrop={onDrop}
+            onDragOver={onDragOver}
+            onMouseMove={handleMouseMove}
+            onClick={onClick}
+
             fitView
             fitViewOptions={{ maxZoom: 1 }}
             onInit={setReactFlowInstance}
