@@ -2297,7 +2297,7 @@ If none apply, return { "algorithms": [] }.
       }
     
     // Optional: Pan the camera to the newly added node
-    reactFlowInstance.setCenter(position.x, position.y, { zoom: 1, duration: 800 });
+    reactFlowInstance.setCenter(position.x, position.y, { zoom: 1, duration: 700 });
 
   }, [reactFlowInstance, setNodes, collaborationModeOn, cursors, myClientId, userName]);
 
@@ -2377,9 +2377,6 @@ If none apply, return { "algorithms": [] }.
 
       console.log("PLUGIN DATA FROM DROP", pluginData);
 
-      // const getId = () => crypto.randomUUID();
-
-      // const compactOptions = def?.compactOptions ?? [];
 
       // Get drop position
       const position = reactFlowInstance.project({
@@ -2387,14 +2384,8 @@ If none apply, return { "algorithms": [] }.
         y: event.clientY - reactFlowBounds.top,
       });
 
+      // add node to canvas
       addNodeToCanvas(def, position, pluginData);
-
-
-      
-
-
-      // setNodes(newNode);
-
 
       console.log("nodes", nodes);
 
