@@ -4,6 +4,7 @@ import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
 import * as consts from "../../constants";
 import { DomainProfile } from "../modals/domainProfileModal";
+import { Label } from "recharts";
 
 const selector = (state: {
   ancillaMode: boolean;
@@ -37,6 +38,13 @@ const categoryIcons: Record<string, string> = {
 
 };
 
+const operatorIcons: Record<string, string> = {
+  ["Deutsch-Jozsa"]: "PaletteIcon_Beginner_DJ.png",
+  ["Grover Oracle"]: "PaletteIcon_Beginner_Oracle.png",
+  ["Grover Diffuser"]: "PaletteIcon_Beginner_Diffuser.png",
+  ["Grover's Search Algorithm"]: "PaletteIcon_Beginner_Grover.png",
+};
+
 export const AddNodePanel = () => {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [activeSubcategories, setActiveSubcategories] = useState<Set<string>>(new Set());
@@ -45,6 +53,13 @@ export const AddNodePanel = () => {
     selector,
     shallow
   );
+
+  const isControlledGate = (label: string) =>
+    ["CNOT", "CZ", "CY", "CH", "SWAP", "CU", "CP(λ)", "CRX(θ)", "CRY(θ)", "CRZ(θ)"]
+      .includes(label);
+  const multiControlledGate = (label: string) =>
+    ["Toffoli", "CSWAP"]
+      .includes(label);
 
 
   // select correct categories (based on domainProfile)
@@ -58,7 +73,6 @@ export const AddNodePanel = () => {
     } else {
       baseCategories = staticCategories;
     }
-    console.log(baseCategories);
     // no user templates: only return standard templates (baseCategories)
     if (userTemplates.length === 0) return baseCategories;
 
@@ -94,7 +108,7 @@ export const AddNodePanel = () => {
   }, [defaultOpenSubcategories]);
 
   // Define mock inputs/outputs for ML plugins (until Plugin Runner metadata is available)
-  const getMockPluginMetadata = (node:any, pluginName: string) => {
+  const getMockPluginMetadata = (node: any, pluginName: string) => {
     switch (pluginName) {
       case 'Classical Clustering':
         return {
@@ -410,7 +424,7 @@ export const AddNodePanel = () => {
               content_type: ['text/plain'],
               required: true,
             },
-             {
+            {
               parameter: 'testDataUrl',
               data_type: 'entity/vector',
               content_type: ['application/json', 'text/csv'],
@@ -538,7 +552,7 @@ export const AddNodePanel = () => {
               content_type: ['text/plain'],
               required: true,
             },
-             {
+            {
               parameter: 'qnnName',
               data_type: 'string',
               content_type: ['text/plain'],
@@ -612,7 +626,7 @@ export const AddNodePanel = () => {
     // For plugin nodes, store additional metadata
     if (node.type === consts.PluginNode) {
       const pluginName = node.label;
-      const mockMetadata = getMockPluginMetadata(node,pluginName);
+      const mockMetadata = getMockPluginMetadata(node, pluginName);
       const pluginData = {
         name: pluginName,
         mockDataInputs: mockMetadata.dataInputs,
@@ -703,6 +717,12 @@ export const AddNodePanel = () => {
       );
     }
   };
+//   useEffect(() => {
+//   console.log(
+//     "All node labels:",
+//     allNodes.map((node) => node.label)
+//   );
+// }, [allNodes]);
 
   const renderNodes = (nodeGroup: any): React.ReactNode => {
     if (Array.isArray(nodeGroup)) {
@@ -714,6 +734,7 @@ export const AddNodePanel = () => {
         .filter((node: Node) => node.compactOptions.includes(compact));
 
       if (visibleNodes.length === 0) return null;
+      
 
       return (
         <div className="space-y-2 mt-2">
@@ -728,20 +749,26 @@ export const AddNodePanel = () => {
               {node.icon ? (
                 <img
                   src={
-                    Array.isArray(node.icon)
-                      ? node.type === consts.GateNode
-                        ? node.icon[experienceLevel === "explorer" ? 1 : 0]
-                        : node.icon[ancillaMode ? 1 : 0] // Use ancillaMode for others
-                      : node.icon
+                    experienceLevel === "explorer" && operatorIcons[node.label]
+                      ? operatorIcons[node.label]
+                      : Array.isArray(node.icon)
+                        ? node.type === consts.GateNode
+                          ? node.icon[experienceLevel === "explorer" ? 1 : 0]
+                          : node.icon[ancillaMode ? 1 : 0]
+                        : node.icon
                   }
                   alt={typeof node.label === "string" ? node.label : ""}
-                  className={`object-contain ${node.type === consts.GateNode
-                    ? "w-[120px] h-[140px]"
-                    : node.type === consts.SplitterNode || node.type === consts.MergerNode
-                      ? "w-[190px] h-[190px]"
-                      : node.type === consts.templates
-                        ? "w-[120px] h-[120px]"
-                        : "w-70 h-70"
+                  className={`object-contain ${node.type === consts.GateNode && isControlledGate(node.label)
+                    ? "w-[180px] h-[200px]"
+                    : node.type === consts.GateNode && multiControlledGate(node.label)
+                      ? "w-[190px] h-[270px]"
+                      : node.type === consts.GateNode
+                        ? "w-[120px] h-[140px]"
+                        : node.type === consts.SplitterNode || node.type === consts.MergerNode
+                          ? "w-[190px] h-[190px]"
+                          : node.type === consts.templates
+                            ? "w-[120px] h-[120px]"
+                            : "w-70 h-70"
                     }`}
                 />
               ) : (

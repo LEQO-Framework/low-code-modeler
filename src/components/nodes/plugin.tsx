@@ -2,10 +2,10 @@ import { memo, useEffect, useState } from "react";
 import { Handle, Position, Node, useUpdateNodeInternals } from "reactflow";
 import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
-import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { classicalConstructColor, quantumConstructColor } from "@/constants";
 import OutputPort from "../utils/outputPort";
+import { awareness } from "@/yjs";
 
 // Plugin metadata types
 interface PluginInputMetadata {
@@ -69,25 +69,41 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
   const [outputIdentifierError, setOutputIdentifierError] = useState(false);
   const [sizeError, setSizeError] = useState(false);
 
+  console.log(data)
   const dataInputs = data.dataInputs || [];
   const dataOutputs = data.dataOutputs || [];
 
+  console.log(dataInputs)
+
   useEffect(() => {
-    updateNodeInternals(node.id);
-    console.log("clusteringAlgorithm");
-    console.log(node.data.clusteringAlgorithm)
-    if (node.data.clusteringAlgorithm === "k-medoids") {
+  updateNodeInternals(node.id);
+
+  if (
+    node.data.clusteringAlgorithm === "k-medoids" &&
+    (!node.data.initializationMethod || !node.data.algorithm)
+  ) {
+    if (!node.data.initializationMethod) {
       updateNodeValue(node.id, "initializationMethod", "random");
+    }
+
+    if (!node.data.algorithm) {
       updateNodeValue(node.id, "algorithm", "pam");
     }
-    if (
-      (node.data.label === "Quantum Clustering" || node.data.label === "Classical Clustering") &&
-      !node.data.clusteringAlgorithm
-    ) {
-      updateNodeValue(node.id, "clusteringAlgorithm", "k-means");
-    }
-  }, [dataInputs, dataOutputs, data.clusteringAlgorithm]);
+  }
 
+  if (
+    (node.data.label === "Quantum Clustering" ||
+      node.data.label === "Classical Clustering") &&
+    !node.data.clusteringAlgorithm
+  ) {
+    updateNodeValue(node.id, "clusteringAlgorithm", "k-means");
+  }
+}, [
+  node.id,
+  node.data.clusteringAlgorithm,
+  node.data.initializationMethod,
+  node.data.algorithm,
+]);
   // Check if this is a clustering node (k-means)
   const isClusteringNode = data.pluginName === 'Classical Clustering' || data.pluginName === 'Quantum Clustering';
 
@@ -256,19 +272,59 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
     />;;
   };
 
+  const id = node.id;
+
+  const [remoteHighlightColor, setRemoteHighlightColor] = useState<string | null>(null);
+  const [selectingUserName, setSelectingUserName] = useState<string | null>(null); // technically not needed, could extend functionality to also show user name next to highlighted node
+
+  useEffect(() => {
+    const checkRemoteSelection = () => {
+      let foundColor: string | null = null;
+      let foundName: string | null = null;
+
+      // Loop through all active client states in the room
+      awareness.getStates().forEach((state: any, clientId: number) => {
+        // Skip your own client ID so you don't highlight it with your own color
+        // if (clientId === awareness.clientID) return;
+
+        // Check if a peer has selected this specific node ID
+        if (state.cursor && state.cursor.mySelectedNodeId === id) {
+          foundColor = state.cursor.color;
+          foundName = state.cursor.name;
+        }
+      });
+
+      setRemoteHighlightColor(foundColor);
+      setSelectingUserName(foundName);
+      console.log("COLOR", foundColor, foundName);
+    };
+
+    // Run once immediately on mount
+    checkRemoteSelection();
+
+    // 3. Listen to remote awareness updates
+    awareness.on("change", checkRemoteSelection);
+
+    // Clean up listener when the node unmounts
+    return () => {
+      awareness.off("change", checkRemoteSelection);
+    };
+  }, [id]); // Re-run if node ID changes
+
   return (
-    <motion.div
+    <div
       className="grand-parent"
-      initial={false}
-      animate={{ width: 320, height: dynamicHeight }}
-      transition={{ duration: 0.3, ease: "easeInOut" }}
+      style={{ width: 320, height: dynamicHeight }}
     >
       <div
-        className={cn(
-          "w-[320px] bg-white border border-solid border-gray-700 shadow-md overflow-hidden",
-          selected && "border-blue-500"
-        )}
-        style={{ height: `${dynamicHeight}px`, borderRadius: isQuantumPlugin ? "0px" : "40px" }}
+        className={"w-[320px] bg-white border border-solid border-gray-700 shadow-md overflow-hidden"}
+        style={{
+          height: `${dynamicHeight}px`, borderRadius: isQuantumPlugin ? "0px" : "40px",
+          borderColor: remoteHighlightColor ? remoteHighlightColor : (selected ? "#3B82F6" : "#374151"),
+          boxShadow: remoteHighlightColor
+            ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}` // Glowing aura ring
+            : undefined,
+        }}
       >
         {/* Header */}
         <div className="w-full flex items-center" style={{ height: '52px' }}>
@@ -724,7 +780,7 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
           </div>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 });
 

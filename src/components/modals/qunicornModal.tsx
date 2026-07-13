@@ -22,7 +22,7 @@ interface QunicornModalProps {
   setAccessToken: (token: string) => void;
   errorMessage?: string;
   progress?: number;
-  chartData?: { register: string; value: number }[];
+  chartData?: { register: number; value: number }[];
 }
 
 export const QunicornModal = ({
@@ -62,6 +62,17 @@ export const QunicornModal = ({
   // Trigger warning if both conditions are true
   setWarningExecution(simulatorWarning && selectedDevice.trim().toLowerCase() === "aer_simulator");
 }, [simulatorWarning, selectedDevice]);
+
+  // Custom Ticks for histogram
+  const maxRegister = chartData?.length > 0 
+    ? Math.max(...chartData.map(d => d.register)) 
+    : 0;
+  const numQubits = maxRegister.toString(2).length;
+
+  const formatXAxis = (tickItem: number) => {
+    const bin = tickItem.toString(2).padStart(numQubits, '0');
+    return `${tickItem} (${bin})`;
+  };
 
   return (
     <Modal
@@ -219,7 +230,7 @@ export const QunicornModal = ({
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="register" label={{ value: "Register", position: "insideBottom", offset: -3 }} />
+                  <XAxis dataKey="register" tickFormatter={formatXAxis} label={{ value: "Register", position: "insideBottom", offset: -3 }} />
                   <YAxis
                     domain={[0, 100]}
                     label={{ value: "Probabilities", angle: -90, dx: 0, dy: 30, position: "insideLeft" }}

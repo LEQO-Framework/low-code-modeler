@@ -21,7 +21,7 @@ export const SendRequestModal = ({
   sendToBackend,
 }: SendRequestModalProps) => {
   useEffect(() => {
-    if ((containsPlaceholder||containsWorkflowNodes) && compilationTarget === "qasm") {
+    if ((containsPlaceholder||containsWorkflowNodes) && (compilationTarget === "qasm" || compilationTarget === "qiskit")) {
       setCompilationTarget("workflow");
     }
   }, [containsPlaceholder, compilationTarget, setCompilationTarget, containsWorkflowNodes]);

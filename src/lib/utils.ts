@@ -148,7 +148,7 @@ export async function handleOnDrop(
   }
 }
 
-function findNodeDefinition(type: string, label: string, categories: Record<string, CategoryEntry>) {
+export function findNodeDefinition(type: string, label: string, categories: Record<string, CategoryEntry>) {
 
   for (const cat of Object.values(categories)) {
     const content = cat.content;
