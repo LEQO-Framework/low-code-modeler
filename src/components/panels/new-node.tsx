@@ -45,7 +45,12 @@ const operatorIcons: Record<string, string> = {
   ["Grover's Search Algorithm"]: "PaletteIcon_Beginner_Grover.png",
 };
 
-export const AddNodePanel = () => {
+interface AddNodePanelProps {
+  ancillaMode?: any;
+  onAddNode?: (def: any, customPosition?: { x: number; y: number }, pluginData?: any) => void;
+}
+
+export const AddNodePanel = ({ onAddNode }: AddNodePanelProps) => {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [activeSubcategories, setActiveSubcategories] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -810,6 +815,34 @@ export const AddNodePanel = () => {
           className="mb-4 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
+          onKeyDown={(e) => {
+            // console.log("search result, key down: ", e.key)
+            // console.log(filteredNodes)
+            // console.log(onAddNode)
+            if (e.key === 'Enter' && filteredNodes.length > 0 && onAddNode) {
+              // get top result
+              const topResult = filteredNodes[0] as any;
+              // console.log("top result", topResult)
+
+              // get mock plugin metadata
+              let resultPluginData = null;
+              if (topResult.type === consts.PluginNode) {
+                const pluginName = topResult.label;
+                const mockMetadata = getMockPluginMetadata(topResult, pluginName);
+                resultPluginData = {
+                  name: pluginName,
+                  mockDataInputs: mockMetadata.dataInputs,
+                  mockDataOutputs: mockMetadata.dataOutputs,
+                  ...topResult.pluginData,
+                };
+              }
+              // add node to canvas
+              onAddNode(topResult, undefined, resultPluginData); // position is undefined --> node added to center of canvas
+
+              // clear search field
+              setSearchQuery("");
+            }
+          }}
         />
 
         {searchQuery && (

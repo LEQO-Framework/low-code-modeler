@@ -61,6 +61,11 @@ export const shortcuts: ShortcutCategory[] = [
         keys: "Delete / Backspace",
         description: "Delete selected nodes",
       },
+      {
+        id: "enter",
+        keys: "Enter",
+        description: "Add top search result to canvas"
+      }
     ],
   },
   {

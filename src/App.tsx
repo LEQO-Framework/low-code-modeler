@@ -2170,6 +2170,152 @@ If none apply, return { "algorithms": [] }.
     }
   }, [domainProfile, allDomainProfiles]);
 
+  const addNodeToCanvas = useCallback((def: any, customPosition?: { x: number, y: number }, pluginData?: any) => {
+    if (!reactFlowInstance || !reactFlowWrapper.current) return;
+
+    const getId = () => crypto.randomUUID();
+    
+    // Calculate position: Use custom position or center of the canvas
+    const position = customPosition || reactFlowInstance.project({
+      x: reactFlowWrapper.current.clientWidth / 2,
+      y: reactFlowWrapper.current.clientHeight / 2,
+    });
+
+    const compactOptions = def?.compactOptions ?? [];
+
+
+    const newNode = {
+      id: getId(),
+      type: def.type,
+      position,
+
+      selected: false,
+      selectable: true,
+      draggable: true,
+
+      data: {
+        label: def.label,
+
+        inputs: [],
+        outputs: [],
+
+        children: [],
+
+        implementation: "",
+        implementationType: "",
+        uncomputeImplementationType: "",
+        uncomputeImplementation: "",
+
+        completionGuaranteed:
+          def?.completionGuaranteed ?? false,
+
+        compactOptions,
+
+
+        // =====================================
+        // PLUGIN NODE DATA
+        // =====================================
+        ...(def.type === PluginNode && {
+          pluginName: pluginData?.name,
+
+          dataInputs:
+            pluginData?.mockDataInputs ?? [],
+
+          dataOutputs:
+            pluginData?.mockDataOutputs ?? [],
+        }),
+
+
+        ...(def?.properties && {
+          properties: def.properties,
+        }),
+
+        ...(def?.constraints && {
+          constraints: def.constraints,
+        }),
+
+        ...(def?.mapping && {
+          mapping: def.mapping,
+        }),
+
+        ...(def?.description && {
+          description: def.description,
+        }),
+
+        ...(def?.outputType && {
+          outputType: def.outputType,
+        }),
+
+        ...(def?.icon && {
+          icon: def.icon,
+        }),
+
+        ...(def?.isDataType && {
+          isDataType: def.isDataType,
+        }),
+      },
+    };
+
+
+    console.log("CREATED NODE", newNode);
+
+    // Update local Zustand Store
+    setNodes(newNode);
+
+    // Update Yjs Collaborative Store
+
+      const activeName =
+        cursors[myClientId]?.name ||
+        userName ||
+        "unknown";
+
+
+      if (collaborationModeOn) {
+
+        console.log(
+          "ON DROP: collab mode on",
+          collaborationModeOn
+        );
+
+        nodesMap.set(
+          newNode.id,
+          newNode
+        );
+
+
+        historyArray.push([
+          {
+            type: "node-added",
+            nodeId: newNode.id,
+            label: newNode.data?.label,
+            userId: activeName,
+            user: activeName,
+            timestamp: Date.now(),
+          },
+        ]);
+
+
+        console.log(
+          "ADD NODE HISTORY",
+          historyArray.toArray()
+        );
+
+        console.log(
+          "shared nodes",
+          Array.from(nodesMap.values())
+        );
+
+        console.log(
+          "shared edges",
+          Array.from(edgesMap.values())
+        );
+      }
+    
+    // Optional: Pan the camera to the newly added node
+    // reactFlowInstance.setCenter(position.x, position.y, { zoom: 1, duration: 700 });
+
+  }, [reactFlowInstance, setNodes, collaborationModeOn, cursors, myClientId, userName]);
+
   const onDrop = React.useCallback(
     (event: any) => {
       console.log("dropped");
@@ -2232,16 +2378,6 @@ If none apply, return { "algorithms": [] }.
 
       console.log("found node", def);
 
-      const getId = () => crypto.randomUUID();
-
-      const compactOptions = def?.compactOptions ?? [];
-
-      const position = reactFlowInstance.project({
-        x: event.clientX - reactFlowBounds.left,
-        y: event.clientY - reactFlowBounds.top,
-      });
-
-
       // ================================
       // GET PLUGIN METADATA HERE
       // ================================
@@ -2257,132 +2393,14 @@ If none apply, return { "algorithms": [] }.
       console.log("PLUGIN DATA FROM DROP", pluginData);
 
 
-      const newNode = {
-        id: getId(),
-        type,
-        position,
+      // Get drop position
+      const position = reactFlowInstance.project({
+        x: event.clientX - reactFlowBounds.left,
+        y: event.clientY - reactFlowBounds.top,
+      });
 
-        selected: false,
-        selectable: true,
-        draggable: true,
-
-        data: {
-          label,
-
-          inputs: [],
-          outputs: [],
-
-          children: [],
-
-          implementation: "",
-          implementationType: "",
-          uncomputeImplementationType: "",
-          uncomputeImplementation: "",
-
-          completionGuaranteed:
-            def?.completionGuaranteed ?? false,
-
-          compactOptions,
-
-
-          // =====================================
-          // PLUGIN NODE DATA
-          // =====================================
-          ...(type === PluginNode && {
-            pluginName: pluginData?.name,
-
-            dataInputs:
-              pluginData?.mockDataInputs ?? [],
-
-            dataOutputs:
-              pluginData?.mockDataOutputs ?? [],
-          }),
-
-
-          ...(def?.properties && {
-            properties: def.properties,
-          }),
-
-          ...(def?.constraints && {
-            constraints: def.constraints,
-          }),
-
-          ...(def?.mapping && {
-            mapping: def.mapping,
-          }),
-
-          ...(def?.description && {
-            description: def.description,
-          }),
-
-          ...(def?.outputType && {
-            outputType: def.outputType,
-          }),
-
-          ...(def?.icon && {
-            icon: def.icon,
-          }),
-
-          ...(def?.isDataType && {
-            isDataType: def.isDataType,
-          }),
-        },
-      };
-
-
-      console.log("CREATED NODE", newNode);
-
-
-      setNodes(newNode);
-
-
-      const activeName =
-        cursors[myClientId]?.name ||
-        userName ||
-        "unknown";
-
-
-      if (collaborationModeOn) {
-
-        console.log(
-          "ON DROP: collab mode on",
-          collaborationModeOn
-        );
-
-        nodesMap.set(
-          newNode.id,
-          newNode
-        );
-
-
-        historyArray.push([
-          {
-            type: "node-added",
-            nodeId: newNode.id,
-            label: newNode.data?.label,
-            userId: activeName,
-            user: activeName,
-            timestamp: Date.now(),
-          },
-        ]);
-
-
-        console.log(
-          "ADD NODE HISTORY",
-          historyArray.toArray()
-        );
-
-        console.log(
-          "shared nodes",
-          Array.from(nodesMap.values())
-        );
-
-        console.log(
-          "shared edges",
-          Array.from(edgesMap.values())
-        );
-      }
-
+      // add node to canvas
+      addNodeToCanvas(def, position, pluginData);
 
       console.log("nodes", nodes);
 
@@ -4417,7 +4435,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
           <div
             className={`transition-all duration-300 ${isPaletteOpen ? "w-[300px] lg:w-[350px]" : "w-0 overflow-hidden"}`}
           >
-            {isPaletteOpen && <Palette ancillaMode={ancillaModelingOn} />}
+            {isPaletteOpen && <Palette ancillaMode={ancillaModelingOn} onAddNode={addNodeToCanvas} />}
           </div>
           <button
             onClick={togglePalette}
