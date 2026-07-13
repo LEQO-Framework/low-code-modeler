@@ -2297,7 +2297,7 @@ If none apply, return { "algorithms": [] }.
       }
     
     // Optional: Pan the camera to the newly added node
-    reactFlowInstance.setCenter(position.x, position.y, { zoom: 1, duration: 700 });
+    // reactFlowInstance.setCenter(position.x, position.y, { zoom: 1, duration: 700 });
 
   }, [reactFlowInstance, setNodes, collaborationModeOn, cursors, myClientId, userName]);
 
