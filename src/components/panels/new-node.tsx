@@ -717,12 +717,12 @@ export const AddNodePanel = () => {
       );
     }
   };
-  useEffect(() => {
-  console.log(
-    "All node labels:",
-    allNodes.map((node) => node.label)
-  );
-}, [allNodes]);
+//   useEffect(() => {
+//   console.log(
+//     "All node labels:",
+//     allNodes.map((node) => node.label)
+//   );
+// }, [allNodes]);
 
   const renderNodes = (nodeGroup: any): React.ReactNode => {
     if (Array.isArray(nodeGroup)) {

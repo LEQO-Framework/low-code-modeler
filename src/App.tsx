@@ -242,12 +242,12 @@ function App() {
   const [warningExecution, setWarningExecution] = useState(false);
   const [contextMenu, setContextMenu] = useState<{
     visible: boolean;
-    nodeId: string | null;
+    componentId: string | null;
     top: number;
     left: number;
   }>({
     visible: false,
-    nodeId: null,
+    componentId: null,
     top: 0,
     left: 0,
   });
@@ -267,7 +267,22 @@ function App() {
       event.preventDefault();
       setContextMenu({
         visible: true,
-        nodeId: node.id,
+        componentId: node.id,
+        top: event.clientY,
+        left: event.clientX,
+        //top: node.position.y+0.5*node.height, //passt nicht
+        //left: node.position.x-0.5*node.width, //passt nicht
+      });
+    },
+    []
+  );
+
+  const onEdgeContextMenu = useCallback(
+    (event: React.MouseEvent, edge: Edge) => {
+      event.preventDefault();
+      setContextMenu({
+        visible: true,
+        componentId: edge.id,
         top: event.clientY,
         left: event.clientX,
         //top: node.position.y+0.5*node.height, //passt nicht
@@ -1996,7 +2011,7 @@ If none apply, return { "algorithms": [] }.
         let counts = getdata.results[1].data;
         console.log(counts)
         const chartData = Object.entries(counts || {}).map(([key, value]) => ({
-          register: parseInt(key, 16),
+          register: parseInt(key, 16), // TODO: add hex value
           value: Number(value) * 100,
         }));
         setChartData(chartData);
@@ -2137,7 +2152,7 @@ If none apply, return { "algorithms": [] }.
         }
       });
       //setNodes(nodeT);
-      if (node.id == contextMenu.nodeId) {
+      if (node.id == contextMenu.componentId) {
         console.log("moving context menu for node", node.id)
         setContextMenu((prev) => ({ ...prev, left: evt.clientX, top: evt.clientY }));
       }
@@ -3424,7 +3439,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     })
     // move contextmenu with dragged node if it belongs to that node
     // if other node is dragged: make context menu invisible
-    if (node.id == contextMenu.nodeId) {
+    if (node.id == contextMenu.componentId) {
       console.log("drag contextmenu to nodeid: ", node.id)
       setContextMenu((prev) => ({ ...prev, top: event.clientY, left: event.clientX }))
     } else {
@@ -4449,6 +4464,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
             // Node events
             onNodesChange={collaborationModeOn ? onNodesChangeSync : onNodesChange} // TODO: onNodesChange if no collab mode
             onNodeContextMenu={onNodeContextMenu}
+            onEdgeContextMenu={onEdgeContextMenu}
             onNodeClick={(event: React.MouseEvent, node: Node) => {
               handleClick(event, node);
             }}
@@ -4655,10 +4671,9 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
             />
             <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
           </ReactFlow>
-
-          {contextMenu.visible && contextMenu.nodeId && (
+          {contextMenu.visible && contextMenu.componentId && (
             <ContextMenu
-              id={contextMenu.nodeId}
+              id={contextMenu.componentId}
               top={contextMenu.top}
               left={contextMenu.left}
               onAction={handleAction}
