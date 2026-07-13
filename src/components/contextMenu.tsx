@@ -46,6 +46,9 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   const node = useStore(
     useCallback((state) => state.nodeInternals.get(id), [id])
   );
+  const edge = getEdge(id);
+  console.log("node", node)
+  console.log("edge", edge)
 
 
   const [submenuInputAddOpen, setSubmenuInputAddOpen] = useState(false);
@@ -156,7 +159,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
 
 
   // 2. NOW it is completely safe to exit early if node data isn't ready
-  if (!node) return null;
+  if (!node && !edge) return null;
 
   // Variables dependent on node existence
   let minInput = 0;
@@ -184,13 +187,14 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   console.log(hasQuantumInputs)
   console.log(hasClassicalInputs)
 
-  if(type !== "edge") {
-    useEffect(() => {
+
+  useEffect(() => {
+    if(node){
       updateNodeInternals(node.id);
       console.log("update handles")
+    }
     
-    }, [node.data["numberClassicalInputs"] ]);
-  }
+  }, [node?.data["numberClassicalInputs"] ]);
 
 
   let buttons = [];
