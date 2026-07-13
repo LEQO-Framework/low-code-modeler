@@ -4420,7 +4420,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
           <div
             className={`transition-all duration-300 ${isPaletteOpen ? "w-[300px] lg:w-[350px]" : "w-0 overflow-hidden"}`}
           >
-            {isPaletteOpen && <Palette ancillaMode={ancillaModelingOn} />}
+            {isPaletteOpen && <Palette ancillaMode={ancillaModelingOn} onAddNode={addNodeToCanvas} />}
           </div>
           <button
             onClick={togglePalette}
