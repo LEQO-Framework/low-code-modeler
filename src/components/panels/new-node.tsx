@@ -816,13 +816,13 @@ export const AddNodePanel = ({ onAddNode }: AddNodePanelProps) => {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           onKeyDown={(e) => {
-            console.log("search result, key down: ", e.key)
-            console.log(filteredNodes)
-            console.log(onAddNode)
+            // console.log("search result, key down: ", e.key)
+            // console.log(filteredNodes)
+            // console.log(onAddNode)
             if (e.key === 'Enter' && filteredNodes.length > 0 && onAddNode) {
               // get top result
               const topResult = filteredNodes[0] as any;
-              console.log("top result", topResult)
+              // console.log("top result", topResult)
 
               // get mock plugin metadata
               let resultPluginData = null;
