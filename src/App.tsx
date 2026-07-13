@@ -9,17 +9,21 @@ import ReactFlow, {
   MiniMap,
   getNodesBounds,
   Panel,
-  useUpdateNodeInternals
+  useUpdateNodeInternals,
+  Connection,
+  MarkerType,
+  applyNodeChanges,
+  NodeChange
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { v4 as uuidv4 } from 'uuid';
-
+import { nodesMap, edgesMap, ydoc, awareness, yProvider } from "@/yjs";
 import { ContextMenu, CustomPanel, Palette } from "./components";
 import Toolbar from "./components/toolbar";
 import { nodesConfig, tutorial } from "./config/site";
 import { useStore } from "./config/store";
 import { useShallow } from "zustand/react/shallow";
-import { handleDragOver, handleOnDrop } from "./lib/utils";
+import { findNodeDefinition, handleDragOver, handleOnDrop } from "./lib/utils";
 import useKeyBindings from "./hooks/useKeyBindings";
 import { toSvg } from "html-to-image";
 import { initialDiagram } from "./config/site";
@@ -27,7 +31,7 @@ import Modal, { NewDiagramModal } from "./Modal";
 import './index.css';
 import { Placement } from 'react-joyride';
 import { startCompile } from "./backend";
-import { ancillaConstructColor, classicalConstructColor, ClassicalOperatorNode, controlFlowConstructColor, grover, hadamard_test_imaginary_part, hadamard_test_real_part, qaoa, quantum_types, quantumConstructColor, swap_test, quantum_k_means, custom_template, TEMPLATE_STORAGE_KEY, templates } from "./constants";
+import { ancillaConstructColor, classicalConstructColor, ClassicalOperatorNode, controlFlowConstructColor, grover, hadamard_test_imaginary_part, hadamard_test_real_part, qaoa, quantum_types, quantumConstructColor, swap_test, quantum_k_means, custom_template, TEMPLATE_STORAGE_KEY, templates, PluginNode } from "./constants";
 import Joyride from 'react-joyride';
 import { ConfigModal } from "./components/modals/configModal";
 import { QunicornModal } from "./components/modals/qunicornModal";
@@ -48,6 +52,13 @@ import { v4 as uuid } from "uuid";
 import DomainProfileModal, { DomainProfile } from "./components/modals/domainProfileModal";
 import { PatternSelectionModal } from "./components/modals/patternSelectionModal";
 import { PatternImplementationSelectionModal } from "./components/modals/patternImplementationSelectionModal";
+import UserCountPanel from "./components/modals/userAwareness";
+import VersioningPanel from "./components/modals/versioningModal";
+import { EdgeChange } from "@xyflow/react";
+import PromptFlowModal from "./components/modals/promptFlowModal";
+import ShortcutHelpModal from "./components/modals/shortcutHelpModal";
+import { generateFlow, sendToMistral } from "./generation";
+import { openQasmToFlow } from "./qasmConverter";
 
 const selector = (state: {
   nodes: Node[];
@@ -155,6 +166,7 @@ function App() {
   } = useStore(useShallow(selector));
 
 
+  // TODO: don't use if no collab mode
 
   const [metadata, setMetadata] = React.useState<any>({
     version: "1.0.0",
@@ -162,6 +174,36 @@ function App() {
     description: "This is a model.",
     author: ""
   });
+
+
+  const historyArray = ydoc.getArray<any>("history");
+  const [versioningHistory, setVersioningHistory] = useState<any[]>([]);
+
+
+  const [nodesI, setNodesI] = useState<Node[]>([]);
+  const [edgesI, setEdgesI] = useState<Edge[]>([]);
+  useEffect(() => {
+    const update = () => {
+      setVersioningHistory([...historyArray.toArray()]);
+      console.log(versioningHistory)
+    };
+
+    historyArray.observe(update);
+    update();
+
+    return () => historyArray.unobserve(update);
+  }, []);
+
+  const [userName, setUserName] = useState<string>("Default Name");
+
+  const onUserNameChange = (newName) => {
+    console.log("newName", newName)
+    setUserName(newName);
+    const currentCursorState = awareness.getLocalState()?.cursor || {};
+    awareness.setLocalStateField("cursor", { ...currentCursorState, name: newName }) //update only name
+    console.log("cursors", cursors)
+  };
+
   const [menu, setMenu] = useState(null);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [isManageTemplatesOpen, setIsManageTemplatesOpen] = useState(false);
@@ -174,6 +216,9 @@ function App() {
 
   const [openAIToken, setOpenAIToken] = useState(
     import.meta.env.VITE_OPENAI_TOKEN
+  );
+  const [mistralToken, setMistralToken] = useState(
+    import.meta.env.VITE_MISTRAL_TOKEN
   );
   const [qunicornEndpoint, setQunicornEndpoint] = useState(
     import.meta.env.VITE_QUNICORN || "http://localhost:8080"
@@ -206,6 +251,16 @@ function App() {
     top: 0,
     left: 0,
   });
+
+
+  const [cursors, setCursors] = useState<{
+    [clientId: number]: {
+      name: string; x: number, y: number, color: string
+    }
+  }>({});
+  const [myClientId, setMyClientId] = useState<number | null>(null);
+
+
 
   const onNodeContextMenu = useCallback(
     (event: React.MouseEvent, node: Node) => {
@@ -252,8 +307,6 @@ function App() {
     })
   };
 
-
-
   const handleAction = (action: string, nodeId: string) => {
     console.log(`Action: ${action} on Node: ${nodeId}`);
     setContextMenu((prev) => ({ ...prev, visible: false }));
@@ -267,6 +320,7 @@ function App() {
   const [githubBranch, setGithubBranch] = useState(import.meta.env.VITE_GITHUB_REPO_BRANCH);
   const [githubToken, setGithubToken] = useState(import.meta.env.VITE_GITHUB_TOKEN);
   const [openqasmCode, setOpenQASMCode] = useState("");
+  const [showResultModal, setShowResultModal] = useState(false);
 
   const [selectedDevice, setSelectedDevice] = useState("aer_simulator");
   const [provider, setProvider] = useState("IBM");
@@ -277,9 +331,10 @@ function App() {
   const [errorJobMessage, setErrorJobMessage] = useState("");
   const [isPatternModalOpen, setIsPatternModalOpen] = useState(false);
   const [isPatternImplementationOpen, setIsPatternImplementationOpen] = useState(false);
+  const [isOpenQASMOpen, setIsOpenQASMOpen] = useState(false);
   const [selectedPatternId, setSelectedPatternId] = useState<string | null>(null);
 
-
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [isLoadJsonModalOpen, setIsLoadJsonModalOpen] = useState(false);
   const [isPaletteOpen, setIsPaletteOpen] = useState(true);
@@ -439,6 +494,7 @@ If none apply, return { "algorithms": [] }.
     setCamundaEndpoint(newValues.tempCamundaEndpoint);
     setNisqAnalyzerEndpoint(newValues.tempNisqAnalyzerEndpoint);
     setOpenAIToken(newValues.tempOpenAIToken);
+    setMistralToken(newValues.tempMistralToken);
     setQunicornEndpoint(newValues.tempQunicornEndpoint);
     setLowcodeBackendEndpoint(newValues.tempLowcodeBackendEndpoint);
     setPatternAtlasUiEndpoint(newValues.tempPatternAtlasUiEndpoint);
@@ -451,10 +507,12 @@ If none apply, return { "algorithms": [] }.
 
     setCompact(newValues.compactVisualization);
     setCompactVisualization(newValues.compactVisualization);
-    setAncillaMode(newValues.ancillaMode);
-    setAncillaModelingOn(newValues.ancillaMode);
+    //setAncillaMode(newValues.ancillaMode);
+    //setAncillaModelingOn(newValues.ancillaMode);
     setExperienceLevel(newValues.experienceLevel);
     setCompletionGuaranteed(newValues.completionGuaranteed);
+    setCollaborationModeOn(newValues.collaborationMode); // passt das?? lieber onToggleCollaborationMode?
+    onUserNameChange(newValues.userName);
 
     setIsConfigOpen(false);
   };
@@ -487,6 +545,8 @@ If none apply, return { "algorithms": [] }.
 
   const ref = useRef(null);
   const hasLoadedFromUrl = useRef(false);
+  const copiedSelectionRef = useRef<{ nodes: Node[]; edges: Edge[] } | null>(null);
+  const pasteCountRef = useRef(0);
 
   const onDragOver = React.useCallback(
     (event: React.DragEvent<HTMLDivElement>) => {
@@ -499,11 +559,13 @@ If none apply, return { "algorithms": [] }.
   const [status, setStatus] = useState("");
   const [modalStep, setModalStep] = useState(1);
   const [isQunicornOpen, setIsQunicornOpen] = useState(false);
+  const [isPromptModalOpen, setIsPromptModalOpen] = useState(false);
   const [loadingQunicorn, setLoadingQunicorn] = useState(true);
   const [statusQunicorn, setStatusQunicorn] = useState(null);
   const [ancillaModelingOn, setAncillaModelingOn] = useState(false);
   const [experienceLevelOn, setExperienceLevelOn] = useState("explorer");
   const [compactVisualization, setCompactVisualization] = useState(false);
+  const [collaborationModeOn, setCollaborationModeOn] = useState(false);
   //const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
   const [toast, setToast] = useState<{
     message: React.ReactNode;
@@ -529,6 +591,220 @@ If none apply, return { "algorithms": [] }.
       showToast(typeError, "error");
     }
   }, [typeError, showToast, setTypeError]);
+
+  const isSyncingFromRemote = useRef(false);
+
+  const stripTransientNodeState = useCallback((node: Node) => {
+    const { selected, dragging, positionAbsolute, ...rest } = node as Node & {
+      selected?: boolean;
+      dragging?: boolean;
+      positionAbsolute?: { x: number; y: number };
+    };
+
+    return rest;
+  }, []);
+
+  // EFFECT 1: Remote-to-Local (Yjs to Zustand & nodesI)
+  useEffect(() => {
+    if (!collaborationModeOn) return;
+
+    const updateFromRemote = () => {
+      // set flag, so that this is ignored by effect 2
+      isSyncingFromRemote.current = true;
+
+      const localNodes = useStore.getState().nodes;
+      const localNodesById = new Map<string, Node>(localNodes.map((node: Node) => [node.id, node]));
+
+      const sharedNodes: any = Array.from(nodesMap.values()).map((sharedNode: any) => {
+        const localNode = localNodesById.get(sharedNode.id);
+
+        if (!localNode) {
+          return sharedNode;
+        }
+
+        return {
+          ...sharedNode,
+          selected: localNode.selected,
+          dragging: localNode.dragging,
+        };
+      });
+      const sharedEdges: any = Array.from(edgesMap.values());
+
+      // Update the local rendering tracking arrays
+      setNodesI(sharedNodes);
+      setEdgesI(sharedEdges);
+
+      // Forcefully inject remote changes into Zustand.
+      // Stringify check to prevent triggering an infinite state update loop.
+      const currentLocalState = useStore.getState();
+
+      if (JSON.stringify(currentLocalState.nodes) !== JSON.stringify(sharedNodes) ||
+        JSON.stringify(currentLocalState.edges) !== JSON.stringify(sharedEdges)) {
+
+        useStore.setState({
+          nodes: sharedNodes,
+          edges: sharedEdges,
+        });
+      }
+      // reset flag
+      setTimeout(() => { isSyncingFromRemote.current = false; }, 50);
+    };
+
+    // Listen to remote changes on the Yjs maps
+    nodesMap.observe(updateFromRemote);
+    edgesMap.observe(updateFromRemote);
+
+    // Run immediately on mount/enable to pull initial room state
+    updateFromRemote();
+
+    return () => {
+      nodesMap.unobserve(updateFromRemote);
+      edgesMap.unobserve(updateFromRemote);
+    };
+  }, [collaborationModeOn]);
+
+
+  // EFFECT 2: Local-to-Remote (Zustand to Yjs)
+  useEffect(() => {
+    if (!collaborationModeOn || isSyncingFromRemote.current) return;
+
+    // Bundle operations into a single transaction block
+    ydoc.transact(() => {
+      // Sync local Zustand nodes to the network map
+      nodes.forEach((node) => {
+        // Keep transient React Flow interaction state local.
+        const nodeData = stripTransientNodeState(node);
+
+        const remoteNode = nodesMap.get(node.id);
+        if (!remoteNode || JSON.stringify(remoteNode) !== JSON.stringify(nodeData)) {
+          nodesMap.set(node.id, nodeData);
+        }
+      });
+
+      // Handle local deletions (If it's in Yjs but missing from local Zustand, delete from Yjs)
+      nodesMap.forEach((_, id) => {
+        if (!nodes.some((n) => n.id === id)) {
+          nodesMap.delete(id);
+        }
+      });
+
+      // Sync local Zustand edges to the network map
+      edges.forEach((edge) => {
+        const remoteEdge = edgesMap.get(edge.id);
+        if (!remoteEdge || JSON.stringify(remoteEdge) !== JSON.stringify(edge)) {
+          edgesMap.set(edge.id, edge);
+        }
+      });
+
+      // Handle edge deletions
+      edgesMap.forEach((_, id) => {
+        if (!edges.some((e) => e.id === id)) {
+          edgesMap.delete(id);
+        }
+      });
+    });
+  }, [nodes, edges, collaborationModeOn]);
+
+  // useEffect(() => {
+  //   console.log("rerun")
+
+  //   if(!collaborationModeOn) return;
+
+  //   // observe remote changes
+  //   const nodesObserver = () => {
+  //     const sharedNodes = Array.from(nodesMap.values());
+  //     setNodesI(sharedNodes);
+  //     console.log(nodesI)
+  //   };
+
+  //   const edgesObserver = () => {
+  //     const sharedEdges = Array.from(edgesMap.values());
+  //     setEdgesI(sharedEdges);
+  //     console.log(edgesI)
+  //   };
+
+  //   nodesObserver();
+  //   edgesObserver()
+  //   nodesMap.observe(nodesObserver);
+  //   edgesMap.observe(edgesObserver);
+  //   return () => { nodesMap.unobserve(nodesObserver); edgesMap.unobserve(edgesObserver) };
+
+  // }, [collaborationModeOn]);
+
+  // needed? 
+  useEffect(() => {
+
+    const updateCursors = () => {
+      const newCursors: typeof cursors = {};
+      awareness.getStates().forEach((state: any, clientId: number) => {
+        if (state.cursor) {
+          // Replace name with "Me" if this is your client
+          // --> maybe not??
+          newCursors[clientId] = {
+            ...state.cursor,
+            //name: clientId === awareness.clientID ? "Me" : state.cursor.name
+          };
+        }
+      });
+      setCursors(newCursors);
+    };
+
+
+    awareness.on("change", updateCursors);
+    updateCursors();
+
+    console.log("CURSORS", cursors)
+
+    return () => awareness.off("change", updateCursors);
+  }, []);
+
+  useEffect(() => {
+
+    if (collaborationModeOn) {
+      // Generate a random username
+      const randomNames = ["Alice", "Bob", "Charlie", "Dana", "Eve", "Frank", "Grace", "Hugo"];
+      const randomUsername = randomNames[Math.floor(Math.random() * randomNames.length)];
+      // Store local clientId
+      setMyClientId(awareness.clientID);
+
+      const color = "#" + Math.floor(Math.random() * 16777215).toString(16);
+
+      // Set initial cursor state with username
+      awareness.setLocalStateField("cursor", {
+        x: 0,
+        y: 0,
+        color: color,
+        name: randomUsername,
+        role: experienceLevel
+      });
+
+      awareness.setLocalStateField("locks", {
+        nodeIds: []
+      });
+
+      // set initial user name  
+      setUserName(randomUsername);
+      console.log("CURSORS", cursors)
+    }
+
+
+  }, [collaborationModeOn]);
+
+  // Sync local Zustand store changes to Yjs Awareness state fields
+  useEffect(() => {
+    if (!awareness) return;
+
+    const currentLocalState = awareness.getLocalState();
+    const existingCursor = currentLocalState?.cursor || {};
+
+    awareness.setLocalStateField("cursor", {
+      ...existingCursor,
+      // Normalize to lowercase strings to eliminate case mismatch in comparisons
+      role: experienceLevel?.toLowerCase(),
+      experienceLevel: experienceLevel?.toLowerCase(),
+    });
+  }, [experienceLevel]);
+
 
   const [runTour, setRunTour] = useState(false);
   const [joyrideStepId, setJoyRideStepId] = useState(0);
@@ -731,6 +1007,7 @@ If none apply, return { "algorithms": [] }.
       console.log("Received OpenQASM code:", openqasmCode);
 
       setOpenQASMCode(openqasmCode);
+      setShowResultModal(true);
       setTimeout(() => {
         setStatus("completed");
         setLoading(false);
@@ -879,7 +1156,7 @@ If none apply, return { "algorithms": [] }.
       if (
         twoQubitGates.includes(label) ||
         ((node.type === "quantumOperatorNode" || node.type === "classicalOperatorNode") &&
-          !minMaxOperators.includes(operator))
+          !minMaxOperators.includes(operator) && operator !== "INVERT")
       ) {
         if (inputCount !== 2) {
           errors.push({
@@ -902,6 +1179,14 @@ If none apply, return { "algorithms": [] }.
           });
         }
 
+      }
+
+      if (node.data.label === "Qubit" && (node.data.size === undefined || node.data.size === 0)) {
+        errors.push({
+          nodeId: node.id,
+          nodeType: node.type,
+          description: `Node "${node.id}" needs a size value.`,
+        });
       }
 
       if (threeQubitGates.includes(label)) {
@@ -984,6 +1269,50 @@ If none apply, return { "algorithms": [] }.
           }
         }
 
+        // MCMT Gate validation
+        if (node.type === "mcmt-gate" || node.data?.label === "MCMT Gate" || node.type === "MCMTGateNode") {
+          const numControls = parseInt(node.data.numControls, 10) || 1;
+          const numTargets = parseInt(node.data.numTargets, 10) || 1;
+          const expectedInputsCount = numControls + numTargets;
+
+          const connectedEdges = edges.filter((edge) => edge.target === node.id);
+
+          const prefix = "quantumHandleInput";
+          const connectedIndices = new Set(
+            connectedEdges
+              .map((edge) => {
+                if (edge.targetHandle && edge.targetHandle.startsWith(prefix) && edge.targetHandle.endsWith(node.id)) {
+                  const indexStr = edge.targetHandle.substring(
+                    prefix.length,
+                    edge.targetHandle.length - node.id.length
+                  );
+                  return parseInt(indexStr, 10);
+                }
+                return null;
+              })
+              .filter((idx) => idx !== null)
+          );
+
+          const missingIndices: number[] = [];
+          for (let i = 0; i < expectedInputsCount; i++) {
+            if (!connectedIndices.has(i)) {
+              missingIndices.push(i);
+            }
+          }
+
+          if (missingIndices.length > 0) {
+            const firstMissing = missingIndices[0];
+            const missingLabel = firstMissing < numControls
+              ? `Control ${firstMissing}`
+              : `Target ${firstMissing - numControls}`;
+
+            errors.push({
+              nodeId: node.id,
+              nodeType: node.type,
+              description: `MCMT Gate block requires ${expectedInputsCount} connected inputs, but is missing an incoming wire at "${missingLabel}".`,
+            });
+          }
+        }
 
         const outgoing = outgoingConnections.get(node.id) || [];
         if (outgoing.length === 0) {
@@ -1046,7 +1375,14 @@ If none apply, return { "algorithms": [] }.
       if (node.type === "ifElseNode") {
         const hasClassical = connectedSources.some((srcId) => {
           const sourceNode: any = nodesById.get(srcId);
-          return sourceNode?.type === "dataTypeNode";
+          // A measurement result and an operator output are classical data too,
+          // not only a dataTypeNode literal. Needed for measurement-driven ifs
+          // like the teleportation corrections (if m == 1 -> X / Z).
+          return (
+            sourceNode?.type === "dataTypeNode" ||
+            sourceNode?.type === "measurementNode" ||
+            sourceNode?.type === "operatorNode"
+          );
         });
         if (!hasClassical) {
           errors.push({
@@ -1099,6 +1435,301 @@ If none apply, return { "algorithms": [] }.
         }
       }
 
+      if (node.data?.label === "QFT" || node.type === "qftNode") {
+        const qubitCount =
+          parseInt(node.data?.numberOutputs || "3");
+
+        const incoming = nodeConnections.get(node.id) || [];
+        const outgoing = outgoingConnections.get(node.id) || [];
+
+        for (let i = 0; i < qubitCount; i++) {
+          const handleId = `quantumHandleQFTInput${i}${node.id}`;
+
+          const isConnected = flow.edges?.some(
+            (e) => e.targetHandle === handleId
+          );
+
+          if (!isConnected) {
+            errors.push({
+              nodeId: node.id,
+              nodeType: node.type,
+              description: `QFT node "${node.id}" is missing connection on input ${i + 1}.`,
+            });
+          }
+        }
+
+        for (let i = 0; i < qubitCount; i++) {
+          const handleId = `qftOut${i}${node.id}`;
+
+          const isUsed = flow.edges?.some(
+            (e) => e.sourceHandle === handleId
+          );
+
+          if (!isUsed) {
+            warnings.push({
+              nodeId: node.id,
+              nodeType: node.type,
+              description: `QFT node "${node.id}" output ${i + 1}/${qubitCount} is not used.`,
+            });
+          }
+        }
+      }
+
+      // Universal Oracle Validation
+      if (node.type === "oracleNode" || node.data?.label === "Universal Oracle") {
+        const connectedInput = connectedSources.length > 0;
+
+        if (!connectedInput) {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Universal Oracle "${node.id}" requires a quantum register input.`,
+          });
+        }
+
+        const mode = node.data?.mode;
+        if (mode && !["boolean", "phase"].includes(mode)) {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Universal Oracle "${node.id}" has invalid mode "${mode}".`,
+          });
+        }
+
+        const targetStates = node.data?.targetStates;
+
+        if (!targetStates || targetStates.trim() === "") {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Universal Oracle "${node.id}" requires at least one marked state.`,
+          });
+        }
+        else if (!/^\d+(?:\s*,\s*\d+)*$/.test(targetStates.trim())) {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Universal Oracle "${node.id}" marked states must be comma-separated integers.`,
+          });
+        }
+        else {
+
+          // Find input register size
+          let registerSize = 3;
+
+          const source = connectedSources
+            .map(src => nodesById.get(src))
+            .find(n => n?.data?.size);
+
+          if (source?.data?.size) {
+            registerSize = parseInt(source.data.size, 10);
+          }
+
+          const maxState = (1 << registerSize) - 1;
+
+          const invalidState = targetStates
+            .split(",")
+            .map((x: string) => parseInt(x.trim(), 10))
+            .some((x: number) => x < 0 || x > maxState);
+
+
+          if (invalidState) {
+            errors.push({
+              nodeId: node.id,
+              nodeType: node.type,
+              description:
+                `Universal Oracle "${node.id}" contains marked states outside register range 0-${maxState}.`,
+            });
+          }
+        }
+
+
+        const outgoing = outgoingConnections.get(node.id) || [];
+        if (outgoing.length === 0) {
+          warnings.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description:
+              `Universal Oracle "${node.id}" output is not connected.`,
+          });
+        }
+      }
+
+
+
+      // Deutsch-Jozsa Validation
+      if (
+        node.type === "deutsch-jozsa" ||
+        node.data?.label === "Deutsch-Jozsa Algorithm"
+      ) {
+
+        const numQubits = parseInt(node.data?.numQubits, 10);
+
+        if (!numQubits || numQubits <= 0) {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description:
+              `Deutsch-Jozsa node "${node.id}" requires a valid number of qubits.`,
+          });
+        }
+
+
+        const oracleType = node.data?.oracleType;
+
+        if (!["balanced", "constant"].includes(oracleType)) {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description:
+              `Deutsch-Jozsa node "${node.id}" has invalid oracle type "${oracleType}".`,
+          });
+        }
+
+
+        if (oracleType === "balanced") {
+
+          const mask = parseInt(node.data?.balancedMask, 10);
+
+          if (isNaN(mask)) {
+            errors.push({
+              nodeId: node.id,
+              nodeType: node.type,
+              description:
+                `Deutsch-Jozsa balanced oracle requires a mask value.`,
+            });
+          }
+          else if (numQubits && mask >= (1 << numQubits)) {
+            errors.push({
+              nodeId: node.id,
+              nodeType: node.type,
+              description:
+                `Deutsch-Jozsa balanced mask ${mask} exceeds ${numQubits}-qubit input range.`,
+            });
+          }
+        }
+
+
+        if (
+          oracleType === "constant" &&
+          ![0, 1].includes(Number(node.data?.constantValue))
+        ) {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description:
+              `Deutsch-Jozsa constant value must be either 0 or 1.`,
+          });
+        }
+
+
+        const outgoing = outgoingConnections.get(node.id) || [];
+
+        if (outgoing.length === 0) {
+          warnings.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description:
+              `Deutsch-Jozsa node "${node.id}" output is not connected.`,
+          });
+        }
+      }
+
+
+      if (node.type === "universal-oracle") {
+        const markedStates = node.data?.targetStates;
+
+        if (!markedStates || markedStates.trim() === "") {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description:
+              `Grover node "${node.id}" requires marked states.`,
+          });
+        }
+
+      }
+      // Grover Algorithm Validation
+      if (
+        node.type === "grover" ||
+        node.data?.label === "Grover Algorithm"
+      ) {
+
+        const numQubits = parseInt(node.data?.numQubits, 10);
+
+        if (!numQubits || numQubits <= 0) {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description:
+              `Grover node "${node.id}" requires a valid number of qubits.`,
+          });
+        }
+
+
+        const iterations = Number(node.data?.iterations);
+
+        if (iterations !== undefined && iterations <= 0) {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description:
+              `Grover iteration count must be greater than zero.`,
+          });
+        }
+
+
+        const markedStates = node.data?.targetStates;
+
+        if (!markedStates || markedStates.trim() === "") {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description:
+              `Grover node "${node.id}" requires marked states.`,
+          });
+        }
+        else if (!/^\d+(?:\s*,\s*\d+)*$/.test(markedStates)) {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description:
+              `Grover marked states must be comma-separated integers.`,
+          });
+        }
+        else if (numQubits) {
+
+          const maxState = (1 << numQubits) - 1;
+
+          const invalid =
+            markedStates
+              .split(",")
+              .map((x: string) => parseInt(x.trim(), 10))
+              .some((x: number) => x > maxState);
+
+
+          if (invalid) {
+            errors.push({
+              nodeId: node.id,
+              nodeType: node.type,
+              description:
+                `Grover marked states exceed the ${numQubits}-qubit range (0-${maxState}).`,
+            });
+          }
+        }
+
+
+        const outgoing = outgoingConnections.get(node.id) || [];
+
+        if (outgoing.length === 0) {
+          warnings.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description:
+              `Grover node "${node.id}" output is not connected.`,
+          });
+        }
+      }
       // Plugin Node Validation
       if (node.type === "pluginNode") {
         const dataInputs = node.data?.dataInputs || [];
@@ -1168,6 +1799,9 @@ If none apply, return { "algorithms": [] }.
           "Executing this flow will not produce meaningful results.",
       });
     }
+
+
+
 
 
     return { warnings, errors };
@@ -1389,6 +2023,7 @@ If none apply, return { "algorithms": [] }.
     }
   };
 
+
   const pollStatus = async () => {
     const interval = setInterval(async () => {
       try {
@@ -1537,51 +2172,228 @@ If none apply, return { "algorithms": [] }.
 
   const onDrop = React.useCallback(
     (event: any) => {
-      console.log("dropped")
-      const position = reactFlowInstance.screenToFlowPosition({
-        x: event.clientX,
-        y: event.clientY,
-      })
-      const label = event.dataTransfer.getData("application/reactflow/label");
-      console.log(position);
+      console.log("dropped");
+      console.log("collab mode", collaborationModeOn);
 
+      event.preventDefault();
+
+      const label = event.dataTransfer.getData("application/reactflow/label");
 
       if (label == qaoa) {
-        loadFlow(qaoa_algorithm)
+        loadFlow(qaoa_algorithm);
+        return;
       } else if (label == swap_test) {
         loadFlow(swap_test_algorithm);
-      }
-      else if (label == hadamard_test_imaginary_part) {
+        return;
+      } else if (label == hadamard_test_imaginary_part) {
         loadFlow(hadamard_test_imaginary_part_algorithm);
-      }
-      else if (label == hadamard_test_real_part) {
+        return;
+      } else if (label == hadamard_test_real_part) {
         loadFlow(hadamard_test_real_part_algorithm);
-      }
-      else if (label == grover) {
+        return;
+      } else if (label == grover) {
         loadFlow(grover_algorithm);
-      }
-      else if (label == quantum_k_means) {
+        return;
+      } else if (label == quantum_k_means) {
         loadFlow(quantum_k_means_algorithm);
-      }
-      else if (label.startsWith(custom_template)) {
-        const userTemplateFlowData = JSON.parse(event.dataTransfer.getData("application/reactflow/templateFlowData"));
-        console.log("USER TEMPLATE")
-        console.log(userTemplateFlowData)
+        return;
+      } else if (label.startsWith(custom_template)) {
+        const userTemplateFlowData = JSON.parse(
+          event.dataTransfer.getData(
+            "application/reactflow/templateFlowData"
+          )
+        );
+
         if (userTemplateFlowData) {
           loadFlow(userTemplateFlowData);
+        } else {
+          console.error(`User Template ${label} not found.`);
         }
-        else {
-          console.error(`User Template ${label} not found.`)
-        }
-      }
-      else {
-        console.log("current categories", currentCategories)
-        handleOnDrop(event, reactFlowWrapper, reactFlowInstance, setNodes, currentCategories);
+
+        return;
       }
 
-      //setContextMenu((prev) => ({ ...prev, left: event.clientX, top: event.clientY,}));
+      console.log("current categories", currentCategories);
+
+      if (!reactFlowWrapper) return;
+
+      const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
+
+      const type = event.dataTransfer.getData("application/reactflow");
+      const dataType = event.dataTransfer.getData(
+        "application/reactflow/dataType"
+      );
+
+      if (!type) {
+        return;
+      }
+
+      const def = findNodeDefinition(type, label, currentCategories);
+
+      console.log("found node", def);
+
+      const getId = () => crypto.randomUUID();
+
+      const compactOptions = def?.compactOptions ?? [];
+
+      const position = reactFlowInstance.project({
+        x: event.clientX - reactFlowBounds.left,
+        y: event.clientY - reactFlowBounds.top,
+      });
+
+
+      // ================================
+      // GET PLUGIN METADATA HERE
+      // ================================
+      const pluginDataRaw = event.dataTransfer.getData(
+        "application/reactflow/pluginData"
+      );
+
+      const pluginData = pluginDataRaw
+        ? JSON.parse(pluginDataRaw)
+        : null;
+
+
+      console.log("PLUGIN DATA FROM DROP", pluginData);
+
+
+      const newNode = {
+        id: getId(),
+        type,
+        position,
+
+        selected: false,
+        selectable: true,
+        draggable: true,
+
+        data: {
+          label,
+
+          inputs: [],
+          outputs: [],
+
+          children: [],
+
+          implementation: "",
+          implementationType: "",
+          uncomputeImplementationType: "",
+          uncomputeImplementation: "",
+
+          completionGuaranteed:
+            def?.completionGuaranteed ?? false,
+
+          compactOptions,
+
+
+          // =====================================
+          // PLUGIN NODE DATA
+          // =====================================
+          ...(type === PluginNode && {
+            pluginName: pluginData?.name,
+
+            dataInputs:
+              pluginData?.mockDataInputs ?? [],
+
+            dataOutputs:
+              pluginData?.mockDataOutputs ?? [],
+          }),
+
+
+          ...(def?.properties && {
+            properties: def.properties,
+          }),
+
+          ...(def?.constraints && {
+            constraints: def.constraints,
+          }),
+
+          ...(def?.mapping && {
+            mapping: def.mapping,
+          }),
+
+          ...(def?.description && {
+            description: def.description,
+          }),
+
+          ...(def?.outputType && {
+            outputType: def.outputType,
+          }),
+
+          ...(def?.icon && {
+            icon: def.icon,
+          }),
+
+          ...(def?.isDataType && {
+            isDataType: def.isDataType,
+          }),
+        },
+      };
+
+
+      console.log("CREATED NODE", newNode);
+
+
+      setNodes(newNode);
+
+
+      const activeName =
+        cursors[myClientId]?.name ||
+        userName ||
+        "unknown";
+
+
+      if (collaborationModeOn) {
+
+        console.log(
+          "ON DROP: collab mode on",
+          collaborationModeOn
+        );
+
+        nodesMap.set(
+          newNode.id,
+          newNode
+        );
+
+
+        historyArray.push([
+          {
+            type: "node-added",
+            nodeId: newNode.id,
+            label: newNode.data?.label,
+            userId: activeName,
+            user: activeName,
+            timestamp: Date.now(),
+          },
+        ]);
+
+
+        console.log(
+          "ADD NODE HISTORY",
+          historyArray.toArray()
+        );
+
+        console.log(
+          "shared nodes",
+          Array.from(nodesMap.values())
+        );
+
+        console.log(
+          "shared edges",
+          Array.from(edgesMap.values())
+        );
+      }
+
+
+      console.log("nodes", nodes);
+
     },
-    [reactFlowInstance, setNodes, currentCategories],
+    [
+      reactFlowInstance,
+      setNodes,
+      currentCategories,
+      collaborationModeOn,
+      cursors,
+    ]
   );
 
   const onNodesDelete = useCallback(() => {
@@ -1675,6 +2487,22 @@ If none apply, return { "algorithms": [] }.
       return { success: false };
     }
   }
+
+  const handleMouseMove = (event: React.MouseEvent) => {
+    if (!awareness) return;
+
+    const bounds = reactFlowWrapper.current?.getBoundingClientRect();
+    if (!bounds) return;
+
+    const x = event.clientX - bounds.left;
+    const y = event.clientY - bounds.top;
+
+    awareness.setLocalStateField("cursor", {
+      ...awareness.getLocalState()?.cursor,
+      x,
+      y
+    });
+  };
 
   async function registerAndUploadToGitHub(patternId, patternName, overwriteImplementationId, solutionId) {
     const flowId = `flow-${Date.now()}`;
@@ -2031,6 +2859,85 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     addUserTemplate(newTemplate);
   };
 
+  function handleOpenQASMClick() {
+    if (!reactFlowInstance) {
+      console.error("React Flow instance is not initialized.");
+      return;
+    }
+
+    function restoreFlow(flow) {
+      console.log("Restoring flow:", flow);
+      if (flow.nodes) {
+        reactFlowInstance.setNodes(
+          flow.nodes.map((node: Node) => ({
+            ...node,
+            data: {
+              ...node.data,
+            },
+          }))
+        );
+        console.log("Nodes restored.");
+      }
+      if (flow.edges) {
+        reactFlowInstance.setEdges(flow.edges || []);
+        console.log("Edges restored.");
+      }
+
+
+      const { x = 0, y = 0, zoom = 1 } = flow.viewport || {};
+      reactFlowInstance.setViewport({ x, y, zoom });
+
+      if (flow.metadata) {
+        setMetadata(flow.metadata);
+        console.log("Metadata restored:", flow.metadata);
+      }
+    }
+
+    const event = new CustomEvent("lcm-open", {
+      cancelable: true,
+      detail: {
+        restoreFlow
+      },
+    });
+    const defaultAction = document.dispatchEvent(event);
+    console.log(`defaultAction: ${defaultAction}`);
+    if (!defaultAction)
+      return;
+
+    const fileInput = document.createElement("input");
+    fileInput.type = "file";
+    fileInput.accept = "application/txt";
+
+    fileInput.onchange = (event) => {
+      const file = (event.target as HTMLInputElement)?.files?.[0];
+      if (!file) {
+        console.warn("No file selected.");
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const flow = openQasmToFlow(e.target?.result as string);
+          console.log(flow)
+
+          restoreFlow(flow);
+        } catch (error) {
+          console.error("Error parsing JSON file:", error);
+          alert("Invalid JSON file. Please ensure it is a valid flow file.");
+        }
+      };
+
+      reader.onerror = (err) => {
+        console.error("Error reading file:", err);
+        alert("Failed to read file. Please try again.");
+      };
+
+      reader.readAsText(file);
+    };
+
+    fileInput.click();
+  }
 
   function handleRestoreClick() {
     if (!reactFlowInstance) {
@@ -2111,19 +3018,194 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     fileInput.click();
   }
 
-  useKeyBindings({ undo, redo });
+  const clearCurrentSelection = useCallback(() => {
+    if (!reactFlowInstance) {
+      return;
+    }
 
-  const handleClick = React.useCallback(
-    (event: React.MouseEvent, node: Node) => {
-      // Prevent the default action (if any)
-      event.preventDefault();
+    reactFlowInstance.setNodes((currentNodes: Node[]) =>
+      currentNodes.map((node) => ({
+        ...node,
+        selected: false,
+      }))
+    );
+    setSelectedNode(null);
+  }, [reactFlowInstance, setSelectedNode]);
 
-      // Set the selected node
-      setSelectedNode(node);
+  const copySelectedNodes = useCallback(() => {
+    if (!reactFlowInstance) {
+      return;
+    }
 
-    },
-    [setSelectedNode],
-  );
+    const selectedNodes = (reactFlowInstance.getNodes() as Node[]).filter((node) => node.selected);
+    if (!selectedNodes.length) {
+      return;
+    }
+
+    const selectedNodeIds = new Set(selectedNodes.map((node) => node.id));
+    const selectedEdges = (reactFlowInstance.getEdges() as Edge[]).filter(
+      (edge) => selectedNodeIds.has(edge.source) && selectedNodeIds.has(edge.target)
+    );
+
+    copiedSelectionRef.current = {
+      nodes: structuredClone(selectedNodes),
+      edges: structuredClone(selectedEdges),
+    };
+    pasteCountRef.current = 0;
+  }, [reactFlowInstance]);
+
+  const pasteCopiedNodes = useCallback(() => {
+    if (!reactFlowInstance || !copiedSelectionRef.current?.nodes?.length) {
+      return;
+    }
+
+    const copiedSelection = copiedSelectionRef.current;
+    pasteCountRef.current += 1;
+
+    const offset = 40 * pasteCountRef.current;
+    const idMap = new Map<string, string>();
+
+    const newNodes = copiedSelection.nodes.map((node) => {
+      const newId = uuidv4();
+      idMap.set(node.id, newId);
+
+      return {
+        id: newId,
+        type: node.type,
+        data: structuredClone(node.data),
+        position: {
+          x: node.position.x + offset,
+          y: node.position.y + offset,
+        },
+        selected: true,
+        selectable: true,
+        draggable: true,
+      };
+    });
+
+    const newEdges = copiedSelection.edges
+      .map((edge) => {
+        const source = idMap.get(edge.source);
+        const target = idMap.get(edge.target);
+
+        if (!source || !target) {
+          return null;
+        }
+
+        return {
+          ...structuredClone(edge),
+          id: uuidv4(),
+          source,
+          target,
+          selected: false,
+        };
+      })
+      .filter(Boolean) as Edge[];
+
+    reactFlowInstance.setNodes((currentNodes: Node[]) =>
+      currentNodes.map((node) => ({
+        ...node,
+        selected: false,
+      }))
+    );
+
+    reactFlowInstance.addNodes(newNodes);
+    if (newEdges.length) {
+      reactFlowInstance.addEdges(newEdges);
+    }
+  }, [reactFlowInstance]);
+
+  const cutSelectedNodes = useCallback(() => {
+    if (!reactFlowInstance) {
+      return;
+    }
+
+    copySelectedNodes();
+    const selectedNodes = (reactFlowInstance.getNodes() as Node[]).filter((node) => node.selected);
+    if (!selectedNodes.length) {
+      return;
+    }
+
+    reactFlowInstance.deleteElements({
+      nodes: selectedNodes.map((node) => ({ id: node.id })),
+    });
+    setSelectedNode(null);
+  }, [copySelectedNodes, reactFlowInstance, setSelectedNode]);
+
+  const selectAllNodes = useCallback(() => {
+    if (!reactFlowInstance) {
+      return;
+    }
+
+    reactFlowInstance.setNodes((currentNodes: Node[]) =>
+      currentNodes.map((node) => ({
+        ...node,
+        selected: true,
+      }))
+    );
+  }, [reactFlowInstance]);
+
+  const duplicateSelectedNodes = useCallback(() => {
+    copySelectedNodes();
+    pasteCopiedNodes();
+  }, [copySelectedNodes, pasteCopiedNodes]);
+
+  useKeyBindings({
+    undo,
+    redo,
+    copy: copySelectedNodes,
+    paste: pasteCopiedNodes,
+    cut: cutSelectedNodes,
+    selectAll: selectAllNodes,
+    duplicate: duplicateSelectedNodes,
+    clearSelection: clearCurrentSelection,
+  });
+
+  const [mySelectedNodeId, setMySelectedNodeId] = useState<string | null>(null);
+
+  // Iterate over all active collaborative tabs to see what nodes are currently targeted
+  const getActiveSelections = useCallback(() => {
+    const selections: { [clientId: number]: string } = {};
+
+    awareness.getStates().forEach((state: any, clientId: number) => {
+      if (state?.cursor?.mySelectedNodeId) {
+        selections[clientId] = state.cursor.mySelectedNodeId;
+      }
+    });
+
+    return selections;
+  }, [awareness]);
+
+  const handleClick = useCallback((event: React.MouseEvent, node: Node) => {
+    if (collaborationModeOn && awareness) {
+      const currentCursorState = awareness.getLocalState()?.cursor || {};
+      console.log(currentCursorState)
+      console.log(node.id);
+      let findAny = false;
+      awareness.getStates().forEach((state: any, clientId: number) => {
+        // Skip your own client ID so you don't highlight it with your own color
+        // if (clientId === awareness.clientID) return;
+        console.log(state.cursor)
+
+
+        // Check if a peer has selected this specific node ID
+        if (state.cursor && state.cursor.mySelectedNodeId === node.id) {
+          findAny = true;
+          return;
+        }
+      });
+      if (!findAny) {
+        // Write the currently selected node directly into this tab's unique Yjs cursor object
+        awareness.setLocalStateField("cursor", {
+          ...currentCursorState,
+          mySelectedNodeId: node.id
+        });
+      }
+    }
+
+    // Keep your normal single-user state if necessary
+    setSelectedNode(node);
+  }, [collaborationModeOn, awareness, setSelectedNode]);
 
   const [modeledDiagram, setModeledDiagram] = useState(null);
 
@@ -2246,7 +3328,25 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     console.log(node.position.x);
     console.log(helperLines)
     console.log(event.clientX)
+    if (collaborationModeOn) {
+      let findAny = false;
 
+      awareness.getStates().forEach((state: any, clientId: number) => {
+        // Skip your own client ID so you don't highlight it with your own color
+        // if (clientId === awareness.clientID) return;
+        console.log(state.cursor)
+
+
+        // Check if a peer has selected this specific node ID
+        if (state.cursor && state.cursor.mySelectedNodeId === node.id) {
+          findAny = true;
+          return;
+        }
+      });
+      if (!findAny) {
+        return;
+      }
+    }
     let verticalLine = null;
     let horizontalLine = null;
 
@@ -2348,12 +3448,25 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
   }
     , [reactFlowInstance, helperLines, nodes, setContextMenu]);
 
+
   const onPaneClick = useCallback(() => {
+    setSelectedNode(null);
+    for (const node of nodes) {
+      updateNodeValue(node.id, "selected", "false");
+    }
+
+
+
+    if (!collaborationModeOn) return;
+    let findAny = false;
+    const currentCursorState = awareness.getLocalState()?.cursor || {};
+
     setMenu(null);
     setContextMenu((prev) => ({ ...prev, visible: false })); // contextMenu disappears when clicking on pane
     setSelectedNode(null);
+    setMySelectedNodeId(null);
     console.log("reset");
-  }, [setMenu, setContextMenu, setSelectedNode]);
+  }, [collaborationModeOn]);
 
   const onClick = useCallback(() => {
     setContextMenu((prev) => ({ ...prev, visible: false })); // contextMenu disappears when clicking anywhere in canvas (but not other panels)
@@ -2367,8 +3480,8 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     setExperienceLevelOn(event);
     const bool_value = (experienceLevel === "pioneer") ? false : true; // if previous experience level was pioneer...
     setCompactVisualization(bool_value)
-    setAncillaMode(bool_value)
-    setAncillaModelingOn(bool_value)
+    //setAncillaMode(bool_value)
+    //setAncillaModelingOn(bool_value)
     //updateNodeInternals since ancilla mode changes number of handles
     nodes.forEach((node) => {
       updateNodeInternals(node.id);
@@ -2378,13 +3491,69 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
 
 
   const onToggleAncilla = () => {
-    setAncillaModelingOn(!ancillaModelingOn);
-    setAncillaMode(!ancillaModelingOn);
+    //setAncillaModelingOn(!ancillaModelingOn);
+    //setAncillaMode(!ancillaModelingOn);
     //updateNodeInternals since ancilla mode changes number of handles
-    nodes.forEach((node) => {
-      updateNodeInternals(node.id);
-    })
+    //nodes.forEach((node) => {
+    //updateNodeInternals(node.id);
+    //})
   }
+
+  const onToggleCollaborationMode = useCallback(() => {
+    const nextMode = !collaborationModeOn;
+    setCollaborationModeOn(nextMode);
+    console.log(nextMode, collaborationModeOn);
+    // if collaborationMode is now off: delete cursor of current client from list of cursors
+    if (nextMode) {
+      // collaboration mode has been turned on
+      // (re-)initialize cursor
+      // Sync room data immediately to overwrite offline state
+      useStore.setState({
+        nodes: Array.from(nodesMap.values()),
+        edges: Array.from(edgesMap.values())
+      });
+
+      // Generate a random username
+      const randomNames = ["Alice", "Bob", "Charlie", "Dana", "Eve", "Frank", "Grace", "Hugo"];
+      const randomUsername = randomNames[Math.floor(Math.random() * randomNames.length)];
+      // Store local clientId
+      setMyClientId(awareness.clientID);
+
+      const color = "#" + Math.floor(Math.random() * 16777215).toString(16);
+
+      // Set initial cursor state with username
+      awareness.setLocalStateField("cursor", {
+        x: 0,
+        y: 0,
+        color: color,
+        name: randomUsername
+      });
+
+      awareness.setLocalStateField("locks", {
+        nodeIds: []
+      });
+
+      // set initial user name  
+      setUserName(randomUsername);
+      console.log("CURSORS", cursors)
+
+      setNodesI(Array.from(nodesMap.values()));
+      setEdgesI(Array.from(edgesMap.values()));
+
+    } else {
+      // collaboration mode has been turned off
+      // delete cursor from awareness state
+      awareness.setLocalStateField("cursor", null);
+      setCursors({});
+      setNodesI([]);
+      setEdgesI([]);
+      setUserName("");
+      // reset canvas
+      // overwriteFlow(initialDiagram);
+
+
+    }
+  }, [collaborationModeOn, userName]);
 
   const handleSaveAsSVG = () => {
     if (ref.current === null) {
@@ -2720,6 +3889,238 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
 
   }
 
+
+  const onNodesChangeSync = useCallback((changes: NodeChange[]) => {
+    console.log("Incoming changes:", changes);
+
+    // 🔒 Build global lock map
+    const states = awareness.getStates();
+    const lockMap = new Map<string, number>();
+
+    states.forEach((state: any, clientId: number) => {
+      if (state?.locks?.nodeIds) {
+        state.locks.nodeIds.forEach((nodeId: string) => {
+          lockMap.set(nodeId, clientId);
+        });
+      }
+    });
+
+    // 🚫 Filter unauthorized changes safely
+    const allowedChanges = changes.filter((change) => {
+      if (!hasId(change)) return true;
+
+      // Always allow your own selection changes to proceed without lock blocks
+      if (change.type === 'select') return true;
+
+      const owner = lockMap.get(change.id);
+      return !owner || owner === myClientId;
+    });
+
+    // 🧠 Apply changes against the latest React Flow node snapshot.
+    const currentNodes = reactFlowInstance?.getNodes?.() ?? nodesI;
+    const updatedNodes = applyNodeChanges(allowedChanges, currentNodes);
+    console.log(
+      "SELECTION STATES AFTER CHANGE",
+      updatedNodes
+        .filter(n => n.selected)
+        .map(n => n.id)
+    );
+
+    setNodesI(updatedNodes);
+    updatedNodes.forEach((node) => nodesMap.set(node.id, stripTransientNodeState(node)));
+
+    // 🔁 Sync with React Flow
+    onNodesChange(allowedChanges);
+    // get user name (from cursors) for history
+    //const clientUserName = cursors[myClientId]?.name || "unknown";
+    // Handle deletions
+    const activeName = cursors[myClientId]?.name || userName || "unknown";
+    allowedChanges.forEach((change) => {
+      if ((change.type === "remove" || change.type === "reset") && hasId(change)) {
+        console.log("NODES MAP", Array.from(nodesMap.values()))
+        const nodeId = change.id;
+        const nodeLabel = Array.from(nodesMap.values()).find((node) => node.id === nodeId)?.data?.label || "unknown"
+        console.log(nodesMap);
+        console.log("Node deleted:", nodeId);
+
+        nodesMap.delete(nodeId);
+
+        // remove connected edges
+        edgesMap.forEach((edge: Edge, edgeId: string) => {
+          if (edge.source === nodeId || edge.target === nodeId) {
+            edgesMap.delete(edgeId);
+          }
+        });
+
+        historyArray.push([{
+          type: "node-deleted",
+          nodeId: nodeId,
+          label: nodeLabel,
+          userId: myClientId,
+          user: activeName,
+          timestamp: Date.now(),
+        }]);
+        console.log("REMOVE NODE HISTORY", historyArray.toArray())
+        console.log("shared nodes", Array.from(nodesMap.values()))
+        console.log("shared edges", Array.from(edgesMap.values()))
+      }
+    });
+
+  }, [nodesI, awareness, myClientId, cursors]);
+
+
+  function hasId(
+    change: NodeChange | EdgeChange
+  ): change is (NodeChange | EdgeChange) & { id: string } {
+    return "id" in change;
+  }
+
+  const getGlobalLocks = () => {
+    const states = awareness.getStates();
+
+    const lockMap = new Map<string, number>();
+
+    states.forEach((state, clientId) => {
+      if (state?.locks?.nodeIds) {
+        state.locks.nodeIds.forEach((nodeId: string) => {
+          lockMap.set(nodeId, clientId);
+        });
+      }
+    });
+
+    return lockMap;
+  };
+
+  const onSelectionChange = useCallback(({ nodes }) => {
+    if (!collaborationModeOn) return;
+
+    const lockedIds = nodes.map(n => n.id);
+
+    awareness.setLocalStateField("locks", {
+      nodeIds: lockedIds
+    });
+    console.log("locked ids", lockedIds)
+    const mySelectedNode = nodes[0]; // Assuming single selection
+    //setMySelectedNodeId(mySelectedNode ? mySelectedNode.id : null);
+    console.log("my selected node id", mySelectedNode)
+
+  }, []);
+
+  // broadcast selection via awareness
+  useEffect(() => {
+    if (collaborationModeOn) {
+      const randomNames = ["Alice", "Bob", "Charlie", "Dana", "Eve", "Frank", "Grace", "Hugo"];
+      const randomUsername = randomNames[Math.floor(Math.random() * randomNames.length)];
+      setMyClientId(awareness.clientID);
+
+      const color = "#" + Math.floor(Math.random() * 16777215).toString(16);
+
+      // Initializing the cursor state with localized variables safely bounded to this specific tab instance
+      awareness.setLocalStateField("cursor", {
+        x: 0,
+        y: 0,
+        color: color,
+        name: randomUsername,
+        role: experienceLevel,
+        mySelectedNodeId: null // <-- Track the selection cleanly inside the user's cursor scope
+      });
+
+      awareness.setLocalStateField("locks", {
+        nodeIds: []
+      });
+
+      setUserName(randomUsername);
+    }
+  }, [collaborationModeOn]);
+
+  const onConnectSync = useCallback((params: Connection) => {
+    console.log(params)
+    let type = "classicalEdge";
+    let color = "#F5A843"; // default classical color
+
+    // Quantum edge
+    if (
+      (params.sourceHandle.includes("quantumHandle") || params.sourceHandle.includes("sideQuantumHandle")) &&
+      params.targetHandle.includes("quantumHandle")
+    ) {
+      type = "quantumEdge";
+      color = "#93C5FD";
+    }
+
+    // Ancilla edge
+    if (
+      (params.sourceHandle.includes("ancilla") || params.sourceHandle.includes("dirtyAncilla")) &&
+      (params.targetHandle.includes("ancilla") || params.targetHandle.includes("dirtyAncilla"))
+    ) {
+      type = "ancillaEdge";
+      color = "#86EFAC";
+    }
+
+    const edge: Edge = {
+      ...params,
+      id: uuid(),
+      type,
+      markerEnd: {
+        type: MarkerType.ArrowClosed,
+        width: 20,
+        height: 20,
+        color: color,
+      },
+      style: { stroke: color },
+    };
+
+
+    // 1. Update local Zustand store (your existing store logic)
+    onConnect(params);
+
+    // 2. Save edge to Yjs shared map
+    edgesMap.set(edge.id, edge);
+    // get user name (from cursors) for history
+    //const userName = cursors[myClientId]?.name || "unknown";
+    // get source and target node label
+    const sourceNode = nodes.find((n) => n.id === edge.source)?.data?.label || edge.source
+    const targetNode = nodes.find((n) => n.id === edge.target)?.data?.label || edge.target
+    // get target node label
+
+
+    historyArray.push([{
+      type: "edge-added",
+      source: sourceNode,
+      target: targetNode,
+      edgeId: edge.id,
+      //user: cursor.name,
+      userId: myClientId,
+      user: userName,
+      timestamp: Date.now(),
+    }]);
+    console.log("ADD EDGE HISTORY", historyArray.toArray());
+    console.log("shared nodes", Array.from(nodesMap.values()))
+    console.log("shared edges", Array.from(edgesMap.values()))
+    // für jeden Cursor? Nicht nur einmal??
+    // Object.entries(cursors).map(([clientId, cursor]) => {
+    //   const displayName = Number(clientId) === myClientId ? "Me" : cursor.name;
+
+    //   // Store name in a variable for history usage
+    //   //const userName = cursor.name;
+
+    //   historyArray.push([{
+    //     type: "edge-added",
+    //     source: edge.source,
+    //     target: edge.target,
+    //     edgeId: edge.id,
+    //     //user: cursor.name,
+    //     userId: myClientId,
+    //     user: userName,
+    //     timestamp: Date.now(),
+    //   }]);
+    //   console.log("ADD EDGE HISTORY", historyArray);
+    // });
+
+
+  }, [awareness, myClientId, cursors
+
+  ]);
+
   return (
     <>
       <Joyride
@@ -2813,6 +4214,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
           uploadDiagram={() => uploadToGitHub()}
           uploadPatternSolution={() => setIsPatternModalOpen(true)}
           openPatternSolution={() => setIsPatternImplementationOpen(true)}
+          openOpenQASM={handleOpenQASMClick}
 
           //uploadPatternSolution={() => registerAndUploadToGitHub()}
           onLoadJson={handleLoadJson}
@@ -2820,10 +4222,11 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
           createDomainProfile={() => setDomainProfileOpen(true)}
           startQuantumAlgorithmSelection={startQuantumAlgorithmSelection}
           //sendToQunicorn={() => setIsQunicornOpen(true)}
-          openHistory={openHistoryModal}
+          openHistory={() => openHistoryModal()}
           startTour={() => { startTour(); }}
           onSaveAsTemplate={handleSaveAsTemplate}
           onManageTemplates={handleManageTemplates}
+          generateModel={() => setIsPromptModalOpen(true)}
         />
       </div>
       {<NewDiagramModal open={isLoadJsonModalOpen} onClose={cancelLoadJson} onConfirm={confirmNewDiagram} />}
@@ -2857,6 +4260,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
         compactVisualization={compactVisualization}
         completionGuaranteed={completionGuaranteed}
         experienceLevel={experienceLevel}
+        collaborationMode={collaborationModeOn}
         tempCamundaEndpoint={camundaEndpoint}
         tempNisqAnalyzerEndpoint={nisqAnalyzerEndpoint}
         tempOpenAIToken={openAIToken}
@@ -2869,6 +4273,8 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
         tempGithubRepositoryName={githubRepositoryName}
         tempGithubBranch={githubBranch}
         tempGithubToken={githubToken}
+        userName={userName}
+        tempMistralToken={mistralToken}
       />
 
       <ManageTemplateModal
@@ -2899,6 +4305,20 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
         progress={progress}
         chartData={chartData}
       />
+
+      <PromptFlowModal
+        open={isPromptModalOpen}
+        mistralToken={mistralToken}
+        onClose={(flow) => {
+          setIsPromptModalOpen(false);
+          if (flow) loadFlow(flow);
+          setIsPromptModalOpen(false);
+        }}
+        sendToMistral={sendToMistral}
+        generateFlow={generateFlow}
+      />
+
+
 
       {patternGraph && (
         <Modal
@@ -3033,25 +4453,38 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
         >
           <ReactFlow
             ref={ref}
-            nodes={nodes}
-            edges={edges}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
+            nodes={collaborationModeOn ? nodesI : nodes}
+            edges={collaborationModeOn ? edgesI : edges}
+
+            // Selection
+            deleteKeyCode={["Backspace", "Delete"]}
+            multiSelectionKeyCode="Shift"
+            selectionKeyCode="Shift"
+
+            // Node events
+            onNodesChange={collaborationModeOn ? onNodesChangeSync : onNodesChange} // TODO: onNodesChange if no collab mode
             onNodeContextMenu={onNodeContextMenu}
             onEdgeContextMenu={onEdgeContextMenu}
             onNodeClick={(event: React.MouseEvent, node: Node) => {
               handleClick(event, node);
             }}
-            onConnectEnd={onConnectEnd}
-            onConnect={onConnect}
-            onPaneClick={onPaneClick}
-            onClick={onClick}
-            onDragOver={onDragOver}
             onNodeDrag={onNodeDrag}
             onNodeDragStop={onNodeDragStop}
+            onNodesDelete={onNodesDelete} // TODO: weglassen oder onNodesDeleteSync erstellen?            
+            onSelectionChange={onSelectionChange}
+            
+            // Edge events
+            onEdgesChange={onEdgesChange} // TODO: onEdgesChangeSync for collab mode (deletion of edge)
+            onEdgesDelete={onEdgesDelete} // TODO: weglassen oder onEdgesDeleteSync erstellen?
+            onConnect={collaborationModeOn ? onConnectSync : onConnect} // TODO: onConnect if no collab mode
+            onConnectEnd={onConnectEnd}
+
+            // Canva
+            onPaneClick={onPaneClick}
             onDrop={onDrop}
-            onNodesDelete={onNodesDelete}
-            onEdgesDelete={onEdgesDelete}
+            onDragOver={onDragOver}
+            onMouseMove={handleMouseMove}
+            onClick={onClick}
 
             fitView
             fitViewOptions={{ maxZoom: 1 }}
@@ -3089,7 +4522,51 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
               )}
             </>
           )}
+
             <Controls />
+            <ShortcutHelpModal />
+            {Object.entries(cursors).length > 1 && collaborationModeOn && Object.entries(cursors).map(([clientId, cursor]) => { // TODO: only if collaborationMode false
+              const displayName = Number(clientId) === myClientId ? "Me" : cursor.name;
+              return (
+                <div
+                  key={clientId}
+                  style={{
+                    position: "absolute",
+                    left: cursor.x,
+                    top: cursor.y,
+                    pointerEvents: "none",
+                    transform: "translate(-50%, -50%)",
+                    zIndex: 999,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                  }}
+                >
+                  <div
+                    style={{
+                      marginBottom: 4,
+                      fontSize: 12,
+                      color: "#fff",
+                      backgroundColor: cursor.color,
+                      padding: "1px 4px",
+                      borderRadius: 4,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {displayName}
+                  </div>
+                  <div
+                    style={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: "50%",
+                      backgroundColor: cursor.color,
+                      transition: "left 0.05s linear, top 0.05s linear",
+                    }}
+                  />
+                </div>
+              );
+            })}
             {toast && (
               <Toast
                 message={toast.message}
@@ -3117,6 +4594,8 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
             )}
 
 
+            {collaborationModeOn && (<UserCountPanel provider={yProvider} roomName="demo" />)}
+            {collaborationModeOn && (<VersioningPanel history={versioningHistory} experienceLevel={experienceLevel} myClientID={myClientId} />)}
 
             <ExperienceModePanel
               expanded={expanded}
@@ -3133,6 +4612,10 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
               domainProfile={domainProfile}
               onDomainProfileChange={(event) => { setDomainProfile(event) }}
               domainProfileNames={allDomainProfiles.map((p) => p.name)}
+              collaborationMode={collaborationModeOn}
+              onCollaborationModeChange={onToggleCollaborationMode}
+              userName={userName}
+              onUserNameChange={onUserNameChange}
             />
 
             <MiniMap
@@ -3186,8 +4669,6 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
               zoomable={true}
               pannable={true}
             />
-
-
             <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
           </ReactFlow>
           {contextMenu.visible && contextMenu.componentId && (
@@ -3230,6 +4711,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
             {isPanelOpen && <CustomPanel metadata={metadata} onUpdateMetadata={setMetadata} />}
           </div>
         </div>
+
 
 
       </main>

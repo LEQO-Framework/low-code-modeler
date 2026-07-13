@@ -3,13 +3,13 @@ import { cn } from "@/lib/utils";
 import { memo, useEffect, useState } from "react";
 import { Edge, Handle, Node, Position, getConnectedEdges, useUpdateNodeInternals } from "reactflow";
 import { shallow } from "zustand/shallow";
-import { motion } from "framer-motion";
 import OutputPort from "../utils/outputPort";
 import UncomputePort from "../utils/uncomputePort";
 import AncillaPort from "../utils/ancillaPort";
 import { ancillaConstructColor, dirtyConstructColor, dirtyAncillaHandle, classicalConstructColor } from "@/constants";
 import { AlertCircle } from "lucide-react";
 import { findDuplicateOutputIdentifiers } from "../utils/utils";
+import { awareness } from "@/yjs";
 
 const selector = (state: {
   selectedNode: Node | null;
@@ -22,6 +22,7 @@ const selector = (state: {
   setNodes: (node: Node) => void;
   setSelectedNode: (node: Node) => void;
   setTypeError: (message: string) => void;
+  experienceLevel: string;
 }) => ({
   selectedNode: state.selectedNode,
   edges: state.edges,
@@ -32,7 +33,8 @@ const selector = (state: {
   setNodes: state.setNodes,
   updateNodeValue: state.updateNodeValue,
   setSelectedNode: state.setSelectedNode,
-  setTypeError: state.setTypeError
+  setTypeError: state.setTypeError,
+  experienceLevel: state.experienceLevel
 });
 
 export const StatePreparationNode = memo((node: Node) => {
@@ -50,23 +52,88 @@ export const StatePreparationNode = memo((node: Node) => {
   const [mounted, setMounted] = useState(false);
   const [startsWithDigitError, setStartsWithDigitError] = useState(false);
   const [boundError, setBoundError] = useState(false);
+
+  // Tracking der Nutzer-Rollen-Kombination im Raum
+  const [mixedView, setMixedView] = useState(false);
+
+  // Mapping-Tabelle: Welches Explorer-Verständnis-Label gehört zu welchem Pioneer-Standard-Label?
+  const explorerLabelMap: Record<string, string> = {
+    "Prepare State": "Prepare State",
+    "Encode Value": "Encode Value",
+    "Basis Encoding": "Basis Encoding",
+    "Angle Encoding": "Angle Encoding",
+    "Custom Encoding": "Custom Encoding",
+    "Matrix Encoding": "Matrix Encoding",
+    "Schmidt Decomposition": "State Split",
+    "Amplitude Encoding": "Amplitude Encoding"
+  };
+
+  // Mapping die einzelnen Quantum States im Prepare State Dropdown
+  const quantumStateLabelMap: Record<string, string> = {
+    "Bell State φ+": "Entangled Pair ϕ+",
+    "Bell State φ-": "Entangled Pair ϕ-",
+    "Bell State ψ+": "Entangled Pair ψ+",
+    "Bell State ψ-": "Entangled Pair ψ-",
+    "Custom State": "My Defined State",
+    "GHZ": "All Together",
+    "Uniform Superposition": "All Options Equal",
+    "W-State": "Shared One"
+  };
+
   const iconMap = {
     "Prepare State": "prepareStateIcon.png",
     "Encode Value": "encodeValueIcon.png",
     "Basis Encoding": "basisEncodingIcon.png",
     "Angle Encoding": "angleEncodingIcon.png",
-    "Custom Encoding": "encodeValueIcon.png",
+    "Custom Encoding": "customEncodingIcon.png",
     "Matrix Encoding": "matrixEncodingIcon.png",
     "Schmidt Decomposition": "schmidtDecompositionIcon.png",
     "Amplitude Encoding": "amplitudeEncodingIcon.png",
   };
 
+  const encoding = node.data.encodingType
+  ? node.data.encodingType.charAt(0).toUpperCase() + node.data.encodingType.slice(1)
+  : "";
 
-
-  const { updateNodeValue, setSelectedNode, setNodes, setTypeError, edges, nodes, ancillaMode, completionGuaranteed, compact } = useStore(selector, shallow);
+const icon =
+  encoding.includes("Basis") ? "basisEncodingIcon.png" :
+  encoding.includes("Angle") ? "angleEncodingIcon.png" :
+  encoding.includes("Amplitude") ? "amplitudeEncodingIcon.png" :
+  encoding.includes("Custom") ? "customEncodingIcon.png" :
+  encoding.includes("Matrix") ? "matrixEncodingIcon.png" :
+  encoding.includes("Schmidt") ? "schmidtDecompositionIcon.png" :
+  "encodeValueIcon.png";
+  const { updateNodeValue, setSelectedNode, setNodes, setTypeError, edges, nodes, ancillaMode, completionGuaranteed, compact, experienceLevel } = useStore(selector, shallow);
   const isConnected = edges.some(
     edge => edge.target === node.id && edge.targetHandle === `ancillaHandlePrepareState0${node.id}`
   );
+
+  useEffect(() => {
+    const checkUserRoles = () => {
+      const states = awareness.getStates();
+      let hasPioneer = false;
+      let hasExplorer = false;
+
+      states.forEach((state: any) => {
+        if (state.cursor && state.cursor.role) {
+          if (state.cursor.role === "pioneer") hasPioneer = true;
+          if (state.cursor.role === "explorer") hasExplorer = true;
+        }
+      });
+      if (hasPioneer && hasExplorer) {
+        setMixedView(true);
+      } else {
+        setMixedView(false);
+      }
+    };
+
+    checkUserRoles();
+    awareness.on("change", checkUserRoles);
+
+    return () => {
+      awareness.off("change", checkUserRoles);
+    };
+  }, []);
 
   const handleStateChange = (e, field) => {
     const value = e.target.value;
@@ -80,7 +147,6 @@ export const StatePreparationNode = memo((node: Node) => {
     }
 
     if (field === "bound") {
-      // must be between 0 and 1 (inclusive)
       const num = parseFloat(value);
       const isValid = value === "" || (!isNaN(num) && num >= 0 && num <= 1);
       setBoundError(!isValid);
@@ -92,14 +158,11 @@ export const StatePreparationNode = memo((node: Node) => {
     updateNodeInternals(node.id);
   };
 
-  console.log(node)
   useEffect(() => {
     if (node.data.label === "Encode Value") {
-      console.log(node.data.encodingType)
       if (node.data.encodingType !== null && !mounted) {
         updateNodeValue(node.id, "encodingType", node.data.encodingType);
       } else {
-        console.log("test")
         if (node.data.label === "Basis Encoding") {
           updateNodeValue(node.id, "encodingType", node.data.label);
         }
@@ -123,8 +186,6 @@ export const StatePreparationNode = memo((node: Node) => {
     } else {
       if (node.data.encodingType !== null && !mounted) {
       } else {
-
-
         updateNodeValue(node.id, "quantumStateName", quantumStateName);
       }
     }
@@ -144,11 +205,10 @@ export const StatePreparationNode = memo((node: Node) => {
   useEffect(() => {
     const value = node.data.size;
     const num = Number(value);
-    console.log(value)
     if (num === 0 && node.data.label === "Prepare State") {
       setMissingSizeError(true);
     } else if (
-      quantumStateName === "GHZ") {
+      quantumStateName === "GHZ" || quantumStateName === "W-State") {
       const value = node.data.size;
       const num = Number(value);
 
@@ -174,11 +234,9 @@ export const StatePreparationNode = memo((node: Node) => {
     }
   }, [quantumStateName, node.data.size]);
 
-
   useEffect(() => {
     const encoding = node.data.encodingType;
 
-    // Only array-only encodings enforce compatibility
     const isArrayOnly =
       encoding !== "Basis Encoding" &&
       encoding !== "Custom Encoding";
@@ -204,9 +262,7 @@ export const StatePreparationNode = memo((node: Node) => {
     const sourceType =
       sourceNode.data.outputTypes?.[outputIndex]?.toLowerCase();
 
-    // Enforce array-only constraint
     if (sourceType !== "array") {
-      console.log("remove edge")
       useStore.getState().onEdgesChange([{ id: edge.id, type: "remove" }]);
       const errorMsg = (sourceType == null) ? "Source does not have a type, your diagram is probably broken, connection removed"
         : `Type mismatch: ${sourceType} -> array, connection removed`;
@@ -215,16 +271,12 @@ export const StatePreparationNode = memo((node: Node) => {
     }
   }, [node.data.encodingType]);
 
-
-
   useEffect(() => {
     const identifier = node.data.outputIdentifier;
     const duplicates = findDuplicateOutputIdentifiers(nodes, node.id);
-    console.log(duplicates)
     const isDuplicate = duplicates.has(identifier);
 
     const startsWithDigit = /^\d/.test(identifier);
-    // Only update state if error state is actually changing
     if (((isDuplicate) && identifier !== "") !== outputIdentifierError) {
       setOutputIdentifierError((isDuplicate) && identifier !== "");
     }
@@ -257,35 +309,31 @@ export const StatePreparationNode = memo((node: Node) => {
     if (!node.data.quantumStateName && node.data.label === "Prepare State") {
       updateNodeValue(node.id, "quantumStateName", quantumStateName);
     }
-    console.log(encodingType)
     if ((node.data.encodingType === "Basis Encoding" || node.data.encodingType === "Angle Encoding") && (encodingType !== "Angle Encoding" && encodingType !== "Basis Encoding")) {
       setEncodingType(node.data.encodingType);
       updateNodeInternals(node.id);
     }
-    console.log(node.data.quantumStateName)
     if (node.data.quantumStateName !== quantumStateName) {
       setQuantumStateName(node.data.quantumStateName);
       updateNodeInternals(node.id);
     }
-  }, [nodes, node.data.outputIdentifier, node.id]);
+  }, [node.data.outputIdentifier, node.id]);
+
   useEffect(() => {
     updateNodeInternals(node.id);
   }, [compact])
-
 
   useEffect(() => {
     updateNodeInternals(node.id);
   }, [node.data.encodingType, ancillaMode]);
 
   const { data, selected } = node;
+  const id = node.id;
 
   const alledges = getConnectedEdges([node], edges);
-
   const [inputs, setInputs] = useState(data.inputs || []);
-
   const [yError, setYError] = useState(false);
   const [y, setY] = useState("");
-
   const [operation, setOperation] = useState("+");
   const updateNodeInternals = useUpdateNodeInternals();
 
@@ -297,14 +345,24 @@ export const StatePreparationNode = memo((node: Node) => {
     setOutputs([...outputs, { id: newOutputId, label: `Output ${outputs.length + 1}`, value: "" }]);
   };
 
-  const handleOutputChange = (id, newValue) => {
-    setOutputs(outputs.map((output) => (output.id === id ? { ...output, value: newValue } : output)));
+  const handleOutputChange = (outputId: string, newValue: any) => {
+    // 1. Update the local React state array for immediate rendering
+    const updatedOutputs = outputs.map((output) =>
+      output.id === outputId ? { ...output, value: newValue } : output
+    );
+    setOutputs(updatedOutputs);
+
+    // 2. Sync it directly to the node object and the Zustand store
+    node.data.outputs = updatedOutputs;
+    updateNodeValue(node.id, "outputs", updatedOutputs);
+
+    // 3. Keep the current selected node context aligned
+    setSelectedNode(node);
   };
 
   const handleOutputIdentifierChange = (e, field) => {
     const value = e.target.value;
 
-    // Check if the first character is a number
     if (/^\d/.test(value)) {
       setOutputIdentifierError(true);
     } else {
@@ -313,36 +371,72 @@ export const StatePreparationNode = memo((node: Node) => {
 
     node.data[field] = value;
     updateNodeValue(node.id, field, value);
-    //setSelectedNode(node);
   };
-
-  const baseHeight = data.label === "Prepare State" ? 460 : 560;
-
+ const baseHeight =
+  data.label === "Prepare State" ? 460 :
+  data.label === "Encode Value" ? 450 :
+  350;
   const extraHeightPerVariable = 20;
   const dynamicHeight = baseHeight;
 
+  const [remoteHighlightColor, setRemoteHighlightColor] = useState<string | null>(null);
+  const [selectingUserName, setSelectingUserName] = useState<string | null>(null);
+
+  useEffect(() => {
+    const checkRemoteSelection = () => {
+      let foundColor: string | null = null;
+      let foundName: string | null = null;
+
+      awareness.getStates().forEach((state: any, clientId: number) => {
+        if (state.cursor && state.cursor.mySelectedNodeId === id) {
+          foundColor = state.cursor.color;
+          foundName = state.cursor.name;
+        }
+      });
+
+      setRemoteHighlightColor(foundColor);
+      setSelectingUserName(foundName);
+    };
+
+    checkRemoteSelection();
+    awareness.on("change", checkRemoteSelection);
+
+    return () => {
+      awareness.off("change", checkRemoteSelection);
+    };
+  }, [id]);
+
+  // Hilfsfunktion zur Generierung der Select-Options-Labels im MixedView-Modus
+  const getDropdownLabel = (pioneerLabel: string) => {
+    if (!mixedView) return pioneerLabel;
+    const explorerLabel = quantumStateLabelMap[pioneerLabel] || pioneerLabel;
+    return `P: ${pioneerLabel} / E: ${explorerLabel}`;
+  };
+
   return (
-    <motion.div
+    <div
       className="grand-parent"
-      initial={false}
-      animate={{ width: showingChildren ? 360 : 320, height: showingChildren ? 400 : 373 }}
-      transition={{ duration: 0.3, ease: "easeInOut" }}
+      style={{ width: showingChildren ? 360 : 320, height: baseHeight }}
     >
       <div className="grand-parent">
         <div
           className={cn(
-            "w-[320px] bg-white border border-solid border-gray-700 shadow-md",
-            selected && "border-blue-500"
+            "w-[320px] bg-white border border-solid shadow-md",
+            mixedView && "border-purple-400"
           )}
           style={{
             height:
-              ["Custom Encoding", "Basis Encoding", "Angle Encoding", "Amplitude Encoding", "Matrix Encoding", "Schmidt Decomposition"].includes(data.label)
+              ["Encode Value", "Custom Encoding", "Basis Encoding", "Angle Encoding", "Amplitude Encoding", "Matrix Encoding", "Schmidt Decomposition"].includes(data.label)
                 ? !ancillaMode
-                  ? "300px"
+                  ? `${baseHeight}px`
                   : `${Math.max(dynamicHeight - 70, 200)}px`
                 : !ancillaMode
                   ? "370px"
                   : `${dynamicHeight}px`,
+            borderColor: remoteHighlightColor ? remoteHighlightColor : (selected ? "#3B82F6" : "#374151"),
+            boxShadow: remoteHighlightColor
+              ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}`
+              : undefined,
           }}
         >
           {outputIdentifierError && (
@@ -411,7 +505,6 @@ export const StatePreparationNode = memo((node: Node) => {
             </div>
           )}
 
-
           <div className="w-full flex items-center" style={{ height: '52px' }}>
             {node.data.implementation && (
               <img
@@ -432,7 +525,7 @@ export const StatePreparationNode = memo((node: Node) => {
                 "Schmidt Decomposition"
               ].includes(data.label) && (
                   <img
-                    src={iconMap[data.label] ?? "amplitudeEncodingIcon.png"}
+                    src={icon}
                     alt={`${data.label} icon`}
                     className={
                       data.label === "Prepare State"
@@ -444,16 +537,27 @@ export const StatePreparationNode = memo((node: Node) => {
                   />
                 )}
 
-
               <div className="h-full w-[1px] bg-black mx-2" />
 
-              <span className="font-semibold leading-none" style={{ paddingLeft: '45px' }}>
-                {data.label}
-              </span>
+              <div className="flex flex-col justify-center pl-2 leading-tight select-none">
+                <div className="flex flex-col justify-center pl-2 leading-tight select-none">
+                  {mixedView ? (
+                    <span className="font-semibold text-xs text-blue-900 block">
+                      P: {data.label} / E: {explorerLabelMap[data.label] || data.label}
+                    </span>
+                  ) : experienceLevel === "explorer" ? (
+                    <span className="font-semibold text-sm">
+                      {explorerLabelMap[data.label] || data.label}
+                    </span>
+                  ) : (
+                    <span className="font-semibold text-sm">
+                      {data.label}
+                    </span>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
-
-
 
           {!showingChildren && (
             <div className="px-3 py-1 mb-1">
@@ -466,18 +570,17 @@ export const StatePreparationNode = memo((node: Node) => {
                     style={{ visibility: showingChildren ? "hidden" : "visible" }}
                     onChange={(e) => handleStateChange(e, "encodingType")}
                   >
-                    {!completionGuaranteed && (<option value="Amplitude Encoding">Amplitude Encoding</option>)}
-                    {!completionGuaranteed && (<option value="Angle Encoding">Angle Encoding</option>)}
-                    <option value="Basis Encoding">Basis Encoding</option>
-                    <option value="Custom Encoding">Custom Encoding</option>
-                    {!completionGuaranteed && (<option value="Matrix Encoding">Matrix Encoding</option>)}
-                    {!completionGuaranteed && (<option value="Schmidt Decomposition">Schmidt Decomposition</option>)}
+                    <option value="basis">Basis Encoding</option>
+                    <option value="amplitude">Amplitude Encoding</option>
+                    <option value="angle">Angle Encoding</option>
+                    <option value="custom">Custom Encoding</option>
+                    <option value="matrix">Matrix Encoding</option>
 
                   </select>
 
-                  {node.data.encodingType !== "Basis Encoding" && node.data.encodingType !== "Angle Encoding" && (
+                  {!node.data.encodingType.includes("Basis") && !node.data.encodingType.includes("Angle") && (
                     <>
-                      <label className="text-sm text-black">Bound:</label>
+                      <label className="text-sm text-black block mt-2">Bound:</label>
                       <input
                         className="w-full p-1 mt-1 text-sm text-center text-black border-2 border-blue-300 rounded-full"
                         type="text"
@@ -489,25 +592,47 @@ export const StatePreparationNode = memo((node: Node) => {
                     </>
                   )}
 
+                  {node.data.encodingType === "Basis Encoding" && (
+                    <>
+                      <label className="text-sm text-black block mt-2">Decimal Precision:</label>
+                      <input
+                        className="w-full p-1 mt-1 text-sm text-center text-black border-2 border-blue-300 rounded-full"
+                        type="number"
+                        min="0"
+                        value={node.data.decimalPrecision ?? ""}
+                        onChange={(e) => handleStateChange(e, "decimalPrecision")}
+                        placeholder="e.g. 1"
+                      />
+                    </>
+                  )}
                 </>
               )}
+
               {(node.data.label === "Amplitude Encoding" || node.data.label === "Custom Encoding" || node.data.label === "Matrix Encoding" || node.data.label === "Schmidt Decomposition") && (
                 <>
+                  <label className="text-sm text-black block mt-2">Bound:</label>
+                  <input
+                    className="w-full p-1 mt-1 text-sm text-center text-black border-2 border-blue-300 rounded-full"
+                    type="text"
+                    id="bound"
+                    value={node.data.bound || bound}
+                    onChange={(e) => handleStateChange(e, "bound")}
+                    placeholder="Enter bound"
+                  />
+                </>
+              )}
 
-                  {node.data.encodingType !== "Basis Encoding" && node.data.encodingType !== "Angle Encoding" && (
-                    <>
-                      <label className="text-sm text-black">Bound:</label>
-                      <input
-                        className="w-full p-1 mt-1 text-sm text-center text-black border-2 border-blue-300 rounded-full"
-                        type="text"
-                        id="bound"
-                        value={node.data.bound || bound}
-                        onChange={(e) => handleStateChange(e, "bound")}
-                        placeholder="Enter bound"
-                      />
-                    </>
-                  )}
-
+              {node.data.label === "Basis Encoding" && (
+                <>
+                  <label className="text-sm text-black block mt-2">Decimal Precision:</label>
+                  <input
+                    className="w-full p-1 mt-1 text-sm text-center text-black border-2 border-blue-300 rounded-full"
+                    type="number"
+                    min="0"
+                    value={node.data.decimalPrecision ?? ""}
+                    onChange={(e) => handleStateChange(e, "decimalPrecision")}
+                    placeholder="e.g. 1"
+                  />
                 </>
               )}
 
@@ -519,28 +644,27 @@ export const StatePreparationNode = memo((node: Node) => {
                   >
                     Quantum State Name:
                   </label>
+
                   <select
                     style={{ visibility: showingChildren ? "hidden" : "visible" }}
-                    className="w-full p-1 mt-1 bg-white text-center text-sm text-black border-2 border-blue-300 rounded-full"
+                    className="w-full p-1 mt-1 bg-white text-center text-sm text-black border-2 border-blue-300 rounded-md"
                     value={node.data.quantumStateName || quantumStateName}
                     onChange={(e) => handleStateChange(e, "quantumStateName")}
                   >
-                    <option value="Bell State φ+">Bell State ϕ+</option>
-                    <option value="Bell State φ-">Bell State ϕ-</option>
-                    <option value="Bell State ψ+">Bell State ψ+</option>
-                    <option value="Bell State ψ-">Bell State ψ-</option>
-                    <option value="Custom State">Custom State</option>
-                    <option value="GHZ">GHZ State</option>
-                    <option value="Uniform Superposition">Uniform Superposition</option>
-                    {!completionGuaranteed && (
-                      <option value="W-State">W-State</option>
-                    )}
+                    <option value="Bell State φ+">{getDropdownLabel("Bell State φ+")}</option>
+                    <option value="Bell State φ-">{getDropdownLabel("Bell State φ-")}</option>
+                    <option value="Bell State ψ+">{getDropdownLabel("Bell State ψ+")}</option>
+                    <option value="Bell State ψ-">{getDropdownLabel("Bell State ψ-")}</option>
+                    <option value="Custom State">{getDropdownLabel("Custom State")}</option>
+                    <option value="GHZ">{getDropdownLabel("GHZ")}</option>
+                    <option value="Uniform Superposition">{getDropdownLabel("Uniform Superposition")}</option>
+                    <option value="W-State">{getDropdownLabel("W-State")}</option>
                   </select>
                 </>
               )}
-
             </div>
           )}
+
           <div className="custom-node-port-in mb-3 mt-2">
             <div className="relative flex flex-col overflow-visible">
               {(node.data.label === "Encode Value" || node.data.label === "Basis Encoding" || node.data.label === "Custom Encoding" || node.data.label === "Angle Encoding" || node.data.label === "Amplitude Encoding" || node.data.label === "Matrix Encoding" || node.data.label === "Schmidt Decomposition") && (
@@ -556,11 +680,6 @@ export const StatePreparationNode = memo((node: Node) => {
                     borderBottomRightRadius: '20px',
                   }}
                 >
-                  <div
-                    className="absolute inset-y-0 left-0 "
-
-                  />
-
                   <Handle
                     type="target"
                     id={`classicalHandleStatePreparationInput0${node.id}`}
@@ -576,76 +695,75 @@ export const StatePreparationNode = memo((node: Node) => {
                       type: {node.data.inputTypes[0]?.toLowerCase() ?? "number"}
                     </span>
                   </div>
-
-                </div>)}
-
-              {ancillaMode && (<div>
-                <div
-                  className="relative p-2 mb-1"
-                  style={{
-                    width: '120px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'flex-start',
-                  }}
-                >
-                  <div
-                    className="absolute inset-0 custom-shape-mirrored"
-                    style={{
-                      backgroundColor: ancillaConstructColor,
-                    }}
-                  />
-                  <Handle
-                    type="target"
-                    id={`ancillaHandleOperationInput2${node.id}`}
-                    position={Position.Left}
-                    className={cn(
-                      "z-10 ancilla-port-in w-4 transform rotate-45 -left-[8px]",
-                      isAncillaConnected
-                        ? "!bg-green-100 !border-solid !border-black"
-                        : "!bg-gray-200 !border-dashed !border-black"
-                    )}
-                    style={{ zIndex: 1, top: '50% !important', transform: 'translateY(-50%) rotate(45deg)' }}
-                  />
-
-
-                  <span className="text-black text-sm text-center w-full" style={{ zIndex: 1 }}>Ancilla</span>
                 </div>
-                <div
-                  className="relative p-2"
-                  style={{
-                    width: '120px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'flex-start',
-                  }}
-                >
+              )}
+
+              {ancillaMode && (
+                <div>
                   <div
-                    className="absolute inset-0 custom-shape-mirrored"
+                    className="relative p-2 mb-1"
                     style={{
-                      backgroundColor: dirtyConstructColor,
+                      width: '120px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'flex-start',
                     }}
-                  />
-                  <Handle
-                    type="target"
-                    id={`${dirtyAncillaHandle}OperationInput3${node.id}`}
-                    position={Position.Left}
-                    className={cn(
-                      "z-10 ancilla-port-in w-4 transform rotate-45 -left-[8px]",
-                      isDirtyAncillaConnected
-                        ? "!bg-green-100 !border-solid !border-black"
-                        : "!bg-gray-200 !border-dashed !border-black"
-                    )}
-                    style={{ zIndex: 1, top: '50% !important', transform: 'translateY(-50%) rotate(45deg)' }}
-                  />
-                  <span className="text-black text-sm text-center w-full" style={{ zIndex: 1 }}> Dirty Ancilla</span>
+                  >
+                    <div
+                      className="absolute inset-0 custom-shape-mirrored"
+                      style={{
+                        backgroundColor: ancillaConstructColor,
+                      }}
+                    />
+                    <Handle
+                      type="target"
+                      id={`ancillaHandleOperationInput2${node.id}`}
+                      position={Position.Left}
+                      className={cn(
+                        "z-10 ancilla-port-in w-4 transform rotate-45 -left-[8px]",
+                        isAncillaConnected
+                          ? "!bg-green-100 !border-solid !border-black"
+                          : "!bg-gray-200 !border-dashed !border-black"
+                      )}
+                      style={{ zIndex: 1, top: '50% !important', transform: 'translateY(-50%) rotate(45deg)' }}
+                    />
+                    <span className="text-black text-sm text-center w-full" style={{ zIndex: 1 }}>Ancilla</span>
+                  </div>
+                  <div
+                    className="relative p-2"
+                    style={{
+                      width: '120px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'flex-start',
+                    }}
+                  >
+                    <div
+                      className="absolute inset-0 custom-shape-mirrored"
+                      style={{
+                        backgroundColor: dirtyConstructColor,
+                      }}
+                    />
+                    <Handle
+                      type="target"
+                      id={`${dirtyAncillaHandle}OperationInput3${node.id}`}
+                      position={Position.Left}
+                      className={cn(
+                        "z-10 ancilla-port-in w-4 transform rotate-45 -left-[8px]",
+                        isDirtyAncillaConnected
+                          ? "!bg-green-100 !border-solid !border-black"
+                          : "!bg-gray-200 !border-dashed !border-black"
+                      )}
+                      style={{ zIndex: 1, top: '50% !important', transform: 'translateY(-50%) rotate(45deg)' }}
+                    />
+                    <span className="text-black text-sm text-center w-full" style={{ zIndex: 1 }}> Dirty Ancilla</span>
+                  </div>
                 </div>
-              </div>)}
+              )}
             </div>
           </div>
 
           <div className="custom-node-port-out">
-
             <>
               {node.data.label === "Prepare State" && (
                 <OutputPort
@@ -664,8 +782,9 @@ export const StatePreparationNode = memo((node: Node) => {
                   setSizeError={setSizeError}
                   setSelectedNode={setSelectedNode}
                   active={true}
-                />)}
-              {(node.data.label === "Encode Value" || node.data.label === "Custom Encoding" || node.data.label === "Basis Encoding" || node.data.label === "Amplitude Encoding" || node.data.label === "Angle Encoding" || node.data.label ==="Matrix Encoding" ||node.data.label ==="Schmidt Decomposition") && (
+                />
+              )}
+              {(node.data.label === "Encode Value" || node.data.label === "Custom Encoding" || node.data.label === "Basis Encoding" || node.data.label === "Amplitude Encoding" || node.data.label === "Angle Encoding" || node.data.label === "Matrix Encoding" || node.data.label === "Schmidt Decomposition") && (
                 <OutputPort
                   node={node}
                   index={0}
@@ -681,7 +800,8 @@ export const StatePreparationNode = memo((node: Node) => {
                   setSizeError={setSizeError}
                   setSelectedNode={setSelectedNode}
                   active={true}
-                />)}
+                />
+              )}
             </>
           </div>
 
@@ -708,6 +828,6 @@ export const StatePreparationNode = memo((node: Node) => {
           )}
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 });

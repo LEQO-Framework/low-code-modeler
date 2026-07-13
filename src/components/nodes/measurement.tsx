@@ -6,6 +6,7 @@ import { shallow } from "zustand/shallow";
 import OutputPort from "../utils/outputPort";
 import { AlertCircle } from "lucide-react";
 import { findDuplicateOutputIdentifiers, findDuplicateOutputIdentifiersInsideNode } from "../utils/utils";
+import { awareness } from "@/yjs";
 
 const selector = (state: {
   selectedNode: Node | null;
@@ -14,18 +15,20 @@ const selector = (state: {
   updateNodeValue: (nodeId: string, field: string, nodeVal: any) => void;
   setNodes: (node: Node) => void;
   setSelectedNode: (node: Node) => void;
+  experienceLevel: string;
 }) => ({
   selectedNode: state.selectedNode,
   edges: state.edges,
   nodes: state.nodes,
   setNodes: state.setNodes,
   updateNodeValue: state.updateNodeValue,
-  setSelectedNode: state.setSelectedNode
+  setSelectedNode: state.setSelectedNode,
+  experienceLevel: state.experienceLevel
 });
 
 export const MeasurementNode = memo((node: Node) => {
   const { data, selected } = node;
-  const { edges, nodes, updateNodeValue, setSelectedNode } = useStore(selector, shallow);
+  const { edges, nodes, updateNodeValue, setSelectedNode, experienceLevel } = useStore(selector, shallow);
   const alledges = getConnectedEdges([node], edges);
   const [y, setY] = useState("");
   const [classicalOutputIdentifierError, setClassicalOutputIdentifierError] = useState(false);
@@ -35,6 +38,9 @@ export const MeasurementNode = memo((node: Node) => {
   const [showingChildren, setShowingChildren] = useState(false);
   const [sizeError, setSizeError] = useState(false);
   const [classicalSizeError, setClassicalSizeError] = useState(false);
+    const [mixedView, setMixedView] = useState(false);
+  const [hasPioneerUser, setHasPioneerUser] = useState(false);
+  const [hasExplorerUser, setHasExplorerUser] = useState(false);
 
 
   const [inputs, setInputs] = useState(data.inputs || []);
@@ -102,16 +108,56 @@ export const MeasurementNode = memo((node: Node) => {
     setSelectedNode(node);
   };
 
+  const id = node.id;
 
+  const [remoteHighlightColor, setRemoteHighlightColor] = useState<string | null>(null);
+  const [selectingUserName, setSelectingUserName] = useState<string | null>(null); // technically not needed, could extend functionality to also show user name next to highlighted node
+
+  useEffect(() => {
+    const checkRemoteSelection = () => {
+      let foundColor: string | null = null;
+      let foundName: string | null = null;
+
+      // Loop through all active client states in the room
+      awareness.getStates().forEach((state: any, clientId: number) => {
+        // Skip your own client ID so you don't highlight it with your own color
+        // if (clientId === awareness.clientID) return;
+
+        // Check if a peer has selected this specific node ID
+        if (state.cursor && state.cursor.mySelectedNodeId === id) {
+          foundColor = state.cursor.color;
+          foundName = state.cursor.name;
+        }
+      });
+
+      setRemoteHighlightColor(foundColor);
+      setSelectingUserName(foundName);
+      console.log("COLOR", foundColor, foundName);
+    };
+
+    // Run once immediately on mount
+    checkRemoteSelection();
+
+    // 3. Listen to remote awareness updates
+    awareness.on("change", checkRemoteSelection);
+
+    // Clean up listener when the node unmounts
+    return () => {
+      awareness.off("change", checkRemoteSelection);
+    };
+  }, [id]); // Re-run if node ID changes
 
   return (
     <div className="grand-parent">
       <div
-        className={cn(
-          "w-[320px] bg-white border border-solid border-gray-700 shadow-md",
-          selected && "border-blue-500"
-        )}
-        style={{ height: `${dynamicHeight}px` }}
+        className={"w-[320px] bg-white border border-solid shadow-md"}
+        style={{
+          height: `${dynamicHeight}px`,
+          borderColor: remoteHighlightColor ? remoteHighlightColor : (selected ? "#3B82F6" : "#374151"),
+          boxShadow: remoteHighlightColor
+            ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}` // Glowing aura ring
+            : undefined,
+        }}
       >
         {(outputIdentifierError || classicalOutputIdentifierError) && (
           <div className="absolute top-2 right-[-50px] group z-20">
@@ -148,7 +194,19 @@ export const MeasurementNode = memo((node: Node) => {
           <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
             <img src="measurementIcon2.png" alt="icon" className="w-[40px] h-[40px] object-contain flex-shrink-0" />
             <div className="h-full w-[1px] bg-black mx-2" />
-            <span className="truncate font-semibold leading-none" style={{ paddingLeft: '55px' }}>{data.label}</span>
+            <span className="truncate font-semibold leading-none">{mixedView ? (
+                  <span className="font-semibold text-xs text-blue-900 block">
+                    P: Measurement / E: Readout the Result
+                  </span>
+                ) : experienceLevel === "explorer" ? (
+                  <span className="font-semibold text-sm">
+                    Readout the Result
+                  </span>
+                ) : (
+                  <span className="font-semibold text-sm">
+                    Measurement
+                  </span>
+                )}</span>
           </div>
         </div>
         <div className="flex justify-center">

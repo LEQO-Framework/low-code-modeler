@@ -1,9 +1,197 @@
 import { useStore } from "@/config/store";
-import { AlgorithmNode, ClassicalAlgorithmNode, parameterized_one_qubit, parameterized_two_qubit, multi_parameterized_two_qubit, OperatorNode, minMaxOperatorLabel, comparisonOperatorLabel, ClassicalOperatorNode, bitwiseOperatorLabel, controlStructureNodes, ControlStructureNode, IfElseNode } from "@/constants";
+import {
+  AlgorithmNode,
+  AncillaNode,
+  ClassicalAlgorithmNode,
+  ClassicalOperatorNode,
+  ClassicalOutputOperationNode,
+  ControlStructureNode,
+  DataTypeNode,
+  DeutschJozsaNode,
+  EditableNode,
+  GateNode,
+  GroverDiffuserNode,
+  GroverNode,
+  GroupNode,
+  IfElseNode,
+  InverseQFTNode,
+  MCMTGateNode,
+  MeasurementNode,
+  MergerNode,
+  OperatorNode,
+  PluginNode,
+  QAOANode,
+  QFTNode,
+  QubitNode,
+  SplitterNode,
+  StatePreparationNode,
+  UniversalOracleNode,
+  parameterized_one_qubit,
+  parameterized_two_qubit,
+  multi_parameterized_two_qubit,
+  minMaxOperatorLabel,
+  comparisonOperatorLabel,
+  bitwiseOperatorLabel,
+  controlStructureNodes,
+  multi_qubit_gates,
+  non_parameterized_one_qubit,
+  non_parameterized_two_qubit,
+  NodeTypes,
+  qubitLabel
+} from "@/constants";
 import { ArrowLeft } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Node } from "reactflow";
 import { shallow } from "zustand/shallow";
+
+const NODE_EXPLANATIONS: Record<string, string> = {
+  [QFTNode]:
+    "Applies the Quantum Fourier Transform (QFT), which converts a quantum state into its frequency representation. It is commonly used in algorithms such as phase estimation and factoring.",
+
+  [InverseQFTNode]:
+    "Applies the inverse Quantum Fourier Transform (QFT), converting a state back from its frequency representation.",
+
+  [MCMTGateNode]:
+    "Applies a gate to one or more target qubits only if all control qubits are in the |1⟩ state. Configure the number of control and target qubits and select the gate matrix.",
+
+  [AlgorithmNode]:
+    "Runs a custom quantum algorithm defined in a QASM file.",
+
+  [ClassicalAlgorithmNode]:
+    "Runs a custom classical algorithm defined in a QASM file.",
+
+  [DeutschJozsaNode]:
+    "Implements the Deutsch-Jozsa algorithm, which determines whether a function always returns the same value or returns different values for half of its inputs. Select the input size and the function type.",
+
+  [UniversalOracleNode]:
+    "Marks selected quantum states for use in quantum algorithms such as Grover's search. Choose whether to flip qubits or apply phase flips, then select the states to mark.",
+
+  [GroverDiffuserNode]:
+    "Applies Grover's diffusion operator, increasing the probability of measuring the marked states during Grover's search algorithm.",
+
+  [GroverNode]:
+    "Implements Grover's search algorithm, which searches an unsorted set of elements faster than a classical algorithm. Select the number of qubits and the elements to search for.",
+
+  [QAOANode]:
+    "Implements the Quantum Approximate Optimization Algorithm (QAOA), which finds approximate solutions to optimization problems. Select the problem, provide the input data, choose an optimizer, and set the number of layers.",
+
+  [MeasurementNode]:
+    "Measures a quantum register, converting its quantum state into classical measurement results. Select the measurement basis if required.",
+
+  [AncillaNode]:
+    "Creates one or more ancilla qubits. Ancilla qubits are temporary helper qubits used during quantum computations.",
+
+  [QubitNode]:
+    "Creates a quantum register. Set the number of qubits in the register.",
+
+  [SplitterNode]:
+    "Splits a quantum register into separate registers according to a QASM definition.",
+
+  [MergerNode]:
+    "Merges quantum registers into a single register according to a QASM definition.",
+
+  [OperatorNode]:
+    "Applies one or more quantum gates to the selected qubits.",
+
+  [ClassicalOutputOperationNode]:
+    "Performs an operation on classical measurement results before passing them to the next node.",
+
+  [IfElseNode]:
+    "Executes different branches depending on whether a specified condition is true or false.",
+
+  [ControlStructureNode]:
+    "Controls the execution flow of the workflow, such as repeating or conditionally executing nodes.",
+
+  [ClassicalOperatorNode]:
+    "Performs classical operations on the input and returns classical output.",
+
+  [PluginNode]:
+    "Executes functionality provided by the plugin.",
+
+  [EditableNode]:
+    "A customizable node that can be configured to perform user-defined operations."
+};
+
+const GATE_EXPLANATIONS: Record<string, string> = {
+  [parameterized_one_qubit[0]]: "X-axis rotation by an angle (rad or deg).",
+  [parameterized_one_qubit[1]]: "Y-axis rotation by an angle (rad or deg).",
+  [parameterized_one_qubit[2]]: "Z-axis rotation by an angle (rad or deg).",
+
+  [parameterized_one_qubit[3]]: "Applies a phase shift of an angle (rad or deg) to the |1⟩ state.",
+  [parameterized_two_qubit[0]]: "If control qubit is in state |1⟩, applies a phase shift of an angle (rad or deg) to the |1⟩ state.",
+
+  [parameterized_two_qubit[1]]: "If control qubit is in state |1⟩, apply X-axis rotation by an angle (rad or deg).",
+  [parameterized_two_qubit[2]]: "If control qubit is in state |1⟩, apply Y-axis rotation by an angle (rad or deg).",
+  [parameterized_two_qubit[3]]: "If control qubit is in state |1⟩, apply Z-axis rotation by an angle (rad or deg).",
+  ["CU"]: "If control qubit is in state |1⟩, apply the U-gate. Set the matrix for the U-gate in the 'Matrix' field.",
+
+  [non_parameterized_one_qubit[0]]: "Creates superposition by applying a Hadamard transform.",
+  [non_parameterized_one_qubit[1]]: "Applies a π/4 phase shift.",
+  [non_parameterized_one_qubit[2]]: "Flips |0⟩ and |1⟩ states.",
+  [non_parameterized_one_qubit[3]]: "Applies a π rotation around the Y-axis.",
+  [non_parameterized_one_qubit[4]]: "Applies a π phase flip to the |1⟩ state.",
+  [non_parameterized_one_qubit[5]]: "Applies a π/2 phase shift to the |1⟩ state.",
+  [non_parameterized_one_qubit[6]]: "Creates superposition by applying a π/2 rotation around the X-axis.",
+  [non_parameterized_one_qubit[7]]: "Inverse S gate; removes a π/2 phase shift.",
+  [non_parameterized_one_qubit[8]]: "Inverse T gate; removes a π/4 phase shift.",
+
+  [non_parameterized_two_qubit[0]]: "If control qubit is in state |1⟩, flips |0⟩ and |1⟩ states of the target qubit.",
+  [non_parameterized_two_qubit[1]]: "Swaps the states of two qubits.",
+  [non_parameterized_two_qubit[2]]: "If control qubit is in state |1⟩, applies a π rotation around the Y-axis to the target qubit.",
+  [non_parameterized_two_qubit[3]]: "If control qubit is in state |1⟩, applies a π phase flip to the |1⟩ state of the target qubit.",
+  [non_parameterized_two_qubit[4]]: "If control qubit is in state |1⟩, applies the H gate to the target qubit.",
+
+  [multi_qubit_gates[0]]: "If both control qubits are in state |1⟩, flips |0⟩ and |1⟩ states of the target qubit.",
+  [multi_qubit_gates[1]]: "If control qubit is in state |1⟩, swaps the states of the two target qubits.",
+  [qubitLabel]: "Represents an individual qubit in the circuit."
+};
+
+const DATA_TYPE_EXPLANATIONS: Record<string, string> = {
+  ["bit"]: "Binary value (0 or 1).",
+  ["boolean"]: "True or false value.",
+  ["Number"]: "Numeric value.",
+  ["Array"]: "List of values, separated by a comma.",
+  ["File"]: "Data loaded from a file. Specify the file path in the 'Value' field.",
+  ["String"]: "Text data."
+}
+
+const STATE_PREPERATION_EXPLANATIONS: Record<string, string> = {
+  ["Basis Encoding"]:
+    "Encodes classical data into computational basis states by mapping binary values to qubit basis states. Numeric values can be converted to binary using the selected precision.",
+
+  ["Custom Encoding"]:
+    "Maps classical values to quantum states using a user-defined implementation.",
+
+  ["Angle Encoding"]:
+    "Encodes an array of classical values into a quantum state using rotation gates. For each input value xi, the corresponding qubit is rotated by RY(2xi).",
+  ["Amplitude Encoding"]:
+    "Encodes an array of numbers using less qubits than basis encoding but requires more depth.",
+  ["Matrix Encoding"]:
+    "Encodes a non-unitary matrix into a unitary matrix."
+  ,
+  ["Prepare State"]:
+    "Initializes the quantum register in a predefined quantum state, such as a basis state, Bell state, GHZ state or W state. Specify size if the state is not a Bell state."
+};
+
+const getNodeExplanation = (selectedNode: Node | null) => {
+  if (!selectedNode) {
+    return "";
+  }
+
+  if (selectedNode.type === GateNode) {
+    return GATE_EXPLANATIONS[selectedNode.data.label] ?? "Error: No explanation available for gate node: " + selectedNode.data.label;
+  }
+
+  if (selectedNode.type === DataTypeNode) {
+    return DATA_TYPE_EXPLANATIONS[selectedNode.data.label] ?? "Error: No explanation available for data type node: " + selectedNode.data.label;
+  }
+
+  if (selectedNode.type === StatePreparationNode) {
+    return STATE_PREPERATION_EXPLANATIONS[selectedNode.data.label] ?? "Error: No explanation available for state preperation node: " + selectedNode.data.label;
+  }
+
+  return NODE_EXPLANATIONS[selectedNode.type] ?? "Error: No explanation available for node type: " + selectedNode.type;
+};
 
 const selector = (state: {
   selectedNode: Node | null;
@@ -18,7 +206,6 @@ const selector = (state: {
   updateNodeValue: state.updateNodeValue,
   setSelectedNode: state.setSelectedNode,
 });
-
 
 export const TextPanel = () => {
   const { selectedNode, updateNodeLabel, updateNodeValue, setSelectedNode, completionGuaranteed } = useStore(
@@ -56,9 +243,12 @@ export const TextPanel = () => {
     "basis",
     "indices",
     "condition",
-    "clusteringAlgorithm"
+    "clusteringAlgorithm",
+    "numControls",
+    "numTargets",
+    "matrix",
+    "controlValue"
   ];
-
 
   const normalizeDegrees = (deg) => {
     const normalized = deg % 360;
@@ -74,7 +264,6 @@ export const TextPanel = () => {
 
   const radToDeg = (rad) => normalizeDegrees((parseFloat(rad) * 180) / Math.PI);
 
-
   const safeEval = (expr) => {
     try {
       console.log(expr)
@@ -85,7 +274,6 @@ export const TextPanel = () => {
       return NaN;
     }
   };
-
 
   const handleParameterChange = (value) => {
     const evaluated = safeEval(value);
@@ -102,9 +290,9 @@ export const TextPanel = () => {
   };
 
   let validMinValue = 0;
-  if(selectedNode.type === 'splitterNode' || selectedNode.type === 'mergerNode') {
+  if (selectedNode?.type === 'splitterNode' || selectedNode?.type === 'mergerNode') {
     validMinValue = 2;
-  } else if (selectedNode.type === 'ifElseNode' || selectedNode.type === 'controlStructureNode') {
+  } else if (selectedNode?.type === 'ifElseNode' || selectedNode?.type === 'controlStructureNode' || selectedNode?.type === 'mcmt-gate') {
     validMinValue = 1;
   }
 
@@ -126,7 +314,7 @@ export const TextPanel = () => {
       }
       // funktioniert nicht ganz richtig, man kann Eingabe nicht mit delete key löschen.
       else if (!isNaN(Number(value))) {
-        if(Number(value) < validMinValue) {
+        if (Number(value) < validMinValue) {
           selectedNode.data[field] = Number(validMinValue);
           updateNodeValue(selectedNode.id, field, String(validMinValue));
         } else {
@@ -134,7 +322,6 @@ export const TextPanel = () => {
           updateNodeValue(selectedNode.id, field, value);
         }
       }
-
     }
   }
 
@@ -163,8 +350,6 @@ export const TextPanel = () => {
     }
   }
 
-
-
   return (
     <>
       <aside className="flex flex-col w-full h-full overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
@@ -179,6 +364,21 @@ export const TextPanel = () => {
           <h2 className="flex-grow text-center">Properties Panel</h2>
         </div>
         <hr />
+
+        {selectedNode && (
+          <div className="p-2 mt-3">
+            <label
+              className="block text-sm font-medium text-start text-gray-700"
+              htmlFor="nodeExplanation"
+            >
+              Explanation
+            </label>
+
+            <div className="mt-1 min-h-28 border border-gray-300 rounded-md sm:text-sm p-2 bg-gray-50 text-gray-700">
+              {getNodeExplanation(selectedNode)}
+            </div>
+          </div>
+        )}
 
         {selectedNode?.type === "positionNode" && (
           <div className="p-2 mt-3">
@@ -201,6 +401,8 @@ export const TextPanel = () => {
             </div>
           </div>
         )}
+
+
 
         {selectedNode?.data.label === "Encode Value" && (
           <div className="p-2 mt-3">
@@ -296,10 +498,10 @@ export const TextPanel = () => {
                     className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
                   >
                     <option value="+">+</option>
-                    {!completionGuaranteed &&(<option value="-">-</option>)}
-                    {!completionGuaranteed &&(<option value="/">/</option>)}
-                    {!completionGuaranteed &&(<option value="*">*</option>)}
-                    {!completionGuaranteed &&(<option value="**">**</option>)}
+                    {!completionGuaranteed && (<option value="-">-</option>)}
+                    {!completionGuaranteed && (<option value="/">/</option>)}
+                    {!completionGuaranteed && (<option value="*">*</option>)}
+                    {!completionGuaranteed && (<option value="**">**</option>)}
                   </select>
                 </div>
               </>
@@ -416,7 +618,7 @@ export const TextPanel = () => {
               </>
             )}
 
-            {!completionGuaranteed && (
+            {(
               <>
                 <label
                   className="block text-sm font-medium text-start text-gray-700 mt-2"
@@ -499,6 +701,40 @@ export const TextPanel = () => {
                     <option value="degree">Degree</option>
                     <option value="radian">Radian</option>
                   </select>
+                </div>
+              </div>
+            )}
+
+            {(selectedNode.data.label === "CU") && (
+              <div className="p-2 mt-3">
+                <label className="block text-sm font-medium text-start text-gray-700" htmlFor="parameter">
+                  Control Value
+                </label>
+                <div className="mt-1">
+                  <select
+                    id="controlValue"
+                    name="controlValue"
+                    value={selectedNode.data.controlValue || ""}
+                    onChange={(e) => handleNumberChange("controlValue", e.target.value)}
+                    className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
+                  >
+                    <option value="0">0</option>
+                    <option value="1">1</option>
+                  </select>
+                </div>
+
+                <label className="block text-sm font-medium text-start text-gray-700 mt-4" htmlFor="matrix">
+                  Matrix
+                </label>
+                <div className="mt-1">
+                  <input
+                    id="matrix"
+                    name="matrix"
+                    value={selectedNode.data.matrix || ""}
+                    onChange={(e) => handleNumberChange("matrix", e.target.value)}
+                    className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
+                  >
+                  </input>
                 </div>
               </div>
             )}
@@ -683,7 +919,7 @@ export const TextPanel = () => {
         )}
         {selectedNode?.type === "mergerNode" && (
           <div className="p-2 mt-3">
-{/*             <label
+            {/*             <label
               className="block text-sm font-medium text-start text-gray-700"
               htmlFor="numberInputs"
             >
