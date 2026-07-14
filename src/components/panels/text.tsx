@@ -112,7 +112,7 @@ const NODE_EXPLANATIONS: Record<string, string> = {
     "A customizable node that can be configured to perform user-defined operations."
 };
 
-const GATE_PARAMETER_EXPLANATION = "Changing units automatically converts the current parameter value and normalizes it to either 360° (deg) or 2π (rad).\nThe conversion follows the standard formula: rad = (deg × π)/180°. "
+const GATE_PARAMETER_EXPLANATION = "Changing units automatically converts the current parameter value and normalizes it to either 360° (deg) or 2π (rad).\nConversion formula: rad = (deg × π)/180°. "
 
 const GATE_EXPLANATIONS: Record<string, string> = {
   [parameterized_one_qubit[0]]: "X-axis rotation by an angle (rad or deg)."+"\n\n"+GATE_PARAMETER_EXPLANATION,
