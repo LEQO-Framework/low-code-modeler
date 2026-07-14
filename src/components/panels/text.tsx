@@ -112,17 +112,19 @@ const NODE_EXPLANATIONS: Record<string, string> = {
     "A customizable node that can be configured to perform user-defined operations."
 };
 
+const GATE_PARAMETER_EXPLANATION = "Changing units automatically converts the current parameter value and normalizes it to either 360° (deg) or 2π (rad).\nThe conversion follows the standard formula: rad = (deg × π)/180°. "
+
 const GATE_EXPLANATIONS: Record<string, string> = {
-  [parameterized_one_qubit[0]]: "X-axis rotation by an angle (rad or deg).",
-  [parameterized_one_qubit[1]]: "Y-axis rotation by an angle (rad or deg).",
-  [parameterized_one_qubit[2]]: "Z-axis rotation by an angle (rad or deg).",
+  [parameterized_one_qubit[0]]: "X-axis rotation by an angle (rad or deg)."+"\n\n"+GATE_PARAMETER_EXPLANATION,
+  [parameterized_one_qubit[1]]: "Y-axis rotation by an angle (rad or deg)."+"\n\n"+GATE_PARAMETER_EXPLANATION,
+  [parameterized_one_qubit[2]]: "Z-axis rotation by an angle (rad or deg)."+"\n\n"+GATE_PARAMETER_EXPLANATION,
 
-  [parameterized_one_qubit[3]]: "Applies a phase shift of an angle (rad or deg) to the |1⟩ state.",
-  [parameterized_two_qubit[0]]: "If control qubit is in state |1⟩, applies a phase shift of an angle (rad or deg) to the |1⟩ state.",
+  [parameterized_one_qubit[3]]: "Applies a phase shift of an angle (rad or deg) to the |1⟩ state."+"\n\n"+GATE_PARAMETER_EXPLANATION,
+  [parameterized_two_qubit[0]]: "If control qubit is in state |1⟩, applies a phase shift of an angle (rad or deg) to the |1⟩ state."+"\n\n"+GATE_PARAMETER_EXPLANATION,
 
-  [parameterized_two_qubit[1]]: "If control qubit is in state |1⟩, apply X-axis rotation by an angle (rad or deg).",
-  [parameterized_two_qubit[2]]: "If control qubit is in state |1⟩, apply Y-axis rotation by an angle (rad or deg).",
-  [parameterized_two_qubit[3]]: "If control qubit is in state |1⟩, apply Z-axis rotation by an angle (rad or deg).",
+  [parameterized_two_qubit[1]]: "If control qubit is in state |1⟩, apply X-axis rotation by an angle (rad or deg)."+"\n\n"+GATE_PARAMETER_EXPLANATION,
+  [parameterized_two_qubit[2]]: "If control qubit is in state |1⟩, apply Y-axis rotation by an angle (rad or deg)."+"\n\n"+GATE_PARAMETER_EXPLANATION,
+  [parameterized_two_qubit[3]]: "If control qubit is in state |1⟩, apply Z-axis rotation by an angle (rad or deg)."+"\n\n"+GATE_PARAMETER_EXPLANATION,
   ["CU"]: "If control qubit is in state |1⟩, apply the U-gate. Set the matrix for the U-gate in the 'Matrix' field.",
 
   [non_parameterized_one_qubit[0]]: "Creates superposition by applying a Hadamard transform.",
@@ -374,7 +376,7 @@ export const TextPanel = () => {
               Explanation
             </label>
 
-            <div className="mt-1 min-h-28 border border-gray-300 rounded-md sm:text-sm p-2 bg-gray-50 text-gray-700">
+            <div className="mt-1 min-h-28 border border-gray-300 rounded-md sm:text-sm p-2 bg-gray-50 text-gray-700 whitespace-pre-line">
               {getNodeExplanation(selectedNode)}
             </div>
           </div>
