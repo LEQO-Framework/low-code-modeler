@@ -4,6 +4,7 @@
  */
 
 import { useMemo, useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { qasmToDirac, qasmToDiracSteps, normalizeQasm, type DiracStepsResult } from "./utils/qasmToDirac";
 import type { Complex } from "@/lib/diracFormatter";
 import { statevectorToDirac } from "@/lib/diracFormatter";
@@ -59,6 +60,11 @@ type QasmProps = {
   title?: string;
   onGetCircuitSvg?: () => Promise<string>;
   onGetModel?: () => object;
+  /** Wird beim Klick auf einen Schritt in den Mathematical Intermediate Steps aufgerufen,
+   *  mit den Canvas-Node-IDs ALLER Gates von Schritt 1 bis einschließlich des angeklickten
+   *  Schritts (Step-Click-Mechanismus, hebt alle bis dahin verwendeten Nodes auf dem Canvas
+   *  kurz hervor). */
+  onStepClick?: (nodeIds: string[]) => void;
 };
 
 type StatevectorProps = {
@@ -624,6 +630,40 @@ function ExportMenu({ latex, numQubits, terms, unicode, onGetCircuitSvg, stepsRe
   const [loadingSvg, setLoadingSvg] = useState(false);
   const [loadingPdf, setLoadingPdf] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [menuPos, setMenuPos] = useState<{ top: number; right: number } | null>(null);
+
+  // Position des Dropdowns relativ zum Viewport berechnen (nicht relativ zum
+  // nächsten "position: relative"-Vorfahren), damit "position: fixed" + Portal
+  // in document.body korrekt platziert wird, unabhängig von overflow-hidden-Ahnen.
+  const toggleOpen = () => {
+    if (!open && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setMenuPos({
+        top: rect.bottom + 4,
+        right: window.innerWidth - rect.right,
+      });
+    }
+    setOpen((v) => !v);
+  };
+
+  // Bei Scroll/Resize Position neu berechnen bzw. Menü schließen, damit es nicht
+  // "schwebend" an der falschen Stelle hängen bleibt.
+  useEffect(() => {
+    if (!open) return;
+    const handleReposition = () => {
+      if (buttonRef.current) {
+        const rect = buttonRef.current.getBoundingClientRect();
+        setMenuPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
+      }
+    };
+    window.addEventListener("scroll", handleReposition, true);
+    window.addEventListener("resize", handleReposition);
+    return () => {
+      window.removeEventListener("scroll", handleReposition, true);
+      window.removeEventListener("resize", handleReposition);
+    };
+  }, [open]);
 
   const copy = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -722,19 +762,23 @@ function ExportMenu({ latex, numQubits, terms, unicode, onGetCircuitSvg, stepsRe
   };
 
   return (
-    <div className="relative">
+    <div className="relative flex-shrink-0">
       <button
-        onClick={() => setOpen((v) => !v)}
+        ref={buttonRef}
+        onClick={toggleOpen}
         disabled={loadingSvg || loadingPdf}
-        className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border border-gray-300 hover:bg-gray-100 text-gray-600 transition-colors disabled:opacity-50"
+        className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border border-gray-300 hover:bg-gray-100 text-gray-600 transition-colors disabled:opacity-50 whitespace-nowrap"
       >
         {loadingSvg ? "⏳ Exporting..." : loadingPdf ? "⏳ PDF..." : "↑ Export"}
       </button>
 
-      {open && (
+      {open && menuPos && createPortal(
         <>
-          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 w-60 py-1 text-sm">
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div
+            className="fixed bg-white border border-gray-200 rounded-lg shadow-lg z-50 w-60 py-1 text-sm"
+            style={{ top: menuPos.top, right: menuPos.right }}
+          >
 
             {/* Kopieren */}
             <button onClick={() => copy(`|\\psi\\rangle = ${latex}`, "latex")}
@@ -788,7 +832,8 @@ function ExportMenu({ latex, numQubits, terms, unicode, onGetCircuitSvg, stepsRe
               <div className="px-3 py-2 text-red-500 text-xs">{pdfError}</div>
             )}
           </div>
-        </>
+        </>,
+        document.body
       )}
     </div>
   );
@@ -873,7 +918,7 @@ function Histogram({ data }: { data: HistogramBar[] }) {
   const totalWidth = data.length * (barWidth + gap);
 
   return (
-    <div className="w-full overflow-x-auto" ref={containerRef}>
+    <div className="w-full overflow-x-auto pt-8" ref={containerRef}>
       <div style={{ minWidth: needsScroll ? `${totalWidth}px` : "100%" }}>
         <div className="flex items-end" style={{ height: `${CHART_HEIGHT + 32}px` }}>
           <div className="flex flex-col justify-between items-end pr-1 flex-shrink-0"
@@ -934,6 +979,9 @@ function Histogram({ data }: { data: HistogramBar[] }) {
 
 export function QasmDiracPanel(props: Props) {
   const title = props.title ?? "Dirac Representation";
+  // onStepClick existiert nur auf QasmProps (Steps gibt es nur für QASM-Input) - daher
+  // per "in"-Check sicher aus dem Props-Union extrahieren.
+  const onStepClick = "onStepClick" in props ? props.onStepClick : undefined;
   const [showBasisStates, setShowBasisStates] = useState(true);
   const [showSteps, setShowSteps] = useState(false);
   const [showBloch, setShowBloch] = useState(false);
@@ -966,6 +1014,25 @@ export function QasmDiracPanel(props: Props) {
     // \text{Toffoli} = $$...$$  →  Vorangestelltes "X =" außerhalb von $$ in die Formel hineinziehen,
     // damit "Toffoli = " nicht als rohtext vor der Formel landet.
     result = result.replace(/\\text\{([A-Za-z0-9†]+)\}\s*=\s*\$\$/g, "$$$1 = ");
+
+    // KRITISCH: remark-math erkennt $$...$$ nur als eigenständigen Block (auf eigener Zeile).
+    // Mistral erzeugt manchmal Zeilen wie "X|0\rangle = $$...$$ $$...$$ = |1\rangle", bei denen
+    // mehrere $$-Blöcke mit Fließtext auf DERSELBEN Zeile gemischt sind - das wird von remark-math
+    // gar nicht als Mathe erkannt und roh angezeigt. Fix: pro Zeile prüfen, ob die Zeile NUR aus
+    // einem einzigen $$...$$-Block besteht (= echter Block). Falls nicht (Fließtext oder mehrere
+    // $$-Segmente auf derselben Zeile), alle $$...$$ auf dieser Zeile zu inline $...$ konvertieren,
+    // damit sie zumindest inline korrekt gerendert werden.
+    result = result
+      .split("\n")
+      .map((line) => {
+        const trimmed = line.trim();
+        const isStandaloneBlock = /^\$\$[\s\S]*\$\$$/.test(trimmed) &&
+          (trimmed.match(/\$\$/g) || []).length === 2;
+        if (isStandaloneBlock) return line; // echter eigenständiger Block, unverändert lassen
+        // Alle $$...$$ Vorkommen in dieser Zeile zu $...$ (inline) konvertieren
+        return line.replace(/\$\$([\s\S]*?)\$\$/g, (_m, inner) => `$${inner}$`);
+      })
+      .join("\n");
 
     return result;
   };
@@ -1020,7 +1087,7 @@ export function QasmDiracPanel(props: Props) {
         ? `This circuit has ${numSteps} steps. To stay within the response length limit: explain each step in 1-2 short sentences, and only include the matrix representation the FIRST time a given gate type appears (for repeated gate types, just refer back to it by name without repeating the matrix).`
         : `Please explain each step in 2-3 sentences. Include the matrix representation for each gate.`;
 
-      const prompt = `You are a quantum computing tutor. Explain the following quantum circuit computation in simple, clear English. For each step, explain what the gate does physically and mathematically, and why the state changes the way it does.\n\nFormatting rules (follow these strictly):\n- Use LaTeX math notation with $...$ for inline math and $$...$$ for block equations.\n- Every math expression, including step headers, gate names, and tensor products (e.g. $I_0 \\otimes X_2$), MUST be wrapped in $...$. Never write LaTeX commands like \\otimes, \\text, or subscripts outside of $...$.\n- Do not use \\text{...} for gate names inside math mode; instead write the gate symbol directly, e.g. write $\\text{CNOT}_{2,3}$ as $CNOT_{2,3}$ using plain uppercase letters, not \\text.\n- Keep each step header on its own line in the format: ### Step N: Apply $<gate notation>$\n- IMPORTANT: make sure your response is complete and not cut off. Always finish with a brief concluding sentence about the final state.\n\nInitial state: $|\\psi_0\\rangle$ = ${stepsResult.initial.unicode}\n\n${stepsText}${nodeContextText}\n\n${lengthGuidance} Focus on intuition and physical meaning.`;
+      const prompt = `You are a quantum computing tutor. Explain the following quantum circuit computation in simple, clear English. For each step, explain what the gate does physically and mathematically, and why the state changes the way it does.\n\nFormatting rules (follow these strictly):\n- Use LaTeX math notation with $...$ for inline math and $$...$$ for block equations.\n- Every math expression, including step headers, gate names, and tensor products (e.g. $I_0 \\otimes X_2$), MUST be wrapped in $...$. Never write LaTeX commands like \\otimes, \\text, or subscripts outside of $...$.\n- Do not use \\text{...} for gate names inside math mode; instead write the gate symbol directly, e.g. write $\\text{CNOT}_{2,3}$ as $CNOT_{2,3}$ using plain uppercase letters, not \\text.\n- CRITICAL: A $$...$$ block equation MUST be the ONLY thing on its line (on its own line, with nothing else before or after it). NEVER write a line that mixes plain text with $$...$$, and NEVER put more than one $$...$$ on the same line (e.g. NEVER write something like "X|0\\rangle = $$\\begin{pmatrix}...\\end{pmatrix}$$ = |1\\rangle" all on one line). If you want to show a full calculation with matrices inline in a sentence, use inline $...$ math instead of $$...$$, or put the entire calculation as a single standalone $$...$$ block on its own line with nothing else on that line.\n- Keep each step header on its own line in the format: ### Step N: Apply $<gate notation>$\n- IMPORTANT: make sure your response is complete and not cut off. Always finish with a brief concluding sentence about the final state.\n\nInitial state: $|\\psi_0\\rangle$ = ${stepsResult.initial.unicode}\n\n${stepsText}${nodeContextText}\n\n${lengthGuidance} Focus on intuition and physical meaning.`;
       const response = await fetch("https://api.mistral.ai/v1/chat/completions", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
@@ -1254,27 +1321,31 @@ export function QasmDiracPanel(props: Props) {
     <div className="rounded-xl border bg-white flex flex-col gap-3 p-4">
 
       {/* Header */}
-      <div className="flex items-start justify-between flex-shrink-0 gap-2 flex-wrap">
+      <div className="flex flex-col gap-2 flex-shrink-0">
         <h3 className="text-base font-semibold text-gray-800">{title}</h3>
-        <div className="flex items-center gap-2 flex-wrap justify-end">
+        <div className="flex items-center gap-2 flex-wrap">
           {fullResult && (
-            <span className="text-xs text-gray-400">
+            <span className="text-xs text-gray-400 whitespace-nowrap flex-shrink-0">
              {numQubits} {numQubits === 1 ? "Qubit" : "Qubits"} · {terms.length} {terms.length === 1 ? "Term" : "Terms"}
             </span>
           )}
-          {terms.length > 0 && (
+          {fullResult && numQubits > 0 && (
             <button
-              onClick={() => setShowBasisStates((v) => !v)}
-              className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border border-gray-300 hover:bg-gray-100 text-gray-600 transition-colors"
+              onClick={() => setShowProperties((v) => !v)}
+              className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border transition-colors flex-shrink-0 whitespace-nowrap ${
+                showProperties
+                  ? "bg-teal-50 border-teal-300 text-teal-600"
+                  : "border-gray-300 hover:bg-gray-100 text-gray-600"
+              }`}
             >
-              <span>{showBasisStates ? "▾" : "▸"}</span>
-              Histogram
+              <span>{showProperties ? "▾" : "▸"}</span>
+              Properties
             </button>
           )}
           {"qasm" in props && props.qasm && stepsResult && stepsResult.steps.length > 0 && (
             <button
               onClick={() => setShowSteps((v) => !v)}
-              className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border transition-colors ${
+              className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border transition-colors flex-shrink-0 whitespace-nowrap ${
                 showSteps
                   ? "bg-blue-50 border-blue-300 text-blue-600"
                   : "border-gray-300 hover:bg-gray-100 text-gray-600"
@@ -1284,10 +1355,19 @@ export function QasmDiracPanel(props: Props) {
               Steps
             </button>
           )}
+          {terms.length > 0 && (
+            <button
+              onClick={() => setShowBasisStates((v) => !v)}
+              className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border border-gray-300 hover:bg-gray-100 text-gray-600 transition-colors flex-shrink-0 whitespace-nowrap"
+            >
+              <span>{showBasisStates ? "▾" : "▸"}</span>
+              Histogram
+            </button>
+          )}
           {fullResult && numQubits > 0 && (
             <button
               onClick={() => setShowBloch((v) => !v)}
-              className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border transition-colors ${
+              className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border transition-colors flex-shrink-0 whitespace-nowrap ${
                 showBloch
                   ? "bg-purple-50 border-purple-300 text-purple-600"
                   : "border-gray-300 hover:bg-gray-100 text-gray-600"
@@ -1295,19 +1375,6 @@ export function QasmDiracPanel(props: Props) {
             >
               <span>{showBloch ? "▾" : "▸"}</span>
               Bloch
-            </button>
-          )}
-          {fullResult && numQubits > 0 && (
-            <button
-              onClick={() => setShowProperties((v) => !v)}
-              className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border transition-colors ${
-                showProperties
-                  ? "bg-teal-50 border-teal-300 text-teal-600"
-                  : "border-gray-300 hover:bg-gray-100 text-gray-600"
-              }`}
-            >
-              <span>{showProperties ? "▾" : "▸"}</span>
-              Properties
             </button>
           )}
           {fullResult && terms.length > 0 && (
@@ -1337,14 +1404,18 @@ export function QasmDiracPanel(props: Props) {
         </div>
       )}
 
-      {/* Formula */}
+      {/* Formula: Bei erkannter Messung (measurementResultHint) und solange der Nutzer keine
+          eigene manuelle Qubit-Auswahl getroffen hat (!isPartial), wird nur das Ergebnis der
+          gemessenen Qubits gezeigt - nicht das volle Register. Ohne Messung bleibt es beim
+          vollständigen Registerzustand wie bisher. */}
       <div className="flex-shrink-0 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 overflow-x-auto">
         <span className="font-mono text-sm text-gray-800 whitespace-nowrap">
-          |ψ⟩ = {unicodeStr}
+          |ψ⟩ = {(!isPartial && measurementResultHint) ? `|${measurementResultHint.bits}⟩` : unicodeStr}
         </span>
       </div>
 
       {/* Hinweis: in welchen Qubits laut Measurement-Node das eigentliche Ergebnis kodiert ist,
+          plus (da die Hauptzeile jetzt reduziert ist) der vollständige Registerzustand zur Info,
           nur sichtbar wenn aktuell "All" ausgewählt ist (sonst hat der User die Auswahl bereits
           selbst getroffen und der Hinweis wäre redundant). */}
       {!isPartial && measurementResultHint && (
@@ -1359,6 +1430,11 @@ export function QasmDiracPanel(props: Props) {
             <span className="font-mono font-semibold">
               |{measurementResultHint.bits}⟩ = {measurementResultHint.decimal}₁₀
             </span>
+            {unicodeStr && (
+              <>
+                {" "}· Full register: <span className="font-mono">{unicodeStr}</span>
+              </>
+            )}
           </span>
         </div>
       )}
@@ -1402,7 +1478,32 @@ export function QasmDiracPanel(props: Props) {
               <div key={idx} className="flex flex-col">
                 <div className="flex items-center gap-1.5 py-0.5 pl-10">
                   <span className="text-blue-400 text-xs">──</span>
-                  <span className="text-blue-600 text-xs font-sans font-medium bg-blue-50 border border-blue-100 px-1.5 py-0.5 rounded whitespace-nowrap">
+                  <span
+                    className={`text-blue-600 text-xs font-sans font-medium bg-blue-50 border border-blue-100 px-1.5 py-0.5 rounded whitespace-nowrap ${
+                      step.nodeId && onStepClick
+                        ? "cursor-pointer hover:bg-blue-100 hover:border-blue-300 transition-colors"
+                        : ""
+                    }`}
+                    onClick={
+                      step.nodeId && onStepClick
+                        ? () => {
+                            // Alle Node-IDs von Schritt 0 bis einschließlich des angeklickten
+                            // Schritts sammeln (dedupliziert, ohne undefined), damit alle bis
+                            // zu diesem Punkt verwendeten Nodes gemeinsam hervorgehoben werden.
+                            const nodeIdsUpToHere = Array.from(
+                              new Set(
+                                stepsResult.steps
+                                  .slice(0, idx + 1)
+                                  .map((s) => s.nodeId)
+                                  .filter((n): n is string => !!n)
+                              )
+                            );
+                            onStepClick(nodeIdsUpToHere);
+                          }
+                        : undefined
+                    }
+                    title={step.nodeId && onStepClick ? "Klicken um alle bis hierhin verwendeten Nodes auf dem Canvas hervorzuheben" : undefined}
+                  >
                     {step.gateLabel}
                   </span>
                   <span className="text-blue-400 text-xs">──→</span>
