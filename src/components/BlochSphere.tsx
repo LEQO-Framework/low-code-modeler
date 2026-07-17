@@ -183,9 +183,14 @@ function SingleBlochSphere({ bloch, label }: { bloch: { x: number; y: number; z:
     const rounded = Math.round(n * 1000) / 1000;
     return (rounded >= 0 ? "" : "") + rounded.toFixed(3).replace(/\.?0+$/, "").replace(/^$/, "0");
   };
-  const thetaLabel = thetaPi ? `${thetaDeg}° (${thetaPi})` : `${thetaDeg}°`;
-  const phiLabel   = phiPi   ? `${phiDeg}° (${phiPi})`   : `${phiDeg}°`;
-  const stateFormula = `|ψ⟩ = cos(${thetaDeg}°/2)|0⟩ + e^(i·${phiDeg}°)·sin(${thetaDeg}°/2)|1⟩ ≈ ${fmt(cosHalfTheta)}|0⟩ + e^(i·${phiDeg}°)·${fmt(sinHalfTheta)}|1⟩`;
+  const thetaLabel = thetaPi ? `${thetaPi} (${thetaDeg}°)` : `${thetaDeg}°`;
+  const phiLabel   = phiPi   ? `${phiPi} (${phiDeg}°)`   : `${phiDeg}°`;
+  // In der Formel selbst π statt Gradzahl verwenden, wenn eine bekannte π-Entsprechung existiert
+  // (z.B. "cos(π/2)" statt "cos(180°/2)"); nur wenn kein bekanntes Vielfaches von π/4 vorliegt,
+  // wird auf die Gradzahl zurückgefallen.
+  const thetaFormulaStr = thetaPi ?? `${thetaDeg}°`;
+  const phiFormulaStr = phiPi ?? `${phiDeg}°`;
+  const stateFormula = `|ψ⟩ = cos(${thetaFormulaStr}/2)|0⟩ + e^(i·${phiFormulaStr})·sin(${thetaFormulaStr}/2)|1⟩ ≈ ${fmt(cosHalfTheta)}|0⟩ + e^(i·${phiFormulaStr})·${fmt(sinHalfTheta)}|1⟩`;
 
   // Entanglement Persistence (von-Neumann-Entropie der reduzierten Dichtematrix dieses Qubits).
   // Eigenwerte der reduzierten 2x2-Dichtematrix ergeben sich aus der Bloch-Vektor-Laenge r:
@@ -207,7 +212,10 @@ function SingleBlochSphere({ bloch, label }: { bloch: { x: number; y: number; z:
     scene.background = new THREE.Color(0xfafafa);
 
     const camera = new THREE.PerspectiveCamera(38, W / H, 0.1, 100);
-    camera.position.set(1.5, 1.2, 2.5);
+    // Kamera weiter weg positionieren (gleiche Blickrichtung, ~40% mehr Abstand) als vorher
+    // (1.5, 1.2, 2.5), damit um die Einheitskugel (Radius 1) mehr sichtbarer Rand entsteht
+    // und sie nicht fast den gesamten Frame ausfüllt ("zu nah").
+    camera.position.set(2.1, 1.68, 3.5);
     camera.lookAt(0, 0, 0);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
