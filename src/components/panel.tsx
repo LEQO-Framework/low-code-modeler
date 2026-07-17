@@ -423,32 +423,42 @@ function ComponentSection({
       }
     : undefined;
 
-  const handleStepClick = (nodeId: string) => {
+  const handleStepClick = (nodeIds: string[]) => {
+    const idSet = new Set(nodeIds);
     setNodes((nds: Node[]) =>
       nds.map((n) => ({
         ...n,
-        selected: n.id === nodeId,
-        className: n.id === nodeId
+        selected: idSet.has(n.id),
+        className: idSet.has(n.id)
           ? (n.className ? n.className + " !ring-4 !ring-blue-500 !ring-offset-2 !shadow-lg !shadow-blue-400/60" : "!ring-4 !ring-blue-500 !ring-offset-2 !shadow-lg !shadow-blue-400/60")
           : n.className?.replace("!ring-4 !ring-blue-500 !ring-offset-2 !shadow-lg !shadow-blue-400/60", "").trim(),
       }))
     );
     setTimeout(() => {
-      const el = document.querySelector(`[data-id="${nodeId}"]`) as HTMLElement | null;
-      if (el) {
+      let firstEl: HTMLElement | null = null;
+      for (const nodeId of nodeIds) {
+        const el = document.querySelector(`[data-id="${nodeId}"]`) as HTMLElement | null;
+        if (!el) continue;
+        if (!firstEl) firstEl = el;
         el.style.transition = "box-shadow 0.15s ease-in-out, outline 0.15s ease-in-out";
         el.style.outline = "3px solid #3b82f6";
         el.style.outlineOffset = "3px";
         el.style.boxShadow = "0 0 0 6px rgba(59,130,246,0.35), 0 0 20px rgba(59,130,246,0.25)";
         el.style.zIndex = "999";
-        el.scrollIntoView({ behavior: "smooth", block: "center" });
-        setTimeout(() => {
+      }
+      // Nur zum ersten (frühesten) hervorgehobenen Node scrollen, damit die Ansicht nicht
+      // zwischen mehreren Nodes hin- und herspringt.
+      firstEl?.scrollIntoView({ behavior: "smooth", block: "center" });
+      setTimeout(() => {
+        for (const nodeId of nodeIds) {
+          const el = document.querySelector(`[data-id="${nodeId}"]`) as HTMLElement | null;
+          if (!el) continue;
           el.style.outline = "";
           el.style.outlineOffset = "";
           el.style.boxShadow = "";
           el.style.zIndex = "";
-        }, 1500);
-      }
+        }
+      }, 1500);
     }, 50);
     setTimeout(() => {
       setNodes((nds: Node[]) =>
