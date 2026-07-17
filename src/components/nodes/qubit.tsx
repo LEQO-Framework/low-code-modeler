@@ -1,10 +1,11 @@
-import { memo, useState, useRef, useEffect } from "react";
+import { memo, useState, useRef, useEffect, useMemo } from "react";
 import { Handle, Position, Node, Edge } from "reactflow";
 import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
 import OutputPort from "../utils/outputPort";
 import { cn } from "@/lib/utils";
 import { awareness } from "@/yjs";
+import { computeQubitIndices } from "@/lib/qubitIndexing";
 
 const selector = (state: {
   selectedNode: Node | null;
@@ -71,6 +72,20 @@ export const QubitNode = memo((node: Node) => {
 
   const id = node.id;
 
+  // Register-Index, den dieser Qubit-Node beim tatsächlichen Kompilieren bekäme
+  // (gleiche Gruppierungs-/Sortierlogik wie componentAnalyzer.ts / backend.ts).
+  // Wird bei jeder Änderung an nodes/edges neu berechnet, damit der Badge immer aktuell ist,
+  // egal auf welchem Weg (Drag&Drop, Duplizieren, QASM-Import, ...) der Node hinzugefügt wurde.
+  const qubitIndexLabel = useMemo(() => {
+    const indices = computeQubitIndices(nodes, edges);
+    const start = indices.get(id);
+    if (start === undefined) return null;
+
+    const rawSize = parseInt(String(data?.size), 10);
+    const size = Number.isFinite(rawSize) && rawSize > 0 ? rawSize : 1;
+    return size > 1 ? `${start}\u2013${start + size - 1}` : `${start}`;
+  }, [nodes, edges, id, data?.size]);
+
   const [remoteHighlightColor, setRemoteHighlightColor] = useState<string | null>(null);
   const [selectingUserName, setSelectingUserName] = useState<string | null>(null); // technically not needed, could extend functionality to also show user name next to highlighted node
 
@@ -110,13 +125,21 @@ export const QubitNode = memo((node: Node) => {
 
   return (
     <div className="grand-parent">
-      <div className={"w-[350px] h-[170px] rounded-none bg-white  border border-solid border-gray-700 shadow-md"}
+      <div className={"w-[350px] h-[170px] rounded-none bg-white  border border-solid border-gray-700 shadow-md relative"}
         style={{
           borderColor: remoteHighlightColor ? remoteHighlightColor : (selected ? "#3B82F6" : "#374151"),
           boxShadow: remoteHighlightColor
             ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}` // Glowing aura ring
             : undefined,
         }}>
+        {qubitIndexLabel !== null && (
+          <div
+            className="absolute bottom-1 right-1.5 text-xs font-mono font-semibold text-gray-500 bg-white/80 rounded px-1 leading-tight pointer-events-none select-none"
+            title={`Register-Index: q${qubitIndexLabel}`}
+          >
+            q{qubitIndexLabel}
+          </div>
+        )}
         <div className="w-full flex items-center" style={{ height: '52px' }}>
           <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
             <img src="qubitIcon.png" alt="icon" className="w-[40px] h-[40px] object-contain flex-shrink-0" />
