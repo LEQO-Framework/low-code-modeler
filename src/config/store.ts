@@ -20,7 +20,6 @@ import { v4 as uuid } from "uuid";
 import * as consts from "../constants";
 import { Template } from "@/components/panels/categories";
 import { DomainProfile } from "@/components/modals/domainProfileModal";
-import { nodesMap } from "@/yjs";
 
 export type NodeData = {
   label: string;
@@ -189,7 +188,7 @@ export const useStore = create<RFState>()(persist((set, get) => ({
     }
 
     if (node.type === consts.DataTypeNode) {
-      node.data.dataType = node.data.label;
+      node.data.dataType = node.data.label.toLowerCase();
       node.data.value = "";
       node.data.outputIdentifier = "";
     }
@@ -472,67 +471,12 @@ export const useStore = create<RFState>()(persist((set, get) => ({
   },
 
   onNodesChange: (changes: NodeChange[]) => {
-    const removedNodeIds = new Set(
-      changes.filter((c) => c.type === "remove").map((c: any) => c.id as string)
-    );
-
     const currentNodes = applyNodeChanges(changes, get().nodes);
-
-    // Wenn Nodes gelöscht wurden: alle verbundenen Edges entfernen
-    // und data.inputs der betroffenen Nachbar-Nodes bereinigen (analog zu onEdgesChange)
-    let currentEdges = get().edges;
-    let nodesAfterCleanup = currentNodes;
-
-    if (removedNodeIds.size > 0) {
-      const edgesToRemove = currentEdges.filter(
-        (e) => removedNodeIds.has(e.source) || removedNodeIds.has(e.target)
-      );
-      const remainingEdges = currentEdges.filter(
-        (e) => !removedNodeIds.has(e.source) && !removedNodeIds.has(e.target)
-      );
-
-      // data.inputs der Ziel-Nodes bereinigen, analog zur Logik in onEdgesChange
-      nodesAfterCleanup = currentNodes.map((node) => {
-        const relevantRemovedEdges = edgesToRemove.filter((e) => e.target === node.id);
-        if (relevantRemovedEdges.length === 0) return node;
-
-        const removedEdgeIds = new Set(relevantRemovedEdges.map((e) => e.id));
-        const updatedInputs = (node.data.inputs || []).filter(
-          (i: any) => !removedEdgeIds.has(i.edgeId ?? "")
-        );
-
-        let targetData = { ...node.data, inputs: updatedInputs };
-
-        // revert inputTypes auf "any" falls anwendbar (analog zu onEdgesChange)
-        if (
-          (node.type === consts.AlgorithmNode ||
-            node.type === consts.ClassicalAlgorithmNode ||
-            node.type === consts.StatePreparationNode) ||
-          (node.type === consts.ClassicalOperatorNode &&
-            (node.data.label?.includes("Arithmetic") || node.data.label?.includes("Comparison")))
-        ) {
-          const hasNoFixedType =
-            node.data.encodingType === "Basis Encoding" ||
-            node.data.encodingType === "Custom Encoding";
-          const stillHasOtherEdge = remainingEdges.some((e) => e.target === node.id);
-          if (!stillHasOtherEdge && hasNoFixedType) {
-            targetData.inputTypes = ["any", "any"];
-            if (node.data.label?.includes("Arithmetic")) {
-              targetData.outputTypes = ["any"];
-            }
-          }
-        }
-
-        return { ...node, data: targetData };
-      });
-
-      currentEdges = remainingEdges;
-    }
-
-    console.log(nodesAfterCleanup)
+    const currentEdges = get().edges;
+    console.log(currentNodes)
     const newHistoryItem: HistoryItem = {
       nodes: [...get().nodes], // Copy the nodes array to avoid mutation
-      edges: [...get().edges], // Copy the edges array to avoid mutation
+      edges: [...currentEdges], // Copy the edges array to avoid mutation
     };
     console.log(changes);
     // Avoid unnecessary history updates if there are no changes
@@ -557,16 +501,30 @@ export const useStore = create<RFState>()(persist((set, get) => ({
     console.log("Current Edges:", currentEdges);
     console.log("New History Item:", newHistoryItem);
 
-    set({
-      selectedNode: null,
-      nodes: nodesAfterCleanup,
-      edges: currentEdges,
-      history: [
-        ...get().history.slice(0, get().historyIndex + 1),
-        newHistoryItem,
-      ],
-      historyIndex: get().historyIndex + 1,
-    });
+    if (get().nodes.length < currentNodes) {
+      set({
+        selectedNode: null,
+        nodes: currentNodes,
+        edges: currentEdges,
+        history: [
+          ...get().history.slice(0, get().historyIndex + 1),
+          newHistoryItem,
+        ],
+        historyIndex: get().historyIndex + 1,
+      });
+    } else {
+
+      set({
+        selectedNode: null,
+        nodes: currentNodes,
+        edges: currentEdges,
+        history: [
+          ...get().history.slice(0, get().historyIndex + 1),
+          newHistoryItem,
+        ],
+        historyIndex: get().historyIndex + 1,
+      });
+    }
     console.log("History after update:", get().history);
     console.log("Current historyIndex:", get().historyIndex);
   },
@@ -586,8 +544,8 @@ export const useStore = create<RFState>()(persist((set, get) => ({
           const sourceNode = currentNodes.find((n) => n.id === removedEdge.source);
           console.log("target Node", targetNode);
 
-          if (targetNode) {
-            const targetNodeIndex = currentNodes.findIndex((n) => n.id === targetNode.id);
+        if (targetNode) {
+          const targetNodeIndex = currentNodes.findIndex((n) => n.id === targetNode.id);
 
             let targetData = {
               ...targetNode.data,
@@ -663,7 +621,7 @@ export const useStore = create<RFState>()(persist((set, get) => ({
       const node = get().nodes.find(n => n.id === nodeId);
       const sourceNode = get().nodes.find(n => n.id === connection.source);
       const targetNode = get().nodes.find(n => n.id === connection.target);
-
+      
       if (!node) return "any";
       if (node.type === consts.AlgorithmNode || node.type === consts.ClassicalAlgorithmNode) {
         return "any"
@@ -671,7 +629,7 @@ export const useStore = create<RFState>()(persist((set, get) => ({
       // TODO: figure out a better way to opt out of locked input types
       if (node.type === consts.PluginNode)
         return "any"
-
+      
       else if (node.type.includes("editable")) {
         // Ensure we have properties
         const inputTypes = node.data?.properties?.map((p: any) => p.type) || [];
@@ -681,7 +639,7 @@ export const useStore = create<RFState>()(persist((set, get) => ({
         // Extract the index from the targetHandle string
         // Example targetHandle: "classicalHandleInput0node123"
         let handleIndex = 0;
-
+        
         const match = connection.targetHandle.match(/^classicalHandleInput(\d)/);
         if (match) {
           handleIndex = parseInt(match[1], 10);
@@ -700,7 +658,7 @@ export const useStore = create<RFState>()(persist((set, get) => ({
           if (!sourceNode) continue;
 
           let type = "any";
-          if (sourceNode.type === "dataTypeNode") type = sourceNode.data?.dataType ?? "any";
+          if (sourceNode.type === "dataTypeNode") type = (sourceNode.data?.dataType ?? "any").toLowerCase();
           else if (sourceNode.type === "ClassicalOperationNode") {
             type = getNodeLockedType(sourceNode.id);
           } else if (sourceNode.data.outputTypes[0]) {
@@ -726,7 +684,7 @@ export const useStore = create<RFState>()(persist((set, get) => ({
       console.log("GETNODEOUTPUTTYPES", node.data.outputTypes)
       console.log(handleId)
       console.log("INDEX", index)
-      if (node.data.outputTypes[index]) return node.data.outputTypes[index];
+      if (node.data.outputTypes[index]) return node.data.outputTypes[index].toLowerCase();
 
       // Measurement Node
       if (node.type === "measurementNode") {
@@ -783,7 +741,7 @@ export const useStore = create<RFState>()(persist((set, get) => ({
       const inputIndex = getHandleIndex(nodeId, handleId);
       console.log("InputIndex", inputIndex);
       //return input.dataType ?? "any"; // fallback to any
-      return targetNode.data.inputTypes[inputIndex] ?? "any";
+      return (targetNode.data.inputTypes[inputIndex] ?? "any").toLowerCase();
     };
 
     const currentNodes = get().nodes;
@@ -806,7 +764,7 @@ export const useStore = create<RFState>()(persist((set, get) => ({
     const target = get().nodes.find((node) => node.id === connection.target);
     console.log(nodeDataSource)
     console.log(target)
-    if (nodeDataSource.data?.label == consts.qubitLabel && target.type === consts.SplitterNode) {
+    if(nodeDataSource.data.label == consts.qubitLabel && target.type === consts.SplitterNode) {
       setTypeError("A qubit cannot be split into smaller units");
       return false;
     }
@@ -1043,13 +1001,13 @@ export const useStore = create<RFState>()(persist((set, get) => ({
     const lockedType = getNodeLockedType(targetNode.id).toLowerCase();
 
     if (sourceNode) {
-      if (sourceNode.type === "dataTypeNode") sourceType = sourceNode.data?.dataType ?? "any";
+      if (sourceNode.type === "dataTypeNode") sourceType = (sourceNode.data?.dataType ?? "any").toLowerCase();
       else if (sourceNode.type === "ClassicalOperationNode") sourceType = getNodeLockedType(sourceNode.id);
     }
 
     // If the target node already has a locked type, new input must match
     // Skip this check for pluginNodes - each input can have its own type
-    if (targetNode.type !== "controlStructureNode" && targetNode.type !== "qaoa" && targetNode.type !== "vqeNode" && targetNode.type !== "pluginNode" && lockedType !== "any" && sourceType !== "any" && sourceType !== lockedType) {
+    if (targetNode.type !== "controlStructureNode" && targetNode.type !== "qaoa" && targetNode.type !== "pluginNode" && lockedType !== "any" && sourceType !== "any" && sourceType !== lockedType) {
       const errorMsg = `Cannot connect: type "${sourceType}" does not match locked type "${lockedType}"`
       console.warn(errorMsg);
       setTypeError(errorMsg);
@@ -1213,9 +1171,9 @@ export const useStore = create<RFState>()(persist((set, get) => ({
             const targetData = { ...targetNode.data };
             const sourceNode = updatedNodes.find((n) => n.id === edge.source);
             sourceIdentifier = sourceNode?.data?.identifiers;
-            const sourceType = getNodeOutputType(sourceNode.id, connection.sourceHandle);
-            const targetType = getNodeInputType(targetNode.id, connection.targetHandle);
-            const lockedType = getNodeLockedType(targetNode.id);
+            const sourceType = getNodeOutputType(sourceNode.id, connection.sourceHandle).toLowerCase();
+            const targetType = getNodeInputType(targetNode.id, connection.targetHandle).toLowerCase();
+            const lockedType = getNodeLockedType(targetNode.id).toLowerCase();
             console.log("SOURCE TYPE", sourceType)
             console.log("TARGET TYPE", targetType)
             console.log("LOCKED TYPE", lockedType)
@@ -1242,7 +1200,7 @@ export const useStore = create<RFState>()(persist((set, get) => ({
             const handleIndex = getHandleIndex(targetNode.id, connection.targetHandle);
             // Update target node inputType if it was "any"
             if (targetType === "any") {
-              targetData.inputTypes[handleIndex] = sourceType;
+              targetData.inputTypes[handleIndex] = sourceType.toLowerCase();
             }
             // Update target node input and output types if classical operation node and both inputs are set
             if (targetNode.type === consts.ClassicalOperatorNode && (targetNode.data.label.includes("Arithmetic") || targetNode.data.label.includes("Comparison")) && lockedType !== "any") {
@@ -1538,12 +1496,6 @@ export const useStore = create<RFState>()(persist((set, get) => ({
       });
 
       console.log(updatedNodes)
-      const updatedNode = get().nodes.find(n => n.id === nodeId);
-
-
-      // if (updatedNode) nodesMap.set(nodeId, updatedNode);
-
-      console.log(updatedNodes)
 
       return {
         nodes: updatedNodes,
@@ -1557,14 +1509,6 @@ export const useStore = create<RFState>()(persist((set, get) => ({
     });
     console.log("History after update:", get().history);
     console.log("Current historyIndex:", get().historyIndex);
-    const updatedNode = get().nodes.find((n) => n.id === nodeId);
-    console.log(get().nodes)
-    console.log("pppppppppppppppppppppppppppppppppppppppp");
-    console.log(updatedNode)
-    // if (updatedNode) {
-    //   nodesMap.set(nodeId, updatedNode);
-    //   console.log("Updated Yjs node:", updatedNode);
-    // }
 
     console.log("History updated successfully.");
   },
