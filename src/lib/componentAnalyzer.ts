@@ -186,13 +186,20 @@ function collectReachableNodes(
 /**
  * Sendet zusammenhängende Komponenten ans Backend.
  */
-export async function analyzeComponents(
-  nodes: Node[],
-  edges: Edge[],
-  backendUrl: string,
-  metadata: any,
-  compilationTarget: string
-): Promise<DiracComponent[]> {
+/**
+ * Berechnet die zusammenhängenden Komponenten im Flow (inkl. Gruppen-Merging und Aufteilung
+ * bei mehrfach verzweigten Gruppen-Outputs) und sortiert sie nach visueller Canvas-Position
+ * (Y, dann X als Tie-Breaker).
+ *
+ * WICHTIG: Diese Sortierung ist entscheidend, weil das Backend Register-Indizes anhand der
+ * Array-Reihenfolge vergibt - ohne sie würden Nodes in Erstellungsreihenfolge statt visueller
+ * Reihenfolge landen (siehe Bugfix weiter oben in der Historie dieser Datei).
+ *
+ * Wird sowohl von analyzeComponents (Backend-Compile) als auch live vom Canvas (Qubit-Index-
+ * Anzeige in qubit.tsx über src/lib/qubitIndexing.ts) genutzt, damit beide IMMER exakt
+ * dieselbe Gruppierung/Reihenfolge verwenden und nicht auseinanderdriften können.
+ */
+export function computeOrderedComponents(nodes: Node[], edges: Edge[]): Node[][] {
   const activeNodes = nodes.filter(
     (n) => n.type !== "groupNode"
   );
@@ -436,6 +443,37 @@ export async function analyzeComponents(
     }
   }
 
+  // Nach visueller Position sortieren (Y zuerst, dann X), damit "oben auf dem Canvas" zuverlässig
+  // zu niedrigeren Register-Indizes führt, unabhängig von der Node-Erstellungsreihenfolge.
+  const sortByVisualPosition = (a: Node, b: Node): number => {
+    const ay = a.positionAbsolute?.y ?? a.position.y;
+    const by = b.positionAbsolute?.y ?? b.position.y;
+    if (ay !== by) return ay - by;
+    const ax = a.positionAbsolute?.x ?? a.position.x;
+    const bx = b.positionAbsolute?.x ?? b.position.x;
+    return ax - bx;
+  };
+
+  return components.map((componentNodes) => [...componentNodes].sort(sortByVisualPosition));
+}
+
+/**
+ * Sendet zusammenhängende Komponenten ans Backend.
+ */
+export async function analyzeComponents(
+  nodes: Node[],
+  edges: Edge[],
+  backendUrl: string,
+  metadata: any,
+  compilationTarget: string
+): Promise<DiracComponent[]> {
+  // activeNodes wird unten von expandEdges/findChild als Closure-Variable benötigt
+  const activeNodes = nodes.filter((n) => n.type !== "groupNode");
+  if (activeNodes.length === 0) return [];
+
+  const components = computeOrderedComponents(nodes, edges);
+  if (components.length === 0) return [];
+
   // Gruppen-Edges expandieren für Backend-Calls
   const expandEdges = (componentNodes: Node[]): Edge[] => {
     const nodeIds = new Set(componentNodes.map((n) => n.id));
@@ -539,6 +577,23 @@ export async function analyzeComponents(
   };
 
   // Jobs erstellen
+  //
+  // WICHTIG: componentNodes kommt in Erstellungsreihenfolge (React-State-Array-Reihenfolge),
+  // NICHT in visueller Canvas-Reihenfolge. Wenn mehrere unverbundene Teilgraphen zur selben
+  // Gruppe zusammengeführt werden (s.o.), würde das Backend Register-Indizes anhand der
+  // Array-Position vergeben - was zu falscher Zuordnung führt, sobald z.B. ein Node dupliziert
+  // und erst später mit einem anderen (visuell höher liegenden) Qubit verbunden wurde.
+  // Fix: vor dem Versand nach visueller Position sortieren (Y zuerst, dann X als Tie-Breaker),
+  // damit "oben auf dem Canvas" zuverlässig zu niedrigeren Register-Indizes führt.
+  const sortByVisualPosition = (a: Node, b: Node): number => {
+    const ay = a.positionAbsolute?.y ?? a.position.y;
+    const by = b.positionAbsolute?.y ?? b.position.y;
+    if (ay !== by) return ay - by;
+    const ax = a.positionAbsolute?.x ?? a.position.x;
+    const bx = b.positionAbsolute?.x ?? b.position.x;
+    return ax - bx;
+  };
+
   const jobs = components.map((componentNodes) => {
     const info = getComponentInfo(componentNodes);
     return {
