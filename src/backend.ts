@@ -282,9 +282,12 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
 
             // Data Types
             case consts.DataTypeNode:
-                switch (node.data.dataType) {
+                // Case-insensitiv vergleichen: node.data.dataType kann je nach Herkunft
+                // (Neuanlage vs. Duplizieren via contextMenu.tsx normalizeNodeTypes)
+                // in unterschiedlicher Groß-/Kleinschreibung vorliegen (z.B. "Number" vs "number").
+                switch (String(node.data.dataType).toLowerCase()) {
                     case "int":
-                    case "Number": {
+                    case "number": {
                         const numValue = Number(node.data.value);
                         return {
                             id: node.id,
@@ -307,21 +310,21 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
                             value: node.data.value === "1" ? 1 : 0
                         }
 
-                    case "String":
+                    case "string":
                         return {
                             id: node.id,
                             type: "string",
                             value: node.data.value
                         }
 
-                    case "File":
+                    case "file":
                         return {
                             id: node.id,
                             type: "file",
                             value: node.data.value
                         }
 
-                    case "Array": {
+                    case "array": {
                         const val = node.data.value;
                         let parsedValue = val;
 
@@ -656,7 +659,13 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
             console.log(edge)
             console.log(sourceNode.data.inputs)
             const inputConnection = sourceNode.data.inputs?.find(
-                (i: any) => getHandleIndex(sourceNode.id, "target", i.targetHandle) === outputIndex
+                // Das inputs-Array kann Einträge für MEHRERE verschiedene Knoten enthalten
+                // (nicht nur für sourceNode selbst). Daher zuerst per endsWith prüfen, ob der
+                // targetHandle überhaupt zu sourceNode gehört, bevor getHandleIndex aufgerufen
+                // wird - sonst wirft getHandleIndex bei fremden Einträgen einen Fehler, obwohl
+                // .find() diese einfach überspringen sollte.
+                (i: any) => i.targetHandle?.endsWith(sourceNode.id) &&
+                    getHandleIndex(sourceNode.id, "target", i.targetHandle) === outputIndex
             );
             console.log(inputConnection)
             if (inputConnection) {
