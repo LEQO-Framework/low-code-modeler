@@ -38,6 +38,39 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   const [inputs, setInputs] = useState(getNode(id).data.inputs || []);
   const updateNodeInternals = useUpdateNodeInternals();
 
+  const regenerateIdentifiers = (data: any): any => {
+    const normalized = { ...data };
+    // outputTypes/inputTypes/dataType normalisieren
+    if (Array.isArray(normalized.outputTypes))
+      normalized.outputTypes = normalized.outputTypes.map((t: string) => t.toLowerCase());
+    if (Array.isArray(normalized.inputTypes))
+      normalized.inputTypes = normalized.inputTypes.map((t: string) => t.toLowerCase());
+    if (typeof normalized.dataType === "string")
+      normalized.dataType = normalized.dataType.toLowerCase();
+    // Neue eindeutige Identifier generieren (exakt wie store.ts Zeile 167ff)
+    const newId = () => `q${Math.floor(100000 + Math.random() * 900000)}`;
+    if (Array.isArray(normalized.identifiers) && normalized.identifiers.length > 0) {
+      normalized.identifiers = normalized.identifiers.map(() => newId());
+    }
+    // outputIdentifier neu generieren falls vorhanden
+    if (normalized.outputIdentifier !== undefined && normalized.outputIdentifier !== "") {
+      normalized.outputIdentifier = newId();
+    }
+    // WICHTIG: data.inputs/data.outputs tracken eingehende/ausgehende Verbindungen
+    // (id, edgeId, targetHandle - siehe backend.ts mapEdge Fallback-Logik) des
+    // ORIGINAL-Node. Ein frisch duplizierter Node hat noch KEINE eigenen Verbindungen -
+    // die entstehen erst, wenn der Nutzer ihn neu verkabelt. Ohne dieses Zurücksetzen
+    // bleibt die alte Referenz auf den Original-Node bestehen und führt bei der
+    // Backend-Kompilierung zu falscher Register-/Identifier-Zuordnung.
+    if (Array.isArray(normalized.inputs)) {
+      normalized.inputs = [];
+    }
+    if (Array.isArray(normalized.outputs)) {
+      normalized.outputs = [];
+    }
+    return normalized;
+  };
+
   const duplicateNode = useCallback(() => {
     const node = getNode(id);
     if (!node) return;
@@ -45,34 +78,31 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
     const offset = { x: 50, y: 50 };
 
     if (node.type === "groupNode") {
-      // Gruppe duplizieren: GroupNode + alle Kind-Nodes + interne Edges
       const allNodes = getNodes();
       const allEdges = getEdges();
       const childNodes = allNodes.filter(n => n.parentNode === id);
 
-      // Neue IDs erstellen
       const newGroupId = uuid();
       const idMap = new Map<string, string>();
       idMap.set(id, newGroupId);
       childNodes.forEach(child => idMap.set(child.id, uuid()));
 
-      // GroupNode duplizieren
       const newGroupNode: Node = {
         ...node,
         id: newGroupId,
+        data: regenerateIdentifiers(node.data),
         position: { x: node.position.x + offset.x, y: node.position.y + offset.y },
         selected: false,
       };
 
-      // Kind-Nodes duplizieren
       const newChildNodes: Node[] = childNodes.map(child => ({
         ...child,
         id: idMap.get(child.id)!,
+        data: regenerateIdentifiers(child.data),
         parentNode: newGroupId,
         selected: false,
       }));
 
-      // Interne Edges duplizieren (beide Seiten innerhalb der Gruppe)
       const internalEdges = allEdges.filter(
         e => idMap.has(e.source) && idMap.has(e.target)
       );
@@ -89,10 +119,10 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
       addNodes([newGroupNode, ...newChildNodes]);
       addEdges(newEdges);
     } else {
-      // Normaler Node
       const newNode: Node = {
         ...node,
         id: uuid(),
+        data: regenerateIdentifiers(node.data),
         position: { x: node.position.x + offset.x, y: node.position.y + offset.y },
         selected: false,
       };
