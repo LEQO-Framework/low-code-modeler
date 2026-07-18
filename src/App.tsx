@@ -59,6 +59,7 @@ import UserCountPanel from "./components/modals/userAwareness";
 import VersioningPanel from "./components/modals/versioningModal";
 import { EdgeChange } from "@xyflow/react";
 import PromptFlowModal from "./components/modals/promptFlowModal";
+import ShortcutHelpModal from "./components/modals/shortcutHelpModal";
 import { generateFlow, sendToMistral } from "./generation";
 import { openQasmToFlow } from "./qasmConverter";
 
@@ -242,12 +243,12 @@ function App() {
   const [warningExecution, setWarningExecution] = useState(false);
   const [contextMenu, setContextMenu] = useState<{
     visible: boolean;
-    nodeId: string | null;
+    componentId: string | null;
     top: number;
     left: number;
   }>({
     visible: false,
-    nodeId: null,
+    componentId: null,
     top: 0,
     left: 0,
   });
@@ -267,7 +268,22 @@ function App() {
       event.preventDefault();
       setContextMenu({
         visible: true,
-        nodeId: node.id,
+        componentId: node.id,
+        top: event.clientY,
+        left: event.clientX,
+        //top: node.position.y+0.5*node.height, //passt nicht
+        //left: node.position.x-0.5*node.width, //passt nicht
+      });
+    },
+    []
+  );
+
+  const onEdgeContextMenu = useCallback(
+    (event: React.MouseEvent, edge: Edge) => {
+      event.preventDefault();
+      setContextMenu({
+        visible: true,
+        componentId: edge.id,
         top: event.clientY,
         left: event.clientX,
         //top: node.position.y+0.5*node.height, //passt nicht
@@ -495,8 +511,8 @@ If none apply, return { "algorithms": [] }.
 
     setCompact(newValues.compactVisualization);
     setCompactVisualization(newValues.compactVisualization);
-    setAncillaMode(newValues.ancillaMode);
-    setAncillaModelingOn(newValues.ancillaMode);
+    //setAncillaMode(newValues.ancillaMode);
+    //setAncillaModelingOn(newValues.ancillaMode);
     setExperienceLevel(newValues.experienceLevel);
     setCompletionGuaranteed(newValues.completionGuaranteed);
     setCollaborationModeOn(newValues.collaborationMode); // passt das?? lieber onToggleCollaborationMode?
@@ -534,8 +550,8 @@ If none apply, return { "algorithms": [] }.
   const ref = useRef(null);
   const hasLoadedFromUrl = useRef(false);
   const lastSelectedNodes = useRef<Node[]>([]);
-
-
+  const copiedSelectionRef = useRef<{ nodes: Node[]; edges: Edge[] } | null>(null);
+  const pasteCountRef = useRef(0);
 
   const onDragOver = React.useCallback(
     (event: React.DragEvent<HTMLDivElement>) => {
@@ -583,6 +599,16 @@ If none apply, return { "algorithms": [] }.
 
   const isSyncingFromRemote = useRef(false);
 
+  const stripTransientNodeState = useCallback((node: Node) => {
+    const { selected, dragging, positionAbsolute, ...rest } = node as Node & {
+      selected?: boolean;
+      dragging?: boolean;
+      positionAbsolute?: { x: number; y: number };
+    };
+
+    return rest;
+  }, []);
+
   // EFFECT 1: Remote-to-Local (Yjs to Zustand & nodesI)
   useEffect(() => {
     if (!collaborationModeOn) return;
@@ -591,7 +617,22 @@ If none apply, return { "algorithms": [] }.
       // set flag, so that this is ignored by effect 2
       isSyncingFromRemote.current = true;
 
-      const sharedNodes: any = Array.from(nodesMap.values());
+      const localNodes = useStore.getState().nodes;
+      const localNodesById = new Map<string, Node>(localNodes.map((node: Node) => [node.id, node]));
+
+      const sharedNodes: any = Array.from(nodesMap.values()).map((sharedNode: any) => {
+        const localNode = localNodesById.get(sharedNode.id);
+
+        if (!localNode) {
+          return sharedNode;
+        }
+
+        return {
+          ...sharedNode,
+          selected: localNode.selected,
+          dragging: localNode.dragging,
+        };
+      });
       const sharedEdges: any = Array.from(edgesMap.values());
 
       // Update the local rendering tracking arrays
@@ -636,8 +677,8 @@ If none apply, return { "algorithms": [] }.
     ydoc.transact(() => {
       // Sync local Zustand nodes to the network map
       nodes.forEach((node) => {
-        // remove selected property from local node, so it isn't broadcasted to other users (messes up highlighting of selected nodes)
-        const { selected, ...nodeData } = node;
+        // Keep transient React Flow interaction state local.
+        const nodeData = stripTransientNodeState(node);
 
         const remoteNode = nodesMap.get(node.id);
         if (!remoteNode || JSON.stringify(remoteNode) !== JSON.stringify(nodeData)) {
@@ -1506,6 +1547,262 @@ If none apply, return { "algorithms": [] }.
           }
         }
       }
+
+      // Universal Oracle Validation
+      if (node.type === "oracleNode" || node.data?.label === "Universal Oracle") {
+        const connectedInput = connectedSources.length > 0;
+
+        if (!connectedInput) {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Universal Oracle "${node.id}" requires a quantum register input.`,
+          });
+        }
+
+        const mode = node.data?.mode;
+        if (mode && !["boolean", "phase"].includes(mode)) {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Universal Oracle "${node.id}" has invalid mode "${mode}".`,
+          });
+        }
+
+        const targetStates = node.data?.targetStates;
+
+        if (!targetStates || targetStates.trim() === "") {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Universal Oracle "${node.id}" requires at least one marked state.`,
+          });
+        }
+        else if (!/^\d+(?:\s*,\s*\d+)*$/.test(targetStates.trim())) {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description: `Universal Oracle "${node.id}" marked states must be comma-separated integers.`,
+          });
+        }
+        else {
+
+          // Find input register size
+          let registerSize = 3;
+
+          const source = connectedSources
+            .map(src => nodesById.get(src))
+            .find(n => n?.data?.size);
+
+          if (source?.data?.size) {
+            registerSize = parseInt(source.data.size, 10);
+          }
+
+          const maxState = (1 << registerSize) - 1;
+
+          const invalidState = targetStates
+            .split(",")
+            .map((x: string) => parseInt(x.trim(), 10))
+            .some((x: number) => x < 0 || x > maxState);
+
+
+          if (invalidState) {
+            errors.push({
+              nodeId: node.id,
+              nodeType: node.type,
+              description:
+                `Universal Oracle "${node.id}" contains marked states outside register range 0-${maxState}.`,
+            });
+          }
+        }
+
+
+        const outgoing = outgoingConnections.get(node.id) || [];
+        if (outgoing.length === 0) {
+          warnings.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description:
+              `Universal Oracle "${node.id}" output is not connected.`,
+          });
+        }
+      }
+
+
+
+      // Deutsch-Jozsa Validation
+      if (
+        node.type === "deutsch-jozsa" ||
+        node.data?.label === "Deutsch-Jozsa Algorithm"
+      ) {
+
+        const numQubits = parseInt(node.data?.numQubits, 10);
+
+        if (!numQubits || numQubits <= 0) {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description:
+              `Deutsch-Jozsa node "${node.id}" requires a valid number of qubits.`,
+          });
+        }
+
+
+        const oracleType = node.data?.oracleType;
+
+        if (!["balanced", "constant"].includes(oracleType)) {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description:
+              `Deutsch-Jozsa node "${node.id}" has invalid oracle type "${oracleType}".`,
+          });
+        }
+
+
+        if (oracleType === "balanced") {
+
+          const mask = parseInt(node.data?.balancedMask, 10);
+
+          if (isNaN(mask)) {
+            errors.push({
+              nodeId: node.id,
+              nodeType: node.type,
+              description:
+                `Deutsch-Jozsa balanced oracle requires a mask value.`,
+            });
+          }
+          else if (numQubits && mask >= (1 << numQubits)) {
+            errors.push({
+              nodeId: node.id,
+              nodeType: node.type,
+              description:
+                `Deutsch-Jozsa balanced mask ${mask} exceeds ${numQubits}-qubit input range.`,
+            });
+          }
+        }
+
+
+        if (
+          oracleType === "constant" &&
+          ![0, 1].includes(Number(node.data?.constantValue))
+        ) {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description:
+              `Deutsch-Jozsa constant value must be either 0 or 1.`,
+          });
+        }
+
+
+        const outgoing = outgoingConnections.get(node.id) || [];
+
+        if (outgoing.length === 0) {
+          warnings.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description:
+              `Deutsch-Jozsa node "${node.id}" output is not connected.`,
+          });
+        }
+      }
+
+
+      if (node.type === "universal-oracle") {
+        const markedStates = node.data?.targetStates;
+
+        if (!markedStates || markedStates.trim() === "") {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description:
+              `Grover node "${node.id}" requires marked states.`,
+          });
+        }
+
+      }
+      // Grover Algorithm Validation
+      if (
+        node.type === "grover" ||
+        node.data?.label === "Grover Algorithm"
+      ) {
+
+        const numQubits = parseInt(node.data?.numQubits, 10);
+
+        if (!numQubits || numQubits <= 0) {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description:
+              `Grover node "${node.id}" requires a valid number of qubits.`,
+          });
+        }
+
+
+        const iterations = Number(node.data?.iterations);
+
+        if (iterations !== undefined && iterations <= 0) {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description:
+              `Grover iteration count must be greater than zero.`,
+          });
+        }
+
+
+        const markedStates = node.data?.targetStates;
+
+        if (!markedStates || markedStates.trim() === "") {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description:
+              `Grover node "${node.id}" requires marked states.`,
+          });
+        }
+        else if (!/^\d+(?:\s*,\s*\d+)*$/.test(markedStates)) {
+          errors.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description:
+              `Grover marked states must be comma-separated integers.`,
+          });
+        }
+        else if (numQubits) {
+
+          const maxState = (1 << numQubits) - 1;
+
+          const invalid =
+            markedStates
+              .split(",")
+              .map((x: string) => parseInt(x.trim(), 10))
+              .some((x: number) => x > maxState);
+
+
+          if (invalid) {
+            errors.push({
+              nodeId: node.id,
+              nodeType: node.type,
+              description:
+                `Grover marked states exceed the ${numQubits}-qubit range (0-${maxState}).`,
+            });
+          }
+        }
+
+
+        const outgoing = outgoingConnections.get(node.id) || [];
+
+        if (outgoing.length === 0) {
+          warnings.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            description:
+              `Grover node "${node.id}" output is not connected.`,
+          });
+        }
+      }
       // Plugin Node Validation
       if (node.type === "pluginNode") {
         const dataInputs = node.data?.dataInputs || [];
@@ -1575,6 +1872,7 @@ If none apply, return { "algorithms": [] }.
           "Executing this flow will not produce meaningful results.",
       });
     }
+
 
 
 
@@ -1786,7 +2084,7 @@ If none apply, return { "algorithms": [] }.
         let counts = getdata.results[1].data;
         console.log(counts)
         const chartData = Object.entries(counts || {}).map(([key, value]) => ({
-          register: parseInt(key, 16),
+          register: parseInt(key, 16), // TODO: add hex value
           value: Number(value) * 100,
         }));
         setChartData(chartData);
@@ -1943,7 +2241,7 @@ If none apply, return { "algorithms": [] }.
       });
       
       //setNodes(nodeT);
-      if (node.id == contextMenu.nodeId) {
+      if (node.id == contextMenu.componentId) {
         console.log("moving context menu for node", node.id)
         setContextMenu((prev) => ({ ...prev, left: evt.clientX, top: evt.clientY }));
       }
@@ -2060,100 +2358,31 @@ If none apply, return { "algorithms": [] }.
     }
   }, [domainProfile, allDomainProfiles]);
 
-const onDrop = React.useCallback(
-  (event: any) => {
-    console.log("dropped");
-    console.log("collab mode", collaborationModeOn);
-
-    event.preventDefault();
-
-    const label = event.dataTransfer.getData("application/reactflow/label");
-
-    if (label == qaoa) {
-      loadFlow(qaoa_algorithm);
-      return;
-    } else if (label == swap_test) {
-      loadFlow(swap_test_algorithm);
-      return;
-    } else if (label == hadamard_test_imaginary_part) {
-      loadFlow(hadamard_test_imaginary_part_algorithm);
-      return;
-    } else if (label == hadamard_test_real_part) {
-      loadFlow(hadamard_test_real_part_algorithm);
-      return;
-    } else if (label == grover) {
-      loadFlow(grover_algorithm);
-      return;
-    } else if (label == quantum_k_means) {
-      loadFlow(quantum_k_means_algorithm);
-      return;
-    } else if (label.startsWith(custom_template)) {
-      const userTemplateFlowData = JSON.parse(
-        event.dataTransfer.getData(
-          "application/reactflow/templateFlowData"
-        )
-      );
-
-      if (userTemplateFlowData) {
-        loadFlow(userTemplateFlowData);
-      } else {
-        console.error(`User Template ${label} not found.`);
-      }
-
-      return;
-    }
-
-    console.log("current categories", currentCategories);
-
-    if (!reactFlowWrapper) return;
-
-    const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
-
-    const type = event.dataTransfer.getData("application/reactflow");
-    const dataType = event.dataTransfer.getData(
-      "application/reactflow/dataType"
-    );
-
-    if (!type) {
-      return;
-    }
-
-    const def = findNodeDefinition(type, label, currentCategories);
-
-    console.log("found node", def);
+  const addNodeToCanvas = useCallback((def: any, customPosition?: { x: number, y: number }, pluginData?: any) => {
+    if (!reactFlowInstance || !reactFlowWrapper.current) return;
 
     const getId = () => crypto.randomUUID();
-
-    const compactOptions = def?.compactOptions ?? [];
-
-    const position = reactFlowInstance.project({
-      x: event.clientX - reactFlowBounds.left,
-      y: event.clientY - reactFlowBounds.top,
+    
+    // Calculate position: Use custom position or center of the canvas
+    const position = customPosition || reactFlowInstance.project({
+      x: reactFlowWrapper.current.clientWidth / 2,
+      y: reactFlowWrapper.current.clientHeight / 2,
     });
 
-
-    // ================================
-    // GET PLUGIN METADATA HERE
-    // ================================
-    const pluginDataRaw = event.dataTransfer.getData(
-      "application/reactflow/pluginData"
-    );
-
-    const pluginData = pluginDataRaw
-      ? JSON.parse(pluginDataRaw)
-      : null;
-
-
-    console.log("PLUGIN DATA FROM DROP", pluginData);
+    const compactOptions = def?.compactOptions ?? [];
 
 
     const newNode = {
       id: getId(),
-      type,
+      type: def.type,
       position,
 
+      selected: false,
+      selectable: true,
+      draggable: true,
+
       data: {
-        label,
+        label: def.label,
 
         inputs: [],
         outputs: [],
@@ -2174,7 +2403,7 @@ const onDrop = React.useCallback(
         // =====================================
         // PLUGIN NODE DATA
         // =====================================
-        ...(type === PluginNode && {
+        ...(def.type === PluginNode && {
           pluginName: pluginData?.name,
 
           dataInputs:
@@ -2218,69 +2447,160 @@ const onDrop = React.useCallback(
 
     console.log("CREATED NODE", newNode);
 
-
+    // Update local Zustand Store
     setNodes(newNode);
 
+    // Update Yjs Collaborative Store
 
-    const activeName =
-      cursors[myClientId]?.name ||
-      userName ||
-      "unknown";
+      const activeName =
+        cursors[myClientId]?.name ||
+        userName ||
+        "unknown";
 
 
-    if (collaborationModeOn) {
+      if (collaborationModeOn) {
 
-      console.log(
-        "ON DROP: collab mode on",
-        collaborationModeOn
+        console.log(
+          "ON DROP: collab mode on",
+          collaborationModeOn
+        );
+
+        nodesMap.set(
+          newNode.id,
+          newNode
+        );
+
+
+        historyArray.push([
+          {
+            type: "node-added",
+            nodeId: newNode.id,
+            label: newNode.data?.label,
+            userId: activeName,
+            user: activeName,
+            timestamp: Date.now(),
+          },
+        ]);
+
+
+        console.log(
+          "ADD NODE HISTORY",
+          historyArray.toArray()
+        );
+
+        console.log(
+          "shared nodes",
+          Array.from(nodesMap.values())
+        );
+
+        console.log(
+          "shared edges",
+          Array.from(edgesMap.values())
+        );
+      }
+    
+    // Optional: Pan the camera to the newly added node
+    // reactFlowInstance.setCenter(position.x, position.y, { zoom: 1, duration: 700 });
+
+  }, [reactFlowInstance, setNodes, collaborationModeOn, cursors, myClientId, userName]);
+
+  const onDrop = React.useCallback(
+    (event: any) => {
+      console.log("dropped");
+      console.log("collab mode", collaborationModeOn);
+
+      event.preventDefault();
+
+      const label = event.dataTransfer.getData("application/reactflow/label");
+
+      if (label == qaoa) {
+        loadFlow(qaoa_algorithm);
+        return;
+      } else if (label == swap_test) {
+        loadFlow(swap_test_algorithm);
+        return;
+      } else if (label == hadamard_test_imaginary_part) {
+        loadFlow(hadamard_test_imaginary_part_algorithm);
+        return;
+      } else if (label == hadamard_test_real_part) {
+        loadFlow(hadamard_test_real_part_algorithm);
+        return;
+      } else if (label == grover) {
+        loadFlow(grover_algorithm);
+        return;
+      } else if (label == quantum_k_means) {
+        loadFlow(quantum_k_means_algorithm);
+        return;
+      } else if (label.startsWith(custom_template)) {
+        const userTemplateFlowData = JSON.parse(
+          event.dataTransfer.getData(
+            "application/reactflow/templateFlowData"
+          )
+        );
+
+        if (userTemplateFlowData) {
+          loadFlow(userTemplateFlowData);
+        } else {
+          console.error(`User Template ${label} not found.`);
+        }
+
+        return;
+      }
+
+      console.log("current categories", currentCategories);
+
+      if (!reactFlowWrapper) return;
+
+      const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
+
+      const type = event.dataTransfer.getData("application/reactflow");
+      const dataType = event.dataTransfer.getData(
+        "application/reactflow/dataType"
       );
 
-      nodesMap.set(
-        newNode.id,
-        newNode
+      if (!type) {
+        return;
+      }
+
+      const def = findNodeDefinition(type, label, currentCategories);
+
+      console.log("found node", def);
+
+      // ================================
+      // GET PLUGIN METADATA HERE
+      // ================================
+      const pluginDataRaw = event.dataTransfer.getData(
+        "application/reactflow/pluginData"
       );
 
-
-      historyArray.push([
-        {
-          type: "node-added",
-          nodeId: newNode.id,
-          label: newNode.data?.label,
-          userId: activeName,
-          user: activeName,
-          timestamp: Date.now(),
-        },
-      ]);
+      const pluginData = pluginDataRaw
+        ? JSON.parse(pluginDataRaw)
+        : null;
 
 
-      console.log(
-        "ADD NODE HISTORY",
-        historyArray.toArray()
-      );
-
-      console.log(
-        "shared nodes",
-        Array.from(nodesMap.values())
-      );
-
-      console.log(
-        "shared edges",
-        Array.from(edgesMap.values())
-      );
-    }
+      console.log("PLUGIN DATA FROM DROP", pluginData);
 
 
-    console.log("nodes", nodes);
+      // Get drop position
+      const position = reactFlowInstance.project({
+        x: event.clientX - reactFlowBounds.left,
+        y: event.clientY - reactFlowBounds.top,
+      });
 
-  },
-  [
-    reactFlowInstance,
-    setNodes,
-    currentCategories,
-    collaborationModeOn,
-    cursors,
-  ]
-);
+      // add node to canvas
+      addNodeToCanvas(def, position, pluginData);
+
+      console.log("nodes", nodes);
+
+    },
+    [
+      reactFlowInstance,
+      setNodes,
+      currentCategories,
+      collaborationModeOn,
+      cursors,
+    ]
+  );
 
   const onNodesDelete = useCallback((deletedNodes: Node[]) => {
     setContextMenu((prev) => ({ ...prev, visible: false })); // contextMenu disappears when node is deleted
@@ -2926,7 +3246,148 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     fileInput.click();
   }
 
-  useKeyBindings({ undo, redo });
+  const clearCurrentSelection = useCallback(() => {
+    if (!reactFlowInstance) {
+      return;
+    }
+
+    reactFlowInstance.setNodes((currentNodes: Node[]) =>
+      currentNodes.map((node) => ({
+        ...node,
+        selected: false,
+      }))
+    );
+    setSelectedNode(null);
+  }, [reactFlowInstance, setSelectedNode]);
+
+  const copySelectedNodes = useCallback(() => {
+    if (!reactFlowInstance) {
+      return;
+    }
+
+    const selectedNodes = (reactFlowInstance.getNodes() as Node[]).filter((node) => node.selected);
+    if (!selectedNodes.length) {
+      return;
+    }
+
+    const selectedNodeIds = new Set(selectedNodes.map((node) => node.id));
+    const selectedEdges = (reactFlowInstance.getEdges() as Edge[]).filter(
+      (edge) => selectedNodeIds.has(edge.source) && selectedNodeIds.has(edge.target)
+    );
+
+    copiedSelectionRef.current = {
+      nodes: structuredClone(selectedNodes),
+      edges: structuredClone(selectedEdges),
+    };
+    pasteCountRef.current = 0;
+  }, [reactFlowInstance]);
+
+  const pasteCopiedNodes = useCallback(() => {
+    if (!reactFlowInstance || !copiedSelectionRef.current?.nodes?.length) {
+      return;
+    }
+
+    const copiedSelection = copiedSelectionRef.current;
+    pasteCountRef.current += 1;
+
+    const offset = 40 * pasteCountRef.current;
+    const idMap = new Map<string, string>();
+
+    const newNodes = copiedSelection.nodes.map((node) => {
+      const newId = uuidv4();
+      idMap.set(node.id, newId);
+
+      return {
+        id: newId,
+        type: node.type,
+        data: structuredClone(node.data),
+        position: {
+          x: node.position.x + offset,
+          y: node.position.y + offset,
+        },
+        selected: true,
+        selectable: true,
+        draggable: true,
+      };
+    });
+
+    const newEdges = copiedSelection.edges
+      .map((edge) => {
+        const source = idMap.get(edge.source);
+        const target = idMap.get(edge.target);
+
+        if (!source || !target) {
+          return null;
+        }
+
+        return {
+          ...structuredClone(edge),
+          id: uuidv4(),
+          source,
+          target,
+          selected: false,
+        };
+      })
+      .filter(Boolean) as Edge[];
+
+    reactFlowInstance.setNodes((currentNodes: Node[]) =>
+      currentNodes.map((node) => ({
+        ...node,
+        selected: false,
+      }))
+    );
+
+    reactFlowInstance.addNodes(newNodes);
+    if (newEdges.length) {
+      reactFlowInstance.addEdges(newEdges);
+    }
+  }, [reactFlowInstance]);
+
+  const cutSelectedNodes = useCallback(() => {
+    if (!reactFlowInstance) {
+      return;
+    }
+
+    copySelectedNodes();
+    const selectedNodes = (reactFlowInstance.getNodes() as Node[]).filter((node) => node.selected);
+    if (!selectedNodes.length) {
+      return;
+    }
+
+    reactFlowInstance.deleteElements({
+      nodes: selectedNodes.map((node) => ({ id: node.id })),
+    });
+    setSelectedNode(null);
+  }, [copySelectedNodes, reactFlowInstance, setSelectedNode]);
+
+  const selectAllNodes = useCallback(() => {
+    if (!reactFlowInstance) {
+      return;
+    }
+
+    reactFlowInstance.setNodes((currentNodes: Node[]) =>
+      currentNodes.map((node) => ({
+        ...node,
+        selected: true,
+      }))
+    );
+  }, [reactFlowInstance]);
+
+  const duplicateSelectedNodes = useCallback(() => {
+    copySelectedNodes();
+    pasteCopiedNodes();
+  }, [copySelectedNodes, pasteCopiedNodes]);
+
+  useKeyBindings({
+    undo,
+    redo,
+    copy: copySelectedNodes,
+    paste: pasteCopiedNodes,
+    cut: cutSelectedNodes,
+    selectAll: selectAllNodes,
+    duplicate: duplicateSelectedNodes,
+    clearSelection: clearCurrentSelection,
+  });
 
   const [mySelectedNodeId, setMySelectedNodeId] = useState<string | null>(null);
 
@@ -3206,7 +3667,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     })
     // move contextmenu with dragged node if it belongs to that node
     // if other node is dragged: make context menu invisible
-    if (node.id == contextMenu.nodeId) {
+    if (node.id == contextMenu.componentId) {
       console.log("drag contextmenu to nodeid: ", node.id)
       setContextMenu((prev) => ({ ...prev, top: event.clientY, left: event.clientX }))
     } else {
@@ -3217,10 +3678,17 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
 
 
   const onPaneClick = useCallback(() => {
+    setSelectedNode(null);
+    for (const node of nodes) {
+      updateNodeValue(node.id, "selected", "false");
+    }
+
+
+
     if (!collaborationModeOn) return;
     let findAny = false;
     const currentCursorState = awareness.getLocalState()?.cursor || {};
-     
+
     setMenu(null);
     setContextMenu((prev) => ({ ...prev, visible: false })); // contextMenu disappears when clicking on pane
     setSelectedNode(null);
@@ -3240,8 +3708,8 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     setExperienceLevelOn(event);
     const bool_value = (experienceLevel === "pioneer") ? false : true; // if previous experience level was pioneer...
     setCompactVisualization(bool_value)
-    setAncillaMode(bool_value)
-    setAncillaModelingOn(bool_value)
+    //setAncillaMode(bool_value)
+    //setAncillaModelingOn(bool_value)
     //updateNodeInternals since ancilla mode changes number of handles
     nodes.forEach((node) => {
       updateNodeInternals(node.id);
@@ -3251,12 +3719,12 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
 
 
   const onToggleAncilla = () => {
-    setAncillaModelingOn(!ancillaModelingOn);
-    setAncillaMode(!ancillaModelingOn);
+    //setAncillaModelingOn(!ancillaModelingOn);
+    //setAncillaMode(!ancillaModelingOn);
     //updateNodeInternals since ancilla mode changes number of handles
-    nodes.forEach((node) => {
-      updateNodeInternals(node.id);
-    })
+    //nodes.forEach((node) => {
+    //updateNodeInternals(node.id);
+    //})
   }
 
   const onToggleCollaborationMode = useCallback(() => {
@@ -3763,10 +4231,18 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
       return !owner || owner === myClientId;
     });
 
-    // 🧠 Apply changes locally
-    const updatedNodes = applyNodeChanges(allowedChanges, nodesI);
+    // 🧠 Apply changes against the latest React Flow node snapshot.
+    const currentNodes = reactFlowInstance?.getNodes?.() ?? nodesI;
+    const updatedNodes = applyNodeChanges(allowedChanges, currentNodes);
+    console.log(
+      "SELECTION STATES AFTER CHANGE",
+      updatedNodes
+        .filter(n => n.selected)
+        .map(n => n.id)
+    );
+
     setNodesI(updatedNodes);
-    updatedNodes.forEach(n => nodesMap.set(n.id, n)); // ???
+    updatedNodes.forEach((node) => nodesMap.set(node.id, stripTransientNodeState(node)));
 
     // 🔁 Sync with React Flow
     onNodesChange(allowedChanges);
@@ -4075,14 +4551,6 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
         setCompilationTarget={setCompilationTarget}
         sendToBackend={sendToBackend}
       />
-      <Modal
-        title={compilationTarget === "qiskit" ? "Generated Qiskit" : "Generated Code"}
-        open={showResultModal}
-        onClose={() => setShowResultModal(false)}
-        className="w-[80vw] max-w-4xl"
-      >
-        <pre className="text-sm overflow-auto max-h-[70vh] whitespace-pre-wrap bg-gray-50 p-3 rounded border">{openqasmCode}</pre>
-      </Modal>
 
       <ConfigModal
         open={isConfigOpen}
@@ -4263,7 +4731,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
           <div
             className={`transition-all duration-300 ${isPaletteOpen ? "w-[300px] lg:w-[350px]" : "w-0 overflow-hidden"}`}
           >
-            {isPaletteOpen && <Palette ancillaMode={ancillaModelingOn} />}
+            {isPaletteOpen && <Palette ancillaMode={ancillaModelingOn} onAddNode={addNodeToCanvas} />}
           </div>
 
           {/* Button zum Einklappen  */}
@@ -4286,28 +4754,40 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
             ref={ref}
             nodes={collaborationModeOn ? nodesI : nodes}
             edges={collaborationModeOn ? edgesI : edges}
+
+            // Selection
             selectionOnDrag={lassoMode}        // ← Lasso nur wenn aktiv
             panOnDrag={!lassoMode}             // ← Panning deaktivieren wenn Lasso aktiv
             selectionMode={SelectionMode.Partial} // ← Nodes die teilweise im Lasso sind auch
-            onNodesChange={collaborationModeOn ? onNodesChangeSync : onNodesChange} // TODO: onNodesChange if no collab mode
-            onEdgesChange={onEdgesChange} // TODO: onEdgesChangeSync for collab mode (deletion of edge)
+            deleteKeyCode={["Backspace", "Delete"]}
+            multiSelectionKeyCode="Shift"
+            selectionKeyCode="Shift"
             onSelectionEnd={onSelectionEnd}
+            onSelectionChange={onSelectionChange}
+
+            // Node events
+            onNodesChange={collaborationModeOn ? onNodesChangeSync : onNodesChange} // TODO: onNodesChange if no collab mode
             onNodeContextMenu={onNodeContextMenu}
             onNodeClick={(event: React.MouseEvent, node: Node) => {
               handleClick(event, node);
             }}
-            onSelectionChange={onSelectionChange}
-            onConnectEnd={onConnectEnd}
-            onConnect={collaborationModeOn ? onConnectSync : onConnect} // TODO: onConnect if no collab mode
-            onPaneClick={onPaneClick}
-            onClick={onClick}
-            onDragOver={onDragOver}
             onNodeDrag={onNodeDrag}
             onNodeDragStop={onNodeDragStop}
-            onDrop={onDrop}
-            onMouseMove={handleMouseMove}
             onNodesDelete={onNodesDelete} // TODO: weglassen oder onNodesDeleteSync erstellen?
+
+            // Edge events
+            onEdgeContextMenu={onEdgeContextMenu}
+            onEdgesChange={onEdgesChange} // TODO: onEdgesChangeSync for collab mode (deletion of edge)
             onEdgesDelete={onEdgesDelete} // TODO: weglassen oder onEdgesDeleteSync erstellen?
+            onConnect={collaborationModeOn ? onConnectSync : onConnect} // TODO: onConnect if no collab mode
+            onConnectEnd={onConnectEnd}
+
+            // Canvas
+            onPaneClick={onPaneClick}
+            onDrop={onDrop}
+            onDragOver={onDragOver}
+            onMouseMove={handleMouseMove}
+            onClick={onClick}
 
             fitView
             fitViewOptions={{ maxZoom: 1 }}
@@ -4409,6 +4889,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
               </span>
             </div>
 
+            <ShortcutHelpModal />
             {Object.entries(cursors).length > 1 && collaborationModeOn && Object.entries(cursors).map(([clientId, cursor]) => { // TODO: only if collaborationMode false
               const displayName = Number(clientId) === myClientId ? "Me" : cursor.name;
               return (
@@ -4560,10 +5041,9 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
             />
             <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
           </ReactFlow>
-
-          {contextMenu.visible && contextMenu.nodeId && (
+          {contextMenu.visible && contextMenu.componentId && (
             <ContextMenu
-              id={contextMenu.nodeId}
+              id={contextMenu.componentId}
               top={contextMenu.top}
               left={contextMenu.left}
               onAction={handleAction}
@@ -4650,6 +5130,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
         )}
       </div>
     </div>
+
 
 
       </main>

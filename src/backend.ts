@@ -525,7 +525,7 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
                     id: node.id,
                     type: "grover",
                     numQubits: node.data.numQubits || 3,
-                    targetStates: node.data.targetStates || "",
+                    targetStates: ""+node.data.targetStates,
                     numIterations: node.data.numIterations || ""
                 } as any;
 

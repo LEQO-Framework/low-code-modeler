@@ -38,7 +38,19 @@ const categoryIcons: Record<string, string> = {
 
 };
 
-export const AddNodePanel = () => {
+const operatorIcons: Record<string, string> = {
+  ["Deutsch-Jozsa"]: "PaletteIcon_Beginner_DJ.png",
+  ["Grover Oracle"]: "PaletteIcon_Beginner_Oracle.png",
+  ["Grover Diffuser"]: "PaletteIcon_Beginner_Diffuser.png",
+  ["Grover's Search Algorithm"]: "PaletteIcon_Beginner_Grover.png",
+};
+
+interface AddNodePanelProps {
+  ancillaMode?: any;
+  onAddNode?: (def: any, customPosition?: { x: number; y: number }, pluginData?: any) => void;
+}
+
+export const AddNodePanel = ({ onAddNode }: AddNodePanelProps) => {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [activeSubcategories, setActiveSubcategories] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -51,7 +63,7 @@ export const AddNodePanel = () => {
     ["CNOT", "CZ", "CY", "CH", "SWAP", "CU", "CP(λ)", "CRX(θ)", "CRY(θ)", "CRZ(θ)"]
       .includes(label);
   const multiControlledGate = (label: string) =>
-    [ "Toffoli", "CSWAP"]
+    ["Toffoli", "CSWAP"]
       .includes(label);
 
 
@@ -710,6 +722,12 @@ export const AddNodePanel = () => {
       );
     }
   };
+//   useEffect(() => {
+//   console.log(
+//     "All node labels:",
+//     allNodes.map((node) => node.label)
+//   );
+// }, [allNodes]);
 
   const renderNodes = (nodeGroup: any): React.ReactNode => {
     if (Array.isArray(nodeGroup)) {
@@ -721,6 +739,7 @@ export const AddNodePanel = () => {
         .filter((node: Node) => node.compactOptions.includes(compact));
 
       if (visibleNodes.length === 0) return null;
+      
 
       return (
         <div className="space-y-2 mt-2">
@@ -735,16 +754,18 @@ export const AddNodePanel = () => {
               {node.icon ? (
                 <img
                   src={
-                    Array.isArray(node.icon)
-                      ? node.type === consts.GateNode
-                        ? node.icon[experienceLevel === "explorer" ? 1 : 0]
-                        : node.icon[ancillaMode ? 1 : 0] // Use ancillaMode for others
-                      : node.icon
+                    experienceLevel === "explorer" && operatorIcons[node.label]
+                      ? operatorIcons[node.label]
+                      : Array.isArray(node.icon)
+                        ? node.type === consts.GateNode
+                          ? node.icon[experienceLevel === "explorer" ? 1 : 0]
+                          : node.icon[ancillaMode ? 1 : 0]
+                        : node.icon
                   }
                   alt={typeof node.label === "string" ? node.label : ""}
                   className={`object-contain ${node.type === consts.GateNode && isControlledGate(node.label)
-                      ? "w-[180px] h-[200px]"
-                      : node.type === consts.GateNode && multiControlledGate(node.label)
+                    ? "w-[180px] h-[200px]"
+                    : node.type === consts.GateNode && multiControlledGate(node.label)
                       ? "w-[190px] h-[270px]"
                       : node.type === consts.GateNode
                         ? "w-[120px] h-[140px]"
@@ -794,6 +815,34 @@ export const AddNodePanel = () => {
           className="mb-4 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
+          onKeyDown={(e) => {
+            // console.log("search result, key down: ", e.key)
+            // console.log(filteredNodes)
+            // console.log(onAddNode)
+            if (e.key === 'Enter' && filteredNodes.length > 0 && onAddNode) {
+              // get top result
+              const topResult = filteredNodes[0] as any;
+              // console.log("top result", topResult)
+
+              // get mock plugin metadata
+              let resultPluginData = null;
+              if (topResult.type === consts.PluginNode) {
+                const pluginName = topResult.label;
+                const mockMetadata = getMockPluginMetadata(topResult, pluginName);
+                resultPluginData = {
+                  name: pluginName,
+                  mockDataInputs: mockMetadata.dataInputs,
+                  mockDataOutputs: mockMetadata.dataOutputs,
+                  ...topResult.pluginData,
+                };
+              }
+              // add node to canvas
+              onAddNode(topResult, undefined, resultPluginData); // position is undefined --> node added to center of canvas
+
+              // clear search field
+              setSearchQuery("");
+            }
+          }}
         />
 
         {searchQuery && (

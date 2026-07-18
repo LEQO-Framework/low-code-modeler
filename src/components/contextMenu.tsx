@@ -32,11 +32,19 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   onAction,
   styles = {}, // Default styles as an empty object
 }) => {
-  const { getNode, getNodes, getEdges, setNodes, addNodes, setEdges, addEdges } = useReactFlow();
-  const type = getNode(id).type
+  const { getNode, getNodes, getEdges, setNodes, addNodes, setEdges, addEdges, getEdge } = useReactFlow();
+  // Safe fallback: bei Edge-Context-Menus liefert getNode(id) undefined zurück
+  const type = getNode(id)?.type || "edge";
   console.log("type", type)
-  const [inputs, setInputs] = useState(getNode(id).data.inputs || []);
   const updateNodeInternals = useUpdateNodeInternals();
+
+  // Alle Hooks müssen unbedingt (unconditionally) VOR jedem frühen Return stehen
+  const node = useStore(
+    useCallback((state) => state.nodeInternals.get(id), [id])
+  );
+  const edge = getEdge(id);
+  console.log("node", node)
+  console.log("edge", edge)
 
   const regenerateIdentifiers = (data: any): any => {
     const normalized = { ...data };
@@ -146,10 +154,13 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
         }
       });
     }
-    // Nodes und Edges atomar in einem Schritt entfernen
+    // Nodes und Edges atomar in einem Schritt entfernen.
+    // Der zusätzliche "e.id !== id"-Check deckt den Fall ab, dass "id" selbst
+    // eine Edge-ID ist (Kontextmenü wurde über onEdgeContextMenu geöffnet) -
+    // dann greift keine der Node-basierten Filterbedingungen oben.
     setNodes((nodes) => nodes.filter((n) => !idsToDelete.has(n.id)));
     setEdges((edges) => edges.filter(
-      (e) => !idsToDelete.has(e.source) && !idsToDelete.has(e.target)
+      (e) => !idsToDelete.has(e.source) && !idsToDelete.has(e.target) && e.id !== id
     ));
     if (onAction) onAction("delete", id);
   }, [id, getNodes, setNodes, setEdges, onAction]);
@@ -186,8 +197,51 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   const [submenuInputRemoveOpen, setSubmenuInputRemoveOpen] = useState(false);
   const [submenuOutputAddOpen, setSubmenuOutputAddOpen] = useState(false);
   const [submenuOutputRemoveOpen, setSubmenuOutputRemoveOpen] = useState(false);
-  var minInput = 0;
-  var minOutput = 0;
+  // Syncing effects (müssen vor jedem frühen Return stehen, Rules of Hooks)
+  useEffect(() => {
+    if (id) updateNodeInternals(id);
+  }, [id, node?.data, updateNodeInternals]);
+
+  useEffect(() => {
+    if (node?.id) {
+      updateNodeInternals(node.id);
+      console.log("update handles");
+    }
+  }, [node?.id, node?.data?.["numberClassicalInputs"], updateNodeInternals]);
+
+  const toggleSubmenuInputAdd = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSubmenuInputAddOpen(prev => !prev);
+  }, []);
+
+  const toggleSubmenuInputRemove = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSubmenuInputRemoveOpen(prev => !prev);
+  }, []);
+
+  const toggleSubmenuOutputAdd = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSubmenuOutputAddOpen(prev => !prev);
+  }, []);
+
+  const toggleSubmenuOutputRemove = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSubmenuOutputRemoveOpen(prev => !prev);
+  }, []);
+
+  // hoveredBtn ist ein Hook (useState) und muss daher VOR dem frühen Return
+  // deklariert werden - hoverProps selbst ist keine Hook-Funktion und darf
+  // an beliebiger Stelle bleiben.
+  const [hoveredBtn, setHoveredBtn] = useState<string | null>(null);
+
+  // Jetzt ist es sicher, früh auszusteigen, falls weder Node noch Edge existiert
+  // (z. B. während eines Renders kurz nach dem Löschen des Elements)
+  if (!node && !edge) return null;
+
+  // Von der Node-Existenz abhängige Variablen
+  let minInput = 0;
+  let minOutput = 0;
+
   if (type === "mergerNode" || type === "splitterNode") {
     minInput = 2;
     minOutput = 2;
@@ -195,55 +249,21 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
     minInput = 1;
   }
 
-  const node = useStore(
-    useCallback((state) => state.nodeInternals.get(id), [id])
-  );
-
-  
-  const quantumInputs =
-    Number(node.data["numberQuantumInputs"] ?? 0);
-  const hasQuantumInputs = quantumInputs > minInput // what happens if node has no filed numQuantumInputs?
-  const hasClassicalInputs = node.data["numberClassicalInputs"] > minInput
-  const hasQuantumOutputs = node.data["numberQuantumOutputs"] > minOutput // what happens if node has no filed numQuantumInputs?
-  const hasClassicalOutputs = node.data["numberClassicalOutputs"] > minOutput
-  const hasInputs = node.data["numberInputs"] > minInput
-  const hasOutputs = node.data["numberOutputs"] > minOutput
-
-  const hasQFTInputs = node.data["numberOutputs"] > minInput
+  // Optional Chaining: id kann eine Edge-ID sein, dann ist node undefined
+  const quantumInputs = Number(node?.data["numberQuantumInputs"] ?? 0);
+  const hasQuantumInputs = quantumInputs > minInput || false;
+  const hasClassicalInputs = node?.data["numberClassicalInputs"] > minInput || false;
+  const hasQuantumOutputs = node?.data["numberQuantumOutputs"] > minOutput || false;
+  const hasClassicalOutputs = node?.data["numberClassicalOutputs"] > minOutput || false;
+  const hasInputs = node?.data["numberInputs"] > minInput || false;
+  const hasOutputs = node?.data["numberOutputs"] > minOutput || false;
+  const hasQFTInputs = node?.data["numberOutputs"] > minInput || false;
 
   console.log("contextMenu")
-  console.log(getNode(id).type)
-  console.log(getNode(id).data["numberQuantumInputs"])
+  console.log(getNode(id)?.type)
+  console.log(getNode(id)?.data["numberQuantumInputs"])
   console.log(hasQuantumInputs)
   console.log(hasClassicalInputs)
-   useEffect(() => {
-    updateNodeInternals(node.id);
-    console.log("update handles")
-   
-  }, [node.data["numberClassicalInputs"] ]);
-
-
-  const toggleSubmenuInputAdd = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation(); // prevent closing parent
-    setSubmenuInputAddOpen(prev => !prev);
-}, []);
-
-  const toggleSubmenuInputRemove = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation(); // prevent closing parent
-    setSubmenuInputRemoveOpen(prev => !prev);
-  }, []);
-
-  const toggleSubmenuOutputAdd = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation(); // prevent closing parent
-    setSubmenuOutputAddOpen(prev => !prev);
-}, []);
-
-  const toggleSubmenuOutputRemove = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation(); // prevent closing parent
-    setSubmenuOutputRemoveOpen(prev => !prev);
-  }, []);
-
-  const [hoveredBtn, setHoveredBtn] = useState<string | null>(null);
 
   const hoverProps = (key: string, isDanger = false) => ({
     onMouseEnter: () => setHoveredBtn(key),
@@ -257,22 +277,25 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   });
 
   let buttons = [];
-  buttons.push(
-    <button
-      key="duplicate"
-      onClick={duplicateNode}
-      aria-label="Duplicate Node"
-      {...hoverProps("duplicate")}
-    >
-      <FaCopy style={iconStyle} /> Duplicate
-    </button>
-  );
+  // Duplizieren nur für Nodes sinnvoll, Edges können nur gelöscht werden
+  if (type !== "edge") {
+    buttons.push(
+      <button
+        key="duplicate"
+        onClick={duplicateNode}
+        aria-label="Duplicate Node"
+        {...hoverProps("duplicate")}
+      >
+        <FaCopy style={iconStyle} /> Duplicate
+      </button>
+    );
+  }
   buttons.push(
     <React.Fragment key="delete-section">
       <div style={{ height: "1px", backgroundColor: "#e5e7eb", margin: "4px 0" }} />
       <button
         onClick={deleteNode}
-        aria-label="Delete Node"
+        aria-label={type === "edge" ? "Delete Edge" : "Delete Node"}
         {...hoverProps("delete", true)}
       >
         <FaTrash style={iconStyle} /> Delete
@@ -610,7 +633,35 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
         </div>
       </div>
     );
-  } else {
+  } 
+  else if (type ==="edge"){
+    return (
+      <div
+        style={{
+          position: "absolute",
+          top,
+          left,
+          ...styles, // Merge passed styles
+          backgroundColor: "#fff",
+          border: "1px solid #ddd",
+          borderRadius: "8px",
+          boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.1)",
+          padding: "10px",
+          zIndex: 1000,
+          display: "flex",
+          flexDirection: "column",
+        }}
+        className="context-menu"
+      >
+        <p style={{ margin: "0.5em", fontSize: "14px", color: "#666" }}>
+          <small>Edge: {id}</small>
+        </p>
+        <div>
+          {buttons}
+        </div>
+      </div>
+    );
+  }else {
     return (
       <div
         style={{ ...menuStyle, top, left, ...styles }}

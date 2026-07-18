@@ -28,12 +28,16 @@ export const UniversalOracleNode = memo((node: Node) => {
   const [outputs, setOutputs] = useState(data.outputs || []);
   const [outputIdentifierError, setOutputIdentifierError] = useState(false);
   const [sizeError, setSizeError] = useState(false);
+  const [missingTargetStatesError, setMissingTargetStatesError] = useState(false);
 
   // Dynamic user role tracking states
   const [mixedView, setMixedView] = useState(false);
   const [hasPioneerUser, setHasPioneerUser] = useState(false);
   const [hasExplorerUser, setHasExplorerUser] = useState(false);
 
+  useEffect(() => {
+    setMissingTargetStatesError(targetStates.trim() === "");
+  }, [targetStates]);
   // Monitor room workspace users and roles
   useEffect(() => {
     const checkUserRoles = () => {
@@ -157,10 +161,24 @@ export const UniversalOracleNode = memo((node: Node) => {
             height: `420px`
           }}>
           {/* VALIDATION ALERT */}
-          {formatError && (
+          {missingTargetStatesError && (
             <div className="absolute top-2 right-[-40px] group z-20">
               <AlertCircle className="text-red-600 w-5 h-5" />
               <div className="absolute top-5 left-[30px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[220px] whitespace-nowrap">
+                Marked states are required.
+              </div>
+            </div>
+          )}
+
+          {formatError && (
+            <div className="absolute top-2 right-[-40px] group z-20">
+              <AlertCircle className="text-red-600 w-5 h-5" />
+              <div
+                className="absolute left-[30px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[220px] whitespace-nowrap"
+                style={{
+                  top: missingTargetStatesError ? "50px" : "35px",
+                }}
+              >
                 Invalid format or out-of-bounds state index.
               </div>
             </div>
