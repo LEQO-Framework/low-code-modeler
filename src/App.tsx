@@ -3550,7 +3550,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
 
   };
 
-  const onNodeDrag = React.useCallback((event: React.MouseEvent, node: Node, nodes: Node[]) => {
+    const onNodeDrag = React.useCallback((event: React.MouseEvent, node: Node, nodes: Node[]) => {
     console.log(reactFlowInstance.getNodes())
     const currentNodes = reactFlowInstance.getNodes();
     console.log(node.position.x);
@@ -3675,7 +3675,6 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     }
   }
     , [reactFlowInstance, helperLines, nodes, setContextMenu]);
-
 
   const onPaneClick = useCallback(() => {
     setSelectedNode(null);
