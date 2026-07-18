@@ -263,6 +263,61 @@ function applyCSwap(
   return result;
 }
 
+/**
+ * Generalisierte Multi-Controlled-Gate-Anwendung (ctrl(N) @ gate aus OpenQASM 3):
+ * Wendet die Matrix `m` auf `target` an, wenn ALLE Qubits in `controls` = 1 sind.
+ * Verallgemeinert applyControlledGate (N=1) und applyToffoli (N=2, fest auf X)
+ * auf beliebige Control-Anzahl und beliebiges Basis-Gate.
+ */
+function applyMultiControlledGate(
+  sv: Complex[],
+  n: number,
+  controls: number[],
+  target: number,
+  m: [Complex, Complex, Complex, Complex]
+): Complex[] {
+  const result = sv.slice();
+  const cBits = controls.map(c => n - 1 - c);
+  const tBit = n - 1 - target;
+
+  for (let i = 0; i < sv.length; i++) {
+    if (cBits.some(b => !(i & (1 << b)))) continue; // alle Controls müssen 1 sein
+    if (i & (1 << tBit)) continue;                   // nur einmal pro Paar
+    const j = i | (1 << tBit);
+    const a = sv[i];
+    const b = sv[j];
+    result[i] = cadd(cmul(m[0], a), cmul(m[1], b));
+    result[j] = cadd(cmul(m[2], a), cmul(m[3], b));
+  }
+  return result;
+}
+
+/** Lookup-Tabelle Basis-Gate-Name → Matrix, für ctrl(N) @ <name>-Konstrukte */
+const GATE_MATRIX_BY_NAME: Record<string, [Complex, Complex, Complex, Complex]> = {
+  h: GATE_H, x: GATE_X, y: GATE_Y, z: GATE_Z,
+  s: GATE_S, sdg: GATE_SDG, t: GATE_T, tdg: GATE_TDG, sx: GATE_SX,
+};
+
+/**
+ * Wendet ein per "mc_<basegate>" kodiertes Multi-Controlled-Gate auf den Statevector an.
+ * Gibt bei unbekanntem Basis-Gate `null` zurück (Aufrufer soll dann eine Warnung ausgeben).
+ */
+function applyParsedMultiControlledGate(sv: Complex[], numQubits: number, gate: ParsedGate): Complex[] | null {
+  const baseName = gate.name.slice(3); // "mc_" abschneiden
+  const matrix = GATE_MATRIX_BY_NAME[baseName];
+  if (!matrix) return null;
+
+  const numControls = gate.numControls ?? gate.qubits.length - 1;
+  const controls = gate.qubits.slice(0, numControls);
+  const targets = gate.qubits.slice(numControls);
+
+  let result = sv;
+  for (const target of targets) {
+    result = applyMultiControlledGate(result, numQubits, controls, target, matrix);
+  }
+  return result;
+}
+
 // ---------------------------------------------------------------------------
 // QASM-Parser
 // ---------------------------------------------------------------------------
@@ -271,6 +326,9 @@ interface ParsedGate {
   name: string;
   qubits: number[];   // Qubit-Indizes (global, aufgelöst)
   params: number[];   // Numerische Parameter
+  // Anzahl Control-Qubits bei "mc_<gate>"-Namen (ctrl(N) @ gate-Modifikator-Syntax).
+  // Die ersten `numControls` Einträge in `qubits` sind die Controls, der Rest die Targets.
+  numControls?: number;
   // Canvas-Node-ID des Nodes, aus dessen "Start node ..."-Kommentarabschnitt dieses Gate stammt
   // (falls vorhanden). Wird für den Step-Click-Mechanismus genutzt, um beim Klick auf einen
   // Schritt in der Dirac-Notation den zugehörigen Node auf dem Canvas hervorzuheben.
@@ -483,6 +541,34 @@ export function parseQasm(qasm: string): {
       continue;
     }
 
+    // OpenQASM 3 Modifikator-Syntax: ctrl(N) @ gate q0, q1, ..., qTarget;
+    //                            oder ctrl @ gate q0, q1;          (N=1 impliziert)
+    // Beispiel: ctrl(2) @ z leqo_..._ctrl_0[0], leqo_..._ctrl_1[0], leqo_..._target_0[0];
+    // Die ersten N Qubits sind die Controls, die verbleibenden die Targets.
+    const ctrlModMatch = line.match(/^ctrl(?:\((\d+)\))?\s*@\s*(\w+)\s+(.+?)\s*;?$/);
+    if (ctrlModMatch) {
+      const numControls = ctrlModMatch[1] ? parseInt(ctrlModMatch[1]) : 1;
+      const baseGate = ctrlModMatch[2].toLowerCase();
+      const qubits = ctrlModMatch[3]
+        .split(',')
+        .map(q => resolveQubit(q.trim()))
+        .filter((q): q is number => q !== null);
+
+      if (qubits.length <= numControls) {
+        warnings.push(`Multi-Controlled Gate "${baseGate}": zu wenige Qubits aufgelöst — übersprungen.`);
+        continue;
+      }
+
+      gates.push({
+        name: `mc_${baseGate}`,
+        qubits,
+        params: [],
+        numControls,
+        nodeId: currentNodeId,
+      });
+      continue;
+    }
+
     // Gate-Aufruf: gateName(params) qubit1, qubit2;
     //          oder gateName qubit1, qubit2;
     const gateMatch = line.match(/^(\w+)(?:\(([^)]*)\))?\s+(.+?)\s*;?$/);
@@ -517,6 +603,17 @@ export function simulate(
   for (const gate of gates) {
     const [q0, q1] = gate.qubits;
     const [p0, p1, p2] = gate.params;
+
+    // Multi-Controlled Gates aus ctrl(N) @ gate-Modifikator-Syntax
+    if (gate.name.startsWith('mc_')) {
+      const applied = applyParsedMultiControlledGate(sv, numQubits, gate);
+      if (applied === null) {
+        warnings.push(`Multi-Controlled Gate mit unbekanntem Basis-Gate "${gate.name.slice(3)}" — übersprungen.`);
+        continue;
+      }
+      sv = applied;
+      continue;
+    }
 
     switch (gate.name) {
       case 'h':
@@ -925,7 +1022,14 @@ function formatGateLabel(gate: ParsedGate, numQubits: number): string {
     case 'cswap':
     case 'fredkin': return buildTensor('CSWAP', [q[0], q[1], q[2]]);
     case 'measure': return `Messung q${sub(q[0])}`;
-    default: return gate.name.toUpperCase();
+    default: {
+      // Multi-Controlled Gates aus ctrl(N) @ gate-Modifikator-Syntax: "mc_z" → "MCZ"
+      if (gate.name.startsWith('mc_')) {
+        const baseName = gate.name.slice(3).toUpperCase();
+        return buildTensor(`MC${baseName}`, gate.qubits);
+      }
+      return gate.name.toUpperCase();
+    }
   }
 }
 
@@ -1003,7 +1107,14 @@ function formatGateLabelLatex(gate: ParsedGate, numQubits: number): string {
     case 'toffoli': return buildTensorLatex('\\text{Toffoli}', [q[0], q[1], q[2]]);
     case 'cswap':
     case 'fredkin': return buildTensorLatex('\\text{CSWAP}', [q[0], q[1], q[2]]);
-    default: return `\\text{${gate.name.toUpperCase()}}`;
+    default: {
+      // Multi-Controlled Gates aus ctrl(N) @ gate-Modifikator-Syntax
+      if (gate.name.startsWith('mc_')) {
+        const baseName = gate.name.slice(3).toUpperCase();
+        return buildTensorLatex(`\\text{MC${baseName}}`, gate.qubits);
+      }
+      return `\\text{${gate.name.toUpperCase()}}`;
+    }
   }
 }
 
@@ -1074,6 +1185,16 @@ export function qasmToDiracSteps(qasm: string): DiracStepsResult {
       case 'swap': sv = applySwap(sv, numQubits, q0, q1); break;
       case 'measure': continue; // Messung überspringen
       default:
+        // Multi-Controlled Gates aus ctrl(N) @ gate-Modifikator-Syntax
+        if (gate.name.startsWith('mc_')) {
+          const applied = applyParsedMultiControlledGate(sv, numQubits, gate);
+          if (applied === null) {
+            simWarnings.push(`Multi-Controlled Gate mit unbekanntem Basis-Gate "${gate.name.slice(3)}" — übersprungen.`);
+            continue;
+          }
+          sv = applied;
+          break;
+        }
         simWarnings.push(`Unbekanntes Gate: "${gate.name}" — übersprungen.`);
         continue;
     }

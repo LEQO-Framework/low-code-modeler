@@ -107,12 +107,18 @@ export const CustomPanel = ({
   // Analyse-Funktion – aufrufbar per Refresh-Button
   const runAnalysis = useCallback(() => {
     if (!backendUrl) return;
+    // Zusätzlich den regulären Backend-Compile anstoßen, damit der QASM-Tab
+    // (qasmCode, gesteuert von sendToBackend() in App.tsx) synchron mit dem
+    // Math-Mode-Ergebnis bleibt. Ohne das lief Math Mode über seinen eigenen,
+    // unabhängigen analyzeComponents()-Request und der QASM-Tab blieb auf
+    // dem Stand des letzten "Send to Backend"-/"Apply to Canvas"-Klicks stehen.
+    onSendToBackend?.();
     setAnalyzing(true);
     setComponents([]);
     analyzeComponents(nodes, edges, backendUrl, metadata, compilationTarget)
       .then(setComponents)
       .finally(() => setAnalyzing(false));
-  }, [nodes, edges, backendUrl, metadata, compilationTarget]);
+  }, [nodes, edges, backendUrl, metadata, compilationTarget, onSendToBackend]);
 
   // Beim Wechsel zum Math Mode Tab → automatisch Backend-Call auslösen
   const handleTabSwitch = useCallback((tab: "properties" | "math") => {
@@ -215,7 +221,12 @@ export const CustomPanel = ({
                     setNodes(newNodes);
                     setEdges(newEdges);
                     setQasmApplySuccess(true);
-                    onSendToBackend()
+                    // setTimeout(0): reactFlowInstance synchronisiert seinen internen
+                    // Store erst NACH dem React-Commit von setNodes/setEdges. Ein
+                    // synchroner onSendToBackend()-Aufruf hier würde daher noch mit
+                    // dem alten Circuit-Stand compilen (siehe auch der analoge
+                    // setTimeout(0)-Patch für den Zustand-Duplicate-Fix).
+                    setTimeout(() => onSendToBackend?.(), 0);
                     setTimeout(() => setQasmApplySuccess(false), 2000);
                   } catch (e) {
                     setQasmApplyError(e instanceof Error ? e.message : "Parse error");
