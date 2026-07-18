@@ -266,12 +266,23 @@ export const TextPanel = () => {
 
   const radToDeg = (rad) => normalizeDegrees((parseFloat(rad) * 180) / Math.PI);
 
-  const safeEval = (expr) => {
+  const safeEval = (expr: number | String) => {
     try {
+      if(typeof expr === "number") return expr;
+      if(expr.trim() === "") return NaN;
       console.log(expr)
+
+      // 1. Replace pi/π with Math.PI
+      // 2. Insert '*' between a number and Math.PI (e.g., "2pi" -> "2*Math.PI")
       const sanitized = expr
-        .replace(/π|pi/gi, `${Math.PI}`);
-      return sanitized;
+        .toLowerCase()
+        .replace(/π|pi/g, "Math.PI")
+        .replace(/(\d)(Math\.PI)/g, "$1*$2");
+
+      // Use Function to safely evaluate the math string
+      const result = new Function(`"use strict"; return (${sanitized})`)();
+      
+      return result;
     } catch (e) {
       return NaN;
     }
@@ -298,7 +309,7 @@ export const TextPanel = () => {
     // If the input is empty, exit early
     if (currentValue === "") return; 
 
-    const numericValue = parseFloat(currentValue);
+    const numericValue = safeEval(currentValue);
 
     if (!isNaN(numericValue)) {
       const isDegree = selectedNode.data.parameterType === "degree";
@@ -697,7 +708,7 @@ export const TextPanel = () => {
                 </label>
                 <div className="mt-1">
                   <input
-                    type="number"
+                    type="text"
                     id="parameter"
                     name="parameter"
                     value={
