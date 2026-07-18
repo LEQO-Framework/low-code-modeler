@@ -291,6 +291,28 @@ export const TextPanel = () => {
     }
   };
 
+  // executed when gate parameter field is exited
+  const handleBlurForGateParameters = (e: React.FocusEvent<HTMLInputElement>) => {
+    const currentValue = e.target.value;
+    
+    // If the input is empty, exit early
+    if (currentValue === "") return; 
+
+    const numericValue = parseFloat(currentValue);
+
+    if (!isNaN(numericValue)) {
+      const isDegree = selectedNode.data.parameterType === "degree";
+      
+      // Normalize based on the parameter type
+      const normalizedValue = isDegree 
+        ? normalizeDegrees(numericValue) 
+        : normalizeRadians(numericValue);
+
+      // Update parameter with normalized value
+      handleNumberChange("parameter", normalizedValue.toString());
+    }
+  };
+
   let validMinValue = 0;
   if (selectedNode?.type === 'splitterNode' || selectedNode?.type === 'mergerNode') {
     validMinValue = 2;
@@ -684,6 +706,7 @@ export const TextPanel = () => {
                         : selectedNode.data.parameter || ""
                     }
                     onChange={(e) => handleNumberChange("parameter", e.target.value)}
+                    onBlur={handleBlurForGateParameters}
                     className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
                     placeholder="Enter parameter"
                   />
@@ -768,6 +791,7 @@ export const TextPanel = () => {
                           : selectedNode.data[key] || ""
                       }
                       onChange={(e) => handleNumberChange(key, e.target.value)}
+                      //onBlur={TODO} //not implemented for multi-parameter gates
                       className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
                       placeholder={`Enter ${label}`}
                     />
