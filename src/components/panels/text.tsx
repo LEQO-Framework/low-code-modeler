@@ -272,14 +272,21 @@ export const TextPanel = () => {
       if(expr.trim() === "") return NaN;
       console.log(expr)
 
-      // 1. Replace pi/π with Math.PI
-      // 2. Insert '*' between a number and Math.PI (e.g., "2pi" -> "2*Math.PI")
-      const sanitized = expr
-        .toLowerCase()
+      // Convert commas to dots ("0,5" -> "0.5")
+      let sanitized = expr.toLowerCase().replace(/,/g, '.');
+      
+      // Validate input: Only allow numbers, math operators, dots, spaces, and "pi" / "π"
+      if (!/^[0-9+\-*/(). piπ\s]+$/.test(sanitized)) {
+        return NaN;
+      }
+
+      // Replace pi/π with Math.PI
+      // and insert '*' between a number and Math.PI (e.g., "2pi" -> "2*Math.PI")
+      sanitized = expr
         .replace(/π|pi/g, "Math.PI")
         .replace(/(\d)(Math\.PI)/g, "$1*$2");
 
-      // Use Function to safely evaluate the math string
+      // Safely evaluate the math string
       const result = new Function(`"use strict"; return (${sanitized})`)();
       
       return result;
@@ -321,6 +328,8 @@ export const TextPanel = () => {
 
       // Update parameter with normalized value
       handleNumberChange("parameter", normalizedValue.toString());
+    } else {
+      handleNumberChange("parameter", "");
     }
   };
 
