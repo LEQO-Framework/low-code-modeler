@@ -3089,7 +3089,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
 
   };
 
-  const onNodeDrag = React.useCallback((event: React.MouseEvent, node: Node, nodes: Node[]) => {
+    const onNodeDrag = React.useCallback((event: React.MouseEvent, node: Node, nodes: Node[]) => {
     console.log(reactFlowInstance.getNodes())
     const currentNodes = reactFlowInstance.getNodes();
     console.log(node.position.x);
@@ -3206,7 +3206,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     })
     // move contextmenu with dragged node if it belongs to that node
     // if other node is dragged: make context menu invisible
-    if (node.id == contextMenu.nodeId) {
+    if (node.id == contextMenu.componentId) {
       console.log("drag contextmenu to nodeid: ", node.id)
       setContextMenu((prev) => ({ ...prev, top: event.clientY, left: event.clientX }))
     } else {
@@ -3214,7 +3214,6 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     }
   }
     , [reactFlowInstance, helperLines, nodes, setContextMenu]);
-
 
   const onPaneClick = useCallback(() => {
     if (!collaborationModeOn) return;
@@ -3763,10 +3762,18 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
       return !owner || owner === myClientId;
     });
 
-    // 🧠 Apply changes locally
-    const updatedNodes = applyNodeChanges(allowedChanges, nodesI);
+    // 🧠 Apply changes against the latest React Flow node snapshot.
+    const currentNodes = reactFlowInstance?.getNodes?.() ?? nodesI;
+    const updatedNodes = applyNodeChanges(allowedChanges, currentNodes);
+    console.log(
+      "SELECTION STATES AFTER CHANGE",
+      updatedNodes
+        .filter(n => n.selected)
+        .map(n => n.id)
+    );
+
     setNodesI(updatedNodes);
-    updatedNodes.forEach(n => nodesMap.set(n.id, n)); // ???
+    updatedNodes.forEach((node) => nodesMap.set(node.id, stripTransientNodeState(node)));
 
     // 🔁 Sync with React Flow
     onNodesChange(allowedChanges);
@@ -4075,14 +4082,6 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
         setCompilationTarget={setCompilationTarget}
         sendToBackend={sendToBackend}
       />
-      <Modal
-        title={compilationTarget === "qiskit" ? "Generated Qiskit" : "Generated Code"}
-        open={showResultModal}
-        onClose={() => setShowResultModal(false)}
-        className="w-[80vw] max-w-4xl"
-      >
-        <pre className="text-sm overflow-auto max-h-[70vh] whitespace-pre-wrap bg-gray-50 p-3 rounded border">{openqasmCode}</pre>
-      </Modal>
 
       <ConfigModal
         open={isConfigOpen}
