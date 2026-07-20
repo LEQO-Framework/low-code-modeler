@@ -138,8 +138,13 @@ function getProxyHandles(
 
     // Input-Handle ID nach bekanntem Muster generieren
     let inputHandleId: string | null = null;
-    // gateNode: nur Input wenn der Node tatsächlich Inputs hat (nicht |0⟩ Qubit-Gate)
-    if (nodeType === "gateNode" && child.data?.inputs?.length > 0)
+    // gateNode: nur Input wenn es sich NICHT um eine reine |0⟩-Qubit-Quelle handelt.
+    // Vorher wurde dies über child.data?.inputs?.length > 0 geprüft - dieses Feld
+    // spiegelt aber nicht zuverlässig die tatsächlichen Verbindungen wider (z.B. bei
+    // frisch gruppierten oder verketteten Gattern kann es fälschlich leer sein).
+    // "Qubit Circuit" ist das strukturell stabile Erkennungsmerkmal der Qubit-Quelle,
+    // unabhängig vom aktuellen Verbindungszustand.
+    if (nodeType === "gateNode" && child.data?.label !== "Qubit Circuit")
                                                inputHandleId = `quantumHandleGateInput0${child.id}`;
     else if (nodeType === "measurementNode")   inputHandleId = `quantumHandleMeasurementInput0${child.id}`;
     else if (nodeType === "statePreparationNode") inputHandleId = `classicalHandleStatePreparationInput0${child.id}`;
@@ -177,7 +182,7 @@ function getProxyHandles(
 export const GroupNode = memo((node: Node) => {
   const { data, selected, id } = node;
   const { nodes, updateNodeValue } = useStore(selector, shallow);
-  const { setNodes, getNodes, getEdges } = useReactFlow();
+  const { setNodes, getNodes, getEdges, setEdges } = useReactFlow();
 
   const [isEditingLabel, setIsEditingLabel] = useState(false);
   const [editableLabel, setEditableLabel] = useState(data.label || "Group");
@@ -301,10 +306,32 @@ export const GroupNode = memo((node: Node) => {
             },
           };
         }
+        // Data.inputs-Referenzen auf die jetzt gelöschte Gruppen-ID bereinigen
+        // (z.B. falls dieser Node von der Gruppe aus über einen Output-Proxy-Handle
+        // gespeist wurde). Analog zur Bereinigung in contextMenu.tsx's deleteNode -
+        // ohne dies bleiben Karteileichen zurück, die spätere Verbindungen/Analysen
+        // fälschlich beeinflussen können.
+        if (Array.isArray(n.data?.inputs) && n.data.inputs.some((inp: any) => inp?.id === id)) {
+          return {
+            ...n,
+            data: {
+              ...n.data,
+              inputs: n.data.inputs.filter((inp: any) => inp?.id !== id),
+            },
+          };
+        }
         return n;
       })
     );
-  }, [id, setNodes, getNodes]);
+    // Externe Edges bereinigen, die auf die Proxy-Handles DER GRUPPE selbst
+    // zeigten (source/target === groupId). Ohne dies bleiben sie als Karteileichen
+    // im Edge-Array zurück (die Gruppe existiert ja nicht mehr) und blockieren
+    // spätere neue Verbindungen zu den jetzt eigenständigen Kind-Knoten, z.B. weil
+    // eine spätere edgeExists-Prüfung denselben targetHandle fälschlich als
+    // "bereits belegt" ansieht. Interne Edges zwischen den Kind-Knoten sind davon
+    // nicht betroffen und bleiben unverändert erhalten.
+    setEdges((eds: Edge[]) => eds.filter((edge) => edge.source !== id && edge.target !== id));
+  }, [id, setNodes, setEdges, getNodes]);
 
   const handleLabelBlur = () => {
     setIsEditingLabel(false);

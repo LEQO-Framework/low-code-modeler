@@ -158,7 +158,29 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
     // Der zusätzliche "e.id !== id"-Check deckt den Fall ab, dass "id" selbst
     // eine Edge-ID ist (Kontextmenü wurde über onEdgeContextMenu geöffnet) -
     // dann greift keine der Node-basierten Filterbedingungen oben.
-    setNodes((nodes) => nodes.filter((n) => !idsToDelete.has(n.id)));
+    //
+    // WICHTIG: Dieser Pfad nutzt die rohen setNodes/setEdges von useReactFlow()
+    // und läuft damit AN der onEdgesChange-Bereinigungslogik im Zustand-Store
+    // vorbei (die beim Tastatur-Löschen via onNodesChange/onEdgesChange greift).
+    // Ohne die folgende Bereinigung blieben data.inputs-Einträge auf verbleibenden
+    // Knoten zurück, die auf die gerade gelöschte(n) ID(s) verweisen - das führte zu
+    // Folgefehlern (blockierte neue Verbindungen, doppelte Gruppen in der Analyse).
+    setNodes((nodes) =>
+      nodes
+        .filter((n) => !idsToDelete.has(n.id))
+        .map((n) => {
+          if (!Array.isArray(n.data?.inputs)) return n;
+          const hasStaleInput = n.data.inputs.some((inp: any) => idsToDelete.has(inp?.id));
+          if (!hasStaleInput) return n;
+          return {
+            ...n,
+            data: {
+              ...n.data,
+              inputs: n.data.inputs.filter((inp: any) => !idsToDelete.has(inp?.id)),
+            },
+          };
+        })
+    );
     setEdges((edges) => edges.filter(
       (e) => !idsToDelete.has(e.source) && !idsToDelete.has(e.target) && e.id !== id
     ));
