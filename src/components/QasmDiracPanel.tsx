@@ -982,7 +982,7 @@ export function QasmDiracPanel(props: Props) {
   // onStepClick existiert nur auf QasmProps (Steps gibt es nur für QASM-Input) - daher
   // per "in"-Check sicher aus dem Props-Union extrahieren.
   const onStepClick = "onStepClick" in props ? props.onStepClick : undefined;
-  const [showBasisStates, setShowBasisStates] = useState(true);
+  const [showBasisStates, setShowBasisStates] = useState(false);
   const [showSteps, setShowSteps] = useState(false);
   const [showBloch, setShowBloch] = useState(false);
   const [showProperties, setShowProperties] = useState(false);
@@ -1161,17 +1161,15 @@ export function QasmDiracPanel(props: Props) {
 
   const [selectedqubits, setSelectedQubits] = useState<number[]>([]);
 
-  // Wenn numQubits sich ändert (neues QASM geladen): Measurement-Ergebnis-Indizes
-  // vorauswählen falls vorhanden (z.B. Additions-Schaltkreis -> direkt Summe anzeigen),
-  // sonst alle Qubits auswählen.
+  // Wenn numQubits sich ändert (neues QASM geladen): immer alle Qubits auswählen
+  // ("All"), auch wenn eine Messung erkannt wurde. Vorher wurde bei einer Messung
+  // automatisch nur die gemessenen Qubits vorausgewählt - das unterdrückte aber
+  // die grüne measurementResultHint-Box (die nur bei !isPartial angezeigt wird,
+  // siehe unten), obwohl genau diese Box das Ergebnis kompakt und mit zusätzlichem
+  // Kontext (z.B. Bit-Reihenfolge-Hinweis) zeigt.
   useEffect(() => {
     if (numQubits > 0) {
-      if (measurementResultIndices && measurementResultIndices.length > 0
-          && measurementResultIndices.length < numQubits) {
-        setSelectedQubits(measurementResultIndices);
-      } else {
-        setSelectedQubits(Array.from({ length: numQubits }, (_, i) => i));
-      }
+      setSelectedQubits(Array.from({ length: numQubits }, (_, i) => i));
     }
   }, [numQubits, measurementResultIndices]);
 
@@ -1334,7 +1332,7 @@ export function QasmDiracPanel(props: Props) {
               onClick={() => setShowProperties((v) => !v)}
               className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border transition-colors flex-shrink-0 whitespace-nowrap ${
                 showProperties
-                  ? "bg-teal-50 border-teal-300 text-teal-600"
+                  ? "bg-blue-50 border-blue-300 text-blue-600"
                   : "border-gray-300 hover:bg-gray-100 text-gray-600"
               }`}
             >
@@ -1358,7 +1356,11 @@ export function QasmDiracPanel(props: Props) {
           {terms.length > 0 && (
             <button
               onClick={() => setShowBasisStates((v) => !v)}
-              className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border border-gray-300 hover:bg-gray-100 text-gray-600 transition-colors flex-shrink-0 whitespace-nowrap"
+              className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border transition-colors flex-shrink-0 whitespace-nowrap ${
+                showBasisStates
+                  ? "bg-blue-50 border-blue-300 text-blue-600"
+                  : "border-gray-300 hover:bg-gray-100 text-gray-600"
+              }`}
             >
               <span>{showBasisStates ? "▾" : "▸"}</span>
               Histogram
@@ -1369,7 +1371,7 @@ export function QasmDiracPanel(props: Props) {
               onClick={() => setShowBloch((v) => !v)}
               className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border transition-colors flex-shrink-0 whitespace-nowrap ${
                 showBloch
-                  ? "bg-purple-50 border-purple-300 text-purple-600"
+                  ? "bg-blue-50 border-blue-300 text-blue-600"
                   : "border-gray-300 hover:bg-gray-100 text-gray-600"
               }`}
             >
@@ -1414,30 +1416,129 @@ export function QasmDiracPanel(props: Props) {
         </span>
       </div>
 
+      {/* Hinweis: Bei der finalen Anzeige wird eine rein globale Phase (z.B. ein
+          Vorzeichen bei Einzelterm-Zuständen wie -|1⟩) entfernt, da sie physikalisch
+          keinen messbaren Unterschied macht. In den Mathematical Intermediate Steps
+          weiter unten bleibt das Vorzeichen dagegen sichtbar, um die algebraische
+          Wirkung jedes einzelnen Gatters nachvollziehbar zu zeigen. */}
+      {!isPartial && fullResult?.globalPhaseNote && (
+        <div className="flex-shrink-0 rounded-lg border border-blue-100 bg-blue-50/40 px-3 py-2 flex items-start gap-2">
+          <span className="text-blue-500 text-xs mt-0.5">ℹ</span>
+          <span className="text-xs text-blue-800">
+            The sign shown above reflects a global phase. This has no physical effect and cannot
+            be detected by measurement - a state and its negative (or any overall phase factor)
+            are indistinguishable.
+          </span>
+        </div>
+      )}
+
       {/* Hinweis: in welchen Qubits laut Measurement-Node das eigentliche Ergebnis kodiert ist,
           plus (da die Hauptzeile jetzt reduziert ist) der vollständige Registerzustand zur Info,
           nur sichtbar wenn aktuell "All" ausgewählt ist (sonst hat der User die Auswahl bereits
           selbst getroffen und der Hinweis wäre redundant). */}
       {!isPartial && measurementResultHint && (
-        <div className="flex-shrink-0 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 flex items-center gap-2 flex-wrap">
-          <span className="text-emerald-600">💡</span>
-          <span className="text-xs text-emerald-800">
-            Result is encoded in qubit{measurementResultHint.indices.length > 1 ? "s" : ""}{" "}
-            <span className="font-mono font-semibold">
-              q{measurementResultHint.indices.join(", q")}
+        <div className="flex-shrink-0 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-emerald-600">💡</span>
+            <span className="text-xs text-emerald-800">
+              Result is encoded in qubit{measurementResultHint.indices.length > 1 ? "s" : ""}{" "}
+              <span className="font-mono font-semibold">
+                q{measurementResultHint.indices.join(", q")}
+              </span>
+              :{" "}
+              <span className="font-mono font-semibold">
+                |{measurementResultHint.bits}⟩ = {measurementResultHint.decimal}₁₀
+              </span>
+              {unicodeStr && (
+                <>
+                  {" "}· Full register: <span className="font-mono">{unicodeStr}</span>
+                </>
+              )}
             </span>
-            :{" "}
-            <span className="font-mono font-semibold">
-              |{measurementResultHint.bits}⟩ = {measurementResultHint.decimal}₁₀
-            </span>
-            {unicodeStr && (
-              <>
-                {" "}· Full register: <span className="font-mono">{unicodeStr}</span>
-              </>
-            )}
-          </span>
+          </div>
+          {/* Hinweis zur Bit-Signifikanz: Die Anzeige folgt immer q0,q1,q2,... von
+              links nach rechts. Ob dabei q[niedrigster Index] das niedrigst- oder
+              das höchstwertige Bit ist, hängt von der jeweiligen Schaltung ab (z.B.
+              verwendet ein Ripple-Carry-Addierer typischerweise Index 0 als LSB).
+              Der oben gezeigte Dezimalwert geht von genau der Bit-Reihenfolge aus,
+              in der die Qubits hier aufgelistet sind (q{measurementResultHint.indices[0]}
+              zuerst) - das muss nicht zwangsläufig der MSB-zuerst-Konvention entsprechen. */}
+          {measurementResultHint.indices.length > 1 && (
+            <div className="text-xs text-emerald-700/80 mt-1.5 pt-1.5 border-t border-emerald-200/70">
+              ⓘ Bit order shown: q{measurementResultHint.indices[0]} first (as listed above).
+              Depending on how this circuit encodes values (e.g. an adder typically treats the
+              lowest qubit index as the least-significant bit), the decimal value may need to be
+              read with the bits in reverse order. Check your circuit's specific wiring if the
+              decimal value looks unexpected.
+            </div>
+          )}
         </div>
       )}
+
+      {/* Properties Tab */}
+      {showProperties && fullResult && numQubits > 0 && (() => {
+        const statevectorArr = Array.from({ length: 1 << numQubits }, (_, i) => {
+          const term = fullResult.terms.find(t => parseInt(t.basisState, 2) === i);
+          return term ? term.amplitude : { re: 0, im: 0 };
+        });
+
+        // Persistence: bei 1 Qubit die exakte von-Neumann-Entropie. Bei mehreren Qubits:
+        // 0 falls vollständig separabel, sonst Mustererkennung (GHZ/Bell/W-State) - liefert
+        // null ("not computable") falls kein bekanntes Muster zutrifft.
+        const persistence: number | null = numQubits === 1
+          ? getEntanglementPersistence(statevectorArr, numQubits, 0)
+          : isEntangled
+          ? getMultiQubitPersistence(fullResult.terms, numQubits)
+          : 0;
+
+        return (
+          <div className="flex-shrink-0 rounded-lg border border-teal-100 bg-teal-50/20 px-3 py-3">
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">
+              Properties
+            </p>
+            <table className="w-full text-xs border-collapse">
+              <tbody>
+                <tr className="border-b border-teal-100">
+                  <td className="py-1.5 pr-2 font-medium text-gray-600">Property</td>
+                  <td className="py-1.5"></td>
+                </tr>
+                <tr className="border-b border-teal-100">
+                  <td className="py-1.5 pr-2 text-gray-700">Bloch Sphere Representation</td>
+                  <td className="py-1.5 text-gray-700">
+                    {numQubits === 1
+                      ? <span className="font-semibold">✓</span>
+                      : <span className="font-semibold text-gray-400">✗ <span className="font-normal text-gray-400 text-xs">(only for single qubits)</span></span>}
+                  </td>
+                </tr>
+                <tr className="border-b border-teal-100">
+                  <td className="py-1.5 pr-2 text-gray-700">Entangled</td>
+                  <td className="py-1.5">
+                    {isEntangled ? (
+                      <span className="font-semibold">✓</span>
+                    ) : (
+                      <span className="font-semibold">✗</span>
+                    )}
+                  </td>
+                </tr>
+                <tr>
+                  <td className="py-1.5 pr-2 text-gray-700">
+                    Persistence
+                    {numQubits >= 2 && (
+                      <span
+                        className="text-gray-400 cursor-help"
+                        title="Minimum number of qubits that must be measured to guarantee full separability of the remaining state. Recognized for GHZ-like states (incl. all Bell variants) and W-states. Other states show 'not computable'."
+                      > ⓘ</span>
+                    )}
+                  </td>
+                  <td className="py-1.5 font-mono text-gray-700">
+                    {persistence !== null ? persistence : "not computable"}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        );
+      })()}
 
       {/* Zwischenschritte */}
       {showSteps && stepsResult && stepsResult.steps.length > 0 && (
@@ -1464,7 +1565,7 @@ export function QasmDiracPanel(props: Props) {
           <div className="flex items-start gap-1.5 mb-2 px-2 py-1.5 rounded bg-blue-50 border border-blue-100">
             <span className="text-blue-400 text-xs mt-0.5">ℹ</span>
             <p className="text-xs text-blue-600 leading-relaxed">
-              <strong>Notation:</strong> H<sub>0</sub> means the H gate applied to qubit 0, I<sub>1</sub> means identity (no operation) on qubit 1. The subscript indicates which qubit the gate acts on.
+              <strong>Notation:</strong> U<sub>0</sub> means that U is applied to qubit 0, I<sub>1</sub> means identity (no operation) on qubit 1. The subscript indicates which qubit the gate acts on.
             </p>
           </div>
 
@@ -1629,70 +1730,6 @@ export function QasmDiracPanel(props: Props) {
         </div>
       )}
 
-      {/* Properties Tab */}
-      {showProperties && fullResult && numQubits > 0 && (() => {
-        const statevectorArr = Array.from({ length: 1 << numQubits }, (_, i) => {
-          const term = fullResult.terms.find(t => parseInt(t.basisState, 2) === i);
-          return term ? term.amplitude : { re: 0, im: 0 };
-        });
-
-        // Persistence: bei 1 Qubit die exakte von-Neumann-Entropie. Bei mehreren Qubits:
-        // 0 falls vollständig separabel, sonst Mustererkennung (GHZ/Bell/W-State) - liefert
-        // null ("not computable") falls kein bekanntes Muster zutrifft.
-        const persistence: number | null = numQubits === 1
-          ? getEntanglementPersistence(statevectorArr, numQubits, 0)
-          : isEntangled
-          ? getMultiQubitPersistence(fullResult.terms, numQubits)
-          : 0;
-
-        return (
-          <div className="flex-shrink-0 rounded-lg border border-teal-100 bg-teal-50/20 px-3 py-3">
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">
-              Properties
-            </p>
-            <table className="w-full text-xs border-collapse">
-              <tbody>
-                <tr className="border-b border-teal-100">
-                  <td className="py-1.5 pr-2 font-medium text-gray-600">Property</td>
-                  <td className="py-1.5"></td>
-                </tr>
-                <tr className="border-b border-teal-100">
-                  <td className="py-1.5 pr-2 text-gray-700">Bloch Sphere Representation</td>
-                  <td className="py-1.5 text-gray-700">
-                    {numQubits === 1
-                      ? <span className="font-semibold">✓</span>
-                      : <span className="font-semibold text-gray-400">✗ <span className="font-normal text-gray-400 text-xs">(only for single qubits)</span></span>}
-                  </td>
-                </tr>
-                <tr className="border-b border-teal-100">
-                  <td className="py-1.5 pr-2 text-gray-700">Entangled</td>
-                  <td className="py-1.5">
-                    {isEntangled ? (
-                      <span className="font-semibold">✓</span>
-                    ) : (
-                      <span className="font-semibold">✗</span>
-                    )}
-                  </td>
-                </tr>
-                <tr>
-                  <td className="py-1.5 pr-2 text-gray-700">
-                    Persistence
-                    {numQubits >= 2 && (
-                      <span
-                        className="text-gray-400 cursor-help"
-                        title="Minimum number of qubits that must be measured to guarantee full separability of the remaining state. Recognized for GHZ-like states (incl. all Bell variants) and W-states. Other states show 'not computable'."
-                      > ⓘ</span>
-                    )}
-                  </td>
-                  <td className="py-1.5 font-mono text-gray-700">
-                    {persistence !== null ? persistence : "not computable"}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        );
-      })()}
     </div>
   );
 }
