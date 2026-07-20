@@ -209,6 +209,14 @@ export const CustomPanel = ({
             </span>
             <div className="flex gap-1.5">
               <button
+                onClick={() => onSendToBackend?.()}
+                disabled={!onSendToBackend}
+                className="text-xs px-2.5 py-1 rounded-full border border-gray-300 hover:bg-gray-100 text-gray-600 transition-colors disabled:opacity-40"
+                title="Recompile current canvas and refresh QASM output"
+              >
+                ↺ Refresh
+              </button>
+              <button
                 onClick={() => {
                   setQasmApplyError(null);
                   setQasmApplySuccess(false);
