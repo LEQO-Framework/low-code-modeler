@@ -30,6 +30,11 @@ export interface DiracResult {
   unicode: string;              // Unicode-String mit ⟨ ⟩ Klammern
   numQubits: number;
   warnings: string[];
+  /** true, wenn der erste Term eine nicht-triviale globale Phase (z.B. ein
+   *  Vorzeichen) trägt. Der Zustand wird dafür NICHT verändert - das Feld dient
+   *  nur dazu, einen Hinweis anzuzeigen, dass diese Phase physikalisch nicht
+   *  messbar ist. Nur bei statevectorToDirac(..., detectGlobalPhase=true) gesetzt. */
+  globalPhaseNote?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -777,34 +782,45 @@ function formatAmplitude(c: Complex, useLatex: boolean): string {
 }
 
 /**
- * Entfernt die globale Phase aus dem Statevector.
- * Die globale Phase ist physikalisch nicht messbar.
- * Referenz: erster Term mit |amp| > THRESHOLD wird reell+positiv gemacht.
+ * HINWEIS: Eine frühere Version entfernte hier die globale Phase des Statevectors
+ * (erster Term mit |amp| > THRESHOLD wurde reell+positiv normalisiert). Das wurde
+ * entfernt, da es bei Einzelterm-Zuständen (z.B. -|1⟩ nach Z|1⟩) fälschlich das
+ * Vorzeichen wegnormalisiert und damit die algebraische Gatter-Wirkung verschluckt
+ * hätte - siehe Kommentar in statevectorToDirac().
  */
-function removeGlobalPhase(sv: Complex[]): Complex[] {
-  // Finde ersten nicht-null Eintrag
+
+/**
+ * Erkennt (ohne den Statevector zu verändern!), ob der erste von Null verschiedene
+ * Term eine nicht-triviale globale Phase trägt (z.B. ein Vorzeichen wie bei -|1⟩
+ * nach Z|1⟩). Wird nur für einen Hinweistext genutzt - die Anzeige selbst zeigt
+ * immer den exakten, algebraisch korrekten Zustand inklusive Vorzeichen, da eine
+ * globale Phase zwar physikalisch nicht messbar ist, das Vorzeichen aber trotzdem
+ * die korrekte Rechnung widerspiegelt und dem Nutzer nicht verschwiegen werden soll.
+ */
+function hasNonTrivialGlobalPhase(sv: Complex[]): boolean {
   let ref: Complex | null = null;
   for (const amp of sv) {
     if (cabs2(amp) > THRESHOLD) { ref = amp; break; }
   }
-  if (!ref) return sv;
-
-  const mag = Math.sqrt(cabs2(ref));
-  if (mag < 1e-14) return sv;
-
-  // Konjugierte Phase: e^(-iφ) wobei φ = arg(ref)
-  const phaseConj: Complex = { re: ref.re / mag, im: -ref.im / mag };
-
-  return sv.map(amp => cmul(amp, phaseConj));
+  if (!ref) return false;
+  // Bereits reell+positiv (innerhalb Toleranz)? Dann keine "auffällige" Phase.
+  return !(ref.im > -1e-8 && ref.im < 1e-8 && ref.re > 0);
 }
 
 export function statevectorToDirac(
   sv: Complex[],
   numQubits: number,
-  warnings: string[] = []
+  warnings: string[] = [],
+  detectGlobalPhase: boolean = false
 ): DiracResult {
-  // Globale Phase entfernen – physikalisch bedeutungslos, verbessert Lesbarkeit
-  const normalizedSv = removeGlobalPhase(sv);
+  // Der Statevector wird NIE verändert (kein "Wegnormalisieren" von Vorzeichen
+  // mehr) - sowohl die finale Dirac-Notation als auch die Mathematical Intermediate
+  // Steps zeigen immer den exakten, algebraisch korrekten Zustand. Bei Bedarf
+  // (detectGlobalPhase=true, nur für die finale Anzeige in qasmToDirac()) wird
+  // lediglich ERKANNT, ob eine nicht-triviale globale Phase vorliegt, um dazu
+  // einen erklärenden Hinweis anzuzeigen ("dieses Vorzeichen ist nicht messbar").
+  const normalizedSv = sv;
+  const globalPhaseNote = detectGlobalPhase ? hasNonTrivialGlobalPhase(sv) : false;
   const terms: DiracTerm[] = [];
 
   for (let i = 0; i < normalizedSv.length; i++) {
@@ -815,7 +831,7 @@ export function statevectorToDirac(
 
   if (terms.length === 0) {
     warnings.push('Statevector ist Null – möglicherweise nach Kollaps durch Messung.');
-    return { terms, latex: '0', unicode: '0', numQubits, warnings };
+    return { terms, latex: '0', unicode: '0', numQubits, warnings, globalPhaseNote };
   }
 
   const renderTerms = (useLatex: boolean): string => {
@@ -842,7 +858,7 @@ export function statevectorToDirac(
   const latex = renderTerms(true);
   const unicode = renderTerms(false);
 
-  return { terms, latex, unicode, numQubits, warnings };
+  return { terms, latex, unicode, numQubits, warnings, globalPhaseNote };
 }
 
 // ---------------------------------------------------------------------------
@@ -901,10 +917,13 @@ export function marginalizeQubits(
 export function qasmToDirac(qasm: string): DiracResult {
   const { numQubits, gates, warnings: parseWarnings } = parseQasm(qasm);
   const { sv, warnings: simWarnings } = simulate(numQubits, gates);
+  // detectGlobalPhase=true: nur hier, für die finale Gesamt-Notation - der Zustand
+  // selbst bleibt unverändert (Vorzeichen bleibt sichtbar), es wird lediglich
+  // erkannt, ob ein Hinweis auf nicht-messbare globale Phase angezeigt werden soll.
   const result = statevectorToDirac(sv, numQubits, [
     ...parseWarnings,
     ...simWarnings,
-  ]);
+  ], true);
   return result;
 }
 
