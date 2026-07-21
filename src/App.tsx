@@ -172,7 +172,8 @@ function App() {
     version: "1.0.0",
     name: "My Model",
     description: "This is a model.",
-    author: ""
+    author: "",
+    containsPlaceholder: false
   });
 
 
@@ -1689,14 +1690,6 @@ If none apply, return { "algorithms": [] }.
               `Grover node "${node.id}" requires marked states.`,
           });
         }
-        else if (!/^\d+(?:\s*,\s*\d+)*$/.test(markedStates)) {
-          errors.push({
-            nodeId: node.id,
-            nodeType: node.type,
-            description:
-              `Grover marked states must be comma-separated integers.`,
-          });
-        }
         else if (numQubits) {
 
           const maxState = (1 << numQubits) - 1;
@@ -2904,7 +2897,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
 
       const { x = 0, y = 0, zoom = 1 } = flow.viewport || {};
       reactFlowInstance.setViewport({ x, y, zoom });
-
+      
       if (flow.metadata) {
         setMetadata(flow.metadata);
         console.log("Metadata restored:", flow.metadata);

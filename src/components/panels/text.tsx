@@ -112,17 +112,19 @@ const NODE_EXPLANATIONS: Record<string, string> = {
     "A customizable node that can be configured to perform user-defined operations."
 };
 
+const GATE_PARAMETER_EXPLANATION = "You can enter values such as 'pi', which are then transformed into their numerical values. Changing units automatically converts the current parameter value and normalizes it to either 360° (deg) or 2π (rad).\nConversion formula: rad = (deg × π)/180°. "
+
 const GATE_EXPLANATIONS: Record<string, string> = {
-  [parameterized_one_qubit[0]]: "X-axis rotation by an angle (rad or deg).",
-  [parameterized_one_qubit[1]]: "Y-axis rotation by an angle (rad or deg).",
-  [parameterized_one_qubit[2]]: "Z-axis rotation by an angle (rad or deg).",
+  [parameterized_one_qubit[0]]: "X-axis rotation by an angle (rad or deg)."+"\n\n"+GATE_PARAMETER_EXPLANATION,
+  [parameterized_one_qubit[1]]: "Y-axis rotation by an angle (rad or deg)."+"\n\n"+GATE_PARAMETER_EXPLANATION,
+  [parameterized_one_qubit[2]]: "Z-axis rotation by an angle (rad or deg)."+"\n\n"+GATE_PARAMETER_EXPLANATION,
 
-  [parameterized_one_qubit[3]]: "Applies a phase shift of an angle (rad or deg) to the |1⟩ state.",
-  [parameterized_two_qubit[0]]: "If control qubit is in state |1⟩, applies a phase shift of an angle (rad or deg) to the |1⟩ state.",
+  [parameterized_one_qubit[3]]: "Applies a phase shift of an angle (rad or deg) to the |1⟩ state."+"\n\n"+GATE_PARAMETER_EXPLANATION,
+  [parameterized_two_qubit[0]]: "If control qubit is in state |1⟩, applies a phase shift of an angle (rad or deg) to the |1⟩ state."+"\n\n"+GATE_PARAMETER_EXPLANATION,
 
-  [parameterized_two_qubit[1]]: "If control qubit is in state |1⟩, apply X-axis rotation by an angle (rad or deg).",
-  [parameterized_two_qubit[2]]: "If control qubit is in state |1⟩, apply Y-axis rotation by an angle (rad or deg).",
-  [parameterized_two_qubit[3]]: "If control qubit is in state |1⟩, apply Z-axis rotation by an angle (rad or deg).",
+  [parameterized_two_qubit[1]]: "If control qubit is in state |1⟩, apply X-axis rotation by an angle (rad or deg)."+"\n\n"+GATE_PARAMETER_EXPLANATION,
+  [parameterized_two_qubit[2]]: "If control qubit is in state |1⟩, apply Y-axis rotation by an angle (rad or deg)."+"\n\n"+GATE_PARAMETER_EXPLANATION,
+  [parameterized_two_qubit[3]]: "If control qubit is in state |1⟩, apply Z-axis rotation by an angle (rad or deg)."+"\n\n"+GATE_PARAMETER_EXPLANATION,
   ["CU"]: "If control qubit is in state |1⟩, apply the U-gate. Set the matrix for the U-gate in the 'Matrix' field.",
 
   [non_parameterized_one_qubit[0]]: "Creates superposition by applying a Hadamard transform.",
@@ -264,12 +266,30 @@ export const TextPanel = () => {
 
   const radToDeg = (rad) => normalizeDegrees((parseFloat(rad) * 180) / Math.PI);
 
-  const safeEval = (expr) => {
+  const safeEval = (expr: number | String) => {
     try {
+      if(typeof expr === "number") return expr;
+      if(expr.trim() === "") return NaN;
       console.log(expr)
-      const sanitized = expr
-        .replace(/π|pi/gi, `${Math.PI}`);
-      return sanitized;
+
+      // Convert commas to dots ("0,5" -> "0.5")
+      let sanitized = expr.toLowerCase().replace(/,/g, '.');
+      
+      // Validate input: Only allow numbers, math operators, dots, spaces, and "pi" / "π"
+      if (!/^[0-9+\-*/(). piπ\s]+$/.test(sanitized)) {
+        return NaN;
+      }
+
+      // Replace pi/π with Math.PI
+      // and insert '*' between a number and Math.PI (e.g., "2pi" -> "2*Math.PI")
+      sanitized = expr
+        .replace(/π|pi/g, "Math.PI")
+        .replace(/(\d)(Math\.PI)/g, "$1*$2");
+
+      // Safely evaluate the math string
+      const result = new Function(`"use strict"; return (${sanitized})`)();
+      
+      return result;
     } catch (e) {
       return NaN;
     }
@@ -286,6 +306,30 @@ export const TextPanel = () => {
       handleNumberChange("parameter", "" + storedValue);
     } else {
       handleNumberChange("parameter", evaluated);
+    }
+  };
+
+  // executed when gate parameter field is exited
+  const handleBlurForGateParameters = (e: React.FocusEvent<HTMLInputElement>) => {
+    const currentValue = e.target.value;
+    
+    // If the input is empty, exit early
+    if (currentValue === "") return; 
+
+    const numericValue = safeEval(currentValue);
+
+    if (!isNaN(numericValue)) {
+      const isDegree = selectedNode.data.parameterType === "degree";
+      
+      // Normalize based on the parameter type
+      const normalizedValue = isDegree 
+        ? normalizeDegrees(numericValue) 
+        : normalizeRadians(numericValue);
+
+      // Update parameter with normalized value
+      handleNumberChange("parameter", normalizedValue.toString());
+    } else {
+      handleNumberChange("parameter", "");
     }
   };
 
@@ -374,7 +418,7 @@ export const TextPanel = () => {
               Explanation
             </label>
 
-            <div className="mt-1 min-h-28 border border-gray-300 rounded-md sm:text-sm p-2 bg-gray-50 text-gray-700">
+            <div className="mt-1 min-h-28 border border-gray-300 rounded-md sm:text-sm p-2 bg-gray-50 text-gray-700 whitespace-pre-line">
               {getNodeExplanation(selectedNode)}
             </div>
           </div>
@@ -673,7 +717,7 @@ export const TextPanel = () => {
                 </label>
                 <div className="mt-1">
                   <input
-                    type="number"
+                    type="text"
                     id="parameter"
                     name="parameter"
                     value={
@@ -682,6 +726,7 @@ export const TextPanel = () => {
                         : selectedNode.data.parameter || ""
                     }
                     onChange={(e) => handleNumberChange("parameter", e.target.value)}
+                    onBlur={handleBlurForGateParameters}
                     className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
                     placeholder="Enter parameter"
                   />
@@ -766,6 +811,7 @@ export const TextPanel = () => {
                           : selectedNode.data[key] || ""
                       }
                       onChange={(e) => handleNumberChange(key, e.target.value)}
+                      //onBlur={TODO} //not implemented for multi-parameter gates
                       className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
                       placeholder={`Enter ${label}`}
                     />
