@@ -19,7 +19,7 @@ export const GroverNode = memo((node: Node) => {
   const { id, data, selected } = node;
   const { updateNodeValue, nodes, edges, setSelectedNode, setContainsPlaceholder } = useStore(selector, shallow);
 
-  const [numQubitsStr, setNumQubitsStr] = useState(String(data.numQubits || 3));
+  const [numQubitsStr, setNumQubitsStr] = useState(String(data.numQubits)|| 3);
   const [targetStates, setTargetStates] = useState(data.targetStates || "");
   const [iterationsStr, setIterationsStr] = useState(data.numIterations ? String(data.numIterations) : "");
 
@@ -42,6 +42,23 @@ export const GroverNode = memo((node: Node) => {
   const [remoteHighlightColor, setRemoteHighlightColor] = useState<string | null>(null);
   const [selectingUserName, setSelectingUserName] = useState<string | null>(null); // technically not needed, could extend functionality to also show user name next to highlighted node
 
+  useEffect(() => {
+  if (data.numQubits !== undefined && data.numQubits !== null) {
+    setNumQubitsStr(String(data.numQubits));
+  }
+
+  if (data.targetStates !== undefined && data.targetStates !== null) {
+      const hasLetters = /[a-zA-Z]/.test(targetStates);
+  setContainsPlaceholder(hasLetters);
+    setTargetStates(data.targetStates);
+  }
+
+  if (data.numIterations !== undefined && data.numIterations !== null) {
+    setIterationsStr(String(data.numIterations));
+  } else {
+    setIterationsStr("");
+  }
+}, [data.numQubits, data.targetStates, data.numIterations]);
   useEffect(() => {
     const checkRemoteSelection = () => {
       let foundColor: string | null = null;
@@ -128,28 +145,28 @@ export const GroverNode = memo((node: Node) => {
               : undefined,
             height: `420px`
           }}>
-            {missingQubitsError && (
-  <div className="absolute top-2 right-[-40px] group z-20">
-    <AlertCircle className="text-red-600 w-5 h-5" />
-    <div className="absolute top-5 left-[30px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
-      Number of qubits is required.
-    </div>
-  </div>
-)}
+          {missingQubitsError && (
+            <div className="absolute top-2 right-[-40px] group z-20">
+              <AlertCircle className="text-red-600 w-5 h-5" />
+              <div className="absolute top-5 left-[30px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
+                Number of qubits is required.
+              </div>
+            </div>
+          )}
 
-{missingTargetStatesError && (
-  <div className="absolute top-2 right-[-40px] group z-20">
-    <AlertCircle className="text-red-600 w-5 h-5" />
-    <div
-      className="absolute left-[30px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap"
-      style={{
-        top: missingQubitsError ? "50px" : "35px",
-      }}
-    >
-      Marked states are required.
-    </div>
-  </div>
-)}
+          {missingTargetStatesError && (
+            <div className="absolute top-2 right-[-40px] group z-20">
+              <AlertCircle className="text-red-600 w-5 h-5" />
+              <div
+                className="absolute left-[30px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap"
+                style={{
+                  top: missingQubitsError ? "50px" : "35px",
+                }}
+              >
+                Marked states are required.
+              </div>
+            </div>
+          )}
 
           {/* HEADER */}
           <div className="w-full flex items-center" style={{ height: '52px' }}>
