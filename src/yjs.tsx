@@ -3,8 +3,8 @@ import type { Node, Edge } from "reactflow";
 
 // Create a single shared provider
 export const yProvider = new HocuspocusProvider({
-  url: "ws://127.0.0.1:1234",
-  name: "reactflow-yjs",
+  url: import.meta.env.VITE_HOCUSPOCUS_URL,
+  name: "reactflow-yjs", // possible TODO for future: different rooms
 });
 
 // Shared Yjs document
