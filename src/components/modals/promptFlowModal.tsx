@@ -4,7 +4,7 @@ import { Toast } from "./toast";
 
 type InputNode = {
   name: string;
-  type: "string" | "number" | "boolean" | "select" | "bit" | "statePreparation" | "file" | "size";
+  type: "string" | "number" | "boolean" | "select" | "bit" | "statePreparation" | "file" | "size" | "array" | "targetStates" | "numQubits" | "condition" | "repeatCount";
   options?: string[];
   label: string;
   id: string;
@@ -273,7 +273,19 @@ export default function PromptFlowModal({
                     </select>
                   )}
 
-                  {input.type === "size" && (
+                  {input.type === "boolean" && (
+                    <select
+                      className="w-full border p-2 rounded"
+                      value={inputValues[itemKey] || ""}
+                      onChange={(e) => setInputValues({ ...inputValues, [itemKey]: e.target.value })}
+                    >
+                      <option value="">Select a value</option>
+                      <option value="true">True</option>
+                      <option value="false">False</option>
+                    </select>
+                  )}
+
+                  {(input.type === "size" || input.type === "numQubits" || input.type === "repeatCount") && (
                     <div className="space-y-1">
                       <input
                         type="number"
@@ -282,18 +294,22 @@ export default function PromptFlowModal({
                         className={`w-full border p-2 rounded ${
                           inputErrors[itemKey] ? "border-red-500 bg-red-50" : "border-gray-300"
                         }`}
-                        placeholder="Enter number of qubits (e.g. 1, 2, 3)"
+                        placeholder={
+                          input.type === "repeatCount"
+                            ? "Enter number of repetitions (e.g. 3)"
+                            : "Enter number of qubits (e.g. 1, 2, 3)"
+                        }
                         value={inputValues[itemKey] || ""}
                         onChange={(e) => {
                           const value = e.target.value;
                           setInputValues({ ...inputValues, [itemKey]: value });
                           // Pass the isBellState flag from the input block
-                          const isBellState = input.isBellState || isCurrentlyBellSelected(input.id);
+                          const isBellState = input.type === "size" && (input.isBellState || isCurrentlyBellSelected(input.id));
                           const { isValid, message } = validateSizeInput(value, isBellState);
                           setInputErrors({ ...inputErrors, [itemKey]: isValid ? "" : message });
                         }}
                         onBlur={(e) => {
-                          const isBellState = input.isBellState || isCurrentlyBellSelected(input.id);
+                          const isBellState = input.type === "size" && (input.isBellState || isCurrentlyBellSelected(input.id));
                           const { isValid, message } = validateSizeInput(e.target.value, isBellState);
                           setInputErrors({ ...inputErrors, [itemKey]: isValid ? "" : message });
                         }}
@@ -309,6 +325,22 @@ export default function PromptFlowModal({
                       type={input.type === "number" ? "number" : "text"}
                       className="w-full border p-2 rounded"
                       placeholder={`Enter ${input.type}`}
+                      value={inputValues[itemKey] || ""}
+                      onChange={(e) => setInputValues({ ...inputValues, [itemKey]: e.target.value })}
+                    />
+                  )}
+
+                  {(input.type === "array" || input.type === "targetStates" || input.type === "condition") && (
+                    <input
+                      type="text"
+                      className="w-full border p-2 rounded"
+                      placeholder={
+                        input.type === "array"
+                          ? "e.g. 1,3.4,6,2,4.5"
+                          : input.type === "targetStates"
+                          ? "e.g. 0,3,5,9 (comma-separated)"
+                          : "e.g. bit_0 == 1"
+                      }
                       value={inputValues[itemKey] || ""}
                       onChange={(e) => setInputValues({ ...inputValues, [itemKey]: e.target.value })}
                     />

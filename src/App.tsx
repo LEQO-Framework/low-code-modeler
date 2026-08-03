@@ -1008,7 +1008,7 @@ If none apply, return { "algorithms": [] }.
         created: job.createdAt,
         type: "generation",
         result: job.result, // This is already a JSON string from the backend
-        validationScore: job.validationScore,
+        semanticScore: job.semanticScore,
         missingValues: job.missingValues,
         links: {
           request: `http://localhost:3000/job/${job.id}/request`,
@@ -2443,7 +2443,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
         created: new Date().toISOString(),
         type: "generation",
         result: null,
-        validationScore: 0,
+        semanticScore: 0,
         missingValues: newJob.missingValues || [],
         links: {
           request: `http://localhost:3000/jobs/${newJob.id}/request`,
