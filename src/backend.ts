@@ -119,7 +119,7 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
                     label: node.data.label, // optional
                     propertyValues: node.data.propertyValues || {}, // numeric/string/date/etc.
                     mapping: node.data.mapping || [], // input-output mapping
-
+                    isDataType: node.data.isDataType || "false", // true if it is a data type node, false if it is a operator node
                 };
 
             case consts.StatePreparationNode:

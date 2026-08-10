@@ -483,7 +483,7 @@ export default function DomainProfileTableModal({
         mapping: node.mapping,
         completionGuaranteed: true,
         compactOptions: [true, false],
-        isDataType: node.category.includes("Data"),
+        isDataType: node.category.includes("data"),
       };
 
       (acc[cat].content as any[]).push(nodeData);
