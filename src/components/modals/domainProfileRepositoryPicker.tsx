@@ -94,7 +94,7 @@ export function DomainProfileRepositoryPicker({
       </button>
 
       {open && (
-        <div className="absolute right-0 z-10 mt-2 w-80 rounded-md border border-slate-300 bg-white p-3 shadow-lg">
+        <div className="absolute right-0 z-20 mt-2 w-80 rounded-md border border-slate-300 bg-white p-3 shadow-lg">
           <div className="mb-2 text-xs font-semibold text-slate-600">
             LOAD DOMAIN PROFILE
           </div>
