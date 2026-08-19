@@ -9,9 +9,10 @@
  *
  * Because it is read with plain HTTP GET, any raw Git host, GitHub Pages or a
  * static file server works and no server-side component is required. The base
- * URL is configured with `VITE_DOMAIN_PROFILES_URL`. There is deliberately no
- * default: a repository is only useful once it is publicly readable, and a
- * hard-coded URL would make every install run into an authentication failure.
+ * URL can be provided via `VITE_DOMAIN_PROFILES_URL` or supplied at runtime by
+ * the user. There is deliberately no hard-coded default: a repository is only
+ * useful once it is publicly readable, and a hard-coded URL would make every
+ * install run into an authentication failure.
  */
 
 /** A property declared on a domain block. */
@@ -60,16 +61,17 @@ export function isProfileRepositoryConfigured(): boolean {
   return typeof PROFILES_REPO_URL === "string" && PROFILES_REPO_URL.length > 0;
 }
 
-function baseUrl(): string {
-  if (!isProfileRepositoryConfigured()) {
-    throw new Error("No profile repository configured (VITE_DOMAIN_PROFILES_URL is unset)");
+function resolveBaseUrl(repositoryUrl?: string): string {
+  const candidate = (repositoryUrl ?? PROFILES_REPO_URL ?? "").trim();
+  if (!candidate) {
+    throw new Error("No profile repository configured or provided");
   }
-  return (PROFILES_REPO_URL as string).replace(/\/+$/, "");
+  return candidate.replace(/\/+$/, "");
 }
 
 /** Discover the available domains and their revisions. */
-export async function fetchProfileIndex(): Promise<ProfileIndexEntry[]> {
-  const response = await fetch(`${baseUrl()}/index.json`);
+export async function fetchProfileIndex(repositoryUrl?: string): Promise<ProfileIndexEntry[]> {
+  const response = await fetch(`${resolveBaseUrl(repositoryUrl)}/index.json`);
   if (!response.ok) {
     throw new Error(`Could not read the profile index (${response.status})`);
   }
@@ -83,9 +85,12 @@ export async function fetchProfileIndex(): Promise<ProfileIndexEntry[]> {
 /** Fetch a single profile revision. */
 export async function fetchProfile(
   directory: string,
-  version: string
+  version: string,
+  repositoryUrl?: string
 ): Promise<RepositoryDomainProfile> {
-  const response = await fetch(`${baseUrl()}/${directory}/${version}.json`);
+  const response = await fetch(
+    `${resolveBaseUrl(repositoryUrl)}/${directory}/${version}.json`
+  );
   if (!response.ok) {
     throw new Error(`Could not read ${directory} ${version} (${response.status})`);
   }

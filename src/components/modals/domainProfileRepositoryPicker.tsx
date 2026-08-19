@@ -10,14 +10,14 @@
  * does not use one is unaffected.
  */
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Download } from "lucide-react";
 import {
   compareVersionsDescending,
   fetchProfile,
   fetchProfileIndex,
-  isProfileRepositoryConfigured,
   ProfileIndexEntry,
+  PROFILES_REPO_URL,
   RepositoryDomainProfile,
 } from "../../services/domainProfileRepository";
 
@@ -29,52 +29,58 @@ export function DomainProfileRepositoryPicker({
 }) {
   const [open, setOpen] = useState(false);
   const [domains, setDomains] = useState<ProfileIndexEntry[]>([]);
+  const [repositoryUrl, setRepositoryUrl] = useState(PROFILES_REPO_URL ?? "");
   const [directory, setDirectory] = useState("");
   const [version, setVersion] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // The index is read when the panel is opened rather than on mount, so a dialog
-  // that is never used for this costs no request.
-  useEffect(() => {
-    if (!open || domains.length > 0) return;
-    let cancelled = false;
+  /** The index is read when the user enters a repository URL and clicks "Load Domains". */
+  const loadIndex = async () => {
+    const trimmedRepositoryUrl = repositoryUrl.trim();
+    if (!trimmedRepositoryUrl) {
+      setDomains([]);
+      setDirectory("");
+      setVersion("");
+      setError("Please provide a repository URL.");
+      return;
+    }
 
     setBusy(true);
-    fetchProfileIndex()
-      .then((entries) => {
-        if (cancelled) return;
-        setDomains(entries);
-        setError(null);
-        const first = entries[0];
-        if (first) {
-          setDirectory(first.directory);
-          setVersion(first.latest || [...first.versions].sort(compareVersionsDescending)[0] || "");
-        }
-      })
-      .catch((cause) => {
-        if (!cancelled) setError(cause instanceof Error ? cause.message : String(cause));
-      })
-      .finally(() => {
-        if (!cancelled) setBusy(false);
-      });
+    setError(null);
 
-    return () => {
-      cancelled = true;
-    };
-  }, [open, domains.length]);
+    try {
+      const entries = await fetchProfileIndex(trimmedRepositoryUrl);
+      setDomains(entries);
 
-  if (!isProfileRepositoryConfigured()) return null;
+      const first = entries[0];
+      if (first) {
+        setDirectory(first.directory);
+        setVersion(first.latest || [...first.versions].sort(compareVersionsDescending)[0] || "");
+      } else {
+        setDirectory("");
+        setVersion("");
+      }
+    } catch (cause) {
+      setDomains([]);
+      setDirectory("");
+      setVersion("");
+      setError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const selected = domains.find((entry) => entry.directory === directory);
   const versions = selected ? [...selected.versions].sort(compareVersionsDescending) : [];
 
   const load = async () => {
-    if (!directory || !version) return;
+    const trimmedRepositoryUrl = repositoryUrl.trim();
+    if (!trimmedRepositoryUrl || !directory || !version) return;
     setBusy(true);
     setError(null);
     try {
-      onLoad(await fetchProfile(directory, version));
+      onLoad(await fetchProfile(directory, version, trimmedRepositoryUrl));
       setOpen(false);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause));
@@ -99,38 +105,67 @@ export function DomainProfileRepositoryPicker({
             LOAD DOMAIN PROFILE
           </div>
 
-          <label className="mb-1 block text-xs text-slate-500">Domain</label>
-          <select
+          <label className="mb-1 block text-xs text-slate-500">Repository URL</label>
+          <input
             className="mb-2 w-full rounded border border-slate-300 px-2 py-1 text-sm"
-            value={directory}
-            disabled={busy || domains.length === 0}
+            value={repositoryUrl}
+            disabled={busy}
+            placeholder="https://raw.githubusercontent.com/<owner>/<repo>/main"
             onChange={(event) => {
-              const next = domains.find((entry) => entry.directory === event.target.value);
-              setDirectory(event.target.value);
-              setVersion(next?.latest ?? "");
+              setRepositoryUrl(event.target.value);
+              setDomains([]);
+              setDirectory("");
+              setVersion("");
+              setError(null);
             }}
-          >
-            {domains.map((entry) => (
-              <option key={entry.directory} value={entry.directory}>
-                {entry.name}
-              </option>
-            ))}
-          </select>
+          />
 
-          <label className="mb-1 block text-xs text-slate-500">Revision</label>
-          <select
-            className="mb-3 w-full rounded border border-slate-300 px-2 py-1 text-sm"
-            value={version}
-            disabled={busy || versions.length === 0}
-            onChange={(event) => setVersion(event.target.value)}
-          >
-            {versions.map((candidate) => (
-              <option key={candidate} value={candidate}>
-                {candidate}
-                {selected?.latest === candidate ? " (latest)" : ""}
-              </option>
-            ))}
-          </select>
+          <div className="mb-3 flex justify-end">
+            <button
+              className="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+              disabled={busy || !repositoryUrl.trim()}
+              onClick={() => void loadIndex()}
+            >
+              {busy ? "Loading…" : "Load Domains"}
+            </button>
+          </div>
+
+          {domains.length > 0 && (
+            <>
+              <label className="mb-1 block text-xs text-slate-500">Domain</label>
+              <select
+                className="mb-2 w-full rounded border border-slate-300 px-2 py-1 text-sm"
+                value={directory}
+                disabled={busy || domains.length === 0}
+                onChange={(event) => {
+                  const next = domains.find((entry) => entry.directory === event.target.value);
+                  setDirectory(event.target.value);
+                  setVersion(next?.latest ?? "");
+                }}
+              >
+                {domains.map((entry) => (
+                  <option key={entry.directory} value={entry.directory}>
+                    {entry.name}
+                  </option>
+                ))}
+              </select>
+
+              <label className="mb-1 block text-xs text-slate-500">Revision</label>
+              <select
+                className="mb-3 w-full rounded border border-slate-300 px-2 py-1 text-sm"
+                value={version}
+                disabled={busy || versions.length === 0}
+                onChange={(event) => setVersion(event.target.value)}
+              >
+                {versions.map((candidate) => (
+                  <option key={candidate} value={candidate}>
+                    {candidate}
+                    {selected?.latest === candidate ? " (latest)" : ""}
+                  </option>
+                ))}
+              </select>
+            </>
+          )}
 
           {error && <div className="mb-2 text-xs text-red-700">{error}</div>}
 
