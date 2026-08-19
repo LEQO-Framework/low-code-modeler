@@ -111,6 +111,12 @@ export function DomainProfileRepositoryPicker({
             value={repositoryUrl}
             disabled={busy}
             placeholder="https://raw.githubusercontent.com/<owner>/<repo>/main"
+            onKeyDown={(event) => {
+              console.log("keydown:", event.key, "ctrl:", event.ctrlKey);
+            }}
+            onPaste={(event) => {
+              console.log("PASTE EVENT", event.clipboardData.getData("text"));
+            }}
             onChange={(event) => {
               setRepositoryUrl(event.target.value);
               setDomains([]);
