@@ -31,17 +31,20 @@ export default function useKeyBindings({
         return;
       }
 
+      const selection = window.getSelection();
+      if (selection && !selection.isCollapsed) {
+        return;
+      }
+
       const key = e.key?.toLowerCase();
       const ctrlOrMeta = e.ctrlKey || e.metaKey; // CtrlKey Windows/Linux, MetaKey Mac
 
       switch (true) {
         case ctrlOrMeta && key === "z": {
-          console.log("registered");
           undo();
           break;
         }
         case ctrlOrMeta && key === "y": {
-          console.log("registered");
           redo();
           break;
         }
