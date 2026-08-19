@@ -67,9 +67,31 @@ function resolveBaseUrl(repositoryUrl?: string): string {
 /** Discover the available domains and their revisions. */
 export async function fetchProfileIndex(repositoryUrl?: string): Promise<ProfileIndexEntry[]> {
   const response = await fetch(`${resolveBaseUrl(repositoryUrl)}/index.json`);
+
   if (!response.ok) {
-    throw new Error(`Could not read the profile index (${response.status})`);
+    if (response.status === 404) {
+      throw new Error(
+        `Could not find index.json at the specified repository URL. Please check the URL and make sure the repository contains an index.json. (HTTP ${response.status})`
+      );
+    }
+
+    if (response.status === 401 || response.status === 403) {
+      throw new Error(
+        `Access to the profile repository was denied. Please make sure the repository is publicly accessible. (HTTP ${response.status})`
+      );
+    }
+
+    if (response.status >= 500 && response.status < 600) {
+      throw new Error(
+        `The profile repository is currently unavailable. Please try again later. (HTTP ${response.status})`
+      );
+    }
+
+    throw new Error(
+      `Could not read the profile repository (HTTP ${response.status}).`
+    );
   }
+  
   const data = await response.json();
   if (!Array.isArray(data?.domains)) {
     throw new Error("The profile index does not list any domains");
