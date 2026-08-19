@@ -656,7 +656,7 @@ export default function DomainProfileTableModal({
         </div>
       }
     >
-      <div className="overflow-y-auto max-h-[70vh] space-y-8">
+      <div className="space-y-8">
         <section className="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-3">
           <div className="flex items-center justify-between gap-3">
             <div>
