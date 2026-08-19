@@ -56,11 +56,6 @@ export interface ProfileIndexEntry {
 export const PROFILES_REPO_URL: string | undefined = import.meta.env
   .VITE_DOMAIN_PROFILES_URL;
 
-/** Whether a repository is configured. If not, the UI keeps quiet about it. */
-export function isProfileRepositoryConfigured(): boolean {
-  return typeof PROFILES_REPO_URL === "string" && PROFILES_REPO_URL.length > 0;
-}
-
 function resolveBaseUrl(repositoryUrl?: string): string {
   const candidate = (repositoryUrl ?? PROFILES_REPO_URL ?? "").trim();
   if (!candidate) {
