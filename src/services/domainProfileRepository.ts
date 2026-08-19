@@ -56,12 +56,54 @@ export interface ProfileIndexEntry {
 export const PROFILES_REPO_URL: string | undefined = import.meta.env
   .VITE_DOMAIN_PROFILES_URL;
 
+/**
+ * Normalize GitHub repository URLs to raw content base URLs. Unspecified branch defaults to `main`. Non-GitHub URLs and raw.githubusercontent.com URLs remain unchanged.
+ *
+ * Converts:
+ * https://github.com/<owner>/<repo>
+ * to:
+ * https://raw.githubusercontent.com/<owner>/<repo>/main
+ *
+ * Converts:
+ * https://github.com/<owner>/<repo>/tree/<branch>[/...]
+ * to:
+ * https://raw.githubusercontent.com/<owner>/<repo>/<branch>[/...]
+ */
+export function normalizeRepositoryBaseUrl(repositoryUrl: string): string {
+  try {
+    const parsed = new URL(repositoryUrl);
+    if (parsed.hostname !== "github.com") {
+      return repositoryUrl;
+    }
+
+    const segments = parsed.pathname
+      .replace(/^\/+|\/+$/g, "")
+      .split("/")
+      .filter(Boolean);
+    if (segments.length === 2) {
+      const [owner, repo] = segments;
+      return `https://raw.githubusercontent.com/${owner}/${repo}/main`;
+    }
+
+    if (segments.length >= 4) {
+      const [owner, repo, marker, ...branchSegments] = segments;
+      if (marker === "tree" && branchSegments.length > 0) {
+        return `https://raw.githubusercontent.com/${owner}/${repo}/${branchSegments.join("/")}`;
+      }
+    }
+
+    return repositoryUrl;
+  } catch {
+    return repositoryUrl;
+  }
+}
+
 function resolveBaseUrl(repositoryUrl?: string): string {
   const candidate = (repositoryUrl ?? PROFILES_REPO_URL ?? "").trim();
   if (!candidate) {
     throw new Error("No profile repository configured or provided");
   }
-  return candidate.replace(/\/+$/, "");
+  return normalizeRepositoryBaseUrl(candidate).replace(/\/+$/, "");
 }
 
 /** Discover the available domains and their revisions. */

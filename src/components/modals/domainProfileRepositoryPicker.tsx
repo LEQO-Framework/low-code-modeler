@@ -16,6 +16,7 @@ import {
   compareVersionsDescending,
   fetchProfile,
   fetchProfileIndex,
+  normalizeRepositoryBaseUrl,
   ProfileIndexEntry,
   PROFILES_REPO_URL,
   RepositoryDomainProfile,
@@ -50,7 +51,9 @@ export function DomainProfileRepositoryPicker({
     setError(null);
 
     try {
-      const entries = await fetchProfileIndex(trimmedRepositoryUrl);
+      const normalizedRepositoryUrl = normalizeRepositoryBaseUrl(trimmedRepositoryUrl);
+      const entries = await fetchProfileIndex(normalizedRepositoryUrl);
+      setRepositoryUrl(normalizedRepositoryUrl);
       setDomains(entries);
 
       const first = entries[0];
