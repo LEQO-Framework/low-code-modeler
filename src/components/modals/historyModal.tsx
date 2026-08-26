@@ -321,6 +321,8 @@ console.log(history)
                         <td className="px-4 py-2 border">
                           {item.status === "User input required" ? (
                             <span className="text-yellow-600 font-medium">User input required</span>
+                          ) : item.status === "Prompt rejected" ? (
+                            <span className="text-red-600 font-medium">Prompt rejected</span>
                           ) : (
                             item.status
                           )}
@@ -336,7 +338,8 @@ console.log(history)
                             >
                               Add Required Values
                             </button>
-                          ) : item.result ? (
+                          ) : item.result && item.status !== "Prompt rejected" ? (
+                            // A rejected job stores the rejection message in `result`, not a model.
                             <button
                               className="btn btn-primary"
                               onClick={() => handleLoadModel(item)}

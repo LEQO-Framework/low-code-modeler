@@ -4,7 +4,7 @@ import { Toast } from "./toast";
 
 type InputNode = {
   name: string;
-  type: "string" | "number" | "boolean" | "select" | "bit" | "statePreparation" | "file" | "size" | "array" | "targetStates" | "numQubits" | "condition" | "repeatCount";
+  type: "string" | "number" | "boolean" | "select" | "bit" | "statePreparation" | "file" | "size" | "array" | "targetStates" | "numQubits" | "condition" | "repeatCount" | "oracleType" | "balancedMask" | "constantValue" | "angle" | "qaoaProblem";
   options?: string[];
   label: string;
   id: string;
@@ -74,11 +74,45 @@ export default function PromptFlowModal({
     }
   }, [missingValues]);
 
+  // The backend rejects prompts that are insulting, malicious or not about modeling a quantum
+  // program ("Prompt rejected"). Nothing polls a generation job otherwise, so watch this one job
+  // until it reaches a final status and tell the user why nothing was generated. Deliberately
+  // fire-and-forget and free of component state: the modal closes right after submitting, and
+  // showToast belongs to the page, so it still works once this modal is gone.
+  const watchForRejectedPrompt = (jobIdToWatch: string) => {
+    const intervalMs = 1500;
+    const deadline = Date.now() + 60_000;
+
+    const poll = async () => {
+      while (Date.now() < deadline) {
+        await new Promise((resolve) => setTimeout(resolve, intervalMs));
+        const response = await fetch(`http://localhost:3000/job/${jobIdToWatch}`);
+        if (!response.ok) return;
+
+        const job = await response.json();
+        if (job?.status === "Prompt rejected") {
+          // The backend stores the reason in `result`; fall back only if it is missing.
+          const reason =
+            typeof job.result === "string" && job.result.trim()
+              ? job.result
+              : "Your prompt was rejected because it is insulting, malicious, or not about creating a quantum algorithm, circuit, workflow or program.";
+          showToast(reason, "error");
+          return;
+        }
+        if (["completed", "failed", "User input required"].includes(job?.status)) return;
+      }
+    };
+
+    poll().catch((err) => console.error("Error while watching generation job:", err));
+  };
+
   const handleSubmitPrompt = async () => {
     if (!prompt.trim()) return;
     setLoading(true);
     try {
-      await onSubmitPrompt(prompt, generationMode);
+      const job = await onSubmitPrompt(prompt, generationMode);
+      const newJobId = job?.jobId ?? job?.id;
+      if (newJobId) watchForRejectedPrompt(newJobId);
       onClose();
     } catch (err: any) {
       showToast(`Failed to generate model: ${err.message}`, "error");
@@ -285,7 +319,57 @@ export default function PromptFlowModal({
                     </select>
                   )}
 
-                  {(input.type === "size" || input.type === "numQubits" || input.type === "repeatCount") && (
+                  {input.type === "oracleType" && (
+                    <select
+                      className="w-full border p-2 rounded"
+                      value={inputValues[itemKey] || ""}
+                      onChange={(e) => setInputValues({ ...inputValues, [itemKey]: e.target.value })}
+                    >
+                      <option value="">Select a behaviour</option>
+                      <option value="balanced">Balanced</option>
+                      <option value="constant">Constant</option>
+                    </select>
+                  )}
+
+                  {input.type === "constantValue" && (
+                    <select
+                      className="w-full border p-2 rounded"
+                      value={inputValues[itemKey] || ""}
+                      onChange={(e) => setInputValues({ ...inputValues, [itemKey]: e.target.value })}
+                    >
+                      <option value="">Select a constant value</option>
+                      <option value="0">0</option>
+                      <option value="1">1</option>
+                    </select>
+                  )}
+
+                  {input.type === "qaoaProblem" && (
+                    <select
+                      className="w-full border p-2 rounded"
+                      value={inputValues[itemKey] || ""}
+                      onChange={(e) => setInputValues({ ...inputValues, [itemKey]: e.target.value })}
+                    >
+                      <option value="">Select a problem type</option>
+                      <option value="MaxCut">MaxCut</option>
+                      <option value="Max-2-SAT">Max-2-SAT</option>
+                      <option value="GraphColoring">GraphColoring</option>
+                    </select>
+                  )}
+
+                  {input.type === "angle" && (
+                    // Own input: an angle may be decimal and negative, so it must not use the
+                    // positive-integer validation of the size/numQubits field below.
+                    <input
+                      type="number"
+                      step="any"
+                      className="w-full border p-2 rounded"
+                      placeholder="Enter the rotation angle (e.g. 90 or 1.5708)"
+                      value={inputValues[itemKey] || ""}
+                      onChange={(e) => setInputValues({ ...inputValues, [itemKey]: e.target.value })}
+                    />
+                  )}
+
+                  {(input.type === "size" || input.type === "numQubits" || input.type === "repeatCount" || input.type === "balancedMask") && (
                     <div className="space-y-1">
                       <input
                         type="number"
@@ -297,7 +381,9 @@ export default function PromptFlowModal({
                         placeholder={
                           input.type === "repeatCount"
                             ? "Enter number of repetitions (e.g. 3)"
-                            : "Enter number of qubits (e.g. 1, 2, 3)"
+                            : input.type === "balancedMask"
+                              ? "Enter the balanced mask (e.g. 5)"
+                              : "Enter number of qubits (e.g. 1, 2, 3)"
                         }
                         value={inputValues[itemKey] || ""}
                         onChange={(e) => {
