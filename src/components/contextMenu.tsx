@@ -3,6 +3,7 @@ import {
   useReactFlow,
   useStore,
   useUpdateNodeInternals,
+  Node,
 } from "reactflow";
 import {
   FaTrash,
@@ -35,13 +36,20 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   onAction,
   styles = {},
 }) => {
-  const { setNodes, setEdges, addNodes } = useReactFlow();
+  const { getNode, setNodes, addNodes, setEdges, getEdge } = useReactFlow();
+  const type = getNode(id)?.type || "edge";
+  console.log("type", type)
+
   const updateNodeInternals = useUpdateNodeInternals();
 
   // 1. All hooks must be defined unconditionally at the top
   const node = useStore(
     useCallback((state) => state.nodeInternals.get(id), [id])
   );
+  const edge = getEdge(id);
+  console.log("node", node)
+  console.log("edge", edge)
+
 
   const [submenuInputAddOpen, setSubmenuInputAddOpen] = useState(false);
   const [submenuInputRemoveOpen, setSubmenuInputRemoveOpen] = useState(false);
@@ -82,14 +90,11 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
     onAction?.("duplicate", id);
   }, [node, id, addNodes, onAction]);
 
-  const deleteNode = useCallback(() => {
-    const myCursor = awareness.getLocalState()?.cursor;
-    if (myCursor?.mySelectedNodeId !== id) return;
-
-    setNodes((nodes) => nodes.filter((n) => n.id !== id));
-    setEdges((edges) => edges.filter((e) => e.source !== id));
-
-    onAction?.("delete", id);
+  const deleteComponent = useCallback(() => { // delete node or edge
+      setNodes((nodes) => nodes.filter((node) => node.id !== id));
+      setEdges((edges) => edges.filter((edge) => edge.source !== id));
+      setEdges((edges) => edges.filter((edge) => edge.id !== id)); // incase edge is deleted and not node
+      if (onAction) onAction("delete", id);
   }, [id, setNodes, setEdges, onAction]);
 
   const incrementNodeDataField = useCallback(
@@ -154,10 +159,9 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
 
 
   // 2. NOW it is completely safe to exit early if node data isn't ready
-  if (!node) return null;
+  if (!node && !edge) return null;
 
   // Variables dependent on node existence
-  const type = node.type;
   let minInput = 0;
   let minOutput = 0;
 
@@ -168,24 +172,52 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
     minInput = 1;
   }
 
-  // Answer to your code comment question: 
-  // If the field is missing, fallback defaults (?? 0) handle it cleanly now.
-  const quantumInputs = Number(node.data["numberQuantumInputs"] ?? 0);
-  const hasQuantumInputs = quantumInputs > minInput;
-  const hasClassicalInputs = (node.data["numberClassicalInputs"] ?? 0) > minInput;
-  const hasQuantumOutputs = (node.data["numberQuantumOutputs"] ?? 0) > minOutput;
-  const hasClassicalOutputs = (node.data["numberClassicalOutputs"] ?? 0) > minOutput;
-  const hasInputs = (node.data["numberInputs"] ?? 0) > minInput;
-  const hasOutputs = (node.data["numberOutputs"] ?? 0) > minOutput;
+  const quantumInputs =
+    Number(node?.data["numberQuantumInputs"] ?? 0);
+  const hasQuantumInputs = quantumInputs > minInput || false; // what happens if node has no filed numQuantumInputs?
+  const hasClassicalInputs = node?.data["numberClassicalInputs"] > minInput || false; 
+  const hasQuantumOutputs = node?.data["numberQuantumOutputs"] > minOutput || false;  // what happens if node has no filed numQuantumInputs?
+  const hasClassicalOutputs = node?.data["numberClassicalOutputs"] > minOutput || false; 
+  const hasInputs = node?.data["numberInputs"] > minInput || false; 
+  const hasOutputs = node?.data["numberOutputs"] > minOutput || false; 
 
-  let buttons = [
-    <button key="duplicate" onClick={duplicateNode} style={buttonStyle} aria-label="Duplicate Node">
-      <FaCopy style={iconStyle} /> Duplicate
-    </button>,
-    <button key="delete" onClick={deleteNode} style={buttonStyle} aria-label="Delete Node">
+  console.log("contextMenu")
+  console.log(getNode(id)?.type)
+  console.log(getNode(id)?.data["numberQuantumInputs"])
+  console.log(hasQuantumInputs)
+  console.log(hasClassicalInputs)
+
+
+  useEffect(() => {
+    if(node){
+      updateNodeInternals(node.id);
+      console.log("update handles")
+    }
+    
+  }, [node?.data["numberClassicalInputs"] ]);
+
+
+  let buttons = [];
+  // every node can be duplicated and deleted, edges can only be deleted
+  if(type !== "edge"){
+    buttons.push(
+      <button
+        onClick={duplicateNode}
+        style={buttonStyle}
+        aria-label="Duplicate Node"
+      >
+        <FaCopy style={iconStyle} /> Duplicate
+      </button>);
+  }
+  buttons.push(
+    <button
+      onClick={deleteComponent}
+      style={buttonStyle}
+      aria-label={type === "edge"?"Delete Edge":"Delete Node"}
+    >
       <FaTrash style={iconStyle} /> Delete
     </button>
-  ];
+  );
 
   if (type === "ifElseNode" || type === "controlStructureNode") {
     return (
@@ -308,7 +340,35 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
         <div>{buttons}</div>
       </div>
     );
-  } else {
+  } 
+  else if (type ==="edge"){
+    return (
+      <div
+        style={{
+          position: "absolute",
+          top,
+          left,
+          ...styles, // Merge passed styles
+          backgroundColor: "#fff",
+          border: "1px solid #ddd",
+          borderRadius: "8px",
+          boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.1)",
+          padding: "10px",
+          zIndex: 1000,
+          display: "flex",
+          flexDirection: "column",
+        }}
+        className="context-menu"
+      >
+        <p style={{ margin: "0.5em", fontSize: "14px", color: "#666" }}>
+          <small>Edge: {id}</small>
+        </p>
+        <div>
+          {buttons}
+        </div>
+      </div>
+    );
+  }else {
     return (
       <div style={{ position: "absolute", top, left, ...styles, backgroundColor: "#fff", border: "1px solid #ddd", borderRadius: "8px", boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.1)", padding: "10px", zIndex: 1000, display: "flex", flexDirection: "column" }} className="context-menu">
         <p style={{ margin: "0.5em", fontSize: "14px", color: "#666" }}><small>Node: {id}</small></p>

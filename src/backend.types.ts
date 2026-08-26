@@ -129,27 +129,30 @@ export interface components {
             values: any[];
         };
         EditableNode: {
-      /** Unique node ID */
-      id: string;
+            /** Unique node ID */
+            id: string;
 
-      /** Optional label */
-      label?: string | null;
+            /** Optional label */
+            label?: string | null;
 
-      /** Node type discriminator */
-      type: "editableNode";
+            /** Node type discriminator */
+            type: "editableNode";
 
-      /** Editable properties of the node */
-      propertyValues: Record<string, any>;
+            /** Editable properties of the node */
+            propertyValues: Record<string, any>;
 
-      /** Optional input-output mapping */
-      mapping?: string[][];
+            /** Optional input-output mapping */
+            mapping?: string[][];
 
-      /** Input types */
-      inputTypes?: string[];
+            /** Input types */
+            inputTypes?: string[];
 
-      /** Output types */
-      outputTypes?: string[];
-    };
+            /** Output types */
+            outputTypes?: string[];
+
+            /** is Data Type */
+            isDataType?: boolean;
+        };
 
         /** AncillaNode */
         AncillaNode: {

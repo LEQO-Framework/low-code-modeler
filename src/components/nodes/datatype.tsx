@@ -235,7 +235,7 @@ export const DataTypeNode = memo((node: Node) => {
 
       setRemoteHighlightColor(foundColor);
       setSelectingUserName(foundName);
-      console.log("COLOR", foundColor, foundName);
+      // console.log("COLOR", foundColor, foundName);
     };
 
     // Run once immediately on mount

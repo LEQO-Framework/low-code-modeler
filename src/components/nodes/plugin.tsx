@@ -69,25 +69,41 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
   const [outputIdentifierError, setOutputIdentifierError] = useState(false);
   const [sizeError, setSizeError] = useState(false);
 
+  console.log(data)
   const dataInputs = data.dataInputs || [];
   const dataOutputs = data.dataOutputs || [];
 
+  console.log(dataInputs)
+
   useEffect(() => {
-    updateNodeInternals(node.id);
-    console.log("clusteringAlgorithm");
-    console.log(node.data.clusteringAlgorithm)
-    if (node.data.clusteringAlgorithm === "k-medoids") {
+  updateNodeInternals(node.id);
+
+  if (
+    node.data.clusteringAlgorithm === "k-medoids" &&
+    (!node.data.initializationMethod || !node.data.algorithm)
+  ) {
+    if (!node.data.initializationMethod) {
       updateNodeValue(node.id, "initializationMethod", "random");
+    }
+
+    if (!node.data.algorithm) {
       updateNodeValue(node.id, "algorithm", "pam");
     }
-    if (
-      (node.data.label === "Quantum Clustering" || node.data.label === "Classical Clustering") &&
-      !node.data.clusteringAlgorithm
-    ) {
-      updateNodeValue(node.id, "clusteringAlgorithm", "k-means");
-    }
-  }, [dataInputs, dataOutputs, data.clusteringAlgorithm]);
+  }
 
+  if (
+    (node.data.label === "Quantum Clustering" ||
+      node.data.label === "Classical Clustering") &&
+    !node.data.clusteringAlgorithm
+  ) {
+    updateNodeValue(node.id, "clusteringAlgorithm", "k-means");
+  }
+}, [
+  node.id,
+  node.data.clusteringAlgorithm,
+  node.data.initializationMethod,
+  node.data.algorithm,
+]);
   // Check if this is a clustering node (k-means)
   const isClusteringNode = data.pluginName === 'Classical Clustering' || data.pluginName === 'Quantum Clustering';
 

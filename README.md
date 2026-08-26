@@ -20,6 +20,25 @@ Make sure to start:
 4. **Low Code Modeler**: `pnpm install && npm run dev` (runs on port 4242)
 5. **Open**: http://localhost:4242
 
+### Loading domain profiles from a repository
+
+Domain profiles can be read from a shared repository instead of being created by
+hand or imported file by file. Set `VITE_DOMAIN_PROFILES_URL` to the raw base URL
+of a publicly readable repository, for example
+`https://raw.githubusercontent.com/<owner>/<repo>/main`. The Domain Profile
+dialog then offers **Load from Repository**, which lists the available domains
+and revisions and loads the selected one into the editor.
+
+The repository is a plain static tree, so any raw Git host, GitHub Pages or file
+server works and no server-side component is needed:
+
+```
+index.json                   { "domains": [{ name, directory, versions, latest }] }
+<directory>/<version>.json   the profile, with its blocks grouped by category
+```
+
+Leaving the variable unset switches the feature off and hides the button.
+
 ## Execution in Docker
 
 To build and run an own image execute:

@@ -3,7 +3,6 @@ import { Node, Handle, Position } from "reactflow";
 import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
 import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
 import OutputPort from "../utils/outputPort";
 import { AlertCircle } from "lucide-react";
 import { quantumConstructColor } from "@/constants";
@@ -14,12 +13,13 @@ const selector = (state: any) => ({
   nodes: state.nodes,
   edges: state.edges,
   setSelectedNode: state.setSelectedNode,
-  experienceLevel: state.experienceLevel
-});
+  experienceLevel: state.experienceLevel,
+  setContainsPlaceholder: state.setContainsPlaceholder
+}); 
 
 export const UniversalOracleNode = memo((node: Node) => {
   const { id, data, selected } = node;
-  const { updateNodeValue, nodes, edges, setSelectedNode, experienceLevel } = useStore(selector, shallow);
+  const { updateNodeValue, nodes, edges, setSelectedNode, experienceLevel, setContainsPlaceholder } = useStore(selector, shallow);
 
   const [mode, setMode] = useState(data.mode || "phase");
   const [targetStates, setTargetStates] = useState(data.targetStates || "");
@@ -28,12 +28,16 @@ export const UniversalOracleNode = memo((node: Node) => {
   const [outputs, setOutputs] = useState(data.outputs || []);
   const [outputIdentifierError, setOutputIdentifierError] = useState(false);
   const [sizeError, setSizeError] = useState(false);
+  const [missingTargetStatesError, setMissingTargetStatesError] = useState(false);
 
   // Dynamic user role tracking states
   const [mixedView, setMixedView] = useState(false);
   const [hasPioneerUser, setHasPioneerUser] = useState(false);
   const [hasExplorerUser, setHasExplorerUser] = useState(false);
 
+  useEffect(() => {
+    setMissingTargetStatesError(targetStates.trim() === "");
+  }, [targetStates]);
   // Monitor room workspace users and roles
   useEffect(() => {
     const checkUserRoles = () => {
@@ -90,13 +94,26 @@ export const UniversalOracleNode = memo((node: Node) => {
       setFormatError(false);
       return;
     }
-    const isValidFormat = /^\d+(?:\s*,\s*\d+)*$/.test(targetStates.trim());
+
+    // Allow letters, numbers, underscores, and commas
+    const isValidFormat = /^[a-zA-Z0-9_]+(?:\s*,\s*[a-zA-Z0-9_]+)*$/.test(targetStates.trim());
+
     if (!isValidFormat) {
       setFormatError(true);
       return;
     }
-    const indices = targetStates.split(",").map(x => parseInt(x.trim(), 10));
-    const hasOutOfBounds = indices.some(idx => idx < 0 || idx > maxAllowedIndex);
+
+    // Only check bounds for pure numeric states
+    const values = targetStates
+      .split(",")
+      .map(x => x.trim());
+
+    const numericValues = values.filter(v => /^\d+$/.test(v));
+
+    const hasOutOfBounds = numericValues.some(
+      idx => parseInt(idx, 10) < 0 || parseInt(idx, 10) > maxAllowedIndex
+    );
+
     setFormatError(hasOutOfBounds);
   }, [targetStates, maxAllowedIndex]);
 
@@ -157,10 +174,24 @@ export const UniversalOracleNode = memo((node: Node) => {
             height: `420px`
           }}>
           {/* VALIDATION ALERT */}
-          {formatError && (
+          {missingTargetStatesError && (
             <div className="absolute top-2 right-[-40px] group z-20">
               <AlertCircle className="text-red-600 w-5 h-5" />
               <div className="absolute top-5 left-[30px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[220px] whitespace-nowrap">
+                Marked states are required.
+              </div>
+            </div>
+          )}
+
+          {formatError && (
+            <div className="absolute top-2 right-[-40px] group z-20">
+              <AlertCircle className="text-red-600 w-5 h-5" />
+              <div
+                className="absolute left-[30px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[220px] whitespace-nowrap"
+                style={{
+                  top: missingTargetStatesError ? "50px" : "35px",
+                }}
+              >
                 Invalid format or out-of-bounds state index.
               </div>
             </div>
@@ -211,19 +242,28 @@ export const UniversalOracleNode = memo((node: Node) => {
             </div>
 
             <div className="mt-3">
-              <label className="text-xs font-normal text-gray-700">Marked States:</label>
+              <label className="text-xs font-normal text-gray-700">
+                Marked States:
+              </label>
+
               <input
                 type="text"
-                placeholder="e.g. 0, 3, 7"
+                placeholder="e.g. 0, 3, A, target1"
                 className={cn(
                   "w-full p-1 mt-1 text-sm text-center text-black border-2 rounded-full outline-none transition-colors",
-                  formatError ? "border-red-400 focus:border-red-500" : "border-blue-200 focus:border-blue-400"
+                  formatError
+                    ? "border-red-400 focus:border-red-500"
+                    : "border-blue-200 focus:border-blue-400"
                 )}
                 value={node.data.targetStates || targetStates}
                 onChange={(e) => {
-                  setTargetStates(e.target.value);
-                  updateNodeValue(node.id, "targetStates", e.target.value)
-                  //handleChange("targetStates", e.target.value);
+                  const val = e.target.value.replace(/[^a-zA-Z0-9,\s]/g, "");
+
+                  setTargetStates(val);
+                  updateNodeValue(node.id, "targetStates", val);
+
+                  const hasLetters = /[a-zA-Z]/.test(val);
+                  setContainsPlaceholder(hasLetters);
                 }}
               />
             </div>

@@ -493,8 +493,12 @@ export const useStore = create<RFState>()(persist((set, get) => ({
     });
 
     if (validChanges.length === 0) {
-      // No meaningful changes
-      console.log("No meaningful node changes. Skipping history update.");
+      set({
+        nodes: currentNodes,
+        edges: currentEdges,
+      });
+
+      console.log("Applied non-history node changes.");
       return;
     }
     console.log("Updating history (onNodesChange):");

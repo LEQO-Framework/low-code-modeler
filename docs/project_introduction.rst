@@ -64,11 +64,22 @@ The central *canvas area* serves as the main workspace for diagram construction.
 - Resetting the view
 - Locking the canvas via controls located at the bottom left
 - Keyboard shortcuts:
-
-   - *Delete* to remove nodes
-   - Arrow keys for moving elements
-   - Lasso tool (hold *Shift*) to select multiple nodes
-   - *Undo/Redo* functionality to support editing
+   - Selection
+      - Hold *Shift* while selecting to select multiple nodes
+      - *Ctrl/Cmd + A* to select all nodes
+      - *Escape* to clear the current selection
+   - Editing
+      - *Delete* / *Backspace* to remove selected nodes
+      - *Ctrl/Cmd + C* to copy selected nodes
+      - *Ctrl/Cmd + V* to paste copied nodes
+      - *Ctrl/Cmd + X* to cut selected nodes
+      - *Ctrl/Cmd + D* to duplicate selected nodes
+   - History navigation
+      - *Ctrl/Cmd + Z* to undo
+      - *Ctrl/Cmd + Y* to redo   
+   - Movement
+      - *Arrow keys* to move selected nodes
+      - *Shift + Arrow keys* to move selected nodes with larger steps
 
 .. figure:: images/userInterface.png
    :alt: User Interface

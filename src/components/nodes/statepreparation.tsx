@@ -58,14 +58,14 @@ export const StatePreparationNode = memo((node: Node) => {
 
   // Mapping-Tabelle: Welches Explorer-Verständnis-Label gehört zu welchem Pioneer-Standard-Label?
   const explorerLabelMap: Record<string, string> = {
-    "Prepare State": "Input State",
-    "Encode Value": "Value Input",
-    "Basis Encoding": "Number Encoding",
-    "Angle Encoding": "Phase Encoding",
-    "Custom Encoding": "Manual Encoding",
-    "Matrix Encoding": "Array Encoding",
+    "Prepare State": "Prepare State",
+    "Encode Value": "Encode Value",
+    "Basis Encoding": "Basis Encoding",
+    "Angle Encoding": "Angle Encoding",
+    "Custom Encoding": "Custom Encoding",
+    "Matrix Encoding": "Matrix Encoding",
     "Schmidt Decomposition": "State Split",
-    "Amplitude Encoding": "Wave Encoding"
+    "Amplitude Encoding": "Amplitude Encoding"
   };
 
   // Mapping die einzelnen Quantum States im Prepare State Dropdown
@@ -85,12 +85,24 @@ export const StatePreparationNode = memo((node: Node) => {
     "Encode Value": "encodeValueIcon.png",
     "Basis Encoding": "basisEncodingIcon.png",
     "Angle Encoding": "angleEncodingIcon.png",
-    "Custom Encoding": "encodeValueIcon.png",
+    "Custom Encoding": "customEncodingIcon.png",
     "Matrix Encoding": "matrixEncodingIcon.png",
     "Schmidt Decomposition": "schmidtDecompositionIcon.png",
     "Amplitude Encoding": "amplitudeEncodingIcon.png",
   };
 
+  const encoding = node.data.encodingType
+  ? node.data.encodingType.charAt(0).toUpperCase() + node.data.encodingType.slice(1)
+  : "";
+
+const icon =
+  encoding.includes("Basis") ? "basisEncodingIcon.png" :
+  encoding.includes("Angle") ? "angleEncodingIcon.png" :
+  encoding.includes("Amplitude") ? "amplitudeEncodingIcon.png" :
+  encoding.includes("Custom") ? "customEncodingIcon.png" :
+  encoding.includes("Matrix") ? "matrixEncodingIcon.png" :
+  encoding.includes("Schmidt") ? "schmidtDecompositionIcon.png" :
+  "encodeValueIcon.png";
   const { updateNodeValue, setSelectedNode, setNodes, setTypeError, edges, nodes, ancillaMode, completionGuaranteed, compact, experienceLevel } = useStore(selector, shallow);
   const isConnected = edges.some(
     edge => edge.target === node.id && edge.targetHandle === `ancillaHandlePrepareState0${node.id}`
@@ -334,19 +346,19 @@ export const StatePreparationNode = memo((node: Node) => {
   };
 
   const handleOutputChange = (outputId: string, newValue: any) => {
-  // 1. Update the local React state array for immediate rendering
-  const updatedOutputs = outputs.map((output) => 
-    output.id === outputId ? { ...output, value: newValue } : output
-  );
-  setOutputs(updatedOutputs);
+    // 1. Update the local React state array for immediate rendering
+    const updatedOutputs = outputs.map((output) =>
+      output.id === outputId ? { ...output, value: newValue } : output
+    );
+    setOutputs(updatedOutputs);
 
-  // 2. Sync it directly to the node object and the Zustand store
-  node.data.outputs = updatedOutputs;
-  updateNodeValue(node.id, "outputs", updatedOutputs);
-  
-  // 3. Keep the current selected node context aligned
-  setSelectedNode(node);
-};
+    // 2. Sync it directly to the node object and the Zustand store
+    node.data.outputs = updatedOutputs;
+    updateNodeValue(node.id, "outputs", updatedOutputs);
+
+    // 3. Keep the current selected node context aligned
+    setSelectedNode(node);
+  };
 
   const handleOutputIdentifierChange = (e, field) => {
     const value = e.target.value;
@@ -360,8 +372,10 @@ export const StatePreparationNode = memo((node: Node) => {
     node.data[field] = value;
     updateNodeValue(node.id, field, value);
   };
-
-  const baseHeight = data.label === "Prepare State" ? 460 : 560;
+ const baseHeight =
+  data.label === "Prepare State" ? 460 :
+  data.label === "Encode Value" ? 450 :
+  350;
   const extraHeightPerVariable = 20;
   const dynamicHeight = baseHeight;
 
@@ -402,7 +416,7 @@ export const StatePreparationNode = memo((node: Node) => {
   return (
     <div
       className="grand-parent"
-      style={{ width: showingChildren ? 360 : 320, height: showingChildren ? 400 : 373 }}
+      style={{ width: showingChildren ? 360 : 320, height: baseHeight }}
     >
       <div className="grand-parent">
         <div
@@ -412,9 +426,9 @@ export const StatePreparationNode = memo((node: Node) => {
           )}
           style={{
             height:
-              ["Custom Encoding", "Basis Encoding", "Angle Encoding", "Amplitude Encoding", "Matrix Encoding", "Schmidt Decomposition"].includes(data.label)
+              ["Encode Value", "Custom Encoding", "Basis Encoding", "Angle Encoding", "Amplitude Encoding", "Matrix Encoding", "Schmidt Decomposition"].includes(data.label)
                 ? !ancillaMode
-                  ? "300px"
+                  ? `${baseHeight}px`
                   : `${Math.max(dynamicHeight - 70, 200)}px`
                 : !ancillaMode
                   ? "370px"
@@ -511,17 +525,7 @@ export const StatePreparationNode = memo((node: Node) => {
                 "Schmidt Decomposition"
               ].includes(data.label) && (
                   <img
-                    src={
-                      data.label === "Prepare State"
-                        ? "prepareStateIcon.png"
-                        : data.label === "Encode Value"
-                          ? "encodeValueIcon.png"
-                          : data.label === "Basis Encoding"
-                            ? "basisEncodingIcon.png"
-                            : data.label === "Angle Encoding"
-                              ? "angleEncodingIcon.png"
-                              : "amplitudeEncodingIcon.png"
-                    }
+                    src={icon}
                     alt={`${data.label} icon`}
                     className={
                       data.label === "Prepare State"
@@ -566,15 +570,15 @@ export const StatePreparationNode = memo((node: Node) => {
                     style={{ visibility: showingChildren ? "hidden" : "visible" }}
                     onChange={(e) => handleStateChange(e, "encodingType")}
                   >
-                    {!completionGuaranteed && (<option value="amplitude">Amplitude Encoding</option>)}
-                    {!completionGuaranteed && (<option value="angle">Angle Encoding</option>)}
                     <option value="basis">Basis Encoding</option>
+                    <option value="amplitude">Amplitude Encoding</option>
+                    <option value="angle">Angle Encoding</option>
                     <option value="custom">Custom Encoding</option>
-                    {!completionGuaranteed && (<option value="matrix">Matrix Encoding</option>)}
-                    {!completionGuaranteed && (<option value="schmidt">Schmidt Decomposition</option>)}
+                    <option value="matrix">Matrix Encoding</option>
+
                   </select>
 
-                  {node.data.encodingType !== "basis" && node.data.encodingType !== "angle" && (
+                  {!node.data.encodingType.includes("Basis") && !node.data.encodingType.includes("Angle") && (
                     <>
                       <label className="text-sm text-black block mt-2">Bound:</label>
                       <input
