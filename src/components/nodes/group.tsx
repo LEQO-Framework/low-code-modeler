@@ -109,35 +109,62 @@ function getProxyHandles(
   childNodes.forEach((child) => {
     const nodeType = child.type ?? "";
 
-    // Output-Handle ID nach bekanntem Muster generieren
-    let outputHandleId: string | null = null;
-    if (nodeType === "gateNode")               outputHandleId = `quantumHandleGateOutput0${child.id}`;
-    else if (nodeType === "qubitNode")         outputHandleId = `quantumHandleQubitOutput0${child.id}`;
-    else if (nodeType === "measurementNode")   outputHandleId = `quantumHandleMeasurementOutput0${child.id}`;
-    else if (nodeType === "statePreparationNode") outputHandleId = `quantumHandleStatePreparationOutput0${child.id}`;
-    else if (nodeType === "quantumOperatorNode")  outputHandleId = `quantumHandleQuantumOperatorOutput0${child.id}`;
-    else if (nodeType === "algorithmNode")     outputHandleId = `quantumHandleAlgorithmOutput0${child.id}`;
-    else if (nodeType === "ancillaNode")       outputHandleId = `ancillaHandleAncillaOutput0${child.id}`;
-    else if (nodeType === "uncomputeNode")     outputHandleId = `quantumHandleUncomputeOutput0${child.id}`;
-    else if (nodeType === "dataTypeNode")      outputHandleId = `classicalHandleDataTypeOutput0${child.id}`;
-    else if (nodeType === "classicalAlgorithmNode") outputHandleId = `classicalHandleClassicalAlgorithmOutput0${child.id}`;
-    else if (nodeType === "classicalOperatorNode")  outputHandleId = `classicalHandleClassicalOperatorOutput0${child.id}`;
+    // Anzahl der Qubit-Wires dieses Nodes. Für die meisten Node-Typen ist das genau 1,
+    // aber gateNode kann mehrere Wires haben (CNOT=2, Toffoli=3). Die realen
+    // Handle-IDs tragen den Wire-Index direkt vor der Node-ID (z.B.
+    // "quantumHandleGateOutput0<id>", "...Output1<id>", "...Output2<id>",
+    // siehe store.ts Zeilen mit sourceHandle.includes("Output1")/.endsWith("Output2")).
+    // Vorher wurde hier IMMER nur Index 0 generiert, wodurch der zweite/dritte Wire
+    // eines CNOT/Toffoli-Gates niemals als Proxy-Handle der Gruppe auftauchen konnte.
+    //
+    // WICHTIG: Die Wire-Anzahl wird bewusst über data.label bestimmt und NICHT über
+    // data.identifiers.length. Letzteres wäre zwar bei der Node-Erstellung korrekt
+    // (siehe addNode in store.ts: CNOT bekommt 2, Toffoli 3 Einträge), wird aber in
+    // der onConnect-Logik von store.ts bei JEDER eingehenden Edge mit
+    // `targetData["identifiers"] = sourceIdentifier` überschrieben - also mit den
+    // identifiers des jeweils verbundenen Quell-Nodes. Ein an CNOT angeschlossener
+    // einzelner Qubit-Node hat aber nur 1 Identifier, wodurch CNOT.data.identifiers
+    // nach dem Verbinden fälschlich wieder auf Länge 1 zurückfällt. data.label ist
+    // davon nicht betroffen und daher das stabile Signal.
+    const wireCount =
+      child.data?.label === "Toffoli" ? 3 :
+      child.data?.label === "CNOT"    ? 2 : 1;
+    const outputWireCount = nodeType === "gateNode" ? wireCount : 1;
+    const inputWireCount  = nodeType === "gateNode" ? wireCount : 1;
 
-    // Output-Proxy: nicht intern verbunden UND nicht bereits extern verbunden
-    if (outputHandleId
-      && !isHandleUsed(outputHandleId, internalSourceHandles)
-      && !isHandleUsed(outputHandleId, externalSourceHandles)) {
-      outputs.push({
-        id: outputHandleId,
-        type: "source",
-        color: getHandleColor(outputHandleId),
-        index: outputs.length,
-        total: 0,
-      });
+    // Output-Handle-Präfix nach bekanntem Muster generieren (ohne Wire-Index/ID)
+    let outputPrefix: string | null = null;
+    if (nodeType === "gateNode")               outputPrefix = "quantumHandleGateOutput";
+    else if (nodeType === "qubitNode")         outputPrefix = "quantumHandleQubitOutput";
+    else if (nodeType === "measurementNode")   outputPrefix = "quantumHandleMeasurementOutput";
+    else if (nodeType === "statePreparationNode") outputPrefix = "quantumHandleStatePreparationOutput";
+    else if (nodeType === "quantumOperatorNode")  outputPrefix = "quantumHandleQuantumOperatorOutput";
+    else if (nodeType === "algorithmNode")     outputPrefix = "quantumHandleAlgorithmOutput";
+    else if (nodeType === "ancillaNode")       outputPrefix = "ancillaHandleAncillaOutput";
+    else if (nodeType === "uncomputeNode")     outputPrefix = "quantumHandleUncomputeOutput";
+    else if (nodeType === "dataTypeNode")      outputPrefix = "classicalHandleDataTypeOutput";
+    else if (nodeType === "classicalAlgorithmNode") outputPrefix = "classicalHandleClassicalAlgorithmOutput";
+    else if (nodeType === "classicalOperatorNode")  outputPrefix = "classicalHandleClassicalOperatorOutput";
+
+    // Output-Proxy je Wire: nicht intern verbunden UND nicht bereits extern verbunden
+    if (outputPrefix) {
+      for (let wireIndex = 0; wireIndex < outputWireCount; wireIndex++) {
+        const outputHandleId = `${outputPrefix}${wireIndex}${child.id}`;
+        if (!isHandleUsed(outputHandleId, internalSourceHandles)
+          && !isHandleUsed(outputHandleId, externalSourceHandles)) {
+          outputs.push({
+            id: outputHandleId,
+            type: "source",
+            color: getHandleColor(outputHandleId),
+            index: outputs.length,
+            total: 0,
+          });
+        }
+      }
     }
 
-    // Input-Handle ID nach bekanntem Muster generieren
-    let inputHandleId: string | null = null;
+    // Input-Handle-Präfix nach bekanntem Muster generieren (ohne Wire-Index/ID)
+    let inputPrefix: string | null = null;
     // gateNode: nur Input wenn es sich NICHT um eine reine |0⟩-Qubit-Quelle handelt.
     // Vorher wurde dies über child.data?.inputs?.length > 0 geprüft - dieses Feld
     // spiegelt aber nicht zuverlässig die tatsächlichen Verbindungen wider (z.B. bei
@@ -145,27 +172,31 @@ function getProxyHandles(
     // "Qubit Circuit" ist das strukturell stabile Erkennungsmerkmal der Qubit-Quelle,
     // unabhängig vom aktuellen Verbindungszustand.
     if (nodeType === "gateNode" && child.data?.label !== "Qubit Circuit")
-                                               inputHandleId = `quantumHandleGateInput0${child.id}`;
-    else if (nodeType === "measurementNode")   inputHandleId = `quantumHandleMeasurementInput0${child.id}`;
-    else if (nodeType === "statePreparationNode") inputHandleId = `classicalHandleStatePreparationInput0${child.id}`;
-    else if (nodeType === "quantumOperatorNode")  inputHandleId = `quantumHandleQuantumOperatorInput0${child.id}`;
-    else if (nodeType === "algorithmNode")     inputHandleId = `quantumHandleAlgorithmInput0${child.id}`;
-    else if (nodeType === "uncomputeNode")     inputHandleId = `quantumHandleUncomputeInput0${child.id}`;
-    else if (nodeType === "classicalAlgorithmNode") inputHandleId = `classicalHandleClassicalAlgorithmInput0${child.id}`;
-    else if (nodeType === "classicalOperatorNode")  inputHandleId = `classicalHandleClassicalOperatorInput0${child.id}`;
+                                               inputPrefix = "quantumHandleGateInput";
+    else if (nodeType === "measurementNode")   inputPrefix = "quantumHandleMeasurementInput";
+    else if (nodeType === "statePreparationNode") inputPrefix = "classicalHandleStatePreparationInput";
+    else if (nodeType === "quantumOperatorNode")  inputPrefix = "quantumHandleQuantumOperatorInput";
+    else if (nodeType === "algorithmNode")     inputPrefix = "quantumHandleAlgorithmInput";
+    else if (nodeType === "uncomputeNode")     inputPrefix = "quantumHandleUncomputeInput";
+    else if (nodeType === "classicalAlgorithmNode") inputPrefix = "classicalHandleClassicalAlgorithmInput";
+    else if (nodeType === "classicalOperatorNode")  inputPrefix = "classicalHandleClassicalOperatorInput";
     // qubitNode, dataTypeNode: keine Inputs
 
-    // Input-Proxy: nicht intern verbunden UND nicht bereits extern verbunden
-    if (inputHandleId
-      && !isHandleUsed(inputHandleId, internalTargetHandles)
-      && !isHandleUsed(inputHandleId, externalTargetHandles)) {
-      inputs.push({
-        id: inputHandleId,
-        type: "target",
-        color: getHandleColor(inputHandleId),
-        index: inputs.length,
-        total: 0,
-      });
+    // Input-Proxy je Wire: nicht intern verbunden UND nicht bereits extern verbunden
+    if (inputPrefix) {
+      for (let wireIndex = 0; wireIndex < inputWireCount; wireIndex++) {
+        const inputHandleId = `${inputPrefix}${wireIndex}${child.id}`;
+        if (!isHandleUsed(inputHandleId, internalTargetHandles)
+          && !isHandleUsed(inputHandleId, externalTargetHandles)) {
+          inputs.push({
+            id: inputHandleId,
+            type: "target",
+            color: getHandleColor(inputHandleId),
+            index: inputs.length,
+            total: 0,
+          });
+        }
+      }
     }
   });
 
