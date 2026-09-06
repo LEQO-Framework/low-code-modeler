@@ -3,6 +3,8 @@ import Modal from "./Modal";
 import { categories, CategoryEntry } from "../panels/categories";
 import { ImageIcon, Plus, Trash2, CheckCircle2, Circle, ChevronDown, Check } from "lucide-react";
 import { boundaryNodes, dataTypes, circuitLevelNodes, controlStructureNodes, templates, operator, customOperators, OperatorNode, EditableNode } from "@/constants";
+import { DomainProfileRepositoryPicker } from "./domainProfileRepositoryPicker";
+import { RepositoryDomainProfile } from "../../services/domainProfileRepository";
 
 export interface EditableNodeProfile {
   label: string;
@@ -33,6 +35,33 @@ interface NodeProfileConstraint {
   propertyName: string;
   constraint: string;
   value?: string;
+}
+
+/**
+ * Convert a profile revision from the repository into the editor's flat node
+ * list. The repository groups blocks by category, the editor keeps one list and
+ * carries the category on each node, so this is the inverse of what Save Profile
+ * does. Fields the repository format does not carry, such as the icon, fall back
+ * to the same defaults the file import uses.
+ */
+function toEditableNodes(profile: RepositoryDomainProfile): EditableNodeProfile[] {
+  return Object.entries(profile.domainBlocks ?? {}).flatMap(([category, blocks]) =>
+    (blocks ?? []).map((block) => ({
+      label: block.label,
+      description: block.description ?? "",
+      icon: "QAOA.png",
+      visible: true,
+      outputType: "",
+      category,
+      properties: block.properties ?? [],
+      constraints: block.constraints ?? [],
+      mapping: [[]],
+
+      originalLabel: block.label,
+      originalDescription: block.description ?? "",
+      originalIcon: "QAOA.png",
+    }))
+  );
 }
 
 function extractNodes(content: any): EditableNodeProfile[] {
@@ -483,7 +512,7 @@ export default function DomainProfileTableModal({
         mapping: node.mapping,
         completionGuaranteed: true,
         compactOptions: [true, false],
-        isDataType: node.category.includes("Data"),
+        isDataType: node.category.includes("data"),
       };
 
       (acc[cat].content as any[]).push(nodeData);
@@ -614,6 +643,17 @@ export default function DomainProfileTableModal({
           >
             Export Profile
           </button>
+
+          {/* Load a revision from the shared repository. Renders nothing when
+              VITE_DOMAIN_PROFILES_URL is unset. */}
+          <DomainProfileRepositoryPicker
+            onLoad={(profile) => {
+              setProfileName(
+                profile.version ? `${profile.name} v${profile.version}` : profile.name
+              );
+              setLocalNodes(toEditableNodes(profile));
+            }}
+          />
 
           {/* Import Button */}
           <label className="flex items-center gap-1 bg-blue-500 text-white px-3 py-1 rounded-md hover:bg-blue-700 text-sm cursor-pointer">
