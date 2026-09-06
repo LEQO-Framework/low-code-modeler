@@ -109,7 +109,7 @@ Detailed descriptions and examples for each construct type are provided in the c
 
 
 Math Mode, QASM Editor, and Grouping
--------------------
+------------------------------------
 
 In addition to the modeling constructs, the tool provides features that support
 working with larger models and understanding the mathematical behavior of a
