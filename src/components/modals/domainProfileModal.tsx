@@ -818,8 +818,7 @@ export default function DomainProfileTableModal({
         </div>
 
 
-        <div className="max-h-[70vh] overflow-y-auto space-y-8">
-          <div className="overflow-x-auto">
+        <div className="max-h-[40vh] overflow-auto">
             <table className="table-auto w-full border border-gray-300 rounded-md">
               <thead className="sticky top-0 bg-gray-100 z-10">
                 <tr>
@@ -939,7 +938,6 @@ export default function DomainProfileTableModal({
                   )))}
               </tbody>
             </table>
-          </div>
         </div>
       </div>
     </Modal>
