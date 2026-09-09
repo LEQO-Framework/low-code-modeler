@@ -233,7 +233,7 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
                         matrix: JSON.parse(node.data.matrix)
                     }
                 }
-                else if (["RX(θ)", "RY(θ)", "RZ(θ)"].includes(node.data.label)) {
+                else if (["RX(θ)", "RY(θ)", "RZ(θ)", "P(λ)", "CP(λ)", "CRX(θ)", "CRY(θ)", "CRZ(θ)", "U1(λ)", "U2(φ,λ)", "U3(θ,φ,λ)"].includes(node.data.label)) {
                     return {
                         id: node.id,
                         type: "gate-with-param",
@@ -241,6 +241,14 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
                             "RX(θ)": "rx",
                             "RY(θ)": "ry",
                             "RZ(θ)": "rz",
+                            "P(λ)": "p",
+                            "CP(λ)": "cp",
+                            "CRX(θ)": "crx",
+                            "CRY(θ)": "cry",
+                            "CRZ(θ)": "crz",
+                            "U1(λ)": "u1",
+                            "U2(φ,λ)": "u2",
+                            "U3(θ,φ,λ)": "u3",
                         }, node.data.label),
                         parameter: parseFloat(node.data.parameter)
                     }
@@ -251,6 +259,7 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
                         gate: map({
                             "CNOT": "cnot",
                             "Toffoli": "toffoli",
+                            "CSWAP": "cswap",
                             "H": "h",
                             "T": "t",
                             "X": "x",
@@ -259,17 +268,27 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
                             "S": "s",
                             "SX": "sx",
                             "SDG": "sdg",
-                            "TDG": "tdg"
+                            "S†": "sdg",
+                            "TDG": "tdg",
+                            "T†": "tdg",
+                            "I": "id",
+                            "CZ": "cz",
+                            "CY": "cy",
+                            "CH": "ch",
+                            "SWAP": "swap",
                         }, node.data.label)
                     }
                 }
 
             // Data Types
             case consts.DataTypeNode:
-                switch (node.data.dataType) {
+                // Case-insensitiv vergleichen: node.data.dataType kann je nach Herkunft
+                // (Neuanlage vs. Duplizieren via contextMenu.tsx normalizeNodeTypes)
+                // in unterschiedlicher Groß-/Kleinschreibung vorliegen (z.B. "Number" vs "number").
+                switch (String(node.data.dataType).toLowerCase()) {
                     case "int":
-                    case "Number": {
-                        const numValue = node.data.value;
+                    case "number": {
+                        const numValue = Number(node.data.value);
                         return {
                             id: node.id,
                             type: Number.isInteger(numValue) ? "int" : "float",
@@ -291,21 +310,21 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
                             value: node.data.value === "1" ? 1 : 0
                         }
 
-                    case "String":
+                    case "string":
                         return {
                             id: node.id,
                             type: "string",
                             value: node.data.value
                         }
 
-                    case "File":
+                    case "file":
                         return {
                             id: node.id,
                             type: "file",
                             value: node.data.value
                         }
 
-                    case "Array": {
+                    case "array": {
                         const val = node.data.value;
                         let parsedValue = val;
 
@@ -415,6 +434,31 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
                 };
             }
 
+            case consts.VQENode: {
+                const paramEdge = edges.find(e => e.target === node.id && e.targetHandle === `classicalHandleVQEInput0${node.id}`);
+                const obsEdge = edges.find(e => e.target === node.id && e.targetHandle === `classicalHandleVQEInput1${node.id}`);
+
+                const getEdgeValue = (edge: Edge | undefined) => {
+                    if (!edge) return "";
+                    const sourceNode = nodes.find(n => n.id === edge.source);
+                    if (!sourceNode || !sourceNode.data.value) return "";
+                    return typeof sourceNode.data.value === 'string' 
+                        ? sourceNode.data.value 
+                        : JSON.stringify(sourceNode.data.value);
+                };
+
+                return {
+                    id: node.id,
+                    type: "vqe",
+                    numQubits: Number(node.data.numQubits) || 2,
+                    ansatz: node.data.ansatz || "HardwareEfficient",
+                    layers: Number(node.data.layers) || 1,
+                    parameters: getEdgeValue(paramEdge),
+                    observable: getEdgeValue(obsEdge),
+                    optimizer: node.data.optimizer || "ParameterShift",
+                    outputIdentifier: node.data.outputIdentifier || "vqe_reg",
+                };
+            }
 
             case consts.ControlStructureNode:
                 return {
@@ -560,18 +604,25 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
 
         let extractedIndex = -1;
 
-        // Generic pattern to check if handleId ends with -<number>
-        const endsWithIndexPattern = /-(\d+)$/;
-        const indexMatch = handleId.match(endsWithIndexPattern);
+        // PRIORITY 1: handle IDs always end with "<index><nodeId>" (e.g. "...Output0qubit-1").
+        // Extract the digits immediately preceding the known nodeId suffix. This must take
+        // priority over the generic "-<number>$" check below, because node IDs themselves can
+        // end in "-<digit>" (e.g. "qubit-1", "gate-h0"), which would otherwise be misread as
+        // the handle index instead of the actual index digit before the nodeId.
+        if (handleId.endsWith(nodeId)) {
+            const prefix = handleId.slice(0, handleId.length - nodeId.length);
+            const prefixMatch = prefix.match(/(\d+)$/);
+            if (prefixMatch) {
+                extractedIndex = parseInt(prefixMatch[1], 10);
+            }
+        }
 
-        if (indexMatch) {
-            extractedIndex = parseInt(indexMatch[1], 10);
-        } else {
-            const pattern = new RegExp(`(\\d+)(?=${nodeId}$)`);
-            const match = handleId.match(pattern);
-
-            if (match) {
-                extractedIndex = parseInt(match[1], 10);
+        // PRIORITY 2 (fallback): generic pattern to check if handleId ends with -<number>
+        if (extractedIndex === -1) {
+            const endsWithIndexPattern = /-(\d+)$/;
+            const indexMatch = handleId.match(endsWithIndexPattern);
+            if (indexMatch) {
+                extractedIndex = parseInt(indexMatch[1], 10);
             }
         }
 
@@ -608,7 +659,13 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
             console.log(edge)
             console.log(sourceNode.data.inputs)
             const inputConnection = sourceNode.data.inputs?.find(
-                (i: any) => getHandleIndex(sourceNode.id, "target", i.targetHandle) === outputIndex
+                // Das inputs-Array kann Einträge für MEHRERE verschiedene Knoten enthalten
+                // (nicht nur für sourceNode selbst). Daher zuerst per endsWith prüfen, ob der
+                // targetHandle überhaupt zu sourceNode gehört, bevor getHandleIndex aufgerufen
+                // wird - sonst wirft getHandleIndex bei fremden Einträgen einen Fehler, obwohl
+                // .find() diese einfach überspringen sollte.
+                (i: any) => i.targetHandle?.endsWith(sourceNode.id) &&
+                    getHandleIndex(sourceNode.id, "target", i.targetHandle) === outputIndex
             );
             console.log(inputConnection)
             if (inputConnection) {
@@ -661,7 +718,52 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
             }
         }
 
+        if (sourceNode.type === consts.VQENode) {
+            try {
+                const numQubits = Number(sourceNode.data.numQubits) || 2;
+                output = output ? { ...output, size: numQubits } : { size: numQubits, identifier: sourceNode.data.outputIdentifier || "vqe_reg" };
+            } catch (e) {
+                console.warn("Failed to compute VQE edge size", e);
+            }
+        }
+
         const parsedSize = parseInt(output?.size, 10);
+
+        // Fallback-Identifier generieren, falls der User keinen eigenen Namen vergeben hat.
+        // NUR für klassische Operator-Nodes relevant (Arithmetic/Bitwise/Comparison/Min&Max) -
+        // Quanten-Gates (z.B. H, CNOT) brauchen/erwarten hier KEINEN künstlichen Identifier,
+        // da dort identifier ohnehin nicht zur Disambiguierung verwendet wird.
+        const isClassicalOperatorNode = sourceNode.type === consts.ClassicalOperatorNode;
+
+        const getDefaultIdentifier = (): string => {
+            const OPERATOR_NAME_MAP: Record<string, string> = {
+                "+": "sum",
+                "-": "diff",
+                "*": "product",
+                "/": "quotient",
+                "**": "power",
+                "|": "or",
+                "&": "and",
+                "^": "xor",
+                "~": "invert",
+                "<": "lt",
+                ">": "gt",
+                "<=": "lte",
+                ">=": "gte",
+                "==": "eq",
+                "!=": "neq",
+                "min": "min",
+                "max": "max",
+            };
+            const opName = OPERATOR_NAME_MAP[sourceNode.data?.operator] ?? "result";
+            // Volle Node-ID anhängen (nicht gekürzt), um Kollisionen zwischen ähnlichen IDs zu vermeiden.
+            return `${opName}_out_${sourceNode.id}`;
+        };
+
+        const identifier = (output.identifier && output.identifier.trim() !== "")
+            ? output.identifier
+            : (isClassicalOperatorNode ? getDefaultIdentifier() : output.identifier);
+
         return {
             source: [
                 edge.source,
@@ -671,7 +773,7 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
                 edge.target,
                 getHandleIndex(edge.target, "target", edge.targetHandle)
             ],
-            identifier: output.identifier,
+            identifier: identifier,
             size: Number.isNaN(parsedSize) ? null : parsedSize
         }
     }

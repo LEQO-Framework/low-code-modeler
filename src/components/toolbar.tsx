@@ -20,10 +20,17 @@ import {
   FileJson,
   ImageIcon,
   LayoutTemplate,
+  PuzzleIcon,
+  LucidePuzzle,
+  Puzzle,
+  Group,
+  BoxSelect,
   BrainCircuit,
   Search,
   BadgeCheck,
 } from "lucide-react";
+
+
 
 interface ToolbarProps {
   onSave: () => void;
@@ -42,6 +49,8 @@ interface ToolbarProps {
   startTour: () => void;
   onSaveAsTemplate: () => void;
   onManageTemplates: () => void;
+  onGroupSelected: () => void;
+  onLoadQasm: (qasm: string) => void;
   generateModel: () => void;
   openOpenQASM: () => void;
 }
@@ -58,15 +67,29 @@ const Toolbar: React.FC<ToolbarProps> = ({
   startQuantumAlgorithmSelection,
   uploadPatternSolution,
   openPatternSolution,
-  //sendToQunicorn,
   openHistory,
   startTour,
   onSaveAsTemplate,
   onManageTemplates,
+  onGroupSelected,
+  onLoadQasm,
   generateModel, 
   openOpenQASM
 }) => {
   const [saveIsOpen, setSaveIsOpen] = useState(false);
+
+  const handleQasmUpload = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".qasm,.txt";
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      const text = await file.text();
+      onLoadQasm(text);
+    };
+    input.click();
+  };
   return (
     <div className="flex items-center justify-between bg-gray-100 p-4 border-b border-gray-300 h-[56px]">
       <div className="flex items-center">
@@ -91,7 +114,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
               <DropdownMenuItem onClick={openPatternSolution} title="Open a pattern solution">
                 <ImageIcon className="w-4 h-4 mr-2" />
                 <span>Pattern Solution</span>
-              </DropdownMenuItem>
+              </DropdownMenuItem>            
               <DropdownMenuItem onClick={openOpenQASM} title="Open a pattern solution">
                 <ImageIcon className="w-4 h-4 mr-2" />
                 <span>OpenQASM</span>
@@ -151,6 +174,8 @@ const Toolbar: React.FC<ToolbarProps> = ({
           <Button className="backend-button" size="sm" onClick={sendToBackend} title="Send the diagram to the backend">
             <Send className="w-4 h-4 mr-2" /> Send to Backend
           </Button>
+              
+
           <Button size="sm" onClick={startQuantumAlgorithmSelection}>
             <Search className="w-4 h-4 mr-2" /> Detect Algorithm
           </Button>

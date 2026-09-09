@@ -20,7 +20,6 @@ import { v4 as uuid } from "uuid";
 import * as consts from "../constants";
 import { Template } from "@/components/panels/categories";
 import { DomainProfile } from "@/components/modals/domainProfileModal";
-import { nodesMap } from "@/yjs";
 
 export type NodeData = {
   label: string;
@@ -90,6 +89,25 @@ const getHandleIndex = (nodeId: string, handleId: string) => {
   }
 
   return parseInt(match[0], 10);
+};
+
+/**
+ * Ermittelt den tatsächlichen "Owner"-Knoten eines Handles anhand der im
+ * handleId-String eingebetteten ID (z.B. "quantumHandleGateOutput0<nodeId>").
+ *
+ * Wichtig bei Gruppen: Ein Gruppen-Proxy-Handle wird DOM-technisch der Gruppe
+ * zugeordnet (connection.source/target = groupId), aber die im handleId
+ * eingebettete ID gehört dem eigentlichen Kind-Knoten innerhalb der Gruppe
+ * (siehe group.tsx: outputHandleId = `quantumHandleGateOutput0${child.id}`).
+ * Ohne diese Auflösung würden getNodeOutputType/getNodeInputType/getHandleIndex
+ * fälschlich auf die Gruppe selbst zugreifen, deren data.outputTypes/inputTypes
+ * nicht zu den Proxy-Handle-Indizes der Kind-Knoten passen (oder gar nicht
+ * existieren) - das verhindert jede Verbindung von/zu Gruppen-Handles.
+ */
+const resolveHandleOwnerId = (nodes: Node[], fallbackNodeId: string, handleId?: string | null): string => {
+  if (!handleId) return fallbackNodeId;
+  const owner = nodes.find((n) => handleId.endsWith(n.id));
+  return owner ? owner.id : fallbackNodeId;
 };
 
 // Zustand store with undo/redo logic
@@ -189,7 +207,7 @@ export const useStore = create<RFState>()(persist((set, get) => ({
     }
 
     if (node.type === consts.DataTypeNode) {
-      node.data.dataType = node.data.label;
+      node.data.dataType = node.data.label.toLowerCase();
       node.data.value = "";
       node.data.outputIdentifier = "";
     }
@@ -549,8 +567,8 @@ export const useStore = create<RFState>()(persist((set, get) => ({
           const sourceNode = currentNodes.find((n) => n.id === removedEdge.source);
           console.log("target Node", targetNode);
 
-          if (targetNode) {
-            const targetNodeIndex = currentNodes.findIndex((n) => n.id === targetNode.id);
+        if (targetNode) {
+          const targetNodeIndex = currentNodes.findIndex((n) => n.id === targetNode.id);
 
             let targetData = {
               ...targetNode.data,
@@ -626,7 +644,7 @@ export const useStore = create<RFState>()(persist((set, get) => ({
       const node = get().nodes.find(n => n.id === nodeId);
       const sourceNode = get().nodes.find(n => n.id === connection.source);
       const targetNode = get().nodes.find(n => n.id === connection.target);
-
+      
       if (!node) return "any";
       if (node.type === consts.AlgorithmNode || node.type === consts.ClassicalAlgorithmNode) {
         return "any"
@@ -634,7 +652,7 @@ export const useStore = create<RFState>()(persist((set, get) => ({
       // TODO: figure out a better way to opt out of locked input types
       if (node.type === consts.PluginNode)
         return "any"
-
+      
       else if (node.type.includes("editable")) {
         // Ensure we have properties
         const inputTypes = node.data?.properties?.map((p: any) => p.type) || [];
@@ -644,7 +662,7 @@ export const useStore = create<RFState>()(persist((set, get) => ({
         // Extract the index from the targetHandle string
         // Example targetHandle: "classicalHandleInput0node123"
         let handleIndex = 0;
-
+        
         const match = connection.targetHandle.match(/^classicalHandleInput(\d)/);
         if (match) {
           handleIndex = parseInt(match[1], 10);
@@ -663,10 +681,10 @@ export const useStore = create<RFState>()(persist((set, get) => ({
           if (!sourceNode) continue;
 
           let type = "any";
-          if (sourceNode.type === "dataTypeNode") type = sourceNode.data?.dataType ?? "any";
+          if (sourceNode.type === "dataTypeNode") type = (sourceNode.data?.dataType ?? "any").toLowerCase();
           else if (sourceNode.type === "ClassicalOperationNode") {
             type = getNodeLockedType(sourceNode.id);
-          } else if (sourceNode.data.outputTypes[0]) {
+          } else if (sourceNode.data?.outputTypes?.[0]) {
             type = sourceNode.data.outputTypes[0]; // TODO:  eigentlich sollte man da den richtigen outputType aussuchen. Geht mittlerweile, weil edgeId mitgespeichert wird. 
           }
 
@@ -683,13 +701,16 @@ export const useStore = create<RFState>()(persist((set, get) => ({
     };
 
     const getNodeOutputType = (nodeId: string, handleId?: string): string => {
-      const node = get().nodes.find(n => n.id === nodeId);
+      // Bei Gruppen-Proxy-Handles gehört handleId dem eigentlichen Kind-Knoten,
+      // nicht der Gruppe (nodeId) selbst - siehe resolveHandleOwnerId-Kommentar oben.
+      const effectiveId = resolveHandleOwnerId(get().nodes, nodeId, handleId);
+      const node = get().nodes.find(n => n.id === effectiveId);
       if (!node) return "any";
-      const index = getHandleIndex(nodeId, handleId);
+      const index = getHandleIndex(effectiveId, handleId);
       console.log("GETNODEOUTPUTTYPES", node.data.outputTypes)
       console.log(handleId)
       console.log("INDEX", index)
-      if (node.data.outputTypes[index]) return node.data.outputTypes[index];
+      if (node.data.outputTypes?.[index]) return node.data.outputTypes[index].toLowerCase();
 
       // Measurement Node
       if (node.type === "measurementNode") {
@@ -737,16 +758,19 @@ export const useStore = create<RFState>()(persist((set, get) => ({
 
 
     const getNodeInputType = (nodeId: string, handleId: string) => {
-      const targetNode = get().nodes.find(n => n.id === nodeId);
+      // Siehe resolveHandleOwnerId-Kommentar: bei Gruppen-Proxy-Handles gehört
+      // handleId dem Kind-Knoten, nicht der Gruppe (nodeId).
+      const effectiveId = resolveHandleOwnerId(get().nodes, nodeId, handleId);
+      const targetNode = get().nodes.find(n => n.id === effectiveId);
       if (!targetNode) return "any";
 
       // Find input corresponding to this handle
       const input = targetNode.data.inputs?.find((i: any) => i.id === handleId);
       //if (!input) return "any";
-      const inputIndex = getHandleIndex(nodeId, handleId);
+      const inputIndex = getHandleIndex(effectiveId, handleId);
       console.log("InputIndex", inputIndex);
       //return input.dataType ?? "any"; // fallback to any
-      return targetNode.data.inputTypes[inputIndex] ?? "any";
+      return (targetNode.data.inputTypes?.[inputIndex] ?? "any").toLowerCase();
     };
 
     const currentNodes = get().nodes;
@@ -769,7 +793,7 @@ export const useStore = create<RFState>()(persist((set, get) => ({
     const target = get().nodes.find((node) => node.id === connection.target);
     console.log(nodeDataSource)
     console.log(target)
-    if (nodeDataSource.data?.label == consts.qubitLabel && target.type === consts.SplitterNode) {
+    if(nodeDataSource.data.label == consts.qubitLabel && target.type === consts.SplitterNode) {
       setTypeError("A qubit cannot be split into smaller units");
       return false;
     }
@@ -962,8 +986,11 @@ export const useStore = create<RFState>()(persist((set, get) => ({
     console.log("Current Nodes:", currentNodes);
     console.log("Current Edges:", get().edges);
     console.log("New History Item:", newHistoryItem);
-    const getOutputIndex = (sourceHandle: String, nodeDataSource: Node) => {
-      const tmpHandle = sourceHandle.split(nodeDataSource.id)[0];
+    const getOutputIndex = (sourceHandle: string, nodeDataSource: Node) => {
+      // Bei Gruppen-Proxy-Handles gehört sourceHandle dem Kind-Knoten, nicht der
+      // Gruppe (nodeDataSource) - siehe resolveHandleOwnerId-Kommentar oben.
+      const effectiveId = resolveHandleOwnerId(get().nodes, nodeDataSource.id, sourceHandle);
+      const tmpHandle = sourceHandle.split(effectiveId)[0];
       if (!tmpHandle) {
         return null;
       }
@@ -980,7 +1007,10 @@ export const useStore = create<RFState>()(persist((set, get) => ({
     // TYPE CHECK
     let sourceType = getNodeOutputType(connection.source, connection.sourceHandle).toLowerCase();
     const targetType = getNodeInputType(connection.target, connection.targetHandle).toLowerCase();
-    const inputIndex = getHandleIndex(connection.target, connection.targetHandle);
+    const inputIndex = getHandleIndex(
+      resolveHandleOwnerId(get().nodes, connection.target, connection.targetHandle),
+      connection.targetHandle
+    );
 
 
     const sourceNode = get().nodes.find(n => n.id === connection.source);
@@ -1006,7 +1036,7 @@ export const useStore = create<RFState>()(persist((set, get) => ({
     const lockedType = getNodeLockedType(targetNode.id).toLowerCase();
 
     if (sourceNode) {
-      if (sourceNode.type === "dataTypeNode") sourceType = sourceNode.data?.dataType ?? "any";
+      if (sourceNode.type === "dataTypeNode") sourceType = (sourceNode.data?.dataType ?? "any").toLowerCase();
       else if (sourceNode.type === "ClassicalOperationNode") sourceType = getNodeLockedType(sourceNode.id);
     }
 
@@ -1046,6 +1076,11 @@ export const useStore = create<RFState>()(persist((set, get) => ({
       console.log(connection.source);
 
       console.log(nodeDataSource);
+      // Absicherung: nodeDataTarget kann z.B. eine Gruppe sein, deren data-Objekt
+      // (anders als bei echten Gate-Knoten) kein inputs-Array besitzt. Ohne diese
+      // Initialisierung würde .find()/.push() weiter unten eine Exception werfen
+      // und jede Verbindung zu Gruppen-Proxy-Handles stillschweigend abbrechen.
+      if (!nodeDataTarget.data.inputs) nodeDataTarget.data.inputs = [];
       const existingInput = nodeDataTarget.data.inputs.find(
         (input) => (input.id === nodeDataSource.id && input.targetHandle === connection.targetHandle)
       );
@@ -1176,9 +1211,9 @@ export const useStore = create<RFState>()(persist((set, get) => ({
             const targetData = { ...targetNode.data };
             const sourceNode = updatedNodes.find((n) => n.id === edge.source);
             sourceIdentifier = sourceNode?.data?.identifiers;
-            const sourceType = getNodeOutputType(sourceNode.id, connection.sourceHandle);
-            const targetType = getNodeInputType(targetNode.id, connection.targetHandle);
-            const lockedType = getNodeLockedType(targetNode.id);
+            const sourceType = getNodeOutputType(sourceNode.id, connection.sourceHandle).toLowerCase();
+            const targetType = getNodeInputType(targetNode.id, connection.targetHandle).toLowerCase();
+            const lockedType = getNodeLockedType(targetNode.id).toLowerCase();
             console.log("SOURCE TYPE", sourceType)
             console.log("TARGET TYPE", targetType)
             console.log("LOCKED TYPE", lockedType)
@@ -1200,12 +1235,18 @@ export const useStore = create<RFState>()(persist((set, get) => ({
             console.log(sourceIdentifier)
 
             if (!targetData.inputs) targetData.inputs = [];
+            // Absicherung: targetData.inputTypes kann bei Gruppen-Proxy-Handles fehlen
+            // (Gruppen führen kein eigenes inputTypes-Array wie echte Gate-Knoten).
+            if (!targetData.inputTypes) targetData.inputTypes = [];
 
             const inputIndex = targetData.inputs.findIndex((input) => input.id === connection.source);
-            const handleIndex = getHandleIndex(targetNode.id, connection.targetHandle);
+            const handleIndex = getHandleIndex(
+              resolveHandleOwnerId(updatedNodes, targetNode.id, connection.targetHandle),
+              connection.targetHandle
+            );
             // Update target node inputType if it was "any"
-            if (targetType === "any") {
-              targetData.inputTypes[handleIndex] = sourceType;
+            if (targetType === "any" && handleIndex !== null) {
+              targetData.inputTypes[handleIndex] = sourceType.toLowerCase();
             }
             // Update target node input and output types if classical operation node and both inputs are set
             if (targetNode.type === consts.ClassicalOperatorNode && (targetNode.data.label.includes("Arithmetic") || targetNode.data.label.includes("Comparison")) && lockedType !== "any") {
@@ -1326,9 +1367,11 @@ export const useStore = create<RFState>()(persist((set, get) => ({
   updateNodeValue: (nodeId: string, identifier: string, nodeVal: any) => {
     console.log("Updating node value for:", nodeId);
     console.log("Identifier:", identifier, "New Value:", nodeVal);
-    const getOutputIndex = (sourceHandle: String, nodeDataSource: Node) => {
-
-      const tmpHandle = sourceHandle.split(nodeDataSource.id)[0];
+    const getOutputIndex = (sourceHandle: string, nodeDataSource: Node) => {
+      // Bei Gruppen-Proxy-Handles gehört sourceHandle dem Kind-Knoten, nicht der
+      // Gruppe (nodeDataSource) - siehe resolveHandleOwnerId-Kommentar oben.
+      const effectiveId = resolveHandleOwnerId(get().nodes, nodeDataSource.id, sourceHandle);
+      const tmpHandle = sourceHandle.split(effectiveId)[0];
 
       if (!tmpHandle) {
         return null;
@@ -1501,12 +1544,6 @@ export const useStore = create<RFState>()(persist((set, get) => ({
       });
 
       console.log(updatedNodes)
-      const updatedNode = get().nodes.find(n => n.id === nodeId);
-
-
-      // if (updatedNode) nodesMap.set(nodeId, updatedNode);
-
-      console.log(updatedNodes)
 
       return {
         nodes: updatedNodes,
@@ -1520,14 +1557,6 @@ export const useStore = create<RFState>()(persist((set, get) => ({
     });
     console.log("History after update:", get().history);
     console.log("Current historyIndex:", get().historyIndex);
-    const updatedNode = get().nodes.find((n) => n.id === nodeId);
-    console.log(get().nodes)
-    console.log("pppppppppppppppppppppppppppppppppppppppp");
-    console.log(updatedNode)
-    // if (updatedNode) {
-    //   nodesMap.set(nodeId, updatedNode);
-    //   console.log("Updated Yjs node:", updatedNode);
-    // }
 
     console.log("History updated successfully.");
   },

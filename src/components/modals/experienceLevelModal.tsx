@@ -14,10 +14,14 @@ interface ExperienceModePanelProps {
   domainProfile: string;
   onDomainProfileChange: (profile: string) => void;
   domainProfileNames: string[];
+  mathMode: boolean;               // ← NEU
+  onToggleMathMode: () => void;    // ← NEU
+  qasmEditorMode: boolean;
+  onToggleQasmEditorMode: () => void;
   onCollaborationModeChange: () => void;
   collaborationMode: boolean;
   userName: string;
-  onUserNameChange: (string) => void;
+  onUserNameChange: (name: string) => void;
 }
 
 export default function ExperienceModePanel({
@@ -34,6 +38,10 @@ export default function ExperienceModePanel({
   domainProfile,
   onDomainProfileChange,
   domainProfileNames,
+  mathMode,
+  onToggleMathMode,
+  qasmEditorMode,
+  onToggleQasmEditorMode,
   onCollaborationModeChange,
   collaborationMode,
   userName,
@@ -64,9 +72,7 @@ export default function ExperienceModePanel({
             <tbody>
               <tr>
                 <td align="right">
-                  <span title="Choose your domain profile.">
-                    Domain Profile
-                  </span>
+                  <span title="Choose your domain profile.">Domain Profile</span>
                 </td>
                 <td align="left">
                   <select
@@ -74,10 +80,10 @@ export default function ExperienceModePanel({
                     onChange={(e) => onDomainProfileChange(e.target.value)}
                     className="mt-1 px-2 py-1 border rounded"
                   >
-                    <option value="none">
-                      None
-                    </option>
-                    {domainProfileNames.map((name) => (<option key={name} value={name}>{name}</option>))}
+                    <option value="none">None</option>
+                    {domainProfileNames.map((name) => (
+                      <option key={name} value={name}>{name}</option>
+                    ))}
                   </select>
                 </td>
               </tr>
@@ -105,20 +111,31 @@ export default function ExperienceModePanel({
                     }}
                     className="mt-1 px-2 py-1 border rounded"
                   >
-                    <option value="explorer" title="New to quantum computing, curious and starting the journey.">
-                      Explorer
-                    </option>
-                    <option value="pioneer" title="Advanced understanding, pushing the frontier of quantum computing.">
-                      Pioneer
-                    </option>
+                    <option value="explorer">Explorer</option>
+                    <option value="pioneer">Pioneer</option>
                   </select>
                 </td>
               </tr>
-
-
               <tr>
                 <td align="right">
-                  <span title="Compact Visualization reduces visual space by compressing nodes. Recommended for advanced users.">
+                  <span title="Ancilla qubits are helper qubits used for intermediate calculations.">
+                    Ancilla Modeling
+                  </span>
+                </td>
+                <td align="left">
+                  <button
+                    onClick={onToggleAncilla}
+                    className={`px-2 py-1 rounded text-white ${
+                      ancillaModelingOn ? "bg-blue-600" : "bg-gray-400"
+                    }`}
+                  >
+                    {ancillaModelingOn ? "On" : "Off"}
+                  </button>
+                </td>
+              </tr>
+              <tr>
+                <td align="right">
+                  <span title="Compact Visualization reduces visual space by compressing nodes.">
                     Compact Visualization
                   </span>
                 </td>
@@ -134,7 +151,6 @@ export default function ExperienceModePanel({
                   </button>
                 </td>
               </tr>
-
               <tr>
                 <td align="right">
                   <span title="Completion Guaranteed ensures that the backend has a suitable implementation.">
@@ -142,17 +158,55 @@ export default function ExperienceModePanel({
                   </span>
                 </td>
                 <td align="left">
-
                   <select
                     value={completionGuaranteed ? "Yes" : "No"}
                     onChange={(e) => onCompletionGuaranteedChange(e.target.value === "Yes")}
                     className="px-2 py-1 border rounded"
                   >
-                    <option title="The backend has suitable implementations for all nodes available.">Yes</option>
-                    <option title="The backend does not have suitable implementations for all nodes available.">No</option>
+                    <option>Yes</option>
+                    <option>No</option>
                   </select>
                 </td>
               </tr>
+
+              {/* Math Mode Toggle */}
+              <tr>
+                <td align="right">
+                  <span title="Shows the Dirac notation of the latest QASM output in the Properties panel.">
+                    Math Mode
+                  </span>
+                </td>
+                <td align="left">
+                  <button
+                    onClick={onToggleMathMode}
+                    className={`px-2 py-1 rounded text-white ${
+                      mathMode ? "bg-blue-600" : "bg-gray-400"
+                    }`}
+                  >
+                    {mathMode ? "On" : "Off"}
+                  </button>
+                </td>
+              </tr>
+
+              {/* QASM Editor Toggle */}
+              <tr>
+                <td align="right">
+                  <span title="Shows a QASM code editor in the Properties panel.">
+                    QASM Editor
+                  </span>
+                </td>
+                <td align="left">
+                  <button
+                    onClick={onToggleQasmEditorMode}
+                    className={`px-2 py-1 rounded text-white ${
+                      qasmEditorMode ? "bg-blue-600" : "bg-gray-400"
+                    }`}
+                  >
+                    {qasmEditorMode ? "On" : "Off"}
+                  </button>
+                </td>
+              </tr>
+
               <tr>
                 <td align="right">
                   <span title="Collaboration Mode enables collaborative editing of diagrams among multiple users.">

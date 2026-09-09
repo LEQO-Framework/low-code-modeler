@@ -1,19 +1,22 @@
-import { memo, useEffect, useState } from "react";
+import { memo, useEffect, useState, useMemo } from "react";
 import { Handle, Position, Node, Edge } from "reactflow";
 import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
 import { cn } from "@/lib/utils";
 import { awareness } from "@/yjs";
+import { computeQubitIndices } from "@/lib/qubitIndexing";
 
 const selector = (state: {
   selectedNode: Node | null;
   edges: Edge[];
+  nodes: Node[];
   experienceLevel: string;
   updateNodeValue: (nodeId: string, field: string, nodeVal: string) => void;
   setSelectedNode: (node: Node | null) => void;
 }) => ({
   selectedNode: state.selectedNode,
   edges: state.edges,
+  nodes: state.nodes,
   experienceLevel: state.experienceLevel,
   updateNodeValue: state.updateNodeValue,
   setSelectedNode: state.setSelectedNode
@@ -24,8 +27,24 @@ export const GateNode = memo((node: Node) => {
   const isQubit = data.label === "Qubit Circuit";
   const isTwoQubit = data.label === "CU" || data.label === "CNOT" || data.label === "SWAP" || data.label === "CZ" || data.label === "CY" || data.label === "CH" || data.label === "CP(λ)" || data.label === "CRX(θ)" || data.label === "CRY(θ)" || data.label === "CRZ(θ)" || data.label === "CU(θ,φ,λ,γ)";
   const isThreeQubit = data.label === "Toffoli" || data.label === "CSWAP";
-  const { edges, experienceLevel, updateNodeValue } = useStore(selector, shallow);
+  const { edges, nodes, experienceLevel, updateNodeValue } = useStore(selector, shallow);
   console.log(experienceLevel)
+
+  // Register-Index, den dieser Qubit-Node beim tatsächlichen Kompilieren bekäme (gleiche
+  // Gruppierungs-/Sortierlogik wie componentAnalyzer.ts / backend.ts). Nur für Qubit-Circuit-
+  // Nodes relevant; wird bei jeder Änderung an nodes/edges neu berechnet, damit der Badge immer
+  // aktuell ist, egal auf welchem Weg (Drag&Drop, Duplizieren, QASM-Import, ...) der Node
+  // hinzugefügt wurde.
+  const qubitIndexLabel = useMemo(() => {
+    if (!isQubit) return null;
+    const indices = computeQubitIndices(nodes, edges);
+    const start = indices.get(node.id);
+    if (start === undefined) return null;
+
+    const rawSize = parseInt(String(node.data?.size), 10);
+    const size = Number.isFinite(rawSize) && rawSize > 0 ? rawSize : 1;
+    return size > 1 ? `${start}\u2013${start + size - 1}` : `${start}`;
+  }, [isQubit, nodes, edges, node.id, node.data?.size]);
 
   useEffect(() => {
     if (node) {
@@ -118,6 +137,16 @@ export const GateNode = memo((node: Node) => {
           width: `${baseSize}px`,
           height: `${dynamicSize}px`
         }}>
+
+        {qubitIndexLabel !== null && (
+          <div
+            className="absolute bottom-0.5 right-1 text-xs font-mono font-semibold text-gray-500 bg-white/80 rounded px-1 leading-tight pointer-events-none select-none z-20"
+            style={{ fontSize: "10px" }}
+            title={`Register-Index: q${qubitIndexLabel}`}
+          >
+            q{qubitIndexLabel}
+          </div>
+        )}
 
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center font-bold z-0 text-xl">
           {experienceLevel === "pioneer" && (data.label === "Qubit Circuit" ? (
@@ -351,7 +380,7 @@ export const GateNode = memo((node: Node) => {
             position={Position.Left}
             className="!absolute !top-[50%] !left--4 z-10 circle-port-op !bg-blue-300 !border-black"
             isConnectableStart={false}
-            isConnectable={edges.filter(edge => edge.targetHandle === "quantumHandleGateOutput0" + node.id).length < 1}
+            isConnectable={edges.filter(edge => edge.targetHandle === "quantumHandleGateInput0" + node.id).length < 1}
           />
         )}
 
@@ -426,7 +455,7 @@ export const GateNode = memo((node: Node) => {
               position={Position.Right}
               className="!absolute !top-[25%] !right--15 z-10 circle-port-out !bg-blue-300 !border-black"
               isValidConnection={() => true}
-              isConnectable={edges.filter(edge => edge.sourceHandle === "quantumHandleGateOutput2" + node.id).length < 1}
+              isConnectable={edges.filter(edge => edge.sourceHandle === "quantumHandleGateOutput0" + node.id).length < 1}
             />
             <Handle
               type="source"

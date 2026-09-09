@@ -10,10 +10,11 @@ import ReactFlow, {
   getNodesBounds,
   Panel,
   useUpdateNodeInternals,
+  SelectionMode,
   Connection,
   MarkerType,
   applyNodeChanges,
-  NodeChange
+  NodeChange,
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { v4 as uuidv4 } from 'uuid';
@@ -52,6 +53,8 @@ import { v4 as uuid } from "uuid";
 import DomainProfileModal, { DomainProfile } from "./components/modals/domainProfileModal";
 import { PatternSelectionModal } from "./components/modals/patternSelectionModal";
 import { PatternImplementationSelectionModal } from "./components/modals/patternImplementationSelectionModal";
+import { groupSelectedNodes, ungroupNodes, handleNodeDropOnGroup } from "./lib/groupHandler";
+import { qasmToNodes } from "./lib/qasmToNodes";
 import UserCountPanel from "./components/modals/userAwareness";
 import VersioningPanel from "./components/modals/versioningModal";
 import { EdgeChange } from "@xyflow/react";
@@ -237,8 +240,6 @@ function App() {
   const [qcAtlasEndpoint, setQcAtlasEndpoint] = useState(
     import.meta.env.VITE_QC_ATLAS || "http://localhost:6626"
   );
-
-
   const [activeTab, setActiveTab] = useState("editor");
   const [warningExecution, setWarningExecution] = useState(false);
   const [contextMenu, setContextMenu] = useState<{
@@ -294,18 +295,17 @@ function App() {
   );
 
   const onEdgesDelete = (edges: Edge[]) => {
-    edges.forEach((edge) => {
-      console.log("ON EDGES DELETE")
-      console.log("EDGE", edge)
-      const targetNodeId = edge.target
-      const targetHandle = edge.targetHandle
-      const targetNode = nodes.find(n => n.id === targetNodeId);
-      const newInputs = targetNode.data.inputs.filter(i => i.targetHandle !== targetHandle)
-      updateNodeValue(targetNodeId, "inputs", newInputs)
-      console.log(targetHandle)
-      console.log("update new inputs", newInputs)
-      console.log("NEW INPUTS", targetNode.data.inputs)
-    })
+  edges.forEach((edge) => {
+    const targetNodeId = edge.target;
+    const targetHandle = edge.targetHandle;
+    const targetNode = nodes.find(n => n.id === targetNodeId);
+
+    // GroupNodes und Nodes ohne inputs überspringen
+    if (!targetNode || !targetNode.data?.inputs || targetNode.type === "groupNode") return;
+
+    const newInputs = targetNode.data.inputs.filter((i: any) => i.targetHandle !== targetHandle);
+    updateNodeValue(targetNodeId, "inputs", newInputs);
+  });
   };
 
   const handleAction = (action: string, nodeId: string) => {
@@ -334,6 +334,10 @@ function App() {
   const [isPatternImplementationOpen, setIsPatternImplementationOpen] = useState(false);
   const [isOpenQASMOpen, setIsOpenQASMOpen] = useState(false);
   const [selectedPatternId, setSelectedPatternId] = useState<string | null>(null);
+  const [lassoMode, setLassoMode] = useState(false);
+  
+  const [mathMode, setMathMode] = useState(false);
+  const [qasmEditorMode, setQasmEditorMode] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -546,6 +550,7 @@ If none apply, return { "algorithms": [] }.
 
   const ref = useRef(null);
   const hasLoadedFromUrl = useRef(false);
+  const lastSelectedNodes = useRef<Node[]>([]);
   const copiedSelectionRef = useRef<{ nodes: Node[]; edges: Edge[] } | null>(null);
   const pasteCountRef = useRef(0);
 
@@ -574,7 +579,7 @@ If none apply, return { "algorithms": [] }.
   } | null>(null);
 
   const [workflow, setWorkflow] = useState("");
-
+ const [panelWidth, setPanelWidth] = useState(350);
 
   const updateNodeInternals = useUpdateNodeInternals();
 
@@ -927,13 +932,81 @@ If none apply, return { "algorithms": [] }.
       console.log(validMetadata);
       console.log(metadata);
 
-      const response = await startCompile(
-        lowcodeBackendEndpoint,
-        validMetadata,
-        reactFlowInstance.getNodes(),
-        reactFlowInstance.getEdges(),
-        compilationTarget
-      );
+    
+    const response = await startCompile(
+      lowcodeBackendEndpoint,
+      validMetadata,
+      reactFlowInstance.getNodes().map(n => ({
+        ...n,
+        parentNode: undefined,
+        extent: undefined,
+        position: n.positionAbsolute ?? n.position,
+      })).filter(n => n.type !== "groupNode"),
+      (() => {
+        const allNodes = reactFlowInstance.getNodes();
+        const allEdges = reactFlowInstance.getEdges();
+        const expandedEdges: typeof allEdges = [];
+
+        const findNodeFromHandle = (handleId: string | null, groupId: string): Node | undefined => {
+          if (!handleId) return undefined;
+          const children = allNodes.filter(n => n.parentNode === groupId && n.type !== "groupNode");
+          // Prüfe ob Handle-ID eine Kind-Node ID enthält
+          const match = children.find(n => handleId.includes(n.id));
+          if (match) return match;
+          // Fallback: wenn es ein Gruppen-Handle ist (groupInput/groupOutput)
+          // dann ersten/letzten Kind-Node nehmen
+          if (handleId.includes("groupInput")) {
+            // Ersten Kind-Node mit freiem Input nehmen
+            return children.find(n => n.type === "gateNode" && n.data?.inputs?.length > 0)
+              ?? children[0];
+          }
+          if (handleId.includes("groupOutput")) {
+            // Letzten Kind-Node nehmen (Output)
+            return children[children.length - 1];
+          }
+          return children[0];
+        };
+
+
+        for (const edge of allEdges) {
+          const srcNode = allNodes.find(n => n.id === edge.source);
+          const tgtNode = allNodes.find(n => n.id === edge.target);
+
+          if (srcNode?.type === "groupNode" || tgtNode?.type === "groupNode") {
+            const realSrc = srcNode?.type === "groupNode"
+              ? findNodeFromHandle(edge.sourceHandle, srcNode.id)
+                ?? allNodes.filter(n => n.parentNode === srcNode.id && n.type !== "groupNode")[0]
+              : srcNode;
+            const realTgt = tgtNode?.type === "groupNode"
+              ? findNodeFromHandle(edge.targetHandle, tgtNode.id)
+                ?? allNodes.filter(n => n.parentNode === tgtNode.id && n.type !== "groupNode")[0]
+              : tgtNode;
+
+            if (realSrc && realTgt) {
+              // Generiere die korrekten Handle-IDs wenn es Gruppen-Handles waren
+              const newSourceHandle = edge.sourceHandle?.includes("groupOutput")
+                ? `quantumHandleGateOutput0${realSrc.id}`
+                : edge.sourceHandle;
+              const newTargetHandle = edge.targetHandle?.includes("groupInput")
+                ? `quantumHandleGateInput0${realTgt.id}`
+                : edge.targetHandle;
+
+              expandedEdges.push({
+                ...edge,
+                id: `expanded-${edge.id}`,
+                source: realSrc.id,
+                target: realTgt.id,
+                sourceHandle: newSourceHandle,
+                targetHandle: newTargetHandle,
+              });
+            } } else {
+            expandedEdges.push(edge);
+          }
+        }
+        return expandedEdges;
+      })(),
+      compilationTarget
+    );
       console.log(response)
 
       const jsonData = await response.json();
@@ -1012,7 +1085,7 @@ If none apply, return { "algorithms": [] }.
       setTimeout(() => {
         setStatus("completed");
         setLoading(false);
-        showToast("Result for model " + id + " is available.", "success");
+        showToast("Result for model " + id + " is available.", "success"); 
       }, 3000);
       setStatus("completed");
       setLoading(false);
@@ -2056,6 +2129,21 @@ If none apply, return { "algorithms": [] }.
       if (node.type === "group") {
         return;
       }
+
+      // Drag-to-Group für groupNode
+    if (node.type !== "groupNode") {
+          try {
+            const currentNodes = reactFlowInstance.getNodes();
+            const updatedNodes = handleNodeDropOnGroup(node, currentNodes);
+            if (updatedNodes !== currentNodes) {
+              reactFlowInstance.setNodes(updatedNodes);
+            }
+          } catch (e) {
+            // Node nicht gefunden – kein Update nötig
+          }
+      }
+    
+
       console.log("onNodeDrag");
       console.log(node);
       let nodeT = nodes[0];
@@ -2144,6 +2232,7 @@ If none apply, return { "algorithms": [] }.
           }
         }
       });
+      
       //setNodes(nodeT);
       if (node.id == contextMenu.componentId) {
         console.log("moving context menu for node", node.id)
@@ -2151,7 +2240,106 @@ If none apply, return { "algorithms": [] }.
       }
     }, [nodes, setContextMenu]);
 
-  const currentCategories: Record<string, CategoryEntry> = useMemo(() => {
+    
+
+
+      const onSelectionChange = useCallback(({ nodes: selectedNodes }: { nodes: Node[] }) => {
+        if (selectedNodes.length === 0) return;
+
+        // Selektierte top-level Nodes (GroupNodes + normale Nodes ohne Parent) merken
+        lastSelectedNodes.current = selectedNodes.filter(n => !n.parentNode);
+
+        // Kind-Nodes (keine GroupNodes) deselektieren
+        const groupedSelected = selectedNodes.filter(
+          (n) => n.parentNode && n.type !== "groupNode"
+        );
+        if (groupedSelected.length > 0) {
+          reactFlowInstance.setNodes((nds: Node[]) =>
+            nds.map((n) => {
+              if (n.parentNode && n.type !== "groupNode") {
+                return { ...n, selected: false };
+              }
+              return n;
+            })
+          );
+        }
+
+        // Collaboration: Sperren für ausgewählte Nodes broadcasten
+        if (collaborationModeOn) {
+          const lockedIds = selectedNodes.map((n) => n.id);
+          awareness.setLocalStateField("locks", { nodeIds: lockedIds });
+          console.log("locked ids", lockedIds);
+        }
+      }, [reactFlowInstance, collaborationModeOn]);
+
+      const onSelectionEnd = useCallback(() => {
+        if (!lassoMode) return;
+        const currentNodes = reactFlowInstance.getNodes();
+        const currentEdges = reactFlowInstance.getEdges();
+
+        // Selektierte Nodes aus ref verwenden
+        const selectedIds = new Set(lastSelectedNodes.current.map(n => n.id));
+        const nodesWithSelection = currentNodes.map(n => ({
+          ...n,
+          selected: selectedIds.has(n.id),
+        }));
+
+      const updatedNodes = groupSelectedNodes(nodesWithSelection, currentEdges);
+      if (updatedNodes !== nodesWithSelection) {
+        reactFlowInstance.setNodes(updatedNodes);
+        setLassoMode(false);
+      }
+    }, [lassoMode, reactFlowInstance]);
+
+    const handleConnect = useCallback((connection: Connection) => {
+  const sourceNode = reactFlowInstance.getNode(connection.source ?? "");
+  const targetNode = reactFlowInstance.getNode(connection.target ?? "");
+
+  if (sourceNode?.type === "groupNode" || targetNode?.type === "groupNode") {
+    const edgeType = connection.sourceHandle?.includes("quantum") ? "quantumEdge" : "classicalEdge";
+    const color = connection.sourceHandle?.includes("quantum") ? "#93C5FD" : "#F5A843";
+
+    // Falls source/target eine Gruppe ist, das eigentliche Kind-Node anhand des Handle-Suffix auflösen,
+    // damit die Edge direkt auf die Kind-Node zeigt statt auf die Gruppe selbst.
+    // Handle-IDs enden immer auf die Node-ID, z.B. "...StatePreparationInput0<nodeId>".
+    const resolveRealNodeId = (groupId: string | null | undefined, handleId: string | null | undefined): string | null => {
+      if (!handleId) return null;
+      const allNodes = reactFlowInstance.getNodes();
+      // Kandidaten: alle Nodes deren ID am Ende der Handle-ID steht
+      const candidates = allNodes.filter((n) => handleId.endsWith(n.id));
+      if (candidates.length === 0) return null;
+      // Längste Übereinstimmung wählen (vermeidet Teilstring-Fehltreffer bei ähnlichen IDs)
+      candidates.sort((a, b) => b.id.length - a.id.length);
+      return candidates[0].id;
+    };
+
+    let realSource = connection.source;
+    let realTarget = connection.target;
+
+    if (sourceNode?.type === "groupNode") {
+      realSource = resolveRealNodeId(sourceNode.id, connection.sourceHandle) ?? connection.source;
+    }
+    if (targetNode?.type === "groupNode") {
+      realTarget = resolveRealNodeId(targetNode.id, connection.targetHandle) ?? connection.target;
+    }
+
+    reactFlowInstance.addEdges([{
+      ...connection,
+      source: realSource,
+      target: realTarget,
+      id: `edge-group-${Date.now()}`,
+      type: edgeType,
+      markerEnd: { type: "arrowclosed", width: 20, height: 20, color, hidden: false },
+    }]);
+    return;
+  }
+
+  onConnect(connection);
+}, [reactFlowInstance, onConnect]);
+
+
+
+    const currentCategories: Record<string, CategoryEntry> = useMemo(() => {
     const domainProfileNames = allDomainProfiles.map((p) => p.name);
     const index = domainProfileNames.indexOf(domainProfile);
     console.log("domainProfile", domainProfile)
@@ -2407,9 +2595,31 @@ If none apply, return { "algorithms": [] }.
     ]
   );
 
-  const onNodesDelete = useCallback(() => {
+  const onNodesDelete = useCallback((deletedNodes: Node[]) => {
     setContextMenu((prev) => ({ ...prev, visible: false })); // contextMenu disappears when node is deleted
-  }, [setContextMenu]);
+
+    // Handle-Bounds der Geschwister-Nodes neu berechnen lassen,
+    // damit Connects nach dem Löschen eines Nodes (z.B. innerhalb einer Gruppe) wieder funktionieren.
+    const deletedIds = new Set(deletedNodes.map((n) => n.id));
+    const affectedParentIds = new Set(
+      deletedNodes.map((n) => n.parentNode).filter(Boolean) as string[]
+    );
+
+    // Kurze Verzögerung damit React Flow den neuen Node/Edge-State zuerst übernimmt
+    requestAnimationFrame(() => {
+      const remainingNodes = reactFlowInstance.getNodes();
+      remainingNodes.forEach((node) => {
+        if (deletedIds.has(node.id)) return;
+        // Geschwister-Nodes (gleiche Gruppe) und die Gruppe selbst aktualisieren
+        if (
+          (node.parentNode && affectedParentIds.has(node.parentNode)) ||
+          affectedParentIds.has(node.id)
+        ) {
+          updateNodeInternals(node.id);
+        }
+      });
+    });
+  }, [setContextMenu, reactFlowInstance, updateNodeInternals]);
 
 
   const flowKey = "example-flow";
@@ -3333,7 +3543,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
 
   };
 
-  const onNodeDrag = React.useCallback((event: React.MouseEvent, node: Node, nodes: Node[]) => {
+    const onNodeDrag = React.useCallback((event: React.MouseEvent, node: Node, nodes: Node[]) => {
     console.log(reactFlowInstance.getNodes())
     const currentNodes = reactFlowInstance.getNodes();
     console.log(node.position.x);
@@ -3459,7 +3669,6 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
   }
     , [reactFlowInstance, helperLines, nodes, setContextMenu]);
 
-
   const onPaneClick = useCallback(() => {
     setSelectedNode(null);
     for (const node of nodes) {
@@ -3579,6 +3788,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
         if (node.classList?.contains("react-flow__controls")) return false;
         if (node.classList?.contains("react-flow__panel")) return false;
         if (typeof node.className === "string" && node.className.includes("react-flow__panel")) return false;
+        
 
         return true;
       }
@@ -3591,6 +3801,92 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
       })
       .catch((err) => console.error("Error exporting SVG:", err));
   };
+
+  const getCircuitSvg = (): Promise<string> => {
+    // Vor dem Screenshot zentrieren
+  reactFlowInstance.fitView({ padding: 0.1 });
+
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      toSvg(ref.current, {
+        filter: (node) => {
+          if (!node) return false;
+          if (node.classList?.contains("react-flow__minimap")) return false;
+          if (node.classList?.contains("react-flow__controls")) return false;
+          if (node.classList?.contains("react-flow__panel")) return false;
+          if (typeof node.className === "string" && node.className.includes("react-flow__panel")) return false;
+          if (node.classList?.contains("lasso-button")) return false;
+          if (typeof node.className === "string" && node.className.includes("lasso")) return false;
+          if (node instanceof HTMLElement && node.style.display === "none") return false;
+          return true;
+        },
+      })
+        .then((dataUrl) => resolve(dataUrl))  // ← Data-URL direkt zurückgeben
+        .catch(reject);
+    }, 300);
+})
+};
+
+  const getModel = useCallback(() => {
+    return reactFlowInstance.toObject();
+  }, [reactFlowInstance]);
+
+
+
+  //Handler-Funktionen für Gruppierung von Nodes
+  const handleGroupSelected = useCallback(() => {
+    const currentNodes = reactFlowInstance.getNodes();
+      
+    // React Flow speichert selected manchmal als separate Liste
+    // Hole ausgewählte Nodes über das selection-System
+    const selectedNodes = currentNodes.filter(
+      (n) => n.selected || reactFlowInstance.getNode(n.id)?.selected
+    );
+    
+    console.log("Selected nodes:", selectedNodes.length);
+    
+    if (selectedNodes.length < 2) {
+      showToast("Select at least 2 nodes to group.", "info");
+      return;
+    }
+   
+    
+    const currentEdges = reactFlowInstance.getEdges();
+    const updatedNodes = groupSelectedNodes(currentNodes, currentEdges);
+    if (updatedNodes !== currentNodes) {
+      reactFlowInstance.setNodes(updatedNodes);
+      showToast("Nodes grouped.", "success");
+    } else {
+      showToast("Select at least 2 nodes to group.", "info");
+    }
+  }, [reactFlowInstance, showToast]);
+
+  const handleLoadQasm = useCallback((qasm: string) => {
+    const { nodes: newNodes, edges: newEdges } = qasmToNodes(qasm);
+
+    // Fehlende Node-Daten ergänzen die der Store erwartet
+    const enrichedNodes = newNodes.map(n => ({
+      ...n,
+      data: {
+        ...n.data,
+        inputTypes: n.data.inputs?.length > 0 ? ["quantum register"] : [],
+        outputTypes: ["quantum register"],
+        children: [],
+        implementation: "",
+        implementationType: "",
+        uncomputeImplementationType: "",
+        uncomputeImplementation: "",
+        completionGuaranteed: true,
+      }
+    }));
+
+  reactFlowInstance.setNodes(newNodes);
+  reactFlowInstance.setEdges(newEdges);
+  reactFlowInstance.fitView();
+}, [reactFlowInstance]);
+
+
+
 
   async function deployWorkflowToCamunda(
     workflowName,
@@ -4002,21 +4298,6 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
     return lockMap;
   };
 
-  const onSelectionChange = useCallback(({ nodes }) => {
-    if (!collaborationModeOn) return;
-
-    const lockedIds = nodes.map(n => n.id);
-
-    awareness.setLocalStateField("locks", {
-      nodeIds: lockedIds
-    });
-    console.log("locked ids", lockedIds)
-    const mySelectedNode = nodes[0]; // Assuming single selection
-    //setMySelectedNodeId(mySelectedNode ? mySelectedNode.id : null);
-    console.log("my selected node id", mySelectedNode)
-
-  }, []);
-
   // broadcast selection via awareness
   useEffect(() => {
     if (collaborationModeOn) {
@@ -4226,6 +4507,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
           uploadPatternSolution={() => setIsPatternModalOpen(true)}
           openPatternSolution={() => setIsPatternImplementationOpen(true)}
           openOpenQASM={handleOpenQASMClick}
+          onLoadQasm={handleLoadQasm}
 
           //uploadPatternSolution={() => registerAndUploadToGitHub()}
           onLoadJson={handleLoadJson}
@@ -4237,6 +4519,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
           startTour={() => { startTour(); }}
           onSaveAsTemplate={handleSaveAsTemplate}
           onManageTemplates={handleManageTemplates}
+          onGroupSelected={handleGroupSelected}
           generateModel={() => setIsPromptModalOpen(true)}
         />
       </div>
@@ -4252,10 +4535,10 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
         validationResult={validationResult}
       />
       <SendRequestModal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        compilationTarget={compilationTarget}
-        containsPlaceholder={containsPlaceholder}
+    open={modalOpen}
+    onClose={() => setModalOpen(false)}
+    compilationTarget={compilationTarget}
+    containsPlaceholder={containsPlaceholder}
         containsWorkflowNodes={containsWorkflowNodes}
         setCompilationTarget={setCompilationTarget}
         sendToBackend={sendToBackend}
@@ -4424,38 +4707,35 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
 
 
       <main className="flex flex-col lg:flex-row h-[calc(100vh_-_60px)]">
-        <div className="relative flex h-[calc(100vh_-_60px)]  border-gray-200 border">
+        <div className="relative flex h-[calc(100vh_-_60px)] border-gray-200 border">
+
+          {/* Button zum Aufklappen */}
+          {!isPaletteOpen && (
+            <button
+              onClick={togglePalette}
+              style={{ width: "24px", paddingLeft: "4px" }}
+              className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white p-2 rounded-r-lg shadow-md hover:bg-gray-600 z-50 -left-0 ${isValidationOpen ? "hidden" : ""}`}
+            >
+              →
+            </button>
+          )}
+
           <div
             className={`transition-all duration-300 ${isPaletteOpen ? "w-[300px] lg:w-[350px]" : "w-0 overflow-hidden"}`}
           >
             {isPaletteOpen && <Palette ancillaMode={ancillaModelingOn} onAddNode={addNodeToCanvas} />}
           </div>
-          <button
-            onClick={togglePalette}
-            style={{
-              width: "24px"
-            }}
-            className={`
-    absolute top-1/2 transform -translate-y-1/2 
-    bg-gray-400 text-white p-2 rounded-l-lg shadow-md hover:bg-gray-600 z-50 
-    ${isPaletteOpen ? "right-0" : "hidden"} 
-    ${isValidationOpen ? "hidden" : ""}
-  `}
-          >
-            {isPaletteOpen ? "←" : "→"}
-          </button>
 
-          <button
-            onClick={togglePalette}
-            style={{
-              width: "24px",
-              paddingLeft: "4px"
-            }}
-            className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white p-2 rounded-r-lg shadow-md hover:bg-gray-600 z-50 ${isPaletteOpen ? "hidden" : "-left-0"} ${isValidationOpen ? "hidden" : ""}`}
-          >
-            {isPaletteOpen ? "←" : "→"}
-          </button>
-
+          {/* Button zum Einklappen  */}
+          {isPaletteOpen && (
+            <button
+              onClick={togglePalette}
+              style={{ width: "24px" }}
+              className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white p-2 rounded-l-lg shadow-md hover:bg-gray-600 z-50 right-0 ${isValidationOpen ? "hidden" : ""}`}
+            >
+              ←
+            </button>
+          )}
         </div>
 
         <div
@@ -4468,29 +4748,33 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
             edges={collaborationModeOn ? edgesI : edges}
 
             // Selection
+            selectionOnDrag={lassoMode}        // ← Lasso nur wenn aktiv
+            panOnDrag={!lassoMode}             // ← Panning deaktivieren wenn Lasso aktiv
+            selectionMode={SelectionMode.Partial} // ← Nodes die teilweise im Lasso sind auch
             deleteKeyCode={["Backspace", "Delete"]}
             multiSelectionKeyCode="Shift"
             selectionKeyCode="Shift"
+            onSelectionEnd={onSelectionEnd}
+            onSelectionChange={onSelectionChange}
 
             // Node events
             onNodesChange={collaborationModeOn ? onNodesChangeSync : onNodesChange} // TODO: onNodesChange if no collab mode
             onNodeContextMenu={onNodeContextMenu}
-            onEdgeContextMenu={onEdgeContextMenu}
             onNodeClick={(event: React.MouseEvent, node: Node) => {
               handleClick(event, node);
             }}
             onNodeDrag={onNodeDrag}
             onNodeDragStop={onNodeDragStop}
-            onNodesDelete={onNodesDelete} // TODO: weglassen oder onNodesDeleteSync erstellen?            
-            onSelectionChange={onSelectionChange}
-            
+            onNodesDelete={onNodesDelete} // TODO: weglassen oder onNodesDeleteSync erstellen?
+
             // Edge events
+            onEdgeContextMenu={onEdgeContextMenu}
             onEdgesChange={onEdgesChange} // TODO: onEdgesChangeSync for collab mode (deletion of edge)
             onEdgesDelete={onEdgesDelete} // TODO: weglassen oder onEdgesDeleteSync erstellen?
             onConnect={collaborationModeOn ? onConnectSync : onConnect} // TODO: onConnect if no collab mode
             onConnectEnd={onConnectEnd}
 
-            // Canva
+            // Canvas
             onPaneClick={onPaneClick}
             onDrop={onDrop}
             onDragOver={onDragOver}
@@ -4534,7 +4818,69 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
             </>
           )}
 
+            {/* Controls */}
             <Controls />
+
+            {/* Lasso Button – separat positioniert über den Controls */}
+            <div
+              className="lasso-button"
+              style={{
+                position: "absolute",
+                bottom: "130px",  // anbinden an Controls nicht möglich, daher Position separat festlegen
+                left: "14px",
+                zIndex: 10,
+              }}
+              onMouseEnter={(e) => {
+              const tooltip = e.currentTarget.querySelector(".lasso-tooltip") as HTMLElement;
+              if (tooltip) tooltip.style.opacity = "1";
+              }}
+              onMouseLeave={(e) => {
+                const tooltip = e.currentTarget.querySelector(".lasso-tooltip") as HTMLElement;
+                if (tooltip) tooltip.style.opacity = "0";
+        }}
+            >
+              <button
+                onClick={() => setLassoMode((v) => !v)}
+                style={{
+                  width: "28px",
+                  height: "24px",
+                  background: lassoMode ? "#6366f1" : "white",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: "4px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  boxShadow: "0 1px 4px rgba(0,0,0,0.15)",
+                  color: lassoMode ? "white" : "#374151",
+                }}
+              >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <ellipse cx="7" cy="6" rx="5" ry="4" strokeDasharray="3 1.5"/>
+                <line x1="11" y1="9" x2="13" y2="13"/>
+              </svg>
+              </button>
+              <span style={{
+                position: "absolute",
+                left: "30px",
+                top: "50%",
+                transform: "translateY(-50%)",
+                background: "#1f2937",
+                color: "white",
+                fontSize: "11px",
+                padding: "2px 8px",
+                borderRadius: "4px",
+                whiteSpace: "nowrap",
+                pointerEvents: "none",
+                opacity: 0,
+                transition: "opacity 0.15s",
+              }}              
+              >
+                {lassoMode ? "Cancel grouping" : "Group selection"}
+              </span>
+            </div>
+
             <ShortcutHelpModal />
             {Object.entries(cursors).length > 1 && collaborationModeOn && Object.entries(cursors).map(([clientId, cursor]) => { // TODO: only if collaborationMode false
               const displayName = Number(clientId) === myClientId ? "Me" : cursor.name;
@@ -4583,6 +4929,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
                 message={toast.message}
                 type={toast.type}
                 onClose={() => setToast(null)}
+                rightOffset={isPanelOpen ? panelWidth + 16 : 24}
               />
             )}
 
@@ -4623,6 +4970,10 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
               domainProfile={domainProfile}
               onDomainProfileChange={(event) => { setDomainProfile(event) }}
               domainProfileNames={allDomainProfiles.map((p) => p.name)}
+              mathMode={mathMode}
+              onToggleMathMode={() => setMathMode((v) => !v)} 
+              qasmEditorMode={qasmEditorMode}
+              onToggleQasmEditorMode={() => setQasmEditorMode((v) => !v)}
               collaborationMode={collaborationModeOn}
               onCollaborationModeChange={onToggleCollaborationMode}
               userName={userName}
@@ -4692,36 +5043,85 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
           )}
         </div>
 
-        <div className="relative flex bg-gray-100 h-[calc(100vh_-_60px)]  border-gray-200 border">
+        <div className="relative flex bg-gray-100 h-[calc(100vh_-_60px)] border-gray-200 border">
+
+  {/* Button zum Aufklappen*/}
+  {!isPanelOpen && (
+    <button
+      onClick={togglePanel}
+      style={{ width: "24px" }}
+      className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white p-2 rounded-l-lg shadow-md hover:bg-gray-600 z-50 right-0 ${isValidationOpen ? "hidden" : ""}`}
+    >
+      ←
+    </button>
+  )}
+
+      <div
+        className={`transition-all duration-300 relative ${isPanelOpen ? "" : "w-0 overflow-hidden"}`}
+        style={isPanelOpen ? { width: `${panelWidth}px` } : {}}>
+
+        {/* Drag-Handle */}
+        {isPanelOpen && (
           <div
-            className={`transition-all duration-300 ${isPanelOpen ? "w-[300px] lg:w-[350px]" : "w-0 overflow-hidden"}`}
+            onMouseDown={(e) => {
+              const startX = e.clientX;
+              const startWidth = panelWidth;
+              const onMove = (e: MouseEvent) => {
+                const newWidth = Math.min(900, Math.max(280, startWidth + (startX - e.clientX)));
+                setPanelWidth(newWidth);
+              };
+              const onUp = () => {
+                window.removeEventListener("mousemove", onMove);
+                window.removeEventListener("mouseup", onUp);
+                document.body.style.cursor = "";
+              };
+              document.body.style.cursor = "ew-resize";
+              window.addEventListener("mousemove", onMove);
+              window.addEventListener("mouseup", onUp);
+            }}
+            style={{
+              position: "absolute",
+              left: 0,
+              top: 0,
+              width: "6px",
+              height: "100%",
+              cursor: "ew-resize",
+              zIndex: 50,
+              borderLeft: "2px solid #e5e7eb",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#6366f1")}
+            onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#e5e7eb")}
+          />
+        )}
+
+        {/* Button zum Einklappen */}
+        {isPanelOpen && (
+          <button
+            onClick={togglePanel}
+            style={{ width: "24px", paddingLeft: "4px" }}
+            className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white text-center p-2 rounded-r-lg shadow-md hover:bg-gray-600 z-50 -left-0 ${isValidationOpen ? "hidden" : ""}`}
           >
+            →
+          </button>
+        )}
 
-            <button
-              onClick={togglePanel}
-              style={{
-                width: "24px",
-                paddingLeft: "4px",
-              }}
-              className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white text-center p-2 rounded-r-lg shadow-md hover:bg-gray-600 z-50 ${isPanelOpen ? "-left-0" : "hidden"} ${isValidationOpen ? "hidden" : ""}`}
-            >
-
-              {isPanelOpen ? "→" : "←"}
-            </button>
-            <button
-              onClick={togglePanel}
-              style={{
-                width: "24px"
-              }}
-              className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white p-2 rounded-l-lg shadow-md hover:bg-gray-600 z-50 ${isPanelOpen ? "hidden" : "right-0"} ${isValidationOpen ? "hidden" : ""}`}
-            >
-              {isPanelOpen ? "→" : "←"}
-            </button>
-
-
-            {isPanelOpen && <CustomPanel metadata={metadata} onUpdateMetadata={setMetadata} />}
-          </div>
-        </div>
+        {isPanelOpen && (
+          <CustomPanel
+            metadata={metadata}
+            onUpdateMetadata={setMetadata}
+            mathMode={mathMode}
+            onWidthChange={setPanelWidth}
+            backendUrl={lowcodeBackendEndpoint}        
+            compilationTarget={compilationTarget}
+            qasmCode={openqasmCode}
+            onGetCircuitSvg={getCircuitSvg}
+            onSendToBackend={sendToBackend}
+            onGetModel={getModel}
+            qasmEditorMode={qasmEditorMode}
+          />
+        )}
+      </div>
+    </div>
 
 
 

@@ -1,364 +1,396 @@
-import { memo, useEffect, useState } from "react";
-import { Handle, Position, Node, Edge, getConnectedEdges, useUpdateNodeInternals } from "reactflow";
+/**
+ * group.tsx
+ * Platzierung: src/components/nodes/group.tsx
+ */
+
+import { memo, useState, useCallback, useEffect } from "react";
+import { NodeResizer, Handle, Position, Node, Edge, useReactFlow } from "reactflow";
 import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
-import AncillaPort from "../utils/ancillaPort";
-import UncomputePort from "../utils/uncomputePort";
-import OutputPort from "../utils/outputPort";
-import { motion } from "framer-motion";
-import { cn } from "@/lib/utils";
-import { ancillaConstructColor, dirtyAncillaHandle, dirtyConstructColor, quantumConstructColor } from "@/constants";
-import { findDuplicateOutputIdentifier, findDuplicateOutputIdentifiers, findDuplicateOutputIdentifiersInsideNode } from "../utils/utils";
-import { AlertCircle } from "lucide-react";
-import { Button } from "antd";
 import { awareness } from "@/yjs";
 
 const selector = (state: {
-  selectedNode: Node | null;
   nodes: Node[];
-  edges: Edge[];
-  ancillaMode: boolean;
-  updateNodeValue: (nodeId: string, field: string, nodeVal: string) => void;
-  setSelectedNode: (node: Node | null) => void;
-  setEdges: (edge: Edge) => void;
-  setNewEdges: (newEdges: Edge[]) => void;
+  updateNodeValue: (nodeId: string, field: string, nodeVal: any) => void;
 }) => ({
-  selectedNode: state.selectedNode,
   nodes: state.nodes,
-  edges: state.edges,
-  ancillaMode: state.ancillaMode,
   updateNodeValue: state.updateNodeValue,
-  setSelectedNode: state.setSelectedNode,
-  setEdges: state.setEdges,
-  setNewEdges: state.setNewEdges
 });
 
-export const GroupNode = memo((node: Node) => {
-  const { data, selected } = node;
-  console.log(selected)
-  console.log(data.numberInputs)
-  const numberInputs = 7;
-  const numberOutputs = 7;
+const EXPANDED_MIN_WIDTH  = 300;
+const EXPANDED_MIN_HEIGHT = 200;
+const COLLAPSED_HEIGHT    = 48;
 
-  const handleCount = numberInputs + numberOutputs;
-  console.log(handleCount)
+const QUANTUM_TYPES = new Set([
+  "gateNode", "quantumOperatorNode", "ancillaNode", "statePreparationNode",
+  "uncomputeNode", "algorithmNode", "qubitNode", "measurementNode",
+]);
+const CLASSICAL_TYPES = new Set([
+  "dataTypeNode", "classicalAlgorithmNode", "classicalOperatorNode",
+]);
 
-  const handleGap = 40;
-  const handleOffset = 15;
+type GroupType = "quantum" | "classical" | "mixed";
 
-  const nodeHeight = Math.max(handleOffset * 2 + (handleCount) * handleGap, 100);
-  const { edges, nodes, updateNodeValue, setSelectedNode, setNewEdges, setEdges, ancillaMode } = useStore(
-    selector,
-    shallow
+function getGroupType(childNodes: Node[]): GroupType {
+  const types = childNodes.map((n) => n.type ?? "");
+  const hasQuantum   = types.some((t) => QUANTUM_TYPES.has(t));
+  const hasClassical = types.some((t) => CLASSICAL_TYPES.has(t));
+  if (hasQuantum && hasClassical) return "mixed";
+  if (hasClassical) return "classical";
+  return "quantum";
+}
+
+function getGroupStyle(type: GroupType) {
+  switch (type) {
+    case "quantum":   return { color: "#3b82f6", borderRadius: "8px",  borderStyle: "dashed" };
+    case "classical": return { color: "#f97316", borderRadius: "20px", borderStyle: "dashed" };
+    case "mixed":     return { color: "#8b5cf6", borderRadius: "4px",  borderStyle: "dashed" };
+  }
+}
+
+// Handle-Farbe anhand der Handle-ID bestimmen
+function getHandleColor(handleId: string): string {
+  if (handleId.toLowerCase().includes("quantum"))   return "#93c5fd";
+  if (handleId.toLowerCase().includes("classical")) return "#F5A843";
+  if (handleId.toLowerCase().includes("ancilla"))   return "#c084fc";
+  return "#94a3b8";
+}
+
+interface ProxyHandle {
+  id: string;
+  type: "source" | "target";
+  color: string;
+  index: number;
+  total: number;
+}
+
+/**
+ * Berechnet die Proxy-Handles der Gruppe anhand der Edges:
+ * - Output: sourceHandle eines Kind-Nodes der NICHT intern verbunden ist
+ * - Input: targetHandle eines Kind-Nodes der NICHT intern verbunden ist
+ * Handles werden direkt aus den Edges abgeleitet – keine data.inputs nötig.
+ */
+function getProxyHandles(
+  childNodes: Node[],
+  edges: Edge[]
+): { inputs: ProxyHandle[]; outputs: ProxyHandle[]; hasInputs: boolean } {
+  const childIds = new Set(childNodes.map((n) => n.id));
+
+  // Interne Edges (beide Seiten sind Kind-Nodes)
+  const internalEdges = edges.filter(
+    (e) => childIds.has(e.source) && childIds.has(e.target)
   );
-  const alledges = getConnectedEdges([node], edges);
 
-  const [inputs, setInputs] = useState(data.inputs || []);
-  const [outputs, setOutputs] = useState(data.outputs || []);
-  const [yError, setYError] = useState(false);
-  const [y, setY] = useState("");
-  const [outputIdentifierError, setOutputIdentifierError] = useState(false);
-  const [showingChildren, setShowingChildren] = useState(false);
-  const [sizeErrors, setSizeErrors] = useState<{ [key: number]: boolean }>({});
-  const [isEditingLabel, setIsEditingLabel] = useState(false);
-  const [editableLabel, setEditableLabel] = useState(data.label || "");
-  const updateNodeInternals = useUpdateNodeInternals();
-  const [outputIdentifierErrors, setOutputIdentifierErrors] = useState({});
+  // Handle-IDs aus internen Edges – als Prefix-Set für Vergleich
+  const internalSourceHandles = internalEdges.map((e) => e.sourceHandle).filter(Boolean) as string[];
+  const internalTargetHandles = internalEdges.map((e) => e.targetHandle).filter(Boolean) as string[];
 
-  const handleLabelChange = () => {
-    setIsEditingLabel(false);
-    updateNodeValue(node.id, "label", editableLabel);
-    node.data.label = editableLabel;
-    setSelectedNode(node);
+  // Externe Edges
+  const externalEdges = edges.filter(
+    (e) => (childIds.has(e.source) && !childIds.has(e.target)) ||
+            (!childIds.has(e.source) && childIds.has(e.target))
+  );
+  const externalSourceHandles = externalEdges.map((e) => e.sourceHandle).filter(Boolean) as string[];
+  const externalTargetHandles = externalEdges.map((e) => e.targetHandle).filter(Boolean) as string[];
+
+  // Prüft ob ein Handle-ID mit einem der gespeicherten Handles übereinstimmt
+  // (unterstützt sowohl exakte als auch prefix-basierte Übereinstimmung)
+  const isHandleUsed = (handleId: string, usedHandles: string[]): boolean => {
+    return usedHandles.some((h) =>
+      h === handleId ||
+      h.startsWith(handleId) ||
+      handleId.startsWith(h)
+    );
   };
 
-  useEffect(() => {
-    updateNodeInternals(node.id);
-    setSelectedNode(node);
-  }, [node]);
+  const inputs:  ProxyHandle[] = [];
+  const outputs: ProxyHandle[] = [];
 
+  childNodes.forEach((child) => {
+    const nodeType = child.type ?? "";
 
-  const isAncillaConnected = edges.some(
-    edge => edge.target === node.id && edge.targetHandle === `ancillaHandleOperationInput2${node.id}`
-  );
+    // Anzahl der Qubit-Wires dieses Nodes. Für die meisten Node-Typen ist das genau 1,
+    // aber gateNode kann mehrere Wires haben (CNOT=2, Toffoli=3). Die realen
+    // Handle-IDs tragen den Wire-Index direkt vor der Node-ID (z.B.
+    // "quantumHandleGateOutput0<id>", "...Output1<id>", "...Output2<id>",
+    // siehe store.ts Zeilen mit sourceHandle.includes("Output1")/.endsWith("Output2")).
+    // Vorher wurde hier IMMER nur Index 0 generiert, wodurch der zweite/dritte Wire
+    // eines CNOT/Toffoli-Gates niemals als Proxy-Handle der Gruppe auftauchen konnte.
+    //
+    // WICHTIG: Die Wire-Anzahl wird bewusst über data.label bestimmt und NICHT über
+    // data.identifiers.length. Letzteres wäre zwar bei der Node-Erstellung korrekt
+    // (siehe addNode in store.ts: CNOT bekommt 2, Toffoli 3 Einträge), wird aber in
+    // der onConnect-Logik von store.ts bei JEDER eingehenden Edge mit
+    // `targetData["identifiers"] = sourceIdentifier` überschrieben - also mit den
+    // identifiers des jeweils verbundenen Quell-Nodes. Ein an CNOT angeschlossener
+    // einzelner Qubit-Node hat aber nur 1 Identifier, wodurch CNOT.data.identifiers
+    // nach dem Verbinden fälschlich wieder auf Länge 1 zurückfällt. data.label ist
+    // davon nicht betroffen und daher das stabile Signal.
+    const wireCount =
+      child.data?.label === "Toffoli" ? 3 :
+      child.data?.label === "CNOT"    ? 2 : 1;
+    const outputWireCount = nodeType === "gateNode" ? wireCount : 1;
+    const inputWireCount  = nodeType === "gateNode" ? wireCount : 1;
 
-  const isDirtyAncillaConnected = edges.some(
-    edge => edge.target === node.id && edge.targetHandle === `${dirtyAncillaHandle}OperationInput3${node.id}`
-  );
+    // Output-Handle-Präfix nach bekanntem Muster generieren (ohne Wire-Index/ID)
+    let outputPrefix: string | null = null;
+    if (nodeType === "gateNode")               outputPrefix = "quantumHandleGateOutput";
+    else if (nodeType === "qubitNode")         outputPrefix = "quantumHandleQubitOutput";
+    else if (nodeType === "measurementNode")   outputPrefix = "quantumHandleMeasurementOutput";
+    else if (nodeType === "statePreparationNode") outputPrefix = "quantumHandleStatePreparationOutput";
+    else if (nodeType === "quantumOperatorNode")  outputPrefix = "quantumHandleQuantumOperatorOutput";
+    else if (nodeType === "algorithmNode")     outputPrefix = "quantumHandleAlgorithmOutput";
+    else if (nodeType === "ancillaNode")       outputPrefix = "ancillaHandleAncillaOutput";
+    else if (nodeType === "uncomputeNode")     outputPrefix = "quantumHandleUncomputeOutput";
+    else if (nodeType === "dataTypeNode")      outputPrefix = "classicalHandleDataTypeOutput";
+    else if (nodeType === "classicalAlgorithmNode") outputPrefix = "classicalHandleClassicalAlgorithmOutput";
+    else if (nodeType === "classicalOperatorNode")  outputPrefix = "classicalHandleClassicalOperatorOutput";
 
-
-  const [quantumHandles, setQuantumHandles] = useState([0]);
-  const [classicalHandles, setClassicalHandles] = useState([0]);
-
-  const [quantumOutputHandles, setQuantumOutputHandles] = useState([0]);
-  const [quantumOutputHandlesElse, setQuantumOutputHandlesElse] = useState([0]);
-  const [classicalOutputHandles, setClassicalOutputHandles] = useState([{ index: 0, branch: "then" }]);
-
-  const [classicalOutputHandlesElse, setClassicalOutputHandlesElse] = useState([0]);
-  const [collapsed, setColllapsed] = useState(false);
-
-  const collapseParent = () => {
-    setColllapsed(!collapsed);
-    updateNodeValue(node.id, "collapsed", "" + collapsed);
-    console.log("collap")
-    // Get the main node
-    let mainNodes = document.querySelectorAll<HTMLDivElement>(
-      'div.react-flow__node-ifElseNode'
-    );
-    let keys = mainNodes.keys();
-
-    // extract key and see if it matches data-id this is then the mainNode
-    let mainNode: HTMLDivElement | undefined;
-    mainNodes.forEach((nodeElement) => {
-      const dataId = nodeElement.getAttribute('data-id');
-      console.log('Checking node with data-id:', dataId);
-      if (dataId === node.id) {   // assuming node.id is available in scope
-        mainNode = nodeElement;
+    // Output-Proxy je Wire: nicht intern verbunden UND nicht bereits extern verbunden
+    if (outputPrefix) {
+      for (let wireIndex = 0; wireIndex < outputWireCount; wireIndex++) {
+        const outputHandleId = `${outputPrefix}${wireIndex}${child.id}`;
+        if (!isHandleUsed(outputHandleId, internalSourceHandles)
+          && !isHandleUsed(outputHandleId, externalSourceHandles)) {
+          outputs.push({
+            id: outputHandleId,
+            type: "source",
+            color: getHandleColor(outputHandleId),
+            index: outputs.length,
+            total: 0,
+          });
+        }
       }
-    });
+    }
 
-    console.log('Main node:', mainNode);
-    if (mainNode) {
-      // Get the first child div (grand-parent where you set width)
-      const firstChild = mainNode.querySelector<HTMLDivElement>(
-        'div.grand-parent'
-      );
+    // Input-Handle-Präfix nach bekanntem Muster generieren (ohne Wire-Index/ID)
+    let inputPrefix: string | null = null;
+    // gateNode: nur Input wenn es sich NICHT um eine reine |0⟩-Qubit-Quelle handelt.
+    // Vorher wurde dies über child.data?.inputs?.length > 0 geprüft - dieses Feld
+    // spiegelt aber nicht zuverlässig die tatsächlichen Verbindungen wider (z.B. bei
+    // frisch gruppierten oder verketteten Gattern kann es fälschlich leer sein).
+    // "Qubit Circuit" ist das strukturell stabile Erkennungsmerkmal der Qubit-Quelle,
+    // unabhängig vom aktuellen Verbindungszustand.
+    if (nodeType === "gateNode" && child.data?.label !== "Qubit Circuit")
+                                               inputPrefix = "quantumHandleGateInput";
+    else if (nodeType === "measurementNode")   inputPrefix = "quantumHandleMeasurementInput";
+    else if (nodeType === "statePreparationNode") inputPrefix = "classicalHandleStatePreparationInput";
+    else if (nodeType === "quantumOperatorNode")  inputPrefix = "quantumHandleQuantumOperatorInput";
+    else if (nodeType === "algorithmNode")     inputPrefix = "quantumHandleAlgorithmInput";
+    else if (nodeType === "uncomputeNode")     inputPrefix = "quantumHandleUncomputeInput";
+    else if (nodeType === "classicalAlgorithmNode") inputPrefix = "classicalHandleClassicalAlgorithmInput";
+    else if (nodeType === "classicalOperatorNode")  inputPrefix = "classicalHandleClassicalOperatorInput";
+    // qubitNode, dataTypeNode: keine Inputs
 
-      console.log('Main node:', mainNode);
+    // Input-Proxy je Wire: nicht intern verbunden UND nicht bereits extern verbunden
+    if (inputPrefix) {
+      for (let wireIndex = 0; wireIndex < inputWireCount; wireIndex++) {
+        const inputHandleId = `${inputPrefix}${wireIndex}${child.id}`;
+        if (!isHandleUsed(inputHandleId, internalTargetHandles)
+          && !isHandleUsed(inputHandleId, externalTargetHandles)) {
+          inputs.push({
+            id: inputHandleId,
+            type: "target",
+            color: getHandleColor(inputHandleId),
+            index: inputs.length,
+            total: 0,
+          });
+        }
+      }
+    }
+  });
 
-      console.log('First child (grand-parent):', firstChild);
-      if (firstChild) {
-        for (let i = 0; i < nodes.length; i++) {
-          console.log(node.data)
-          console.log(nodes[i]);
-          if (nodes[i].parentNode === node.id && node.data.collapsed === "true") {
-            updateNodeValue(nodes[i].id, "hidden", "true");
-          } else if (nodes[i].parentNode === node.id && node.data.collapsed === "false") {
-            updateNodeValue(nodes[i].id, "hidden", "false");
+  // Total aktualisieren
+  inputs.forEach((h, i)  => { h.index = i; h.total = inputs.length; });
+  outputs.forEach((h, i) => { h.index = i; h.total = outputs.length; });
+
+  // hasInputs: true wenn tatsächlich unbesetzte Input-Proxy-Handles existieren
+  const hasInputs = inputs.length > 0;
+
+  return { inputs, outputs, hasInputs };
+}
+
+export const GroupNode = memo((node: Node) => {
+  const { data, selected, id } = node;
+  const { nodes, updateNodeValue } = useStore(selector, shallow);
+  const { setNodes, getNodes, getEdges, setEdges } = useReactFlow();
+
+  const [isEditingLabel, setIsEditingLabel] = useState(false);
+  const [editableLabel, setEditableLabel] = useState(data.label || "Group");
+  const collapsed = data.collapsed === true;
+  const locked = data.locked === true;
+
+  const childNodes = nodes.filter((n) => n.parentNode === id);
+  const groupType = getGroupType(childNodes);
+  const groupStyle = getGroupStyle(groupType);
+  const color = groupStyle.color;
+  const borderRadius = groupStyle.borderRadius;
+  const borderStyle = collapsed ? "solid" : groupStyle.borderStyle;
+
+  // Proxy-Handles nur wenn aufgeklappt
+  const { inputs: proxyInputs, outputs: proxyOutputs, hasInputs: groupHasInputs } = !collapsed
+    ? getProxyHandles(childNodes, getEdges())
+    : { inputs: [] as ProxyHandle[], outputs: [] as ProxyHandle[], hasInputs: false };
+
+  const getChildBounds = useCallback(() => {
+    const allNodes = getNodes();
+    const children = allNodes.filter((n) => n.parentNode === id);
+    if (children.length === 0) return null;
+
+    // Für Untergruppen: style.width/height verwenden (echte Größe, nicht kollabierte)
+    const getNodeWidth  = (n: Node) => (n.type === "groupNode"
+      ? ((n.style?.width  as number) ?? n.width  ?? 100)
+      : (n.width  ?? 100));
+    const getNodeHeight = (n: Node) => (n.type === "groupNode"
+      ? ((n.style?.height as number) ?? n.height ?? 100)
+      : (n.height ?? 100));
+
+    const minX = Math.min(...children.map((n) => n.position.x)) - 20;
+    const minY = Math.min(...children.map((n) => n.position.y)) - 40;
+    const maxX = Math.max(...children.map((n) => n.position.x + getNodeWidth(n)))  + 20;
+    const maxY = Math.max(...children.map((n) => n.position.y + getNodeHeight(n))) + 20;
+
+    return {
+      width:  Math.max(maxX - minX, EXPANDED_MIN_WIDTH),
+      height: Math.max(maxY - minY, EXPANDED_MIN_HEIGHT),
+    };
+  }, [id, getNodes]);
+
+  const toggleCollapse = useCallback(() => {
+    const newCollapsed = !collapsed;
+    setNodes((nds: Node[]) => {
+      // Alle Nachfahren-IDs rekursiv sammeln
+      const getDescendants = (groupId: string): Set<string> => {
+        const result = new Set<string>();
+        const queue = [groupId];
+        while (queue.length > 0) {
+          const cur = queue.shift()!;
+          for (const n of nds) {
+            if (n.parentNode === cur) {
+              result.add(n.id);
+              if (n.type === "groupNode") queue.push(n.id);
+            }
           }
         }
+        return result;
+      };
+      const descendants = getDescendants(id);
 
-        // Get the current minWidth from computed styles
-        const currentMinWidth = window.getComputedStyle(firstChild).minWidth;
-        // Parse it into a number
-        const currentMinWidthValue = parseFloat(currentMinWidth);
-        // Add 100 to it
-        const newMinWidth = 400;
-        // Set it back with "px"
-        firstChild.style.minWidth = `${newMinWidth}px`;
-        firstChild.style.height = `${newMinWidth}px`;
-        console.log(`Updated minWidth to ${newMinWidth}px`);
-        updateNodeValue(node.id, "collapsed", "" + collapsed);
-      }
-    } else {
-      console.error('Main node not found');
-    }
-
-  }
-
-  useEffect(() => {
-    updateNodeInternals(node.id);
-    setSelectedNode(node);
-  }, [node]);
-  useEffect(() => {
-    const connectedQuantumHandles = edges
-      .filter(edge => edge.target === node.id && edge.targetHandle?.startsWith(`quantumHandleInputInitialization${node.id}`))
-      .map(edge => edge.targetHandle);
-
-    const connectedClassicalHandles = edges
-      .filter(edge => edge.target === node.id && edge.targetHandle?.startsWith(`classicalHandleInputInitialization${node.id}`))
-      .map(edge => edge.targetHandle);
-
-    const expectedHandles = quantumHandles.map(index => `quantumHandleInputInitialization${index}${node.id}`);
-    const lastHandle = expectedHandles[expectedHandles.length - 1];
-
-    const expectedClassicalHandles = classicalHandles.map(index => `classicalHandleInputInitialization${index}${node.id}`);
-    const lastClassicalHandle = expectedClassicalHandles[expectedClassicalHandles.length - 1];
-
-    if (connectedQuantumHandles.includes(lastHandle)) {
-      setQuantumHandles(prev => [...prev, prev.length]);
-    }
-    console.log(classicalHandles)
-    console.log(connectedClassicalHandles)
-    console.log(lastClassicalHandle)
-
-    if (connectedClassicalHandles.includes(lastClassicalHandle)) {
-      setClassicalHandles(prev => [...prev, prev.length]);
-      console.log(classicalHandles)
-    } else {
-      console.log(connectedClassicalHandles)
-      const expectedClassicalIndices = connectedClassicalHandles.map(handleId => {
-        const parts = handleId.split("-");
-        return parseInt(parts[parts.length - 1], 10);
-      });
-      const nextClassicalIndex = Math.max(...expectedClassicalIndices, -1) + 1;
-      console.log(expectedClassicalIndices)
-      setClassicalHandles([...expectedClassicalIndices, nextClassicalIndex]);
-
-    }
-    const connectedOutputHandles = edges
-      .filter(edge => edge.target === node.id && (edge.targetHandle?.startsWith(`classicalHandleDynamicOutput${node.id}`) || edge.targetHandle?.startsWith(`classicalHandleDynamicOutputElse${node.id}`)))
-      .map(edge => edge.targetHandle);
-    console.log(connectedOutputHandles)
-
-    const expected = classicalOutputHandles.map(({ index, branch }) => {
-      console.log(index);
-      return `classicalHandleDynamicOutput${branch === "else" ? "Else" : ""}${node.id}-${index}`
-    }
-    );
-    const lastHandleId = expected[expected.length - 1];
-
-    // Extract last branch from the last handleId
-    const lastBranch = lastHandleId.includes("Else") ? "else" : "then";
-
-    if (connectedOutputHandles.includes(lastHandleId)) {
-      const nextIndex = classicalOutputHandles.length;
-      setClassicalOutputHandles(prev => [...prev, { index: nextIndex, branch: lastBranch }]);
-    }
-
-    const connectedOutputHandlesElse = edges
-      .filter(edge => edge.target === node.id && edge.targetHandle?.startsWith(`classicalHandleDynamicOutputElse${node.id}`))
-      .map(edge => edge.targetHandle);
-    console.log(connectedOutputHandlesElse)
-
-    const expectedElse = connectedClassicalHandles.map(index => `classicalHandleDynamicOutputElse${node.id}-${index}`);
-    const lastHandleIdElse = expectedElse[expectedElse.length - 1];
-
-    if (connectedOutputHandlesElse.includes(lastHandleIdElse)) {
-      setClassicalOutputHandlesElse(prev => [...prev, prev.length]);
-    }
-
-    const connectedQuantumOutputHandles = edges
-      .filter(edge => edge.target === node.id && edge.targetHandle?.startsWith(`quantumHandleDynamicOutput${node.id}`))
-      .map(edge => edge.targetHandle);
-    console.log(connectedOutputHandles)
-
-    const quantumExpected = quantumOutputHandles.map(index => `quantumHandleDynamicOutput${index}${node.id}`);
-    const lastQuantumHandleId = quantumExpected[quantumExpected.length - 1];
-
-    if (connectedQuantumOutputHandles.includes(lastQuantumHandleId)) {
-      setQuantumOutputHandles(prev => [...prev, prev.length]);
-    }
-
-    const connectedOutputHandlesQuantumElse = edges
-      .filter(edge => edge.target === node.id && edge.targetHandle?.startsWith(`quantumHandleDynamicOutputElse${node.id}`))
-      .map(edge => edge.targetHandle);
-    console.log(connectedOutputHandlesQuantumElse)
-
-    const expectedQuantumElse = quantumOutputHandlesElse.map(index => `quantumHandleDynamicOutputElse${index}${node.id}`);
-    const lastHandleIdQuantumElse = expectedQuantumElse[expectedQuantumElse.length - 1];
-
-    if (connectedOutputHandlesQuantumElse.includes(lastHandleIdQuantumElse)) {
-      setQuantumOutputHandlesElse(prev => [...prev, prev.length]);
-    }
-
-    updateNodeInternals(node.id); // `nodeId` is the ID of the updated node
-  }, [edges, node.id, quantumHandles, classicalOutputHandles, quantumOutputHandles, quantumOutputHandlesElse, classicalOutputHandlesElse]);
-
-  const dynamicHeight = 900 + Math.max(0, numberInputs + numberInputs - 1 + (numberOutputs - 1)) * 30;
-  const totalHandles = Math.max(classicalHandles.length + quantumHandles.length, classicalOutputHandles.length + classicalOutputHandlesElse.length + quantumOutputHandles.length + quantumOutputHandlesElse.length);
-  const hexagonHeight = dynamicHeight + 50//handleOffset * 2 + (handleCount) * handleGap + Math.max(250, 280 + totalHandles * 30);
-  const hexagonTopOffset = -(hexagonHeight / 2) + 20;
-  const hexagonWidth = collapsed ? 200 : 250;
-  const hexagonHeightCollapsed = collapsed ? 100 : hexagonHeight;
-  const hexagonTopOffsetCollapsed = collapsed ? 10 : hexagonTopOffset;
-
-  useEffect(() => {
-    const identifier = node.data.outputIdentifier;
-    console.log(nodes)
-    let selectedNode = nodes.find(n => n.id === node.id);
-    const newErrors = {};
-
-    outputs.forEach((output, index) => {
-      const outputIdentifier = output?.identifier?.trim();
-      console.log(outputIdentifier)
-      const size = output?.size?.trim();
-      if (!outputIdentifier) return;
-      const duplicates = findDuplicateOutputIdentifier(nodes, selectedNode.id, selectedNode, outputIdentifier);
-      let isDuplicate = false;
-      for (const [key] of duplicates.entries()) {
-        if (
-          Array.isArray(key) &&
-          key.some((item) => item.identifier === outputIdentifier)
-        ) {
-          isDuplicate = true;
-          break;
+      return nds.map((n) => {
+        if (descendants.has(n.id)) {
+          if (newCollapsed) {
+            // Einklappen: alle Nachfahren verstecken
+            return { ...n, hidden: true };
+          } else {
+            // Aufklappen: nur sichtbar machen wenn der direkte Parent nicht collapsed ist
+            const parentNode = nds.find(p => p.id === n.parentNode);
+            const parentIsCollapsed = parentNode?.data?.collapsed === true && parentNode?.id !== id;
+            return { ...n, hidden: parentIsCollapsed };
+          }
         }
-      }
-      console.log(isDuplicate)
-      isDuplicate = isDuplicate || findDuplicateOutputIdentifiersInsideNode(nodes, selectedNode, outputIdentifier)
-      console.log(findDuplicateOutputIdentifiersInsideNode(nodes, selectedNode, outputIdentifier))
-      const startsWithDigit = /^\d/.test(outputIdentifier);
-      console.log(isDuplicate)
-      console.log(output)
+        if (n.id === id) {
+          const bounds = newCollapsed ? null : getChildBounds();
+          return {
+            ...n,
+            data: { ...n.data, collapsed: newCollapsed },
+            style: {
+              ...n.style,
+              width:  newCollapsed ? (n.style?.width ?? EXPANDED_MIN_WIDTH) : (bounds?.width  ?? EXPANDED_MIN_WIDTH),
+              height: newCollapsed ? COLLAPSED_HEIGHT : (bounds?.height ?? EXPANDED_MIN_HEIGHT),
+            },
+          };
+        }
+        return n;
+      });
+    });
+  }, [collapsed, id, setNodes, getChildBounds]);
 
-      console.log("set for identifier error");
-      console.log(outputIdentifier)
-      // Flag error if identifier is invalid or duplicated
-      newErrors[index] = startsWithDigit || isDuplicate;
-      console.log(newErrors[index])
-      if (!size) return;
-      const startsWithDigitSize = !/^\d/.test(size);
-      sizeErrors[index] = startsWithDigitSize;
-    })
-
-    setOutputIdentifierErrors(newErrors);
-    setSizeErrors(sizeErrors)
-  }, [nodes, outputs, node.id]);
-
-
-  const baseHeight = !ancillaMode ? 50 : 200;
-  const extraHeightPerVariable = 130;
-  // Ensure identifiers exist and match the number of outputs
-  if (!data.identifiers) {
-    data.identifiers = [];
-  }
-
-  // Add missing identifiers
-  while (data.identifiers.length < numberOutputs) {
-    data.identifiers.push("q" + Math.floor(100000 + Math.random() * 900000).toString());
-  }
-
-  // Remove extra identifiers
-  if (data.identifiers.length > numberOutputs) {
-    const removedIdentifiers = data.identifiers.slice(numberOutputs);
-    console.log(removedIdentifiers);
-
-    // Clean up edges with sourceHandles related to removed identifiers
-    const edgesToRemove = edges.filter((edge) =>
-      !removedIdentifiers.some((id, index) =>
-        edge.sourceHandle === `quantumHandleGateOutput${numberOutputs + index + 1}${node.id}`
-      )
+  const handleToggleLock = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    const newLocked = !locked;
+    setNodes((nds: Node[]) =>
+      nds.map((n) => {
+        if (n.parentNode === id) return { ...n, draggable: !newLocked, connectable: !newLocked };
+        if (n.id === id) return { ...n, data: { ...n.data, locked: newLocked } };
+        return n;
+      })
     );
-    console.log("EDGES")
-    console.log(edgesToRemove)
+  }, [locked, id, setNodes]);
 
-    if (edgesToRemove.length > 0) {
-      console.log("remove edges")
-      setNewEdges(edgesToRemove);
-    }
+  const handleUngroup = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    const groupNode = getNodes().find((n) => n.id === id);
+    if (!groupNode) return;
+    setNodes((nds: Node[]) =>
+      nds.filter((n) => n.id !== id).map((n) => {
+        if (n.parentNode === id) {
+          return {
+            ...n,
+            parentNode: undefined,
+            extent: undefined,
+            hidden: false,
+            draggable: true,
+            connectable: true,
+            position: {
+              x: n.position.x + groupNode.position.x,
+              y: n.position.y + groupNode.position.y,
+            },
+          };
+        }
+        // Data.inputs-Referenzen auf die jetzt gelöschte Gruppen-ID bereinigen
+        // (z.B. falls dieser Node von der Gruppe aus über einen Output-Proxy-Handle
+        // gespeist wurde). Analog zur Bereinigung in contextMenu.tsx's deleteNode -
+        // ohne dies bleiben Karteileichen zurück, die spätere Verbindungen/Analysen
+        // fälschlich beeinflussen können.
+        if (Array.isArray(n.data?.inputs) && n.data.inputs.some((inp: any) => inp?.id === id)) {
+          return {
+            ...n,
+            data: {
+              ...n.data,
+              inputs: n.data.inputs.filter((inp: any) => inp?.id !== id),
+            },
+          };
+        }
+        return n;
+      })
+    );
+    // Externe Edges bereinigen, die auf die Proxy-Handles DER GRUPPE selbst
+    // zeigten (source/target === groupId). Ohne dies bleiben sie als Karteileichen
+    // im Edge-Array zurück (die Gruppe existiert ja nicht mehr) und blockieren
+    // spätere neue Verbindungen zu den jetzt eigenständigen Kind-Knoten, z.B. weil
+    // eine spätere edgeExists-Prüfung denselben targetHandle fälschlich als
+    // "bereits belegt" ansieht. Interne Edges zwischen den Kind-Knoten sind davon
+    // nicht betroffen und bleiben unverändert erhalten.
+    setEdges((eds: Edge[]) => eds.filter((edge) => edge.source !== id && edge.target !== id));
+  }, [id, setNodes, setEdges, getNodes]);
 
-    data.identifiers = data.identifiers.slice(0, numberOutputs);
-  }
+  const handleLabelBlur = () => {
+    setIsEditingLabel(false);
+    updateNodeValue(id, "label", editableLabel);
+  };
 
-  console.log(nodeHeight)
+  const handleLabelKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter")  handleLabelBlur();
+    if (e.key === "Escape") { setIsEditingLabel(false); setEditableLabel(data.label || "Group"); }
+  };
 
-  const id = node.id;
+  // Vertikale Position der Handles gleichmäßig verteilen
+  const handleTop = (index: number, total: number): string => {
+    if (total === 1) return "50%";
+    const step = 70 / (total + 1);
+    return `${15 + step * (index + 1)}%`;
+  };
 
+  // Remote-Highlight: zeigt an, ob ein anderer Nutzer diese Node gerade ausgewählt hat
   const [remoteHighlightColor, setRemoteHighlightColor] = useState<string | null>(null);
-  const [selectingUserName, setSelectingUserName] = useState<string | null>(null); // technically not needed, could extend functionality to also show user name next to highlighted node
+  const [selectingUserName, setSelectingUserName] = useState<string | null>(null);
 
   useEffect(() => {
     const checkRemoteSelection = () => {
       let foundColor: string | null = null;
       let foundName: string | null = null;
 
-      // Loop through all active client states in the room
-      awareness.getStates().forEach((state: any, clientId: number) => {
-        // Skip your own client ID so you don't highlight it with your own color
-        // if (clientId === awareness.clientID) return;
-
-        // Check if a peer has selected this specific node ID
+      awareness.getStates().forEach((state: any) => {
         if (state.cursor && state.cursor.selectedNodeId === id) {
           foundColor = state.cursor.color;
           foundName = state.cursor.name;
@@ -367,375 +399,203 @@ export const GroupNode = memo((node: Node) => {
 
       setRemoteHighlightColor(foundColor);
       setSelectingUserName(foundName);
-      console.log("COLOR", foundColor, foundName);
     };
 
-    // Run once immediately on mount
     checkRemoteSelection();
-
-    // 3. Listen to remote awareness updates
     awareness.on("change", checkRemoteSelection);
-
-    // Clean up listener when the node unmounts
     return () => {
       awareness.off("change", checkRemoteSelection);
     };
-  }, [id]); // Re-run if node ID changes
+  }, [id]);
 
-  return !collapsed ? (
-    <div
-      className="grand-parent"
-      initial={false}
-      style={{
-        width: showingChildren ? 360 : 320,
-        height: showingChildren ? 400 : 373,
-      }}
-    >
-      <div className="grand-parent">
+  return (
+    <>
+      <NodeResizer
+        minWidth={collapsed ? 150 : Math.max(EXPANDED_MIN_WIDTH, (getChildBounds()?.width ?? EXPANDED_MIN_WIDTH))}
+        minHeight={collapsed ? COLLAPSED_HEIGHT : Math.max(EXPANDED_MIN_HEIGHT, (getChildBounds()?.height ?? EXPANDED_MIN_HEIGHT))}
+        isVisible={selected && !collapsed}
+        lineStyle={{ borderColor: color }}
+        handleStyle={{ borderColor: color, backgroundColor: "white" }}
+      />
 
+      <div
+        style={{
+          width: "100%", height: "100%",
+          border: remoteHighlightColor ? `2px solid ${remoteHighlightColor}` : `2px ${borderStyle} ${color}`,
+          borderRadius,
+          backgroundColor: locked
+            ? `${color}33`  // transparenter im Lock-Zustand
+            : `${color}${collapsed ? "22" : "0d"}`,
+          opacity: locked ? 0.75 : 1,
+          position: "relative",
+          transition: "height 0.2s ease, background-color 0.2s ease, opacity 0.2s ease",
+          boxSizing: "border-box", overflow: "visible",
+          boxShadow: remoteHighlightColor
+            ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}`
+            : undefined,
+        }}
+      >
+        {/* Header */}
         <div
-          className={"w-[320px]  border border-solid border-gray-700 shadow-md"}
-          style={{ height: `${dynamicHeight}px`,
-                    borderColor: remoteHighlightColor ? remoteHighlightColor : (selected? "#3B82F6" : "#374151"),
-                    boxShadow: remoteHighlightColor 
-                        ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}` // Glowing aura ring
-                        : undefined,
-                }}
+          style={{
+            backgroundColor: `${color}33`,
+            borderBottom: collapsed ? "none" : `1px dashed ${color}55`,
+            borderRadius: collapsed ? borderRadius : `calc(${borderRadius} - 2px) calc(${borderRadius} - 2px) 0 0`,
+            padding: "6px 10px", height: "36px",
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            userSelect: "none",
+          }}
         >
-          {(Object.values(outputIdentifierErrors).some(Boolean) ||
-            Object.values(sizeErrors).some(Boolean)) && (
-              <div className="absolute top-2 right-[-40px] group z-20">
-                <AlertCircle className="text-red-600 w-5 h-5" />
-                <div className="absolute top-5 left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
-                  One or more outputs have errors (duplicate ID or size is not a number).
-                </div>
-              </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", flex: 1, minWidth: 0 }}>
+            <span style={{
+                  backgroundColor: color,
+                  width: "20px",
+                  height: "20px",
+                  borderRadius: "3px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                  overflow: "hidden",
+                }}>
+                  {groupType === "classical" ? (
+                    // Zahnrad (Classical)
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="3"/>
+                      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                    </svg>
+                  ) : (
+                    // Atom (Quantum / Mixed)
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="1"/>
+                      <ellipse cx="12" cy="12" rx="10" ry="4"/>
+                      <ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(60 12 12)"/>
+                      <ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(120 12 12)"/>
+                    </svg>
+                  )}
+            </span>
+            {isEditingLabel ? (
+              <input
+                autoFocus value={editableLabel}
+                onChange={(e) => setEditableLabel(e.target.value)}
+                onBlur={handleLabelBlur} onKeyDown={handleLabelKeyDown}
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  fontSize: "18px", fontWeight: 600, color,
+                  background: "transparent", border: "none",
+                  borderBottom: `1px solid ${color}`, outline: "none",
+                  flex: 1, minWidth: 0,
+                }}
+              />
+            ) : (
+              <span
+                style={{
+                  fontSize: "18px", fontWeight: 600, color,
+                  overflow: "hidden", textOverflow: "ellipsis",
+                  whiteSpace: "nowrap", flex: 1, cursor: "text",
+                }}
+                onDoubleClick={() => setIsEditingLabel(true)}
+                title="Double-click to edit"
+              >
+                {data.label || "Group"}
+              </span>
             )}
-
-
-          <div className="w-full flex items-center" style={{ height: "52px" }}>
-            {node.data.implementation && (
-              <img
-                src="implementation-icon.png"
-                alt="Custom Icon"
-                className="absolute -top-4 -right-4 w-8 h-8"
-              />
-            )}
-            <div
-              className="w-full bg-blue-300 py-1 px-2 flex items-center"
-              style={{ height: "inherit" }}
-            >
-              <img
-                src="algorithmIcon.png"
-                alt="icon"
-                className="w-[42px] h-[42px] object-contain flex-shrink-0"
-              />
-              <div className="h-full w-[1px] bg-black mx-2" />
-              {isEditingLabel ? (
-                <input
-                  autoFocus
-                  type="text"
-                  value={editableLabel}
-                  onChange={(e) => setEditableLabel(e.target.value)}
-                  onBlur={handleLabelChange}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") handleLabelChange();
-                  }}
-                  className="font-semibold leading-none bg-white border border-gray-400 px-2 py-1 rounded"
-                  style={{ paddingLeft: "25px", width: "100%" }}
-                />
-              ) : (
-                <span
-                  className="truncate font-semibold leading-none cursor-pointer"
-                  style={{ paddingLeft: "25px" }}
-                  onClick={() => setIsEditingLabel(true)}
-                >
-                  {editableLabel}
-                </span>
-              )}
-            </div>
           </div>
 
-          <div className="custom-node-port-in mb-3 mt-[5px]">
-            <div className="relative flex flex-col overflow-visible">
-              <div className="custom-node-port-in">
-                <div className="relative flex flex-col overflow-visible">
-                  {Array.from({ length: numberInputs }).map((_, index) => (
-                    <div
-                      key={`quantum-input-${index}`}
-                      className="relative p-2 mb-1"
-                      style={{
-                        backgroundColor: quantumConstructColor,
-                        width: "120px",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "flex-start",
-                      }}
-                    >
-                      <Handle
-                        type="target"
-                        id={`quantumHandleOperationInput${index}${node.id}`}
-                        position={Position.Left}
-                        className="z-10 circle-port-op !bg-blue-300 !border-black -left-[8px]"
-                        style={{ top: "50%", transform: "translateY(-50%)" }}
-                      />
-                      <span className="text-black text-sm text-center w-full">
-                        {node.data.inputs?.[index]?.outputIdentifier || `Input ${index + 1}`}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              {ancillaMode && (<div>
-                <div
-                  className="relative p-2 mb-1"
-                  style={{
-                    width: "120px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "flex-start",
-                  }}
-                >
-                  <div
-                    className="absolute inset-0 custom-shape-mirrored"
-                    style={{ backgroundColor: ancillaConstructColor }}
-                  />
-                  <Handle
-                    type="target"
-                    id={`ancillaHandleOperationInput2${node.id}`}
-                    position={Position.Left}
-                    className={cn(
-                      "z-10 ancilla-port-in w-4 transform rotate-45 -left-[8px]",
-                      isAncillaConnected
-                        ? "!bg-green-100 !border-solid !border-black"
-                        : "!bg-gray-200 !border-dashed !border-black"
-                    )}
-                    style={{ zIndex: 1, top: '50% !important', transform: 'translateY(-50%) rotate(45deg)' }}
-                  />
-                  <span
-                    className="text-black text-sm text-center w-full"
-                    style={{ zIndex: 1 }}
-                  >
-                    Ancilla
-                  </span>
-                </div>
-                <div
-                  className="relative p-2"
-                  style={{
-                    width: "120px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "flex-start",
-                  }}
-                >
-                  <div
-                    className="absolute inset-0 custom-shape-mirrored"
-                    style={{ backgroundColor: dirtyConstructColor }}
-                  />
-                  <Handle
-                    type="target"
-                    id={`${dirtyAncillaHandle}OperationInput3${node.id}`}
-                    position={Position.Left}
-                    className={cn(
-                      "z-10 ancilla-port-in w-4 transform rotate-45 -left-[8px]",
-                      isDirtyAncillaConnected
-                        ? "!bg-green-100 !border-solid !border-black"
-                        : "!bg-gray-200 !border-dashed !border-black"
-                    )}
-                    style={{ zIndex: 1, top: '50% !important', transform: 'translateY(-50%) rotate(45deg)' }}
-                  />
-                  <span
-                    className="text-black text-sm text-center w-full"
-                    style={{ zIndex: 1 }}
-                  >
-                    Dirty Ancilla
-                  </span>
-                </div>
-              </div>)}
-            </div>
-          </div>
-
-
-          <div className="custom-node-port-out">
-            {Array.from({ length: numberOutputs }).map((_, index) => (
-              <OutputPort
-                key={`output-port-${index}`}
-                node={node}
-                index={index}
-                type={"quantum"}
-                nodes={nodes}
-                outputs={outputs}
-                setOutputs={setOutputs}
-                edges={edges}
-                outputIdentifierError={outputIdentifierErrors[index]}
-                updateNodeValue={updateNodeValue}
-                setOutputIdentifierError={(error) =>
-                  setOutputIdentifierErrors(prev => ({ ...prev, [index]: error }))
-                }
-                sizeError={sizeErrors[index]}
-                setSizeError={(error) =>
-                  setSizeErrors((prev) => ({ ...prev, [index]: error }))
-                }
-                setSelectedNode={setSelectedNode}
-                active={true}
-              />
-            ))}
-
-          </div>
-
-          {ancillaMode && (
-            <div>
-              <AncillaPort node={node} edges={edges} dirty={false} index={numberOutputs} />
-              <AncillaPort node={node} edges={edges} dirty={true} index={numberOutputs + 1} />
-              <UncomputePort node={node} edges={edges} index={numberOutputs + 2} />
-            </div>
+          {collapsed && childNodes.length > 0 && (
+            <span style={{ fontSize: "10px", color: `${color}99`, marginRight: "6px", flexShrink: 0 }}>
+              {childNodes.length} Node{childNodes.length !== 1 ? "s" : ""}
+            </span>
           )}
 
+          <button onClick={(e) => { e.stopPropagation(); toggleCollapse(); }}
+            style={{
+              flexShrink: 0, width: "20px", height: "20px",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              borderRadius: "4px", fontSize: "11px", fontWeight: "bold",
+              backgroundColor: `${color}33`, color,
+              border: `1px solid ${color}66`, cursor: "pointer", lineHeight: 1,
+            }}
+            title={collapsed ? "Expand" : "Collapse"}
+          >{collapsed ? "▸" : "▾"}</button>
+
+          <button onClick={handleToggleLock}
+            style={{
+              flexShrink: 0, width: "20px", height: "20px",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              borderRadius: "4px", fontSize: "11px",
+              backgroundColor: locked ? `${color}33` : `${color}22`,
+              color: color,
+              border: `1px solid ${color}66`,
+              cursor: "pointer", lineHeight: 1, marginLeft: "2px",
+              opacity: locked ? 1 : 0.7,
+            }}
+            title={locked ? "Unlock group" : "Lock group"}
+          >{locked ? "🔒" : "🔓"}</button>
+
+          <button onClick={handleUngroup}
+            style={{
+              flexShrink: 0, width: "20px", height: "20px",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              borderRadius: "4px", fontSize: "11px", fontWeight: "bold",
+              backgroundColor: "#fee2e2", color: "#ef4444",
+              border: "1px solid #fca5a5", cursor: "pointer",
+              lineHeight: 1, marginLeft: "4px",
+            }}
+            title="Ungroup"
+          >×</button>
         </div>
-        <Button
-          onClick={() => { collapseParent(); }}
-          icon={collapsed ? "-" : "+"}
+      </div>
+
+      {/* Proxy Input-Handles (links) */}
+      {!collapsed && proxyInputs.length > 0 && proxyInputs.map((h) => (
+        <Handle
+          key={h.id}
+          type="target"
+          id={h.id}
+          position={Position.Left}
+          isConnectable={true}
           style={{
-            position: "absolute",
-            bottom: "0px",
-            left: "50%",
-            transform: "translateX(-50%)",
+            top: handleTop(h.index, h.total),
+            backgroundColor: h.color,
             border: "1px solid black",
-            borderRadius: 0,
-            zIndex: 30,
+            width: 13, height: 13, zIndex: 10,
+            borderRadius: h.color === "#F5A843" ? "50%" : 0,
           }}
         />
-      </div>
-    </div>
-  ) : (
-    <div className="absolute left-0 overflow-visible text-center" style={{ zIndex: 30 }}>
-      <div style={{ position: "relative", width: "225px", overflow: "visible" }}>
+      ))}
 
-        <div
-          className="hexagon-left"
+      {/* Proxy Output-Handles (rechts) */}
+      {!collapsed && proxyOutputs.length > 0 && proxyOutputs.map((h) => (
+        <Handle
+          key={h.id}
+          type="source"
+          id={h.id}
+          position={Position.Right}
+          isConnectable={true}
           style={{
-            position: "absolute",
-            left: "-50px",
-            width: "250px",
-            height: `${hexagonHeight}px`,
-            backgroundColor: "black",
-            top: `${-90}px`,
-            clipPath: "polygon(10% 0%, 90% 0%, 100% 10%, 100% 90%, 90% 100%, 10% 100%, 0% 90%, 0% 10%)",
+            top: handleTop(h.index, h.total),
+            backgroundColor: h.color,
+            border: "1px solid black",
+            width: 13, height: 13, zIndex: 10,
+            borderRadius: h.color === "#F5A843" ? "50%" : 0,
           }}
-        ></div>
-        <div
-          className="hexagon-left"
-          style={{
-            position: "absolute",
-            left: "-50px",
-            width: "250px",
-            height: `${hexagonHeight}px`,
-            backgroundColor: "white",
-            top: `${-90}px`,
-            clipPath: "polygon(10% 0%, 90% 0%, 100% 10%, 100% 90%, 90% 100%, 10% 100%, 0% 90%, 0% 10%)",
+        />
+      ))}
 
-
-          }}
-        >
-          <div className="w-full flex items-center" style={{ height: '52px' }}>
-            <div className="w-full bg-purple-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
-              <img src="Grouping icon.png" alt="icon" className="w-[60px] h-[60px] object-contain flex-shrink-0" style={{ paddingLeft: '25px' }} />
-              <div className="h-full w-[1px] bg-black mx-2" />
-              <span className=" font-semibold leading-none" style={{ paddingLeft: '25px' }}>Dynamic Circuit</span>
-            </div>
-          </div>
-
-          <Button
-            onClick={() => { collapseParent(); setColllapsed(!collapsed) }}
-            icon={collapsed ? "+" : "-"}
-            style={{
-              position: "absolute",
-              bottom: "0px",
-              left: "50%",
-              transform: "translateX(-50%)",
-              border: "1px solid black",
-              borderRadius: 0,
-              zIndex: 30,
-            }}
-          />
-        </div>
-
-        <div style={{ position: "relative", left: "-120px", overflow: "visible" }}>
-          <div style={{ position: "relative", left: "2px", overflow: "visible" }}>
-            {Array.from({ length: numberInputs }).map((_, index) => (
-              <div
-                key={`quantum-input-${index}`}
-                className="relative p-2 mb-1"
-                style={{
-                  width: "120px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "flex-start",
-                }}
-              >
-                <Handle
-                  type="target"
-                  id={`quantumHandleOperationInput${index}${node.id}`}
-                  position={Position.Left}
-                  className="z-10 circle-port-op !bg-blue-300 !border-black -left-[8px]"
-                  style={{ top: "16px", }}
-                />
-           
-              </div>
-            ))}
-        
-            {Array.from({ length: numberInputs }).map((_, index) => (
-              <div
-                key={`quantum-input-${index}`}
-                className="relative p-2 mb-1"
-                style={{
-                  width: "120px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "flex-start",
-                }}
-              >
-                <Handle
-                  type="target"
-                  id={`quantumHandleOperationInput${index}${node.id}`}
-                  position={Position.Left}
-                  className="z-10 circle-port-op !bg-blue-300 !border-black -left-[8px]"
-                  style={{ top: "16px", }}
-                />
-           
-              </div>
-            ))}
-          </div>
-
-
-          <div style={{ right: "-25px", overflow: "visible", position: "relative" }}>
-
-            {Array.from({ length: numberOutputs }).map((_, index) => (
-              <OutputPort
-                key={`output-port-${index}`}
-                node={node}
-                index={index}
-                type={"quantum"}
-                nodes={nodes}
-                outputs={outputs}
-                setOutputs={setOutputs}
-                edges={edges}
-                outputIdentifierError={outputIdentifierErrors[index]}
-                updateNodeValue={updateNodeValue}
-                setOutputIdentifierError={(error) =>
-                  setOutputIdentifierErrors(prev => ({ ...prev, [index]: error }))
-                }
-                sizeError={sizeErrors[index]}
-                setSizeError={(error) =>
-                  setSizeErrors((prev) => ({ ...prev, [index]: error }))
-                }
-                setSelectedNode={setSelectedNode}
-                active={true}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
+      {/* Fallback wenn keine Proxy-Handles */}
+      {(collapsed || proxyInputs.length === 0) && groupHasInputs && (
+        <Handle type="target" id={`groupInput0${id}`} position={Position.Left}
+          isConnectable={true}
+          style={{ top: "50%", backgroundColor: getHandleColor(`${groupType === "classical" ? "classical" : "quantum"}Handle`), border: "1px solid black", width: 13, height: 13, zIndex: 10, borderRadius: groupType === "classical" ? "50%" : 0 }}
+        />
+      )}
+      {(collapsed || proxyOutputs.length === 0) && (
+        <Handle type="source" id={`groupOutput0${id}`} position={Position.Right}
+          isConnectable={true}
+          style={{ top: "50%", backgroundColor: getHandleColor(`${groupType === "classical" ? "classical" : "quantum"}Handle`), border: "1px solid black", width: 13, height: 13, zIndex: 10, borderRadius: groupType === "classical" ? "50%" : 0 }}
+        />
+      )}
+    </>
   );
 });
