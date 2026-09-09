@@ -950,18 +950,18 @@ If none apply, return { "algorithms": [] }.
         const findNodeFromHandle = (handleId: string | null, groupId: string): Node | undefined => {
           if (!handleId) return undefined;
           const children = allNodes.filter(n => n.parentNode === groupId && n.type !== "groupNode");
-          // Prüfe ob Handle-ID eine Kind-Node ID enthält
+          // check whether the handle ID contains a child node ID
           const match = children.find(n => handleId.includes(n.id));
           if (match) return match;
-          // Fallback: wenn es ein Gruppen-Handle ist (groupInput/groupOutput)
-          // dann ersten/letzten Kind-Node nehmen
+          // fallback: for a group handle (groupInput/groupOutput),
+          // take the first or last child node
           if (handleId.includes("groupInput")) {
-            // Ersten Kind-Node mit freiem Input nehmen
+            // take the first child node with a free input
             return children.find(n => n.type === "gateNode" && n.data?.inputs?.length > 0)
               ?? children[0];
           }
           if (handleId.includes("groupOutput")) {
-            // Letzten Kind-Node nehmen (Output)
+            // take the last child node (output)
             return children[children.length - 1];
           }
           return children[0];
@@ -983,7 +983,7 @@ If none apply, return { "algorithms": [] }.
               : tgtNode;
 
             if (realSrc && realTgt) {
-              // Generiere die korrekten Handle-IDs wenn es Gruppen-Handles waren
+              // build the correct handle IDs if these were group handles
               const newSourceHandle = edge.sourceHandle?.includes("groupOutput")
                 ? `quantumHandleGateOutput0${realSrc.id}`
                 : edge.sourceHandle;
@@ -2130,7 +2130,7 @@ If none apply, return { "algorithms": [] }.
         return;
       }
 
-      // Drag-to-Group für groupNode
+      // drag-to-group for groupNode
     if (node.type !== "groupNode") {
           try {
             const currentNodes = reactFlowInstance.getNodes();
@@ -2139,7 +2139,7 @@ If none apply, return { "algorithms": [] }.
               reactFlowInstance.setNodes(updatedNodes);
             }
           } catch (e) {
-            // Node nicht gefunden – kein Update nötig
+            // node not found, no update needed
           }
       }
     
@@ -2299,16 +2299,16 @@ If none apply, return { "algorithms": [] }.
     const edgeType = connection.sourceHandle?.includes("quantum") ? "quantumEdge" : "classicalEdge";
     const color = connection.sourceHandle?.includes("quantum") ? "#93C5FD" : "#F5A843";
 
-    // Falls source/target eine Gruppe ist, das eigentliche Kind-Node anhand des Handle-Suffix auflösen,
-    // damit die Edge direkt auf die Kind-Node zeigt statt auf die Gruppe selbst.
-    // Handle-IDs enden immer auf die Node-ID, z.B. "...StatePreparationInput0<nodeId>".
+    // If source or target is a group, resolve the actual child node from the handle suffix so
+    // that the edge points directly at the child node instead of at the group itself.
+    // Handle IDs always end with the node ID, e.g. "...StatePreparationInput0<nodeId>".
     const resolveRealNodeId = (groupId: string | null | undefined, handleId: string | null | undefined): string | null => {
       if (!handleId) return null;
       const allNodes = reactFlowInstance.getNodes();
-      // Kandidaten: alle Nodes deren ID am Ende der Handle-ID steht
+      // candidates: all nodes whose ID appears at the end of the handle ID
       const candidates = allNodes.filter((n) => handleId.endsWith(n.id));
       if (candidates.length === 0) return null;
-      // Längste Übereinstimmung wählen (vermeidet Teilstring-Fehltreffer bei ähnlichen IDs)
+      // pick the longest match to avoid substring mismatches between similar IDs
       candidates.sort((a, b) => b.id.length - a.id.length);
       return candidates[0].id;
     };
@@ -2598,19 +2598,19 @@ If none apply, return { "algorithms": [] }.
   const onNodesDelete = useCallback((deletedNodes: Node[]) => {
     setContextMenu((prev) => ({ ...prev, visible: false })); // contextMenu disappears when node is deleted
 
-    // Handle-Bounds der Geschwister-Nodes neu berechnen lassen,
-    // damit Connects nach dem Löschen eines Nodes (z.B. innerhalb einer Gruppe) wieder funktionieren.
+    // Recompute the handle bounds of the sibling nodes so that connecting works again
+    // after a node has been deleted, e.g. from inside a group.
     const deletedIds = new Set(deletedNodes.map((n) => n.id));
     const affectedParentIds = new Set(
       deletedNodes.map((n) => n.parentNode).filter(Boolean) as string[]
     );
 
-    // Kurze Verzögerung damit React Flow den neuen Node/Edge-State zuerst übernimmt
+    // short delay so React Flow applies the new node/edge state first
     requestAnimationFrame(() => {
       const remainingNodes = reactFlowInstance.getNodes();
       remainingNodes.forEach((node) => {
         if (deletedIds.has(node.id)) return;
-        // Geschwister-Nodes (gleiche Gruppe) und die Gruppe selbst aktualisieren
+        // update the sibling nodes (same group) and the group itself
         if (
           (node.parentNode && affectedParentIds.has(node.parentNode)) ||
           affectedParentIds.has(node.id)
@@ -3803,7 +3803,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
   };
 
   const getCircuitSvg = (): Promise<string> => {
-    // Vor dem Screenshot zentrieren
+    // center the view before taking the screenshot
   reactFlowInstance.fitView({ padding: 0.1 });
 
   return new Promise((resolve, reject) => {
@@ -3833,12 +3833,12 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
 
 
 
-  //Handler-Funktionen für Gruppierung von Nodes
+  // handler functions for grouping nodes
   const handleGroupSelected = useCallback(() => {
     const currentNodes = reactFlowInstance.getNodes();
       
-    // React Flow speichert selected manchmal als separate Liste
-    // Hole ausgewählte Nodes über das selection-System
+    // React Flow sometimes keeps the selection in a separate list,
+    // so read the selected nodes through the selection system
     const selectedNodes = currentNodes.filter(
       (n) => n.selected || reactFlowInstance.getNode(n.id)?.selected
     );
@@ -3864,7 +3864,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
   const handleLoadQasm = useCallback((qasm: string) => {
     const { nodes: newNodes, edges: newEdges } = qasmToNodes(qasm);
 
-    // Fehlende Node-Daten ergänzen die der Store erwartet
+    // fill in the node data the store expects
     const enrichedNodes = newNodes.map(n => ({
       ...n,
       data: {
@@ -4507,7 +4507,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
           uploadPatternSolution={() => setIsPatternModalOpen(true)}
           openPatternSolution={() => setIsPatternImplementationOpen(true)}
           openOpenQASM={handleOpenQASMClick}
-
+          onLoadQasm={handleLoadQasm}
           //uploadPatternSolution={() => registerAndUploadToGitHub()}
           onLoadJson={handleLoadJson}
           sendToBackend={handleOpenValidation}
