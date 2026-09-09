@@ -4507,7 +4507,6 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
           uploadPatternSolution={() => setIsPatternModalOpen(true)}
           openPatternSolution={() => setIsPatternImplementationOpen(true)}
           openOpenQASM={handleOpenQASMClick}
-          onLoadQasm={handleLoadQasm}
 
           //uploadPatternSolution={() => registerAndUploadToGitHub()}
           onLoadJson={handleLoadJson}
