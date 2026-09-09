@@ -14,8 +14,8 @@ interface ExperienceModePanelProps {
   domainProfile: string;
   onDomainProfileChange: (profile: string) => void;
   domainProfileNames: string[];
-  mathMode: boolean;               // ← NEU
-  onToggleMathMode: () => void;    // ← NEU
+  mathMode: boolean;
+  onToggleMathMode: () => void;
   qasmEditorMode: boolean;
   onToggleQasmEditorMode: () => void;
   onCollaborationModeChange: () => void;
@@ -111,31 +111,18 @@ export default function ExperienceModePanel({
                     }}
                     className="mt-1 px-2 py-1 border rounded"
                   >
-                    <option value="explorer">Explorer</option>
-                    <option value="pioneer">Pioneer</option>
+                    <option value="explorer" title="New to quantum computing, curious and starting the journey.">
+                      Explorer
+                    </option>
+                    <option value="pioneer" title="Advanced understanding, pushing the frontier of quantum computing.">
+                      Pioneer
+                    </option>
                   </select>
                 </td>
               </tr>
               <tr>
                 <td align="right">
-                  <span title="Ancilla qubits are helper qubits used for intermediate calculations.">
-                    Ancilla Modeling
-                  </span>
-                </td>
-                <td align="left">
-                  <button
-                    onClick={onToggleAncilla}
-                    className={`px-2 py-1 rounded text-white ${
-                      ancillaModelingOn ? "bg-blue-600" : "bg-gray-400"
-                    }`}
-                  >
-                    {ancillaModelingOn ? "On" : "Off"}
-                  </button>
-                </td>
-              </tr>
-              <tr>
-                <td align="right">
-                  <span title="Compact Visualization reduces visual space by compressing nodes.">
+                  <span title="Compact Visualization reduces visual space by compressing nodes. Recommended for advanced users.">
                     Compact Visualization
                   </span>
                 </td>
@@ -163,8 +150,8 @@ export default function ExperienceModePanel({
                     onChange={(e) => onCompletionGuaranteedChange(e.target.value === "Yes")}
                     className="px-2 py-1 border rounded"
                   >
-                    <option>Yes</option>
-                    <option>No</option>
+                    <option title="The backend has suitable implementations for all nodes available.">Yes</option>
+                    <option title="The backend does not have suitable implementations for all nodes available.">No</option>
                   </select>
                 </td>
               </tr>

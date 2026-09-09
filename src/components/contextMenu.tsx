@@ -30,46 +30,42 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   right,
   bottom,
   onAction,
-  styles = {}, // Default styles as an empty object
+  styles = {},
 }) => {
   const { getNode, getNodes, getEdges, setNodes, addNodes, setEdges, addEdges, getEdge } = useReactFlow();
-  // Safe fallback: bei Edge-Context-Menus liefert getNode(id) undefined zurück
+  // safe fallback: getNode(id) returns undefined for edge context menus
   const type = getNode(id)?.type || "edge";
-  console.log("type", type)
   const updateNodeInternals = useUpdateNodeInternals();
 
-  // Alle Hooks müssen unbedingt (unconditionally) VOR jedem frühen Return stehen
+  // all hooks must run unconditionally BEFORE any early return (rules of hooks)
   const node = useStore(
     useCallback((state) => state.nodeInternals.get(id), [id])
   );
   const edge = getEdge(id);
-  console.log("node", node)
-  console.log("edge", edge)
 
   const regenerateIdentifiers = (data: any): any => {
     const normalized = { ...data };
-    // outputTypes/inputTypes/dataType normalisieren
+    // normalize outputTypes/inputTypes/dataType
     if (Array.isArray(normalized.outputTypes))
       normalized.outputTypes = normalized.outputTypes.map((t: string) => t.toLowerCase());
     if (Array.isArray(normalized.inputTypes))
       normalized.inputTypes = normalized.inputTypes.map((t: string) => t.toLowerCase());
     if (typeof normalized.dataType === "string")
       normalized.dataType = normalized.dataType.toLowerCase();
-    // Neue eindeutige Identifier generieren (exakt wie store.ts Zeile 167ff)
+    // generate new unique identifiers, matching the generator used in store.ts
     const newId = () => `q${Math.floor(100000 + Math.random() * 900000)}`;
     if (Array.isArray(normalized.identifiers) && normalized.identifiers.length > 0) {
       normalized.identifiers = normalized.identifiers.map(() => newId());
     }
-    // outputIdentifier neu generieren falls vorhanden
     if (normalized.outputIdentifier !== undefined && normalized.outputIdentifier !== "") {
       normalized.outputIdentifier = newId();
     }
-    // WICHTIG: data.inputs/data.outputs tracken eingehende/ausgehende Verbindungen
-    // (id, edgeId, targetHandle - siehe backend.ts mapEdge Fallback-Logik) des
-    // ORIGINAL-Node. Ein frisch duplizierter Node hat noch KEINE eigenen Verbindungen -
-    // die entstehen erst, wenn der Nutzer ihn neu verkabelt. Ohne dieses Zurücksetzen
-    // bleibt die alte Referenz auf den Original-Node bestehen und führt bei der
-    // Backend-Kompilierung zu falscher Register-/Identifier-Zuordnung.
+    // IMPORTANT: data.inputs/data.outputs track the incoming and outgoing connections
+    // (id, edgeId, targetHandle - see the mapEdge fallback logic in backend.ts) of the
+    // ORIGINAL node. A freshly duplicated node has no connections of its own yet; those
+    // only appear once the user wires it up. Without resetting them here, the stale
+    // reference to the original node survives and leads to a wrong register/identifier
+    // assignment during backend compilation.
     if (Array.isArray(normalized.inputs)) {
       normalized.inputs = [];
     }
@@ -142,7 +138,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
 
   const deleteNode = useCallback(() => {
     const allNodes = getNodes();
-    // Rekursiv alle Nachkommen sammeln (Subgruppen in Gruppen etc.)
+    // collect all descendants recursively (subgroups inside groups, etc.)
     const idsToDelete = new Set<string>([id]);
     let changed = true;
     while (changed) {
@@ -154,17 +150,16 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
         }
       });
     }
-    // Nodes und Edges atomar in einem Schritt entfernen.
-    // Der zusätzliche "e.id !== id"-Check deckt den Fall ab, dass "id" selbst
-    // eine Edge-ID ist (Kontextmenü wurde über onEdgeContextMenu geöffnet) -
-    // dann greift keine der Node-basierten Filterbedingungen oben.
+    // Remove nodes and edges atomically in a single step. The extra "e.id !== id" check
+    // covers the case where "id" is itself an edge ID (the menu was opened through
+    // onEdgeContextMenu), because none of the node-based filters above would match then.
     //
-    // WICHTIG: Dieser Pfad nutzt die rohen setNodes/setEdges von useReactFlow()
-    // und läuft damit AN der onEdgesChange-Bereinigungslogik im Zustand-Store
-    // vorbei (die beim Tastatur-Löschen via onNodesChange/onEdgesChange greift).
-    // Ohne die folgende Bereinigung blieben data.inputs-Einträge auf verbleibenden
-    // Knoten zurück, die auf die gerade gelöschte(n) ID(s) verweisen - das führte zu
-    // Folgefehlern (blockierte neue Verbindungen, doppelte Gruppen in der Analyse).
+    // IMPORTANT: this path uses the raw setNodes/setEdges from useReactFlow() and
+    // therefore bypasses the onEdgesChange cleanup in the Zustand store, which only runs
+    // for keyboard deletion via onNodesChange/onEdgesChange. Without the cleanup below,
+    // remaining nodes keep data.inputs entries pointing at the deleted IDs, which caused
+    // follow-up errors such as blocked new connections and duplicate groups in the
+    // component analysis.
     setNodes((nodes) =>
       nodes
         .filter((n) => !idsToDelete.has(n.id))
@@ -187,10 +182,9 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
     if (onAction) onAction("delete", id);
   }, [id, getNodes, setNodes, setEdges, onAction]);
 
-  const incrementNodeDataField = useCallback((field: string, min_value: number) => { //TODO: richtiges Feld verwenden (bei merger: numberInputs) --> Feld als Argument übergeben?
+  // TODO: use the correct field (numberInputs for merger nodes) - pass it as an argument?
+  const incrementNodeDataField = useCallback((field: string, min_value: number) => {
     const node = getNode(id);
-    //const field = "numberQuantumInputs";
-    console.log("[INCREMENT] field value", field, "field value type", typeof node.data[field])
     setNodes((nodes) =>
       nodes.map((n) =>
         n.id === id
@@ -204,7 +198,6 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
 
   const decrementNodeDataField = useCallback((field: string, min_value: number) => {
     const node = getNode(id);
-    console.log("[DECREMENT] field value", node.data[field], "field value type", typeof node.data[field])
     setNodes((nodes) =>
       nodes.map((n) =>
         n.id === id
@@ -219,7 +212,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   const [submenuInputRemoveOpen, setSubmenuInputRemoveOpen] = useState(false);
   const [submenuOutputAddOpen, setSubmenuOutputAddOpen] = useState(false);
   const [submenuOutputRemoveOpen, setSubmenuOutputRemoveOpen] = useState(false);
-  // Syncing effects (müssen vor jedem frühen Return stehen, Rules of Hooks)
+  // syncing effects, kept before any early return (rules of hooks)
   useEffect(() => {
     if (id) updateNodeInternals(id);
   }, [id, node?.data, updateNodeInternals]);
@@ -227,7 +220,6 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   useEffect(() => {
     if (node?.id) {
       updateNodeInternals(node.id);
-      console.log("update handles");
     }
   }, [node?.id, node?.data?.["numberClassicalInputs"], updateNodeInternals]);
 
@@ -251,16 +243,14 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
     setSubmenuOutputRemoveOpen(prev => !prev);
   }, []);
 
-  // hoveredBtn ist ein Hook (useState) und muss daher VOR dem frühen Return
-  // deklariert werden - hoverProps selbst ist keine Hook-Funktion und darf
-  // an beliebiger Stelle bleiben.
+  // hoveredBtn is a hook and must be declared BEFORE the early return below;
+  // hoverProps itself is a plain function and may live anywhere.
   const [hoveredBtn, setHoveredBtn] = useState<string | null>(null);
 
-  // Jetzt ist es sicher, früh auszusteigen, falls weder Node noch Edge existiert
-  // (z. B. während eines Renders kurz nach dem Löschen des Elements)
+  // safe to bail out now if neither a node nor an edge exists,
+  // e.g. during a render right after the element was deleted
   if (!node && !edge) return null;
 
-  // Von der Node-Existenz abhängige Variablen
   let minInput = 0;
   let minOutput = 0;
 
@@ -271,7 +261,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
     minInput = 1;
   }
 
-  // Optional Chaining: id kann eine Edge-ID sein, dann ist node undefined
+  // optional chaining: id may be an edge ID, in which case node is undefined
   const quantumInputs = Number(node?.data["numberQuantumInputs"] ?? 0);
   const hasQuantumInputs = quantumInputs > minInput || false;
   const hasClassicalInputs = node?.data["numberClassicalInputs"] > minInput || false;
@@ -280,12 +270,6 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   const hasInputs = node?.data["numberInputs"] > minInput || false;
   const hasOutputs = node?.data["numberOutputs"] > minOutput || false;
   const hasQFTInputs = node?.data["numberOutputs"] > minInput || false;
-
-  console.log("contextMenu")
-  console.log(getNode(id)?.type)
-  console.log(getNode(id)?.data["numberQuantumInputs"])
-  console.log(hasQuantumInputs)
-  console.log(hasClassicalInputs)
 
   const hoverProps = (key: string, isDanger = false) => ({
     onMouseEnter: () => setHoveredBtn(key),
@@ -299,7 +283,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   });
 
   let buttons = [];
-  // Duplizieren nur für Nodes sinnvoll, Edges können nur gelöscht werden
+  // duplicating only makes sense for nodes; edges can only be deleted
   if (type !== "edge") {
     buttons.push(
       <button
@@ -663,7 +647,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
           position: "absolute",
           top,
           left,
-          ...styles, // Merge passed styles
+          ...styles,
           backgroundColor: "#fff",
           border: "1px solid #ddd",
           borderRadius: "8px",

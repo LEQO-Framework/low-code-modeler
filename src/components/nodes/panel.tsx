@@ -1,8 +1,3 @@
-/**
- * panel.tsx
- * Platzierung: src/components/panel.tsx
- */
-
 import { useState, useRef, useCallback } from "react";
 import { Node } from "reactflow";
 import { shallow } from "zustand/shallow";
@@ -37,11 +32,12 @@ export const CustomPanel = ({
   const { selectedNode } = useStore(selector, shallow);
   const [activeTab, setActiveTab] = useState<"properties" | "math">("properties");
 
-  // Manuelle Breite – wenn Math Mode ein, starte breiter
+  // Manually adjustable width; starts wider while Math Mode is active
   const [width, setWidth] = useState(DEFAULT_WIDTH);
   const [prevMathMode, setPrevMathMode] = useState(false);
 
-  // Wenn Math Mode umgeschaltet wird, Breite anpassen
+  // Sync width to the Math Mode toggle during render instead of in an effect,
+  // so the panel does not flash at the old width for one frame
   if (mathMode !== prevMathMode) {
     setPrevMathMode(mathMode);
     setWidth(mathMode ? MATH_MODE_WIDTH : DEFAULT_WIDTH);
@@ -62,7 +58,7 @@ export const CustomPanel = ({
 
     const onMouseMove = (e: MouseEvent) => {
       if (!isDragging.current) return;
-      const delta = startX.current - e.clientX; // Panel ist rechts → nach links ziehen = breiter
+      const delta = startX.current - e.clientX; // panel is docked right, so dragging left widens it
       const newWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, startWidth.current + delta));
       setWidth(newWidth);
     };
@@ -92,7 +88,7 @@ export const CustomPanel = ({
   return (
     <div style={{ display: "flex", height: "100%" }}>
 
-      {/* Drag-Handle links (ziehen um Panel zu verbreitern) */}
+      {/* Drag handle on the left edge for resizing the panel */}
       <div
         onMouseDown={onMouseDown}
         style={{
@@ -108,12 +104,10 @@ export const CustomPanel = ({
         title="Breite anpassen"
       />
 
-      {/* Panel-Inhalt */}
       <div
         className="currentPanel-container bg-gray-100 h-full border-gray-200 border text-black flex flex-col"
         style={{ width: `${width}px`, minWidth: `${MIN_WIDTH}px`, transition: isDragging.current ? "none" : "width 0.2s ease" }}
       >
-        {/* Tab-Leiste */}
         {mathMode && (
           <div className="flex border-b border-gray-300 bg-white flex-shrink-0">
             <button
@@ -139,14 +133,12 @@ export const CustomPanel = ({
           </div>
         )}
 
-        {/* Properties Tab */}
         {activeTab === "properties" && (
           <div className="flex-1 overflow-y-auto">
             <CurrentPanel metadata={metadata} onUpdateMetadata={handleChange} />
           </div>
         )}
 
-        {/* Math Mode Tab */}
         {activeTab === "math" && mathMode && (
           <div className="flex-1 overflow-y-auto p-2">
             {hasMathContent ? (

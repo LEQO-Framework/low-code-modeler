@@ -30,11 +30,10 @@ export const GateNode = memo((node: Node) => {
   const { edges, nodes, experienceLevel, updateNodeValue } = useStore(selector, shallow);
   console.log(experienceLevel)
 
-  // Register-Index, den dieser Qubit-Node beim tatsächlichen Kompilieren bekäme (gleiche
-  // Gruppierungs-/Sortierlogik wie componentAnalyzer.ts / backend.ts). Nur für Qubit-Circuit-
-  // Nodes relevant; wird bei jeder Änderung an nodes/edges neu berechnet, damit der Badge immer
-  // aktuell ist, egal auf welchem Weg (Drag&Drop, Duplizieren, QASM-Import, ...) der Node
-  // hinzugefügt wurde.
+  // Register index this qubit node would receive during actual compilation (same grouping and
+  // sorting logic as componentAnalyzer.ts / backend.ts). Only relevant for Qubit Circuit nodes;
+  // recomputed on every change to nodes/edges so the badge always stays up to date, no matter
+  // how the node was added (drag & drop, duplication, QASM import, ...).
   const qubitIndexLabel = useMemo(() => {
     if (!isQubit) return null;
     const indices = computeQubitIndices(nodes, edges);
