@@ -1,14 +1,11 @@
 /**
- * nodesToQasm.ts
- * Platzierung: src/lib/nodesToQasm.ts
- *
- * Generiert QASM 2.0 direkt aus React Flow Nodes und Edges,
- * ohne Backend-Call. Wird für die Canvas → QASM Editor Sync verwendet.
+ * Generates QASM 2.0 directly from React Flow nodes and edges, without a backend call.
+ * Used for the canvas to QASM editor synchronization.
  */
 
 import { Node, Edge } from "reactflow";
 
-// Label → QASM-Befehl Mapping (umgekehrt zu GATE_LABEL_MAP in qasmToNodes.ts)
+// label to QASM instruction mapping (the inverse of GATE_LABEL_MAP in qasmToNodes.ts)
 const LABEL_TO_QASM: Record<string, string> = {
   "H": "h",
   "X": "x",
@@ -43,7 +40,7 @@ const LABEL_TO_QASM: Record<string, string> = {
   "U3(θ,φ,λ)": "u3",
 };
 
-// Parametrische Gates die einen Parameter-Wert benötigen
+// parametric gates that require a parameter value
 const PARAMETRIC_GATES = new Set([
   "rx", "ry", "rz", "p", "cp", "crx", "cry", "crz", "u1", "u2", "u3",
 ]);
@@ -51,46 +48,46 @@ const PARAMETRIC_GATES = new Set([
 interface TopoNode {
   id: string;
   label: string;
-  qubitIds: string[];    // identifiers der Qubits in Reihenfolge
+  qubitIds: string[];    // identifiers of the qubits, in order
   parameter?: string;
-  deps: string[];        // Node-IDs die vorher kommen müssen
+  deps: string[];        // IDs of the nodes that have to come first
 }
 
 /**
- * Wandelt Canvas-Nodes und Edges in QASM 2.0 um.
- * Gibt null zurück wenn keine gültigen Quantum-Nodes gefunden werden.
+ * Converts canvas nodes and edges into QASM 2.0.
+ * Returns null when no valid quantum nodes are found.
  */
 export function nodesToQasm(nodes: Node[], edges: Edge[]): string | null {
-  // Nur Gate-Nodes berücksichtigen
+  // only gate nodes are considered
   const gateNodes = nodes.filter(n => n.type === "gateNode");
   if (gateNodes.length === 0) return null;
 
-  // Qubit-Nodes identifizieren (|0⟩)
+  // identify the qubit nodes (|0⟩)
   const qubitNodes = gateNodes.filter(n => n.data?.label === "Qubit Circuit");
   if (qubitNodes.length === 0) return null;
 
-  // Qubit-Reihenfolge per Y-Position bestimmen
+  // determine the qubit order from the Y position
   const sortedQubits = [...qubitNodes].sort((a, b) => {
     const ay = (a.positionAbsolute?.y ?? a.position.y);
     const by = (b.positionAbsolute?.y ?? b.position.y);
     return ay - by;
   });
 
-  // Qubit-Index-Map: nodeId → globaler Index
+  // qubit index map: node ID -> global index
   const qubitIndexMap = new Map<string, number>();
   sortedQubits.forEach((q, i) => qubitIndexMap.set(q.id, i));
 
-  // Identifier → Qubit-Index Map (für inputs-Referenzen)
+  // identifier to qubit index map, used for the inputs references
   const identifierToIndex = new Map<string, number>();
   sortedQubits.forEach((q, i) => {
     const ids: string[] = q.data?.identifiers ?? [];
     ids.forEach(id => identifierToIndex.set(id, i));
   });
 
-  // Gate-Nodes (ohne Qubits) topologisch sortieren
+  // topologically sort the gate nodes, excluding the qubit sources
   const nonQubitGates = gateNodes.filter(n => n.data?.label !== "Qubit Circuit");
 
-  // Topologische Sortierung via Kahn's Algorithmus
+  // topological sort via Kahn's algorithm
   const inDegree = new Map<string, number>();
   const adjList = new Map<string, string[]>();
 
@@ -141,7 +138,7 @@ export function nodesToQasm(nodes: Node[], edges: Edge[]): string | null {
     }
   }
 
-  // QASM aufbauen
+  // assemble the QASM
   const numQubits = sortedQubits.length;
   const lines: string[] = [
     "OPENQASM 2.0;",
@@ -149,21 +146,21 @@ export function nodesToQasm(nodes: Node[], edges: Edge[]): string | null {
     "",
   ];
 
-  // Gate-Befehle generieren
+  // generate the gate instructions
   for (const gateId of sortedGateIds) {
     const gate = nonQubitGates.find(g => g.id === gateId);
     if (!gate) continue;
 
     const label: string = gate.data?.label ?? "";
     const qasmName = LABEL_TO_QASM[label];
-    if (!qasmName) continue; // unbekanntes Gate überspringen
+    if (!qasmName) continue; // skip unknown gates
 
-    // Qubit-Indizes aus inputs-Array ermitteln
+    // derive the qubit indices from the inputs array
     const inputs: any[] = gate.data?.inputs ?? [];
     const qubitIndices: number[] = [];
 
     for (const input of inputs) {
-      // Direkt über die Identifier
+      // directly via the identifiers
       const ids: string[] = input.identifiers ?? [];
       for (const identifier of ids) {
         const idx = identifierToIndex.get(identifier);
@@ -174,7 +171,7 @@ export function nodesToQasm(nodes: Node[], edges: Edge[]): string | null {
       }
     }
 
-    // Fallback: per Y-Position der Source-Nodes
+    // fallback: use the Y position of the source nodes
     if (qubitIndices.length === 0) {
       const sourceEdges = edges.filter(e => e.target === gateId);
       const sourceNodes = sourceEdges
@@ -188,7 +185,7 @@ export function nodesToQasm(nodes: Node[], edges: Edge[]): string | null {
       for (const src of sourceNodes) {
         const idx = qubitIndexMap.get(src.id) ??
           (() => {
-            // Rückwärts durch die Kette bis zum Qubit
+            // walk backwards along the chain until the qubit is reached
             let cur: Node | undefined = src;
             while (cur && cur.data?.label !== "Qubit Circuit") {
               const prevEdge = edges.find(e => e.target === cur!.id);

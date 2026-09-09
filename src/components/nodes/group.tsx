@@ -48,7 +48,7 @@ function getGroupStyle(type: GroupType) {
   }
 }
 
-// Handle-Farbe anhand der Handle-ID bestimmen
+// Determine the handle color from the handle ID
 function getHandleColor(handleId: string): string {
   if (handleId.toLowerCase().includes("quantum"))   return "#93c5fd";
   if (handleId.toLowerCase().includes("classical")) return "#F5A843";
@@ -65,10 +65,10 @@ interface ProxyHandle {
 }
 
 /**
- * Berechnet die Proxy-Handles der Gruppe anhand der Edges:
- * - Output: sourceHandle eines Kind-Nodes der NICHT intern verbunden ist
- * - Input: targetHandle eines Kind-Nodes der NICHT intern verbunden ist
- * Handles werden direkt aus den Edges abgeleitet – keine data.inputs nötig.
+ * Computes the proxy handles of a group from the edges:
+ * - output: sourceHandle of a child node that is NOT connected internally
+ * - input: targetHandle of a child node that is NOT connected internally
+ * The handles are derived from the edges directly, so data.inputs is not needed.
  */
 function getProxyHandles(
   childNodes: Node[],
@@ -76,16 +76,16 @@ function getProxyHandles(
 ): { inputs: ProxyHandle[]; outputs: ProxyHandle[]; hasInputs: boolean } {
   const childIds = new Set(childNodes.map((n) => n.id));
 
-  // Interne Edges (beide Seiten sind Kind-Nodes)
+  // internal edges (both ends are child nodes)
   const internalEdges = edges.filter(
     (e) => childIds.has(e.source) && childIds.has(e.target)
   );
 
-  // Handle-IDs aus internen Edges – als Prefix-Set für Vergleich
+  // handle IDs from internal edges, used as a prefix set for comparison
   const internalSourceHandles = internalEdges.map((e) => e.sourceHandle).filter(Boolean) as string[];
   const internalTargetHandles = internalEdges.map((e) => e.targetHandle).filter(Boolean) as string[];
 
-  // Externe Edges
+  // external edges
   const externalEdges = edges.filter(
     (e) => (childIds.has(e.source) && !childIds.has(e.target)) ||
             (!childIds.has(e.source) && childIds.has(e.target))
@@ -93,8 +93,8 @@ function getProxyHandles(
   const externalSourceHandles = externalEdges.map((e) => e.sourceHandle).filter(Boolean) as string[];
   const externalTargetHandles = externalEdges.map((e) => e.targetHandle).filter(Boolean) as string[];
 
-  // Prüft ob ein Handle-ID mit einem der gespeicherten Handles übereinstimmt
-  // (unterstützt sowohl exakte als auch prefix-basierte Übereinstimmung)
+  // Checks whether a handle ID matches one of the stored handles,
+  // supporting both exact and prefix-based matches.
   const isHandleUsed = (handleId: string, usedHandles: string[]): boolean => {
     return usedHandles.some((h) =>
       h === handleId ||
@@ -109,30 +109,29 @@ function getProxyHandles(
   childNodes.forEach((child) => {
     const nodeType = child.type ?? "";
 
-    // Anzahl der Qubit-Wires dieses Nodes. Für die meisten Node-Typen ist das genau 1,
-    // aber gateNode kann mehrere Wires haben (CNOT=2, Toffoli=3). Die realen
-    // Handle-IDs tragen den Wire-Index direkt vor der Node-ID (z.B.
-    // "quantumHandleGateOutput0<id>", "...Output1<id>", "...Output2<id>",
-    // siehe store.ts Zeilen mit sourceHandle.includes("Output1")/.endsWith("Output2")).
-    // Vorher wurde hier IMMER nur Index 0 generiert, wodurch der zweite/dritte Wire
-    // eines CNOT/Toffoli-Gates niemals als Proxy-Handle der Gruppe auftauchen konnte.
+    // Number of qubit wires of this node. For most node types this is exactly 1, but a
+    // gateNode can have several wires (CNOT = 2, Toffoli = 3). The real handle IDs carry
+    // the wire index right before the node ID (e.g. "quantumHandleGateOutput0<id>",
+    // "...Output1<id>", "...Output2<id>"; see the lines in store.ts using
+    // sourceHandle.includes("Output1") / .endsWith("Output2")). Previously only index 0
+    // was generated here, so the second and third wire of a CNOT/Toffoli gate could never
+    // show up as a proxy handle of the group.
     //
-    // WICHTIG: Die Wire-Anzahl wird bewusst über data.label bestimmt und NICHT über
-    // data.identifiers.length. Letzteres wäre zwar bei der Node-Erstellung korrekt
-    // (siehe addNode in store.ts: CNOT bekommt 2, Toffoli 3 Einträge), wird aber in
-    // der onConnect-Logik von store.ts bei JEDER eingehenden Edge mit
-    // `targetData["identifiers"] = sourceIdentifier` überschrieben - also mit den
-    // identifiers des jeweils verbundenen Quell-Nodes. Ein an CNOT angeschlossener
-    // einzelner Qubit-Node hat aber nur 1 Identifier, wodurch CNOT.data.identifiers
-    // nach dem Verbinden fälschlich wieder auf Länge 1 zurückfällt. data.label ist
-    // davon nicht betroffen und daher das stabile Signal.
+    // IMPORTANT: the wire count is deliberately derived from data.label and NOT from
+    // data.identifiers.length. The latter is correct at node creation time (see addNode in
+    // store.ts: CNOT gets 2 entries, Toffoli 3), but the onConnect logic in store.ts
+    // overwrites it on EVERY incoming edge via `targetData["identifiers"] =
+    // sourceIdentifier`, i.e. with the identifiers of the connected source node. A single
+    // qubit node attached to a CNOT only has 1 identifier, which makes
+    // CNOT.data.identifiers fall back to length 1 after connecting. data.label is not
+    // affected by this and is therefore the stable signal.
     const wireCount =
       child.data?.label === "Toffoli" ? 3 :
       child.data?.label === "CNOT"    ? 2 : 1;
     const outputWireCount = nodeType === "gateNode" ? wireCount : 1;
     const inputWireCount  = nodeType === "gateNode" ? wireCount : 1;
 
-    // Output-Handle-Präfix nach bekanntem Muster generieren (ohne Wire-Index/ID)
+    // build the output handle prefix from the known pattern (without wire index and ID)
     let outputPrefix: string | null = null;
     if (nodeType === "gateNode")               outputPrefix = "quantumHandleGateOutput";
     else if (nodeType === "qubitNode")         outputPrefix = "quantumHandleQubitOutput";
@@ -146,7 +145,7 @@ function getProxyHandles(
     else if (nodeType === "classicalAlgorithmNode") outputPrefix = "classicalHandleClassicalAlgorithmOutput";
     else if (nodeType === "classicalOperatorNode")  outputPrefix = "classicalHandleClassicalOperatorOutput";
 
-    // Output-Proxy je Wire: nicht intern verbunden UND nicht bereits extern verbunden
+    // one output proxy per wire: neither connected internally nor already externally
     if (outputPrefix) {
       for (let wireIndex = 0; wireIndex < outputWireCount; wireIndex++) {
         const outputHandleId = `${outputPrefix}${wireIndex}${child.id}`;
@@ -163,14 +162,13 @@ function getProxyHandles(
       }
     }
 
-    // Input-Handle-Präfix nach bekanntem Muster generieren (ohne Wire-Index/ID)
+    // build the input handle prefix from the known pattern (without wire index and ID)
     let inputPrefix: string | null = null;
-    // gateNode: nur Input wenn es sich NICHT um eine reine |0⟩-Qubit-Quelle handelt.
-    // Vorher wurde dies über child.data?.inputs?.length > 0 geprüft - dieses Feld
-    // spiegelt aber nicht zuverlässig die tatsächlichen Verbindungen wider (z.B. bei
-    // frisch gruppierten oder verketteten Gattern kann es fälschlich leer sein).
-    // "Qubit Circuit" ist das strukturell stabile Erkennungsmerkmal der Qubit-Quelle,
-    // unabhängig vom aktuellen Verbindungszustand.
+    // gateNode: only gets an input if it is NOT a pure |0⟩ qubit source. This used to be
+    // checked via child.data?.inputs?.length > 0, but that field does not reliably reflect
+    // the actual connections (for freshly grouped or chained gates it can wrongly be
+    // empty). "Qubit Circuit" is the structurally stable marker of a qubit source,
+    // independent of the current connection state.
     if (nodeType === "gateNode" && child.data?.label !== "Qubit Circuit")
                                                inputPrefix = "quantumHandleGateInput";
     else if (nodeType === "measurementNode")   inputPrefix = "quantumHandleMeasurementInput";
@@ -180,9 +178,9 @@ function getProxyHandles(
     else if (nodeType === "uncomputeNode")     inputPrefix = "quantumHandleUncomputeInput";
     else if (nodeType === "classicalAlgorithmNode") inputPrefix = "classicalHandleClassicalAlgorithmInput";
     else if (nodeType === "classicalOperatorNode")  inputPrefix = "classicalHandleClassicalOperatorInput";
-    // qubitNode, dataTypeNode: keine Inputs
+    // qubitNode and dataTypeNode have no inputs
 
-    // Input-Proxy je Wire: nicht intern verbunden UND nicht bereits extern verbunden
+    // one input proxy per wire: neither connected internally nor already externally
     if (inputPrefix) {
       for (let wireIndex = 0; wireIndex < inputWireCount; wireIndex++) {
         const inputHandleId = `${inputPrefix}${wireIndex}${child.id}`;
@@ -200,11 +198,11 @@ function getProxyHandles(
     }
   });
 
-  // Total aktualisieren
+  // refresh index and total
   inputs.forEach((h, i)  => { h.index = i; h.total = inputs.length; });
   outputs.forEach((h, i) => { h.index = i; h.total = outputs.length; });
 
-  // hasInputs: true wenn tatsächlich unbesetzte Input-Proxy-Handles existieren
+  // hasInputs: true when unoccupied input proxy handles actually exist
   const hasInputs = inputs.length > 0;
 
   return { inputs, outputs, hasInputs };
@@ -227,7 +225,7 @@ export const GroupNode = memo((node: Node) => {
   const borderRadius = groupStyle.borderRadius;
   const borderStyle = collapsed ? "solid" : groupStyle.borderStyle;
 
-  // Proxy-Handles nur wenn aufgeklappt
+  // proxy handles only while the group is expanded
   const { inputs: proxyInputs, outputs: proxyOutputs, hasInputs: groupHasInputs } = !collapsed
     ? getProxyHandles(childNodes, getEdges())
     : { inputs: [] as ProxyHandle[], outputs: [] as ProxyHandle[], hasInputs: false };
@@ -237,7 +235,7 @@ export const GroupNode = memo((node: Node) => {
     const children = allNodes.filter((n) => n.parentNode === id);
     if (children.length === 0) return null;
 
-    // Für Untergruppen: style.width/height verwenden (echte Größe, nicht kollabierte)
+    // for subgroups use style.width/height, which is the real size rather than the collapsed one
     const getNodeWidth  = (n: Node) => (n.type === "groupNode"
       ? ((n.style?.width  as number) ?? n.width  ?? 100)
       : (n.width  ?? 100));
@@ -279,10 +277,10 @@ export const GroupNode = memo((node: Node) => {
       return nds.map((n) => {
         if (descendants.has(n.id)) {
           if (newCollapsed) {
-            // Einklappen: alle Nachfahren verstecken
+            // collapsing: hide all descendants
             return { ...n, hidden: true };
           } else {
-            // Aufklappen: nur sichtbar machen wenn der direkte Parent nicht collapsed ist
+            // expanding: only reveal a node if its direct parent is not collapsed
             const parentNode = nds.find(p => p.id === n.parentNode);
             const parentIsCollapsed = parentNode?.data?.collapsed === true && parentNode?.id !== id;
             return { ...n, hidden: parentIsCollapsed };
@@ -337,11 +335,10 @@ export const GroupNode = memo((node: Node) => {
             },
           };
         }
-        // Data.inputs-Referenzen auf die jetzt gelöschte Gruppen-ID bereinigen
-        // (z.B. falls dieser Node von der Gruppe aus über einen Output-Proxy-Handle
-        // gespeist wurde). Analog zur Bereinigung in contextMenu.tsx's deleteNode -
-        // ohne dies bleiben Karteileichen zurück, die spätere Verbindungen/Analysen
-        // fälschlich beeinflussen können.
+        // Clean up data.inputs references pointing at the now deleted group ID, e.g. when
+        // this node was fed from the group through an output proxy handle. This mirrors the
+        // cleanup in deleteNode in contextMenu.tsx; without it, stale entries remain and can
+        // wrongly influence later connections and analyses.
         if (Array.isArray(n.data?.inputs) && n.data.inputs.some((inp: any) => inp?.id === id)) {
           return {
             ...n,
@@ -354,13 +351,12 @@ export const GroupNode = memo((node: Node) => {
         return n;
       })
     );
-    // Externe Edges bereinigen, die auf die Proxy-Handles DER GRUPPE selbst
-    // zeigten (source/target === groupId). Ohne dies bleiben sie als Karteileichen
-    // im Edge-Array zurück (die Gruppe existiert ja nicht mehr) und blockieren
-    // spätere neue Verbindungen zu den jetzt eigenständigen Kind-Knoten, z.B. weil
-    // eine spätere edgeExists-Prüfung denselben targetHandle fälschlich als
-    // "bereits belegt" ansieht. Interne Edges zwischen den Kind-Knoten sind davon
-    // nicht betroffen und bleiben unverändert erhalten.
+    // Clean up external edges that pointed at the proxy handles of THE GROUP itself
+    // (source/target === groupId). Without this they stay behind as stale entries in the
+    // edge array even though the group no longer exists, and they block new connections to
+    // the now independent child nodes, e.g. because a later edgeExists check wrongly treats
+    // the same targetHandle as already occupied. Internal edges between the child nodes are
+    // not affected and are kept unchanged.
     setEdges((eds: Edge[]) => eds.filter((edge) => edge.source !== id && edge.target !== id));
   }, [id, setNodes, setEdges, getNodes]);
 
@@ -374,14 +370,14 @@ export const GroupNode = memo((node: Node) => {
     if (e.key === "Escape") { setIsEditingLabel(false); setEditableLabel(data.label || "Group"); }
   };
 
-  // Vertikale Position der Handles gleichmäßig verteilen
+  // distribute the handles evenly along the vertical axis
   const handleTop = (index: number, total: number): string => {
     if (total === 1) return "50%";
     const step = 70 / (total + 1);
     return `${15 + step * (index + 1)}%`;
   };
 
-  // Remote-Highlight: zeigt an, ob ein anderer Nutzer diese Node gerade ausgewählt hat
+  // remote highlight: indicates whether another user currently has this node selected
   const [remoteHighlightColor, setRemoteHighlightColor] = useState<string | null>(null);
   const [selectingUserName, setSelectingUserName] = useState<string | null>(null);
 

@@ -282,9 +282,9 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
 
             // Data Types
             case consts.DataTypeNode:
-                // Case-insensitiv vergleichen: node.data.dataType kann je nach Herkunft
+                // Compare case-insensitively: node.data.dataType may arrive
                 // (Neuanlage vs. Duplizieren via contextMenu.tsx normalizeNodeTypes)
-                // in unterschiedlicher Groß-/Kleinschreibung vorliegen (z.B. "Number" vs "number").
+                // in different casings depending on its origin (e.g. "Number" vs "number").
                 switch (String(node.data.dataType).toLowerCase()) {
                     case "int":
                     case "number": {
@@ -634,11 +634,11 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
             console.log(edge)
             console.log(sourceNode.data.inputs)
             const inputConnection = sourceNode.data.inputs?.find(
-                // Das inputs-Array kann Einträge für MEHRERE verschiedene Knoten enthalten
-                // (nicht nur für sourceNode selbst). Daher zuerst per endsWith prüfen, ob der
-                // targetHandle überhaupt zu sourceNode gehört, bevor getHandleIndex aufgerufen
-                // wird - sonst wirft getHandleIndex bei fremden Einträgen einen Fehler, obwohl
-                // .find() diese einfach überspringen sollte.
+                // The inputs array can hold entries for SEVERAL different nodes, not just for
+                // sourceNode itself. So first check with endsWith whether the targetHandle
+                // belongs to sourceNode at all before calling getHandleIndex; otherwise
+                // getHandleIndex throws on entries belonging to other nodes, even though
+                // .find() should simply skip them.
                 (i: any) => i.targetHandle?.endsWith(sourceNode.id) &&
                     getHandleIndex(sourceNode.id, "target", i.targetHandle) === outputIndex
             );
@@ -695,10 +695,10 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
 
         const parsedSize = parseInt(output?.size, 10);
 
-        // Fallback-Identifier generieren, falls der User keinen eigenen Namen vergeben hat.
-        // NUR für klassische Operator-Nodes relevant (Arithmetic/Bitwise/Comparison/Min&Max) -
-        // Quanten-Gates (z.B. H, CNOT) brauchen/erwarten hier KEINEN künstlichen Identifier,
-        // da dort identifier ohnehin nicht zur Disambiguierung verwendet wird.
+        // Generate a fallback identifier when the user did not provide a name. This is only
+        // relevant for classical operator nodes (arithmetic/bitwise/comparison/min&max);
+        // quantum gates such as H or CNOT neither need nor expect an artificial identifier
+        // here, because identifier is not used for disambiguation there.
         const isClassicalOperatorNode = sourceNode.type === consts.ClassicalOperatorNode;
 
         const getDefaultIdentifier = (): string => {
@@ -722,7 +722,7 @@ export const startCompile = async (baseUrl: string, metadata: any, rawNodes: Nod
                 "max": "max",
             };
             const opName = OPERATOR_NAME_MAP[sourceNode.data?.operator] ?? "result";
-            // Volle Node-ID anhängen (nicht gekürzt), um Kollisionen zwischen ähnlichen IDs zu vermeiden.
+            // append the full node ID, not a shortened one, to avoid collisions between similar IDs
             return `${opName}_out_${sourceNode.id}`;
         };
 

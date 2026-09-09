@@ -16,20 +16,20 @@ import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 
 /**
- * Extrahiert aus dem rohen QASM die globalen leqo_reg-Qubit-Indizes des Inputs der
- * (letzten) measurementNode im Schaltkreis. Wird genutzt um in der Dirac-Notation einen
- * Hinweis zu zeigen, in welchen Qubits das eigentliche Ergebnis (z.B. eine Summe) kodiert ist,
- * statt dass der User das selbst aus dem vollen Registerzustand herausrechnen muss.
+ * Extracts the global leqo_reg qubit indices of the input of the (last) measurement node
+ * in the circuit from the raw QASM. Used to show a hint in the Dirac notation about which
+ * qubits actually encode the result (e.g. a sum), instead of making the user work that out
+ * from the full register state.
  *
- * Vorgehen: den Block zwischen "@leqo.input 0" und der zugehörigen
- * "let <var> = leqo_reg[{a, b, c}];"-Zeile innerhalb des measure-Knoten-Abschnitts (erkennbar an
- * "measure ...;") finden und die Indizes extrahieren. Liefert null, falls keine Measurement-Node
- * im QASM gefunden wird oder die Struktur nicht dem erwarteten Muster entspricht.
+ * Approach: find the block between "@leqo.input 0" and the corresponding
+ * "let <var> = leqo_reg[{a, b, c}];" line inside the measure node section (recognizable by
+ * "measure ...;") and extract the indices. Returns null if no measurement node is found in
+ * the QASM or the structure does not match the expected pattern.
  */
 function extractMeasurementResultIndices(qasmText: string): number[] | null {
   if (!qasmText) return null;
 
-  // Alle Node-Abschnitte durchgehen und den (letzten) finden, der eine "measure"-Anweisung enthält.
+  // Walk all node sections and pick the last one containing a "measure" statement.
   const sectionRegex = /\/\* Start node ([\w-]+) \*\/([\s\S]*?)\/\* End node \1 \*\//g;
   let match: RegExpExecArray | null;
   let lastMeasureSection: string | null = null;
@@ -43,8 +43,8 @@ function extractMeasurementResultIndices(qasmText: string): number[] | null {
 
   if (!lastMeasureSection) return null;
 
-  // Innerhalb dieses Abschnitts: die erste direkte "let <var> = leqo_reg[{a, b, c}];" Zuweisung
-  // vor der "measure"-Zeile ist das Input-Register der Messung.
+  // Inside that section, the first direct "let <var> = leqo_reg[{a, b, c}];" assignment
+  // before the "measure" line is the input register of the measurement.
   const directRegex = /let\s+(\S+)\s*=\s*leqo_reg\[\{([^}]*)\}\];/;
   const directMatch = lastMeasureSection.match(directRegex);
   if (!directMatch) return null;
@@ -60,10 +60,9 @@ type QasmProps = {
   title?: string;
   onGetCircuitSvg?: () => Promise<string>;
   onGetModel?: () => object;
-  /** Wird beim Klick auf einen Schritt in den Mathematical Intermediate Steps aufgerufen,
-   *  mit den Canvas-Node-IDs ALLER Gates von Schritt 1 bis einschließlich des angeklickten
-   *  Schritts (Step-Click-Mechanismus, hebt alle bis dahin verwendeten Nodes auf dem Canvas
-   *  kurz hervor). */
+  /** Called when a step in the Mathematical Intermediate Steps is clicked, with the canvas
+   *  node IDs of ALL gates from step 1 up to and including the clicked step (step-click
+   *  mechanism, highlights every node used up to that point on the canvas). */
   onStepClick?: (nodeIds: string[]) => void;
 };
 
@@ -93,7 +92,7 @@ const MAX_BARS_BEFORE_SCROLL = 16;
 // ---------------------------------------------------------------------------
 
 /**
- * Konvertiert einen SVG-String (oder SVG Data-URL) im Browser zu einem PNG-Base64-String.
+ * Converts an SVG string (or SVG data URL) to a base64 PNG string in the browser.
  */
 async function svgToPngBase64(svgInput: string, scale = 2): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -134,7 +133,7 @@ async function svgToPngBase64(svgInput: string, scale = 2): Promise<string> {
 }
 
 // ---------------------------------------------------------------------------
-// Gate-Erklärungen und Matrizendarstellungen
+// Gate explanations and matrix representations
 // ---------------------------------------------------------------------------
 
 const GATE_DESCRIPTIONS: Record<string, { description: string; matrix: string; effect: string }> = {
@@ -248,7 +247,7 @@ const GATE_DESCRIPTIONS: Record<string, { description: string; matrix: string; e
 function buildGateExplanationsSection(stepsResult?: DiracStepsResult): string {
   if (!stepsResult || stepsResult.steps.length === 0) return "";
 
-  // Alle verwendeten Gates aus den Steps extrahieren
+  // collect all gates used across the steps
   const usedGates = new Set<string>();
   for (const step of stepsResult.steps) {
     // Gate-Label bereinigen (z.B. "H₀" → "H", "I₀ ⊗ CNOT₀,₂" → ["I", "CNOT"])
@@ -264,7 +263,7 @@ function buildGateExplanationsSection(stepsResult?: DiracStepsResult): string {
   const gateEntries = [...usedGates].map(gate => {
     const info = GATE_DESCRIPTIONS[gate];
     if (!info) return "";
-    // effect enthält $...$ – für align-Umgebung die $ entfernen
+    // effect contains $...$, strip the $ for the align environment
     const effectLatex = info.effect.replace(/\$([^$]+)\$/g, "$1");
     return `\\subsection*{${gate} Gate}
 
@@ -294,7 +293,7 @@ ${gateEntries}
  * Konvertiert Markdown-Text in LaTeX-kompatiblen Text.
  */
 function markdownToLatex(md: string): string {
-  // Schritt 1: Math-Blöcke zuerst schützen
+  // step 1: protect the math blocks first
   const mathBlocks: string[] = [];
   let out = md
     .replace(/\$\$[\s\S]*?\$\$/g, (m) => {
@@ -313,7 +312,7 @@ function markdownToLatex(md: string): string {
     .replace(/^#{2}\s+(.+)$/gm, (_: string, t: string) => `\\subsection*{${t}}`)
     .replace(/^#{1}\s+(.+)$/gm, (_: string, t: string) => `\\section*{${t}}`);
 
-  // Schritt 3: Bold und Italic
+  // step 3: bold and italic
   out = out
     .replace(/\*\*\*([^*\n]+)\*\*\*/g, (_: string, t: string) => `\\textbf{\\textit{${t}}}`)
     .replace(/\*\*([^*\n]+)\*\*/g, (_: string, t: string) => `\\textbf{${t}}`)
@@ -333,13 +332,13 @@ function markdownToLatex(md: string): string {
     .replace(/←/g, "$\\leftarrow$")
     .replace(/₀/g, "$_0$").replace(/₁/g, "$_1$").replace(/₂/g, "$_2$");
 
-  // Schritt 6: Bra-Ket außerhalb von Math
+  // step 6: bra-ket outside of math
   out = out.replace(/\|([^|\n⟩%%]{0,20})⟩/g, (_: string, s: string) => {
     const inner = s.replace(/ψ/g, "\\psi").replace(/φ/g, "\\phi");
     return `$|${inner}\\rangle$`;
   });
 
-  // Schritt 7: Math-Blöcke wiederherstellen
+  // step 7: restore the math blocks
   out = out.replace(/%%MATH(\d+)%%/g, (_: string, i: string) => {
     const block = mathBlocks[parseInt(i)];
     if (block.startsWith("$$")) {
@@ -360,14 +359,14 @@ function buildLatexExport(
   stepsResult?: DiracStepsResult,
   aiExplanation?: string
 ): string {
-  // Statevector einmal rekonstruieren, für Separabilitäts- und Persistence-Berechnung genutzt.
+  // Reconstruct the statevector once; used for the separability and persistence checks.
   const statevectorArr = Array.from({ length: 1 << numQubits }, (_, i) => {
     const term = terms.find((t) => parseInt(t.basisState, 2) === i);
     return term ? term.amplitude : { re: 0, im: 0 };
   });
 
-  // Exakte Separabilitätsprüfung (keine Heuristik): vollständig separabel, wenn JEDES Qubit
-  // einen reinen reduzierten Zustand hat (Bloch-Vektor-Länge 1 für jede Qubit-Bipartition).
+  // Exact separability check (not a heuristic): fully separable when EVERY qubit has a pure
+  // reduced state (Bloch vector length 1 for each qubit bipartition).
   const isEntangledExport = numQubits >= 2 && !isStateFullySeparable(statevectorArr, numQubits);
 
   const persistenceExport: number | null = numQubits === 1
@@ -426,9 +425,9 @@ ${persistenceExport !== null
     : "";
 
   // Zwischenschritte als align-Umgebung
-  // Hilfsfunktion: Matrix für ein Gate-Label finden
+  // helper: find the matrix for a gate label
   const getGateMatrix = (gateLabelLatex: string): string | null => {
-    // Längere Keys zuerst prüfen damit "CNOT" vor "T" und "NOT" gefunden wird
+  // check longer keys first so that "CNOT" is matched before "T" and "NOT"
     const sortedKeys = Object.keys(GATE_DESCRIPTIONS).sort((a, b) => b.length - a.length);
     for (const key of sortedKeys) {
       if (gateLabelLatex.includes(key)) {
@@ -461,7 +460,7 @@ ${stepsResult.steps.map((step, idx) => {
         const coords = terms
           .map((t) => {
             const p = prob(t.amplitude.re, t.amplitude.im);
-            // Escape den Basis State für pgfplots x-Tick-Labels
+            // escape the basis state for the pgfplots x tick labels
             return { label: `|${t.basisState}\\rangle`, value: p };
           });
         const coordStr = coords
@@ -523,7 +522,7 @@ ${termLines}
 
   const gateExplanationsSection = buildGateExplanationsSection(stepsResult);
 
-  // AI Erklärung in LaTeX umwandeln
+  // convert the AI explanation into LaTeX
   const aiSection = aiExplanation
     ? `\\section*{AI Explanation of the Computation}
 
@@ -611,7 +610,7 @@ function downloadQasmFile(content: string) {
 }
 
 // ---------------------------------------------------------------------------
-// Export-Menü
+// Export menu
 // ---------------------------------------------------------------------------
 
 function ExportMenu({ latex, numQubits, terms, unicode, onGetCircuitSvg, stepsResult, onGetModel, aiExplanation, qasm}: {
@@ -633,9 +632,9 @@ function ExportMenu({ latex, numQubits, terms, unicode, onGetCircuitSvg, stepsRe
   const buttonRef = useRef<HTMLButtonElement>(null);
   const [menuPos, setMenuPos] = useState<{ top: number; right: number } | null>(null);
 
-  // Position des Dropdowns relativ zum Viewport berechnen (nicht relativ zum
-  // nächsten "position: relative"-Vorfahren), damit "position: fixed" + Portal
-  // in document.body korrekt platziert wird, unabhängig von overflow-hidden-Ahnen.
+  // Compute the dropdown position relative to the viewport rather than to the nearest
+  // "position: relative" ancestor, so that "position: fixed" plus the portal into
+  // document.body is placed correctly even below overflow-hidden ancestors.
   const toggleOpen = () => {
     if (!open && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
@@ -647,8 +646,8 @@ function ExportMenu({ latex, numQubits, terms, unicode, onGetCircuitSvg, stepsRe
     setOpen((v) => !v);
   };
 
-  // Bei Scroll/Resize Position neu berechnen bzw. Menü schließen, damit es nicht
-  // "schwebend" an der falschen Stelle hängen bleibt.
+  // Recompute the position on scroll/resize, or close the menu, so it does not end up
+  // floating at the wrong place.
   useEffect(() => {
     if (!open) return;
     const handleReposition = () => {
@@ -717,7 +716,7 @@ function ExportMenu({ latex, numQubits, terms, unicode, onGetCircuitSvg, stepsRe
     setLoadingPdf(true);
     setPdfError(null);
     try {
-      // circuit.png einbetten wenn möglich
+      // embed circuit.png when possible
       let pngBase64: string | undefined;
       if (onGetCircuitSvg) {
         try {
@@ -730,7 +729,7 @@ function ExportMenu({ latex, numQubits, terms, unicode, onGetCircuitSvg, stepsRe
 
       const texContent = buildLatexExport(latex, numQubits, terms, pngBase64, stepsResult, aiExplanation);
 
-      // ytotech JSON API: resources-Array mit main.tex + optional circuit.png
+      // ytotech JSON API: resources array with main.tex and optionally circuit.png
       const resources: object[] = [
         { main: true, content: texContent },
       ];
@@ -852,11 +851,11 @@ interface QubitSelectorProps {
 function QubitSelector({ numQubits, selected, onChange }: QubitSelectorProps) {
   const allSelected = selected.length === numQubits;
   const selectOne = (q: number) => {
-    // Wenn nur dieser eine bereits ausgewählt ist → alle auswählen
+    // if this one is the only selected qubit, select all of them
     if (selected.length === 1 && selected[0] === q) {
       onChange(Array.from({ length: numQubits }, (_, i) => i));
     } else {
-      // Sonst: nur diesen einen auswählen
+      // otherwise select just this one
       onChange([q]);
     }
   };
@@ -979,8 +978,8 @@ function Histogram({ data }: { data: HistogramBar[] }) {
 
 export function QasmDiracPanel(props: Props) {
   const title = props.title ?? "Dirac Representation";
-  // onStepClick existiert nur auf QasmProps (Steps gibt es nur für QASM-Input) - daher
-  // per "in"-Check sicher aus dem Props-Union extrahieren.
+  // onStepClick only exists on QasmProps (steps are only available for QASM input), so it is
+  // extracted from the props union via an "in" check.
   const onStepClick = "onStepClick" in props ? props.onStepClick : undefined;
   const [showBasisStates, setShowBasisStates] = useState(false);
   const [showSteps, setShowSteps] = useState(false);
@@ -991,18 +990,18 @@ export function QasmDiracPanel(props: Props) {
   const [mistralLoading, setMistralLoading] = useState(false);
 
   /**
-   * Behebt Formatierungsfehler in der Mistral-Antwort, die KaTeX nicht rendern kann:
-   * - \begin{pmatrix}...\end{pmatrix} Blöcke, die nicht in $$...$$ eingeschlossen sind
-   * - \text{...} um Gate-Namen, was in $...$ oft nicht korrekt mit \otimes etc. zusammenspielt
+   * Fixes formatting problems in the Mistral response that KaTeX cannot render:
+   * - \begin{pmatrix}...\end{pmatrix} blocks that are not wrapped in $$...$$
+   * - \text{...} around gate names, which often does not combine correctly with \otimes in $...$
    */
   const sanitizeMistralMath = (text: string): string => {
     let result = text;
 
-    // Lose \begin{pmatrix}...\end{pmatrix} (und ähnliche Matrix-Envs) automatisch in $$...$$ einschließen,
-    // falls sie nicht bereits in $ oder $$ stehen.
+    // Automatically wrap loose \begin{pmatrix}...\end{pmatrix} (and similar matrix
+    // environments) in $$...$$ unless they already sit inside $ or $$.
     const matrixEnvRegex = /(\\begin\{(?:p|b|v|V)?matrix\}[\s\S]*?\\end\{(?:p|b|v|V)?matrix\})/g;
     result = result.replace(matrixEnvRegex, (match, group, offset, fullStr) => {
-      // Prüfen ob unmittelbar davor schon ein $ oder $$ steht
+      // check whether a $ or $$ already precedes it directly
       const before = fullStr.slice(Math.max(0, offset - 2), offset);
       const after = fullStr.slice(offset + match.length, offset + match.length + 2);
       if (before.includes("$") || after.includes("$")) {
@@ -1011,17 +1010,17 @@ export function QasmDiracPanel(props: Props) {
       return `$$${match}$$`;
     });
 
-    // \text{Toffoli} = $$...$$  →  Vorangestelltes "X =" außerhalb von $$ in die Formel hineinziehen,
-    // damit "Toffoli = " nicht als rohtext vor der Formel landet.
+    // \text{Toffoli} = $$...$$  ->  pull a leading "X =" outside the $$ into the formula, so
+    // that "Toffoli = " does not end up as raw text in front of it.
     result = result.replace(/\\text\{([A-Za-z0-9†]+)\}\s*=\s*\$\$/g, "$$$1 = ");
 
-    // KRITISCH: remark-math erkennt $$...$$ nur als eigenständigen Block (auf eigener Zeile).
+    // CRITICAL: remark-math only recognizes $$...$$ as a standalone block (on its own line).
     // Mistral erzeugt manchmal Zeilen wie "X|0\rangle = $$...$$ $$...$$ = |1\rangle", bei denen
-    // mehrere $$-Blöcke mit Fließtext auf DERSELBEN Zeile gemischt sind - das wird von remark-math
-    // gar nicht als Mathe erkannt und roh angezeigt. Fix: pro Zeile prüfen, ob die Zeile NUR aus
-    // einem einzigen $$...$$-Block besteht (= echter Block). Falls nicht (Fließtext oder mehrere
-    // $$-Segmente auf derselben Zeile), alle $$...$$ auf dieser Zeile zu inline $...$ konvertieren,
-    // damit sie zumindest inline korrekt gerendert werden.
+    // several $$ blocks are mixed with running text on the SAME line, which remark-math does
+    // not recognize as math at all and renders raw. Fix: check per line whether the line
+    // consists of a single $$...$$ block only (a real block). If not (running text or several
+    // $$ segments on the same line), convert every $$...$$ on that line to inline $...$ so it
+    // at least renders correctly inline.
     result = result
       .split("\n")
       .map((line) => {
@@ -1029,7 +1028,7 @@ export function QasmDiracPanel(props: Props) {
         const isStandaloneBlock = /^\$\$[\s\S]*\$\$$/.test(trimmed) &&
           (trimmed.match(/\$\$/g) || []).length === 2;
         if (isStandaloneBlock) return line; // echter eigenständiger Block, unverändert lassen
-        // Alle $$...$$ Vorkommen in dieser Zeile zu $...$ (inline) konvertieren
+        // convert every $$...$$ occurrence on this line to inline $...$
         return line.replace(/\$\$([\s\S]*?)\$\$/g, (_m, inner) => `$${inner}$`);
       })
       .join("\n");
@@ -1081,8 +1080,8 @@ export function QasmDiracPanel(props: Props) {
       }
 
       const numSteps = stepsResult.steps.length;
-      // Bei vielen Steps kürzer fassen und Matrizen nur einmal pro Gate-Typ zeigen,
-      // damit die Antwort innerhalb des Token-Budgets bleibt und nicht abgeschnitten wird.
+      // With many steps, keep it shorter and show the matrices only once per gate type, so
+      // the answer stays within the token budget and does not get truncated.
       const lengthGuidance = numSteps > 6
         ? `This circuit has ${numSteps} steps. To stay within the response length limit: explain each step in 1-2 short sentences, and only include the matrix representation the FIRST time a given gate type appears (for repeated gate types, just refer back to it by name without repeating the matrix).`
         : `Please explain each step in 2-3 sentences. Include the matrix representation for each gate.`;
@@ -1123,9 +1122,9 @@ export function QasmDiracPanel(props: Props) {
 
   const numQubits = fullResult?.numQubits ?? ("numQubits" in props ? props.numQubits : 0);
 
-  // Globale Qubit-Indizes, in denen laut QASM das tatsächliche Measurement-Ergebnis liegt
-  // (z.B. die Summe eines Additionsknotens), und das daraus direkt berechnete Teilergebnis.
-  // Wird nur als Hinweis angezeigt, verändert nicht die eigentliche Qubit-Auswahl.
+  // Global qubit indices holding the actual measurement result according to the QASM (e.g.
+  // the sum of an adder node), plus the partial result computed directly from them. Shown
+  // as a hint only; it does not change the actual qubit selection.
   const measurementResultIndices = useMemo(() => {
     if (!("qasm" in props) || !props.qasm) return null;
     return extractMeasurementResultIndices(props.qasm);
@@ -1134,11 +1133,11 @@ export function QasmDiracPanel(props: Props) {
   const measurementResultHint = useMemo(() => {
     if (!measurementResultIndices || !fullResult) return null;
     if (measurementResultIndices.length === 0) return null;
-    // Nur sinnvoll als Hinweis, wenn es tatsächlich eine ECHTE Teilmenge aller Qubits ist
+    // only useful as a hint if it really is a PROPER subset of all qubits
     if (measurementResultIndices.length >= fullResult.numQubits) return null;
 
-    // Eindeutigkeit prüfen: alle Terme müssen an diesen Indizes denselben Bitstring haben,
-    // sonst gibt es kein deterministisches Einzelergebnis zum Anzeigen.
+    // Check uniqueness: all terms must carry the same bitstring at these indices, otherwise
+    // there is no deterministic single result to display.
     const bitsForTerm = (basisState: string) =>
       measurementResultIndices.map((i) => basisState[i]).join("");
 
@@ -1146,10 +1145,10 @@ export function QasmDiracPanel(props: Props) {
     if (distinctOutcomes.size !== 1) return null;
 
     const bits = [...distinctOutcomes][0];
-    // measurementResultIndices ist aufsteigend sortiert, d.h. bits[0] = LSB (niedrigstwertigstes
-    // Qubit zuerst, wie im Addier-Schaltkreis üblich). Für die Anzeige und die Dezimalumwandlung
-    // wird in die intuitive MSB-first-Reihenfolge umgekehrt, damit Bitstring und Dezimalwert
-    // konsistent sind: |011⟩ = 3₁₀ statt (irreführend) |110⟩ = 3₁₀.
+    // measurementResultIndices is sorted ascending, i.e. bits[0] = LSB (least significant
+    // qubit first, as usual in the adder circuit). For display and the decimal conversion it
+    // is reversed into the intuitive MSB-first order, so that bitstring and decimal value are
+    // consistent: |011⟩ = 3₁₀ instead of the misleading |110⟩ = 3₁₀.
     const bitsDisplay = bits.split("").reverse().join("");
     const decimal = parseInt(bitsDisplay, 2);
     return {
@@ -1161,12 +1160,12 @@ export function QasmDiracPanel(props: Props) {
 
   const [selectedqubits, setSelectedQubits] = useState<number[]>([]);
 
-  // Wenn numQubits sich ändert (neues QASM geladen): immer alle Qubits auswählen
-  // ("All"), auch wenn eine Messung erkannt wurde. Vorher wurde bei einer Messung
-  // automatisch nur die gemessenen Qubits vorausgewählt - das unterdrückte aber
-  // die grüne measurementResultHint-Box (die nur bei !isPartial angezeigt wird,
-  // siehe unten), obwohl genau diese Box das Ergebnis kompakt und mit zusätzlichem
-  // Kontext (z.B. Bit-Reihenfolge-Hinweis) zeigt.
+  // When numQubits changes (new QASM is loaded), always select all qubits ("All"), even
+  // if a measurement was detected. Previously only the measured qubits were preselected
+  // in that case, which suppressed the green measurementResultHint box (shown only when
+  // !isPartial, see below) even though that box is exactly what presents the result
+  // compactly and with additional context such as the hint about the bit order.
+  // Selecting everything keeps that box available.
   useEffect(() => {
     if (numQubits > 0) {
       setSelectedQubits(Array.from({ length: numQubits }, (_, i) => i));
@@ -1180,7 +1179,7 @@ export function QasmDiracPanel(props: Props) {
   }, [selectedqubits, numQubits]);
 
   // ---------------------------------------------------------------------------
-  // Partielle Messung: Projektionsoperator, Wahrscheinlichkeit, kollabierter Zustand
+  // partial measurement: projection operator, probability, collapsed state
   // ---------------------------------------------------------------------------
   const partialMeasurement = useMemo(() => {
     if (!fullResult || effectiveSelected.length === 0) return null;
@@ -1188,7 +1187,7 @@ export function QasmDiracPanel(props: Props) {
     const measuredQubits = numQubits === 1 ? [0] : effectiveSelected.length === numQubits ? [] : effectiveSelected;
     if (measuredQubits.length === 0) return null;
 
-    // Für jedes mögliche Messergebnis (0 oder 1 pro gemessenem Qubit)
+    // for every possible measurement outcome (0 or 1 per measured qubit)
     const results = [];
     const numOutcomes = 1 << measuredQubits.length;
 
@@ -1205,14 +1204,14 @@ export function QasmDiracPanel(props: Props) {
 
       if (matchingTerms.length === 0) continue;
 
-      // P(outcome) = Summe der |amplitude|^2 der passenden Terme
+      // P(outcome) = sum of |amplitude|^2 over the matching terms
       const probability = matchingTerms.reduce((sum, t) =>
         sum + t.amplitude.re * t.amplitude.re + t.amplitude.im * t.amplitude.im, 0
       );
 
       if (probability < 1e-10) continue;
 
-      // Kollabierter Zustand: normierte Terme
+      // collapsed state: renormalized terms
       const collapsedTerms = matchingTerms.map(t => ({
         ...t,
         amplitude: {
@@ -1302,10 +1301,10 @@ export function QasmDiracPanel(props: Props) {
   const terms = fullResult?.terms ?? [];
   const isPartial = effectiveSelected.length < numQubits;
 
-  // Exakte Separabilitätsprüfung (keine Heuristik mehr): vollständig separabel, wenn JEDES
-  // Qubit einen reinen reduzierten Zustand hat (Bloch-Vektor-Länge 1 für jede Bipartition).
-  // Deckt z.B. den Fall ab, dass zwei unabhängige H-Gates ohne CNOT 4 Terme erzeugen, der
-  // Zustand aber trotzdem ein reines Tensorprodukt (separabel) ist.
+  // Exact separability check (no longer a heuristic): fully separable when EVERY qubit has a
+  // pure reduced state (Bloch vector length 1 for each bipartition). This covers e.g. the case
+  // where two independent H gates without a CNOT produce 4 terms while the state is still a
+  // pure tensor product, i.e. separable.
   const isEntangled = useMemo(() => {
     if (numQubits < 2 || terms.length === 0) return false;
     const statevectorArr = Array.from({ length: 1 << numQubits }, (_, i) => {
@@ -1482,9 +1481,9 @@ export function QasmDiracPanel(props: Props) {
           return term ? term.amplitude : { re: 0, im: 0 };
         });
 
-        // Persistence: bei 1 Qubit die exakte von-Neumann-Entropie. Bei mehreren Qubits:
-        // 0 falls vollständig separabel, sonst Mustererkennung (GHZ/Bell/W-State) - liefert
-        // null ("not computable") falls kein bekanntes Muster zutrifft.
+        // Persistence: for a single qubit the exact von Neumann entropy. For several qubits:
+        // 0 when fully separable, otherwise pattern matching (GHZ/Bell/W state), returning
+        // null ("not computable") when no known pattern applies.
         const persistence: number | null = numQubits === 1
           ? getEntanglementPersistence(statevectorArr, numQubits, 0)
           : isEntangled
@@ -1588,9 +1587,9 @@ export function QasmDiracPanel(props: Props) {
                     onClick={
                       step.nodeId && onStepClick
                         ? () => {
-                            // Alle Node-IDs von Schritt 0 bis einschließlich des angeklickten
-                            // Schritts sammeln (dedupliziert, ohne undefined), damit alle bis
-                            // zu diesem Punkt verwendeten Nodes gemeinsam hervorgehoben werden.
+                            // Collect all node IDs from step 0 up to and including the
+                            // clicked step (deduplicated, without undefined), so that every
+                            // node used up to that point is highlighted together.
                             const nodeIdsUpToHere = Array.from(
                               new Set(
                                 stepsResult.steps

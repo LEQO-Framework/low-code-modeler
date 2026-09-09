@@ -72,10 +72,10 @@ export const QubitNode = memo((node: Node) => {
 
   const id = node.id;
 
-  // Register-Index, den dieser Qubit-Node beim tatsächlichen Kompilieren bekäme
-  // (gleiche Gruppierungs-/Sortierlogik wie componentAnalyzer.ts / backend.ts).
-  // Wird bei jeder Änderung an nodes/edges neu berechnet, damit der Badge immer aktuell ist,
-  // egal auf welchem Weg (Drag&Drop, Duplizieren, QASM-Import, ...) der Node hinzugefügt wurde.
+  // Register index this qubit node would receive during actual compilation (same grouping
+  // and sorting logic as componentAnalyzer.ts / backend.ts). Recomputed on every change to
+  // nodes/edges so the badge always stays up to date, no matter how the node was added
+  // (drag & drop, duplication, QASM import, ...).
   const qubitIndexLabel = useMemo(() => {
     const indices = computeQubitIndices(nodes, edges);
     const start = indices.get(id);
