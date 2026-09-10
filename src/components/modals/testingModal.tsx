@@ -1,108 +1,82 @@
-import { useState } from "react";
+// TestingModal.tsx
+import { useState, useMemo } from "react";
 import { Node, Edge, MarkerType } from "reactflow";
 import { v4 as uuidv4 } from "uuid";
 import Modal from "./Modal";
+import { 
+  TESTABLE_NODE_REGISTRY, 
+  TestableNodeSpec, 
+  resolvePool, 
+  ARRAY_DATATYPE_NODE_TYPE, 
+  TEST_EDGE_TYPE 
+} from "./testingSpecs";
 
+import { categories, CategoryEntry } from "../panels/categories";
 
-const QAOA_NODE_TYPE = "qaoaNode";
-const ARRAY_DATATYPE_NODE_TYPE = "editableNode";
-const TEST_EDGE_TYPE: string | undefined = undefined;
-
-function buildOutputHandleId(node: Node, index = 0): string {
-  const kind = node.data?.isDataType ? "classical" : "quantum";
-  return `${kind}Output${index}${node.id}`;
+interface TestingModalProps {
+  open: boolean;
+  onClose: () => void;
+  // existingNodes?: CategoryEntry[];
+  onAddFlowToCanvas: (nodes: Node[], edges: Edge[]) => void;
 }
 
-export type ValuePoolContext = Record<string, string | number | boolean>;
-export type ValuePool = string[] | ((ctx: ValuePoolContext) => string[]);
+const existingNodes = categories;
 
-export const dataTypeValuePools: Record<string, ValuePool> = {
-  array: ["0,1", "0,1,1,0", "1,2,3"],
-  number: ["0", "1", "-1", "3.14"],
-  boolean: ["true", "false"],
-  string: ["sample", "test_value"],
+function extractNodeLabels(nodes: Node[] = []): Record<string, string> {
+  const labels: Record<string, string> = {};
 
-  // Derived pool: one array whose length always matches the chosen `p` option.
-  "array:length=p": (ctx) => {
-    const p = Math.max(1, Number(ctx.p) || 1);
-    return [Array.from({ length: p }, (_, i) => ((i + 1) * 0.1).toFixed(2)).join(",")];
-  },
-};
+  const walk = (value: any) => {
+    if (Array.isArray(value)) {
+      value.forEach((item) => {
+        const label = item?.data?.label || item?.label;
+        const description = item?.data?.description || item?.description || "";
+        if (label) {
+          labels[label] = description;
+        }
+      });
+    } else if (typeof value === "object" && value !== null) {
+      Object.values(value).forEach(walk);
+    }
+  };
 
-function resolvePool(key: string, ctx: ValuePoolContext): string[] {
-  const pool = dataTypeValuePools[key];
-  if (!pool) return [""];
-  return typeof pool === "function" ? pool(ctx) : pool;
+  walk(nodes);
+  return labels;
 }
 
+// --- Pairwise Generator (Heuristic) ---
+function generatePairwise<T>(pools: T[][]): T[][] {
+  if (pools.length === 0) return [[]];
+  if (pools.length === 1) return pools[0].map(v => [v]);
 
-export interface TestableOption {
-  key: string; // the data field name on the node, e.g. "problem"
-  label: string;
-  values: (string | number)[];
+  // Seed with cartesian product of first two pools to guarantee pairs
+  let results: T[][] = [];
+  for (const v1 of pools[0]) {
+    for (const v2 of pools[1]) {
+      results.push([v1, v2]);
+    }
+  }
+
+  // Greedily distribute remaining pools
+  for (let i = 2; i < pools.length; i++) {
+    const currentPool = pools[i];
+    const newResults: T[][] = [];
+    
+    results.forEach((row, rowIndex) => {
+      const valueToAssign = currentPool[rowIndex % currentPool.length];
+      newResults.push([...row, valueToAssign]);
+    });
+
+    // Expand rows if the current pool is larger than the existing result matrix
+    if (currentPool.length > results.length) {
+      for (let j = results.length; j < currentPool.length; j++) {
+         const fallbackRow = results[0].slice(); 
+         newResults.push([...fallbackRow, currentPool[j]]);
+      }
+    }
+    results = newResults;
+  }
+  return results;
 }
-
-export interface TestableInputPort {
-  key: string; // logical name, e.g. "gamma"
-  label: string;
-  // Optional: derive a nicer label from the current option values, mirroring
-  // how QAOANode itself renames its first port to "Clauses" for Max2SAT.
-  labelFor?: (optionValues: Record<string, string | number>) => string;
-  dataTypeKey: string; // key into dataTypeValuePools
-  targetHandle: (nodeId: string) => string; // exact handle id on the node under test
-}
-
-export interface TestableNodeSpec {
-  id: string; // registry key
-  label: string; // shown in the dropdown
-  nodeType: string; // reactflow `type` — must match nodesConfig
-  defaultData: Record<string, any>;
-  width: number;
-  height: number;
-  options: TestableOption[];
-  inputs: TestableInputPort[];
-}
-
-export const TESTABLE_NODE_REGISTRY: TestableNodeSpec[] = [
-  {
-    id: "qaoa",
-    label: "QAOA",
-    nodeType: QAOA_NODE_TYPE,
-    defaultData: { outputs: [] },
-    width: 320,
-    height: 550,
-    options: [
-      { key: "problem", label: "Problem", values: ["MaxCut", "Max2SAT", "GraphColoring"] },
-      { key: "optimizer", label: "Optimizer", values: ["COBYLA", "SPSA", "NELDER_MEAD"] },
-      { key: "p", label: "Layers (p)", values: [1, 2, 3] },
-    ],
-    inputs: [
-      {
-        key: "edges",
-        label: "Edges",
-        labelFor: (opts) => (opts.problem === "Max2SAT" ? "Clauses" : "Edges"),
-        dataTypeKey: "array",
-        targetHandle: (id) => `classicalHandleQAOAInput0${id}`,
-      },
-      {
-        key: "gamma",
-        label: "Gamma (γ)",
-        dataTypeKey: "array:length=p",
-        targetHandle: (id) => `classicalHandleQAOAInput1${id}`,
-      },
-      {
-        key: "beta",
-        label: "Beta (β)",
-        dataTypeKey: "array:length=p",
-        targetHandle: (id) => `classicalHandleQAOAInput2${id}`,
-      },
-    ],
-  },
-
-];
-
-
-const MAX_OPTION_COMBOS = 60;
 
 export interface GeneratedTestFlow {
   id: string;
@@ -113,12 +87,13 @@ export interface GeneratedTestFlow {
   descriptionLines: string[];
 }
 
-function cartesian<T>(pools: T[][]): T[][] {
-  return pools.reduce<T[][]>((acc, pool) => acc.flatMap((combo) => pool.map((val) => [...combo, val])), [[]]);
-}
-
 function slugify(text: string): string {
   return text.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+}
+
+function buildOutputHandleId(node: Node, index = 0): string {
+  const kind = node.data?.isDataType ? "classical" : "quantum";
+  return `${kind}Output${index}${node.id}`;
 }
 
 function describeFlow(
@@ -151,9 +126,11 @@ export function generateTestFlows(spec: TestableNodeSpec): { flows: GeneratedTes
   let counter = 1;
   let truncated = false;
 
-  // -- Option coverage --------------------------------------------------
   const optionKeys = spec.options.map((o) => o.key);
-  let optionCombos = spec.options.length ? cartesian(spec.options.map((o) => o.values)) : [[]];
+  // Using Pairwise instead of Cartesian
+  let optionCombos = spec.options.length ? generatePairwise(spec.options.map((o) => o.values)) : [[]];
+  
+  const MAX_OPTION_COMBOS = 60;
   if (optionCombos.length > MAX_OPTION_COMBOS) {
     optionCombos = optionCombos.slice(0, MAX_OPTION_COMBOS);
     truncated = true;
@@ -178,11 +155,10 @@ export function generateTestFlows(spec: TestableNodeSpec): { flows: GeneratedTes
     });
   });
 
-  // -- Input coverage (one port varied at a time, baseline options) -----
   spec.inputs.forEach((inp) => {
     const pool = resolvePool(inp.dataTypeKey, baselineOptions);
     pool.forEach((value) => {
-      if (value === baselineInputs[inp.key]) return; // already covered above
+      if (value === baselineInputs[inp.key]) return; 
       const inputValues = { ...baselineInputs, [inp.key]: value };
       flows.push({
         id: uuidv4(),
@@ -198,7 +174,6 @@ export function generateTestFlows(spec: TestableNodeSpec): { flows: GeneratedTes
   return { flows, truncated };
 }
 
-// Build Test Flow
 function buildCanvasFlow(
   spec: TestableNodeSpec,
   flow: GeneratedTestFlow,
@@ -256,18 +231,17 @@ function buildCanvasFlow(
   return { nodes: [mainNode, ...inputNodes], edges };
 }
 
-// Modal
-interface TestingModalProps {
-  open: boolean;
-  onClose: () => void;
-  existingNodes: Node[];
-  onAddFlowToCanvas: (nodes: Node[], edges: Edge[]) => void;
-}
+
 
 type Row = GeneratedTestFlow & { selected: boolean };
 
-export const TestingModal = ({ open, onClose, existingNodes, onAddFlowToCanvas }: TestingModalProps) => {
+export const TestingModal = ({ open, onClose, onAddFlowToCanvas }: TestingModalProps) => {
   const testableSpecs = TESTABLE_NODE_REGISTRY.filter((s) => s.inputs.length > 0);
+
+  // Dynamically extract node labels from existing canvas nodes
+  const dynamicNodeLabels = useMemo(() => {
+    return extractNodeLabels(existingNodes);
+  }, [existingNodes]);
 
   const [selectedSpecId, setSelectedSpecId] = useState(testableSpecs[0]?.id ?? "");
   const [rows, setRows] = useState<Row[]>([]);
@@ -282,6 +256,7 @@ export const TestingModal = ({ open, onClose, existingNodes, onAddFlowToCanvas }
     setRows(flows.map((f) => ({ ...f, selected: true })));
     setTruncated(truncated);
   };
+
 
   const anchorFor = (offsetIndex: number) => {
     const fallbackWidth = 320;
@@ -323,7 +298,7 @@ export const TestingModal = ({ open, onClose, existingNodes, onAddFlowToCanvas }
 
   return (
     <Modal
-      title="Node Testing"
+      title="Generate Test Flows for Nodes"
       open={open}
       onClose={onClose}
       footer={
@@ -363,7 +338,6 @@ export const TestingModal = ({ open, onClose, existingNodes, onAddFlowToCanvas }
 
         <div className="mt-3">
           <button className="btn btn-primary" onClick={handleGenerate} disabled={!selectedSpec}>
-            Generate Test Cases
           </button>
         </div>
 
@@ -372,13 +346,6 @@ export const TestingModal = ({ open, onClose, existingNodes, onAddFlowToCanvas }
             <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
               <div className="text-sm text-gray-600">
                 {rows.length} test flows generated ({optionCount} option coverage, {inputCount} input coverage)
-                {truncated && (
-                  <span className="text-orange-600">
-                    {" "}
-                    — option coverage capped at {MAX_OPTION_COMBOS}; narrow the option value pools to see fewer,
-                    more targeted cases.
-                  </span>
-                )}
               </div>
               <div className="flex items-center gap-2">
                 <button className="text-xs underline text-blue-600" onClick={() => toggleAll(true)}>
