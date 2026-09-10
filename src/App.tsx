@@ -62,6 +62,7 @@ import PromptFlowModal from "./components/modals/promptFlowModal";
 import ShortcutHelpModal from "./components/modals/shortcutHelpModal";
 import { generateFlow, sendToMistral } from "./generation";
 import { openQasmToFlow } from "./qasmConverter";
+import { TestingModal } from "./components/modals/testingModal";
 
 const selector = (state: {
   nodes: Node[];
@@ -573,6 +574,8 @@ If none apply, return { "algorithms": [] }.
   const [compactVisualization, setCompactVisualization] = useState(false);
   const [collaborationModeOn, setCollaborationModeOn] = useState(false);
   //const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
+  const isTestingFeatureEnabled = import.meta.env.VITE_ENABLE_NODE_TESTING === "true";
+  const [isTestingModalOpen, setIsTestingModalOpen] = useState(false);
   const [toast, setToast] = useState<{
     message: React.ReactNode;
     type: "success" | "error" | "info";
@@ -4521,6 +4524,15 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
           onGroupSelected={handleGroupSelected}
           generateModel={() => setIsPromptModalOpen(true)}
         />
+        {isTestingFeatureEnabled && (
+          <button
+            className="btn btn-secondary ml-2"
+            onClick={() => setIsTestingModalOpen(true)}
+            title="Generate test flows for nodes with inputs"
+          >
+            Test Flows
+          </button>
+        )}
       </div>
       {<NewDiagramModal open={isLoadJsonModalOpen} onClose={cancelLoadJson} onConfirm={confirmNewDiagram} />}
 
