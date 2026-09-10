@@ -29,7 +29,6 @@ import * as consts from "@/constants";
 import { EditableNode } from "@/components/nodes/editableNode";
 import { QFTNode } from "@/components/nodes/qft";
 import { InverseQFTNode } from "@/components/nodes/qftInverse";
-import * as consts from "@/constants";
 
 export const nodesConfig = {
   initialNodes: [] as unknown as Node[],
