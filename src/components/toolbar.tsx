@@ -53,6 +53,8 @@ interface ToolbarProps {
   onLoadQasm: (qasm: string) => void;
   generateModel: () => void;
   openOpenQASM: () => void;
+  isTestingFeatureEnabled: boolean;
+  openTesting: () => void;
 }
 
 const Toolbar: React.FC<ToolbarProps> = ({
@@ -74,7 +76,9 @@ const Toolbar: React.FC<ToolbarProps> = ({
   onGroupSelected,
   onLoadQasm,
   generateModel, 
-  openOpenQASM
+  openOpenQASM,
+  isTestingFeatureEnabled,
+  openTesting
 }) => {
   const [saveIsOpen, setSaveIsOpen] = useState(false);
 
@@ -95,6 +99,15 @@ const Toolbar: React.FC<ToolbarProps> = ({
       <div className="flex items-center">
         <img src="Logo.png" alt="Logo" className="h-8 w-20" />
         <span className="font-semibold text-lg">Qonstruct</span>
+        {isTestingFeatureEnabled && (
+                <button
+                  className="btn btn-secondary ml-2"
+                  onClick={openTesting}
+                  title="Generate test flows for nodes with inputs"
+                >
+                  Test Flows
+                </button>
+              )}
         <div className="ml-[170px] flex gap-2">
           <Button size="sm" onClick={onLoadJson} title="Open a new diagram">
             <FilePlus className="w-4 h-4 mr-2" />

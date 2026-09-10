@@ -4518,24 +4518,23 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
           startQuantumAlgorithmSelection={startQuantumAlgorithmSelection}
           //sendToQunicorn={() => setIsQunicornOpen(true)}
           openHistory={() => openHistoryModal()}
-          startTour={() => { startTour(); }}
+          startTour={() => { startTour(); } }
           onSaveAsTemplate={handleSaveAsTemplate}
           onManageTemplates={handleManageTemplates}
           onGroupSelected={handleGroupSelected}
           generateModel={() => setIsPromptModalOpen(true)}
-        />
-        {isTestingFeatureEnabled && (
-          <button
-            className="btn btn-secondary ml-2"
-            onClick={() => setIsTestingModalOpen(true)}
-            title="Generate test flows for nodes with inputs"
-          >
-            Test Flows
-          </button>
-        )}
+          onLoadQasm={function (qasm: string): void {
+            throw new Error("Function not implemented.");
+          } } 
+          isTestingFeatureEnabled={isTestingFeatureEnabled} 
+          openTesting={() => setIsTestingModalOpen(true)}               
+          />
       </div>
       {<NewDiagramModal open={isLoadJsonModalOpen} onClose={cancelLoadJson} onConfirm={confirmNewDiagram} />}
-
+      <TestingModal
+        open={isTestingModalOpen}
+        onClose={() => setIsTestingModalOpen(false)} 
+        onAddFlowToCanvas={loadFlow}      />
       <ValidationModal
         open={isValidationOpen}
         onClose={() => setIsValidationOpen(false)}
