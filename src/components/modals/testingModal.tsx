@@ -1,4 +1,3 @@
-// TestingModal.tsx
 import { useState, useMemo } from "react";
 import { Node, Edge, MarkerType } from "reactflow";
 import { v4 as uuidv4 } from "uuid";
@@ -16,22 +15,19 @@ import { categories, CategoryEntry } from "../panels/categories";
 interface TestingModalProps {
   open: boolean;
   onClose: () => void;
-  // existingNodes?: CategoryEntry[];
+  existingNodes?: Node[];
   onAddFlowToCanvas: (nodes: Node[], edges: Edge[]) => void;
 }
 
-const existingNodes = categories;
 
-function extractNodeLabels(nodes: Node[] = []): Record<string, string> {
+function extractNodeLabels(content: any): Record<string, string> {
   const labels: Record<string, string> = {};
 
   const walk = (value: any) => {
     if (Array.isArray(value)) {
-      value.forEach((item) => {
-        const label = item?.data?.label || item?.label;
-        const description = item?.data?.description || item?.description || "";
-        if (label) {
-          labels[label] = description;
+      value.forEach((n) => {
+        if (n?.label && n?.description) {
+          labels[n.label] = n.description;
         }
       });
     } else if (typeof value === "object" && value !== null) {
@@ -39,7 +35,7 @@ function extractNodeLabels(nodes: Node[] = []): Record<string, string> {
     }
   };
 
-  walk(nodes);
+  walk(content);
   return labels;
 }
 
@@ -235,13 +231,13 @@ function buildCanvasFlow(
 
 type Row = GeneratedTestFlow & { selected: boolean };
 
-export const TestingModal = ({ open, onClose, onAddFlowToCanvas }: TestingModalProps) => {
+export const TestingModal = ({ open, onClose, existingNodes = [], onAddFlowToCanvas }: TestingModalProps) => {
   const testableSpecs = TESTABLE_NODE_REGISTRY.filter((s) => s.inputs.length > 0);
 
   // Dynamically extract node labels from existing canvas nodes
   const dynamicNodeLabels = useMemo(() => {
-    return extractNodeLabels(existingNodes);
-  }, [existingNodes]);
+    return extractNodeLabels(categories);
+  }, [categories]);
 
   const [selectedSpecId, setSelectedSpecId] = useState(testableSpecs[0]?.id ?? "");
   const [rows, setRows] = useState<Row[]>([]);
@@ -336,18 +332,13 @@ export const TestingModal = ({ open, onClose, onAddFlowToCanvas }: TestingModalP
           </tbody>
         </table>
 
-        <div className="mt-3">
-          <button className="btn btn-primary" onClick={handleGenerate} disabled={!selectedSpec}>
-          </button>
-        </div>
-
         {rows.length > 0 && (
           <div className="mt-4">
             <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
               <div className="text-sm text-gray-600">
-                {rows.length} test flows generated ({optionCount} option coverage, {inputCount} input coverage)
+                {rows.length} test flows generated
               </div>
-              <div className="flex items-center gap-2">
+              {/*<div className="flex items-center gap-2">
                 <button className="text-xs underline text-blue-600" onClick={() => toggleAll(true)}>
                   Select all
                 </button>
@@ -357,7 +348,7 @@ export const TestingModal = ({ open, onClose, onAddFlowToCanvas }: TestingModalP
                 <button className="btn btn-primary" onClick={handleGenerateSelected} disabled={selectedCount === 0}>
                   Generate Selected ({selectedCount})
                 </button>
-              </div>
+              </div>*/}
             </div>
 
             <div className="overflow-x-auto">
@@ -373,7 +364,7 @@ export const TestingModal = ({ open, onClose, onAddFlowToCanvas }: TestingModalP
                     </th>
                     <th className="p-2 border w-32">Name</th>
                     <th className="p-2 border">Description</th>
-                    <th className="p-2 border w-28">Category</th>
+                    {/*<th className="p-2 border w-28">Category</th>*/}
                     <th className="p-2 border w-36">Action</th>
                   </tr>
                 </thead>
@@ -385,7 +376,7 @@ export const TestingModal = ({ open, onClose, onAddFlowToCanvas }: TestingModalP
                       </td>
                       <td className="p-2 border text-sm font-medium whitespace-nowrap">{row.name}</td>
                       <td className="p-2 border text-xs whitespace-pre-line">{row.descriptionLines.join("\n")}</td>
-                      <td className="p-2 border text-xs text-gray-500">{row.category}</td>
+                      {/*<td className="p-2 border text-xs text-gray-500">{row.category}</td>*/}
                       <td className="p-2 border text-center">
                         <button className="btn btn-secondary text-xs" onClick={() => handleGenerateOne(row)}>
                           Generate on Canvas
