@@ -349,6 +349,8 @@ function App() {
   const [jobId, setJobId] = useState(null);
   const [quantumAlgorithmModalStep, setQuantumAlgorithmModalStep] = useState(0);
   const [domainProfileOpen, setDomainProfileOpen] = useState(false);
+  const [editingDomainProfileIndex, setEditingDomainProfileIndex] = useState<number | null>(null);
+  const [editingDomainProfile, setEditingDomainProfile] = useState<DomainProfile | null>(null);
   const [quantumAlgorithms, setQuantumAlgorithms] = useState([
     { name: "Quantum Approximate Optimization Algorithm (QAOA)", configCount: 0, patternGraphPng: "patterns/qaoa_patterngraph.png" },
     { name: "SWAP Test", configCount: 0, patternGraphPng: null },
@@ -3039,10 +3041,91 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     console.log("Flow saved:", flowWithMetadata);
   }
 
+  const openDomainProfileEditor = (profile: DomainProfile | null = null, index: number | null = null) => {
+    setEditingDomainProfileIndex(index);
+    setEditingDomainProfile(profile);
+    setDomainProfileOpen(true);
+  };
+
+  const closeDomainProfileEditor = () => {
+    setDomainProfileOpen(false);
+    setEditingDomainProfileIndex(null);
+    setEditingDomainProfile(null);
+  };
+
   const handleSaveDomainProfile = (newProfile: DomainProfile) => {
-    const updatedProfiles = [...allDomainProfiles, newProfile]
+    const previousProfile = editingDomainProfileIndex !== null ? allDomainProfiles[editingDomainProfileIndex] : null;
+    const updatedProfiles = editingDomainProfileIndex === null
+      ? [...allDomainProfiles, newProfile]
+      : allDomainProfiles.map((profile, index) => index === editingDomainProfileIndex ? newProfile : profile);
+
     setAllDomainProfiles(updatedProfiles);
-    console.log("Profile saved and appended:", newProfile);
+
+    if (editingDomainProfileIndex === null) {
+      setDomainProfile(newProfile.name);
+    } else if (previousProfile && domainProfile === previousProfile.name) {
+      setDomainProfile(newProfile.name);
+    }
+
+    console.log("Profile saved:", newProfile);
+  };
+
+  const handleDeleteDomainProfile = (index: number) => {
+    const profileToDelete = allDomainProfiles[index];
+    if (!profileToDelete) {
+      return;
+    }
+
+    const confirmed = window.confirm(`Delete domain profile \"${profileToDelete.name}\"?`);
+    if (!confirmed) {
+      return;
+    }
+
+    const updatedProfiles = allDomainProfiles.filter((_, profileIndex) => profileIndex !== index);
+    setAllDomainProfiles(updatedProfiles);
+
+    if (domainProfile === profileToDelete.name) {
+      setDomainProfile(updatedProfiles[0]?.name ?? "standard");
+    }
+
+    if (editingDomainProfileIndex === index) {
+      closeDomainProfileEditor();
+    }
+  };
+
+  const handleReorderDomainProfiles = (fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex) {
+      return;
+    }
+
+    const nextProfiles = [...allDomainProfiles];
+    const [movedProfile] = nextProfiles.splice(fromIndex, 1);
+    nextProfiles.splice(toIndex, 0, movedProfile);
+    setAllDomainProfiles(nextProfiles);
+  };
+
+  const handleDuplicateDomainProfile = (index: number) => {
+    const sourceProfile = allDomainProfiles[index];
+    if (!sourceProfile) {
+      return;
+    }
+
+    const clonedProfile = structuredClone(sourceProfile);
+    const baseName = `${sourceProfile.name} (Copy)`;
+    const existingNames = new Set(allDomainProfiles.map((profile) => profile.name));
+    let duplicateName = baseName;
+    let copyIndex = 2;
+
+    while (existingNames.has(duplicateName)) {
+      duplicateName = `${baseName} ${copyIndex}`;
+      copyIndex += 1;
+    }
+
+    clonedProfile.name = duplicateName;
+
+    const nextProfiles = [...allDomainProfiles];
+    nextProfiles.splice(index + 1, 0, clonedProfile);
+    setAllDomainProfiles(nextProfiles);
   };
 
 
@@ -4511,7 +4594,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
           //uploadPatternSolution={() => registerAndUploadToGitHub()}
           onLoadJson={handleLoadJson}
           sendToBackend={handleOpenValidation}
-          createDomainProfile={() => setDomainProfileOpen(true)}
+          createDomainProfile={() => openDomainProfileEditor()}
           startQuantumAlgorithmSelection={startQuantumAlgorithmSelection}
           //sendToQunicorn={() => setIsQunicornOpen(true)}
           openHistory={() => openHistoryModal()}
@@ -4625,8 +4708,15 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
 
       <DomainProfileModal
         open={domainProfileOpen}
-        onClose={() => setDomainProfileOpen(false)}
+        onClose={closeDomainProfileEditor}
         onSave={handleSaveDomainProfile}
+        initialProfile={editingDomainProfile}
+        profiles={allDomainProfiles}
+        editingProfileIndex={editingDomainProfileIndex}
+        onEditProfile={(index) => openDomainProfileEditor(allDomainProfiles[index] ?? null, index)}
+        onDeleteProfile={handleDeleteDomainProfile}
+        onReorderProfiles={handleReorderDomainProfiles}
+        onDuplicateProfile={handleDuplicateDomainProfile}
       />
 
       <AiModal

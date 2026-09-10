@@ -9,9 +9,10 @@
  *
  * Because it is read with plain HTTP GET, any raw Git host, GitHub Pages or a
  * static file server works and no server-side component is required. The base
- * URL is configured with `VITE_DOMAIN_PROFILES_URL`. There is deliberately no
- * default: a repository is only useful once it is publicly readable, and a
- * hard-coded URL would make every install run into an authentication failure.
+ * URL can be provided via `VITE_DOMAIN_PROFILES_URL` or supplied at runtime by
+ * the user. There is deliberately no hard-coded default: a repository is only
+ * useful once it is publicly readable, and a hard-coded URL would make every
+ * install run into an authentication failure.
  */
 
 /** A property declared on a domain block. */
@@ -55,24 +56,84 @@ export interface ProfileIndexEntry {
 export const PROFILES_REPO_URL: string | undefined = import.meta.env
   .VITE_DOMAIN_PROFILES_URL;
 
-/** Whether a repository is configured. If not, the UI keeps quiet about it. */
-export function isProfileRepositoryConfigured(): boolean {
-  return typeof PROFILES_REPO_URL === "string" && PROFILES_REPO_URL.length > 0;
+/**
+ * Normalize GitHub repository URLs to raw content base URLs. Unspecified branch defaults to `main`. Non-GitHub URLs and raw.githubusercontent.com URLs remain unchanged.
+ *
+ * Converts:
+ * https://github.com/<owner>/<repo>
+ * to:
+ * https://raw.githubusercontent.com/<owner>/<repo>/main
+ *
+ * Converts:
+ * https://github.com/<owner>/<repo>/tree/<branch>[/...]
+ * to:
+ * https://raw.githubusercontent.com/<owner>/<repo>/<branch>[/...]
+ */
+export function normalizeRepositoryBaseUrl(repositoryUrl: string): string {
+  try {
+    const parsed = new URL(repositoryUrl);
+    if (parsed.hostname !== "github.com") {
+      return repositoryUrl;
+    }
+
+    const segments = parsed.pathname
+      .replace(/^\/+|\/+$/g, "")
+      .split("/")
+      .filter(Boolean);
+    if (segments.length === 2) {
+      const [owner, repo] = segments;
+      return `https://raw.githubusercontent.com/${owner}/${repo}/main`;
+    }
+
+    if (segments.length >= 4) {
+      const [owner, repo, marker, ...branchSegments] = segments;
+      if (marker === "tree" && branchSegments.length > 0) {
+        return `https://raw.githubusercontent.com/${owner}/${repo}/${branchSegments.join("/")}`;
+      }
+    }
+
+    return repositoryUrl;
+  } catch {
+    return repositoryUrl;
+  }
 }
 
-function baseUrl(): string {
-  if (!isProfileRepositoryConfigured()) {
-    throw new Error("No profile repository configured (VITE_DOMAIN_PROFILES_URL is unset)");
+function resolveBaseUrl(repositoryUrl?: string): string {
+  const candidate = (repositoryUrl ?? PROFILES_REPO_URL ?? "").trim();
+  if (!candidate) {
+    throw new Error("No profile repository configured or provided");
   }
-  return (PROFILES_REPO_URL as string).replace(/\/+$/, "");
+  return normalizeRepositoryBaseUrl(candidate).replace(/\/+$/, "");
 }
 
 /** Discover the available domains and their revisions. */
-export async function fetchProfileIndex(): Promise<ProfileIndexEntry[]> {
-  const response = await fetch(`${baseUrl()}/index.json`);
+export async function fetchProfileIndex(repositoryUrl?: string): Promise<ProfileIndexEntry[]> {
+  const response = await fetch(`${resolveBaseUrl(repositoryUrl)}/index.json`);
+
   if (!response.ok) {
-    throw new Error(`Could not read the profile index (${response.status})`);
+    if (response.status === 404) {
+      throw new Error(
+        `Could not find index.json at the specified repository URL. Please check the URL and make sure the repository contains an index.json. (HTTP ${response.status})`
+      );
+    }
+
+    if (response.status === 401 || response.status === 403) {
+      throw new Error(
+        `Access to the profile repository was denied. Please make sure the repository is publicly accessible. (HTTP ${response.status})`
+      );
+    }
+
+    if (response.status >= 500 && response.status < 600) {
+      throw new Error(
+        `The profile repository is currently unavailable. Please try again later. (HTTP ${response.status})`
+      );
+    }
+
+    throw new Error(
+      `Could not read the profile repository (HTTP ${response.status}).`
+    );
   }
+  
   const data = await response.json();
   if (!Array.isArray(data?.domains)) {
     throw new Error("The profile index does not list any domains");
@@ -83,9 +144,12 @@ export async function fetchProfileIndex(): Promise<ProfileIndexEntry[]> {
 /** Fetch a single profile revision. */
 export async function fetchProfile(
   directory: string,
-  version: string
+  version: string,
+  repositoryUrl?: string
 ): Promise<RepositoryDomainProfile> {
-  const response = await fetch(`${baseUrl()}/${directory}/${version}.json`);
+  const response = await fetch(
+    `${resolveBaseUrl(repositoryUrl)}/${directory}/${version}.json`
+  );
   if (!response.ok) {
     throw new Error(`Could not read ${directory} ${version} (${response.status})`);
   }

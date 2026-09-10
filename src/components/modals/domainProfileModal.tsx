@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import Modal from "./Modal";
 import { categories, CategoryEntry } from "../panels/categories";
-import { ImageIcon, Plus, Trash2, CheckCircle2, Circle, ChevronDown, Check } from "lucide-react";
+import { ImageIcon, Plus, Trash2, CheckCircle2, Circle, ChevronDown, Check, GripVertical } from "lucide-react";
 import { boundaryNodes, dataTypes, circuitLevelNodes, controlStructureNodes, templates, operator, customOperators, OperatorNode, EditableNode } from "@/constants";
 import { DomainProfileRepositoryPicker } from "./domainProfileRepositoryPicker";
 import { RepositoryDomainProfile } from "../../services/domainProfileRepository";
@@ -96,6 +96,27 @@ function extractNodes(content: any): EditableNodeProfile[] {
   walk(content);
   return nodes;
 }
+
+function toEditableNodesFromDomainProfile(profile: DomainProfile): EditableNodeProfile[] {
+  return Object.entries(profile.domainBlocks ?? {}).flatMap(([category, entry]: any) => {
+    const content = entry?.content ?? [];
+    return (Array.isArray(content) ? content : []).map((node: any) => ({
+      label: node.label ?? "",
+      description: node.description ?? "",
+      icon: node.icon ?? "QAOA.png", //TODO: define default Icon 
+      visible: node.visible ?? true,
+      outputType: node.outputType ?? "",
+      category: node.category ?? category ?? "",
+      properties: node.properties ?? [],
+      constraints: node.constraints ?? [],
+      mapping: node.mapping ?? [[]],
+      originalLabel: node.originalLabel ?? node.label ?? "",
+      originalDescription: node.originalDescription ?? node.description ?? "",
+      originalIcon: node.originalIcon ?? node.icon ?? "QAOA.png", //TODO: define default Icon 
+    }));
+  });
+}
+
 function extractNodeLabels(content: any): Record<string, string> {
   const labels: Record<string, string> = {};
 
@@ -465,29 +486,47 @@ export default function DomainProfileTableModal({
   open,
   onClose,
   onSave,
+  initialProfile,
+  profiles,
+  editingProfileIndex,
+  onEditProfile,
+  onDeleteProfile,
+  onReorderProfiles,
+  onDuplicateProfile,
 }: {
   open: boolean;
   onClose: () => void;
   onSave: (profile: any) => void;
+  initialProfile: DomainProfile | null;
+  profiles: DomainProfile[];
+  editingProfileIndex: number | null;
+  onEditProfile: (index: number) => void;
+  onDeleteProfile: (index: number) => void;
+  onReorderProfiles: (fromIndex: number, toIndex: number) => void;
+  onDuplicateProfile: (index: number) => void;
 }) {
   const [localNodes, setLocalNodes] = useState<EditableNodeProfile[]>([]);
   const [profileName, setProfileName] = useState("");
+  const [draggedProfileIndex, setDraggedProfileIndex] = useState<number | null>(null);
 
-  // Reset localNodes and profileName when closed
+  // Reset localNodes and profileName when closed, or load the selected profile while open.
   useEffect(() => {
     if (!open) {
       setLocalNodes([]);
       setProfileName("");
+      setDraggedProfileIndex(null);
+      return;
     }
-  }, [open]);
 
-  const [profile, setProfile] = useState(() => {
-    const result: Record<string, EditableNodeProfile[]> = {};
-    Object.entries(categories).forEach(([categoryName, entry]: any) => {
-      result[categoryName] = extractNodes(entry.content);
-    });
-    return result;
-  });
+    if (initialProfile) {
+      setProfileName(initialProfile.name);
+      setLocalNodes(toEditableNodesFromDomainProfile(initialProfile));
+      return;
+    }
+
+    setProfileName("");
+    setLocalNodes([]);
+  }, [open, initialProfile]);
 
   const saveProfile = () => {
     // group nodes by category into the CategoryEntry format
@@ -542,21 +581,6 @@ export default function DomainProfileTableModal({
     });
   };
 
-  // unused! --> need to fix before using again
-  const resetNode = (category: string, index: number) => {
-    setProfile((prev) => {
-      const copy = structuredClone(prev);
-      const node = copy[category][index];
-
-      node.label = node.originalLabel;
-      node.description = node.originalDescription;
-      node.icon = node.originalIcon;
-      node.visible = true;
-
-      return copy;
-    });
-  };
-
   const addNode = () => {
     const newNode: EditableNodeProfile = {
       label: "",
@@ -590,6 +614,28 @@ export default function DomainProfileTableModal({
 
   const categoryOptions = [dataTypes, boundaryNodes, operator, controlStructureNodes, customOperators, circuitLevelNodes, templates];
 
+  const handleDropProfile = (targetIndex: number) => {
+    if (draggedProfileIndex === null || draggedProfileIndex === targetIndex) {
+      setDraggedProfileIndex(null);
+      return;
+    }
+
+    onReorderProfiles(draggedProfileIndex, targetIndex);
+    setDraggedProfileIndex(null);
+  };
+
+  const exportProfile = (profile: DomainProfile) => {
+    const nodes = toEditableNodesFromDomainProfile(profile);
+    const dataStr = JSON.stringify({ name: profile.name, nodes }, null, 2);
+    const blob = new Blob([dataStr], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${profile.name || "domain_profile"}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <Modal
       title="Domain Profile"
@@ -610,7 +656,73 @@ export default function DomainProfileTableModal({
         </div>
       }
     >
-      <div className="overflow-y-auto max-h-[70vh] space-y-8">
+      <div className="space-y-8">
+        <section className="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-semibold text-gray-900">Saved Profiles</h3>
+              <p className="text-xs text-gray-500">Edit, duplicate, export, delete or reorder the stored profiles.</p>
+            </div>
+            <span className="text-xs text-gray-500">{profiles.length} total</span>
+          </div>
+
+          {profiles.length === 0 ? (
+            <div className="rounded border border-dashed border-gray-300 bg-white px-3 py-2 text-sm text-gray-500">
+              Save a profile to see it here.
+            </div>
+          ) : (
+            <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+              {profiles.map((profile, index) => (
+                <div
+                  key={`${profile.name}-${index}`}
+                  draggable
+                  onDragStart={() => setDraggedProfileIndex(index)}
+                  onDragOver={(event) => event.preventDefault()}
+                  onDrop={() => handleDropProfile(index)}
+                  onDragEnd={() => setDraggedProfileIndex(null)}
+                  className={`flex items-center gap-3 rounded border bg-white px-3 py-2 shadow-sm transition ${editingProfileIndex === index ? "border-blue-500 ring-2 ring-blue-200" : "border-gray-200"}`}
+                >
+                  <span className="cursor-grab text-gray-400" title="Drag to reorder">
+                    <GripVertical size={16} />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-medium text-gray-900">{profile.name}</div>
+                    <div className="text-xs text-gray-500">{Object.keys(profile.domainBlocks ?? {}).length} categories</div>
+                  </div>
+                  <button
+                    type="button"
+                    className="rounded border border-blue-200 px-2 py-1 text-xs font-medium text-blue-700 hover:bg-blue-50"
+                    onClick={() => onEditProfile(index)}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded border border-gray-200 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                    onClick={() => onDuplicateProfile(index)}
+                  >
+                    Duplicate
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded border border-blue-200 px-2 py-1 text-xs font-medium text-blue-700 hover:bg-blue-50"
+                    onClick={() => exportProfile(profile)}
+                  >
+                    Export
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded border border-red-200 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50"
+                    onClick={() => onDeleteProfile(index)}
+                  >
+                    Delete
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
         <div className="flex justify-start items-center gap-2">
           <span className="px-4 py-2 font-semibold">Domain Profile Name</span>
           <input
@@ -705,129 +817,143 @@ export default function DomainProfileTableModal({
           </label>
         </div>
 
-
-        <div className="max-h-[70vh] overflow-y-auto space-y-8">
-          <div className="overflow-x-auto">
-            <table className="table-auto w-full border border-gray-300 rounded-md">
-              <thead className="sticky top-0 bg-gray-100 z-10">
-                <tr>
-                  <th className="p-2 border w-32">Name</th>
-                  <th className="p-2 border w-24">Icon</th>
-                  <th className="p-2 border w-24">Category</th>
-                  <th className="p-2 border w-24">Output Type</th>
-                  <th className="p-2 border w-32">Properties</th>
-                  <th className="p-2 border w-32">Constraints</th>
-                  <th className="p-2 border w-24">Mapping</th>
-                  {/* <th className="p-2 border">Description</th>
+        <div className="max-h-[40vh] overflow-auto">
+          <table className="table-auto w-full border border-gray-300 rounded-md">
+            <thead className="sticky top-0 bg-gray-100 z-10">
+              <tr>
+                <th className="p-2 border w-32">Name</th>
+                <th className="p-2 border w-24">Icon</th>
+                <th className="p-2 border w-24">Category</th>
+                <th className="p-2 border w-24">Output Type</th>
+                <th className="p-2 border w-32">Properties</th>
+                <th className="p-2 border w-32">Constraints</th>
+                <th className="p-2 border w-24">Mapping</th>
+                {/* <th className="p-2 border">Description</th>
                     <th className="p-2 border w-20 text-center">
                       Visible
                     </th>
                     <th className="p-2 border w-24">Actions</th> */}
-                </tr>
-              </thead>
+              </tr>
+            </thead>
 
-              <tbody>
-                {localNodes.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className="p-12 text-center text-gray-400 italic">
-                      No blocks added yet. Click "Add Domain Block" to begin.
+            <tbody>
+              {localNodes.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={8}
+                    className="p-12 text-center text-gray-400 italic"
+                  >
+                    No blocks added yet. Click "Add Domain Block" to begin.
+                  </td>
+                </tr>
+              ) : (
+                localNodes.map((node, idx) => (
+                  <tr
+                    key={`${node.originalLabel}-${idx}`}
+                    className="align-top"
+                  >
+                    {/* Name */}
+                    <td className="p-2 border">
+                      <input
+                        className="w-full border rounded px-2 py-1 text-sm"
+                        value={node.label}
+                        onChange={(e) =>
+                          updateNode(idx, "label", e.target.value)
+                        }
+                      />
+                    </td>
+                    {/* Icon */}
+                    <td className="relative group w-24 h-24 bg-white border rounded shrink-0 overflow-hidden p-2 border text-center">
+                      <img
+                        src={
+                          Array.isArray(node.icon) ? node.icon[0] : node.icon
+                        }
+                        className="w-full h-full object-contain p-1"
+                        alt="icon"
+                      />
+                      <label className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity">
+                        <input
+                          type="file"
+                          className="hidden"
+                          accept="image/*"
+                          onChange={(e) => handleIconUpload(e, idx)}
+                        />
+                        <ImageIcon className="w-5 h-5 text-white" />
+                      </label>
+                    </td>
+                    {/* Category (in palette panel)*/}
+                    <td className="p-2 border">
+                      <label
+                        htmlFor="profile-select"
+                        className="text-sm font-medium whitespace-nowrap"
+                      ></label>
+                      <select
+                        id="profile-select"
+                        value={node.category}
+                        onChange={(e) =>
+                          updateNode(idx, "category", e.target.value)
+                        }
+                        className="border rounded px-2 py-1 bg-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="" disabled>
+                          Choose a category...
+                        </option>
+
+                        <option key={"dataTypes"} value={"dataTypes"}>
+                          Data Types
+                        </option>
+                        <option key={"operators"} value={"Operators"}>
+                          Operators
+                        </option>
+                      </select>
+                    </td>
+                    {/* Output Type: String */}
+                    <td className="p-2 border text-center">
+                      <OutputTypeEditor
+                        outputTypes={
+                          Array.isArray(node.outputType)
+                            ? node.outputType
+                            : [node.outputType].filter(Boolean)
+                        }
+                        onChange={(newTypes) =>
+                          updateNode(idx, "outputType", newTypes)
+                        }
+                      />
+                    </td>
+
+                    {/* Properties  */}
+                    <td className="p-2 border text-center">
+                      <PropertyEditor
+                        properties={node.properties || []}
+                        onChange={(newProperties) =>
+                          updateNode(idx, "properties", newProperties)
+                        }
+                      />
+                    </td>
+                    {/* Constraints  */}
+                    <td className="p-2 border text-center">
+                      <ConstraintEditor
+                        constraints={node.constraints || []}
+                        availableProperties={node.properties || []}
+                        onChange={(newConstraints) =>
+                          updateNode(idx, "constraints", newConstraints)
+                        }
+                      />
+                    </td>
+                    {/* Mappings  */}
+                    <td className="p-2 border text-center">
+                      <MappingEditor
+                        mappings={node.mapping}
+                        onChange={(newMappings) =>
+                          updateNode(idx, "mapping", newMappings)
+                        }
+                      />
                     </td>
                   </tr>
-                ) : (
-                  localNodes.map((node, idx) => (
-                    <tr
-                      key={`${node.originalLabel}-${idx}`}
-                      className="align-top"
-                    >
-                      {/* Name */}
-                      <td className="p-2 border">
-                        <input
-                          className="w-full border rounded px-2 py-1 text-sm"
-                          value={node.label}
-                          onChange={(e) =>
-                            updateNode(idx, "label", e.target.value)
-                          }
-                        />
-                      </td>
-                      {/* Icon */}
-                      <td className="relative group w-24 h-24 bg-white border rounded shrink-0 overflow-hidden p-2 border text-center">
-                        <img
-                          src={Array.isArray(node.icon)
-                            ? node.icon[0]
-                            : node.icon}
-                          className="w-full h-full object-contain p-1"
-                          alt="icon"
-                        />
-                        <label className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity">
-                          <input type="file" className="hidden" accept="image/*" onChange={(e) => handleIconUpload(e, idx)} />
-                          <ImageIcon className="w-5 h-5 text-white" />
-                        </label>
-                      </td>
-                      {/* Category (in palette panel)*/}
-                      <td className="p-2 border">
-                        <label htmlFor="profile-select" className="text-sm font-medium whitespace-nowrap">
-                        </label>
-                        <select
-                          id="profile-select"
-                          value={node.category}
-                          onChange={(e) =>
-                            updateNode(idx, "category", e.target.value)
-                          }
-                          className="border rounded px-2 py-1 bg-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                          <option value="" disabled>Choose a category...</option>
-                          
-                            <option key={"dataTypes"} value={"dataTypes"}>
-                              Data Types
-                            </option>
-                            <option key={"operators"} value={"Operators"}>
-                              Operators
-                            </option>
-                          
-                        </select>
-                      </td>
-                      {/* Output Type: String */}
-                      <td className="p-2 border text-center">
-  <OutputTypeEditor
-    outputTypes={Array.isArray(node.outputType) ? node.outputType : [node.outputType].filter(Boolean)}
-    onChange={(newTypes) => updateNode(idx, "outputType", newTypes)}
-  />
-</td>
-
-
-                      {/* Properties  */}
-                      <td className="p-2 border text-center">
-                        <PropertyEditor
-                          properties={node.properties || []}
-                          onChange={(newProperties) =>
-                            updateNode(idx, "properties", newProperties)
-                          }
-                        />
-                      </td>
-                      {/* Constraints  */}
-                      <td className="p-2 border text-center">
-                        <ConstraintEditor
-                          constraints={node.constraints || []}
-                          availableProperties={node.properties || []}
-                          onChange={(newConstraints) =>
-                            updateNode(idx, "constraints", newConstraints)
-                          }
-                        />
-                      </td>
-                      {/* Mappings  */}
-                      <td className="p-2 border text-center">
-                        <MappingEditor
-                          mappings={node.mapping}
-                          onChange={(newMappings) =>
-                            updateNode(idx, "mapping", newMappings)
-                          }
-                        />
-                      </td>
-                    </tr>
-                  )))}
-              </tbody>
-            </table>
-          </div>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </Modal>
