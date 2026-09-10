@@ -10,6 +10,7 @@ import type { Complex } from "@/lib/diracFormatter";
 import { statevectorToDirac } from "@/lib/diracFormatter";
 import JSZip from "jszip";
 import { BlochSphere, BlochSphereMulti, getEntanglementPersistence, isStateFullySeparable, getMultiQubitPersistence } from "./BlochSphere";
+import { GroverInfoBox } from "./GroverInfoBox";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
@@ -96,10 +97,10 @@ const MAX_BARS_BEFORE_SCROLL = 16;
  */
 async function svgToPngBase64(svgInput: string, scale = 2): Promise<string> {
   return new Promise((resolve, reject) => {
-    // Akzeptiert sowohl rohen SVG-Text als auch Data-URLs
+    // Accepts both raw SVG text and data URLs
     let objectUrl: string;
     if (svgInput.startsWith("data:")) {
-      // Data-URL direkt verwenden
+      // use the data URL directly
       objectUrl = svgInput;
     } else {
       // Roher SVG-Text → Blob URL
@@ -305,7 +306,7 @@ function markdownToLatex(md: string): string {
       return `%%MATH${mathBlocks.length - 1}%%`;
     });
 
-  // Schritt 2: Headers (vor Bold/Italic)
+  // step 2: headers (before bold/italic)
   out = out
     .replace(/^#{4}\s+(.+)$/gm, (_: string, t: string) => `\\subsubsection*{${t}}`)
     .replace(/^#{3}\s+(.+)$/gm, (_: string, t: string) => `\\subsubsection*{${t}}`)
@@ -318,13 +319,13 @@ function markdownToLatex(md: string): string {
     .replace(/\*\*([^*\n]+)\*\*/g, (_: string, t: string) => `\\textbf{${t}}`)
     .replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, (_: string, t: string) => `\\textit{${t}}`);
 
-  // Schritt 4: Listen
+  // step 4: lists
   out = out
     .replace(/^[-*]\s+(.+)$/gm, (_: string, t: string) => `\\item ${t}`)
     .replace(/((?:\\item .+\n?)+)/g, (_: string, items: string) =>
       `\\begin{itemize}\n${items}\\end{itemize}\n`);
 
-  // Schritt 5: Sonstiges
+  // step 5: miscellaneous
   out = out
     .replace(/^---$/gm, "\\hrule\\vspace{0.5em}")
     .replace(/`([^`]+)`/g, (_: string, t: string) => `\\texttt{${t}}`)
@@ -424,7 +425,7 @@ ${persistenceExport !== null
 `
     : "";
 
-  // Zwischenschritte als align-Umgebung
+  // intermediate steps as an align environment
   // helper: find the matrix for a gate label
   const getGateMatrix = (gateLabelLatex: string): string | null => {
   // check longer keys first so that "CNOT" is matched before "T" and "NOT"
@@ -448,7 +449,11 @@ ${stepsResult.steps.map((step, idx) => {
   const prevState = idx === 0
     ? `|\\psi_0\\rangle = ${stepsResult.initial.latex}`
     : `|\\psi_{${idx}}\\rangle`;
-  return `${matrixBlock}\\begin{align}\n  ${prevState} &\\xrightarrow{${step.gateLabelLatex}} \\\\[2pt]\n  |\\psi_{${idx + 1}}\\rangle &= ${step.latex}\n\\end{align}`;
+  // Grover component heading, emitted once at the start of each component
+  const componentHeader = step.component && step.component !== stepsResult.steps[idx - 1]?.component
+    ? `\\subsection*{${step.component}}\n\n`
+    : "";
+  return `${componentHeader}${matrixBlock}\\begin{align}\n  ${prevState} &\\xrightarrow{${step.gateLabelLatex}} \\\\[2pt]\n  |\\psi_{${idx + 1}}\\rangle &= ${step.latex}\n\\end{align}`;
 }).join("\n\n")}
 
 `
@@ -802,7 +807,7 @@ function ExportMenu({ latex, numQubits, terms, unicode, onGetCircuitSvg, stepsRe
               </span>
             </button>
 
-            {/* .zip mit .tex + circuit.png + circuit.qasm */}
+            {/* .zip with .tex + circuit.png + circuit.qasm */}
             {onGetCircuitSvg && (
               <button onClick={() => handleDownloadTex(true)}
                 className="w-full text-left px-3 py-2 hover:bg-gray-50 text-gray-700 flex items-center gap-2">
@@ -1015,7 +1020,7 @@ export function QasmDiracPanel(props: Props) {
     result = result.replace(/\\text\{([A-Za-z0-9†]+)\}\s*=\s*\$\$/g, "$$$1 = ");
 
     // CRITICAL: remark-math only recognizes $$...$$ as a standalone block (on its own line).
-    // Mistral erzeugt manchmal Zeilen wie "X|0\rangle = $$...$$ $$...$$ = |1\rangle", bei denen
+    // Mistral sometimes produces lines such as "X|0\rangle = $$...$$ $$...$$ = |1\rangle" in which
     // several $$ blocks are mixed with running text on the SAME line, which remark-math does
     // not recognize as math at all and renders raw. Fix: check per line whether the line
     // consists of a single $$...$$ block only (a real block). If not (running text or several
@@ -1027,7 +1032,7 @@ export function QasmDiracPanel(props: Props) {
         const trimmed = line.trim();
         const isStandaloneBlock = /^\$\$[\s\S]*\$\$$/.test(trimmed) &&
           (trimmed.match(/\$\$/g) || []).length === 2;
-        if (isStandaloneBlock) return line; // echter eigenständiger Block, unverändert lassen
+        if (isStandaloneBlock) return line; // a real standalone block, leave unchanged
         // convert every $$...$$ occurrence on this line to inline $...$
         return line.replace(/\$\$([\s\S]*?)\$\$/g, (_m, inner) => `$${inner}$`);
       })
@@ -1050,7 +1055,7 @@ export function QasmDiracPanel(props: Props) {
         `Step ${i + 1}: Apply gate $${s.gateLabelLatex ?? s.gateLabel}$ → $|\\psi_{${i + 1}}\\rangle$ = ${s.unicode}`
       ).join("\n");
 
-      // Node-Kontext aus Model extrahieren
+      // Extract node context from the model
       let nodeContextText = "";
       if (props.onGetModel) {
         try {
@@ -1183,7 +1188,7 @@ export function QasmDiracPanel(props: Props) {
   // ---------------------------------------------------------------------------
   const partialMeasurement = useMemo(() => {
     if (!fullResult || effectiveSelected.length === 0) return null;
-    // Bei 1 Qubit: immer alle Qubits messen
+    // With a single qubit, always measure all qubits
     const measuredQubits = numQubits === 1 ? [0] : effectiveSelected.length === numQubits ? [] : effectiveSelected;
     if (measuredQubits.length === 0) return null;
 
@@ -1192,7 +1197,7 @@ export function QasmDiracPanel(props: Props) {
     const numOutcomes = 1 << measuredQubits.length;
 
     for (let outcome = 0; outcome < numOutcomes; outcome++) {
-      // Welche Terme passen zu diesem Messergebnis?
+      // which terms match this measurement outcome?
       const matchingTerms = fullResult.terms.filter(term => {
         for (let k = 0; k < measuredQubits.length; k++) {
           const bit = parseInt(term.basisState[measuredQubits[k]] ?? "0");
@@ -1220,7 +1225,7 @@ export function QasmDiracPanel(props: Props) {
         }
       }));
 
-      // Unicode-Darstellung des kollabierten Zustands
+      // Unicode representation of the collapsed state
       const formatAmplitude = (re: number, im: number): string => {
         const absVal = Math.sqrt(re * re + im * im);
         if (Math.abs(absVal - 1) < 0.001) return "";
@@ -1405,21 +1410,21 @@ export function QasmDiracPanel(props: Props) {
         </div>
       )}
 
-      {/* Formula: Bei erkannter Messung (measurementResultHint) und solange der Nutzer keine
-          eigene manuelle Qubit-Auswahl getroffen hat (!isPartial), wird nur das Ergebnis der
-          gemessenen Qubits gezeigt - nicht das volle Register. Ohne Messung bleibt es beim
-          vollständigen Registerzustand wie bisher. */}
+      {/* Formula: if a measurement was detected (measurementResultHint) and as long as the
+          user has not made a manual qubit selection (!isPartial), only the result of the
+          measured qubits is shown - not the full register. Without a measurement, the full
+          register state is shown as before. */}
       <div className="flex-shrink-0 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 overflow-x-auto">
         <span className="font-mono text-sm text-gray-800 whitespace-nowrap">
           |ψ⟩ = {(!isPartial && measurementResultHint) ? `|${measurementResultHint.bits}⟩` : unicodeStr}
         </span>
       </div>
 
-      {/* Hinweis: Bei der finalen Anzeige wird eine rein globale Phase (z.B. ein
-          Vorzeichen bei Einzelterm-Zuständen wie -|1⟩) entfernt, da sie physikalisch
-          keinen messbaren Unterschied macht. In den Mathematical Intermediate Steps
-          weiter unten bleibt das Vorzeichen dagegen sichtbar, um die algebraische
-          Wirkung jedes einzelnen Gatters nachvollziehbar zu zeigen. */}
+      {/* Note: in the final display a purely global phase (e.g. a sign on single-term
+          states such as -|1⟩) is removed, because it makes no physically measurable
+          difference. In the Mathematical Intermediate Steps further below the sign
+          remains visible, so that the algebraic effect of each individual gate stays
+          traceable. */}
       {!isPartial && fullResult?.globalPhaseNote && (
         <div className="flex-shrink-0 rounded-lg border border-blue-100 bg-blue-50/40 px-3 py-2 flex items-start gap-2">
           <span className="text-blue-500 text-xs mt-0.5">ℹ</span>
@@ -1431,10 +1436,10 @@ export function QasmDiracPanel(props: Props) {
         </div>
       )}
 
-      {/* Hinweis: in welchen Qubits laut Measurement-Node das eigentliche Ergebnis kodiert ist,
-          plus (da die Hauptzeile jetzt reduziert ist) der vollständige Registerzustand zur Info,
-          nur sichtbar wenn aktuell "All" ausgewählt ist (sonst hat der User die Auswahl bereits
-          selbst getroffen und der Hinweis wäre redundant). */}
+      {/* Note: which qubits carry the actual result according to the measurement node,
+          plus (since the main line is now reduced) the full register state for reference,
+          only visible while "All" is selected (otherwise the user has already made the
+          selection and the note would be redundant). */}
       {!isPartial && measurementResultHint && (
         <div className="flex-shrink-0 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
           <div className="flex items-center gap-2 flex-wrap">
@@ -1455,13 +1460,13 @@ export function QasmDiracPanel(props: Props) {
               )}
             </span>
           </div>
-          {/* Hinweis zur Bit-Signifikanz: Die Anzeige folgt immer q0,q1,q2,... von
-              links nach rechts. Ob dabei q[niedrigster Index] das niedrigst- oder
-              das höchstwertige Bit ist, hängt von der jeweiligen Schaltung ab (z.B.
-              verwendet ein Ripple-Carry-Addierer typischerweise Index 0 als LSB).
-              Der oben gezeigte Dezimalwert geht von genau der Bit-Reihenfolge aus,
-              in der die Qubits hier aufgelistet sind (q{measurementResultHint.indices[0]}
-              zuerst) - das muss nicht zwangsläufig der MSB-zuerst-Konvention entsprechen. */}
+          {/* Note on bit significance: the display always follows q0,q1,q2,... from
+              left to right. Whether q[lowest index] is the least or the most significant
+              bit depends on the individual circuit (a ripple-carry adder, for example,
+              typically uses index 0 as the LSB). The decimal value shown above assumes
+              exactly the bit order in which the qubits are listed here
+              (q{measurementResultHint.indices[0]} first) - this does not necessarily
+              match the MSB-first convention. */}
           {measurementResultHint.indices.length > 1 && (
             <div className="text-xs text-emerald-700/80 mt-1.5 pt-1.5 border-t border-emerald-200/70">
               ⓘ Bit order shown: q{measurementResultHint.indices[0]} first (as listed above).
@@ -1539,7 +1544,7 @@ export function QasmDiracPanel(props: Props) {
         );
       })()}
 
-      {/* Zwischenschritte */}
+      {/* Intermediate steps */}
       {showSteps && stepsResult && stepsResult.steps.length > 0 && (
         <div className="flex-shrink-0 rounded-lg border border-blue-100 bg-blue-50/30 px-3 py-3 overflow-x-auto">
           <div className="flex items-center justify-between mb-2">
@@ -1560,13 +1565,22 @@ export function QasmDiracPanel(props: Props) {
               {mistralLoading ? "Explaining..." : "Explain"}
             </button>
           </div>
-          {/* Notation-Hinweis */}
+          {/* Notation note */}
           <div className="flex items-start gap-1.5 mb-2 px-2 py-1.5 rounded bg-blue-50 border border-blue-100">
             <span className="text-blue-400 text-xs mt-0.5">ℹ</span>
             <p className="text-xs text-blue-600 leading-relaxed">
               <strong>Notation:</strong> U<sub>0</sub> means that U is applied to qubit 0, I<sub>1</sub> means identity (no operation) on qubit 1. The subscript indicates which qubit the gate acts on.
             </p>
           </div>
+
+          {/* Grover metadata, only rendered when a Grover node was detected */}
+          {stepsResult.groverIterations > 0 && (
+            <GroverInfoBox
+              numQubits={stepsResult.groverQubits.length}
+              iterations={stepsResult.groverIterations}
+              markedStates={stepsResult.groverMarkedStates}
+            />
+          )}
 
           <div className="flex flex-col gap-0 font-mono text-sm">
             <div className="flex items-baseline gap-2 py-1">
@@ -1576,6 +1590,12 @@ export function QasmDiracPanel(props: Props) {
             </div>
             {stepsResult.steps.map((step, idx) => (
               <div key={idx} className="flex flex-col">
+                {/* Grover component heading, rendered once at the start of each component */}
+                {step.component && step.component !== stepsResult.steps[idx - 1]?.component && (
+                  <div className="mt-3 mb-1 pl-10 text-[11px] font-sans font-semibold uppercase tracking-wide text-indigo-600">
+                    {step.component}
+                  </div>
+                )}
                 <div className="flex items-center gap-1.5 py-0.5 pl-10">
                   <span className="text-blue-400 text-xs">──</span>
                   <span
@@ -1602,7 +1622,7 @@ export function QasmDiracPanel(props: Props) {
                           }
                         : undefined
                     }
-                    title={step.nodeId && onStepClick ? "Klicken um alle bis hierhin verwendeten Nodes auf dem Canvas hervorzuheben" : undefined}
+                    title={step.nodeId && onStepClick ? "Click to highlight all nodes used up to this point on the canvas" : undefined}
                   >
                     {step.gateLabel}
                   </span>
@@ -1619,7 +1639,7 @@ export function QasmDiracPanel(props: Props) {
             ))}
           </div>
 
-          {/* Mistral AI Erklärung */}
+          {/* Mistral AI explanation */}
           {mistralExplanation && (
             <div className="mt-3 pt-3 border-t border-blue-100">
               <div className="flex items-center gap-1.5 mb-2">
@@ -1643,7 +1663,7 @@ export function QasmDiracPanel(props: Props) {
         </div>
       )}
 
-      {/* Histogram + Qubit Selector + Partielle Messung */}
+      {/* Histogram + qubit selector + partial measurement */}
       {terms.length > 0 && showBasisStates && (
         <div className="flex-shrink-0 flex flex-col gap-2">
           {numQubits > 1 && (
@@ -1652,7 +1672,7 @@ export function QasmDiracPanel(props: Props) {
 
             </div>
           )}
-          {/* Histogramm: nur wenn alle Qubits ausgewählt */}
+          {/* Histogram: only when all qubits are selected */}
           {!isPartial && (
             <>
               <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
@@ -1662,7 +1682,7 @@ export function QasmDiracPanel(props: Props) {
             </>
           )}
 
-          {/* Partielle Messung: Projektion + kollabierter Zustand */}
+          {/* Partial measurement: projection + collapsed state */}
           {isPartial && partialMeasurement && partialMeasurement.length > 0 && (
             <div className="rounded-lg border border-indigo-100 bg-indigo-50/30 px-3 py-3 mt-1">
               <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">
