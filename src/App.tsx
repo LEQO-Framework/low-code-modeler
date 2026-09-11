@@ -3982,7 +3982,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     }
   }, [reactFlowInstance, showToast]);
 
-  async function deployWorkflowToCamunda(workflowName, workflowXml, viewMap) {
+  async function deployWorkflowToCamunda(workflowName, workflowXml) {
     console.log("Deploying workflow to Camunda Engine");
 
     // add required form data fields
@@ -4148,11 +4148,6 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
    * Configuration for the new pattern solution entry
    */
   const NEW_FILE_NAME = "new-workflow.json";
-  const NEW_FILE_CONTENT = {
-    metadata: { version: "1.0.0", name: "New Workflow" },
-    nodes: [],
-    edges: [],
-  };
   const PACKAGE_TYPE = "workflow_editor";
   const ALGO_NAME = "New Algorithm Entry";
   const IMPL_NAME = "New Implementation Entry";
@@ -4805,7 +4800,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
               if (hasMultipleMappingsInFlow(modelData)) {
                 //sendWorkflowForDeployment(workflow);
               }
-              await deployWorkflowToCamunda("process-workflow", workflow, "");
+              await deployWorkflowToCamunda("process-workflow", workflow);
 
               // Upload the QRMS file to GitHub if available
               if (item.links?.qrms) {
