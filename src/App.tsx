@@ -4486,7 +4486,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
           },
         }}
         callback={(data) => {
-          const { status, index, type } = data;
+          const { index, type } = data;
           console.log("HELP");
           console.log(index);
           console.log(type);
