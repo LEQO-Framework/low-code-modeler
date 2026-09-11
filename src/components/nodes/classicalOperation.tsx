@@ -1,7 +1,14 @@
 import { useStore } from "@/config/store";
 import { cn } from "@/lib/utils";
 import React, { memo, useEffect, useState } from "react";
-import { Edge, Handle, Node, Position, getConnectedEdges, useUpdateNodeInternals } from "reactflow";
+import {
+  Edge,
+  Handle,
+  Node,
+  Position,
+  getConnectedEdges,
+  useUpdateNodeInternals,
+} from "reactflow";
 import { shallow } from "zustand/shallow";
 import { Button } from "antd";
 import { motion } from "framer-motion";
@@ -29,7 +36,8 @@ const selector = (state: {
 
 export const ClassicalOperationNode = memo((node: Node) => {
   const { data, selected } = node;
-  const { edges, nodes, updateNodeValue, setSelectedNode, ancillaMode } = useStore(selector, shallow);
+  const { edges, nodes, updateNodeValue, setSelectedNode, ancillaMode } =
+    useStore(selector, shallow);
   const alledges = getConnectedEdges([node], edges);
 
   const [inputs, setInputs] = useState(data.inputs || []);
@@ -47,8 +55,14 @@ export const ClassicalOperationNode = memo((node: Node) => {
     const newInputId = `input-${inputs.length + 1}`;
     const newOutputId = `output-${outputs.length + 1}`;
 
-    setInputs([...inputs, { id: newInputId, label: `Variable ${inputs.length + 1}` }]);
-    setOutputs([...outputs, { id: newOutputId, label: `Output ${outputs.length + 1}`, value: "" }]);
+    setInputs([
+      ...inputs,
+      { id: newInputId, label: `Variable ${inputs.length + 1}` },
+    ]);
+    setOutputs([
+      ...outputs,
+      { id: newOutputId, label: `Output ${outputs.length + 1}`, value: "" },
+    ]);
   };
 
   const handleYChange = (e, field) => {
@@ -60,7 +74,10 @@ export const ClassicalOperationNode = memo((node: Node) => {
   };
 
   const inputTypesMatch = (): boolean => {
-    if (node.data.label === consts.classicalLabel + consts.bitwiseOperatorLabel) {
+    if (
+      node.data.label ===
+      consts.classicalLabel + consts.bitwiseOperatorLabel
+    ) {
       return true; // fixed type: bit
     }
 
@@ -82,7 +99,7 @@ export const ClassicalOperationNode = memo((node: Node) => {
 
       // Check if this input is connected
       const edge = edges.find(
-        (e) => e.target === node.id && e.targetHandle === handleId
+        (e) => e.target === node.id && e.targetHandle === handleId,
       );
 
       if (edge) {
@@ -106,7 +123,7 @@ export const ClassicalOperationNode = memo((node: Node) => {
       const otherIndex = inputIndex === 0 ? 1 : 0;
       const otherHandleId = `classicalHandleOperationInput${otherIndex}${node.id}`;
       const otherEdge = edges.find(
-        (e) => e.target === node.id && e.targetHandle === otherHandleId
+        (e) => e.target === node.id && e.targetHandle === otherHandleId,
       );
 
       if (otherEdge) {
@@ -123,30 +140,44 @@ export const ClassicalOperationNode = memo((node: Node) => {
       }
 
       // Operator-based fallback
-      if (node.data.label === consts.classicalLabel + consts.bitwiseOperatorLabel) {
+      if (
+        node.data.label ===
+        consts.classicalLabel + consts.bitwiseOperatorLabel
+      ) {
         return "bit";
       }
-      if (node.data.label === consts.classicalLabel + consts.minMaxOperatorLabel) {
+      if (
+        node.data.label ===
+        consts.classicalLabel + consts.minMaxOperatorLabel
+      ) {
         return "array";
       }
     }
     return "any"; // Default
   };
 
-
   useEffect(() => {
     updateNodeInternals(node.id);
     if (node.data.operator === undefined) {
-      if (node.data.label === consts.classicalLabel + consts.arithmeticOperatorLabel) {
+      if (
+        node.data.label ===
+        consts.classicalLabel + consts.arithmeticOperatorLabel
+      ) {
         updateNodeValue(node.id, "operator", "+");
-      }
-      else if (node.data.label === consts.classicalLabel + consts.bitwiseOperatorLabel) {
+      } else if (
+        node.data.label ===
+        consts.classicalLabel + consts.bitwiseOperatorLabel
+      ) {
         updateNodeValue(node.id, "operator", "OR");
       }
-      if (node.data.label === consts.classicalLabel + consts.comparisonOperatorLabel) {
+      if (
+        node.data.label ===
+        consts.classicalLabel + consts.comparisonOperatorLabel
+      ) {
         updateNodeValue(node.id, "operator", "<");
+      } else {
+        updateNodeValue(node.id, "operator", "min");
       }
-      else { updateNodeValue(node.id, "operator", "min"); }
     } else {
       updateNodeValue(node.id, "operator", node.data.operator);
     }
@@ -157,10 +188,10 @@ export const ClassicalOperationNode = memo((node: Node) => {
   const dynamicHeight = baseHeight;
 
   const iconMap = {
-    "Classical Arithmetic Operator": 'classicalArithmeticIcon.png',
-    "Classical Bitwise Operator": 'classicalBitwiseIcon.png',
-    "Classical Min & Max Operator": 'classicalMinMaxIcon.png',
-    "Classical Comparison Operator": 'classicalComparisonIcon.png',
+    "Classical Arithmetic Operator": "classicalArithmeticIcon.png",
+    "Classical Bitwise Operator": "classicalBitwiseIcon.png",
+    "Classical Min & Max Operator": "classicalMinMaxIcon.png",
+    "Classical Comparison Operator": "classicalComparisonIcon.png",
   };
   const label = data.label;
   const iconSrc = iconMap[label];
@@ -173,8 +204,12 @@ export const ClassicalOperationNode = memo((node: Node) => {
 
   const id = node.id;
 
-  const [remoteHighlightColor, setRemoteHighlightColor] = useState<string | null>(null);
-  const [selectingUserName, setSelectingUserName] = useState<string | null>(null); // technically not needed, could extend functionality to also show user name next to highlighted node
+  const [remoteHighlightColor, setRemoteHighlightColor] = useState<
+    string | null
+  >(null);
+  const [selectingUserName, setSelectingUserName] = useState<string | null>(
+    null,
+  ); // technically not needed, could extend functionality to also show user name next to highlighted node
 
   useEffect(() => {
     const checkRemoteSelection = () => {
@@ -213,18 +248,29 @@ export const ClassicalOperationNode = memo((node: Node) => {
   return (
     <div
       className="grand-parent"
-      style={{ width: showingChildren ? 360 : 320, height: showingChildren ? 400 : 373 }}
+      style={{
+        width: showingChildren ? 360 : 320,
+        height: showingChildren ? 400 : 373,
+      }}
     >
       <div className="grand-parent">
         <div
           className={cn(
             "w-[320px] bg-white border border-solid border-gray-700 shadow-md overflow-hidden",
-            selected && "border-blue-500"
+            selected && "border-blue-500",
           )}
           style={{ height: `${dynamicHeight}px`, borderRadius: "40px" }}
         >
-          <div className="w-full flex items-center" style={{ height: '52px' }}>
-            <div className="w-full bg-orange-300 py-1 px-2 flex items-center" style={{ height: "inherit", borderTopLeftRadius: "28px", borderTopRightRadius: "28px", overflow: "hidden", paddingLeft: '25px', }}
+          <div className="w-full flex items-center" style={{ height: "52px" }}>
+            <div
+              className="w-full bg-orange-300 py-1 px-2 flex items-center"
+              style={{
+                height: "inherit",
+                borderTopLeftRadius: "28px",
+                borderTopRightRadius: "28px",
+                overflow: "hidden",
+                paddingLeft: "25px",
+              }}
             >
               {(() => {
                 const { width, height } = iconSizeMap[node.data.label];
@@ -238,7 +284,12 @@ export const ClassicalOperationNode = memo((node: Node) => {
                 );
               })()}
               <div className="h-full w-[1px] bg-black mx-2" />
-              <span className="font-semibold leading-none" style={{ paddingLeft: '15px' }}>{data.label.split(consts.classicalLabel)[1]}</span>
+              <span
+                className="font-semibold leading-none"
+                style={{ paddingLeft: "15px" }}
+              >
+                {data.label.split(consts.classicalLabel)[1]}
+              </span>
             </div>
           </div>
 
@@ -249,7 +300,7 @@ export const ClassicalOperationNode = memo((node: Node) => {
               value={node.data.operator || operation}
               onChange={(e) => handleYChange(e, "operator")}
             >
-              {(node.data.label === "Classical Arithmetic Operator") && (
+              {node.data.label === "Classical Arithmetic Operator" && (
                 <>
                   <option value="+">+</option>
                   <option value="-">-</option>
@@ -259,7 +310,7 @@ export const ClassicalOperationNode = memo((node: Node) => {
                 </>
               )}
 
-              {(node.data.label === "Classical Bitwise Operator") && (
+              {node.data.label === "Classical Bitwise Operator" && (
                 <>
                   <option value="|">OR</option>
                   <option value="&">AND</option>
@@ -268,7 +319,7 @@ export const ClassicalOperationNode = memo((node: Node) => {
                 </>
               )}
 
-              {(node.data.label === "Classical Comparison Operator") && (
+              {node.data.label === "Classical Comparison Operator" && (
                 <>
                   <option value="<">&lt;</option>
                   <option value=">">&gt;</option>
@@ -279,7 +330,7 @@ export const ClassicalOperationNode = memo((node: Node) => {
                 </>
               )}
 
-              {(node.data.label === "Classical Min & Max Operator") && (
+              {node.data.label === "Classical Min & Max Operator" && (
                 <>
                   <option value="min">Min</option>
                   <option value="max">Max</option>
@@ -294,12 +345,12 @@ export const ClassicalOperationNode = memo((node: Node) => {
                 className="relative p-2 mb-1"
                 style={{
                   backgroundColor: consts.classicalConstructColor,
-                  width: '120px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'flex-start',
-                  borderTopRightRadius: '20px',
-                  borderBottomRightRadius: '20px',
+                  width: "120px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "flex-start",
+                  borderTopRightRadius: "20px",
+                  borderBottomRightRadius: "20px",
                 }}
               >
                 <Handle
@@ -307,7 +358,7 @@ export const ClassicalOperationNode = memo((node: Node) => {
                   id={`classicalHandleOperationInput0${node.id}`}
                   position={Position.Left}
                   className="z-10 classical-circle-port-operation !bg-orange-300 !border-black -left-[8px]"
-                  style={{ top: '50%', transform: 'translateY(-50%)' }}
+                  style={{ top: "50%", transform: "translateY(-50%)" }}
                 />
                 <div className="flex flex-col items-center w-full leading-tight">
                   <span className="text-black text-sm">
@@ -317,19 +368,19 @@ export const ClassicalOperationNode = memo((node: Node) => {
                     type: {getInputType(0)?.toLowerCase() ?? "unknown"}
                   </span>
                 </div>
-
               </div>
-              {node.data.label !== consts.classicalLabel + consts.minMaxOperatorLabel && (
+              {node.data.label !==
+                consts.classicalLabel + consts.minMaxOperatorLabel && (
                 <div
                   className="relative p-2 mb-1"
                   style={{
                     backgroundColor: consts.classicalConstructColor,
-                    width: '120px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'flex-start',
-                    borderTopRightRadius: '20px',
-                    borderBottomRightRadius: '20px',
+                    width: "120px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "flex-start",
+                    borderTopRightRadius: "20px",
+                    borderBottomRightRadius: "20px",
                   }}
                 >
                   <Handle
@@ -337,7 +388,7 @@ export const ClassicalOperationNode = memo((node: Node) => {
                     id={`classicalHandleOperationInput1${node.id}`}
                     position={Position.Left}
                     className="z-10 classical-circle-port-operation !bg-orange-300 !border-black -left-[8px]"
-                    style={{ top: '50%', transform: 'translateY(-50%)' }}
+                    style={{ top: "50%", transform: "translateY(-50%)" }}
                   />
                   <div className="flex flex-col items-center w-full leading-tight">
                     <span className="text-black text-sm">
@@ -346,14 +397,14 @@ export const ClassicalOperationNode = memo((node: Node) => {
                     <span
                       className={cn(
                         "text-[10px]",
-                        inputTypesMatch() ? "text-gray-600" : "text-red-500"
+                        inputTypesMatch() ? "text-gray-600" : "text-red-500",
                       )}
                     >
                       type: {getInputType(1)?.toLowerCase() ?? "unknown"}
                     </span>
                   </div>
-
-                </div>)}
+                </div>
+              )}
               <div
                 className="relative p-2 mb-1 overflow-visible"
                 style={{
@@ -361,7 +412,7 @@ export const ClassicalOperationNode = memo((node: Node) => {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "flex-start",
-                  left: "132px"
+                  left: "132px",
                 }}
               >
                 <OutputPort
@@ -378,7 +429,8 @@ export const ClassicalOperationNode = memo((node: Node) => {
                   setOutputIdentifierError={setOutputIdentifierError}
                   setSizeError={setSizeError}
                   setSelectedNode={setSelectedNode}
-                  active={true} />
+                  active={true}
+                />
               </div>
             </div>
           </div>
