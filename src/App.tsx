@@ -246,7 +246,7 @@ function App() {
     console.log("cursors", cursors);
   };
 
-  const [menu, setMenu] = useState(null);
+  const [, setMenu] = useState(null);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [isManageTemplatesOpen, setIsManageTemplatesOpen] = useState(false);
   const [nisqAnalyzerEndpoint, setNisqAnalyzerEndpoint] = useState(
@@ -378,7 +378,7 @@ function App() {
     import.meta.env.VITE_GITHUB_TOKEN,
   );
   const [openqasmCode, setOpenQASMCode] = useState("");
-  const [showResultModal, setShowResultModal] = useState(false);
+  const [, setShowResultModal] = useState(false);
 
   const [selectedDevice, setSelectedDevice] = useState("aer_simulator");
   const [provider, setProvider] = useState("IBM");
@@ -386,20 +386,14 @@ function App() {
   const [numShots, setNumShots] = useState(1024);
   const [accessToken, setAccessToken] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
-  const [errorJobMessage, setErrorJobMessage] = useState("");
+  const [, setErrorJobMessage] = useState("");
   const [isPatternModalOpen, setIsPatternModalOpen] = useState(false);
   const [isPatternImplementationOpen, setIsPatternImplementationOpen] =
     useState(false);
-  const [isOpenQASMOpen, setIsOpenQASMOpen] = useState(false);
-  const [selectedPatternId, setSelectedPatternId] = useState<string | null>(
-    null,
-  );
   const [lassoMode, setLassoMode] = useState(false);
 
   const [mathMode, setMathMode] = useState(false);
   const [qasmEditorMode, setQasmEditorMode] = useState(false);
-
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [isLoadJsonModalOpen, setIsLoadJsonModalOpen] = useState(false);
   const [isPaletteOpen, setIsPaletteOpen] = useState(true);
