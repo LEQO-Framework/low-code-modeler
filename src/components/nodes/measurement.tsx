@@ -1,7 +1,6 @@
 import { useStore } from "@/config/store";
-import { cn } from "@/lib/utils";
 import React, { memo, useState, useRef, useEffect } from "react";
-import { Edge, Handle, Node, Position, getConnectedEdges } from "reactflow";
+import { Edge, Handle, Node, Position } from "reactflow";
 import { shallow } from "zustand/shallow";
 import OutputPort from "../utils/outputPort";
 import { AlertCircle } from "lucide-react";
@@ -33,29 +32,19 @@ export const MeasurementNode = memo((node: Node) => {
   const { data, selected } = node;
   const { edges, nodes, updateNodeValue, setSelectedNode, experienceLevel } =
     useStore(selector, shallow);
-  const alledges = getConnectedEdges([node], edges);
-  const [y, setY] = useState("");
   const [classicalOutputIdentifierError, setClassicalOutputIdentifierError] =
     useState(false);
   const [outputIdentifierError, setOutputIdentifierError] = useState(false);
-  const [outputIdentifier, setOutputIdentifier] = useState("");
-  const [operation, setOperation] = useState("");
-  const [showingChildren, setShowingChildren] = useState(false);
+  const [outputIdentifier] = useState("");
   const [sizeError, setSizeError] = useState(false);
   const [classicalSizeError, setClassicalSizeError] = useState(false);
-  const [mixedView, setMixedView] = useState(false);
-  const [hasPioneerUser, setHasPioneerUser] = useState(false);
-  const [hasExplorerUser, setHasExplorerUser] = useState(false);
-
-  const [inputs, setInputs] = useState(data.inputs || []);
+  const [mixedView] = useState(false);
   const [outputs, setOutputs] = useState(data.outputs || []);
   const [error, setError] = useState(false);
-  const [yError, setYError] = useState(false);
   const [indices, setIndices] = useState("");
-  const [startsWithDigitError, setStartsWithDigitError] = useState(false);
+  const [startsWithDigitError] = useState(false);
 
   const xRef = useRef(null);
-  const yRef = useRef(null);
 
   const baseHeight = 400;
   const extraHeightPerVariable = 40;
@@ -121,9 +110,6 @@ export const MeasurementNode = memo((node: Node) => {
   const [remoteHighlightColor, setRemoteHighlightColor] = useState<
     string | null
   >(null);
-  const [selectingUserName, setSelectingUserName] = useState<string | null>(
-    null,
-  ); // technically not needed, could extend functionality to also show user name next to highlighted node
 
   useEffect(() => {
     const checkRemoteSelection = () => {
@@ -131,10 +117,7 @@ export const MeasurementNode = memo((node: Node) => {
       let foundName: string | null = null;
 
       // Loop through all active client states in the room
-      awareness.getStates().forEach((state: any, clientId: number) => {
-        // Skip your own client ID so you don't highlight it with your own color
-        // if (clientId === awareness.clientID) return;
-
+      awareness.getStates().forEach((state: any) => {
         // Check if a peer has selected this specific node ID
         if (state.cursor && state.cursor.mySelectedNodeId === id) {
           foundColor = state.cursor.color;
@@ -143,7 +126,6 @@ export const MeasurementNode = memo((node: Node) => {
       });
 
       setRemoteHighlightColor(foundColor);
-      setSelectingUserName(foundName);
       console.log("COLOR", foundColor, foundName);
     };
 
@@ -275,7 +257,7 @@ export const MeasurementNode = memo((node: Node) => {
                   position={Position.Left}
                   className="z-10 circle-port-op !bg-blue-300 !border-black"
                   style={{ top: "20px" }}
-                  isValidConnection={(connection) => true}
+                  isValidConnection={() => true}
                   isConnectable={
                     edges.filter(
                       (edge) =>
