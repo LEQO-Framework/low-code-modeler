@@ -6,12 +6,9 @@ import {
   Handle,
   Node,
   Position,
-  getConnectedEdges,
   useUpdateNodeInternals,
 } from "reactflow";
 import { shallow } from "zustand/shallow";
-import { Button } from "antd";
-import { motion } from "framer-motion";
 import OutputPort from "../utils/outputPort";
 import * as consts from "@/constants";
 import { awareness } from "@/yjs";
@@ -36,34 +33,18 @@ const selector = (state: {
 
 export const ClassicalOperationNode = memo((node: Node) => {
   const { data, selected } = node;
-  const { edges, nodes, updateNodeValue, setSelectedNode, ancillaMode } =
-    useStore(selector, shallow);
-  const alledges = getConnectedEdges([node], edges);
+  const { edges, nodes, updateNodeValue, setSelectedNode } = useStore(
+    selector,
+    shallow,
+  );
 
-  const [inputs, setInputs] = useState(data.inputs || []);
   const [outputs, setOutputs] = useState(data.outputs || []);
-  const [yError, setYError] = useState(false);
-  const [y, setY] = useState("");
+  const [_y, setY] = useState("");
   const [outputIdentifierError, setOutputIdentifierError] = useState(false);
-  const [outputIdentifier, setOutputIdentifier] = useState("");
-  const [operation, setOperation] = useState("+");
-  const [showingChildren, setShowingChildren] = useState(false);
+  const [operation, _setOperation] = useState("+");
+  const [showingChildren, _setShowingChildren] = useState(false);
   const [sizeError, setSizeError] = useState(false);
   const updateNodeInternals = useUpdateNodeInternals();
-
-  const addVariable = () => {
-    const newInputId = `input-${inputs.length + 1}`;
-    const newOutputId = `output-${outputs.length + 1}`;
-
-    setInputs([
-      ...inputs,
-      { id: newInputId, label: `Variable ${inputs.length + 1}` },
-    ]);
-    setOutputs([
-      ...outputs,
-      { id: newOutputId, label: `Output ${outputs.length + 1}`, value: "" },
-    ]);
-  };
 
   const handleYChange = (e, field) => {
     const value = e.target.value;
@@ -128,7 +109,6 @@ export const ClassicalOperationNode = memo((node: Node) => {
 
       if (otherEdge) {
         const otherSourceNode = nodes.find((n) => n.id === otherEdge.source);
-        const otherSourceNodeHandle = otherEdge.sourceHandle;
         if (otherSourceNode) {
           if (otherSourceNode.type === "dataTypeNode") {
             return otherSourceNode.data?.dataType ?? "any";
@@ -184,7 +164,6 @@ export const ClassicalOperationNode = memo((node: Node) => {
   }, []);
 
   const baseHeight = 400;
-  const extraHeightPerVariable = 20;
   const dynamicHeight = baseHeight;
 
   const iconMap = {
@@ -204,12 +183,9 @@ export const ClassicalOperationNode = memo((node: Node) => {
 
   const id = node.id;
 
-  const [remoteHighlightColor, setRemoteHighlightColor] = useState<
+  const [_remoteHighlightColor, setRemoteHighlightColor] = useState<
     string | null
   >(null);
-  const [selectingUserName, setSelectingUserName] = useState<string | null>(
-    null,
-  ); // technically not needed, could extend functionality to also show user name next to highlighted node
 
   useEffect(() => {
     const checkRemoteSelection = () => {
@@ -217,10 +193,7 @@ export const ClassicalOperationNode = memo((node: Node) => {
       let foundName: string | null = null;
 
       // Loop through all active client states in the room
-      awareness.getStates().forEach((state: any, clientId: number) => {
-        // Skip your own client ID so you don't highlight it with your own color
-        // if (clientId === awareness.clientID) return;
-
+      awareness.getStates().forEach((state: any) => {
         // Check if a peer has selected this specific node ID
         if (state.cursor && state.cursor.mySelectedNodeId === id) {
           foundColor = state.cursor.color;
@@ -229,7 +202,6 @@ export const ClassicalOperationNode = memo((node: Node) => {
       });
 
       setRemoteHighlightColor(foundColor);
-      setSelectingUserName(foundName);
       console.log("COLOR", foundColor, foundName);
     };
 
