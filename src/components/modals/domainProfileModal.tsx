@@ -1,8 +1,27 @@
 import { useState, useRef, useEffect } from "react";
 import Modal from "./Modal";
 import { categories, CategoryEntry } from "../panels/categories";
-import { ImageIcon, Plus, Trash2, CheckCircle2, Circle, ChevronDown, Check, GripVertical } from "lucide-react";
-import { boundaryNodes, dataTypes, circuitLevelNodes, controlStructureNodes, templates, operator, customOperators, OperatorNode, EditableNode } from "@/constants";
+import {
+  ImageIcon,
+  Plus,
+  Trash2,
+  CheckCircle2,
+  Circle,
+  ChevronDown,
+  Check,
+  GripVertical,
+} from "lucide-react";
+import {
+  boundaryNodes,
+  dataTypes,
+  circuitLevelNodes,
+  controlStructureNodes,
+  templates,
+  operator,
+  customOperators,
+  OperatorNode,
+  EditableNode,
+} from "@/constants";
 import { DomainProfileRepositoryPicker } from "./domainProfileRepositoryPicker";
 import { RepositoryDomainProfile } from "../../services/domainProfileRepository";
 
@@ -25,7 +44,7 @@ export interface EditableNodeProfile {
 export type DomainProfile = {
   name: string;
   domainBlocks: Record<string, CategoryEntry>;
-}
+};
 
 interface NodeProfileProperty {
   name: string;
@@ -44,23 +63,26 @@ interface NodeProfileConstraint {
  * does. Fields the repository format does not carry, such as the icon, fall back
  * to the same defaults the file import uses.
  */
-function toEditableNodes(profile: RepositoryDomainProfile): EditableNodeProfile[] {
-  return Object.entries(profile.domainBlocks ?? {}).flatMap(([category, blocks]) =>
-    (blocks ?? []).map((block) => ({
-      label: block.label,
-      description: block.description ?? "",
-      icon: "QAOA.png",
-      visible: true,
-      outputType: "",
-      category,
-      properties: block.properties ?? [],
-      constraints: block.constraints ?? [],
-      mapping: [[]],
+function toEditableNodes(
+  profile: RepositoryDomainProfile,
+): EditableNodeProfile[] {
+  return Object.entries(profile.domainBlocks ?? {}).flatMap(
+    ([category, blocks]) =>
+      (blocks ?? []).map((block) => ({
+        label: block.label,
+        description: block.description ?? "",
+        icon: "QAOA.png",
+        visible: true,
+        outputType: "",
+        category,
+        properties: block.properties ?? [],
+        constraints: block.constraints ?? [],
+        mapping: [[]],
 
-      originalLabel: block.label,
-      originalDescription: block.description ?? "",
-      originalIcon: "QAOA.png",
-    }))
+        originalLabel: block.label,
+        originalDescription: block.description ?? "",
+        originalIcon: "QAOA.png",
+      })),
   );
 }
 
@@ -97,24 +119,28 @@ function extractNodes(content: any): EditableNodeProfile[] {
   return nodes;
 }
 
-function toEditableNodesFromDomainProfile(profile: DomainProfile): EditableNodeProfile[] {
-  return Object.entries(profile.domainBlocks ?? {}).flatMap(([category, entry]: any) => {
-    const content = entry?.content ?? [];
-    return (Array.isArray(content) ? content : []).map((node: any) => ({
-      label: node.label ?? "",
-      description: node.description ?? "",
-      icon: node.icon ?? "QAOA.png", //TODO: define default Icon 
-      visible: node.visible ?? true,
-      outputType: node.outputType ?? "",
-      category: node.category ?? category ?? "",
-      properties: node.properties ?? [],
-      constraints: node.constraints ?? [],
-      mapping: node.mapping ?? [[]],
-      originalLabel: node.originalLabel ?? node.label ?? "",
-      originalDescription: node.originalDescription ?? node.description ?? "",
-      originalIcon: node.originalIcon ?? node.icon ?? "QAOA.png", //TODO: define default Icon 
-    }));
-  });
+function toEditableNodesFromDomainProfile(
+  profile: DomainProfile,
+): EditableNodeProfile[] {
+  return Object.entries(profile.domainBlocks ?? {}).flatMap(
+    ([category, entry]: any) => {
+      const content = entry?.content ?? [];
+      return (Array.isArray(content) ? content : []).map((node: any) => ({
+        label: node.label ?? "",
+        description: node.description ?? "",
+        icon: node.icon ?? "QAOA.png", //TODO: define default Icon
+        visible: node.visible ?? true,
+        outputType: node.outputType ?? "",
+        category: node.category ?? category ?? "",
+        properties: node.properties ?? [],
+        constraints: node.constraints ?? [],
+        mapping: node.mapping ?? [[]],
+        originalLabel: node.originalLabel ?? node.label ?? "",
+        originalDescription: node.originalDescription ?? node.description ?? "",
+        originalIcon: node.originalIcon ?? node.icon ?? "QAOA.png", //TODO: define default Icon
+      }));
+    },
+  );
 }
 
 function extractNodeLabels(content: any): Record<string, string> {
@@ -138,17 +164,20 @@ function extractNodeLabels(content: any): Record<string, string> {
 
 function PropertyEditor({
   properties,
-  onChange
+  onChange,
 }: {
-  properties: NodeProfileProperty[],
-  onChange: (props: NodeProfileProperty[]) => void
+  properties: NodeProfileProperty[];
+  onChange: (props: NodeProfileProperty[]) => void;
 }) {
-
   const addProperty = () => {
     onChange([...properties, { name: "", type: "" }]);
   };
 
-  const updateProperty = (index: number, field: keyof NodeProfileProperty, value: any) => {
+  const updateProperty = (
+    index: number,
+    field: keyof NodeProfileProperty,
+    value: any,
+  ) => {
     const newProps = [...properties];
     newProps[index] = { ...newProps[index], [field]: value };
     onChange(newProps);
@@ -171,7 +200,9 @@ function PropertyEditor({
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-[10px] font-bold text-gray-500 uppercase">Name</label>
+              <label className="block text-[10px] font-bold text-gray-500 uppercase">
+                Name
+              </label>
               <input
                 className="w-full border rounded px-1 py-0.5 text-xs"
                 value={prop.name}
@@ -179,7 +210,9 @@ function PropertyEditor({
               />
             </div>
             <div>
-              <label className="block text-[10px] font-bold text-gray-500 uppercase">Type</label>
+              <label className="block text-[10px] font-bold text-gray-500 uppercase">
+                Type
+              </label>
               <input
                 className="w-full border rounded px-1 py-0.5 text-xs"
                 value={prop.type}
@@ -203,15 +236,15 @@ function PropertyEditor({
 function ConstraintEditor({
   constraints,
   availableProperties,
-  onChange
+  onChange,
 }: {
-  constraints: NodeProfileConstraint[],
-  availableProperties: NodeProfileProperty[],
-  onChange: (props: NodeProfileConstraint[]) => void
+  constraints: NodeProfileConstraint[];
+  availableProperties: NodeProfileProperty[];
+  onChange: (props: NodeProfileConstraint[]) => void;
 }) {
-  const constraintOptions = ["==", "!=", "<", ">", "<=", ">=", "is required"]
+  const constraintOptions = ["==", "!=", "<", ">", "<=", ">=", "is required"];
 
-  const propertyOptions = (availableProperties || []).flatMap(prop => {
+  const propertyOptions = (availableProperties || []).flatMap((prop) => {
     const base = [prop.name];
     // Check if type contains 'array' or '[]'
     if (prop.type.toLowerCase().includes("array") || prop.type.includes("[]")) {
@@ -224,12 +257,24 @@ function ConstraintEditor({
     onChange([...constraints, { propertyName: "", constraint: "", value: "" }]);
   };
 
-  const updateConstraint = (index: number, field: keyof NodeProfileConstraint, value: any) => {
+  const updateConstraint = (
+    index: number,
+    field: keyof NodeProfileConstraint,
+    value: any,
+  ) => {
     const newConstraints = [...constraints];
-    const finalValue = field === "constraint" && value === "is required" ? "" :
-      field === "value" ? value : newConstraints[index].value;
+    const finalValue =
+      field === "constraint" && value === "is required"
+        ? ""
+        : field === "value"
+          ? value
+          : newConstraints[index].value;
 
-    newConstraints[index] = { ...newConstraints[index], [field]: value, value: finalValue };
+    newConstraints[index] = {
+      ...newConstraints[index],
+      [field]: value,
+      value: finalValue,
+    };
     onChange(newConstraints);
   };
 
@@ -243,7 +288,10 @@ function ConstraintEditor({
         const isRequiredType = con.constraint === "is required";
 
         return (
-          <div key={idx} className="p-2 border rounded bg-gray-50 relative group">
+          <div
+            key={idx}
+            className="p-2 border rounded bg-gray-50 relative group"
+          >
             <button
               onClick={() => removeConstraint(idx)}
               className="absolute -top-2 -right-2 bg-red-100 text-red-600 rounded-full p-1 hover:bg-red-200"
@@ -254,41 +302,57 @@ function ConstraintEditor({
             <div className="grid grid-cols-3 gap-2">
               {/* Property Name */}
               <div>
-                <label className="block text-[10px] font-bold text-gray-500 uppercase">Property</label>
+                <label className="block text-[10px] font-bold text-gray-500 uppercase">
+                  Property
+                </label>
                 <select
                   className="w-full border rounded px-1 py-0.5 text-xs bg-white"
                   value={con.propertyName}
-                  onChange={(e) => updateConstraint(idx, "propertyName", e.target.value)}
+                  onChange={(e) =>
+                    updateConstraint(idx, "propertyName", e.target.value)
+                  }
                 >
                   <option value="">Select...</option>
-                  {propertyOptions.map(opt => (
-                    <option key={opt} value={opt}>{opt}</option>
+                  {propertyOptions.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
                   ))}
                 </select>
               </div>
               {/* Constraint */}
               <div>
-                <label className="block text-[10px] font-bold text-gray-500 uppercase">Constraint</label>
+                <label className="block text-[10px] font-bold text-gray-500 uppercase">
+                  Constraint
+                </label>
                 <select
                   className="w-full border rounded px-1 py-0.5 text-xs bg-white"
                   value={con.constraint}
-                  onChange={(e) => updateConstraint(idx, "constraint", e.target.value)}
+                  onChange={(e) =>
+                    updateConstraint(idx, "constraint", e.target.value)
+                  }
                 >
                   <option value="">Select...</option>
-                  {constraintOptions.map(opt => (
-                    <option key={opt} value={opt}>{opt}</option>
+                  {constraintOptions.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
                   ))}
                 </select>
               </div>
               {/* Value */}
               <div>
-                <label className="block text-[10px] font-bold text-gray-500 uppercase">Value</label>
+                <label className="block text-[10px] font-bold text-gray-500 uppercase">
+                  Value
+                </label>
                 <input
                   className={`w-full border rounded px-1 py-0.5 text-xs ${isRequiredType ? "bg-gray-200 cursor-not-allowed text-transparent" : "bg-white"}`}
                   value={con.value}
                   disabled={isRequiredType}
                   placeholder={isRequiredType ? "-" : "Value..."}
-                  onChange={(e) => updateConstraint(idx, "value", e.target.value)}
+                  onChange={(e) =>
+                    updateConstraint(idx, "value", e.target.value)
+                  }
                 />
               </div>
             </div>
@@ -306,21 +370,27 @@ function ConstraintEditor({
   );
 }
 
-const staticMappingOptions = { "Number": "Number", "Array": "Array", "QUBO": "QUBO", "QAOA": "QAOA", "VQE": "VQE", "QAE": "QAE" } // with descriptions
+const staticMappingOptions = {
+  Number: "Number",
+  Array: "Array",
+  QUBO: "QUBO",
+  QAOA: "QAOA",
+  VQE: "VQE",
+  QAE: "QAE",
+}; // with descriptions
 const dynamicMappingOptions = extractNodeLabels(categories);
 const mappingOptions: Record<string, string> = {
   ...staticMappingOptions,
-  ...dynamicMappingOptions
+  ...dynamicMappingOptions,
 };
 
 function OutputTypeEditor({
   outputTypes,
-  onChange
+  onChange,
 }: {
-  outputTypes: string[],
-  onChange: (types: string[]) => void
+  outputTypes: string[];
+  onChange: (types: string[]) => void;
 }) {
-
   const addType = () => {
     onChange([...outputTypes, ""]);
   };
@@ -338,7 +408,10 @@ function OutputTypeEditor({
   return (
     <div className="space-y-2 min-w-[150px]">
       {outputTypes.map((type, idx) => (
-        <div key={idx} className="flex items-center gap-1 p-1 border rounded bg-gray-50 relative group">
+        <div
+          key={idx}
+          className="flex items-center gap-1 p-1 border rounded bg-gray-50 relative group"
+        >
           <input
             className="flex-1 border rounded px-1 py-0.5 text-xs"
             value={type}
@@ -365,15 +438,14 @@ function OutputTypeEditor({
   );
 }
 
-
 function MappingGroup({
   selected,
   onToggle,
-  onRemove
+  onRemove,
 }: {
-  selected: string[],
-  onToggle: (val: string) => void,
-  onRemove: () => void
+  selected: string[];
+  onToggle: (val: string) => void;
+  onRemove: () => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -381,7 +453,10 @@ function MappingGroup({
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
       }
     };
@@ -390,7 +465,10 @@ function MappingGroup({
   }, []);
 
   return (
-    <div className="relative mb-2 flex items-center gap-2 group" ref={dropdownRef}>
+    <div
+      className="relative mb-2 flex items-center gap-2 group"
+      ref={dropdownRef}
+    >
       <div className="flex-1">
         {/* Dropdown Trigger */}
         <button
@@ -400,7 +478,10 @@ function MappingGroup({
           <span>
             {selected.length > 0 ? selected.join(" + ") : "Select mapping..."}
           </span>
-          <ChevronDown size={14} className={`transition-transform ${isOpen ? "rotate-180" : ""}`} />
+          <ChevronDown
+            size={14}
+            className={`transition-transform ${isOpen ? "rotate-180" : ""}`}
+          />
         </button>
 
         {/* Dropdown Menu */}
@@ -415,10 +496,16 @@ function MappingGroup({
                   onClick={() => onToggle(option)}
                   className="flex items-center gap-2 px-3 py-2 hover:bg-blue-50 cursor-pointer text-xs"
                 >
-                  <div className={`w-4 h-4 border rounded flex items-center justify-center ${isChecked ? "bg-blue-500 border-blue-500" : "bg-white"}`}>
+                  <div
+                    className={`w-4 h-4 border rounded flex items-center justify-center ${isChecked ? "bg-blue-500 border-blue-500" : "bg-white"}`}
+                  >
                     {isChecked && <Check size={10} className="text-white" />}
                   </div>
-                  <span className={isChecked ? "font-bold text-blue-700" : "text-gray-700"}>
+                  <span
+                    className={
+                      isChecked ? "font-bold text-blue-700" : "text-gray-700"
+                    }
+                  >
                     {option}
                   </span>
                 </div>
@@ -440,17 +527,17 @@ function MappingGroup({
 
 export function MappingEditor({
   mappings,
-  onChange
+  onChange,
 }: {
-  mappings: string[][],
-  onChange: (newMappings: string[][]) => void
+  mappings: string[][];
+  onChange: (newMappings: string[][]) => void;
 }) {
   const handleToggle = (groupIdx: number, val: string) => {
     const newMappings = [...mappings];
     const currentGroup = newMappings[groupIdx] || [];
 
     if (currentGroup.includes(val)) {
-      newMappings[groupIdx] = currentGroup.filter(v => v !== val);
+      newMappings[groupIdx] = currentGroup.filter((v) => v !== val);
     } else {
       newMappings[groupIdx] = [...currentGroup, val].sort();
     }
@@ -459,7 +546,8 @@ export function MappingEditor({
 
   const addGroup = () => onChange([...mappings, []]);
 
-  const removeGroup = (idx: number) => onChange(mappings.filter((_, i) => i !== idx));
+  const removeGroup = (idx: number) =>
+    onChange(mappings.filter((_, i) => i !== idx));
 
   return (
     <div className="min-w-[200px] p-1">
@@ -507,7 +595,9 @@ export default function DomainProfileTableModal({
 }) {
   const [localNodes, setLocalNodes] = useState<EditableNodeProfile[]>([]);
   const [profileName, setProfileName] = useState("");
-  const [draggedProfileIndex, setDraggedProfileIndex] = useState<number | null>(null);
+  const [draggedProfileIndex, setDraggedProfileIndex] = useState<number | null>(
+    null,
+  );
 
   // Reset localNodes and profileName when closed, or load the selected profile while open.
   useEffect(() => {
@@ -530,34 +620,37 @@ export default function DomainProfileTableModal({
 
   const saveProfile = () => {
     // group nodes by category into the CategoryEntry format
-    const domainBlocks = localNodes.reduce((acc, node) => {
-      const cat = node.category || "Uncategorized";
-      if (!acc[cat]) {
-        acc[cat] = {
-          description: "",
-          content: []
+    const domainBlocks = localNodes.reduce(
+      (acc, node) => {
+        const cat = node.category || "Uncategorized";
+        if (!acc[cat]) {
+          acc[cat] = {
+            description: "",
+            content: [],
+          };
+        }
+        const type = EditableNode; //TODO: different types for different categories?
+        const nodeData = {
+          label: node.label,
+          description: node.description,
+          icon: node.icon,
+          type: type,
+          category: node.category,
+          outputType: node.outputType,
+          properties: node.properties,
+          constraints: node.constraints,
+          mapping: node.mapping,
+          completionGuaranteed: true,
+          compactOptions: [true, false],
+          isDataType: node.category.includes("data"),
         };
-      }
-      const type = EditableNode; //TODO: different types for different categories?
-      const nodeData = {
-        label: node.label,
-        description: node.description,
-        icon: node.icon,
-        type: type,
-        category: node.category,
-        outputType: node.outputType,
-        properties: node.properties,
-        constraints: node.constraints,
-        mapping: node.mapping,
-        completionGuaranteed: true,
-        compactOptions: [true, false],
-        isDataType: node.category.includes("data"),
-      };
 
-      (acc[cat].content as any[]).push(nodeData);
+        (acc[cat].content as any[]).push(nodeData);
 
-      return acc;
-    }, {} as Record<string, CategoryEntry>);
+        return acc;
+      },
+      {} as Record<string, CategoryEntry>,
+    );
 
     const newProfile: DomainProfile = {
       name: profileName || "Untitled Profile",
@@ -571,12 +664,12 @@ export default function DomainProfileTableModal({
   const updateNode = (
     index: number,
     field: keyof EditableNodeProfile,
-    value: any
+    value: any,
   ) => {
     setLocalNodes((prev) => {
       const copy: any = structuredClone(prev);
       copy[index] = { ...copy[index], [field]: value };
-      console.log("changed Node", copy[index])
+      console.log("changed Node", copy[index]);
       return copy;
     });
   };
@@ -601,18 +694,25 @@ export default function DomainProfileTableModal({
 
   const handleIconUpload = (
     e: React.ChangeEvent<HTMLInputElement>,
-    index: number
+    index: number,
   ) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = () =>
-      updateNode(index, "icon", reader.result);
+    reader.onload = () => updateNode(index, "icon", reader.result);
     reader.readAsDataURL(file);
   };
 
-  const categoryOptions = [dataTypes, boundaryNodes, operator, controlStructureNodes, customOperators, circuitLevelNodes, templates];
+  const categoryOptions = [
+    dataTypes,
+    boundaryNodes,
+    operator,
+    controlStructureNodes,
+    customOperators,
+    circuitLevelNodes,
+    templates,
+  ];
 
   const handleDropProfile = (targetIndex: number) => {
     if (draggedProfileIndex === null || draggedProfileIndex === targetIndex) {
@@ -644,10 +744,7 @@ export default function DomainProfileTableModal({
       className="max-w-6xl"
       footer={
         <div className="space-x-2">
-          <button
-            className="btn btn-primary"
-            onClick={saveProfile}
-          >
+          <button className="btn btn-primary" onClick={saveProfile}>
             Save Profile
           </button>
           <button className="btn btn-secondary" onClick={onClose}>
@@ -660,10 +757,16 @@ export default function DomainProfileTableModal({
         <section className="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-3">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <h3 className="text-sm font-semibold text-gray-900">Saved Profiles</h3>
-              <p className="text-xs text-gray-500">Edit, duplicate, export, delete or reorder the stored profiles.</p>
+              <h3 className="text-sm font-semibold text-gray-900">
+                Saved Profiles
+              </h3>
+              <p className="text-xs text-gray-500">
+                Edit, duplicate, export, delete or reorder the stored profiles.
+              </p>
             </div>
-            <span className="text-xs text-gray-500">{profiles.length} total</span>
+            <span className="text-xs text-gray-500">
+              {profiles.length} total
+            </span>
           </div>
 
           {profiles.length === 0 ? (
@@ -682,12 +785,20 @@ export default function DomainProfileTableModal({
                   onDragEnd={() => setDraggedProfileIndex(null)}
                   className={`flex items-center gap-3 rounded border bg-white px-3 py-2 shadow-sm transition ${editingProfileIndex === index ? "border-blue-500 ring-2 ring-blue-200" : "border-gray-200"}`}
                 >
-                  <span className="cursor-grab text-gray-400" title="Drag to reorder">
+                  <span
+                    className="cursor-grab text-gray-400"
+                    title="Drag to reorder"
+                  >
                     <GripVertical size={16} />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-medium text-gray-900">{profile.name}</div>
-                    <div className="text-xs text-gray-500">{Object.keys(profile.domainBlocks ?? {}).length} categories</div>
+                    <div className="truncate text-sm font-medium text-gray-900">
+                      {profile.name}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {Object.keys(profile.domainBlocks ?? {}).length}{" "}
+                      categories
+                    </div>
                   </div>
                   <button
                     type="button"
@@ -742,7 +853,11 @@ export default function DomainProfileTableModal({
           {/* Export Button */}
           <button
             onClick={() => {
-              const dataStr = JSON.stringify({ name: profileName, nodes: localNodes }, null, 2);
+              const dataStr = JSON.stringify(
+                { name: profileName, nodes: localNodes },
+                null,
+                2,
+              );
               const blob = new Blob([dataStr], { type: "application/json" });
               const url = URL.createObjectURL(blob);
               const a = document.createElement("a");
@@ -761,7 +876,9 @@ export default function DomainProfileTableModal({
           <DomainProfileRepositoryPicker
             onLoad={(profile) => {
               setProfileName(
-                profile.version ? `${profile.name} v${profile.version}` : profile.name
+                profile.version
+                  ? `${profile.name} v${profile.version}`
+                  : profile.name,
               );
               setLocalNodes(toEditableNodes(profile));
             }}
@@ -787,21 +904,23 @@ export default function DomainProfileTableModal({
                     }
 
                     // Map imported nodes to ensure defaults
-                    const sanitizedNodes: EditableNodeProfile[] = json.nodes.map((n: any) => ({
-                      label: n.label || "",
-                      description: n.description || "",
-                      icon: n.icon || "QAOA.png",
-                      visible: n.visible ?? true,
-                      outputType: n.outputType || "",
-                      category: n.category || "",
-                      properties: n.properties || [],
-                      constraints: n.constraints || [],
-                      mapping: n.mapping || [[]],
+                    const sanitizedNodes: EditableNodeProfile[] =
+                      json.nodes.map((n: any) => ({
+                        label: n.label || "",
+                        description: n.description || "",
+                        icon: n.icon || "QAOA.png",
+                        visible: n.visible ?? true,
+                        outputType: n.outputType || "",
+                        category: n.category || "",
+                        properties: n.properties || [],
+                        constraints: n.constraints || [],
+                        mapping: n.mapping || [[]],
 
-                      originalLabel: n.originalLabel || n.label || "",
-                      originalDescription: n.originalDescription || n.description || "",
-                      originalIcon: n.originalIcon || n.icon || "",
-                    }));
+                        originalLabel: n.originalLabel || n.label || "",
+                        originalDescription:
+                          n.originalDescription || n.description || "",
+                        originalIcon: n.originalIcon || n.icon || "",
+                      }));
 
                     setProfileName(json.name);
                     setLocalNodes(sanitizedNodes);
@@ -813,7 +932,6 @@ export default function DomainProfileTableModal({
                 reader.readAsText(file);
               }}
             />
-
           </label>
         </div>
 
