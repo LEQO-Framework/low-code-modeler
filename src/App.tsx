@@ -78,7 +78,6 @@ import {
   updateNodeType,
   updateServiceTemplate,
 } from "./winery";
-import custom from "./components/nodes/custom";
 import {
   categories,
   CategoryEntry,
@@ -93,7 +92,6 @@ import { PatternSelectionModal } from "./components/modals/patternSelectionModal
 import { PatternImplementationSelectionModal } from "./components/modals/patternImplementationSelectionModal";
 import {
   groupSelectedNodes,
-  ungroupNodes,
   handleNodeDropOnGroup,
 } from "./lib/groupHandler";
 import { qasmToNodes } from "./lib/qasmToNodes";
