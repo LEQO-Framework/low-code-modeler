@@ -5,23 +5,11 @@ import {
   ImageIcon,
   Plus,
   Trash2,
-  CheckCircle2,
-  Circle,
   ChevronDown,
   Check,
   GripVertical,
 } from "lucide-react";
-import {
-  boundaryNodes,
-  dataTypes,
-  circuitLevelNodes,
-  controlStructureNodes,
-  templates,
-  operator,
-  customOperators,
-  OperatorNode,
-  EditableNode,
-} from "@/constants";
+import { EditableNode } from "@/constants";
 import { DomainProfileRepositoryPicker } from "./domainProfileRepositoryPicker";
 import { RepositoryDomainProfile } from "../../services/domainProfileRepository";
 
@@ -84,39 +72,6 @@ function toEditableNodes(
         originalIcon: "QAOA.png",
       })),
   );
-}
-
-function extractNodes(content: any): EditableNodeProfile[] {
-  const nodes: EditableNodeProfile[] = [];
-
-  const walk = (value: any) => {
-    if (Array.isArray(value)) {
-      value.forEach((n) => {
-        if (n?.label && n?.description) {
-          nodes.push({
-            label: n.label,
-            description: n.description,
-            icon: n.icon,
-            visible: true,
-            outputType: n.outputType || "",
-            category: n.type || "",
-            properties: [],
-            constraints: [],
-            mapping: [[]],
-
-            originalLabel: n.label,
-            originalDescription: n.description,
-            originalIcon: n.icon,
-          });
-        }
-      });
-    } else if (typeof value === "object" && value !== null) {
-      Object.values(value).forEach(walk);
-    }
-  };
-
-  walk(content);
-  return nodes;
 }
 
 function toEditableNodesFromDomainProfile(
@@ -703,16 +658,6 @@ export default function DomainProfileTableModal({
     reader.onload = () => updateNode(index, "icon", reader.result);
     reader.readAsDataURL(file);
   };
-
-  const categoryOptions = [
-    dataTypes,
-    boundaryNodes,
-    operator,
-    controlStructureNodes,
-    customOperators,
-    circuitLevelNodes,
-    templates,
-  ];
 
   const handleDropProfile = (targetIndex: number) => {
     if (draggedProfileIndex === null || draggedProfileIndex === targetIndex) {
