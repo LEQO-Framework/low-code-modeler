@@ -3044,7 +3044,6 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     const jsonBlob = new Blob([JSON.stringify(flowWithMetadata, null, 2)], {
       type: "application/json",
     });
-    const jsonString = JSON.stringify(flowWithMetadata, null, 2);
     const downloadUrl = URL.createObjectURL(jsonBlob);
     const link = document.createElement("a");
     link.href = downloadUrl;
@@ -3495,7 +3494,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     clearSelection: clearCurrentSelection,
   });
 
-  const [mySelectedNodeId, setMySelectedNodeId] = useState<string | null>(null);
+  const [, setMySelectedNodeId] = useState<string | null>(null);
 
   // Iterate over all active collaborative tabs to see what nodes are currently targeted
   const getActiveSelections = useCallback(() => {
