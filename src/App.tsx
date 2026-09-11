@@ -90,10 +90,7 @@ import DomainProfileModal, {
 } from "./components/modals/domainProfileModal";
 import { PatternSelectionModal } from "./components/modals/patternSelectionModal";
 import { PatternImplementationSelectionModal } from "./components/modals/patternImplementationSelectionModal";
-import {
-  groupSelectedNodes,
-  handleNodeDropOnGroup,
-} from "./lib/groupHandler";
+import { groupSelectedNodes, handleNodeDropOnGroup } from "./lib/groupHandler";
 import { qasmToNodes } from "./lib/qasmToNodes";
 import UserCountPanel from "./components/modals/userAwareness";
 import VersioningPanel from "./components/modals/versioningModal";
@@ -667,7 +664,12 @@ If none apply, return { "algorithms": [] }.
   const isSyncingFromRemote = useRef(false);
 
   const stripTransientNodeState = useCallback((node: Node) => {
-    const { selected, dragging, positionAbsolute, ...rest } = node as Node & {
+    const {
+      selected: _selected,
+      dragging: _dragging,
+      positionAbsolute: _positionAbsolute,
+      ...rest
+    } = node as Node & {
       selected?: boolean;
       dragging?: boolean;
       positionAbsolute?: { x: number; y: number };
