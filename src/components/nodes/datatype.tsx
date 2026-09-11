@@ -2,7 +2,10 @@ import { memo, useEffect, useState } from "react";
 import { Handle, Position, Node, Edge } from "reactflow";
 import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
-import { findDuplicateOutputIdentifiers, isUniqueIdentifier } from "../utils/utils";
+import {
+  findDuplicateOutputIdentifiers,
+  isUniqueIdentifier,
+} from "../utils/utils";
 import { AlertCircle, File } from "lucide-react";
 import OutputPort from "../utils/outputPort";
 import { cn } from "@/lib/utils";
@@ -21,7 +24,7 @@ const selector = (state: {
   edges: state.edges,
   updateNodeValue: state.updateNodeValue,
   setSelectedNode: state.setSelectedNode,
-  setContainsPlaceholder: state.setContainsPlaceholder
+  setContainsPlaceholder: state.setContainsPlaceholder,
 });
 
 export const DataTypeNode = memo((node: Node) => {
@@ -33,8 +36,16 @@ export const DataTypeNode = memo((node: Node) => {
   const [outputIdentifierError, setOutputIdentifierError] = useState(false);
   const [sizeError, setSizeError] = useState(false);
 
-  const { nodes, edges, updateNodeValue, setSelectedNode, setContainsPlaceholder } = useStore(selector, shallow);
-  const [durationUnit, setDurationUnit] = useState(node.data.durationUnit || "s");
+  const {
+    nodes,
+    edges,
+    updateNodeValue,
+    setSelectedNode,
+    setContainsPlaceholder,
+  } = useStore(selector, shallow);
+  const [durationUnit, setDurationUnit] = useState(
+    node.data.durationUnit || "s",
+  );
   const { data, selected } = node;
 
   const changeValue = (e) => {
@@ -49,12 +60,12 @@ export const DataTypeNode = memo((node: Node) => {
     const containsLetters = (val) => /[a-zA-Z]/.test(val);
     const startsWithNumber = (val) => /^[+-]?\d/.test(val.trim());
 
-    const updatedNodes = nodes.map(n =>
-      n.id === node.id ? { ...n, data: { ...n.data, value: newValue } } : n
+    const updatedNodes = nodes.map((n) =>
+      n.id === node.id ? { ...n, data: { ...n.data, value: newValue } } : n,
     );
 
-    const hasAnyPlaceholder = updatedNodes.some(n =>
-      containsLetters(n.data?.value || "")
+    const hasAnyPlaceholder = updatedNodes.some((n) =>
+      containsLetters(n.data?.value || ""),
     );
     if (data.dataType === "boolean") {
       setContainsPlaceholder(false);
@@ -86,20 +97,25 @@ export const DataTypeNode = memo((node: Node) => {
 
       let is2DArray = false;
       try {
-        const parsed = JSON.parse(trimmed.startsWith('[') ? trimmed : `[${trimmed}]`);
+        const parsed = JSON.parse(
+          trimmed.startsWith("[") ? trimmed : `[${trimmed}]`,
+        );
         if (Array.isArray(parsed)) is2DArray = true;
-      } catch (e) { }
+      } catch (e) {}
 
       if (!isCommaSeparated && !is2DArray) {
-        setValueError("Array must be comma-separated numbers or a 2D array (e.g., [[0,1], [1,2]])");
+        setValueError(
+          "Array must be comma-separated numbers or a 2D array (e.g., [[0,1], [1,2]])",
+        );
         return;
       }
     }
 
-
     if (data.label === "complex") {
       if (!isComplexNumber(newValue)) {
-        setValueError("Value must be a valid complex number (e.g., 1+2i, 3, -i)");
+        setValueError(
+          "Value must be a valid complex number (e.g., 1+2i, 3, -i)",
+        );
         return;
       }
     }
@@ -120,7 +136,6 @@ export const DataTypeNode = memo((node: Node) => {
     }
   };
 
-
   function isComplexNumber(value) {
     const trimmed = value.trim().toLowerCase().replace(/\s+/g, "");
 
@@ -133,14 +148,17 @@ export const DataTypeNode = memo((node: Node) => {
     // Real only: 1, -3.14
     const realOnly = /^[+-]?\d+(\.\d+)?$/;
 
-    return fullComplex.test(trimmed) || imaginaryOnly.test(trimmed) || realOnly.test(trimmed);
+    return (
+      fullComplex.test(trimmed) ||
+      imaginaryOnly.test(trimmed) ||
+      realOnly.test(trimmed)
+    );
   }
 
   function isPlaceholder(value) {
     const t = value.trim();
     return /^[a-zA-Z]+$/.test(t);
   }
-
 
   function parseToNormalizedAngle(angle) {
     const trimmed = angle.trim().toLowerCase();
@@ -153,7 +171,7 @@ export const DataTypeNode = memo((node: Node) => {
 
     if (/^[+-]?[0-9]*\.?[0-9]+$/.test(trimmed)) {
       const num = parseFloat(trimmed);
-      return ((num % (2 * Math.PI)) + (2 * Math.PI)) % (2 * Math.PI);
+      return ((num % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
     }
     return null;
   }
@@ -182,39 +200,42 @@ export const DataTypeNode = memo((node: Node) => {
     // }, [nodes, node.id]);
   }, [node.id]); // temp fix: white screen during coillaboration mode when dropping datatype node
 
-
-
   const iconMap = {
-    "int": 'intIcon.png',
-    "Number": 'floatIcon.png',
-    "bit": 'bitIcon.png',
-    "duration": 'durationIcon.png',
-    "boolean": 'booleanIcon.png',
-    "angle": 'angleIcon.png',
-    "complex": 'complexIcon.png',
-    "String": 'stringIcon.png',
-    "Array": 'arrayIcon.png',
-    "File": 'fileIcon.png',
+    int: "intIcon.png",
+    Number: "floatIcon.png",
+    bit: "bitIcon.png",
+    duration: "durationIcon.png",
+    boolean: "booleanIcon.png",
+    angle: "angleIcon.png",
+    complex: "complexIcon.png",
+    String: "stringIcon.png",
+    Array: "arrayIcon.png",
+    File: "fileIcon.png",
   };
   const label = data.label;
-  const iconSrc = iconMap[label] ?? iconMap[label?.charAt(0).toUpperCase() + label?.slice(1)];
+  const iconSrc =
+    iconMap[label] ?? iconMap[label?.charAt(0).toUpperCase() + label?.slice(1)];
   const iconSizeMap = {
-    "int": { width: 60, height: 60 },
-    "Number": { width: 55, height: 55 },
-    "bit": { width: 50, height: 50 },
-    "duration": { width: 45, height: 45 },
-    "boolean": { width: 45, height: 45 },
-    "angle": { width: 45, height: 45 },
-    "complex": { width: 55, height: 55 },
-    "String": { width: 50, height: 50 },
-    "Array": { width: 55, height: 60 },
-    "File": { width: 45, height: 45 },
+    int: { width: 60, height: 60 },
+    Number: { width: 55, height: 55 },
+    bit: { width: 50, height: 50 },
+    duration: { width: 45, height: 45 },
+    boolean: { width: 45, height: 45 },
+    angle: { width: 45, height: 45 },
+    complex: { width: 55, height: 55 },
+    String: { width: 50, height: 50 },
+    Array: { width: 55, height: 60 },
+    File: { width: 45, height: 45 },
   };
 
   const id = node.id;
 
-  const [remoteHighlightColor, setRemoteHighlightColor] = useState<string | null>(null);
-  const [selectingUserName, setSelectingUserName] = useState<string | null>(null); // technically not needed, could extend functionality to also show user name next to highlighted node
+  const [remoteHighlightColor, setRemoteHighlightColor] = useState<
+    string | null
+  >(null);
+  const [selectingUserName, setSelectingUserName] = useState<string | null>(
+    null,
+  ); // technically not needed, could extend functionality to also show user name next to highlighted node
 
   useEffect(() => {
     const checkRemoteSelection = () => {
@@ -276,19 +297,36 @@ export const DataTypeNode = memo((node: Node) => {
           </div>
         </div>
       )}
-      <div className={"w-full h-full rounded-full bg-white  overflow-hidden border border-solid shadow-md"}
+      <div
+        className={
+          "w-full h-full rounded-full bg-white  overflow-hidden border border-solid shadow-md"
+        }
         style={{
-          borderColor: remoteHighlightColor ? remoteHighlightColor : (selected ? "#3B82F6" : "#374151"),
+          borderColor: remoteHighlightColor
+            ? remoteHighlightColor
+            : selected
+              ? "#3B82F6"
+              : "#374151",
           boxShadow: remoteHighlightColor
             ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}` // Glowing aura ring
             : undefined,
-        }}>
+        }}
+      >
         <div className="w-full bg-orange-300 text-black text-center font-semibold py-1 truncate relative">
-
-          <div className="w-full flex items-center" style={{ height: '52px', paddingLeft: '100px' }}>
-            <div className="w-full bg-orange-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
+          <div
+            className="w-full flex items-center"
+            style={{ height: "52px", paddingLeft: "100px" }}
+          >
+            <div
+              className="w-full bg-orange-300 py-1 px-2 flex items-center"
+              style={{ height: "inherit" }}
+            >
               {(() => {
-                const iconSize = iconSizeMap[node.data.label] ?? iconSizeMap[node.data.label?.charAt(0).toUpperCase() + node.data.label?.slice(1)] ?? { width: 50, height: 50 };
+                const iconSize = iconSizeMap[node.data.label] ??
+                  iconSizeMap[
+                    node.data.label?.charAt(0).toUpperCase() +
+                      node.data.label?.slice(1)
+                  ] ?? { width: 50, height: 50 };
                 const { width, height } = iconSize;
 
                 return (
@@ -323,17 +361,17 @@ export const DataTypeNode = memo((node: Node) => {
                                   : "10px",
                 }}
               >
-
                 {data.label}
               </span>
             </div>
           </div>
-
         </div>
 
         <div className="px-4 py-3 flex flex-col items-center space-y-3">
           <div className="flex flex-col items-center">
-            <label htmlFor="value" className="text-black text-sm mr-2">Value</label>
+            <label htmlFor="value" className="text-black text-sm mr-2">
+              Value
+            </label>
 
             {data.dataType === "boolean" ? (
               <select
@@ -359,7 +397,7 @@ export const DataTypeNode = memo((node: Node) => {
               <input
                 id="value"
                 type="text"
-                className={`input-classical-focus p-1 text-black opacity-75 text-sm rounded-full w-24 text-center border-2 transition-all duration-200 ${valueError ? 'bg-red-500 border-red-500' : 'bg-white border-orange-300'}`}
+                className={`input-classical-focus p-1 text-black opacity-75 text-sm rounded-full w-24 text-center border-2 transition-all duration-200 ${valueError ? "bg-red-500 border-red-500" : "bg-white border-orange-300"}`}
                 value={node.data.value || value}
                 placeholder="1,2,3"
                 onChange={changeValue}
@@ -368,7 +406,7 @@ export const DataTypeNode = memo((node: Node) => {
               <input
                 id="value"
                 type="text"
-                className={`input-classical-focus p-1 text-black opacity-75 text-sm rounded-full w-24 text-center border-2 transition-all duration-200 ${valueError ? 'bg-red-500 border-red-500' : 'bg-white border-orange-300'}`}
+                className={`input-classical-focus p-1 text-black opacity-75 text-sm rounded-full w-24 text-center border-2 transition-all duration-200 ${valueError ? "bg-red-500 border-red-500" : "bg-white border-orange-300"}`}
                 value={node.data.value || value}
                 placeholder="2pi"
                 onChange={changeValue}
@@ -378,7 +416,7 @@ export const DataTypeNode = memo((node: Node) => {
                 <input
                   id="value"
                   type="text"
-                  className={`input-classical-focus p-1 text-black opacity-75 text-sm rounded-full w-20 text-center border-2 ${valueError ? 'bg-red-500 border-red-500' : 'bg-white border-orange-300'}`}
+                  className={`input-classical-focus p-1 text-black opacity-75 text-sm rounded-full w-20 text-center border-2 ${valueError ? "bg-red-500 border-red-500" : "bg-white border-orange-300"}`}
                   value={node.data.value || value}
                   placeholder="0"
                   onChange={changeValue}
@@ -403,17 +441,17 @@ export const DataTypeNode = memo((node: Node) => {
               <input
                 id="value"
                 type="text"
-                className={`input-classical-focus p-1 text-black opacity-75 text-sm rounded-full w-full text-center border-2 ${valueError ? 'bg-red-500 border-red-500' : 'bg-white border-orange-300'}`}
+                className={`input-classical-focus p-1 text-black opacity-75 text-sm rounded-full w-full text-center border-2 ${valueError ? "bg-red-500 border-red-500" : "bg-white border-orange-300"}`}
                 value={node.data.value || value}
                 placeholder="http://example.com/data.json"
                 onChange={changeValue}
-                style={{ minWidth: '200px' }}
+                style={{ minWidth: "200px" }}
               />
             ) : data.label === "String" ? (
               <input
                 id="value"
                 type="text"
-                className={`input-classical-focus p-1 text-black opacity-75 text-sm rounded-full w-32 text-center border-2 ${valueError ? 'bg-red-500 border-red-500' : 'bg-white border-orange-300'}`}
+                className={`input-classical-focus p-1 text-black opacity-75 text-sm rounded-full w-32 text-center border-2 ${valueError ? "bg-red-500 border-red-500" : "bg-white border-orange-300"}`}
                 value={node.data.value || value}
                 placeholder="text"
                 onChange={changeValue}
@@ -422,7 +460,7 @@ export const DataTypeNode = memo((node: Node) => {
               <input
                 id="value"
                 type="text"
-                className={`input-classical-focus p-1 text-black opacity-75 text-sm rounded-full w-20 text-center border-2 ${valueError ? 'bg-red-500 border-red-500' : 'bg-white border-orange-300'}`}
+                className={`input-classical-focus p-1 text-black opacity-75 text-sm rounded-full w-20 text-center border-2 ${valueError ? "bg-red-500 border-red-500" : "bg-white border-orange-300"}`}
                 value={node.data.value || value}
                 placeholder="0"
                 onChange={changeValue}
@@ -433,7 +471,6 @@ export const DataTypeNode = memo((node: Node) => {
         <div className="relative">
           <div className="absolute top-1/2 right-0 transform -translate-y-1/2 z-10 w-[200px] h-full">
             <OutputPort
-
               node={node}
               index={0}
               type={"classical"}
@@ -451,7 +488,6 @@ export const DataTypeNode = memo((node: Node) => {
             />
           </div>
         </div>
-
       </div>
 
       <div className="flex items-center justify-end space-x-0">
