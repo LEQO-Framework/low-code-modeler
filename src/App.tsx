@@ -2243,7 +2243,6 @@ If none apply, return { "algorithms": [] }.
 
       console.log("onNodeDrag");
       console.log(node);
-      let nodeT = nodes[0];
       nodes.forEach((nd) => {
         // Check if there's a group node in the array of nodes on the screen
         if (
@@ -2326,7 +2325,6 @@ If none apply, return { "algorithms": [] }.
               //nd.style.width = 10;
               console.log(node);
               //intersectionNodes[0].width = 1000;
-              nodeT = node;
               updateParent(node.id, nd.id, node.position);
               updateChildren(node.parentNode, node.id);
               //updateNodeValue(node.id, "hidden", "true")
@@ -2337,7 +2335,6 @@ If none apply, return { "algorithms": [] }.
         }
       });
 
-      //setNodes(nodeT);
       if (node.id == contextMenu.componentId) {
         console.log("moving context menu for node", node.id);
         setContextMenu((prev) => ({
