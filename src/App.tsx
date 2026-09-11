@@ -898,7 +898,6 @@ If none apply, return { "algorithms": [] }.
   }, [experienceLevel]);
 
   const [runTour, setRunTour] = useState(false);
-  const [joyrideStepId, setJoyRideStepId] = useState(0);
 
   const joyrideSteps: {
     target: string;
@@ -949,7 +948,7 @@ If none apply, return { "algorithms": [] }.
     },
   ];
 
-  const [isProcessingModalOpen, setProcessingModalOpen] = useState(false);
+  const [, setProcessingModalOpen] = useState(false);
 
   // TODO: Change here to workflow
   const [compilationTarget, setCompilationTarget] = useState("qasm");
@@ -1218,7 +1217,7 @@ If none apply, return { "algorithms": [] }.
 
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [isHistoryOpen, setHistoryOpen] = useState(false);
-  const [historyLoading, setHistoryLoading] = useState(false);
+  const [, setHistoryLoading] = useState(false);
 
   const fetchHistory = async () => {
     setHistoryLoading(true);
@@ -1302,8 +1301,6 @@ If none apply, return { "algorithms": [] }.
       const {
         outputIdentifier,
         label,
-        inputs,
-        outputSize,
         condition,
         operator,
       } = node.data || {};
