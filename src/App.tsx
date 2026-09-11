@@ -91,7 +91,6 @@ import DomainProfileModal, {
 import { PatternSelectionModal } from "./components/modals/patternSelectionModal";
 import { PatternImplementationSelectionModal } from "./components/modals/patternImplementationSelectionModal";
 import { groupSelectedNodes, handleNodeDropOnGroup } from "./lib/groupHandler";
-import { qasmToNodes } from "./lib/qasmToNodes";
 import UserCountPanel from "./components/modals/userAwareness";
 import VersioningPanel from "./components/modals/versioningModal";
 import { EdgeChange } from "@xyflow/react";
@@ -4140,20 +4139,6 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     }
   }
 
-  /**
-   * Configuration for the new pattern solution entry
-   */
-  const NEW_FILE_NAME = "new-workflow.json";
-  const PACKAGE_TYPE = "workflow_editor";
-  const ALGO_NAME = "New Algorithm Entry";
-  const IMPL_NAME = "New Implementation Entry";
-
-  /**
-   * Helper to convert JSON to Postgres Hex format (\x...)
-   */
-  const toHex = (obj: any) =>
-    "\\x" + Buffer.from(JSON.stringify(obj)).toString("hex");
-
   async function createServiceTemplates(
     serviceDeploymentModelsUrl: string,
     namespace: string,
@@ -4171,7 +4156,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     // Extract folder names
     const folderNames = new Set<string>();
 
-    for (const [path, entry] of Object.entries(zip.files)) {
+    for (const [path] of Object.entries(zip.files)) {
       const match = path.match(/^(Activity_[^/]+)/);
       if (match) {
         folderNames.add(match[1]);
