@@ -1,15 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Modal from "./Modal";
-import {
-  Download,
-  Upload,
-  Trash2,
-  FileEdit,
-  User,
-  Type,
-  AlignLeft,
-  ImageIcon,
-} from "lucide-react";
+import { Download, Upload, Trash2, ImageIcon } from "lucide-react";
 import { Button } from "../ui";
 
 interface ManageTemplateModalProps {
@@ -138,7 +129,7 @@ export const ManageTemplateModal = ({
             return { fileName: file.name, data: [] };
           }
           return { fileName: file.name, data: valid };
-        } catch (err) {
+        } catch {
           results.invalidFiles.push(file.name);
           return { fileName: file.name, data: [] };
         }
