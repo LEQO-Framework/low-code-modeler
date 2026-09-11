@@ -1660,9 +1660,6 @@ If none apply, return { "algorithms": [] }.
       if (node.data?.label === "QFT" || node.type === "qftNode") {
         const qubitCount = parseInt(node.data?.numberOutputs || "3");
 
-        const incoming = nodeConnections.get(node.id) || [];
-        const outgoing = outgoingConnections.get(node.id) || [];
-
         for (let i = 0; i < qubitCount; i++) {
           const handleId = `quantumHandleQFTInput${i}${node.id}`;
 
@@ -2078,7 +2075,6 @@ If none apply, return { "algorithms": [] }.
       console.log(data["id"]);
       setDeploymentId(data["id"]);
       setModalStep(2);
-      //pollStatus(response["Location"]);
     } catch (error) {
       console.error("Error sending data:", error);
       setLoading(false);
@@ -2206,30 +2202,10 @@ If none apply, return { "algorithms": [] }.
         }));
         setChartData(chartData);
       }, 2000);
-      //pollStatus(response["Location"]);
     } catch (error) {
       console.error("Error sending data:", error);
       setLoading(false);
     }
-  };
-
-  const pollStatus = async () => {
-    const interval = setInterval(async () => {
-      try {
-        const response = await fetch(lowcodeBackendEndpoint + "/status");
-        const result = await response.json();
-        setStatus(result);
-
-        if (result.status === "complete") {
-          clearInterval(interval);
-          setLoading(false);
-        }
-      } catch (error) {
-        console.error("Error polling status:", error);
-        clearInterval(interval);
-        setLoading(false);
-      }
-    }, 3000);
   };
 
   const onNodeDragStop = useCallback(
