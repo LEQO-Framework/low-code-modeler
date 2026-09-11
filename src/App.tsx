@@ -3750,7 +3750,6 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
         console.log(node.parentId);
         if (node.parentId && nd.id !== node.id) {
           console.log("parent nicht nzkk");
-          const relativeX = node.positionAbsolute.x - nd.position.x;
           const relativeY = node.positionAbsolute.y - nd.position.y;
           console.warn("Hier drin");
 
@@ -3758,8 +3757,6 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
             node.data?.scope === "if" && relativeY > nd.height / 2;
 
           if (isForbidden) {
-            const maxY = relativeY > nd.height / 2;
-
             console.warn(
               "Cannot drop node in the right half due to 'if' constraint.",
             );
@@ -3790,8 +3787,6 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     }
 
     if (!collaborationModeOn) return;
-    let findAny = false;
-    const currentCursorState = awareness.getLocalState()?.cursor || {};
 
     setMenu(null);
     setContextMenu((prev) => ({ ...prev, visible: false })); // contextMenu disappears when clicking on pane
