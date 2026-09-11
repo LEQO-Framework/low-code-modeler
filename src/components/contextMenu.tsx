@@ -15,9 +15,6 @@ import {
 } from "react-icons/fa";
 import { FaGear } from "react-icons/fa6";
 import { v4 as uuid } from "uuid";
-import { Button } from "./ui";
-import { IPortData } from "@/components/nodes/model";
-import { MergerNode } from "@/constants";
 
 interface ContextMenuProps {
   id: string;
@@ -29,16 +26,10 @@ interface ContextMenuProps {
   styles?: React.CSSProperties; // Optional styles for customization
 }
 
-const generateRandomId = () => {
-  return `${Math.random().toString(36).substr(2, 9)}-${Date.now()}`;
-};
-
 export const ContextMenu: React.FC<ContextMenuProps> = ({
   id,
   top,
   left,
-  right,
-  bottom,
   onAction,
   styles = {}, // Default styles as an empty object
 }) => {
@@ -312,7 +303,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
     }
   }, [node?.id, node?.data?.["numberClassicalInputs"], updateNodeInternals]);
 
-  const toggleSubmenuInputAdd = useCallback((e: React.MouseEvent) => {
+  const _toggleSubmenuInputAdd = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     setSubmenuInputAddOpen((prev) => !prev);
   }, []);
@@ -322,12 +313,12 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
     setSubmenuInputRemoveOpen((prev) => !prev);
   }, []);
 
-  const toggleSubmenuOutputAdd = useCallback((e: React.MouseEvent) => {
+  const _toggleSubmenuOutputAdd = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     setSubmenuOutputAddOpen((prev) => !prev);
   }, []);
 
-  const toggleSubmenuOutputRemove = useCallback((e: React.MouseEvent) => {
+  const _toggleSubmenuOutputRemove = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     setSubmenuOutputRemoveOpen((prev) => !prev);
   }, []);
@@ -363,13 +354,6 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
     node?.data["numberClassicalOutputs"] > minOutput || false;
   const hasInputs = node?.data["numberInputs"] > minInput || false;
   const hasOutputs = node?.data["numberOutputs"] > minOutput || false;
-  const hasQFTInputs = node?.data["numberOutputs"] > minInput || false;
-
-  console.log("contextMenu");
-  console.log(getNode(id)?.type);
-  console.log(getNode(id)?.data["numberQuantumInputs"]);
-  console.log(hasQuantumInputs);
-  console.log(hasClassicalInputs);
 
   const hoverProps = (key: string, isDanger = false) => ({
     onMouseEnter: () => setHoveredBtn(key),
