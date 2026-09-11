@@ -4158,47 +4158,6 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
   const toHex = (obj: any) =>
     "\\x" + Buffer.from(JSON.stringify(obj)).toString("hex");
 
-  function generateAppendSql() {
-    const ka_algo_id = uuidv4();
-    const ka_impl_id = uuidv4();
-    const ka_file_id = uuidv4();
-    const ka_pkg_id = uuidv4();
-    const file_data_id = uuidv4();
-    let fileContent = JSON.stringify(
-      {
-        metadata: {
-          ...metadata,
-          containsPlaceholder: containsPlaceholder,
-          id: "flow123",
-          timestamp: new Date().toISOString(),
-        },
-        flow: reactFlowInstance.toObject(),
-      },
-      null,
-      2,
-    );
-
-    return `
-
--- Additional manual registration for ${NEW_FILE_NAME}
-INSERT INTO public.knowledge_artifact (id) VALUES ('${ka_algo_id}');
-INSERT INTO public.knowledge_artifact (id) VALUES ('${ka_impl_id}');
-INSERT INTO public.knowledge_artifact (id) VALUES ('${ka_file_id}');
-INSERT INTO public.knowledge_artifact (id) VALUES ('${ka_pkg_id}');
-
-INSERT INTO public.algorithm (name, id) VALUES ('${ALGO_NAME}', '${ka_algo_id}');
-INSERT INTO public.quantum_algorithm (nisq_ready, quantum_computation_model, id) VALUES (false, 0, '${ka_algo_id}');
-INSERT INTO public.implementation (name, id, implemented_algorithm_id) VALUES ('${IMPL_NAME}', '${ka_impl_id}', '${ka_algo_id}');
-
-INSERT INTO public.implementation_package (id, type) VALUES ('${ka_pkg_id}', '${PACKAGE_TYPE}');
-
-INSERT INTO public.file (fileurl, mime_type, name, id) VALUES ('${NEW_FILE_NAME}', 'application/json', '${NEW_FILE_NAME}', '${ka_file_id}');
-INSERT INTO public.file_data (id, data, file_id) VALUES ('${file_data_id}', '${toHex(fileContent)}', '${ka_file_id}');
-
-INSERT INTO public.implementation_package_file (file_id, implementation_package_id) VALUES ('${ka_file_id}', '${ka_pkg_id}');
-`;
-  }
-
   async function createServiceTemplates(
     serviceDeploymentModelsUrl: string,
     namespace: string,
