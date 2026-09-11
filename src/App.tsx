@@ -3982,33 +3982,6 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     }
   }, [reactFlowInstance, showToast]);
 
-  const handleLoadQasm = useCallback(
-    (qasm: string) => {
-      const { nodes: newNodes, edges: newEdges } = qasmToNodes(qasm);
-
-      // Fehlende Node-Daten ergänzen die der Store erwartet
-      const enrichedNodes = newNodes.map((n) => ({
-        ...n,
-        data: {
-          ...n.data,
-          inputTypes: n.data.inputs?.length > 0 ? ["quantum register"] : [],
-          outputTypes: ["quantum register"],
-          children: [],
-          implementation: "",
-          implementationType: "",
-          uncomputeImplementationType: "",
-          uncomputeImplementation: "",
-          completionGuaranteed: true,
-        },
-      }));
-
-      reactFlowInstance.setNodes(newNodes);
-      reactFlowInstance.setEdges(newEdges);
-      reactFlowInstance.fitView();
-    },
-    [reactFlowInstance],
-  );
-
   async function deployWorkflowToCamunda(workflowName, workflowXml, viewMap) {
     console.log("Deploying workflow to Camunda Engine");
 
