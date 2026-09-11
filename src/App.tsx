@@ -2836,122 +2836,6 @@ If none apply, return { "algorithms": [] }.
   };
 
   async function registerAndUploadToGitHub(
-    patternId,
-    patternName,
-    overwriteImplementationId,
-    solutionId,
-  ) {
-    const flowId = `flow-${Date.now()}`;
-    const modelFileName = `${flowId}.json`;
-    const sqlPath = "example-data/SQL/backup-files/2_pattern_solutions.sql";
-    const modelPath = "example-data/models";
-
-    // 1. Prepare Model Content
-    const modelContent = JSON.stringify(
-      {
-        metadata: {
-          ...metadata,
-          containsPlaceholder: containsPlaceholder,
-          id: flowId,
-          timestamp: new Date().toISOString(),
-        },
-        flow: reactFlowInstance.toObject(),
-      },
-      null,
-      2,
-    );
-
-    // 2. Generate SQL for registration
-
-    const ids = {
-      algo: crypto.randomUUID(),
-      fileId: crypto.randomUUID(),
-      fileImplementationId: crypto.randomUUID(),
-      filePackageId: crypto.randomUUID(),
-      data: crypto.randomUUID(),
-      package: crypto.randomUUID(),
-    };
-
-    const toHex = (str: string) => {
-      const encoder = new TextEncoder(); // Encode string to bytes
-      const bytes = encoder.encode(str);
-      return (
-        "\\x" +
-        Array.from(bytes) // Convert each byte to hex
-          .map((b) => b.toString(16).padStart(2, "0"))
-          .join("")
-      );
-    };
-
-    console.log(toHex(ids.algo));
-
-    const sqlAppend = `
--- Register ${modelFileName}
-INSERT INTO public.knowledge_artifact (id, creation_date, last_modified_at) VALUES ('${ids.algo}', NULL, NULL);
-INSERT INTO public.knowledge_artifact (id, creation_date, last_modified_at) VALUES ('${ids.package}', NULL, NULL);
-INSERT INTO public.knowledge_artifact (id, creation_date, last_modified_at) VALUES ('${ids.fileId}', NULL, NULL);
-INSERT INTO public.algorithm (acronym, algo_parameter, assumptions, computation_model, input_format, intent, name, output_format, problem, solution, id) VALUES (NULL, NULL, NULL, NULL, NULL, NULL, 'QML Implementation', NULL, NULL, NULL, '${ids.algo}');
-INSERT INTO public.quantum_algorithm (nisq_ready, quantum_computation_model, speed_up, id) VALUES (false, 0, NULL, '${ids.algo}');
-INSERT INTO public.quantum_algorithm (nisq_ready, quantum_computation_model, id) VALUES (false, 0, '${ids.algo}');
-INSERT INTO public.implementation (assumptions, contributors, dependencies, description, input_format, license, link, name, technology, output_format, parameter, problem_statement, version, id, implemented_algorithm_id) VALUES (NULL, NULL, NULL, NULL, NULL, NULL, NULL, '${patternName} low-code solution', NULL, NULL, NULL, NULL, NULL, '${ids.package}', '${ids.algo}');
-INSERT INTO public.pattern_uris (implementation_id, pattern_uri) VALUES ('${ids.package}', 'patternLanguages/af7780d5-1f97-4536-8da7-4194b093ab1d/patterns/${patternId}');
-INSERT INTO public.file (fileurl, mime_type, name, id) VALUES ('${modelFileName}', 'application/json', '${modelFileName}', '${ids.fileId}');
-INSERT INTO public.file_data (id, data, file_id) VALUES ('${ids.data}', '${toHex(modelContent)}', '${ids.fileId}');
-INSERT INTO public.implementation_package (dtype, id, description, name, package_type, implementation_id, type) VALUES ('FileImplementationPackage', '${ids.fileImplementationId}', '${patternName} solution', 'Pattern low_code_modeler package', 0, '${ids.package}', 'low_code_modeler');
-INSERT INTO public.implementation_package_file (file_id, implementation_package_id) VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
-
-`;
-
-    const headers = {
-      Authorization: `token ${githubToken}`,
-      Accept: "application/vnd.github.v3+json",
-      "Content-Type": "application/json",
-    };
-
-    try {
-      // 3. Update SQL Seed File via API
-      const sqlUrl = `https://api.github.com/repos/${githubRepositoryOwner}/${githubRepositoryName}/contents/${sqlPath}`;
-      const sqlGet = await fetch(`${sqlUrl}?ref=${githubBranch}`, { headers });
-
-      if (sqlGet.ok) {
-        const { content, sha } = await sqlGet.json();
-        const updatedSql = atob(content) + sqlAppend;
-
-        await fetch(sqlUrl, {
-          method: "PUT",
-          headers,
-          body: JSON.stringify({
-            message: `Register ${modelFileName} in seed data`,
-            content: btoa(updatedSql),
-            sha,
-            branch: githubBranch,
-          }),
-        });
-      }
-
-      // 4. Upload the Model JSON File
-      const modelUrl = `https://api.github.com/repos/${githubRepositoryOwner}/${githubRepositoryName}/contents/${modelPath}/${modelFileName}`;
-      const modelUpload = await fetch(modelUrl, {
-        method: "PUT",
-        headers,
-        body: JSON.stringify({
-          message: `Upload model ${flowId}`,
-          content: btoa(modelContent),
-          branch: githubBranch,
-        }),
-      });
-
-      if (modelUpload.ok) {
-        console.log("Database registration and model upload successful.");
-        return { success: true, flowId };
-      }
-    } catch (error) {
-      console.error("GitHub API Error:", error);
-      return { success: false };
-    }
-  }
-
-  async function registerAndUploadToGitHub2(
     patternId: string,
     patternName: string,
     overwriteImplementationId,
@@ -4793,7 +4677,6 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
           uploadPatternSolution={() => setIsPatternModalOpen(true)}
           openPatternSolution={() => setIsPatternImplementationOpen(true)}
           openOpenQASM={handleOpenQASMClick}
-          //uploadPatternSolution={() => registerAndUploadToGitHub()}
           onLoadJson={handleLoadJson}
           sendToBackend={handleOpenValidation}
           createDomainProfile={() => openDomainProfileEditor()}
@@ -5272,7 +5155,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
                   solutionId,
                 ) => {
                   setIsPatternModalOpen(false);
-                  registerAndUploadToGitHub2(
+                  registerAndUploadToGitHub(
                     patternId,
                     patternName,
                     overwriteImplementationId,
