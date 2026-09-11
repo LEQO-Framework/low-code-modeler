@@ -2,13 +2,9 @@ import { memo, useEffect, useState } from "react";
 import { Handle, Position, Node, Edge } from "reactflow";
 import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
-import {
-  findDuplicateOutputIdentifiers,
-  isUniqueIdentifier,
-} from "../utils/utils";
-import { AlertCircle, File } from "lucide-react";
+import { findDuplicateOutputIdentifiers } from "../utils/utils";
+import { AlertCircle } from "lucide-react";
 import OutputPort from "../utils/outputPort";
-import { cn } from "@/lib/utils";
 import { awareness } from "@/yjs";
 
 const selector = (state: {
@@ -29,7 +25,6 @@ const selector = (state: {
 
 export const DataTypeNode = memo((node: Node) => {
   const [value, setValue] = useState("");
-  const [outputIdentifier, setOutputIdentifier] = useState("");
   const [outputs, setOutputs] = useState(node.data.outputs || []);
 
   const [valueError, setValueError] = useState("");
@@ -101,7 +96,7 @@ export const DataTypeNode = memo((node: Node) => {
           trimmed.startsWith("[") ? trimmed : `[${trimmed}]`,
         );
         if (Array.isArray(parsed)) is2DArray = true;
-      } catch (e) {}
+      } catch {}
 
       if (!isCommaSeparated && !is2DArray) {
         setValueError(
@@ -155,11 +150,6 @@ export const DataTypeNode = memo((node: Node) => {
     );
   }
 
-  function isPlaceholder(value) {
-    const t = value.trim();
-    return /^[a-zA-Z]+$/.test(t);
-  }
-
   function parseToNormalizedAngle(angle) {
     const trimmed = angle.trim().toLowerCase();
     const piMatch = /^([0-9]*\.?[0-9]*)\s*\*?\s*pi$/.exec(trimmed);
@@ -180,7 +170,6 @@ export const DataTypeNode = memo((node: Node) => {
     const trimmed = value.trim().toLowerCase();
 
     if (/^[+]?[0-9]*\.?[0-9]+$/.test(trimmed)) {
-      const num = parseFloat(trimmed);
       return true;
     }
     return false;
@@ -233,30 +222,20 @@ export const DataTypeNode = memo((node: Node) => {
   const [remoteHighlightColor, setRemoteHighlightColor] = useState<
     string | null
   >(null);
-  const [selectingUserName, setSelectingUserName] = useState<string | null>(
-    null,
-  ); // technically not needed, could extend functionality to also show user name next to highlighted node
 
   useEffect(() => {
     const checkRemoteSelection = () => {
       let foundColor: string | null = null;
-      let foundName: string | null = null;
 
       // Loop through all active client states in the room
-      awareness.getStates().forEach((state: any, clientId: number) => {
-        // Skip your own client ID so you don't highlight it with your own color
-        // if (clientId === awareness.clientID) return;
-
+      awareness.getStates().forEach((state: any) => {
         // Check if a peer has selected this specific node ID
         if (state.cursor && state.cursor.mySelectedNodeId === id) {
           foundColor = state.cursor.color;
-          foundName = state.cursor.name;
         }
       });
 
       setRemoteHighlightColor(foundColor);
-      setSelectingUserName(foundName);
-      // console.log("COLOR", foundColor, foundName);
     };
 
     // Run once immediately on mount
@@ -496,7 +475,7 @@ export const DataTypeNode = memo((node: Node) => {
           id={`classicalHandleDataTypeOutput0${node.id}`}
           position={Position.Right}
           className="!absolute !top-[67%] z-10 classical-circle-port-round-out !bg-orange-300 !border-black overflow-visible"
-          isValidConnection={(connection) => true}
+          isValidConnection={() => true}
           isConnectableEnd={false}
         />
       </div>
