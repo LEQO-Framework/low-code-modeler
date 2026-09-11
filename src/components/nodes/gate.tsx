@@ -2,7 +2,6 @@ import { memo, useEffect, useState, useMemo } from "react";
 import { Handle, Position, Node, Edge } from "reactflow";
 import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
-import { cn } from "@/lib/utils";
 import { awareness } from "@/yjs";
 import { computeQubitIndices } from "@/lib/qubitIndexing";
 
@@ -88,7 +87,6 @@ export const GateNode = memo((node: Node) => {
   }, [node, experienceLevel, data.label, node?.data, node?.id]);
   const baseSize = 110;
   const handleCount = isThreeQubit ? 3 : isTwoQubit ? 2 : isQubit ? 0 : 1;
-  const extraPerHandle = 30;
 
   const dynamicSize = handleCount <= 1 ? baseSize : baseSize * handleCount;
 
@@ -97,32 +95,20 @@ export const GateNode = memo((node: Node) => {
   const [remoteHighlightColor, setRemoteHighlightColor] = useState<
     string | null
   >(null);
-  const [selectingUserName, setSelectingUserName] = useState<string | null>(
-    null,
-  ); // technically not needed, could extend functionality to also show user name next to highlighted node
 
   useEffect(() => {
     const checkRemoteSelection = () => {
       let foundColor: string | null = null;
-      let foundName: string | null = null;
-
+      
       // Loop through all active client states in the room
-      awareness.getStates().forEach((state: any, clientId: number) => {
-        // Skip your own client ID so you don't highlight it with your own color
-        // if (clientId === awareness.clientID) return;
-        console.log(state.cursor);
-        console.log(id);
-
+      awareness.getStates().forEach((state: any) => {
         // Check if a peer has selected this specific node ID
         if (state.cursor && state.cursor.mySelectedNodeId === id) {
           foundColor = state.cursor.color;
-          foundName = state.cursor.name;
         }
       });
 
       setRemoteHighlightColor(foundColor);
-      setSelectingUserName(foundName);
-      console.log("COLOR", foundColor, foundName);
     };
 
     // Run once immediately on mount
