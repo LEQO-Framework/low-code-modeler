@@ -3503,9 +3503,8 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
         console.log(currentCursorState);
         console.log(node.id);
         let findAny = false;
-        awareness.getStates().forEach((state: any, clientId: number) => {
+        awareness.getStates().forEach((state: any) => {
           // Skip your own client ID so you don't highlight it with your own color
-          // if (clientId === awareness.clientID) return;
           console.log(state.cursor);
 
           // Check if a peer has selected this specific node ID
@@ -3656,9 +3655,8 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
       if (collaborationModeOn) {
         let findAny = false;
 
-        awareness.getStates().forEach((state: any, clientId: number) => {
+        awareness.getStates().forEach((state: any) => {
           // Skip your own client ID so you don't highlight it with your own color
-          // if (clientId === awareness.clientID) return;
           console.log(state.cursor);
 
           // Check if a peer has selected this specific node ID
@@ -3678,7 +3676,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
       console.log(horizontalLine);
       const bounds = getNodesBounds(currentNodes);
       console.log(bounds);
-      const { x, y, zoom } = reactFlowInstance.getViewport();
+      const { x, y, } = reactFlowInstance.getViewport();
       console.log(x);
       console.log(y);
       const snapThreshold = 0; // Adjust threshold for snapping
@@ -3745,7 +3743,6 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
       console.log("trest");
       console.log(intersections);
       console.log(nodes);
-      let oldPosition = node.position;
       currentNodes.forEach((nd) => {
         console.log("check");
         console.log(nd.id);
