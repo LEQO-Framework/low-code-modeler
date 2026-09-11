@@ -5,7 +5,6 @@ import {
   Node,
   Edge,
   useUpdateNodeInternals,
-  NodeResizer,
 } from "reactflow";
 import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
@@ -31,7 +30,7 @@ const selector = (state: {
 });
 
 export const IfElseNode = memo((node: Node) => {
-  const { nodes, setNodes, updateNodeValue, setSelectedNode, edges } = useStore(
+  const { nodes, updateNodeValue, setSelectedNode, edges } = useStore(
     selector,
     shallow,
   );
@@ -39,17 +38,8 @@ export const IfElseNode = memo((node: Node) => {
 
   const { data, selected } = node;
   const numberClassicalInputs = data.numberClassicalInputs || 1;
-  const numberClassicalOutputs = data.numberOutputs || 0;
 
   const numberQuantumInputs = data.numberQuantumInputs || 1;
-  const numberQuantumOutputs = data.numberOutputs || 0;
-
-  //const classicalHandleCount = Math.max(numberClassicalInputs, 1);
-  //const quantumHandleCount = Math.max(numberQuantumInputs, 1);
-  //console.log(quantumHandleCount)
-
-  const handleGap = 40;
-  const handleOffset = 85;
 
   const quantumHandles = Array.from(
     { length: numberQuantumInputs },
@@ -60,22 +50,13 @@ export const IfElseNode = memo((node: Node) => {
     (_, i) => i,
   );
 
-  //setQuantumHandles(prev => [...prev, numberQuantumInputs]);
-  //setClassicalHandles(prev => [...prev, numberClassicalInputs]);
-  //setClassicalHandles(numberClassicalInputs);
   console.log("quantumHandles", quantumHandles);
   console.log("classicalHandles", classicalHandles);
 
-  const nodeHeight = Math.max(
-    handleOffset * 1 + numberQuantumInputs * handleGap,
-    100,
-  );
-
   const [quantumOutputHandles, setQuantumOutputHandles] = useState([0]);
-  const [quantumOutputHandlesElse, setQuantumOutputHandlesElse] = useState([0]);
-  //const [classicalOutputHandles, setClassicalOutputHandles] = useState([{ index: 0, branch: "then" }]);
+  const [_quantumOutputHandlesElse, setQuantumOutputHandlesElse] = useState([0]);
   const [classicalOutputHandles, setClassicalOutputHandles] = useState([0]);
-  const [classicalOutputHandlesElse, setClassicalOutputHandlesElse] = useState([
+  const [_classicalOutputHandlesElse, setClassicalOutputHandlesElse] = useState([
     0,
   ]);
   const [collapsed, setColllapsed] = useState(false);
@@ -88,7 +69,6 @@ export const IfElseNode = memo((node: Node) => {
     let mainNodes = document.querySelectorAll<HTMLDivElement>(
       "div.react-flow__node-ifElseNode",
     );
-    let keys = mainNodes.keys();
 
     // extract key and see if it matches data-id this is then the mainNode
     let mainNode: HTMLDivElement | undefined;
@@ -127,10 +107,6 @@ export const IfElseNode = memo((node: Node) => {
           }
         }
 
-        // Get the current minWidth from computed styles
-        const currentMinWidth = window.getComputedStyle(firstChild).minWidth;
-        // Parse it into a number
-        const currentMinWidthValue = parseFloat(currentMinWidth);
         // Add 100 to it
         const newMinWidth = 400;
         // Set it back with "px"
@@ -145,15 +121,6 @@ export const IfElseNode = memo((node: Node) => {
   };
 
   useEffect(() => {
-    // quantum input handles connected to a source
-    const connectedQuantumHandles = quantumHandles.filter((index) =>
-      edges.some(
-        (edge) =>
-          edge.targetHandle ===
-          `quantumHandleInputInitialization${index}${node.id}`,
-      ),
-    );
-
     // use conntected output handles (quantum & classical) in each block (then & else) to determine final output handles
     // each output handle in each block gets a final output handle
 
@@ -214,70 +181,17 @@ export const IfElseNode = memo((node: Node) => {
     );
     setClassicalOutputHandlesElse(connectedOutputHandlesElse);
 
-    const expectedHandles = quantumHandles.map(
-      (index) => `quantumHandleInputInitialization${index}${node.id}`,
-    );
-    const lastHandle = expectedHandles[expectedHandles.length - 1];
-
     const expectedClassicalHandles = classicalHandles.map(
       (index) => `classicalHandleInputInitialization${index}${node.id}`,
     );
     const lastClassicalHandle =
       expectedClassicalHandles[expectedClassicalHandles.length - 1];
 
-    // if (connectedQuantumHandles.includes(lastHandle)) {
-    //   setQuantumHandles(prev => [...prev, prev.length]);
-    // }
     console.log("classicalHandles", classicalHandles);
     console.log("connectedClassicalHandles", connectedClassicalHandles);
     console.log("lastClassicalHandle", lastClassicalHandle);
 
-    // if (!connectedClassicalHandles.includes(lastClassicalHandle)) {
-    //   console.log(connectedClassicalHandles)
-    //   const expectedClassicalIndices = connectedClassicalHandles.map(handleId => {
-    //     const parts = handleId.split("-");
-    //     return parseInt(parts[parts.length - 1], 10);
-    //   });
-    //   const nextClassicalIndex = Math.max(...expectedClassicalIndices, -1) + 1;
-    //   console.log(expectedClassicalIndices)
-    //   //setClassicalHandles([...expectedClassicalIndices, nextClassicalIndex]);
-    // }
-
-    // const expected = classicalOutputHandles.map(({ index, branch }) => {
-    //   console.log(index);
-    //   return `classicalHandleDynamicOutput${branch === "else" ? "Else" : ""}${node.id}-${index}`
-    // }
-    // );
-    // const lastHandleId = expected[expected.length - 1];
-
-    // // Extract last branch from the last handleId
-    // const lastBranch = lastHandleId.includes("Else") ? "else" : "then";
-
-    // // if (connectedOutputHandles.includes(lastHandleId)) {
-    // //   const nextIndex = classicalOutputHandles.length;
-    // //   setClassicalOutputHandles(prev => [...prev, { index: nextIndex, branch: lastBranch }]);
-    // // }
-
-    // const expectedElse = connectedClassicalHandles.map(index => `classicalHandleDynamicOutputElse${node.id}-${index}`);
-    // const lastHandleIdElse = expectedElse[expectedElse.length - 1];
-
-    // // if (connectedOutputHandlesElse.includes(lastHandleIdElse)) {
-    // //   setClassicalOutputHandlesElse(prev => [...prev, prev.length]);
-    // // }
-
-    // const quantumExpected = quantumOutputHandles.map(index => `quantumHandleDynamicOutput${index}${node.id}`);
-    // const lastQuantumHandleId = quantumExpected[quantumExpected.length - 1];
-
-    // //setQuantumOutputHandles(connectedQuantumHandles);
-
-    // const expectedQuantumElse = quantumOutputHandlesElse.map(index => `quantumHandleDynamicOutputElse${index}${node.id}`);
-    // const lastHandleIdQuantumElse = expectedQuantumElse[expectedQuantumElse.length - 1];
-
-    // if (connectedOutputHandlesQuantumElse.includes(lastHandleIdQuantumElse)) {
-    //   setQuantumOutputHandlesElse(prev => [...prev, prev.length]);
-    // }
     updateNodeInternals(node.id); // `nodeId` is the ID of the updated node
-    //}, [edges, node.id, quantumHandles, classicalOutputHandles, quantumOutputHandles, quantumOutputHandlesElse, classicalOutputHandlesElse]);
   }, [edges, node.id]);
 
   const dynamicHeight =
@@ -295,7 +209,7 @@ export const IfElseNode = memo((node: Node) => {
   const [remoteHighlightColor, setRemoteHighlightColor] = useState<
     string | null
   >(null);
-  const [selectingUserName, setSelectingUserName] = useState<string | null>(
+  const [_selectingUserName, setSelectingUserName] = useState<string | null>(
     null,
   ); // technically not needed, could extend functionality to also show user name next to highlighted node
 
@@ -305,10 +219,7 @@ export const IfElseNode = memo((node: Node) => {
       let foundName: string | null = null;
 
       // Loop through all active client states in the room
-      awareness.getStates().forEach((state: any, clientId: number) => {
-        // Skip your own client ID so you don't highlight it with your own color
-        // if (clientId === awareness.clientID) return;
-
+      awareness.getStates().forEach((state: any) => {
         // Check if a peer has selected this specific node ID
         if (state.cursor && state.cursor.mySelectedNodeId === id) {
           foundColor = state.cursor.color;
@@ -592,9 +503,6 @@ export const IfElseNode = memo((node: Node) => {
                 {/* Initial Classical Input (left polygon) */}
                 {classicalHandles.map((index, i) => {
                   const handleId = `classicalHandleInputInitialization${index}${node.id}`;
-                  const isConnected = edges.some(
-                    (edge) => edge.targetHandle === handleId,
-                  );
 
                   return (
                     <Handle
@@ -619,9 +527,6 @@ export const IfElseNode = memo((node: Node) => {
                 {/* Initial Quantum Input (left polygon) */}
                 {quantumHandles.map((index, i) => {
                   const handleId = `quantumHandleInputInitialization${index}${node.id}`;
-                  const isConnected = edges.some(
-                    (edge) => edge.targetHandle === handleId,
-                  );
 
                   return (
                     <Handle
@@ -1044,9 +949,6 @@ export const IfElseNode = memo((node: Node) => {
 
           {quantumHandles.map((index, i) => {
             const handleId = `quantumHandleInputInitialization${index}${node.id}`;
-            const isConnected = edges.some(
-              (edge) => edge.targetHandle === handleId,
-            );
 
             return (
               <Handle
