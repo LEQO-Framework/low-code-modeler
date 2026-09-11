@@ -1,4 +1,3 @@
-import React, { useState } from "react";
 import {
   Button,
   DropdownMenu,
@@ -20,12 +19,6 @@ import {
   FileJson,
   ImageIcon,
   LayoutTemplate,
-  PuzzleIcon,
-  LucidePuzzle,
-  Puzzle,
-  Group,
-  BoxSelect,
-  BrainCircuit,
   Search,
   BadgeCheck,
 } from "lucide-react";
@@ -42,7 +35,6 @@ interface ToolbarProps {
   startQuantumAlgorithmSelection: () => void;
   uploadPatternSolution: () => void;
   openPatternSolution: () => void;
-  //sendToQunicorn: () => void;
   openHistory: () => void;
   startTour: () => void;
   onSaveAsTemplate: () => void;
@@ -69,25 +61,8 @@ const Toolbar: React.FC<ToolbarProps> = ({
   startTour,
   onSaveAsTemplate,
   onManageTemplates,
-  onGroupSelected,
-  onLoadQasm,
-  generateModel,
   openOpenQASM,
 }) => {
-  const [saveIsOpen, setSaveIsOpen] = useState(false);
-
-  const handleQasmUpload = () => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = ".qasm,.txt";
-    input.onchange = async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) return;
-      const text = await file.text();
-      onLoadQasm(text);
-    };
-    input.click();
-  };
   return (
     <div className="flex items-center justify-between bg-gray-100 p-4 border-b border-gray-300 h-[56px]">
       <div className="flex items-center">
