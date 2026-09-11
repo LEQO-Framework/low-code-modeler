@@ -11,10 +11,8 @@ import ReactFlow, {
   Controls,
   Edge,
   Node,
-  ReactFlowProvider,
   MiniMap,
   getNodesBounds,
-  Panel,
   useUpdateNodeInternals,
   SelectionMode,
   Connection,
@@ -30,7 +28,7 @@ import Toolbar from "./components/toolbar";
 import { nodesConfig, tutorial } from "./config/site";
 import { useStore } from "./config/store";
 import { useShallow } from "zustand/react/shallow";
-import { findNodeDefinition, handleDragOver, handleOnDrop } from "./lib/utils";
+import { findNodeDefinition, handleDragOver } from "./lib/utils";
 import useKeyBindings from "./hooks/useKeyBindings";
 import { toSvg } from "html-to-image";
 import { initialDiagram } from "./config/site";
@@ -47,12 +45,10 @@ import {
   hadamard_test_imaginary_part,
   hadamard_test_real_part,
   qaoa,
-  quantum_types,
   quantumConstructColor,
   swap_test,
   quantum_k_means,
   custom_template,
-  TEMPLATE_STORAGE_KEY,
   templates,
   PluginNode,
 } from "./constants";
@@ -74,7 +70,7 @@ import {
   swap_test_algorithm,
   quantum_k_means_algorithm,
 } from "./constants/templates";
-import JSZip, { JSZipObject } from "jszip";
+import JSZip from "jszip";
 import {
   createDeploymentModel,
   createNodeType,
