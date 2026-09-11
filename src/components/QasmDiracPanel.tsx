@@ -15,7 +15,6 @@ import type { Complex } from "@/lib/diracFormatter";
 import { statevectorToDirac } from "@/lib/diracFormatter";
 import JSZip from "jszip";
 import {
-  BlochSphere,
   BlochSphereMulti,
   getEntanglementPersistence,
   isStateFullySeparable,
@@ -699,16 +698,6 @@ async function downloadZip(
   URL.revokeObjectURL(url);
 }
 
-function downloadQasmFile(content: string) {
-  const blob = new Blob([content], { type: "text/plain" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "circuit.qasm";
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
 // ---------------------------------------------------------------------------
 // Export-Menü
 // ---------------------------------------------------------------------------
@@ -830,24 +819,6 @@ function ExportMenu({
           aiExplanation,
         ),
       );
-    }
-  };
-
-  const handleDownloadPng = async () => {
-    setOpen(false);
-    if (!onGetCircuitSvg) return;
-    setLoadingSvg(true);
-    try {
-      const svg = await onGetCircuitSvg();
-      const pngBase64 = await svgToPngBase64(svg);
-      const a = document.createElement("a");
-      a.href = `data:image/png;base64,${pngBase64}`;
-      a.download = "circuit.png";
-      a.click();
-    } catch (e) {
-      console.error("PNG Export failed:", e);
-    } finally {
-      setLoadingSvg(false);
     }
   };
 
@@ -1235,7 +1206,6 @@ export function QasmDiracPanel(props: Props) {
   const [showSteps, setShowSteps] = useState(false);
   const [showBloch, setShowBloch] = useState(false);
   const [showProperties, setShowProperties] = useState(false);
-  const [blochQubit, setBlochQubit] = useState(0);
   const [mistralExplanation, setMistralExplanation] = useState<string | null>(
     null,
   );
