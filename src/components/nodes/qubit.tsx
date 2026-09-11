@@ -9,8 +9,8 @@ import { computeQubitIndices } from "@/lib/qubitIndexing";
 
 const selector = (state: {
   selectedNode: Node | null;
-  edges: Edge[],
-  nodes: Node[],
+  edges: Edge[];
+  nodes: Node[];
   updateNodeValue: (nodeId: string, field: string, nodeVal: string) => void;
   setSelectedNode: (node: Node | null) => void;
 }) => ({
@@ -18,7 +18,7 @@ const selector = (state: {
   edges: state.edges,
   nodes: state.nodes,
   updateNodeValue: state.updateNodeValue,
-  setSelectedNode: state.setSelectedNode
+  setSelectedNode: state.setSelectedNode,
 });
 
 export const QubitNode = memo((node: Node) => {
@@ -32,7 +32,8 @@ export const QubitNode = memo((node: Node) => {
   const xRef = useRef(null);
   const yRef = useRef(null);
 
-  const { selectedNode, nodes, updateNodeValue, setSelectedNode, edges } = useStore(selector, shallow);
+  const { selectedNode, nodes, updateNodeValue, setSelectedNode, edges } =
+    useStore(selector, shallow);
   const [outputIdentifierError, setOutputIdentifierError] = useState(false);
   const [outputIdentifier, setOutputIdentifier] = useState("");
   const [operation, setOperation] = useState("");
@@ -55,7 +56,6 @@ export const QubitNode = memo((node: Node) => {
     node.data["size"] = value;
     updateNodeValue(node.id, "size", value);
   };
-
 
   const handleYChange = (e) => {
     const value = e.target.value;
@@ -86,8 +86,12 @@ export const QubitNode = memo((node: Node) => {
     return size > 1 ? `${start}\u2013${start + size - 1}` : `${start}`;
   }, [nodes, edges, id, data?.size]);
 
-  const [remoteHighlightColor, setRemoteHighlightColor] = useState<string | null>(null);
-  const [selectingUserName, setSelectingUserName] = useState<string | null>(null); // technically not needed, could extend functionality to also show user name next to highlighted node
+  const [remoteHighlightColor, setRemoteHighlightColor] = useState<
+    string | null
+  >(null);
+  const [selectingUserName, setSelectingUserName] = useState<string | null>(
+    null,
+  ); // technically not needed, could extend functionality to also show user name next to highlighted node
 
   useEffect(() => {
     const checkRemoteSelection = () => {
@@ -125,13 +129,21 @@ export const QubitNode = memo((node: Node) => {
 
   return (
     <div className="grand-parent">
-      <div className={"w-[350px] h-[170px] rounded-none bg-white  border border-solid border-gray-700 shadow-md relative"}
+      <div
+        className={
+          "w-[350px] h-[170px] rounded-none bg-white  border border-solid border-gray-700 shadow-md relative"
+        }
         style={{
-          borderColor: remoteHighlightColor ? remoteHighlightColor : (selected ? "#3B82F6" : "#374151"),
+          borderColor: remoteHighlightColor
+            ? remoteHighlightColor
+            : selected
+              ? "#3B82F6"
+              : "#374151",
           boxShadow: remoteHighlightColor
             ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}` // Glowing aura ring
             : undefined,
-        }}>
+        }}
+      >
         {qubitIndexLabel !== null && (
           <div
             className="absolute bottom-1 right-1.5 text-xs font-mono font-semibold text-gray-500 bg-white/80 rounded px-1 leading-tight pointer-events-none select-none"
@@ -140,11 +152,23 @@ export const QubitNode = memo((node: Node) => {
             q{qubitIndexLabel}
           </div>
         )}
-        <div className="w-full flex items-center" style={{ height: '52px' }}>
-          <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
-            <img src="qubitIcon.png" alt="icon" className="w-[40px] h-[40px] object-contain flex-shrink-0" />
+        <div className="w-full flex items-center" style={{ height: "52px" }}>
+          <div
+            className="w-full bg-blue-300 py-1 px-2 flex items-center"
+            style={{ height: "inherit" }}
+          >
+            <img
+              src="qubitIcon.png"
+              alt="icon"
+              className="w-[40px] h-[40px] object-contain flex-shrink-0"
+            />
             <div className="h-full w-[1px] bg-black mx-2" />
-            <span className="truncate font-semibold leading-none" style={{ paddingLeft: '75px' }}>{data.label}</span>
+            <span
+              className="truncate font-semibold leading-none"
+              style={{ paddingLeft: "75px" }}
+            >
+              {data.label}
+            </span>
           </div>
         </div>
         <div className="custom-node-port-out">
