@@ -1,11 +1,16 @@
-import { Handle, Position } from 'reactflow';
+import { Handle, Position } from "reactflow";
 import { cn } from "@/lib/utils";
-import { findDuplicateOutputIdentifiersInsideNode, isUniqueIdentifier } from "../utils/utils";
+import {
+  findDuplicateOutputIdentifiersInsideNode,
+  isUniqueIdentifier,
+} from "../utils/utils";
 import { Node } from "reactflow";
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { AlgorithmNode, ClassicalAlgorithmNode, classicalConstructColor } from '@/constants';
-
-
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  AlgorithmNode,
+  ClassicalAlgorithmNode,
+  classicalConstructColor,
+} from "@/constants";
 
 interface inputPortProps {
   node: Node;
@@ -68,7 +73,7 @@ export default function InputPort({
 
   const wasBellState = useRef(false);
   const inputIdentifier = propertyName;
-  const isConnected = edges.some(edge => edge.sourceHandle === handleId);
+  const isConnected = edges.some((edge) => edge.sourceHandle === handleId);
   const [valueError, setValueError] = useState("");
 
   const changeValue = (e) => {
@@ -83,8 +88,8 @@ export default function InputPort({
 
     // Clear error by default
     setPropertyValueError("");
-    //TODO: auskommentieren + setContainsPlaceholder 
-/*     if (value.trim() === "") {
+    //TODO: auskommentieren + setContainsPlaceholder
+    /*     if (value.trim() === "") {
       setContainsPlaceholder(false);
     }
 
@@ -100,7 +105,9 @@ export default function InputPort({
       if (trimmedValue === "") return; // optional empty
       const arrayRegex = /^-?\d+(?:,-?\d+)*$/;
       if (!arrayRegex.test(trimmedValue)) {
-        setPropertyValueError(`${propertyName} must be comma-separated integers (e.g., 1,2,3)`);
+        setPropertyValueError(
+          `${propertyName} must be comma-separated integers (e.g., 1,2,3)`,
+        );
         return;
       }
     }
@@ -114,9 +121,13 @@ export default function InputPort({
     }
 
     // Float and number validation
-    if (propertyType.toLowerCase() === "float" || propertyType.toLowerCase() === "number") {
+    if (
+      propertyType.toLowerCase() === "float" ||
+      propertyType.toLowerCase() === "number"
+    ) {
       if (!/^-?\d+(\.\d+)?$/.test(value) && value !== "") {
-        const fillerWord = propertyType.toLowerCase() === "float"? "float" : "";
+        const fillerWord =
+          propertyType.toLowerCase() === "float" ? "float" : "";
         setPropertyValueError(`${propertyName} must be a ${fillerWord} number`);
         return;
       }
@@ -125,18 +136,18 @@ export default function InputPort({
     // Angle validation
     if (propertyType === "angle") {
       if (parseToNormalizedAngle(value) === null && value !== "") {
-        setPropertyValueError(`${propertyName} must be a valid angle (number or multiple of pi)`);
+        setPropertyValueError(
+          `${propertyName} must be a valid angle (number or multiple of pi)`,
+        );
         return;
       }
     }
   };
 
-
   function isPlaceholder(value) {
     const t = value.trim();
     return /^[a-zA-Z]+$/.test(t);
   }
-
 
   function parseToNormalizedAngle(angle) {
     const trimmed = angle.trim().toLowerCase();
@@ -149,7 +160,7 @@ export default function InputPort({
 
     if (/^[+-]?[0-9]*\.?[0-9]+$/.test(trimmed)) {
       const num = parseFloat(trimmed);
-      return ((num % (2 * Math.PI)) + (2 * Math.PI)) % (2 * Math.PI);
+      return ((num % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
     }
     return null;
   }
@@ -164,7 +175,7 @@ export default function InputPort({
     return false;
   }
 
-/*   // Get input type for classical arithmetic operator
+  /*   // Get input type for classical arithmetic operator
   const getInputType = (inputIndex: number) => {
     const handleId = `classicalHandleOperationInput${inputIndex}${node.id}`;
     const edge = edges.find(e => e.target === node.id && e.targetHandle === handleId);
@@ -179,7 +190,7 @@ export default function InputPort({
 
     return "any";
   }; */
-/* 
+  /* 
   // Determine displayed input type dynamically
   const displayedInputType = useMemo(() => {
     let inputType = "unknown";
@@ -231,7 +242,7 @@ export default function InputPort({
   }, [node.id, node.data.label, type, edges, nodes]);
  */
   // update inputType if it changes
-/*   useEffect(() => {
+  /*   useEffect(() => {
     if (node.data.inputTypes[index] !== displayedInputType) {
       const updatedInputTypes = { ...node.data.inputTypes }
       updatedInputTypes[index] = displayedInputType
@@ -240,7 +251,7 @@ export default function InputPort({
     }
   }, [displayedInputType, node.id, node.data.inputTypes, updateNodeValue]); */
 
-/*   useEffect(() => {
+  /*   useEffect(() => {
     const isNowBellState = node.data.quantumStateName?.includes("Bell State");
     const updatedInputs = [...inputs];
     if (!updatedInputs[index]) updatedInputs[index] = { identifier: "", size: "" };
@@ -267,31 +278,35 @@ export default function InputPort({
   return (
     <div className="relative flex items-center justify-start space-x-0 mt-1">
       {hasInputHandles && (
-        <div style={{ position: "absolute", left: "-4px", overflow: "visible" }}> 
-        <Handle
-          type="target"
-          id={handleId}
-          position={Position.Left}
-          className={cn(
-            "z-10",
-            handleClass,
-            "top-1/2 -translate-y-1/2",
-            isClassical
-              ? "!bg-orange-300 !border-black"
-              : isAncilla
-                ? "!bg-green-100 !border-black rotate-45"
-                : "!bg-blue-300 !border-black",
-            (active || isConnected)
-              ? `border-solid ${isClassical
+        <div
+          style={{ position: "absolute", left: "-4px", overflow: "visible" }}
+        >
+          <Handle
+            type="target"
+            id={handleId}
+            position={Position.Left}
+            className={cn(
+              "z-10",
+              handleClass,
+              "top-1/2 -translate-y-1/2",
+              isClassical
                 ? "!bg-orange-300 !border-black"
                 : isAncilla
                   ? "!bg-green-100 !border-black rotate-45"
-                  : "!bg-blue-300 !border-black"}`
-              : "!bg-gray-200 !border-dashed !border-gray-500"
-          )}
-          isConnectable={true}
-          isConnectableStart={false}
-        />
+                  : "!bg-blue-300 !border-black",
+              active || isConnected
+                ? `border-solid ${
+                    isClassical
+                      ? "!bg-orange-300 !border-black"
+                      : isAncilla
+                        ? "!bg-green-100 !border-black rotate-45"
+                        : "!bg-blue-300 !border-black"
+                  }`
+                : "!bg-gray-200 !border-dashed !border-gray-500",
+            )}
+            isConnectable={true}
+            isConnectableStart={false}
+          />
         </div>
       )}
       <div
@@ -300,14 +315,16 @@ export default function InputPort({
           backgroundColor: isClassical
             ? classicalConstructColor
             : isAncilla
-              ? 'rgba(137, 218, 131, 0.2)'
-              : 'rgba(105, 145, 210, 0.2)',
+              ? "rgba(137, 218, 131, 0.2)"
+              : "rgba(105, 145, 210, 0.2)",
           width: "120px",
-          borderRadius: isClassical ? '16px' : '0px',
+          borderRadius: isClassical ? "16px" : "0px",
         }}
       >
         <div className="w-full flex justify-between items-center">
-          <span className="text-left text-sm text-black font-semibold">{propertyName}</span>
+          <span className="text-left text-sm text-black font-semibold">
+            {propertyName}
+          </span>
           <span className="text-[10px] text-gray-600">
             type: {propertyType}
           </span>
@@ -316,14 +333,15 @@ export default function InputPort({
         <div className="flex items-center justify-between w-full space-x-2">
           <input
             type="text"
-            className={`p-1 text-sm text-black opacity-75 w-20 text-center rounded-full border ${propertyValueError
-              ? 'bg-red-500 border-red-500'
-              : isClassical
-                ? 'bg-white border-orange-500'
-                : isAncilla
-                  ? 'bg-white border-green-500'
-                  : 'bg-white border-blue-500'
-              }`}
+            className={`p-1 text-sm text-black opacity-75 w-20 text-center rounded-full border ${
+              propertyValueError
+                ? "bg-red-500 border-red-500"
+                : isClassical
+                  ? "bg-white border-orange-500"
+                  : isAncilla
+                    ? "bg-white border-green-500"
+                    : "bg-white border-blue-500"
+            }`}
             value={propertyValues[index]}
             onChange={changeValue}
           />
@@ -351,9 +369,13 @@ export function handleInputIdentifierChange({
   const value = e.target.value;
   node.data["inputIdentifier"] = value;
   updateNodeValue(node.id, "inputIdentifier", value);
-  const selectedNode = nodes.find(n => n.id === node.id);
+  const selectedNode = nodes.find((n) => n.id === node.id);
 
-  if (/^\d/.test(value) || (!isUniqueIdentifier(nodes, value, node.id) || findDuplicateOutputIdentifiersInsideNode(nodes, selectedNode, value))) {
+  if (
+    /^\d/.test(value) ||
+    !isUniqueIdentifier(nodes, value, node.id) ||
+    findDuplicateOutputIdentifiersInsideNode(nodes, selectedNode, value)
+  ) {
     setInputIdentifierError(true);
   } else {
     setInputIdentifierError(false);
