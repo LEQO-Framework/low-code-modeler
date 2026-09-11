@@ -529,10 +529,6 @@ If none apply, return { "algorithms": [] }.
     }
   };
 
-  function viewPatternGraph(algo) {
-    setPatternGraph(algo.patternGraphPng);
-  }
-
   const handleQuantumAlgorithmModalClose = () => {
     setQuantumAlgorithmModalStep(0);
   };
