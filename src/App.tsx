@@ -2261,7 +2261,6 @@ If none apply, return { "algorithms": [] }.
           // Check if the dragged node is inside the group
           if (intersectionNodes[0] == nd.id) {
             console.log(nd);
-            const rec = { height: nd.height, width: nd.width, ...nd.position };
 
             //Check if dragged node isn't already a child to the group
             if (!node.parentNode) {
@@ -2657,9 +2656,6 @@ If none apply, return { "algorithms": [] }.
       const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
 
       const type = event.dataTransfer.getData("application/reactflow");
-      const dataType = event.dataTransfer.getData(
-        "application/reactflow/dataType",
-      );
 
       if (!type) {
         return;
@@ -2728,8 +2724,6 @@ If none apply, return { "algorithms": [] }.
     },
     [setContextMenu, reactFlowInstance, updateNodeInternals],
   );
-
-  const flowKey = "example-flow";
 
   async function uploadToGitHub() {
     let flowId = `model-${Date.now()}`;
