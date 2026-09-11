@@ -12,16 +12,19 @@ const selector = (state: any) => ({
   nodes: state.nodes,
   edges: state.edges,
   setSelectedNode: state.setSelectedNode,
-  experienceLevel: state.experienceLevel
+  experienceLevel: state.experienceLevel,
 });
 
 export const DeutschJozsaNode = memo((node: Node) => {
   const { id, data, selected } = node;
-  const { updateNodeValue, nodes, edges, setSelectedNode, experienceLevel } = useStore(selector, shallow);
+  const { updateNodeValue, nodes, edges, setSelectedNode, experienceLevel } =
+    useStore(selector, shallow);
 
   const [numQubitsStr, setNumQubitsStr] = useState(String(data.numQubits || 3));
   const [oracleType, setOracleType] = useState(data.oracleType || "balanced");
-  const [balancedMaskStr, setBalancedMaskStr] = useState(String(data.balancedMask || 5));
+  const [balancedMaskStr, setBalancedMaskStr] = useState(
+    String(data.balancedMask || 5),
+  );
   const [constantValue, setConstantValue] = useState(data.constantValue ?? 0);
 
   const [outputs, setOutputs] = useState(data.outputs || []);
@@ -33,17 +36,17 @@ export const DeutschJozsaNode = memo((node: Node) => {
   const [hasPioneerUser, setHasPioneerUser] = useState(false);
   const [hasExplorerUser, setHasExplorerUser] = useState(false);
   const [missingQubitsError, setMissingQubitsError] = useState(false);
-const [missingMaskError, setMissingMaskError] = useState(false);
+  const [missingMaskError, setMissingMaskError] = useState(false);
 
-useEffect(() => {
-  setMissingQubitsError(numQubitsStr.trim() === "");
+  useEffect(() => {
+    setMissingQubitsError(numQubitsStr.trim() === "");
 
-  if (oracleType === "balanced") {
-    setMissingMaskError(balancedMaskStr.trim() === "");
-  } else {
-    setMissingMaskError(false);
-  }
-}, [numQubitsStr, balancedMaskStr, oracleType]);
+    if (oracleType === "balanced") {
+      setMissingMaskError(balancedMaskStr.trim() === "");
+    } else {
+      setMissingMaskError(false);
+    }
+  }, [numQubitsStr, balancedMaskStr, oracleType]);
 
   // Monitor awareness states for active users and their selected roles/experience levels
   useEffect(() => {
@@ -85,8 +88,12 @@ useEffect(() => {
     setSelectedNode(node);
   };
 
-  const [remoteHighlightColor, setRemoteHighlightColor] = useState<string | null>(null);
-  const [selectingUserName, setSelectingUserName] = useState<string | null>(null); // technically not needed, could extend functionality to also show user name next to highlighted node
+  const [remoteHighlightColor, setRemoteHighlightColor] = useState<
+    string | null
+  >(null);
+  const [selectingUserName, setSelectingUserName] = useState<string | null>(
+    null,
+  ); // technically not needed, could extend functionality to also show user name next to highlighted node
 
   useEffect(() => {
     const checkRemoteSelection = () => {
@@ -123,49 +130,54 @@ useEffect(() => {
   }, [id]); // Re-run if node ID changes
 
   return (
-    <div
-      className="grand-parent"
-      style={{ width: 320, height: 400 }}
-    >
+    <div className="grand-parent" style={{ width: 320, height: 400 }}>
       <div className="grand-parent">
         <div
           className={cn(
             "w-[320px] bg-white border border-solid border-gray-700 shadow-md relative",
             selected && "border-blue-500",
-            mixedView && "border-purple-400"
+            mixedView && "border-purple-400",
           )}
           style={{
-            borderColor: remoteHighlightColor ? remoteHighlightColor : (selected ? "#3B82F6" : "#374151"),
+            borderColor: remoteHighlightColor
+              ? remoteHighlightColor
+              : selected
+                ? "#3B82F6"
+                : "#374151",
             boxShadow: remoteHighlightColor
               ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}` // Glowing aura ring
               : undefined,
-            height: `400px`
-          }}>
+            height: `400px`,
+          }}
+        >
           {missingQubitsError && (
-  <div className="absolute top-2 right-[-40px] group z-20">
-    <AlertCircle className="text-red-600 w-5 h-5" />
-    <div className="absolute top-5 left-[30px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[180px] whitespace-nowrap">
-      Number of qubits is required.
-    </div>
-  </div>
-)}
+            <div className="absolute top-2 right-[-40px] group z-20">
+              <AlertCircle className="text-red-600 w-5 h-5" />
+              <div className="absolute top-5 left-[30px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[180px] whitespace-nowrap">
+                Number of qubits is required.
+              </div>
+            </div>
+          )}
 
-{missingMaskError && (
-  <div className="absolute top-2 right-[-40px] group z-20">
-    <AlertCircle className="text-red-600 w-5 h-5" />
-    <div
-      className="absolute left-[30px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[180px] whitespace-nowrap"
-      style={{
-        top: missingQubitsError ? "50px" : "35px",
-      }}
-    >
-      Balanced mask is required.
-    </div>
-  </div>
-)}
+          {missingMaskError && (
+            <div className="absolute top-2 right-[-40px] group z-20">
+              <AlertCircle className="text-red-600 w-5 h-5" />
+              <div
+                className="absolute left-[30px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[180px] whitespace-nowrap"
+                style={{
+                  top: missingQubitsError ? "50px" : "35px",
+                }}
+              >
+                Balanced mask is required.
+              </div>
+            </div>
+          )}
           {/* HEADER */}
-          <div className="w-full flex items-center" style={{ height: '52px' }}>
-            <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
+          <div className="w-full flex items-center" style={{ height: "52px" }}>
+            <div
+              className="w-full bg-blue-300 py-1 px-2 flex items-center"
+              style={{ height: "inherit" }}
+            >
               <img
                 src="deutschJozsaIcon.png"
                 alt="DJ icon"
@@ -192,17 +204,14 @@ useEffect(() => {
 
           {/* CONFIGURATION BODY */}
           <div className="px-4 py-1 mt-2">
-
             {/* NUMBER OF QUBITS / INPUT SIZE */}
             <div>
               <label className="text-xs font-semibold text-gray-700">
-                {mixedView ? (
-                  "Number of Qubits / Input Size (Bits):"
-                ) : experienceLevel === "explorer" ? (
-                  "Input Size (Bits):"
-                ) : (
-                  "Number of Qubits:"
-                )}
+                {mixedView
+                  ? "Number of Qubits / Input Size (Bits):"
+                  : experienceLevel === "explorer"
+                    ? "Input Size (Bits):"
+                    : "Number of Qubits:"}
               </label>
               <input
                 type="text"
@@ -223,13 +232,11 @@ useEffect(() => {
             {/* ORACLE TYPE / BEHAVIOR TYPE */}
             <div className="mt-2">
               <label className="text-xs font-semibold text-gray-700">
-                {mixedView ? (
-                  "Oracle Type / Behavior Type:"
-                ) : experienceLevel === "explorer" ? (
-                  "Behavior Type:"
-                ) : (
-                  "Oracle Type:"
-                )}
+                {mixedView
+                  ? "Oracle Type / Behavior Type:"
+                  : experienceLevel === "explorer"
+                    ? "Behavior Type:"
+                    : "Oracle Type:"}
               </label>
               <select
                 className="w-full p-1 mt-1 bg-white rounded-full text-center text-sm text-black border-2 border-blue-200 outline-none focus:border-blue-400 transition-colors"
@@ -246,7 +253,9 @@ useEffect(() => {
 
             {oracleType === "balanced" ? (
               <div className="mt-2">
-                <label className="text-xs font-semibold text-gray-700">Balanced Mask:</label>
+                <label className="text-xs font-semibold text-gray-700">
+                  Balanced Mask:
+                </label>
                 <input
                   type="text"
                   inputMode="numeric"
@@ -265,7 +274,9 @@ useEffect(() => {
               </div>
             ) : (
               <div className="mt-2">
-                <label className="text-xs font-semibold text-gray-700">Constant Value:</label>
+                <label className="text-xs font-semibold text-gray-700">
+                  Constant Value:
+                </label>
                 <select
                   className="w-full p-2 mt-1 text-sm text-center text-black border-2 border-blue-200 rounded-full outline-none focus:border-blue-400 transition-colors"
                   value={constantValue}
