@@ -3,7 +3,6 @@ import { Node, Handle, Position } from "reactflow";
 import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
 import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
 import OutputPort from "../utils/outputPort";
 import { quantumConstructColor } from "@/constants";
 import { awareness } from "@/yjs"; // Imported the room awareness configuration
@@ -27,8 +26,8 @@ export const GroverDiffuserNode = memo((node: Node) => {
 
   // Added context state tracking for room collaborative view states
   const [mixedView, setMixedView] = useState(false);
-  const [hasPioneerUser, setHasPioneerUser] = useState(false);
-  const [hasExplorerUser, setHasExplorerUser] = useState(false);
+  const [_hasPioneerUser, setHasPioneerUser] = useState(false);
+  const [_hasExplorerUser, setHasExplorerUser] = useState(false);
 
   // Monitor awareness states for active users and their selected roles
   useEffect(() => {
@@ -60,30 +59,20 @@ export const GroverDiffuserNode = memo((node: Node) => {
   const [remoteHighlightColor, setRemoteHighlightColor] = useState<
     string | null
   >(null);
-  const [selectingUserName, setSelectingUserName] = useState<string | null>(
-    null,
-  ); // technically not needed, could extend functionality to also show user name next to highlighted node
 
   useEffect(() => {
     const checkRemoteSelection = () => {
       let foundColor: string | null = null;
-      let foundName: string | null = null;
 
       // Loop through all active client states in the room
-      awareness.getStates().forEach((state: any, clientId: number) => {
-        // Skip your own client ID so you don't highlight it with your own color
-        // if (clientId === awareness.clientID) return;
-
+      awareness.getStates().forEach((state: any) => {
         // Check if a peer has selected this specific node ID
         if (state.cursor && state.cursor.mySelectedNodeId === id) {
           foundColor = state.cursor.color;
-          foundName = state.cursor.name;
         }
       });
 
       setRemoteHighlightColor(foundColor);
-      setSelectingUserName(foundName);
-      console.log("COLOR", foundColor, foundName);
     };
 
     // Run once immediately on mount
