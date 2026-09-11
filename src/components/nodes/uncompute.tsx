@@ -24,12 +24,22 @@ export const UncomputeNode = memo((node: Node) => {
     const newInputId = `input-${inputs.length + 1}`;
     const newOutputId = `output-${outputs.length + 1}`;
 
-    setInputs([...inputs, { id: newInputId, label: `Variable ${inputs.length + 1}` }]);
-    setOutputs([...outputs, { id: newOutputId, label: `Output ${outputs.length + 1}`, value: "" }]);
+    setInputs([
+      ...inputs,
+      { id: newInputId, label: `Variable ${inputs.length + 1}` },
+    ]);
+    setOutputs([
+      ...outputs,
+      { id: newOutputId, label: `Output ${outputs.length + 1}`, value: "" },
+    ]);
   };
 
   const handleOutputChange = (id, newValue) => {
-    setOutputs(outputs.map(output => output.id === id ? { ...output, value: newValue } : output));
+    setOutputs(
+      outputs.map((output) =>
+        output.id === id ? { ...output, value: newValue } : output,
+      ),
+    );
   };
   const handleYChange = (e) => {
     const value = e.target.value;
@@ -43,12 +53,17 @@ export const UncomputeNode = memo((node: Node) => {
 
   const baseHeight = 160;
   const extraHeightPerVariable = 20;
-  const dynamicHeight = baseHeight + (inputs.length + outputs.length) * extraHeightPerVariable;
+  const dynamicHeight =
+    baseHeight + (inputs.length + outputs.length) * extraHeightPerVariable;
 
   const id = node.id;
 
-  const [remoteHighlightColor, setRemoteHighlightColor] = useState<string | null>(null);
-  const [selectingUserName, setSelectingUserName] = useState<string | null>(null); // technically not needed, could extend functionality to also show user name next to highlighted node
+  const [remoteHighlightColor, setRemoteHighlightColor] = useState<
+    string | null
+  >(null);
+  const [selectingUserName, setSelectingUserName] = useState<string | null>(
+    null,
+  ); // technically not needed, could extend functionality to also show user name next to highlighted node
 
   useEffect(() => {
     const checkRemoteSelection = () => {
@@ -87,12 +102,20 @@ export const UncomputeNode = memo((node: Node) => {
   return (
     <div className="grand-parent">
       <div
-        className={"w-[320px] bg-white border border-solid border-gray-700 shadow-md"}
-        style={{ height: `${dynamicHeight}px`,
-                  borderColor: remoteHighlightColor ? remoteHighlightColor : (selected? "#3B82F6" : "#374151"),
-                  boxShadow: remoteHighlightColor 
-                      ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}` // Glowing aura ring
-                      : undefined,  }}
+        className={
+          "w-[320px] bg-white border border-solid border-gray-700 shadow-md"
+        }
+        style={{
+          height: `${dynamicHeight}px`,
+          borderColor: remoteHighlightColor
+            ? remoteHighlightColor
+            : selected
+              ? "#3B82F6"
+              : "#374151",
+          boxShadow: remoteHighlightColor
+            ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}` // Glowing aura ring
+            : undefined,
+        }}
       >
         <div className="w-full bg-green-300 text-black text-center font-semibold py-1 truncate">
           {data.label}
@@ -100,10 +123,16 @@ export const UncomputeNode = memo((node: Node) => {
 
         <div className="custom-node-port-in mb-3 mt-2">
           {inputs.map((input, index) => (
-            <div className="relative flex items-center overflow-visible mb-1" key={input.id}>
-              <div className="relative flex items-center justify-between text-sm text-black py-1 px-3 rounded-none w-full" style={{
-                backgroundColor: 'rgba(124, 202, 154, 0.2)',
-              }}>
+            <div
+              className="relative flex items-center overflow-visible mb-1"
+              key={input.id}
+            >
+              <div
+                className="relative flex items-center justify-between text-sm text-black py-1 px-3 rounded-none w-full"
+                style={{
+                  backgroundColor: "rgba(124, 202, 154, 0.2)",
+                }}
+              >
                 <Handle
                   type="target"
                   id={input.label}
@@ -124,7 +153,10 @@ export const UncomputeNode = memo((node: Node) => {
             </div>
           ))}
 
-          <button onClick={addVariable} className="add-variable-button mt-2 w-full bg-gray-300 py-1 rounded text-sm text-black">
+          <button
+            onClick={addVariable}
+            className="add-variable-button mt-2 w-full bg-gray-300 py-1 rounded text-sm text-black"
+          >
             + Add More Variables
           </button>
         </div>
