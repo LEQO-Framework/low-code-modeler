@@ -1,17 +1,13 @@
-import { memo, useState, useRef, useEffect } from "react";
+import { memo, useState, useEffect } from "react";
 import {
   Handle,
   Position,
   Node,
   Edge,
   useUpdateNodeInternals,
-  NodeResizer,
 } from "reactflow";
-import { motion } from "framer-motion";
 import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
-import { Button, Input } from "antd";
-import { cn } from "@/lib/utils";
 import { awareness } from "@/yjs";
 
 const selector = (state: {
@@ -32,8 +28,7 @@ const selector = (state: {
 
 export const ControlStructureNode = memo((node: Node) => {
   const { data, selected } = node;
-  const [showingChildren, setShowingChildren] = useState(false);
-  const { setNodes, updateNodeValue, setSelectedNode, edges } = useStore(
+  const { updateNodeValue, setSelectedNode, edges } = useStore(
     selector,
     shallow,
   );
@@ -50,7 +45,7 @@ export const ControlStructureNode = memo((node: Node) => {
   );
   const [quantumOutputHandles, setQuantumOutputHandles] = useState([0]);
   const [classicalOutputHandles, setClassicalOutputHandles] = useState([0]);
-  const [condition, setCondition] = useState("");
+  const [condition, _setCondition] = useState("");
 
   console.log("quantumHandles", quantumHandles);
   console.log("data.numberQuantumInputs", data.numberQuantumInputs);
@@ -72,15 +67,6 @@ export const ControlStructureNode = memo((node: Node) => {
           `classicalHandleInputDynamic${node.id}-${index}`,
       ),
     );
-
-    //const lastIndex = quantumHandles[quantumHandles.length - 1];
-    //const lastHandleId = `quantumHandleInputInitialization${node.id}-${lastIndex}`;
-    //const isLastConnected = edges.some(edge => edge.targetHandle === lastHandleId);
-
-    // Add only if not already added
-    // if (isLastConnected && quantumHandles.length === connectedQuantumInputs.length) {
-    //   setQuantumHandles((prev) => [...prev, prev.length]);
-    // }
 
     if (node.data.condition !== null) {
       //updateNodeValue(node.id, "condition", node.data.condition);
@@ -107,9 +93,6 @@ export const ControlStructureNode = memo((node: Node) => {
   const [remoteHighlightColor, setRemoteHighlightColor] = useState<
     string | null
   >(null);
-  const [selectingUserName, setSelectingUserName] = useState<string | null>(
-    null,
-  ); // technically not needed, could extend functionality to also show user name next to highlighted node
 
   useEffect(() => {
     const checkRemoteSelection = () => {
@@ -117,10 +100,7 @@ export const ControlStructureNode = memo((node: Node) => {
       let foundName: string | null = null;
 
       // Loop through all active client states in the room
-      awareness.getStates().forEach((state: any, clientId: number) => {
-        // Skip your own client ID so you don't highlight it with your own color
-        // if (clientId === awareness.clientID) return;
-
+      awareness.getStates().forEach((state: any) => {
         // Check if a peer has selected this specific node ID
         if (state.cursor && state.cursor.mySelectedNodeId === id) {
           foundColor = state.cursor.color;
@@ -129,7 +109,6 @@ export const ControlStructureNode = memo((node: Node) => {
       });
 
       setRemoteHighlightColor(foundColor);
-      setSelectingUserName(foundName);
       console.log("COLOR", foundColor, foundName);
     };
 
@@ -279,9 +258,6 @@ export const ControlStructureNode = memo((node: Node) => {
               >
                 {classicalHandles.map((index, i) => {
                   const handleId = `classicalHandleInputInitialization${node.id}-${index}`;
-                  const isConnected = edges.some(
-                    (edge) => edge.targetHandle === handleId,
-                  );
                   return (
                     <Handle
                       key={handleId}
@@ -310,9 +286,6 @@ export const ControlStructureNode = memo((node: Node) => {
               >
                 {quantumHandles.map((index, i) => {
                   const handleId = `quantumHandleInputInitialization${node.id}-${index}`;
-                  const isConnected = edges.some(
-                    (edge) => edge.targetHandle === handleId,
-                  );
                   return (
                     <Handle
                       key={handleId}
@@ -508,9 +481,6 @@ export const ControlStructureNode = memo((node: Node) => {
                     (edge) => edge.targetHandle === handleInputId,
                   );
                   const handleId = `classicalHandleInputDynamic${node.id}-${index}`;
-                  const isConnected = edges.some(
-                    (edge) => edge.targetHandle === handleId,
-                  );
                   return (
                     isInputConnected && (
                       <Handle
@@ -545,9 +515,6 @@ export const ControlStructureNode = memo((node: Node) => {
                     (edge) => edge.targetHandle === handleInputId,
                   );
                   const handleId = `quantumHandleInputDynamic${node.id}-${index}`;
-                  const isConnected = edges.some(
-                    (edge) => edge.targetHandle === handleId,
-                  );
                   return (
                     isInputConnected && (
                       <Handle
@@ -619,7 +586,6 @@ export const ControlStructureNode = memo((node: Node) => {
                     (edge) => edge.targetHandle === handleOutputId,
                   );
                   const handleId = `quantumHandleOutputDynamic${node.id}-${index}`;
-                  //const isConnected = edges.some(edge => edge.sourceHandle === handleId);
                   return (
                     isOutputConnected && (
                       <Handle
