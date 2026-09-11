@@ -4229,7 +4229,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
       const QUANTME_NAMESPACE_PULL = "http://quantil.org/quantme/pull";
 
       // Create service template
-      let serviceTemplate = await createServiceTemplate(
+      let _serviceTemplate = await createServiceTemplate(
         activityName,
         namespace,
       );
@@ -4241,7 +4241,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
         activityName + "Container",
         OPENTOSCA_NAMESPACE_NODETYPE,
       );
-      serviceTemplate = await updateServiceTemplate(
+      _serviceTemplate = await updateServiceTemplate(
         activityName,
         QUANTME_NAMESPACE_PULL,
       );
@@ -4341,22 +4341,6 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
   ): change is (NodeChange | EdgeChange) & { id: string } {
     return "id" in change;
   }
-
-  const getGlobalLocks = () => {
-    const states = awareness.getStates();
-
-    const lockMap = new Map<string, number>();
-
-    states.forEach((state, clientId) => {
-      if (state?.locks?.nodeIds) {
-        state.locks.nodeIds.forEach((nodeId: string) => {
-          lockMap.set(nodeId, clientId);
-        });
-      }
-    });
-
-    return lockMap;
-  };
 
   // broadcast selection via awareness
   useEffect(() => {
