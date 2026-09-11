@@ -12,7 +12,6 @@ import { shallow } from "zustand/shallow";
 import AncillaPort from "../utils/ancillaPort";
 import UncomputePort from "../utils/uncomputePort";
 import OutputPort from "../utils/outputPort";
-import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import {
   ancillaConstructColor,
@@ -23,7 +22,6 @@ import {
 } from "@/constants";
 import {
   findDuplicateOutputIdentifier,
-  findDuplicateOutputIdentifiers,
   findDuplicateOutputIdentifiersInsideNode,
 } from "../utils/utils";
 import { AlertCircle } from "lucide-react";
@@ -61,45 +59,28 @@ export const AlgorithmNode = memo((node: Node) => {
 
   const inputHandleCount = numberQuantumInputs + numberClassicalInputs;
   const outputHandleCount = numberQuantumOutputs + numberClassicalOutputs;
-  //console.log(handleCount)
 
   const handleGap = 40;
   const handleOffset = 15;
 
-  const nodeHeight = Math.max(
-    handleOffset * 2 + inputHandleCount * handleGap + outputHandleCount * 80,
-    100,
-  );
   const {
     edges,
     nodes,
     updateNodeValue,
     setSelectedNode,
     setNewEdges,
-    setEdges,
     ancillaMode,
   } = useStore(selector, shallow);
-  const alledges = getConnectedEdges([node], edges);
 
-  const [inputs, setInputs] = useState(data.inputs || []);
   const [outputs, setOutputs] = useState(data.outputs || []);
-  const [classicalOutputs, setClassicalOutputs] = useState(
-    data.classicalOutputs || [],
-  );
-  const [yError, setYError] = useState(false);
-  const [y, setY] = useState("");
-  const [outputIdentifierError, setOutputIdentifierError] = useState(false);
-  const [showingChildren, setShowingChildren] = useState(false);
   const [sizeErrors, setSizeErrors] = useState<{ [key: number]: boolean }>({});
-  const [classicalSizeErrors, setClassicalSizeErrors] = useState<{
+  const [classicalSizeErrors] = useState<{
     [key: number]: boolean;
   }>({});
   const [isEditingLabel, setIsEditingLabel] = useState(false);
   const [editableLabel, setEditableLabel] = useState(data.label || "");
   const updateNodeInternals = useUpdateNodeInternals();
   const [outputIdentifierErrors, setOutputIdentifierErrors] = useState({});
-  const [classicalOutputIdentifierErrors, setClassicalOutputIdentifierErrors] =
-    useState({});
 
   const handleLabelChange = () => {
     setIsEditingLabel(false);
@@ -149,17 +130,11 @@ export const AlgorithmNode = memo((node: Node) => {
   };
 
   useEffect(() => {
-    const identifier = node.data.outputIdentifier;
     console.log("nodes", nodes);
     console.log("edges", edges);
-    //let selectedNode = nodes.find(n => n.id === node.id);
     let selectedNode = node;
     let newErrors = {};
     console.log("ALGORITHM", outputs);
-    //const classicalOutputs = outputs.find(o => {o.type === "classical"})
-    //const quantumOutputs = outputs.find(o => {o.type === "quantum"})
-    //console.log("classical outputs", classicalOutputs)
-    //console.log("quantum outputs", quantumOutputs)
 
     // quantum outputs
     outputs.forEach((output, index) => {
@@ -269,17 +244,15 @@ export const AlgorithmNode = memo((node: Node) => {
   >(null);
   const [selectingUserName, setSelectingUserName] = useState<string | null>(
     null,
-  ); // technically not needed, could extend functionality to also show user name next to highlighted node
-
+  );
   useEffect(() => {
     const checkRemoteSelection = () => {
       let foundColor: string | null = null;
       let foundName: string | null = null;
 
       // Loop through all active client states in the room
-      awareness.getStates().forEach((state: any, clientId: number) => {
+      awareness.getStates().forEach((state: any) => {
         // Skip your own client ID so you don't highlight it with your own color
-        // if (clientId === awareness.clientID) return;
 
         if (state.cursor && state.cursor.mySelectedNodeId === id) {
           foundColor = state.cursor.color;
