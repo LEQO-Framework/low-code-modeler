@@ -1298,12 +1298,7 @@ If none apply, return { "algorithms": [] }.
 
     // Existing node validation
     flow.nodes?.forEach((node) => {
-      const {
-        outputIdentifier,
-        label,
-        condition,
-        operator,
-      } = node.data || {};
+      const { outputIdentifier, label, condition, operator } = node.data || {};
       const connectedSources = nodeConnections.get(node.id) || [];
       const inputCount = connectedSources.length;
 
@@ -3676,7 +3671,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
       console.log(horizontalLine);
       const bounds = getNodesBounds(currentNodes);
       console.log(bounds);
-      const { x, y, } = reactFlowInstance.getViewport();
+      const { x, y } = reactFlowInstance.getViewport();
       console.log(x);
       console.log(y);
       const snapThreshold = 0; // Adjust threshold for snapping
