@@ -2236,7 +2236,7 @@ If none apply, return { "algorithms": [] }.
           if (updatedNodes !== currentNodes) {
             reactFlowInstance.setNodes(updatedNodes);
           }
-        } catch (e) {
+        } catch {
           // Node nicht gefunden – kein Update nötig
         }
       }
