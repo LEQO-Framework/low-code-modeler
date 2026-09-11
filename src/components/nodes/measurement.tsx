@@ -5,13 +5,16 @@ import { Edge, Handle, Node, Position, getConnectedEdges } from "reactflow";
 import { shallow } from "zustand/shallow";
 import OutputPort from "../utils/outputPort";
 import { AlertCircle } from "lucide-react";
-import { findDuplicateOutputIdentifiers, findDuplicateOutputIdentifiersInsideNode } from "../utils/utils";
+import {
+  findDuplicateOutputIdentifiers,
+  findDuplicateOutputIdentifiersInsideNode,
+} from "../utils/utils";
 import { awareness } from "@/yjs";
 
 const selector = (state: {
   selectedNode: Node | null;
-  edges: Edge[],
-  nodes: Node[],
+  edges: Edge[];
+  nodes: Node[];
   updateNodeValue: (nodeId: string, field: string, nodeVal: any) => void;
   setNodes: (node: Node) => void;
   setSelectedNode: (node: Node) => void;
@@ -23,25 +26,26 @@ const selector = (state: {
   setNodes: state.setNodes,
   updateNodeValue: state.updateNodeValue,
   setSelectedNode: state.setSelectedNode,
-  experienceLevel: state.experienceLevel
+  experienceLevel: state.experienceLevel,
 });
 
 export const MeasurementNode = memo((node: Node) => {
   const { data, selected } = node;
-  const { edges, nodes, updateNodeValue, setSelectedNode, experienceLevel } = useStore(selector, shallow);
+  const { edges, nodes, updateNodeValue, setSelectedNode, experienceLevel } =
+    useStore(selector, shallow);
   const alledges = getConnectedEdges([node], edges);
   const [y, setY] = useState("");
-  const [classicalOutputIdentifierError, setClassicalOutputIdentifierError] = useState(false);
+  const [classicalOutputIdentifierError, setClassicalOutputIdentifierError] =
+    useState(false);
   const [outputIdentifierError, setOutputIdentifierError] = useState(false);
   const [outputIdentifier, setOutputIdentifier] = useState("");
   const [operation, setOperation] = useState("");
   const [showingChildren, setShowingChildren] = useState(false);
   const [sizeError, setSizeError] = useState(false);
   const [classicalSizeError, setClassicalSizeError] = useState(false);
-    const [mixedView, setMixedView] = useState(false);
+  const [mixedView, setMixedView] = useState(false);
   const [hasPioneerUser, setHasPioneerUser] = useState(false);
   const [hasExplorerUser, setHasExplorerUser] = useState(false);
-
 
   const [inputs, setInputs] = useState(data.inputs || []);
   const [outputs, setOutputs] = useState(data.outputs || []);
@@ -53,27 +57,31 @@ export const MeasurementNode = memo((node: Node) => {
   const xRef = useRef(null);
   const yRef = useRef(null);
 
-
   const baseHeight = 400;
   const extraHeightPerVariable = 40;
   const dynamicHeight = baseHeight + extraHeightPerVariable;
-  console.log(dynamicHeight)
-
+  console.log(dynamicHeight);
 
   useEffect(() => {
     const identifier = node.data.outputIdentifier;
-    console.log(nodes)
-    let selectedNode = nodes.find(n => n.id === node.id);
+    console.log(nodes);
+    let selectedNode = nodes.find((n) => n.id === node.id);
     const duplicates = findDuplicateOutputIdentifiers(nodes, node.id);
     let isDuplicate = duplicates.has(identifier);
     const startsWithDigit = /^\d/.test(outputIdentifier);
     setIndices(node.data.indices);
 
-    isDuplicate = isDuplicate || findDuplicateOutputIdentifiersInsideNode(nodes, selectedNode, identifier) || startsWithDigit;
+    isDuplicate =
+      isDuplicate ||
+      findDuplicateOutputIdentifiersInsideNode(
+        nodes,
+        selectedNode,
+        identifier,
+      ) ||
+      startsWithDigit;
 
     setOutputIdentifierError(isDuplicate && identifier !== "");
     setClassicalOutputIdentifierError(isDuplicate && identifier !== "");
-
   }, [nodes, node.data]);
 
   const handleYChange = (e, field) => {
@@ -110,8 +118,12 @@ export const MeasurementNode = memo((node: Node) => {
 
   const id = node.id;
 
-  const [remoteHighlightColor, setRemoteHighlightColor] = useState<string | null>(null);
-  const [selectingUserName, setSelectingUserName] = useState<string | null>(null); // technically not needed, could extend functionality to also show user name next to highlighted node
+  const [remoteHighlightColor, setRemoteHighlightColor] = useState<
+    string | null
+  >(null);
+  const [selectingUserName, setSelectingUserName] = useState<string | null>(
+    null,
+  ); // technically not needed, could extend functionality to also show user name next to highlighted node
 
   useEffect(() => {
     const checkRemoteSelection = () => {
@@ -153,7 +165,11 @@ export const MeasurementNode = memo((node: Node) => {
         className={"w-[320px] bg-white border border-solid shadow-md"}
         style={{
           height: `${dynamicHeight}px`,
-          borderColor: remoteHighlightColor ? remoteHighlightColor : (selected ? "#3B82F6" : "#374151"),
+          borderColor: remoteHighlightColor
+            ? remoteHighlightColor
+            : selected
+              ? "#3B82F6"
+              : "#374151",
           boxShadow: remoteHighlightColor
             ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}` // Glowing aura ring
             : undefined,
@@ -183,7 +199,7 @@ export const MeasurementNode = memo((node: Node) => {
             </div>
           </div>
         )}
-        <div className="w-full flex items-center" style={{ height: '52px' }}>
+        <div className="w-full flex items-center" style={{ height: "52px" }}>
           {node.data.implementation && (
             <img
               src="implementation-icon.png"
@@ -191,38 +207,50 @@ export const MeasurementNode = memo((node: Node) => {
               className="absolute -top-4 -right-4 w-8 h-8"
             />
           )}
-          <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
-            <img src="measurementIcon2.png" alt="icon" className="w-[40px] h-[40px] object-contain flex-shrink-0" />
+          <div
+            className="w-full bg-blue-300 py-1 px-2 flex items-center"
+            style={{ height: "inherit" }}
+          >
+            <img
+              src="measurementIcon2.png"
+              alt="icon"
+              className="w-[40px] h-[40px] object-contain flex-shrink-0"
+            />
             <div className="h-full w-[1px] bg-black mx-2" />
-            <span className="truncate font-semibold leading-none">{mixedView ? (
-                  <span className="font-semibold text-xs text-blue-900 block">
-                    P: Measurement / E: Readout the Result
-                  </span>
-                ) : experienceLevel === "explorer" ? (
-                  <span className="font-semibold text-sm">
-                    Readout the Result
-                  </span>
-                ) : (
-                  <span className="font-semibold text-sm">
-                    Measurement
-                  </span>
-                )}</span>
+            <span className="truncate font-semibold leading-none">
+              {mixedView ? (
+                <span className="font-semibold text-xs text-blue-900 block">
+                  P: Measurement / E: Readout the Result
+                </span>
+              ) : experienceLevel === "explorer" ? (
+                <span className="font-semibold text-sm">
+                  Readout the Result
+                </span>
+              ) : (
+                <span className="font-semibold text-sm">Measurement</span>
+              )}
+            </span>
           </div>
         </div>
         <div className="flex justify-center">
           <div className="custom-node-port-in mb-3 mt-2">
             <div className="relative flex flex-col items-start text-black text-center overflow-visible">
-
               <div className=" ml-6">
-                <label htmlFor="indices" className="text-black text-xs mb-1 block">
+                <label
+                  htmlFor="indices"
+                  className="text-black text-xs mb-1 block"
+                >
                   Indices
                 </label>
                 <input
                   ref={xRef}
                   id="indices"
                   type="text"
-                  className={`p-1 text-black opacity-75 text-xs rounded-full w-[130px] text-center border-2 ${error ? "bg-red-500 border-red-500" : "bg-white border-blue-300"
-                    }`}
+                  className={`p-1 text-black opacity-75 text-xs rounded-full w-[130px] text-center border-2 ${
+                    error
+                      ? "bg-red-500 border-red-500"
+                      : "bg-white border-blue-300"
+                  }`}
                   value={node.data.indices || indices}
                   placeholder="e.g. 1,2,3"
                   onChange={(e) => handleYChange(e, "indices")}
@@ -230,14 +258,16 @@ export const MeasurementNode = memo((node: Node) => {
               </div>
             </div>
           </div>
-
-
         </div>
         <div className="custom-node-port-in mb-3 mt-2">
-
           <div className="relative flex flex-col items-start text-black text-center overflow-visible">
-            <div style={{ padding: "4px", backgroundColor: "rgba(105, 145, 210, 0.2)", width: "45%" }}>
-
+            <div
+              style={{
+                padding: "4px",
+                backgroundColor: "rgba(105, 145, 210, 0.2)",
+                width: "45%",
+              }}
+            >
               <div className="flex items-center space-x-2 mt-2">
                 <Handle
                   type="target"
@@ -246,7 +276,13 @@ export const MeasurementNode = memo((node: Node) => {
                   className="z-10 circle-port-op !bg-blue-300 !border-black"
                   style={{ top: "20px" }}
                   isValidConnection={(connection) => true}
-                  isConnectable={edges.filter(edge => edge.targetHandle === `quantumHandleMeasurementInput0${node.id}`).length < 1}
+                  isConnectable={
+                    edges.filter(
+                      (edge) =>
+                        edge.targetHandle ===
+                        `quantumHandleMeasurementInput0${node.id}`,
+                    ).length < 1
+                  }
                   isConnectableStart={false}
                 />
                 <div className="flex flex-col w-full text-center leading-tight">
@@ -257,12 +293,10 @@ export const MeasurementNode = memo((node: Node) => {
                     type: quantum register
                   </span>
                 </div>
-
               </div>
             </div>
           </div>
         </div>
-
 
         <div className="custom-node-port-out">
           <OutputPort
@@ -274,7 +308,9 @@ export const MeasurementNode = memo((node: Node) => {
             setOutputs={setOutputs}
             edges={edges}
             sizeError={classicalSizeError}
-            outputIdentifierError={(outputIdentifierError || startsWithDigitError)}
+            outputIdentifierError={
+              outputIdentifierError || startsWithDigitError
+            }
             updateNodeValue={updateNodeValue}
             setOutputIdentifierError={setClassicalOutputIdentifierError}
             setSizeError={setClassicalSizeError}
@@ -290,7 +326,9 @@ export const MeasurementNode = memo((node: Node) => {
             setOutputs={setOutputs}
             edges={edges}
             sizeError={sizeError}
-            outputIdentifierError={(outputIdentifierError || startsWithDigitError)}
+            outputIdentifierError={
+              outputIdentifierError || startsWithDigitError
+            }
             updateNodeValue={updateNodeValue}
             setOutputIdentifierError={setOutputIdentifierError}
             setSizeError={setSizeError}
@@ -298,9 +336,6 @@ export const MeasurementNode = memo((node: Node) => {
             active={false}
           />
         </div>
-
-
-
       </div>
     </div>
   );
