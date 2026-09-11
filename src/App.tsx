@@ -199,13 +199,11 @@ function App() {
     setExperienceLevel,
     setAncillaMode,
     setCompletionGuaranteed,
-    setContainsPlaceholder,
     setSelectedNode,
     setNodes,
     updateNodeValue,
     updateParent,
     updateChildren,
-    setEdges,
   } = useStore(useShallow(selector));
 
   // TODO: don't use if no collab mode
