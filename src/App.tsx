@@ -607,8 +607,6 @@ If none apply, return { "algorithms": [] }.
   const [deploymentId, setDeploymentId] = useState(null);
 
   const [expanded, setExpanded] = useState(false);
-  const [completionGuaranteedOption, setCompletionGuaranteedOption] =
-    useState("Yes");
 
   const { undo } = useStore((state) => ({
     undo: state.undo,
@@ -633,15 +631,13 @@ If none apply, return { "algorithms": [] }.
     [],
   );
   const [modalOpen, setModalOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState("");
+  const [, setLoading] = useState(false);
+  const [, setStatus] = useState("");
   const [modalStep, setModalStep] = useState(1);
   const [isQunicornOpen, setIsQunicornOpen] = useState(false);
   const [isPromptModalOpen, setIsPromptModalOpen] = useState(false);
-  const [loadingQunicorn, setLoadingQunicorn] = useState(true);
-  const [statusQunicorn, setStatusQunicorn] = useState(null);
   const [ancillaModelingOn, setAncillaModelingOn] = useState(false);
-  const [experienceLevelOn, setExperienceLevelOn] = useState("explorer");
+  const [, setExperienceLevelOn] = useState("explorer");
   const [compactVisualization, setCompactVisualization] = useState(false);
   const [collaborationModeOn, setCollaborationModeOn] = useState(false);
   //const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
@@ -650,7 +646,7 @@ If none apply, return { "algorithms": [] }.
     type: "success" | "error" | "info";
   } | null>(null);
 
-  const [workflow, setWorkflow] = useState("");
+  const [, setWorkflow] = useState("");
   const [panelWidth, setPanelWidth] = useState(350);
 
   const updateNodeInternals = useUpdateNodeInternals();
