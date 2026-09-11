@@ -4,7 +4,6 @@ import {
   Position,
   Node,
   Edge,
-  getConnectedEdges,
   useUpdateNodeInternals,
 } from "reactflow";
 import { useStore } from "@/config/store";
@@ -59,9 +58,6 @@ export const AlgorithmNode = memo((node: Node) => {
 
   const inputHandleCount = numberQuantumInputs + numberClassicalInputs;
   const outputHandleCount = numberQuantumOutputs + numberClassicalOutputs;
-
-  const handleGap = 40;
-  const handleOffset = 15;
 
   const {
     edges,
@@ -242,9 +238,7 @@ export const AlgorithmNode = memo((node: Node) => {
   const [remoteHighlightColor, setRemoteHighlightColor] = useState<
     string | null
   >(null);
-  const [selectingUserName, setSelectingUserName] = useState<string | null>(
-    null,
-  );
+
   useEffect(() => {
     const checkRemoteSelection = () => {
       let foundColor: string | null = null;
@@ -261,7 +255,6 @@ export const AlgorithmNode = memo((node: Node) => {
       });
 
       setRemoteHighlightColor(foundColor);
-      setSelectingUserName(foundName);
       console.log("COLOR", foundColor, foundName);
     };
 
