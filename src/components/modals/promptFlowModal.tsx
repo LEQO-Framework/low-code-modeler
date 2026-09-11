@@ -61,6 +61,14 @@ export default function PromptFlowModal({
     return { isValid: true, message: "" };
   };
 
+  // Detects whether a generic `number` input is asking for the number of clusters, so it can be
+  // validated the same way as the uniform-superposition size field: a positive integer of 1 or more.
+  const isClusterCountInput = (input: any): boolean => {
+    if (input.type !== "number") return false;
+    const text = `${input.question ?? ""} ${input.label ?? ""} ${input.name ?? ""}`.toLowerCase();
+    return text.includes("cluster");
+  };
+
   useEffect(() => {
     if (missingValues.length > 0) {
       const initialValues: Record<string, any> = {};
@@ -406,9 +414,57 @@ export default function PromptFlowModal({
                     </div>
                   )}
 
-                  {(input.type === "number" || input.type === "file" || input.type === "string") && (
+                  {(input.type === "number" && !isClusterCountInput(input)) && (
                     <input
-                      type={input.type === "number" ? "number" : "text"}
+                      type="number"
+                      className="w-full border p-2 rounded"
+                      placeholder={`Enter ${input.type}`}
+                      value={inputValues[itemKey] || ""}
+                      onChange={(e) => setInputValues({ ...inputValues, [itemKey]: e.target.value })}
+                    />
+                  )}
+
+                  {input.type === "number" && isClusterCountInput(input) && (
+                    <div className="space-y-1">
+                      <input
+                        type="number"
+                        min={1}
+                        step={1}
+                        className={`w-full border p-2 rounded ${
+                          inputErrors[itemKey] ? "border-red-500 bg-red-50" : "border-gray-300"
+                        }`}
+                        placeholder="Enter number of clusters (e.g. 1, 2, 3)"
+                        value={inputValues[itemKey] || ""}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          setInputValues({ ...inputValues, [itemKey]: value });
+                          const { isValid, message } = validateSizeInput(value, false);
+                          setInputErrors({ ...inputErrors, [itemKey]: isValid ? "" : message });
+                        }}
+                        onBlur={(e) => {
+                          const { isValid, message } = validateSizeInput(e.target.value, false);
+                          setInputErrors({ ...inputErrors, [itemKey]: isValid ? "" : message });
+                        }}
+                      />
+                      {inputErrors[itemKey] && (
+                        <p className="text-red-500 text-sm mt-1">{inputErrors[itemKey]}</p>
+                      )}
+                    </div>
+                  )}
+
+                  {input.type === "file" && (
+                    <input
+                      type="text"
+                      className="w-full border p-2 rounded"
+                      placeholder={`Enter ${input.type}`}
+                      value={inputValues[itemKey] || ""}
+                      onChange={(e) => setInputValues({ ...inputValues, [itemKey]: e.target.value })}
+                    />
+                  )}
+
+                  {(input.type === "string") && (
+                    <input
+                      type="text"
                       className="w-full border p-2 rounded"
                       placeholder={`Enter ${input.type}`}
                       value={inputValues[itemKey] || ""}
