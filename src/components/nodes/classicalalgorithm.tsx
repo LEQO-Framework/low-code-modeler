@@ -3,7 +3,6 @@ import { Handle, Position, Node, useUpdateNodeInternals } from "reactflow";
 import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
 import OutputPort from "../utils/outputPort";
-import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { classicalConstructColor } from "@/constants";
 import {
@@ -29,14 +28,8 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
   const numberInputs = data.numberClassicalInputs || 0;
   const numberOutputs = data.numberClassicalOutputs || 0;
 
-  const {
-    edges,
-    nodes,
-    updateNodeValue,
-    setSelectedNode,
-    setNewEdges,
-    ancillaMode,
-  } = useStore(selector, shallow);
+  const { edges, nodes, updateNodeValue, setSelectedNode, ancillaMode } =
+    useStore(selector, shallow);
   const updateNodeInternals = useUpdateNodeInternals();
 
   const [outputs, setOutputs] = useState(data.outputs || []);
@@ -140,33 +133,23 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
 
   const id = node.id;
 
-  const [remoteHighlightColor, setRemoteHighlightColor] = useState<
+  const [_remoteHighlightColor, setRemoteHighlightColor] = useState<
     string | null
   >(null);
-  const [selectingUserName, setSelectingUserName] = useState<string | null>(
-    null,
-  ); // technically not needed, could extend functionality to also show user name next to highlighted node
 
   useEffect(() => {
     const checkRemoteSelection = () => {
       let foundColor: string | null = null;
-      let foundName: string | null = null;
 
       // Loop through all active client states in the room
       awareness.getStates().forEach((state: any, clientId: number) => {
-        // Skip your own client ID so you don't highlight it with your own color
-        // if (clientId === awareness.clientID) return;
-
         // Check if a peer has selected this specific node ID
         if (state.cursor && state.cursor.mySelectedNodeId === id) {
           foundColor = state.cursor.color;
-          foundName = state.cursor.name;
         }
       });
 
       setRemoteHighlightColor(foundColor);
-      setSelectingUserName(foundName);
-      console.log("COLOR", foundColor, foundName);
     };
 
     // Run once immediately on mount
