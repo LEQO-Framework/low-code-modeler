@@ -60,7 +60,8 @@ interface PluginNodeData {
 
 export const PluginNode = memo((node: Node<PluginNodeData>) => {
   const { data, selected } = node;
-  const { nodes, edges, updateNodeValue, setSelectedNode, setNewEdges } = useStore(selector, shallow);
+  const { nodes, edges, updateNodeValue, setSelectedNode, setNewEdges } =
+    useStore(selector, shallow);
   const updateNodeInternals = useUpdateNodeInternals();
 
   const [isEditingLabel, setIsEditingLabel] = useState(false);
@@ -69,50 +70,57 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
   const [outputIdentifierError, setOutputIdentifierError] = useState(false);
   const [sizeError, setSizeError] = useState(false);
 
-  console.log(data)
+  console.log(data);
   const dataInputs = data.dataInputs || [];
   const dataOutputs = data.dataOutputs || [];
 
-  console.log(dataInputs)
+  console.log(dataInputs);
 
   useEffect(() => {
-  updateNodeInternals(node.id);
+    updateNodeInternals(node.id);
 
-  if (
-    node.data.clusteringAlgorithm === "k-medoids" &&
-    (!node.data.initializationMethod || !node.data.algorithm)
-  ) {
-    if (!node.data.initializationMethod) {
-      updateNodeValue(node.id, "initializationMethod", "random");
+    if (
+      node.data.clusteringAlgorithm === "k-medoids" &&
+      (!node.data.initializationMethod || !node.data.algorithm)
+    ) {
+      if (!node.data.initializationMethod) {
+        updateNodeValue(node.id, "initializationMethod", "random");
+      }
+
+      if (!node.data.algorithm) {
+        updateNodeValue(node.id, "algorithm", "pam");
+      }
     }
 
-    if (!node.data.algorithm) {
-      updateNodeValue(node.id, "algorithm", "pam");
+    if (
+      (node.data.label === "Quantum Clustering" ||
+        node.data.label === "Classical Clustering") &&
+      !node.data.clusteringAlgorithm
+    ) {
+      updateNodeValue(node.id, "clusteringAlgorithm", "k-means");
     }
-  }
-
-  if (
-    (node.data.label === "Quantum Clustering" ||
-      node.data.label === "Classical Clustering") &&
-    !node.data.clusteringAlgorithm
-  ) {
-    updateNodeValue(node.id, "clusteringAlgorithm", "k-means");
-  }
-}, [
-  node.id,
-  node.data.clusteringAlgorithm,
-  node.data.initializationMethod,
-  node.data.algorithm,
-]);
+  }, [
+    node.id,
+    node.data.clusteringAlgorithm,
+    node.data.initializationMethod,
+    node.data.algorithm,
+  ]);
   // Check if this is a clustering node (k-means)
-  const isClusteringNode = data.pluginName === 'Classical Clustering' || data.pluginName === 'Quantum Clustering';
+  const isClusteringNode =
+    data.pluginName === "Classical Clustering" ||
+    data.pluginName === "Quantum Clustering";
 
   // Check if this is a quantum plugin (for styling: blue + angular)
-  const isQuantumPlugin = data.pluginName?.toLowerCase().includes('quantum') ||
-    data.label?.toLowerCase().includes('quantum') ||
-    ['quantum neural network', 'varational quantum classifier', 'hybrid autoencoder'].includes(data.pluginName?.toLowerCase() || '');
+  const isQuantumPlugin =
+    data.pluginName?.toLowerCase().includes("quantum") ||
+    data.label?.toLowerCase().includes("quantum") ||
+    [
+      "quantum neural network",
+      "varational quantum classifier",
+      "hybrid autoencoder",
+    ].includes(data.pluginName?.toLowerCase() || "");
 
-  // Determine if an input is quantum or classical based on its parameter name                        
+  // Determine if an input is quantum or classical based on its parameter name
   const isQuantumIO = (param?: string) => {
     const p = (param ?? "").toLowerCase().trim();
     return p.startsWith("quantum");
@@ -135,8 +143,7 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
     } else {
       return dataType?.trim() ? dataType.trim() : "undefined";
     }
-  }
-
+  };
 
   const isKMedoids = data.clusteringAlgorithm === "k-medoids";
   const isOptics = data.clusteringAlgorithm === "optics";
@@ -148,7 +155,13 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
   const inputHeight = 40;
   const outputHeight = 130;
   const dropdownHeight = isClusteringNode ? 60 : 0;
-  const dynamicHeight = baseHeight + (dataInputs.length * inputHeight) + (dataOutputs.length > 0 ? outputHeight : 0) + dropdownHeight + kMedoidsExtraHeight + opticsExtraHeight;
+  const dynamicHeight =
+    baseHeight +
+    dataInputs.length * inputHeight +
+    (dataOutputs.length > 0 ? outputHeight : 0) +
+    dropdownHeight +
+    kMedoidsExtraHeight +
+    opticsExtraHeight;
 
   // Render lucide icon based on plugin name
   const renderIcon = () => {
@@ -161,121 +174,165 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
         borderRadius: isQuantumPlugin ? "0" : "25%",
       },
     };
-    const name = data.pluginName?.toLowerCase() || data.label?.toLowerCase() || '';
+    const name =
+      data.pluginName?.toLowerCase() || data.label?.toLowerCase() || "";
 
     // Quantum ML nodes
-    if (name.includes('quantum') && name.includes('clustering') || name === 'quantum clustering') {
-      return <img
+    if (
+      (name.includes("quantum") && name.includes("clustering")) ||
+      name === "quantum clustering"
+    ) {
+      return (
+        <img
+          src="quantumClusteringIcon.png"
+          alt="icon"
+          style={{ width: `${45}px`, height: `${45}px` }}
+          className="object-contain flex-shrink-0"
+        />
+      );
+    }
+    if (name === "quantum neural network") {
+      return (
+        <img
+          src="qnnIcon.png"
+          alt="icon"
+          style={{ width: `${45}px`, height: `${45}px` }}
+          className="object-contain flex-shrink-0"
+        />
+      );
+    }
+    if (
+      name === "quantum convolutional neural network" ||
+      name.includes("quantum-cnn")
+    ) {
+      return (
+        <img
+          src="qcnnIcon.png"
+          alt="icon"
+          style={{ width: `${45}px`, height: `${45}px` }}
+          className="object-contain flex-shrink-0"
+        />
+      );
+    }
+    if (name === "variational quantum classifier") {
+      return (
+        <img
+          src="variationalQuantumClassifier.png"
+          alt="icon"
+          style={{ width: `${45}px`, height: `${45}px` }}
+          className="object-contain flex-shrink-0"
+        />
+      );
+    }
+    if (
+      name.includes("quantum k-nearest") ||
+      name.includes("k-nearest-neighbour")
+    ) {
+      return (
+        <img
+          src="quantumKNearestNeighbor.png"
+          alt="icon"
+          style={{ width: `${45}px`, height: `${45}px` }}
+          className="object-contain flex-shrink-0"
+        />
+      );
+    }
+    if (name.includes("quantum parzen") || name.includes("parzen-window")) {
+      return (
+        <img
+          src="quantumParzenWindow.png"
+          alt="icon"
+          style={{ width: `${45}px`, height: `${45}px` }}
+          className="object-contain flex-shrink-0"
+        />
+      );
+    }
+    if (
+      name.includes("quantum kernel estimator") ||
+      name.includes("kernel-estimation")
+    ) {
+      return (
+        <img
+          src="quantumKernelEstimator.png"
+          alt="icon"
+          style={{ width: `${45}px`, height: `${45}px` }}
+          className="object-contain flex-shrink-0"
+        />
+      );
+    }
+    if (name.includes("hybrid autoencoder") || name.includes("autoencoder")) {
+      return (
+        <img
+          src="autoencoder.png"
+          alt="icon"
+          style={{ width: `${45}px`, height: `${45}px` }}
+          className="object-contain flex-shrink-0"
+        />
+      );
+    }
+
+    // Classical ML nodes
+    if (
+      (name.includes("classical") && name.includes("clustering")) ||
+      name === "classical clustering"
+    ) {
+      return (
+        <img
+          src="clusteringIcon.png"
+          alt="icon"
+          style={{ width: `${45}px`, height: `${45}px` }}
+          className="object-contain flex-shrink-0"
+        />
+      );
+    }
+
+    if (name === "support vector machine") {
+      return (
+        <img
+          src="supportVectorMachine.png"
+          alt="icon"
+          style={{ width: `${45}px`, height: `${45}px` }}
+          className="object-contain flex-shrink-0"
+        />
+      );
+    }
+    if (name === "neural network" || name.includes("neural-network")) {
+      return (
+        <img
+          src="neuralNetwork.png"
+          alt="icon"
+          style={{ width: `${45}px`, height: `${45}px` }}
+          className="object-contain flex-shrink-0"
+        />
+      );
+    }
+
+    // Fallback
+    return isQuantumPlugin ? (
+      <img
         src="quantumClusteringIcon.png"
         alt="icon"
         style={{ width: `${45}px`, height: `${45}px` }}
         className="object-contain flex-shrink-0"
-      />;
-    }
-    if (name === 'quantum neural network') {
-      return <img
-        src="qnnIcon.png"
-        alt="icon"
-        style={{ width: `${45}px`, height: `${45}px` }}
-        className="object-contain flex-shrink-0"
-      />;
-
-    }
-    if (name === 'quantum convolutional neural network' || name.includes('quantum-cnn')) {
-      return <img
-        src="qcnnIcon.png"
-        alt="icon"
-        style={{ width: `${45}px`, height: `${45}px` }}
-        className="object-contain flex-shrink-0"
-      />;
-    }
-    if (name === 'variational quantum classifier') {
-      return <img
-        src="variationalQuantumClassifier.png"
-        alt="icon"
-        style={{ width: `${45}px`, height: `${45}px` }}
-        className="object-contain flex-shrink-0"
-      />;
-    }
-    if (name.includes('quantum k-nearest') || name.includes('k-nearest-neighbour')) {
-      return <img
-        src="quantumKNearestNeighbor.png"
-        alt="icon"
-        style={{ width: `${45}px`, height: `${45}px` }}
-        className="object-contain flex-shrink-0"
-      />;
-    }
-    if (name.includes('quantum parzen') || name.includes('parzen-window')) {
-      return <img
-        src="quantumParzenWindow.png"
-        alt="icon"
-        style={{ width: `${45}px`, height: `${45}px` }}
-        className="object-contain flex-shrink-0"
-      />;
-    }
-    if (name.includes('quantum kernel estimator') || name.includes('kernel-estimation')) {
-      return <img
-        src="quantumKernelEstimator.png"
-        alt="icon"
-        style={{ width: `${45}px`, height: `${45}px` }}
-        className="object-contain flex-shrink-0"
-      />;
-    }
-    if (name.includes('hybrid autoencoder') || name.includes('autoencoder')) {
-      return <img
-        src="autoencoder.png"
-        alt="icon"
-        style={{ width: `${45}px`, height: `${45}px` }}
-        className="object-contain flex-shrink-0"
-      />;
-    }
-
-    // Classical ML nodes
-    if (name.includes('classical') && name.includes('clustering') || name === 'classical clustering') {
-      return <img
+      />
+    ) : (
+      <img
         src="clusteringIcon.png"
         alt="icon"
         style={{ width: `${45}px`, height: `${45}px` }}
         className="object-contain flex-shrink-0"
-      />;
-    }
-
-    if (name === 'support vector machine') {
-      return <img
-        src="supportVectorMachine.png"
-        alt="icon"
-        style={{ width: `${45}px`, height: `${45}px` }}
-        className="object-contain flex-shrink-0"
-      />;
-    }
-    if (name === 'neural network' || name.includes('neural-network')) {
-      return <img
-        src="neuralNetwork.png"
-        alt="icon"
-        style={{ width: `${45}px`, height: `${45}px` }}
-        className="object-contain flex-shrink-0"
-      />;
-
-    }
-
-    // Fallback
-    return isQuantumPlugin ? <img
-      src="quantumClusteringIcon.png"
-      alt="icon"
-      style={{ width: `${45}px`, height: `${45}px` }}
-      className="object-contain flex-shrink-0"
-    /> : <img
-      src="clusteringIcon.png"
-      alt="icon"
-      style={{ width: `${45}px`, height: `${45}px` }}
-      className="object-contain flex-shrink-0"
-    />;;
+      />
+    );
   };
 
   const id = node.id;
 
-  const [remoteHighlightColor, setRemoteHighlightColor] = useState<string | null>(null);
-  const [selectingUserName, setSelectingUserName] = useState<string | null>(null); // technically not needed, could extend functionality to also show user name next to highlighted node
+  const [remoteHighlightColor, setRemoteHighlightColor] = useState<
+    string | null
+  >(null);
+  const [selectingUserName, setSelectingUserName] = useState<string | null>(
+    null,
+  ); // technically not needed, could extend functionality to also show user name next to highlighted node
 
   useEffect(() => {
     const checkRemoteSelection = () => {
@@ -312,33 +369,37 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
   }, [id]); // Re-run if node ID changes
 
   return (
-    <div
-      className="grand-parent"
-      style={{ width: 320, height: dynamicHeight }}
-    >
+    <div className="grand-parent" style={{ width: 320, height: dynamicHeight }}>
       <div
-        className={"w-[320px] bg-white border border-solid border-gray-700 shadow-md overflow-hidden"}
+        className={
+          "w-[320px] bg-white border border-solid border-gray-700 shadow-md overflow-hidden"
+        }
         style={{
-          height: `${dynamicHeight}px`, borderRadius: isQuantumPlugin ? "0px" : "40px",
-          borderColor: remoteHighlightColor ? remoteHighlightColor : (selected ? "#3B82F6" : "#374151"),
+          height: `${dynamicHeight}px`,
+          borderRadius: isQuantumPlugin ? "0px" : "40px",
+          borderColor: remoteHighlightColor
+            ? remoteHighlightColor
+            : selected
+              ? "#3B82F6"
+              : "#374151",
           boxShadow: remoteHighlightColor
             ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}` // Glowing aura ring
             : undefined,
         }}
       >
         {/* Header */}
-        <div className="w-full flex items-center" style={{ height: '52px' }}>
+        <div className="w-full flex items-center" style={{ height: "52px" }}>
           <div
             className={cn(
               "w-full py-1 px-2 flex items-center",
-              isQuantumPlugin ? "bg-blue-300" : "bg-orange-300"
+              isQuantumPlugin ? "bg-blue-300" : "bg-orange-300",
             )}
             style={{
               height: "inherit",
               borderTopLeftRadius: isQuantumPlugin ? "0px" : "28px",
               borderTopRightRadius: isQuantumPlugin ? "0px" : "28px",
               overflow: "hidden",
-              paddingLeft: '25px',
+              paddingLeft: "25px",
             }}
           >
             {renderIcon()}
@@ -346,12 +407,11 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
 
             <span
               className="font-semibold leading-none cursor-pointer"
-              style={{ paddingLeft: '15px' }}
+              style={{ paddingLeft: "15px" }}
               onClick={() => setIsEditingLabel(true)}
             >
               {editableLabel}
             </span>
-
           </div>
         </div>
 
@@ -362,98 +422,171 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
             <select
               className={cn(
                 "w-full p-1 mt-1 bg-white text-center text-lg text-black border-2",
-                isQuantumPlugin ? "border-blue-300 rounded-none" : "border-orange-300 rounded-full"
+                isQuantumPlugin
+                  ? "border-blue-300 rounded-none"
+                  : "border-orange-300 rounded-full",
               )}
-              value={data.clusteringAlgorithm || 'k-means'}
+              value={data.clusteringAlgorithm || "k-means"}
               onChange={(e) => {
                 const newAlgorithm = e.target.value;
 
                 // Full input/output specs per algorithm
-                const isQuantum = data.pluginName === 'Quantum Clustering';
+                const isQuantum = data.pluginName === "Quantum Clustering";
                 const algorithmInputs: Record<string, PluginInputMetadata[]> = {
-                  'k-means': [
-                    { parameter: 'entityPointsUrl', data_type: 'entity/vector', content_type: ['application/json', 'text/csv'], required: true },
-                    { parameter: 'numberOfClusters', data_type: 'int', content_type: ['text/plain'], required: true },
-                    { parameter: 'maxIterations', data_type: 'int', content_type: ['text/plain'], required: true },
-                    { parameter: 'relativeResidual', data_type: 'float', content_type: ['text/plain'], required: true },
-                  ],
-                  'k-medoids': [
-                    { parameter: 'entityPointsUrl', data_type: 'entity/vector', content_type: ['application/json', 'text/csv'], required: true },
-                    { parameter: 'numberOfClusters', data_type: 'int', content_type: ['text/plain'], required: true },
-                    { parameter: 'maxIterations', data_type: 'int', content_type: ['text/plain'], required: true },
-                    { parameter: 'initializationMethod', data_type: 'string', content_type: ['text/plain'], required: true },
-                    { parameter: 'algorithm', data_type: 'string', content_type: ['text/plain'], required: true },
-                  ],
-                  'optics': [
+                  "k-means": [
                     {
-                      parameter: 'entityPointsUrl',
-                      data_type: 'entity/vector',
-                      content_type: ['application/json', 'text/csv'],
+                      parameter: "entityPointsUrl",
+                      data_type: "entity/vector",
+                      content_type: ["application/json", "text/csv"],
                       required: true,
                     },
                     {
-                      parameter: 'minClusterSize',
-                      data_type: 'int',
-                      content_type: ['text/plain'],
+                      parameter: "numberOfClusters",
+                      data_type: "int",
+                      content_type: ["text/plain"],
                       required: true,
                     },
                     {
-                      parameter: 'leafSize',
-                      data_type: 'int',
-                      content_type: ['text/plain'],
+                      parameter: "maxIterations",
+                      data_type: "int",
+                      content_type: ["text/plain"],
+                      required: true,
+                    },
+                    {
+                      parameter: "relativeResidual",
+                      data_type: "float",
+                      content_type: ["text/plain"],
+                      required: true,
+                    },
+                  ],
+                  "k-medoids": [
+                    {
+                      parameter: "entityPointsUrl",
+                      data_type: "entity/vector",
+                      content_type: ["application/json", "text/csv"],
+                      required: true,
+                    },
+                    {
+                      parameter: "numberOfClusters",
+                      data_type: "int",
+                      content_type: ["text/plain"],
+                      required: true,
+                    },
+                    {
+                      parameter: "maxIterations",
+                      data_type: "int",
+                      content_type: ["text/plain"],
+                      required: true,
+                    },
+                    {
+                      parameter: "initializationMethod",
+                      data_type: "string",
+                      content_type: ["text/plain"],
+                      required: true,
+                    },
+                    {
+                      parameter: "algorithm",
+                      data_type: "string",
+                      content_type: ["text/plain"],
+                      required: true,
+                    },
+                  ],
+                  optics: [
+                    {
+                      parameter: "entityPointsUrl",
+                      data_type: "entity/vector",
+                      content_type: ["application/json", "text/csv"],
+                      required: true,
+                    },
+                    {
+                      parameter: "minClusterSize",
+                      data_type: "int",
+                      content_type: ["text/plain"],
+                      required: true,
+                    },
+                    {
+                      parameter: "leafSize",
+                      data_type: "int",
+                      content_type: ["text/plain"],
                       required: true,
                     },
 
                     {
-                      parameter: 'minSteepness',
-                      data_type: 'int',
-                      content_type: ['text/plain'],
+                      parameter: "minSteepness",
+                      data_type: "int",
+                      content_type: ["text/plain"],
                       required: true,
                     },
                     {
-                      parameter: 'minSamples',
-                      data_type: 'int',
-                      content_type: ['text/plain'],
+                      parameter: "minSamples",
+                      data_type: "int",
+                      content_type: ["text/plain"],
                       required: true,
                     },
                     {
-                      parameter: 'maxDistance',
-                      data_type: 'float',
-                      content_type: ['text/plain'],
+                      parameter: "maxDistance",
+                      data_type: "float",
+                      content_type: ["text/plain"],
                       required: true,
                     },
                     {
-                      parameter: 'epsilon',
-                      data_type: 'float',
-                      content_type: ['text/plain'],
+                      parameter: "epsilon",
+                      data_type: "float",
+                      content_type: ["text/plain"],
                       required: false,
                     },
                   ],
-
                 };
-                const algorithmOutputs: Record<string, PluginOutputMetadata[]> = {
-                  'k-means': [
-                    { name: 'Cluster Labels', data_type: 'entity/label', content_type: ['application/json'], required: true },
-                    { name: 'Visualization', data_type: 'plot', content_type: ['text/html'], required: false },
-                  ],
-                  'k-medoids': [
-                    { name: 'Cluster Labels', data_type: 'entity/label', content_type: ['application/json'], required: true },
-                  ],
-                  'optics': [
-                    { name: 'Cluster Labels', data_type: 'entity/label', content_type: ['application/json'], required: true },
-                  ],
-                };
+                const algorithmOutputs: Record<string, PluginOutputMetadata[]> =
+                  {
+                    "k-means": [
+                      {
+                        name: "Cluster Labels",
+                        data_type: "entity/label",
+                        content_type: ["application/json"],
+                        required: true,
+                      },
+                      {
+                        name: "Visualization",
+                        data_type: "plot",
+                        content_type: ["text/html"],
+                        required: false,
+                      },
+                    ],
+                    "k-medoids": [
+                      {
+                        name: "Cluster Labels",
+                        data_type: "entity/label",
+                        content_type: ["application/json"],
+                        required: true,
+                      },
+                    ],
+                    optics: [
+                      {
+                        name: "Cluster Labels",
+                        data_type: "entity/label",
+                        content_type: ["application/json"],
+                        required: true,
+                      },
+                    ],
+                  };
 
-                const oldInputs: PluginInputMetadata[] = node.data.dataInputs || [];
-                const oldOutputs: PluginOutputMetadata[] = node.data.dataOutputs || [];
+                const oldInputs: PluginInputMetadata[] =
+                  node.data.dataInputs || [];
+                const oldOutputs: PluginOutputMetadata[] =
+                  node.data.dataOutputs || [];
                 const newInputs = algorithmInputs[newAlgorithm] || oldInputs;
                 const newOutputs = algorithmOutputs[newAlgorithm] || oldOutputs;
 
                 // Build parameter-name to old/new index maps
                 const oldParamToIndex: Record<string, number> = {};
-                oldInputs.forEach((inp, i) => { oldParamToIndex[inp.parameter] = i; });
+                oldInputs.forEach((inp, i) => {
+                  oldParamToIndex[inp.parameter] = i;
+                });
                 const newParamToIndex: Record<string, number> = {};
-                newInputs.forEach((inp, i) => { newParamToIndex[inp.parameter] = i; });
+                newInputs.forEach((inp, i) => {
+                  newParamToIndex[inp.parameter] = i;
+                });
 
                 // Helper: extract handle index from handle id
                 const extractIndex = (handleId: string): number | null => {
@@ -465,36 +598,41 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
 
                 // Remap edges
                 const removedEdgeIds = new Set<string>();
-                const updatedEdges = edges.map(edge => {
-                  // Remap input edges (edges targeting this node)
-                  if (edge.target === node.id && edge.targetHandle) {
-                    const oldIdx = extractIndex(edge.targetHandle);
-                    if (oldIdx === null) return edge;
-                    const oldParam = oldInputs[oldIdx]?.parameter;
-                    if (oldParam && newParamToIndex[oldParam] !== undefined) {
-                      const newIdx = newParamToIndex[oldParam];
-                      return { ...edge, targetHandle: `classicalHandlePluginInput${newIdx}${node.id}` };
-                    } else {
-                      removedEdgeIds.add(edge.id);
-                      return edge;
+                const updatedEdges = edges
+                  .map((edge) => {
+                    // Remap input edges (edges targeting this node)
+                    if (edge.target === node.id && edge.targetHandle) {
+                      const oldIdx = extractIndex(edge.targetHandle);
+                      if (oldIdx === null) return edge;
+                      const oldParam = oldInputs[oldIdx]?.parameter;
+                      if (oldParam && newParamToIndex[oldParam] !== undefined) {
+                        const newIdx = newParamToIndex[oldParam];
+                        return {
+                          ...edge,
+                          targetHandle: `classicalHandlePluginInput${newIdx}${node.id}`,
+                        };
+                      } else {
+                        removedEdgeIds.add(edge.id);
+                        return edge;
+                      }
                     }
-                  }
-                  // Remap output edges (edges originating from this node)
-                  if (edge.source === node.id && edge.sourceHandle) {
-                    const oldIdx = extractIndex(edge.sourceHandle);
-                    if (oldIdx === null) return edge;
-                    if (oldIdx >= newOutputs.length) {
-                      removedEdgeIds.add(edge.id);
+                    // Remap output edges (edges originating from this node)
+                    if (edge.source === node.id && edge.sourceHandle) {
+                      const oldIdx = extractIndex(edge.sourceHandle);
+                      if (oldIdx === null) return edge;
+                      if (oldIdx >= newOutputs.length) {
+                        removedEdgeIds.add(edge.id);
+                        return edge;
+                      }
                       return edge;
                     }
                     return edge;
-                  }
-                  return edge;
-                }).filter(edge => !removedEdgeIds.has(edge.id));
+                  })
+                  .filter((edge) => !removedEdgeIds.has(edge.id));
 
                 // Clean node.data.inputs: remove entries for deleted edges
                 const cleanedInputs = (node.data.inputs || []).filter(
-                  (inp: any) => !removedEdgeIds.has(inp.edgeId)
+                  (inp: any) => !removedEdgeIds.has(inp.edgeId),
                 );
 
                 // Apply all updates
@@ -503,35 +641,36 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
                 node.data.dataOutputs = newOutputs;
                 node.data.inputs = cleanedInputs;
 
-                updateNodeValue(node.id, 'clusteringAlgorithm', newAlgorithm);
-                updateNodeValue(node.id, 'dataInputs', newInputs);
-                updateNodeValue(node.id, 'dataOutputs', newOutputs);
-                updateNodeValue(node.id, 'inputs', cleanedInputs);
+                updateNodeValue(node.id, "clusteringAlgorithm", newAlgorithm);
+                updateNodeValue(node.id, "dataInputs", newInputs);
+                updateNodeValue(node.id, "dataOutputs", newOutputs);
+                updateNodeValue(node.id, "inputs", cleanedInputs);
                 setNewEdges(updatedEdges);
                 updateNodeInternals(node.id);
               }}
             >
               <option value="k-means">K-Means</option>
 
-              {data.pluginName === 'Classical Clustering' && (<div>
-                <option value="k-medoids">K-Medoids</option>
-                <option value="optics">OPTICS</option></div>
+              {data.pluginName === "Classical Clustering" && (
+                <div>
+                  <option value="k-medoids">K-Medoids</option>
+                  <option value="optics">OPTICS</option>
+                </div>
               )}
             </select>
           </div>
         )}
 
-
-
         {isClusteringNode && data.clusteringAlgorithm === "optics" && (
           <div className="px-3 py-1 mb-2 space-y-2">
-
             <div>
               <label className="text-sm text-black">Method:</label>
               <select
                 className={cn(
                   "w-full p-1 mt-1 bg-white text-center text-lg text-black border-2",
-                  isQuantumPlugin ? "border-blue-300 rounded-none" : "border-orange-300 rounded-full"
+                  isQuantumPlugin
+                    ? "border-blue-300 rounded-none"
+                    : "border-orange-300 rounded-full",
                 )}
                 value={node.data.method || "xi"}
                 onChange={(e) => {
@@ -548,7 +687,9 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
               <select
                 className={cn(
                   "w-full p-1 mt-1 bg-white text-center text-lg text-black border-2",
-                  isQuantumPlugin ? "border-blue-300 rounded-none" : "border-orange-300 rounded-full"
+                  isQuantumPlugin
+                    ? "border-blue-300 rounded-none"
+                    : "border-orange-300 rounded-full",
                 )}
                 value={node.data.metric || "dice"}
                 onChange={(e) => {
@@ -592,7 +733,9 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
                   step="1"
                   className={cn(
                     "w-full p-1 mt-1 text-center text-lg border-2",
-                    isQuantumPlugin ? "border-blue-300 rounded-none" : "border-orange-300 rounded-full"
+                    isQuantumPlugin
+                      ? "border-blue-300 rounded-none"
+                      : "border-orange-300 rounded-full",
                   )}
                   value={node.data.minkowskiPValue || 2}
                   onChange={(e) => {
@@ -609,7 +752,9 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
               <select
                 className={cn(
                   "w-full p-1 mt-1 bg-white text-center text-lg text-black border-2",
-                  isQuantumPlugin ? "border-blue-300 rounded-none" : "border-orange-300 rounded-full"
+                  isQuantumPlugin
+                    ? "border-blue-300 rounded-none"
+                    : "border-orange-300 rounded-full",
                 )}
                 value={node.data.algorithm || "auto"}
                 onChange={(e) => {
@@ -622,24 +767,30 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
                 <option value="brute">brute</option>
               </select>
             </div>
-
           </div>
         )}
 
         {isClusteringNode && data.clusteringAlgorithm === "k-medoids" && (
           <div className="px-3 py-1 mb-2 space-y-2">
-
             {/* Initialization Method */}
             <div>
-              <label className="text-sm text-black">Initialization Method:</label>
+              <label className="text-sm text-black">
+                Initialization Method:
+              </label>
               <select
                 className={cn(
                   "w-full p-1 mt-1 bg-white text-center text-lg text-black border-2",
-                  isQuantumPlugin ? "border-blue-300 rounded-none" : "border-orange-300 rounded-full"
+                  isQuantumPlugin
+                    ? "border-blue-300 rounded-none"
+                    : "border-orange-300 rounded-full",
                 )}
                 value={node.data.initializationMethod || "random"}
                 onChange={(e) => {
-                  updateNodeValue(node.id, "initializationMethod", e.target.value);
+                  updateNodeValue(
+                    node.id,
+                    "initializationMethod",
+                    e.target.value,
+                  );
                 }}
               >
                 <option value="build">Build</option>
@@ -655,7 +806,9 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
               <select
                 className={cn(
                   "w-full p-1 mt-1 bg-white text-center text-lg text-black border-2",
-                  isQuantumPlugin ? "border-blue-300 rounded-none" : "border-orange-300 rounded-full"
+                  isQuantumPlugin
+                    ? "border-blue-300 rounded-none"
+                    : "border-orange-300 rounded-full",
                 )}
                 value={node.data.algorithm || "pam"}
                 onChange={(e) => {
@@ -666,42 +819,48 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
                 <option value="pam">PAM</option>
               </select>
             </div>
-
           </div>
         )}
 
-        {isClusteringNode && data.clusteringAlgorithm === "k-means" && node.data.label.includes("Quantum") && (
-          <div className="px-3 py-1 mb-2 space-y-2">
-            <div>
-              <label className="text-sm text-black">Variant:</label>
-              <select
-                className={cn(
-                  "w-full p-1 mt-1 bg-white text-center text-lg text-black border-2",
-                  isQuantumPlugin ? "border-blue-300 rounded-none" : "border-orange-300 rounded-full"
-                )}
-                value={node.data.variant || "negative_rotation"}
-                onChange={(e) => {
-                  updateNodeValue(node.id, "variant", e.target.value);
-                }}
-              >
-                <option value="destructive_interference">Destructive Interference</option>
-                <option value="positive_correlation">Positive Correlation</option>
-                <option value="negative_rotation">Negative Rotation</option>
-                <option value="state_prepartion">State Preparation</option>
-              </select>
+        {isClusteringNode &&
+          data.clusteringAlgorithm === "k-means" &&
+          node.data.label.includes("Quantum") && (
+            <div className="px-3 py-1 mb-2 space-y-2">
+              <div>
+                <label className="text-sm text-black">Variant:</label>
+                <select
+                  className={cn(
+                    "w-full p-1 mt-1 bg-white text-center text-lg text-black border-2",
+                    isQuantumPlugin
+                      ? "border-blue-300 rounded-none"
+                      : "border-orange-300 rounded-full",
+                  )}
+                  value={node.data.variant || "negative_rotation"}
+                  onChange={(e) => {
+                    updateNodeValue(node.id, "variant", e.target.value);
+                  }}
+                >
+                  <option value="destructive_interference">
+                    Destructive Interference
+                  </option>
+                  <option value="positive_correlation">
+                    Positive Correlation
+                  </option>
+                  <option value="negative_rotation">Negative Rotation</option>
+                  <option value="state_prepartion">State Preparation</option>
+                </select>
+              </div>
             </div>
-
-          </div>
-        )}
-
-
+          )}
 
         {/* Input Handles */}
         <div className="custom-node-port-in mb-3 mt-2">
           <div className="absolute flex flex-col overflow-visible">
             {dataInputs.map((input, index) => {
               const inputHandleId = `classicalHandlePluginInput${index}${node.id}`;
-              const isInputConnected = edges.some(edge => edge.targetHandle === inputHandleId);
+              const isInputConnected = edges.some(
+                (edge) => edge.targetHandle === inputHandleId,
+              );
               const ioKind = getIOKindForInput(input);
               const ioIsClassical = ioKind === "classical";
 
@@ -710,13 +869,15 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
                   key={`input-${index}`}
                   className="relative p-2 mb-1"
                   style={{
-                    backgroundColor: ioIsClassical ? classicalConstructColor : quantumConstructColor,
-                    width: '140px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'flex-start',
-                    borderTopRightRadius: ioIsClassical ? '20px' : '0px',
-                    borderBottomRightRadius: ioIsClassical ? '20px' : '0px',
+                    backgroundColor: ioIsClassical
+                      ? classicalConstructColor
+                      : quantumConstructColor,
+                    width: "140px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "flex-start",
+                    borderTopRightRadius: ioIsClassical ? "20px" : "0px",
+                    borderBottomRightRadius: ioIsClassical ? "20px" : "0px",
                   }}
                 >
                   <Handle
@@ -731,13 +892,14 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
                           : "circle-port-op !bg-blue-300 !border-black"
                         : ioIsClassical
                           ? "classical-circle-port-operation !bg-gray-200 !border-dashed !border-gray-500"
-                          : "circle-port-op !bg-gray-200 !border-dashed !border-gray-500"
+                          : "circle-port-op !bg-gray-200 !border-dashed !border-gray-500",
                     )}
-                    style={{ top: '50%', transform: 'translateY(-50%)' }}
+                    style={{ top: "50%", transform: "translateY(-50%)" }}
                   />
                   <div className="w-full flex flex-col items-center leading-tight">
                     <span className="text-black text-sm text-center w-full">
-                      {node.data.inputs?.[index]?.outputIdentifier || input.parameter}
+                      {node.data.inputs?.[index]?.outputIdentifier ||
+                        input.parameter}
                     </span>
                     <span className="text-black text-xs opacity-80 text-center w-full">
                       type: {displayType(input.data_type)}
@@ -756,7 +918,7 @@ export const PluginNode = memo((node: Node<PluginNodeData>) => {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "flex-start",
-                  left: "132px"
+                  left: "132px",
                 }}
               >
                 <OutputPort
