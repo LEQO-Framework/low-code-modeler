@@ -592,9 +592,6 @@ export const useStore = create<RFState>()(
               const targetNode = currentNodes.find(
                 (n) => n.id === removedEdge.target,
               );
-              const sourceNode = currentNodes.find(
-                (n) => n.id === removedEdge.source,
-              );
               console.log("target Node", targetNode);
 
               if (targetNode) {
@@ -607,7 +604,7 @@ export const useStore = create<RFState>()(
                   inputs: [...(targetNode.data.inputs || [])],
                 };
                 // remove targetNode.data.inputs entry corresponding to removed edge
-                const inputIndex = targetData.inputs.findIndex(
+                const _inputIndex = targetData.inputs.findIndex(
                   (i) => (i.edgeId ?? -1) === removedEdge.id,
                 );
                 const updatedInputs = targetData.inputs.filter(
@@ -625,14 +622,6 @@ export const useStore = create<RFState>()(
                     (targetNode.data.label.includes("Arithmetic") ||
                       targetNode.data.label.includes("Comparison")))
                 ) {
-                  const sourceHandle = removedEdge.sourceHandle;
-                  const targetHandle = removedEdge.targetHandle;
-
-                  const handleIndex = getHandleIndex(
-                    targetNode.id,
-                    targetHandle,
-                  );
-                  const otherHandleIndex = handleIndex === 0 ? 1 : 0;
                   // find other edge connected to targetNode
                   const otherEdge = get().edges.find(
                     (e) =>
@@ -689,12 +678,6 @@ export const useStore = create<RFState>()(
         let setTypeError = get().setTypeError;
         const getNodeLockedType = (nodeId: string): string => {
           const node = get().nodes.find((n) => n.id === nodeId);
-          const sourceNode = get().nodes.find(
-            (n) => n.id === connection.source,
-          );
-          const targetNode = get().nodes.find(
-            (n) => n.id === connection.target,
-          );
 
           if (!node) return "any";
           if (
@@ -746,12 +729,6 @@ export const useStore = create<RFState>()(
               if (type !== "any") return type;
             }
           }
-          // Find entry in inputTypes != any
-          /*       if(node.data.inputTypes){
-              for(const type of node.data.inputTypes) {
-                if(type.toLowerCase() !== "any") return type;
-              }
-            } */
           return "any"; // no locked type yet
         };
 
@@ -842,14 +819,8 @@ export const useStore = create<RFState>()(
           const targetNode = get().nodes.find((n) => n.id === effectiveId);
           if (!targetNode) return "any";
 
-          // Find input corresponding to this handle
-          const input = targetNode.data.inputs?.find(
-            (i: any) => i.id === handleId,
-          );
-          //if (!input) return "any";
           const inputIndex = getHandleIndex(effectiveId, handleId);
           console.log("InputIndex", inputIndex);
-          //return input.dataType ?? "any"; // fallback to any
           return (
             targetNode.data.inputTypes?.[inputIndex] ?? "any"
           ).toLowerCase();
@@ -858,7 +829,6 @@ export const useStore = create<RFState>()(
         const currentNodes = get().nodes;
         const ancillaMode = get().ancillaMode;
         console.log(connection);
-        //const currentEdges = addEdge(connection, get().edges);
         const currentEdges = get().edges;
         const newHistoryItem: HistoryItem = {
           nodes: [...currentNodes], // Copy the nodes array to avoid mutation
@@ -1206,7 +1176,7 @@ export const useStore = create<RFState>()(
           connection.target,
           connection.targetHandle,
         ).toLowerCase();
-        const inputIndex = getHandleIndex(
+        const _inputIndex = getHandleIndex(
           resolveHandleOwnerId(
             get().nodes,
             connection.target,
@@ -1429,18 +1399,11 @@ export const useStore = create<RFState>()(
                 });
               }
             }
-
-            // Push a new entry
-            //nodeDataTarget.data.inputs.push({
-            //id: nodeDataSource.id,
-            //label: nodeDataSource.data.outputIdentifier
-            //});
           }
 
           set((state) => {
-            const { nodes, edges } = state;
+            const { nodes } = state;
             let updatedNodes = [...nodes];
-            let reuseQubit = false;
             let sourceIdentifier = 0;
             console.log(sourceIdentifier);
             console.log("set state");
@@ -1544,7 +1507,6 @@ export const useStore = create<RFState>()(
                     targetData.inputs[inputIndex]["identifiers"] =
                       sourceIdentifier;
                     targetData["identifiers"] = sourceIdentifier;
-                    reuseQubit = true;
                     console.log(targetData["identifier"]);
                   } else {
                     targetData.inputs[inputIndex].outputIdentifier =
@@ -1599,7 +1561,6 @@ export const useStore = create<RFState>()(
         console.log("Current historyIndex:", get().historyIndex);
       },
       onConnectEnd: (event: MouseEvent) => {
-        const currentNodes = get().nodes;
         console.log(event);
         console.log(event);
 
@@ -1669,7 +1630,6 @@ export const useStore = create<RFState>()(
         set((state) => {
           const { nodes, edges } = state;
           let updatedNodes = [...nodes];
-          let reuseQubit = false;
           let sourceIdentifier = 0;
           console.log(sourceIdentifier);
           console.log("set state");
@@ -1741,7 +1701,6 @@ export const useStore = create<RFState>()(
                       targetData.inputs[inputIndex]["identifiers"] =
                         sourceIdentifier;
                       targetData["identifiers"] = sourceIdentifier;
-                      reuseQubit = true;
                       console.log(targetData["identifier"]);
                     } else {
                       targetData.inputs[inputIndex].outputIdentifier =
@@ -1750,9 +1709,6 @@ export const useStore = create<RFState>()(
                         sourceIdentifier;
                       targetData["identifiers"] = sourceIdentifier;
                       console.log(targetData["identifiers"]);
-                      if (nodeVal.includes(sourceOutputIdentifier)) {
-                        reuseQubit = true;
-                      }
                     }
                   } else {
                     targetData.inputs.push({
@@ -1760,13 +1716,9 @@ export const useStore = create<RFState>()(
                       edgeId: edge.id,
                       outputIdentifier: nodeVal,
                       identifiers: sourceIdentifier,
-                      //targetHandle: connection.targetHandle
                     });
                     targetData["identifiers"] = sourceIdentifier;
                     console.log(targetData["identifiers"]);
-                    if (nodeVal.includes(sourceOutputIdentifier)) {
-                      reuseQubit = true;
-                    }
                   }
                 }
               }
@@ -1871,7 +1823,6 @@ export const useStore = create<RFState>()(
         set((state) => {
           const { nodes, edges } = state;
           let updatedNodes = [...nodes];
-          let reuseQubit = false;
           let sourceIdentifier = 0;
           console.log(sourceIdentifier);
           console.log("set state");
