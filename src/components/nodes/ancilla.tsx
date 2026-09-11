@@ -8,9 +8,9 @@ import { awareness } from "@/yjs";
 
 const selector = (state: {
   selectedNode: Node | null;
-  edges: Edge[],
-  nodes: Node[],
-  ancillaMode: boolean,
+  edges: Edge[];
+  nodes: Node[];
+  ancillaMode: boolean;
   updateNodeValue: (nodeId: string, field: string, nodeVal: string) => void;
   setSelectedNode: (node: Node | null) => void;
 }) => ({
@@ -19,7 +19,7 @@ const selector = (state: {
   nodes: state.nodes,
   ancillaMode: state.ancillaMode,
   updateNodeValue: state.updateNodeValue,
-  setSelectedNode: state.setSelectedNode
+  setSelectedNode: state.setSelectedNode,
 });
 
 export const AncillaNode = memo((node: Node) => {
@@ -33,7 +33,14 @@ export const AncillaNode = memo((node: Node) => {
   const xRef = useRef(null);
   const yRef = useRef(null);
 
-  const { ancillaMode, selectedNode, nodes, updateNodeValue, setSelectedNode, edges } = useStore(selector, shallow);
+  const {
+    ancillaMode,
+    selectedNode,
+    nodes,
+    updateNodeValue,
+    setSelectedNode,
+    edges,
+  } = useStore(selector, shallow);
   const [outputIdentifierError, setOutputIdentifierError] = useState(false);
   const [outputIdentifier, setOutputIdentifier] = useState("");
   const [operation, setOperation] = useState("");
@@ -57,7 +64,6 @@ export const AncillaNode = memo((node: Node) => {
     updateNodeValue(node.id, "value", value);
   };
 
-
   const handleYChange = (e) => {
     const value = e.target.value;
     if (!/^[a-zA-Z_]/.test(value) && value !== "") {
@@ -73,8 +79,12 @@ export const AncillaNode = memo((node: Node) => {
 
   const id = node.id;
 
-  const [remoteHighlightColor, setRemoteHighlightColor] = useState<string | null>(null);
-  const [selectingUserName, setSelectingUserName] = useState<string | null>(null); // technically not needed, could extend functionality to also show user name next to highlighted node
+  const [remoteHighlightColor, setRemoteHighlightColor] = useState<
+    string | null
+  >(null);
+  const [selectingUserName, setSelectingUserName] = useState<string | null>(
+    null,
+  ); // technically not needed, could extend functionality to also show user name next to highlighted node
 
   useEffect(() => {
     const checkRemoteSelection = () => {
@@ -110,42 +120,63 @@ export const AncillaNode = memo((node: Node) => {
     };
   }, [id]); // Re-run if node ID changes
 
-  return ancillaMode &&(
-    <div className="grand-parent">
-      <div className={"w-[350px] h-[170px] rounded-none bg-white  border border-solid border-gray-700 shadow-md"} 
-      style={{
-        borderColor: remoteHighlightColor ? remoteHighlightColor : (selected? "#3B82F6" : "#374151"),
-        boxShadow: remoteHighlightColor 
-            ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}` // Glowing aura ring
-            : undefined,
-            }}>
-        <div className="w-full flex items-center" style={{ height: '52px' }}>
-            <div className="w-full bg-green-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
-              <img src="ancillaIcon.png" alt="icon" className="w-[40px] h-[40px] object-contain flex-shrink-0" />
+  return (
+    ancillaMode && (
+      <div className="grand-parent">
+        <div
+          className={
+            "w-[350px] h-[170px] rounded-none bg-white  border border-solid border-gray-700 shadow-md"
+          }
+          style={{
+            borderColor: remoteHighlightColor
+              ? remoteHighlightColor
+              : selected
+                ? "#3B82F6"
+                : "#374151",
+            boxShadow: remoteHighlightColor
+              ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}` // Glowing aura ring
+              : undefined,
+          }}
+        >
+          <div className="w-full flex items-center" style={{ height: "52px" }}>
+            <div
+              className="w-full bg-green-300 py-1 px-2 flex items-center"
+              style={{ height: "inherit" }}
+            >
+              <img
+                src="ancillaIcon.png"
+                alt="icon"
+                className="w-[40px] h-[40px] object-contain flex-shrink-0"
+              />
               <div className="h-full w-[1px] bg-black mx-2" />
-              <span className="truncate font-semibold leading-none" style={{ paddingLeft: '75px' }}>{data.label}</span>
+              <span
+                className="truncate font-semibold leading-none"
+                style={{ paddingLeft: "75px" }}
+              >
+                {data.label}
+              </span>
             </div>
           </div>
-        <div className="custom-node-port-out">
-          <OutputPort
-            node={node}
-            index={0}
-            type={"ancilla"}
-            nodes={nodes}
-            outputs={outputs}
-            setOutputs={setOutputs}
-            edges={edges}
-            sizeError={sizeError}
-            outputIdentifierError={outputIdentifierError}
-            updateNodeValue={updateNodeValue}
-            setOutputIdentifierError={setOutputIdentifierError}
-            setSizeError={setSizeError}
-            setSelectedNode={setSelectedNode}
-            active={true}
-          />
+          <div className="custom-node-port-out">
+            <OutputPort
+              node={node}
+              index={0}
+              type={"ancilla"}
+              nodes={nodes}
+              outputs={outputs}
+              setOutputs={setOutputs}
+              edges={edges}
+              sizeError={sizeError}
+              outputIdentifierError={outputIdentifierError}
+              updateNodeValue={updateNodeValue}
+              setOutputIdentifierError={setOutputIdentifierError}
+              setSizeError={setSizeError}
+              setSelectedNode={setSelectedNode}
+              active={true}
+            />
+          </div>
         </div>
       </div>
-    </div>
+    )
   );
 });
-
