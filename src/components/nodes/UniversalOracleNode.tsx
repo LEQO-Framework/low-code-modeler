@@ -14,12 +14,19 @@ const selector = (state: any) => ({
   edges: state.edges,
   setSelectedNode: state.setSelectedNode,
   experienceLevel: state.experienceLevel,
-  setContainsPlaceholder: state.setContainsPlaceholder
-}); 
+  setContainsPlaceholder: state.setContainsPlaceholder,
+});
 
 export const UniversalOracleNode = memo((node: Node) => {
   const { id, data, selected } = node;
-  const { updateNodeValue, nodes, edges, setSelectedNode, experienceLevel, setContainsPlaceholder } = useStore(selector, shallow);
+  const {
+    updateNodeValue,
+    nodes,
+    edges,
+    setSelectedNode,
+    experienceLevel,
+    setContainsPlaceholder,
+  } = useStore(selector, shallow);
 
   const [mode, setMode] = useState(data.mode || "phase");
   const [targetStates, setTargetStates] = useState(data.targetStates || "");
@@ -28,7 +35,8 @@ export const UniversalOracleNode = memo((node: Node) => {
   const [outputs, setOutputs] = useState(data.outputs || []);
   const [outputIdentifierError, setOutputIdentifierError] = useState(false);
   const [sizeError, setSizeError] = useState(false);
-  const [missingTargetStatesError, setMissingTargetStatesError] = useState(false);
+  const [missingTargetStatesError, setMissingTargetStatesError] =
+    useState(false);
 
   // Dynamic user role tracking states
   const [mixedView, setMixedView] = useState(false);
@@ -65,14 +73,17 @@ export const UniversalOracleNode = memo((node: Node) => {
     };
   }, []);
 
-  const getRegisterSize = (currentNodeId: string, visited = new Set<string>()): number => {
+  const getRegisterSize = (
+    currentNodeId: string,
+    visited = new Set<string>(),
+  ): number => {
     if (visited.has(currentNodeId)) return 3;
     visited.add(currentNodeId);
 
-    const incomingEdge = edges.find(e => e.target === currentNodeId);
+    const incomingEdge = edges.find((e) => e.target === currentNodeId);
     if (!incomingEdge) return 3;
 
-    const sourceNode = nodes.find(n => n.id === incomingEdge.source);
+    const sourceNode = nodes.find((n) => n.id === incomingEdge.source);
     if (!sourceNode) return 3;
 
     if (sourceNode.data?.size) return parseInt(sourceNode.data.size, 10);
@@ -96,7 +107,9 @@ export const UniversalOracleNode = memo((node: Node) => {
     }
 
     // Allow letters, numbers, underscores, and commas
-    const isValidFormat = /^[a-zA-Z0-9_]+(?:\s*,\s*[a-zA-Z0-9_]+)*$/.test(targetStates.trim());
+    const isValidFormat = /^[a-zA-Z0-9_]+(?:\s*,\s*[a-zA-Z0-9_]+)*$/.test(
+      targetStates.trim(),
+    );
 
     if (!isValidFormat) {
       setFormatError(true);
@@ -104,22 +117,24 @@ export const UniversalOracleNode = memo((node: Node) => {
     }
 
     // Only check bounds for pure numeric states
-    const values = targetStates
-      .split(",")
-      .map(x => x.trim());
+    const values = targetStates.split(",").map((x) => x.trim());
 
-    const numericValues = values.filter(v => /^\d+$/.test(v));
+    const numericValues = values.filter((v) => /^\d+$/.test(v));
 
     const hasOutOfBounds = numericValues.some(
-      idx => parseInt(idx, 10) < 0 || parseInt(idx, 10) > maxAllowedIndex
+      (idx) => parseInt(idx, 10) < 0 || parseInt(idx, 10) > maxAllowedIndex,
     );
 
     setFormatError(hasOutOfBounds);
   }, [targetStates, maxAllowedIndex]);
 
-  const isConnected = edges.some(edge => edge.target === id);
-  const [remoteHighlightColor, setRemoteHighlightColor] = useState<string | null>(null);
-  const [selectingUserName, setSelectingUserName] = useState<string | null>(null); // technically not needed, could extend functionality to also show user name next to highlighted node
+  const isConnected = edges.some((edge) => edge.target === id);
+  const [remoteHighlightColor, setRemoteHighlightColor] = useState<
+    string | null
+  >(null);
+  const [selectingUserName, setSelectingUserName] = useState<string | null>(
+    null,
+  ); // technically not needed, could extend functionality to also show user name next to highlighted node
 
   useEffect(() => {
     const checkRemoteSelection = () => {
@@ -155,24 +170,26 @@ export const UniversalOracleNode = memo((node: Node) => {
     };
   }, [id]); // Re-run if node ID changes
   return (
-    <div
-      className="grand-parent"
-      style={{ width: 320, height: 420 }}
-    >
+    <div className="grand-parent" style={{ width: 320, height: 420 }}>
       <div className="grand-parent">
         <div
           className={cn(
             "w-[320px] bg-white border border-solid border-gray-700 shadow-md relative",
             selected && "border-blue-500",
-            mixedView && "border-purple-400"
+            mixedView && "border-purple-400",
           )}
           style={{
-            borderColor: remoteHighlightColor ? remoteHighlightColor : (selected ? "#3B82F6" : "#374151"),
+            borderColor: remoteHighlightColor
+              ? remoteHighlightColor
+              : selected
+                ? "#3B82F6"
+                : "#374151",
             boxShadow: remoteHighlightColor
               ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}` // Glowing aura ring
               : undefined,
-            height: `420px`
-          }}>
+            height: `420px`,
+          }}
+        >
           {/* VALIDATION ALERT */}
           {missingTargetStatesError && (
             <div className="absolute top-2 right-[-40px] group z-20">
@@ -198,8 +215,11 @@ export const UniversalOracleNode = memo((node: Node) => {
           )}
 
           {/* HEADER */}
-          <div className="w-full flex items-center" style={{ height: '52px' }}>
-            <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
+          <div className="w-full flex items-center" style={{ height: "52px" }}>
+            <div
+              className="w-full bg-blue-300 py-1 px-2 flex items-center"
+              style={{ height: "inherit" }}
+            >
               <img
                 src="oracleIcon.png"
                 alt="Oracle icon"
@@ -227,7 +247,9 @@ export const UniversalOracleNode = memo((node: Node) => {
           {/* CONFIGURATION PROPERTIES */}
           <div className="px-4 py-1 mt-1">
             <div>
-              <label className="text-xs font-normal text-gray-700">Oracle Mode:</label>
+              <label className="text-xs font-normal text-gray-700">
+                Oracle Mode:
+              </label>
               <select
                 className="w-full p-1 mt-1 bg-white rounded-full text-center text-sm text-black border-2 border-blue-200 outline-none focus:border-blue-400 transition-colors"
                 value={mode}
@@ -253,7 +275,7 @@ export const UniversalOracleNode = memo((node: Node) => {
                   "w-full p-1 mt-1 text-sm text-center text-black border-2 rounded-full outline-none transition-colors",
                   formatError
                     ? "border-red-400 focus:border-red-500"
-                    : "border-blue-200 focus:border-blue-400"
+                    : "border-blue-200 focus:border-blue-400",
                 )}
                 value={node.data.targetStates || targetStates}
                 onChange={(e) => {
@@ -272,8 +294,7 @@ export const UniversalOracleNode = memo((node: Node) => {
           {/* QUANTUM INPUT PORT */}
           <div className="mt-2 flex flex-col space-y-2">
             <div
-              className={cn(
-                "relative p-2 flex items-center")}
+              className={cn("relative p-2 flex items-center")}
               style={{ width: "140px", background: quantumConstructColor }}
             >
               <Handle
@@ -284,7 +305,7 @@ export const UniversalOracleNode = memo((node: Node) => {
                   "z-10 circle-port-op !bg-blue-300 !border-gray-400 !absolute !top-1/2 !-translate-y-1/2 -left-[8px]",
                   isConnected
                     ? "!border-solid !border-black !bg-blue-400"
-                    : "!border-dashed !bg-gray-200"
+                    : "!border-dashed !bg-gray-200",
                 )}
                 style={{ width: 12, height: 12 }}
                 isConnectable={!isConnected}
@@ -321,6 +342,6 @@ export const UniversalOracleNode = memo((node: Node) => {
           </div>
         </div>
       </div>
-    </div >
+    </div>
   );
 });
