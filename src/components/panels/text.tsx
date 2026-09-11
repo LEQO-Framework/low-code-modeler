@@ -12,7 +12,6 @@ import {
   GateNode,
   GroverDiffuserNode,
   GroverNode,
-  GroupNode,
   IfElseNode,
   InverseQFTNode,
   MCMTGateNode,
@@ -32,11 +31,9 @@ import {
   minMaxOperatorLabel,
   comparisonOperatorLabel,
   bitwiseOperatorLabel,
-  controlStructureNodes,
   multi_qubit_gates,
   non_parameterized_one_qubit,
   non_parameterized_two_qubit,
-  NodeTypes,
   qubitLabel,
 } from "@/constants";
 import { ArrowLeft } from "lucide-react";
@@ -264,7 +261,6 @@ const selector = (state: {
 export const TextPanel = () => {
   const {
     selectedNode,
-    updateNodeLabel,
     updateNodeValue,
     setSelectedNode,
     completionGuaranteed,
@@ -281,8 +277,8 @@ export const TextPanel = () => {
     }
   }, [selectedNode]);
 
-  const [fileName, setFileName] = useState("");
-  const [uncomputeFileName, setUncomputeFileName] = useState("");
+  const [_fileName, setFileName] = useState("");
+  const [_uncomputeFileName, setUncomputeFileName] = useState("");
   const [implementationContent, setImplementationContent] = useState("");
   console.log(selectedNode);
   const validFields = [
@@ -350,7 +346,7 @@ export const TextPanel = () => {
       const result = new Function(`"use strict"; return (${sanitized})`)();
 
       return result;
-    } catch (e) {
+    } catch {
       return NaN;
     }
   };
@@ -1278,38 +1274,8 @@ export const ImplementationFields: React.FC<ImplementationFieldsProps> = ({
   const prefix = isUncompute ? "uncompute" : "";
   const implementationKey = `${prefix}${isUncompute ? "Implementation" : "implementation"}`;
   const fileNameKey = `${prefix}${isUncompute ? "FileName" : "fileName"}`;
-  const implementationTypeKey = `${prefix}${isUncompute ? "ImplementationType" : "implementationType"}`;
-
-  // const implementationTypeOptions = ["QASM"];
   return (
     <>
-      {
-        // Currently we only support one file type
-        /** <label
-        className="block text-sm font-medium text-start text-gray-700 mt-2"
-        htmlFor={`${implementationTypeKey}`}
-      >
-        {isUncompute ? "Uncompute Implementation Type" : "Implementation Type"}
-      </label>
-      <div className="mt-1">
-        <div className="mt-1">
-          <select
-            id={implementationTypeKey}
-            name={implementationTypeKey}
-            value={selectedNode.data[implementationTypeKey] || ""}
-            onChange={(e) => handleNumberChange(implementationTypeKey, e.target.value)}
-            className="border block w-full border-gray-300 rounded-md sm:text-sm p-2 bg-white"
-          >
-            <option value="">Select implementation type</option>
-            {implementationTypeOptions.map((typeOption) => (
-              <option key={typeOption} value={typeOption}>
-                {typeOption}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>**/
-      }
       <label
         className="block text-sm font-medium text-start text-gray-700 mt-2"
         htmlFor={`${prefix}FileUpload`}
