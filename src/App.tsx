@@ -1562,12 +1562,6 @@ If none apply, return { "algorithms": [] }.
 
       // Measurement Node
       if (node.type === "measurementNode") {
-        const missingRegister = connectedSources.every((srcId) => {
-          const sourceNode: any = nodesById.get(srcId);
-          return (
-            sourceNode?.type !== "qubitNode" && sourceNode?.type !== "gateNode"
-          );
-        });
         if (!node?.data?.indices) {
           warnings.push({
             nodeId: node.id,
