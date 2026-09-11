@@ -61,10 +61,7 @@ export const CustomPanel = ({
   onGetModel,
   qasmEditorMode = false,
 }: CustomPanelProps) => {
-  const { selectedNode, nodes, edges, updateNodeValue } = useStore(
-    selector,
-    shallow,
-  );
+  const { selectedNode, nodes, edges } = useStore(selector, shallow);
   const { setNodes, setEdges } = useReactFlow();
   const [activeTab, setActiveTab] = useState<"properties" | "math" | "qasm">(
     "properties",
@@ -387,7 +384,6 @@ export const CustomPanel = ({
 function ComponentsView({
   components,
   onGetCircuitSvg,
-  nodes,
   onGetModel,
 }: {
   components: DiracComponent[];
@@ -454,7 +450,7 @@ function ComponentSection({
   qasmEditorMode?: boolean;
 }) {
   const [expanded, setExpanded] = useState(true);
-  const { setNodes, getNodes } = useReactFlow();
+  const { setNodes } = useReactFlow();
 
   // Gibt nur das SVG der Nodes dieses Circuits/dieser Gruppe zurück
   const circuitNodeIds = new Set(nodeIds ?? nodes.map((n) => n.id));
@@ -978,5 +974,3 @@ async function svgToPngBase64(svgInput: string, scale = 2): Promise<string> {
     img.src = objectUrl;
   });
 }
-
-const getPanel = (type: string) => TextPanel;
