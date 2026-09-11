@@ -3496,19 +3496,6 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
 
   const [, setMySelectedNodeId] = useState<string | null>(null);
 
-  // Iterate over all active collaborative tabs to see what nodes are currently targeted
-  const getActiveSelections = useCallback(() => {
-    const selections: { [clientId: number]: string } = {};
-
-    awareness.getStates().forEach((state: any, clientId: number) => {
-      if (state?.cursor?.mySelectedNodeId) {
-        selections[clientId] = state.cursor.mySelectedNodeId;
-      }
-    });
-
-    return selections;
-  }, [awareness]);
-
   const handleClick = useCallback(
     (event: React.MouseEvent, node: Node) => {
       if (collaborationModeOn && awareness) {
