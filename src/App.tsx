@@ -3747,8 +3747,8 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
         console.log("check");
         console.log(nd.id);
         console.log(node.id);
-        console.log(node.parentNode);
-        if (node.parentNode && nd.id !== node.id) {
+        console.log(node.parentId);
+        if (node.parentId && nd.id !== node.id) {
           console.log("parent nicht nzkk");
           const relativeX = node.positionAbsolute.x - nd.position.x;
           const relativeY = node.positionAbsolute.y - nd.position.y;
