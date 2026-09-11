@@ -6,7 +6,6 @@ import {
   Handle,
   Node,
   Position,
-  getConnectedEdges,
   useUpdateNodeInternals,
 } from "reactflow";
 import { shallow } from "zustand/shallow";
@@ -51,11 +50,9 @@ const selector = (state: {
 
 export const StatePreparationNode = memo((node: Node) => {
   console.log("StatePreparation Node Beginning to exist");
-  const [size, setSize] = useState("");
-  const [bound, setBound] = useState("");
+  const [bound] = useState("");
   const [quantumStateName, setQuantumStateName] = useState("Bell State φ+");
-  const [outputIdentifier, setOutputIdentifier] = useState("");
-  const [showingChildren, setShowingChildren] = useState(false);
+  const [showingChildren] = useState(false);
   const [sizeError, setSizeError] = useState(false);
   const [missingSizeError, setMissingSizeError] = useState(false);
   const [outputs, setOutputs] = useState(node.data.outputs || []);
@@ -92,17 +89,6 @@ export const StatePreparationNode = memo((node: Node) => {
     "W-State": "Shared One",
   };
 
-  const iconMap = {
-    "Prepare State": "prepareStateIcon.png",
-    "Encode Value": "encodeValueIcon.png",
-    "Basis Encoding": "basisEncodingIcon.png",
-    "Angle Encoding": "angleEncodingIcon.png",
-    "Custom Encoding": "customEncodingIcon.png",
-    "Matrix Encoding": "matrixEncodingIcon.png",
-    "Schmidt Decomposition": "schmidtDecompositionIcon.png",
-    "Amplitude Encoding": "amplitudeEncodingIcon.png",
-  };
-
   const encoding = node.data.encodingType
     ? node.data.encodingType.charAt(0).toUpperCase() +
       node.data.encodingType.slice(1)
@@ -124,20 +110,13 @@ export const StatePreparationNode = memo((node: Node) => {
   const {
     updateNodeValue,
     setSelectedNode,
-    setNodes,
     setTypeError,
     edges,
     nodes,
     ancillaMode,
-    completionGuaranteed,
     compact,
     experienceLevel,
   } = useStore(selector, shallow);
-  const isConnected = edges.some(
-    (edge) =>
-      edge.target === node.id &&
-      edge.targetHandle === `ancillaHandlePrepareState0${node.id}`,
-  );
 
   useEffect(() => {
     const checkUserRoles = () => {
@@ -363,85 +342,31 @@ export const StatePreparationNode = memo((node: Node) => {
 
   const { data, selected } = node;
   const id = node.id;
-
-  const alledges = getConnectedEdges([node], edges);
-  const [inputs, setInputs] = useState(data.inputs || []);
-  const [yError, setYError] = useState(false);
-  const [y, setY] = useState("");
-  const [operation, setOperation] = useState("+");
   const updateNodeInternals = useUpdateNodeInternals();
 
-  const addVariable = () => {
-    const newInputId = `input-${inputs.length + 1}`;
-    const newOutputId = `output-${outputs.length + 1}`;
-
-    setInputs([
-      ...inputs,
-      { id: newInputId, label: `Variable ${inputs.length + 1}` },
-    ]);
-    setOutputs([
-      ...outputs,
-      { id: newOutputId, label: `Output ${outputs.length + 1}`, value: "" },
-    ]);
-  };
-
-  const handleOutputChange = (outputId: string, newValue: any) => {
-    // 1. Update the local React state array for immediate rendering
-    const updatedOutputs = outputs.map((output) =>
-      output.id === outputId ? { ...output, value: newValue } : output,
-    );
-    setOutputs(updatedOutputs);
-
-    // 2. Sync it directly to the node object and the Zustand store
-    node.data.outputs = updatedOutputs;
-    updateNodeValue(node.id, "outputs", updatedOutputs);
-
-    // 3. Keep the current selected node context aligned
-    setSelectedNode(node);
-  };
-
-  const handleOutputIdentifierChange = (e, field) => {
-    const value = e.target.value;
-
-    if (/^\d/.test(value)) {
-      setOutputIdentifierError(true);
-    } else {
-      setOutputIdentifierError(false);
-    }
-
-    node.data[field] = value;
-    updateNodeValue(node.id, field, value);
-  };
   const baseHeight =
     data.label === "Prepare State"
       ? 460
       : data.label === "Encode Value"
         ? 450
         : 350;
-  const extraHeightPerVariable = 20;
   const dynamicHeight = baseHeight;
 
   const [remoteHighlightColor, setRemoteHighlightColor] = useState<
     string | null
   >(null);
-  const [selectingUserName, setSelectingUserName] = useState<string | null>(
-    null,
-  );
 
   useEffect(() => {
     const checkRemoteSelection = () => {
       let foundColor: string | null = null;
-      let foundName: string | null = null;
 
-      awareness.getStates().forEach((state: any, clientId: number) => {
+      awareness.getStates().forEach((state: any) => {
         if (state.cursor && state.cursor.mySelectedNodeId === id) {
           foundColor = state.cursor.color;
-          foundName = state.cursor.name;
         }
       });
 
       setRemoteHighlightColor(foundColor);
-      setSelectingUserName(foundName);
     };
 
     checkRemoteSelection();
