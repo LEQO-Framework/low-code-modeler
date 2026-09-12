@@ -1,7 +1,15 @@
 import { useState } from "react";
 import Modal from "./Modal";
 
-import { qaoa_algorithm, swap_test_algorithm, hadamard_test_imaginary_part_algorithm, hadamard_test_real_part_algorithm, grover_algorithm, initialization, uniform_superposition } from "@/constants/templates";
+import {
+  qaoa_algorithm,
+  swap_test_algorithm,
+  hadamard_test_imaginary_part_algorithm,
+  hadamard_test_real_part_algorithm,
+  grover_algorithm,
+  initialization,
+  uniform_superposition,
+} from "@/constants/templates";
 
 const ALGORITHM_FLOW_MAP: Record<string, any> = {
   "Quantum Approximate Optimization Algorithm (QAOA)": qaoa_algorithm,
@@ -14,9 +22,8 @@ const ALGORITHM_FLOW_MAP: Record<string, any> = {
 
   "Uniform Superposition": uniform_superposition,
 
-  "Initialization": initialization,
+  Initialization: initialization,
 };
-
 
 // TODO: update once the ML-nodes are merged
 const ALGORITHM_PATTERNS = {
@@ -24,28 +31,33 @@ const ALGORITHM_PATTERNS = {
     {
       name: "Quantum Approximate Optimization Algorithm (QAOA)",
       iconUrl: "patterns/qaoa_icon.png",
-      textUrl: "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/da93f915-7f4c-49df-99d0-80d91f26a337"
+      textUrl:
+        "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/da93f915-7f4c-49df-99d0-80d91f26a337",
     },
     {
       name: "Variational Quantum Algorithm (VQA)",
       iconUrl: "patterns/vqa_icon.png",
-      textUrl: "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/bc795a9b-7977-4e01-b513-f9f5aba38aa7"
+      textUrl:
+        "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/bc795a9b-7977-4e01-b513-f9f5aba38aa7",
     },
     {
       name: "Uniform Superposition",
       iconUrl: "patterns/uniform_superposition_icon.png",
-      textUrl: "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/2229a430-fe92-4411-9d72-d10dd1d8da14"
+      textUrl:
+        "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/2229a430-fe92-4411-9d72-d10dd1d8da14",
     },
     {
       name: "Alternating Operator Ansatz (AOA)",
       iconUrl: "patterns/aoa_icon.png",
-      textUrl: "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/b657ea73-63c0-4800-a69d-a91925e19ac6"
+      textUrl:
+        "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/b657ea73-63c0-4800-a69d-a91925e19ac6",
     },
     {
       name: "Phase Shift",
       iconUrl: "patterns/phase_shift_icon.png",
-      textUrl: "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/c6560c51-d2e3-4595-b9c3-b609c75c0b82"
-    }
+      textUrl:
+        "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/c6560c51-d2e3-4595-b9c3-b609c75c0b82",
+    },
   ],
   /**
   "Variational Quantum Eigensolver (VQE)": [
@@ -62,16 +74,46 @@ const ALGORITHM_PATTERNS = {
   ],
   */
   "SWAP Test": [
-    { name: "SWAP Test", iconUrl: "patterns/swap_test_icon.svg", textUrl: "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/fd2bb9f3-b04a-4645-a2d0-ffa4d986db83" },
+    {
+      name: "SWAP Test",
+      iconUrl: "patterns/swap_test_icon.svg",
+      textUrl:
+        "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/fd2bb9f3-b04a-4645-a2d0-ffa4d986db83",
+    },
   ],
   "Hadamard Test": [
-    { name: "Hadamard Test", iconUrl: "patterns/hadamard_test_icon.svg", textUrl: "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/37e64e06-9c2a-4c54-aa18-ddcf67f48a6a" },
+    {
+      name: "Hadamard Test",
+      iconUrl: "patterns/hadamard_test_icon.svg",
+      textUrl:
+        "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/37e64e06-9c2a-4c54-aa18-ddcf67f48a6a",
+    },
   ],
   "Grover's Algorithm": [
-    { name: "Grover Pattern", iconUrl: "patterns/grover_icon.svg", textUrl: "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/b8c2dca0-563a-432d-adfd-8bd15ef0dfb8" },
-    { name: "Oracle Pattern", iconUrl: "patterns/oracle_icon.png", textUrl: "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/1cc7e9d6-ab37-412e-8afa-604a25de296e" },
-    { name: "Amplitude Amplification", iconUrl: "patterns/amplitude_amplification_icon.png", textUrl: "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/96b4d28a-a5ce-4c96-85df-d42587b13c57" },
-    { name: "Uniform Superposition", iconUrl: "patterns/uniform_superposition_icon.png", textUrl: "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/2229a430-fe92-4411-9d72-d10dd1d8da14" }
+    {
+      name: "Grover Pattern",
+      iconUrl: "patterns/grover_icon.svg",
+      textUrl:
+        "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/b8c2dca0-563a-432d-adfd-8bd15ef0dfb8",
+    },
+    {
+      name: "Oracle Pattern",
+      iconUrl: "patterns/oracle_icon.png",
+      textUrl:
+        "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/1cc7e9d6-ab37-412e-8afa-604a25de296e",
+    },
+    {
+      name: "Amplitude Amplification",
+      iconUrl: "patterns/amplitude_amplification_icon.png",
+      textUrl:
+        "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/96b4d28a-a5ce-4c96-85df-d42587b13c57",
+    },
+    {
+      name: "Uniform Superposition",
+      iconUrl: "patterns/uniform_superposition_icon.png",
+      textUrl:
+        "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/2229a430-fe92-4411-9d72-d10dd1d8da14",
+    },
   ],
   /**
   "Quantum Phase Estimation (QPE)": [
@@ -85,7 +127,8 @@ const ALGORITHM_PATTERNS = {
     {
       name: "Uniform Superposition",
       iconUrl: "patterns/uniform_superposition_icon.png",
-      textUrl: "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/2229a430-fe92-4411-9d72-d10dd1d8da14"
+      textUrl:
+        "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/2229a430-fe92-4411-9d72-d10dd1d8da14",
     },
   ],
   /** 
@@ -115,13 +158,43 @@ const ALGORITHM_PATTERNS = {
     { name: "SWAP Test",iconUrl: "patterns/swap_test_icon.png", textUrl: "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/fd2bb9f3-b04a-4645-a2d0-ffa4d986db83" }
   ],
   */
-  "Initialization": [
-    { name: "Initialization", iconUrl: "patterns/initialization_icon.png", textUrl: "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/312bc9d3-26c0-40ae-b90b-56effd136c0d" },
-    { name: "Uniform Superposition", iconUrl: "patterns/uniform_superposition_icon.png", textUrl: "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/2229a430-fe92-4411-9d72-d10dd1d8da14" },
-    { name: "Amplitude Encoding", iconUrl: "patterns/amplitude_encoding_icon.png", textUrl: "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/502147ec-45fa-403f-8f52-e196b3359399" },
-    { name: "Angle Encoding", iconUrl: "patterns/angle_encoding_icon.png", textUrl: "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/e595558d-bfea-4b82-9f47-a38a2097b245" },
-    { name: "Basis Encoding", iconUrl: "patterns/basis_encoding_icon.png", textUrl: "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/bcd4c7a1-3c92-4f8c-a530-72b8b95d3750" },
-    { name: "Matrix Encoding", iconUrl: "patterns/matrix_encoding_icon.png", textUrl: "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/45d09c54-3f4a-453b-885d-2772443c8d72" }
+  Initialization: [
+    {
+      name: "Initialization",
+      iconUrl: "patterns/initialization_icon.png",
+      textUrl:
+        "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/312bc9d3-26c0-40ae-b90b-56effd136c0d",
+    },
+    {
+      name: "Uniform Superposition",
+      iconUrl: "patterns/uniform_superposition_icon.png",
+      textUrl:
+        "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/2229a430-fe92-4411-9d72-d10dd1d8da14",
+    },
+    {
+      name: "Amplitude Encoding",
+      iconUrl: "patterns/amplitude_encoding_icon.png",
+      textUrl:
+        "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/502147ec-45fa-403f-8f52-e196b3359399",
+    },
+    {
+      name: "Angle Encoding",
+      iconUrl: "patterns/angle_encoding_icon.png",
+      textUrl:
+        "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/e595558d-bfea-4b82-9f47-a38a2097b245",
+    },
+    {
+      name: "Basis Encoding",
+      iconUrl: "patterns/basis_encoding_icon.png",
+      textUrl:
+        "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/bcd4c7a1-3c92-4f8c-a530-72b8b95d3750",
+    },
+    {
+      name: "Matrix Encoding",
+      iconUrl: "patterns/matrix_encoding_icon.png",
+      textUrl:
+        "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/45d09c54-3f4a-453b-885d-2772443c8d72",
+    },
   ],
   /** 
   "Dynamic Circuits": [
@@ -129,8 +202,7 @@ const ALGORITHM_PATTERNS = {
     { name: "Mid-circuit Measurement", iconUrl: "patterns/mid_circuit_icon.png", textUrl: "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/ae3d4ca7-9503-463a-b0fc-eabed85b83e0" },
   ]
   */
-
-}
+};
 export default function AiModal({
   quantumAlgorithmModalStep,
   quantumAlgorithms,
@@ -145,11 +217,9 @@ export default function AiModal({
   const [userInput, setUserInput] = useState<string>("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const patterns =
-    selectedAlgoName
-      ? (ALGORITHM_PATTERNS[selectedAlgoName] || [])
-      : [];
-
+  const patterns = selectedAlgoName
+    ? ALGORITHM_PATTERNS[selectedAlgoName] || []
+    : [];
 
   return (
     <>
@@ -178,11 +248,13 @@ export default function AiModal({
         >
           <div className="space-y-4">
             <p>
-              In this step, you describe the problem you'd like to solve using a quantum computer.
+              In this step, you describe the problem you'd like to solve using a
+              quantum computer.
             </p>
             <p>
-              The system uses semantic search powered by OpenAPI to match your problem with
-              relevant quantum algorithms, which may incur usage costs.
+              The system uses semantic search powered by OpenAPI to match your
+              problem with relevant quantum algorithms, which may incur usage
+              costs.
             </p>
           </div>
         </Modal>
@@ -227,9 +299,7 @@ export default function AiModal({
               </div>
             )}
 
-            <label className="font-medium block">
-              Describe your problem:
-            </label>
+            <label className="font-medium block">Describe your problem:</label>
             <textarea
               className="w-full border rounded p-2"
               rows={4}
@@ -263,7 +333,9 @@ export default function AiModal({
         >
           <div className="overflow-x-auto">
             <table className="table-auto w-full border border-gray-300 rounded-md">
-              <caption className="text-left p-2 font-semibold">Quantum Algorithms</caption>
+              <caption className="text-left p-2 font-semibold">
+                Quantum Algorithms
+              </caption>
               <thead>
                 <tr className="bg-gray-100 text-left">
                   <th className="p-2 border">Name</th>
@@ -279,14 +351,12 @@ export default function AiModal({
                         <button
                           className="btn btn-primary"
                           onClick={() => {
-                            const flow =
-                              ALGORITHM_FLOW_MAP[algo.name];
+                            const flow = ALGORITHM_FLOW_MAP[algo.name];
                             handleQuantumAlgorithmModalClose();
                             loadFlow(flow);
                           }}
                         >
                           Select
-
                         </button>
                         <button
                           className="btn btn-primary"
@@ -340,7 +410,6 @@ export default function AiModal({
               </div>
             )}
 
-
             {patterns.length > 0 && (
               <div>
                 <h4 className="font-semibold mb-2">Contained Patterns:</h4>
@@ -355,7 +424,11 @@ export default function AiModal({
                     {patterns.map((p) => (
                       <tr key={p.name} className="hover:bg-gray-50">
                         <td className="p-2 border w-16">
-                          <img src={p.iconUrl} alt={p.name} className="w-12 h-12 object-contain" />
+                          <img
+                            src={p.iconUrl}
+                            alt={p.name}
+                            className="w-12 h-12 object-contain"
+                          />
                         </td>
                         <td className="p-2 border">
                           <a
