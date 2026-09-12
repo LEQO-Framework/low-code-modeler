@@ -48,14 +48,6 @@ const PARAMETRIC_GATES = new Set([
   "rx", "ry", "rz", "p", "cp", "crx", "cry", "crz", "u1", "u2", "u3",
 ]);
 
-interface TopoNode {
-  id: string;
-  label: string;
-  qubitIds: string[];    // identifiers der Qubits in Reihenfolge
-  parameter?: string;
-  deps: string[];        // Node-IDs die vorher kommen müssen
-}
-
 /**
  * Wandelt Canvas-Nodes und Edges in QASM 2.0 um.
  * Gibt null zurück wenn keine gültigen Quantum-Nodes gefunden werden.
