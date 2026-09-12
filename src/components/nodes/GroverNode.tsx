@@ -51,9 +51,6 @@ export const GroverNode = memo((node: Node) => {
   const [remoteHighlightColor, setRemoteHighlightColor] = useState<
     string | null
   >(null);
-  const [selectingUserName, setSelectingUserName] = useState<string | null>(
-    null,
-  ); // technically not needed, could extend functionality to also show user name next to highlighted node
 
   useEffect(() => {
     if (data.numQubits !== undefined && data.numQubits !== null) {
@@ -75,23 +72,16 @@ export const GroverNode = memo((node: Node) => {
   useEffect(() => {
     const checkRemoteSelection = () => {
       let foundColor: string | null = null;
-      let foundName: string | null = null;
 
       // Loop through all active client states in the room
-      awareness.getStates().forEach((state: any, clientId: number) => {
-        // Skip your own client ID so you don't highlight it with your own color
-        // if (clientId === awareness.clientID) return;
-
+      awareness.getStates().forEach((state: any) => {
         // Check if a peer has selected this specific node ID
         if (state.cursor && state.cursor.mySelectedNodeId === id) {
           foundColor = state.cursor.color;
-          foundName = state.cursor.name;
         }
       });
 
       setRemoteHighlightColor(foundColor);
-      setSelectingUserName(foundName);
-      console.log("COLOR", foundColor, foundName);
     };
 
     // Run once immediately on mount
