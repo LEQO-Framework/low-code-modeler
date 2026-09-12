@@ -144,17 +144,6 @@ export const startCompile = async (
       case consts.StatePreparationNode:
         switch (node.data.label) {
           case "Encode Value": {
-            // Resilient mapping to support both the old labels and the new unmerged PR labels
-            const rawType = node.data.encodingType;
-            const encMap: Record<string, string> = {
-              "Amplitude Encoding": "amplitude",
-              "Angle Encoding": "angle",
-              "Basis Encoding": "basis",
-              "Custom Encoding": "custom",
-              "Matrix Encoding": "matrix",
-              "Schmidt Decomposition": "schmidt",
-            };
-
             return {
               id: node.id,
               type: "encode",
