@@ -1557,7 +1557,7 @@ export function QasmDiracPanel(props: Props) {
       }));
     }
     const reducedSize = 1 << effectiveSelected.length;
-    const probs = new Array(reducedSize).fill(0);
+    const probs = Array.from({ length: reducedSize }, () => 0);
     for (const term of fullResult.terms) {
       const p = prob(term.amplitude.re, term.amplitude.im) / 100;
       let reducedIdx = 0;
