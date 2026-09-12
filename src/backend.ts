@@ -154,7 +154,6 @@ export const startCompile = async (
               "Matrix Encoding": "matrix",
               "Schmidt Decomposition": "schmidt",
             };
-            const resolvedType = encMap[rawType] || rawType;
 
             return {
               id: node.id,
@@ -390,7 +389,7 @@ export const startCompile = async (
             if (typeof val === "string") {
               try {
                 parsedValue = JSON.parse(val);
-              } catch (e) {
+              } catch {
                 parsedValue = val.split(",").map(Number);
               }
             }
