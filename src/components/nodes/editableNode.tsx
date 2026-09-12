@@ -40,7 +40,7 @@ export const EditableNode = memo((node: Node) => {
     val: string,
     constraintObj: any,
     allValues: string[],
-    properties: any[]
+    properties: any[],
   ) => {
     const { constraint, value } = constraintObj;
 
@@ -54,7 +54,6 @@ export const EditableNode = memo((node: Node) => {
     if (otherIndex !== -1) compareValue = allValues[otherIndex];
 
     if (!val || !compareValue) return "";
-
 
     // Numeric comparison
     const numVal = parseFloat(val);
@@ -106,7 +105,7 @@ export const EditableNode = memo((node: Node) => {
   const validateAllFields = (
     values: string[],
     properties: any[],
-    constraints: any[]
+    constraints: any[],
   ) => {
     return values.map((val, index) => {
       const prop = properties[index];
@@ -128,17 +127,22 @@ export const EditableNode = memo((node: Node) => {
     const initialValues =
       properties.map((prop: any) => data.propertyValues?.[prop.name] || "") ||
       [];
-    const [propertyValues, setPropertyValues] = useState<string[]>(initialValues);
+    const [propertyValues, setPropertyValues] =
+      useState<string[]>(initialValues);
     const [propertyErrors, setPropertyErrors] = useState<string[]>(
-      validateAllFields(initialValues, properties, constraints)
+      validateAllFields(initialValues, properties, constraints),
     );
 
     const dynamicHeight = 100 + properties.length * 60 + 200;
 
     const id = node.id;
 
-    const [remoteHighlightColor, setRemoteHighlightColor] = useState<string | null>(null);
-    const [selectingUserName, setSelectingUserName] = useState<string | null>(null); // technically not needed, could extend functionality to also show user name next to highlighted node
+    const [remoteHighlightColor, setRemoteHighlightColor] = useState<
+      string | null
+    >(null);
+    const [selectingUserName, setSelectingUserName] = useState<string | null>(
+      null,
+    ); // technically not needed, could extend functionality to also show user name next to highlighted node
 
     useEffect(() => {
       const checkRemoteSelection = () => {
@@ -175,18 +179,22 @@ export const EditableNode = memo((node: Node) => {
     }, [id]); // Re-run if node ID changes
 
     return (
-      <div
-        className="relative w-[450px]"
-        style={{ height: dynamicHeight }}
-      >
+      <div className="relative w-[450px]" style={{ height: dynamicHeight }}>
         <div
-          className={"relative w-full h-full rounded-[80px] bg-white shadow-md border"}
+          className={
+            "relative w-full h-full rounded-[80px] bg-white shadow-md border"
+          }
           style={{
-            borderColor: remoteHighlightColor ? remoteHighlightColor : (selected ? "#3B82F6" : "#374151"),
+            borderColor: remoteHighlightColor
+              ? remoteHighlightColor
+              : selected
+                ? "#3B82F6"
+                : "#374151",
             boxShadow: remoteHighlightColor
               ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}` // Glowing aura ring
               : undefined,
-          }}>
+          }}
+        >
           {/* Header */}
           <div className="absolute top-0 left-0 w-full h-[60px] rounded-t-[80px] overflow-hidden">
             <div className="w-full h-full bg-orange-300 flex items-center px-8">
@@ -227,7 +235,7 @@ export const EditableNode = memo((node: Node) => {
                       const newErrors = validateAllFields(
                         newValues,
                         properties,
-                        constraints
+                        constraints,
                       );
                       setPropertyErrors(newErrors);
 
@@ -236,14 +244,14 @@ export const EditableNode = memo((node: Node) => {
                       updateNodeValue(
                         node.id,
                         "propertyValues",
-                        node.data.propertyValues
+                        node.data.propertyValues,
                       );
                     }}
                     className={cn(
                       "rounded-full border-2 px-3 py-1 w-[380px] text-center",
                       errorMessage
                         ? "border-red-500 bg-red-100"
-                        : "border-orange-300"
+                        : "border-orange-300",
                     )}
                   />
 
@@ -292,14 +300,11 @@ export const EditableNode = memo((node: Node) => {
   const dynamicHeight = 200 + numberInputs * 50 + numberOutputs * 130 + 100;
 
   return (
-    <div
-      className="relative"
-      style={{ width: 320, height: dynamicHeight }}
-    >
+    <div className="relative" style={{ width: 320, height: dynamicHeight }}>
       <div
         className={cn(
           "w-[320px] bg-white border border-solid border-gray-700 shadow-md relative",
-          selected && "border-blue-500"
+          selected && "border-blue-500",
         )}
         style={{ height: `${dynamicHeight}px` }}
       >
@@ -318,7 +323,6 @@ export const EditableNode = memo((node: Node) => {
             </span>
           </div>
         </div>
-
 
         {/* Inputs */}
         <div className="mt-[70px] flex flex-col relative z-0">
