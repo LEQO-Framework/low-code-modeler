@@ -105,7 +105,7 @@ export const startCompile = async (
         id: `flow-${Date.now()}`,
         ...metadata,
       },
-      nodes: [...nodes.filter((x) => !x.parentNode).map(mapNode)],
+      nodes: nodes.filter((x) => !x.parentNode).map(mapNode),
       edges: edges
         .filter((e) => !isNestedEdge(e))
         .filter((e) => {
