@@ -6,11 +6,7 @@ import {
 } from "../utils/utils";
 import { Node } from "reactflow";
 import { useEffect, useMemo, useRef } from "react";
-import {
-  AlgorithmNode,
-  ClassicalAlgorithmNode,
-  classicalConstructColor,
-} from "@/constants";
+import { classicalConstructColor } from "@/constants";
 
 interface OutputPortProps {
   node: Node;
@@ -63,7 +59,6 @@ export default function OutputPort({
   const outputIdentifier = outputs[index]?.identifier || "";
   const outputSize = outputs[index]?.size || "";
   const isConnected = edges.some((edge) => edge.sourceHandle === handleId);
-  const outputType = node.data.outputType || "";
 
   // Handle numeric size change and validation
   const handleYChange = (value: string, field: string) => {
