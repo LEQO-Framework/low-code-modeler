@@ -125,34 +125,6 @@ export function findConnectedComponents(
 }
 
 /**
- * Bestimmt den Gruppennamen einer Komponente.
- * Wenn alle Nodes in derselben Gruppe sind → Gruppenname.
- * Sonst → null.
- */
-function getComponentGroupInfo(
-  componentNodes: Node[],
-  allNodes: Node[],
-): { label: string | null; color: string; groupId: string | null } {
-  const parentIds = new Set(
-    componentNodes.map((n) => n.parentNode).filter(Boolean),
-  );
-
-  if (parentIds.size === 1) {
-    const groupId = [...parentIds][0]!;
-    const groupNode = allNodes.find((n) => n.id === groupId);
-    if (groupNode) {
-      return {
-        label: groupNode.data?.label || "Group",
-        color: groupNode.data?.color || "#6366f1",
-        groupId,
-      };
-    }
-  }
-
-  return { label: null, color: "#6366f1", groupId: null };
-}
-
-/**
  * Sammelt alle erreichbaren Kind-Nodes von einem Gruppen-Target aus.
  */
 function collectReachableNodes(
@@ -235,116 +207,6 @@ export function computeOrderedComponents(
     return tgtNode?.type === "groupNode"
       ? tgtNode.id
       : (tgtNode?.parentNode ?? edge.target);
-  };
-
-  // Für jede Gruppe prüfen ob ihre Outputs zu verschiedenen Zielen gehen
-  const splitGroupComponents = (
-    groupId: string,
-    groupNodes: Node[],
-  ): Node[][] => {
-    const groupNodeIds = new Set(groupNodes.map((n) => n.id));
-
-    // Externe Edges die von dieser Gruppe ausgehen
-    const externalEdges = edges.filter((e) => {
-      const srcNode = nodes.find((n) => n.id === e.source);
-      // Edge geht von GroupNode selbst aus
-      if (srcNode?.type === "groupNode" && srcNode.id === groupId) return true;
-      // Edge geht von einem Kind-Node nach außen
-      if (groupNodeIds.has(e.source)) {
-        const tgtNode = nodes.find((n) => n.id === e.target);
-        return !groupNodeIds.has(e.target) && tgtNode?.parentNode !== groupId;
-      }
-      return false;
-    });
-
-    if (externalEdges.length <= 1) return [groupNodes];
-
-    // Ziele bestimmen
-    const targetGroups = new Set(
-      externalEdges.map((e) => getEdgeTargetGroupId(e)),
-    );
-    if (targetGroups.size <= 1) return [groupNodes];
-
-    // Interne Edges der Gruppe
-    const internalEdges = edges.filter(
-      (e) => groupNodeIds.has(e.source) && groupNodeIds.has(e.target),
-    );
-    const internalTargets = new Set(internalEdges.map((e) => e.target));
-
-    // Für jede externe Edge den zugehörigen Kind-Node finden
-    // und per BFS rückwärts alle verbundenen Nodes sammeln
-    const subComponents: Node[][] = [];
-    const assignedNodes = new Set<string>();
-
-    for (const edge of externalEdges) {
-      const srcNode = nodes.find((n) => n.id === edge.source);
-
-      // Finde den Ausgangs-Kind-Node dieser Edge
-      let sourceKindNode: Node | undefined;
-
-      if (srcNode?.type === "groupNode") {
-        // Proxy-Handle: Handle-ID enthält Kind-Node ID
-        const handleId = edge.sourceHandle ?? "";
-        sourceKindNode = groupNodes.find((n) => handleId.includes(n.id));
-
-        // Fallback: finde den Kind-Node der kein internes Target ist
-        // und zu diesem Ziel führt (per Index)
-        if (!sourceKindNode) {
-          const outputNodes = groupNodes.filter(
-            (n) =>
-              !internalTargets.has(n.id) &&
-              n.type !== "qubitNode" &&
-              n.type !== "groupNode",
-          );
-          const edgeIndex = externalEdges.indexOf(edge);
-          sourceKindNode = outputNodes[edgeIndex] ?? outputNodes[0];
-        }
-      } else {
-        sourceKindNode = srcNode;
-      }
-
-      if (!sourceKindNode) continue;
-
-      // BFS rückwärts: finde alle Nodes die zu diesem Ausgangs-Node führen
-      const subComponent: Node[] = [];
-      const visited = new Set<string>();
-      const queue = [sourceKindNode.id];
-      visited.add(sourceKindNode.id);
-
-      while (queue.length > 0) {
-        const currentId = queue.shift()!;
-        const currentNode = groupNodes.find((n) => n.id === currentId);
-        if (currentNode) subComponent.push(currentNode);
-
-        // Vorwärts-Nachbarn (intern)
-        for (const e of internalEdges) {
-          if (e.source === currentId && !visited.has(e.target)) {
-            visited.add(e.target);
-            queue.push(e.target);
-          }
-        }
-        // Rückwärts-Nachbarn (intern)
-        for (const e of internalEdges) {
-          if (e.target === currentId && !visited.has(e.source)) {
-            visited.add(e.source);
-            queue.push(e.source);
-          }
-        }
-      }
-
-      subComponent.forEach((n) => assignedNodes.add(n.id));
-      if (subComponent.length > 0) subComponents.push(subComponent);
-    }
-
-    // Nicht zugeordnete Nodes zur ersten Sub-Komponente
-    const unassigned = groupNodes.filter((n) => !assignedNodes.has(n.id));
-    if (unassigned.length > 0 && subComponents.length > 0) {
-      subComponents[0].push(...unassigned);
-    } else if (unassigned.length > 0) {
-      subComponents.push(unassigned);
-    }
-
-    return subComponents.length > 0 ? subComponents : [groupNodes];
   };
 
   // Gruppen mit mehreren Outputs zu verschiedenen Zielen identifizieren
@@ -654,24 +516,6 @@ export async function analyzeComponents(
       };
     }
     return { label: null, color: "#6366f1", groupId: null };
-  };
-
-  // Jobs erstellen
-  //
-  // WICHTIG: componentNodes kommt in Erstellungsreihenfolge (React-State-Array-Reihenfolge),
-  // NICHT in visueller Canvas-Reihenfolge. Wenn mehrere unverbundene Teilgraphen zur selben
-  // Gruppe zusammengeführt werden (s.o.), würde das Backend Register-Indizes anhand der
-  // Array-Position vergeben - was zu falscher Zuordnung führt, sobald z.B. ein Node dupliziert
-  // und erst später mit einem anderen (visuell höher liegenden) Qubit verbunden wurde.
-  // Fix: vor dem Versand nach visueller Position sortieren (Y zuerst, dann X als Tie-Breaker),
-  // damit "oben auf dem Canvas" zuverlässig zu niedrigeren Register-Indizes führt.
-  const sortByVisualPosition = (a: Node, b: Node): number => {
-    const ay = a.positionAbsolute?.y ?? a.position.y;
-    const by = b.positionAbsolute?.y ?? b.position.y;
-    if (ay !== by) return ay - by;
-    const ax = a.positionAbsolute?.x ?? a.position.x;
-    const bx = b.positionAbsolute?.x ?? b.position.x;
-    return ax - bx;
   };
 
   const jobs = components.map((componentNodes) => {
