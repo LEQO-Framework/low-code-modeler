@@ -1,23 +1,21 @@
-import {
-  Node,
-} from "reactflow";
+import { Node } from "reactflow";
 
 export const isUniqueIdentifier = (
   nodes: Node[],
   identifier: string,
-  nodeId: string
+  nodeId: string,
 ): boolean => {
   console.log("check if outputIdentifier is unique");
 
-  return !nodes.filter((node) => node.id !== nodeId).some(
-    node => {
-      console.log(nodeId); console.log(node.data.outputIdentifier);
-      console.log(node.id)
-      return node.data.outputIdentifier === identifier
-    }
-  );
+  return !nodes
+    .filter((node) => node.id !== nodeId)
+    .some((node) => {
+      console.log(nodeId);
+      console.log(node.data.outputIdentifier);
+      console.log(node.id);
+      return node.data.outputIdentifier === identifier;
+    });
 };
-
 
 export function findDuplicateOutputIdentifiers(nodes, currentNodeId) {
   const identifierMap = new Map();
@@ -31,19 +29,27 @@ export function findDuplicateOutputIdentifiers(nodes, currentNodeId) {
         identifierMap.set(id, [node.id]);
       }
     }
-
   });
 
   return identifierMap;
 }
 
-export function findDuplicateOutputIdentifier(nodes, currentNodeId, currentNode, identifier) {
+export function findDuplicateOutputIdentifier(
+  nodes,
+  currentNodeId,
+  currentNode,
+  identifier,
+) {
   const identifierMap = new Map();
 
   nodes.forEach((node) => {
     const id = node.data?.outputs;
     for (const output of currentNode.data.outputs) {
-      if (id && node.id !== currentNodeId && output?.identifier === identifier) {
+      if (
+        id &&
+        node.id !== currentNodeId &&
+        output?.identifier === identifier
+      ) {
         if (identifierMap.has(id)) {
           identifierMap.set(id, [...identifierMap.get(id), node.id]);
         } else {
@@ -51,15 +57,22 @@ export function findDuplicateOutputIdentifier(nodes, currentNodeId, currentNode,
         }
       }
     }
-
   });
   console.log(identifierMap);
   return identifierMap;
 }
-export function findDuplicateOutputIdentifiersInsideNode(nodes, currentNode, identifier) {
-  const node = nodes.find(n => n.id === currentNode?.id);
+export function findDuplicateOutputIdentifiersInsideNode(
+  nodes,
+  currentNode,
+  identifier,
+) {
+  const node = nodes.find((n) => n.id === currentNode?.id);
 
-  if (!currentNode || !currentNode.data?.outputs || currentNode.data.outputs.length <= 1) {
+  if (
+    !currentNode ||
+    !currentNode.data?.outputs ||
+    currentNode.data.outputs.length <= 1
+  ) {
     return false;
   }
 
@@ -67,7 +80,7 @@ export function findDuplicateOutputIdentifiersInsideNode(nodes, currentNode, ide
 
   for (const output of currentNode.data.outputs) {
     const id = output?.identifier;
-    console.log(id)
+    console.log(id);
     if (!id) continue;
 
     if (seen.has(id) && id === identifier) {
