@@ -5,7 +5,6 @@ import {
   qaoa_algorithm,
   swap_test_algorithm,
   hadamard_test_imaginary_part_algorithm,
-  hadamard_test_real_part_algorithm,
   grover_algorithm,
   initialization,
   uniform_superposition,
@@ -59,20 +58,6 @@ const ALGORITHM_PATTERNS = {
         "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/c6560c51-d2e3-4595-b9c3-b609c75c0b82",
     },
   ],
-  /**
-  "Variational Quantum Eigensolver (VQE)": [
-    {
-      name: "Variational Quantum Eigensolver (VQE)",
-      iconUrl: "patterns/vqe_icon.png",
-      textUrl: "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/27a5d147-a323-4c6a-84ef-45d80cae923d"
-    },
-    {
-      name: "Variational Quantum Algorithm (VQA)",
-      iconUrl: "patterns/vqa_icon.png",
-      textUrl: "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/bc795a9b-7977-4e01-b513-f9f5aba38aa7"
-    }
-  ],
-  */
   "SWAP Test": [
     {
       name: "SWAP Test",
@@ -115,14 +100,6 @@ const ALGORITHM_PATTERNS = {
         "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/2229a430-fe92-4411-9d72-d10dd1d8da14",
     },
   ],
-  /**
-  "Quantum Phase Estimation (QPE)": [
-    { name: "QPE Pattern", iconUrl: "patterns/qpe_icon.png", textUrl: "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/a4ea9f6c-5b0a-4beb-a056-8b261d96ba80" },
-     { name: "Quantum Fourier Transform (QFT)", iconUrl: "patterns/qft_icon.png",textUrl: "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/12d260d0-08e3-483e-900e-fbe21db10cac" },
-    { name: "Uniform Superposition", iconUrl: "patterns/uniform_superposition_icon.png", textUrl: "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/2229a430-fe92-4411-9d72-d10dd1d8da14" },
-    { name: "Basis Encoding", iconUrl: "patterns/controlled_unitary_icon.png", textUrl: "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/bcd4c7a1-3c92-4f8c-a530-72b8b95d3750" },
-  ],
-   */
   "Uniform Superposition": [
     {
       name: "Uniform Superposition",
@@ -131,33 +108,6 @@ const ALGORITHM_PATTERNS = {
         "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/2229a430-fe92-4411-9d72-d10dd1d8da14",
     },
   ],
-  /** 
-  "Quantum Fourier Transform (QFT)": [
-    { name: "Quantum Fourier Transform (QFT)", iconUrl: "patterns/qft_icon.png",textUrl: "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/12d260d0-08e3-483e-900e-fbe21db10cac" },
-    { name: "Phase Shift", iconUrl: "patterns/phase_shift_icon.png",textUrl: "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/c6560c51-d2e3-4595-b9c3-b609c75c0b82" },
-     { name: "Dynamic Circuit", iconUrl: "patterns/qke_icon.png", textUrl: "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/88d3e6f5-c75f-42aa-b665-2ba79746222e" },
-  ],
-
-  "Quantum Classification": [
-    { name: "Quantum Classification", iconUrl: "patterns/quantum_classification_icon.png",textUrl: "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/cc3731cf-ecbb-490f-b996-525c8f60d8a9" },
-     {
-      name: "Variational Quantum Algorithm (VQA)",
-      iconUrl: "patterns/vqa_icon.png",
-      textUrl: "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/bc795a9b-7977-4e01-b513-f9f5aba38aa7"
-    },
-    { name: "Quantum Kernel Estimator (QKE)", iconUrl: "patterns/qke_icon.png", textUrl: "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/5479acf4-0588-49af-a6a9-4956b7ee32af" },
-  ],
-
-  "Quantum Clustering": [
-    { name: "Quantum Clustering",iconUrl: "patterns/quantum_clustering_icon.png", textUrl: "patterns/quantum_clustering.png" },
-     {
-      name: "Variational Quantum Algorithm (VQA)",
-      iconUrl: "patterns/vqa_icon.png",
-      textUrl: "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/bc795a9b-7977-4e01-b513-f9f5aba38aa7"
-    },
-    { name: "SWAP Test",iconUrl: "patterns/swap_test_icon.png", textUrl: "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/fd2bb9f3-b04a-4645-a2d0-ffa4d986db83" }
-  ],
-  */
   Initialization: [
     {
       name: "Initialization",
@@ -196,17 +146,10 @@ const ALGORITHM_PATTERNS = {
         "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/45d09c54-3f4a-453b-885d-2772443c8d72",
     },
   ],
-  /** 
-  "Dynamic Circuits": [
-    { name: "Dynamic Circuit", iconUrl: "patterns/dynamic_circuit_icon.png", textUrl: "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/88d3e6f5-c75f-42aa-b665-2ba79746222e" },
-    { name: "Mid-circuit Measurement", iconUrl: "patterns/mid_circuit_icon.png", textUrl: "https://patterns.platform.planqk.de/pattern-languages/af7780d5-1f97-4536-8da7-4194b093ab1d/ae3d4ca7-9503-463a-b0fc-eabed85b83e0" },
-  ]
-  */
 };
 export default function AiModal({
   quantumAlgorithmModalStep,
   quantumAlgorithms,
-  isDetectingAlgorithms,
   detectQuantumAlgorithms,
   handleQuantumAlgorithmModalClose,
   setQuantumAlgorithmModalStep,
