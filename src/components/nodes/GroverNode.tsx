@@ -12,16 +12,24 @@ const selector = (state: any) => ({
   nodes: state.nodes,
   edges: state.edges,
   setSelectedNode: state.setSelectedNode,
-  setContainsPlaceholder: state.setContainsPlaceholder
+  setContainsPlaceholder: state.setContainsPlaceholder,
 });
 
 export const GroverNode = memo((node: Node) => {
   const { id, data, selected } = node;
-  const { updateNodeValue, nodes, edges, setSelectedNode, setContainsPlaceholder } = useStore(selector, shallow);
+  const {
+    updateNodeValue,
+    nodes,
+    edges,
+    setSelectedNode,
+    setContainsPlaceholder,
+  } = useStore(selector, shallow);
 
-  const [numQubitsStr, setNumQubitsStr] = useState(String(data.numQubits)|| 3);
+  const [numQubitsStr, setNumQubitsStr] = useState(String(data.numQubits) || 3);
   const [targetStates, setTargetStates] = useState(data.targetStates || "");
-  const [iterationsStr, setIterationsStr] = useState(data.numIterations ? String(data.numIterations) : "");
+  const [iterationsStr, setIterationsStr] = useState(
+    data.numIterations ? String(data.numIterations) : "",
+  );
 
   const [outputs, setOutputs] = useState(data.outputs || []);
   const [outputIdentifierError, setOutputIdentifierError] = useState(false);
@@ -33,32 +41,37 @@ export const GroverNode = memo((node: Node) => {
   const [hasExplorerUser, setHasExplorerUser] = useState(false);
 
   const [missingQubitsError, setMissingQubitsError] = useState(false);
-  const [missingTargetStatesError, setMissingTargetStatesError] = useState(false);
+  const [missingTargetStatesError, setMissingTargetStatesError] =
+    useState(false);
   useEffect(() => {
     setMissingQubitsError(numQubitsStr.trim() === "");
     setMissingTargetStatesError(targetStates.trim() === "");
   }, [numQubitsStr, targetStates]);
 
-  const [remoteHighlightColor, setRemoteHighlightColor] = useState<string | null>(null);
-  const [selectingUserName, setSelectingUserName] = useState<string | null>(null); // technically not needed, could extend functionality to also show user name next to highlighted node
+  const [remoteHighlightColor, setRemoteHighlightColor] = useState<
+    string | null
+  >(null);
+  const [selectingUserName, setSelectingUserName] = useState<string | null>(
+    null,
+  ); // technically not needed, could extend functionality to also show user name next to highlighted node
 
   useEffect(() => {
-  if (data.numQubits !== undefined && data.numQubits !== null) {
-    setNumQubitsStr(String(data.numQubits));
-  }
+    if (data.numQubits !== undefined && data.numQubits !== null) {
+      setNumQubitsStr(String(data.numQubits));
+    }
 
-  if (data.targetStates !== undefined && data.targetStates !== null) {
+    if (data.targetStates !== undefined && data.targetStates !== null) {
       const hasLetters = /[a-zA-Z]/.test(targetStates);
-  setContainsPlaceholder(hasLetters);
-    setTargetStates(data.targetStates);
-  }
+      setContainsPlaceholder(hasLetters);
+      setTargetStates(data.targetStates);
+    }
 
-  if (data.numIterations !== undefined && data.numIterations !== null) {
-    setIterationsStr(String(data.numIterations));
-  } else {
-    setIterationsStr("");
-  }
-}, [data.numQubits, data.targetStates, data.numIterations]);
+    if (data.numIterations !== undefined && data.numIterations !== null) {
+      setIterationsStr(String(data.numIterations));
+    } else {
+      setIterationsStr("");
+    }
+  }, [data.numQubits, data.targetStates, data.numIterations]);
   useEffect(() => {
     const checkRemoteSelection = () => {
       let foundColor: string | null = null;
@@ -127,24 +140,26 @@ export const GroverNode = memo((node: Node) => {
   };
 
   return (
-    <div
-      className="grand-parent"
-      style={{ width: 320, height: 420 }}
-    >
+    <div className="grand-parent" style={{ width: 320, height: 420 }}>
       <div className="grand-parent">
         <div
           className={cn(
             "w-[320px] bg-white border border-solid border-gray-700 shadow-md relative",
             selected && "border-blue-500",
-            mixedView && "border-purple-400"
+            mixedView && "border-purple-400",
           )}
           style={{
-            borderColor: remoteHighlightColor ? remoteHighlightColor : (selected ? "#3B82F6" : "#374151"),
+            borderColor: remoteHighlightColor
+              ? remoteHighlightColor
+              : selected
+                ? "#3B82F6"
+                : "#374151",
             boxShadow: remoteHighlightColor
               ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}` // Glowing aura ring
               : undefined,
-            height: `420px`
-          }}>
+            height: `420px`,
+          }}
+        >
           {missingQubitsError && (
             <div className="absolute top-2 right-[-40px] group z-20">
               <AlertCircle className="text-red-600 w-5 h-5" />
@@ -169,8 +184,11 @@ export const GroverNode = memo((node: Node) => {
           )}
 
           {/* HEADER */}
-          <div className="w-full flex items-center" style={{ height: '52px' }}>
-            <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
+          <div className="w-full flex items-center" style={{ height: "52px" }}>
+            <div
+              className="w-full bg-blue-300 py-1 px-2 flex items-center"
+              style={{ height: "inherit" }}
+            >
               <img
                 src="groverIcon.png"
                 alt="Grover icon"
@@ -197,17 +215,14 @@ export const GroverNode = memo((node: Node) => {
 
           {/* CONFIGURATION BODY */}
           <div className="px-4 py-1 mt-3">
-
             {/* QUBITS / ELEMENTS FIELD */}
             <div>
               <label className="text-xs font-semibold text-gray-700">
-                {mixedView ? (
-                  "Number of Qubits / Number of Elements:"
-                ) : !hasPioneerUser && hasExplorerUser ? (
-                  "Number of Elements:"
-                ) : (
-                  "Number of Qubits:"
-                )}
+                {mixedView
+                  ? "Number of Qubits / Number of Elements:"
+                  : !hasPioneerUser && hasExplorerUser
+                    ? "Number of Elements:"
+                    : "Number of Qubits:"}
               </label>
               <input
                 type="text"
@@ -228,13 +243,11 @@ export const GroverNode = memo((node: Node) => {
             {/* TARGET STATES / ELEMENTS TO SEARCH FIELD */}
             <div className="mt-2">
               <label className="text-xs font-semibold text-gray-700">
-                {mixedView ? (
-                  "Marked States / Element(s) to Search:"
-                ) : !hasPioneerUser && hasExplorerUser ? (
-                  "Element(s) to Search:"
-                ) : (
-                  "Marked States (Comma-separated indices):"
-                )}
+                {mixedView
+                  ? "Marked States / Element(s) to Search:"
+                  : !hasPioneerUser && hasExplorerUser
+                    ? "Element(s) to Search:"
+                    : "Marked States (Comma-separated indices):"}
               </label>
               <input
                 type="text"
@@ -255,7 +268,9 @@ export const GroverNode = memo((node: Node) => {
             </div>
 
             <div className="mt-2">
-              <label className="text-xs font-semibold text-gray-700">Iterations (Oracle + Diffusion):</label>
+              <label className="text-xs font-semibold text-gray-700">
+                Iterations (Oracle + Diffusion):
+              </label>
               <input
                 type="text"
                 placeholder="Auto"
@@ -264,7 +279,10 @@ export const GroverNode = memo((node: Node) => {
                 onChange={(e) => {
                   const val = e.target.value.replace(/[^0-9]/g, "");
                   setIterationsStr(val);
-                  handleChange("numIterations", val === "" ? "" : parseInt(val, 10));
+                  handleChange(
+                    "numIterations",
+                    val === "" ? "" : parseInt(val, 10),
+                  );
                 }}
               />
             </div>
