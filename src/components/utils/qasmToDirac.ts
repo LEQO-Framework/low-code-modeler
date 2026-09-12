@@ -882,7 +882,7 @@ export function marginalizeQubits(
 ): { basisState: string; probability: number }[] {
   // Wahrscheinlichkeit pro Basis-Index (reduziert)
   const reducedSize = 1 << keepQubits.length;
-  const probs = new Array(reducedSize).fill(0);
+  const probs = Array.from({ length: reducedSize }, () => 0);
 
   for (let i = 0; i < sv.length; i++) {
     const p = cabs2(sv[i]);
