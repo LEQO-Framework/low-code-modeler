@@ -1,4 +1,4 @@
-import { FC, ReactElement } from "react";
+import { ReactElement } from "react";
 import { createPortal } from "react-dom";
 
 interface ModalProps {

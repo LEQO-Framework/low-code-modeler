@@ -229,9 +229,8 @@ function resolveQubits(
     const varIdx = varMap.get(part);
     if (varIdx !== undefined) { result.push(varIdx); continue; }
     // Ganzes Register
-    let found = false;
     for (const [key, idx] of qubitMap.entries()) {
-      if (key.startsWith(part + "[")) { result.push(idx); found = true; }
+      if (key.startsWith(part + "[")) { result.push(idx); }
     }
   }
 

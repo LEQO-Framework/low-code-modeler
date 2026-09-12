@@ -4,7 +4,7 @@
  * IBM Quantum Composer style Bloch sphere
  */
 
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useEffect, useRef, useMemo } from "react";
 import * as THREE from "three";
 
 interface BlochSphereProps {

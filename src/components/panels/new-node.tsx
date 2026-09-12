@@ -4,7 +4,6 @@ import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
 import * as consts from "../../constants";
 import { DomainProfile } from "../modals/domainProfileModal";
-import { Label } from "recharts";
 
 const selector = (state: {
   ancillaMode: boolean;

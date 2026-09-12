@@ -18,7 +18,7 @@ const GROUP_COLORS = [
 let colorIndex = 0;
 let groupCounter = 1;
 
-export function groupSelectedNodes(nodes: Node[], edges: Edge[]): Node[] {
+export function groupSelectedNodes(nodes: Node[], _edges: Edge[]): Node[] {
   // Alle selektierten Nodes:
   // - inkl. bestehende Gruppen (für Obergruppen-Bildung)
   // - nur Top-Level: keine Nodes deren Parent auch selektiert ist

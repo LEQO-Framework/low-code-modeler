@@ -1,12 +1,23 @@
 import { useStore } from "@/config/store";
 import { cn } from "@/lib/utils";
 import { memo, useEffect, useState } from "react";
-import { Edge, Handle, Node, Position, getConnectedEdges, useUpdateNodeInternals } from "reactflow";
+import {
+  Edge,
+  Handle,
+  Node,
+  Position,
+  useUpdateNodeInternals,
+} from "reactflow";
 import { shallow } from "zustand/shallow";
 import OutputPort from "../utils/outputPort";
 import UncomputePort from "../utils/uncomputePort";
 import AncillaPort from "../utils/ancillaPort";
-import { ancillaConstructColor, dirtyConstructColor, dirtyAncillaHandle, classicalConstructColor } from "@/constants";
+import {
+  ancillaConstructColor,
+  dirtyConstructColor,
+  dirtyAncillaHandle,
+  classicalConstructColor,
+} from "@/constants";
 import { AlertCircle } from "lucide-react";
 import { findDuplicateOutputIdentifiers } from "../utils/utils";
 import { awareness } from "@/yjs";
@@ -34,16 +45,14 @@ const selector = (state: {
   updateNodeValue: state.updateNodeValue,
   setSelectedNode: state.setSelectedNode,
   setTypeError: state.setTypeError,
-  experienceLevel: state.experienceLevel
+  experienceLevel: state.experienceLevel,
 });
 
 export const StatePreparationNode = memo((node: Node) => {
-  console.log("StatePreparation Node Beginning to exist")
-  const [size, setSize] = useState("");
-  const [bound, setBound] = useState("");
+  console.log("StatePreparation Node Beginning to exist");
+  const [bound] = useState("");
   const [quantumStateName, setQuantumStateName] = useState("Bell State φ+");
-  const [outputIdentifier, setOutputIdentifier] = useState("");
-  const [showingChildren, setShowingChildren] = useState(false);
+  const [showingChildren] = useState(false);
   const [sizeError, setSizeError] = useState(false);
   const [missingSizeError, setMissingSizeError] = useState(false);
   const [outputs, setOutputs] = useState(node.data.outputs || []);
@@ -65,7 +74,7 @@ export const StatePreparationNode = memo((node: Node) => {
     "Custom Encoding": "Custom Encoding",
     "Matrix Encoding": "Matrix Encoding",
     "Schmidt Decomposition": "State Split",
-    "Amplitude Encoding": "Amplitude Encoding"
+    "Amplitude Encoding": "Amplitude Encoding",
   };
 
   // Mapping die einzelnen Quantum States im Prepare State Dropdown
@@ -75,38 +84,39 @@ export const StatePreparationNode = memo((node: Node) => {
     "Bell State ψ+": "Entangled Pair ψ+",
     "Bell State ψ-": "Entangled Pair ψ-",
     "Custom State": "My Defined State",
-    "GHZ": "All Together",
+    GHZ: "All Together",
     "Uniform Superposition": "All Options Equal",
-    "W-State": "Shared One"
-  };
-
-  const iconMap = {
-    "Prepare State": "prepareStateIcon.png",
-    "Encode Value": "encodeValueIcon.png",
-    "Basis Encoding": "basisEncodingIcon.png",
-    "Angle Encoding": "angleEncodingIcon.png",
-    "Custom Encoding": "customEncodingIcon.png",
-    "Matrix Encoding": "matrixEncodingIcon.png",
-    "Schmidt Decomposition": "schmidtDecompositionIcon.png",
-    "Amplitude Encoding": "amplitudeEncodingIcon.png",
+    "W-State": "Shared One",
   };
 
   const encoding = node.data.encodingType
-  ? node.data.encodingType.charAt(0).toUpperCase() + node.data.encodingType.slice(1)
-  : "";
+    ? node.data.encodingType.charAt(0).toUpperCase() +
+      node.data.encodingType.slice(1)
+    : "";
 
-const icon =
-  encoding.includes("Basis") ? "basisEncodingIcon.png" :
-  encoding.includes("Angle") ? "angleEncodingIcon.png" :
-  encoding.includes("Amplitude") ? "amplitudeEncodingIcon.png" :
-  encoding.includes("Custom") ? "customEncodingIcon.png" :
-  encoding.includes("Matrix") ? "matrixEncodingIcon.png" :
-  encoding.includes("Schmidt") ? "schmidtDecompositionIcon.png" :
-  "encodeValueIcon.png";
-  const { updateNodeValue, setSelectedNode, setNodes, setTypeError, edges, nodes, ancillaMode, completionGuaranteed, compact, experienceLevel } = useStore(selector, shallow);
-  const isConnected = edges.some(
-    edge => edge.target === node.id && edge.targetHandle === `ancillaHandlePrepareState0${node.id}`
-  );
+  const icon = encoding.includes("Basis")
+    ? "basisEncodingIcon.png"
+    : encoding.includes("Angle")
+      ? "angleEncodingIcon.png"
+      : encoding.includes("Amplitude")
+        ? "amplitudeEncodingIcon.png"
+        : encoding.includes("Custom")
+          ? "customEncodingIcon.png"
+          : encoding.includes("Matrix")
+            ? "matrixEncodingIcon.png"
+            : encoding.includes("Schmidt")
+              ? "schmidtDecompositionIcon.png"
+              : "encodeValueIcon.png";
+  const {
+    updateNodeValue,
+    setSelectedNode,
+    setTypeError,
+    edges,
+    nodes,
+    ancillaMode,
+    compact,
+    experienceLevel,
+  } = useStore(selector, shallow);
 
   useEffect(() => {
     const checkUserRoles = () => {
@@ -165,17 +175,13 @@ const icon =
       } else {
         if (node.data.label === "Basis Encoding") {
           updateNodeValue(node.id, "encodingType", node.data.label);
-        }
-        else if (node.data.label === "Angle Encoding") {
+        } else if (node.data.label === "Angle Encoding") {
           updateNodeValue(node.id, "encodingType", node.data.label);
-        }
-        else if (node.data.label === "Amplitude Encoding") {
+        } else if (node.data.label === "Amplitude Encoding") {
           updateNodeValue(node.id, "encodingType", node.data.label);
-        }
-        else if (node.data.label === "Custom Encoding") {
+        } else if (node.data.label === "Custom Encoding") {
           updateNodeValue(node.id, "encodingType", node.data.label);
-        }
-        else if (node.data.label === "Schmidt Decomposition") {
+        } else if (node.data.label === "Schmidt Decomposition") {
           updateNodeValue(node.id, "encodingType", node.data.label);
         } else if (node.data.label === "Matrix Encoding") {
           updateNodeValue(node.id, "encodingType", node.data.label);
@@ -195,11 +201,15 @@ const icon =
   }, [ancillaMode]);
 
   const isAncillaConnected = edges.some(
-    edge => edge.target === node.id && edge.targetHandle === `ancillaHandleOperationInput2${node.id}`
+    (edge) =>
+      edge.target === node.id &&
+      edge.targetHandle === `ancillaHandleOperationInput2${node.id}`,
   );
 
   const isDirtyAncillaConnected = edges.some(
-    edge => edge.target === node.id && edge.targetHandle === `${dirtyAncillaHandle}OperationInput3${node.id}`
+    (edge) =>
+      edge.target === node.id &&
+      edge.targetHandle === `${dirtyAncillaHandle}OperationInput3${node.id}`,
   );
 
   useEffect(() => {
@@ -207,28 +217,23 @@ const icon =
     const num = Number(value);
     if (num === 0 && node.data.label === "Prepare State") {
       setMissingSizeError(true);
-    } else if (
-      quantumStateName === "GHZ" || quantumStateName === "W-State") {
+    } else if (quantumStateName === "GHZ" || quantumStateName === "W-State") {
       const value = node.data.size;
       const num = Number(value);
 
-      const isInvalid =
-        value === "" ||
-        num < 3;
+      const isInvalid = value === "" || num < 3;
 
       setSizeError(isInvalid);
       setMissingSizeError(false);
-    } else if ((quantumStateName === "Uniform Superposition" ||
-      quantumStateName === "Custom State")) {
-      const isInvalid =
-        value === "" ||
-        num < 1;
+    } else if (
+      quantumStateName === "Uniform Superposition" ||
+      quantumStateName === "Custom State"
+    ) {
+      const isInvalid = value === "" || num < 1;
 
       setSizeError(isInvalid);
       setMissingSizeError(false);
-    }
-
-    else {
+    } else {
       setSizeError(false);
       setMissingSizeError(false);
     }
@@ -238,15 +243,14 @@ const icon =
     const encoding = node.data.encodingType;
 
     const isArrayOnly =
-      encoding !== "Basis Encoding" &&
-      encoding !== "Custom Encoding";
+      encoding !== "Basis Encoding" && encoding !== "Custom Encoding";
 
     if (!isArrayOnly) return;
 
     const edge = edges.find(
       (e) =>
         e.target === node.id &&
-        e.targetHandle === `classicalHandleStatePreparationInput0${node.id}`
+        e.targetHandle === `classicalHandleStatePreparationInput0${node.id}`,
     );
 
     if (!edge) return;
@@ -255,17 +259,18 @@ const icon =
     if (!sourceNode) return;
 
     const outputIndex =
-      sourceNode.data.outputs?.findIndex(
-        (o) => o.id === edge.sourceHandle
-      ) ?? 0;
+      sourceNode.data.outputs?.findIndex((o) => o.id === edge.sourceHandle) ??
+      0;
 
     const sourceType =
       sourceNode.data.outputTypes?.[outputIndex]?.toLowerCase();
 
     if (sourceType !== "array") {
       useStore.getState().onEdgesChange([{ id: edge.id, type: "remove" }]);
-      const errorMsg = (sourceType == null) ? "Source does not have a type, your diagram is probably broken, connection removed"
-        : `Type mismatch: ${sourceType} -> array, connection removed`;
+      const errorMsg =
+        sourceType == null
+          ? "Source does not have a type, your diagram is probably broken, connection removed"
+          : `Type mismatch: ${sourceType} -> array, connection removed`;
       console.error(errorMsg);
       setTypeError(errorMsg);
     }
@@ -277,8 +282,8 @@ const icon =
     const isDuplicate = duplicates.has(identifier);
 
     const startsWithDigit = /^\d/.test(identifier);
-    if (((isDuplicate) && identifier !== "") !== outputIdentifierError) {
-      setOutputIdentifierError((isDuplicate) && identifier !== "");
+    if ((isDuplicate && identifier !== "") !== outputIdentifierError) {
+      setOutputIdentifierError(isDuplicate && identifier !== "");
     }
     if (startsWithDigit) {
       setStartsWithDigitError(true);
@@ -300,7 +305,10 @@ const icon =
     if (!node.data.encodingType && node.data.label === "Matrix Encoding") {
       updateNodeValue(node.id, "encodingType", node.data.label);
     }
-    if (!node.data.encodingType && node.data.label === "Schmidt Decomposition") {
+    if (
+      !node.data.encodingType &&
+      node.data.label === "Schmidt Decomposition"
+    ) {
       updateNodeValue(node.id, "encodingType", node.data.label);
     }
     if (!node.data.encodingType && node.data.label === "Encode Value") {
@@ -309,7 +317,12 @@ const icon =
     if (!node.data.quantumStateName && node.data.label === "Prepare State") {
       updateNodeValue(node.id, "quantumStateName", quantumStateName);
     }
-    if ((node.data.encodingType === "Basis Encoding" || node.data.encodingType === "Angle Encoding") && (encodingType !== "Angle Encoding" && encodingType !== "Basis Encoding")) {
+    if (
+      (node.data.encodingType === "Basis Encoding" ||
+        node.data.encodingType === "Angle Encoding") &&
+      encodingType !== "Angle Encoding" &&
+      encodingType !== "Basis Encoding"
+    ) {
       setEncodingType(node.data.encodingType);
       updateNodeInternals(node.id);
     }
@@ -321,7 +334,7 @@ const icon =
 
   useEffect(() => {
     updateNodeInternals(node.id);
-  }, [compact])
+  }, [compact]);
 
   useEffect(() => {
     updateNodeInternals(node.id);
@@ -329,73 +342,31 @@ const icon =
 
   const { data, selected } = node;
   const id = node.id;
-
-  const alledges = getConnectedEdges([node], edges);
-  const [inputs, setInputs] = useState(data.inputs || []);
-  const [yError, setYError] = useState(false);
-  const [y, setY] = useState("");
-  const [operation, setOperation] = useState("+");
   const updateNodeInternals = useUpdateNodeInternals();
 
-  const addVariable = () => {
-    const newInputId = `input-${inputs.length + 1}`;
-    const newOutputId = `output-${outputs.length + 1}`;
-
-    setInputs([...inputs, { id: newInputId, label: `Variable ${inputs.length + 1}` }]);
-    setOutputs([...outputs, { id: newOutputId, label: `Output ${outputs.length + 1}`, value: "" }]);
-  };
-
-  const handleOutputChange = (outputId: string, newValue: any) => {
-    // 1. Update the local React state array for immediate rendering
-    const updatedOutputs = outputs.map((output) =>
-      output.id === outputId ? { ...output, value: newValue } : output
-    );
-    setOutputs(updatedOutputs);
-
-    // 2. Sync it directly to the node object and the Zustand store
-    node.data.outputs = updatedOutputs;
-    updateNodeValue(node.id, "outputs", updatedOutputs);
-
-    // 3. Keep the current selected node context aligned
-    setSelectedNode(node);
-  };
-
-  const handleOutputIdentifierChange = (e, field) => {
-    const value = e.target.value;
-
-    if (/^\d/.test(value)) {
-      setOutputIdentifierError(true);
-    } else {
-      setOutputIdentifierError(false);
-    }
-
-    node.data[field] = value;
-    updateNodeValue(node.id, field, value);
-  };
- const baseHeight =
-  data.label === "Prepare State" ? 460 :
-  data.label === "Encode Value" ? 450 :
-  350;
-  const extraHeightPerVariable = 20;
+  const baseHeight =
+    data.label === "Prepare State"
+      ? 460
+      : data.label === "Encode Value"
+        ? 450
+        : 350;
   const dynamicHeight = baseHeight;
 
-  const [remoteHighlightColor, setRemoteHighlightColor] = useState<string | null>(null);
-  const [selectingUserName, setSelectingUserName] = useState<string | null>(null);
+  const [remoteHighlightColor, setRemoteHighlightColor] = useState<
+    string | null
+  >(null);
 
   useEffect(() => {
     const checkRemoteSelection = () => {
       let foundColor: string | null = null;
-      let foundName: string | null = null;
 
-      awareness.getStates().forEach((state: any, clientId: number) => {
+      awareness.getStates().forEach((state: any) => {
         if (state.cursor && state.cursor.mySelectedNodeId === id) {
           foundColor = state.cursor.color;
-          foundName = state.cursor.name;
         }
       });
 
       setRemoteHighlightColor(foundColor);
-      setSelectingUserName(foundName);
     };
 
     checkRemoteSelection();
@@ -422,18 +393,29 @@ const icon =
         <div
           className={cn(
             "w-[320px] bg-white border border-solid shadow-md",
-            mixedView && "border-purple-400"
+            mixedView && "border-purple-400",
           )}
           style={{
-            height:
-              ["Encode Value", "Custom Encoding", "Basis Encoding", "Angle Encoding", "Amplitude Encoding", "Matrix Encoding", "Schmidt Decomposition"].includes(data.label)
-                ? !ancillaMode
-                  ? `${baseHeight}px`
-                  : `${Math.max(dynamicHeight - 70, 200)}px`
-                : !ancillaMode
-                  ? "370px"
-                  : `${dynamicHeight}px`,
-            borderColor: remoteHighlightColor ? remoteHighlightColor : (selected ? "#3B82F6" : "#374151"),
+            height: [
+              "Encode Value",
+              "Custom Encoding",
+              "Basis Encoding",
+              "Angle Encoding",
+              "Amplitude Encoding",
+              "Matrix Encoding",
+              "Schmidt Decomposition",
+            ].includes(data.label)
+              ? !ancillaMode
+                ? `${baseHeight}px`
+                : `${Math.max(dynamicHeight - 70, 200)}px`
+              : !ancillaMode
+                ? "370px"
+                : `${dynamicHeight}px`,
+            borderColor: remoteHighlightColor
+              ? remoteHighlightColor
+              : selected
+                ? "#3B82F6"
+                : "#374151",
             boxShadow: remoteHighlightColor
               ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}`
               : undefined,
@@ -454,7 +436,7 @@ const icon =
               <div
                 className="absolute left-[30px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap"
                 style={{
-                  top: !outputIdentifierError ? '35px' : '50px',
+                  top: !outputIdentifierError ? "35px" : "50px",
                 }}
               >
                 Identifier starts with a number.
@@ -468,26 +450,31 @@ const icon =
               <div
                 className="absolute left-[30px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap"
                 style={{
-                  top: !(outputIdentifierError || startsWithDigitError) ? '35px' : '80px',
+                  top: !(outputIdentifierError || startsWithDigitError)
+                    ? "35px"
+                    : "80px",
                 }}
               >
                 Size must be at least 3.
               </div>
             </div>
           )}
-          {((node.data.size === "" || missingSizeError) && node.data.label === "Prepare State") && (
-            <div className="absolute top-2 right-[-40px] group z-20">
-              <AlertCircle className="text-red-600 w-5 h-5" />
-              <div
-                className="absolute left-[30px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap"
-                style={{
-                  top: !(outputIdentifierError || startsWithDigitError) ? '35px' : '80px',
-                }}
-              >
-                Size is required.
+          {(node.data.size === "" || missingSizeError) &&
+            node.data.label === "Prepare State" && (
+              <div className="absolute top-2 right-[-40px] group z-20">
+                <AlertCircle className="text-red-600 w-5 h-5" />
+                <div
+                  className="absolute left-[30px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap"
+                  style={{
+                    top: !(outputIdentifierError || startsWithDigitError)
+                      ? "35px"
+                      : "80px",
+                  }}
+                >
+                  Size is required.
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
           {boundError && (
             <div className="absolute top-2 right-[-40px] group z-20">
@@ -495,9 +482,13 @@ const icon =
               <div
                 className="absolute left-[30px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap"
                 style={{
-                  top: !(outputIdentifierError || startsWithDigitError || sizeError)
-                    ? '35px'
-                    : '110px',
+                  top: !(
+                    outputIdentifierError ||
+                    startsWithDigitError ||
+                    sizeError
+                  )
+                    ? "35px"
+                    : "110px",
                 }}
               >
                 Bound must be a number between 0 and 1.
@@ -505,7 +496,7 @@ const icon =
             </div>
           )}
 
-          <div className="w-full flex items-center" style={{ height: '52px' }}>
+          <div className="w-full flex items-center" style={{ height: "52px" }}>
             {node.data.implementation && (
               <img
                 src="implementation-icon.png"
@@ -513,7 +504,10 @@ const icon =
                 className="absolute -top-4 -right-4 w-8 h-8"
               />
             )}
-            <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
+            <div
+              className="w-full bg-blue-300 py-1 px-2 flex items-center"
+              style={{ height: "inherit" }}
+            >
               {[
                 "Prepare State",
                 "Encode Value",
@@ -522,20 +516,20 @@ const icon =
                 "Angle Encoding",
                 "Amplitude Encoding",
                 "Matrix Encoding",
-                "Schmidt Decomposition"
+                "Schmidt Decomposition",
               ].includes(data.label) && (
-                  <img
-                    src={icon}
-                    alt={`${data.label} icon`}
-                    className={
-                      data.label === "Prepare State"
-                        ? "w-[45px] h-[45px] object-contain flex-shrink-0"
-                        : data.label === "Amplitude Encoding"
-                          ? "w-[42px] h-[42px] object-contain flex-shrink-0"
-                          : "w-[40px] h-[40px] object-contain flex-shrink-0"
-                    }
-                  />
-                )}
+                <img
+                  src={icon}
+                  alt={`${data.label} icon`}
+                  className={
+                    data.label === "Prepare State"
+                      ? "w-[45px] h-[45px] object-contain flex-shrink-0"
+                      : data.label === "Amplitude Encoding"
+                        ? "w-[42px] h-[42px] object-contain flex-shrink-0"
+                        : "w-[40px] h-[40px] object-contain flex-shrink-0"
+                  }
+                />
+              )}
 
               <div className="h-full w-[1px] bg-black mx-2" />
 
@@ -543,16 +537,15 @@ const icon =
                 <div className="flex flex-col justify-center pl-2 leading-tight select-none">
                   {mixedView ? (
                     <span className="font-semibold text-xs text-blue-900 block">
-                      P: {data.label} / E: {explorerLabelMap[data.label] || data.label}
+                      P: {data.label} / E:{" "}
+                      {explorerLabelMap[data.label] || data.label}
                     </span>
                   ) : experienceLevel === "explorer" ? (
                     <span className="font-semibold text-sm">
                       {explorerLabelMap[data.label] || data.label}
                     </span>
                   ) : (
-                    <span className="font-semibold text-sm">
-                      {data.label}
-                    </span>
+                    <span className="font-semibold text-sm">{data.label}</span>
                   )}
                 </div>
               </div>
@@ -567,7 +560,9 @@ const icon =
                   <select
                     className="w-full p-1 mt-1 bg-white rounded-full text-center text-sm text-black border-2 border-blue-300 rounded"
                     value={node.data.encodingType || encodingType}
-                    style={{ visibility: showingChildren ? "hidden" : "visible" }}
+                    style={{
+                      visibility: showingChildren ? "hidden" : "visible",
+                    }}
                     onChange={(e) => handleStateChange(e, "encodingType")}
                   >
                     <option value="basis">Basis Encoding</option>
@@ -575,32 +570,38 @@ const icon =
                     <option value="angle">Angle Encoding</option>
                     <option value="custom">Custom Encoding</option>
                     <option value="matrix">Matrix Encoding</option>
-
                   </select>
 
-                  {!node.data.encodingType.includes("Basis") && !node.data.encodingType.includes("Angle") && (
-                    <>
-                      <label className="text-sm text-black block mt-2">Bound:</label>
-                      <input
-                        className="w-full p-1 mt-1 text-sm text-center text-black border-2 border-blue-300 rounded-full"
-                        type="text"
-                        id="bound"
-                        value={node.data.bound || bound}
-                        onChange={(e) => handleStateChange(e, "bound")}
-                        placeholder="Enter bound"
-                      />
-                    </>
-                  )}
+                  {!node.data.encodingType.includes("Basis") &&
+                    !node.data.encodingType.includes("Angle") && (
+                      <>
+                        <label className="text-sm text-black block mt-2">
+                          Bound:
+                        </label>
+                        <input
+                          className="w-full p-1 mt-1 text-sm text-center text-black border-2 border-blue-300 rounded-full"
+                          type="text"
+                          id="bound"
+                          value={node.data.bound || bound}
+                          onChange={(e) => handleStateChange(e, "bound")}
+                          placeholder="Enter bound"
+                        />
+                      </>
+                    )}
 
                   {node.data.encodingType === "Basis Encoding" && (
                     <>
-                      <label className="text-sm text-black block mt-2">Decimal Precision:</label>
+                      <label className="text-sm text-black block mt-2">
+                        Decimal Precision:
+                      </label>
                       <input
                         className="w-full p-1 mt-1 text-sm text-center text-black border-2 border-blue-300 rounded-full"
                         type="number"
                         min="0"
                         value={node.data.decimalPrecision ?? ""}
-                        onChange={(e) => handleStateChange(e, "decimalPrecision")}
+                        onChange={(e) =>
+                          handleStateChange(e, "decimalPrecision")
+                        }
                         placeholder="e.g. 1"
                       />
                     </>
@@ -608,9 +609,14 @@ const icon =
                 </>
               )}
 
-              {(node.data.label === "Amplitude Encoding" || node.data.label === "Custom Encoding" || node.data.label === "Matrix Encoding" || node.data.label === "Schmidt Decomposition") && (
+              {(node.data.label === "Amplitude Encoding" ||
+                node.data.label === "Custom Encoding" ||
+                node.data.label === "Matrix Encoding" ||
+                node.data.label === "Schmidt Decomposition") && (
                 <>
-                  <label className="text-sm text-black block mt-2">Bound:</label>
+                  <label className="text-sm text-black block mt-2">
+                    Bound:
+                  </label>
                   <input
                     className="w-full p-1 mt-1 text-sm text-center text-black border-2 border-blue-300 rounded-full"
                     type="text"
@@ -624,7 +630,9 @@ const icon =
 
               {node.data.label === "Basis Encoding" && (
                 <>
-                  <label className="text-sm text-black block mt-2">Decimal Precision:</label>
+                  <label className="text-sm text-black block mt-2">
+                    Decimal Precision:
+                  </label>
                   <input
                     className="w-full p-1 mt-1 text-sm text-center text-black border-2 border-blue-300 rounded-full"
                     type="number"
@@ -640,25 +648,43 @@ const icon =
                 <>
                   <label
                     className="text-sm text-black"
-                    style={{ visibility: showingChildren ? "hidden" : "visible" }}
+                    style={{
+                      visibility: showingChildren ? "hidden" : "visible",
+                    }}
                   >
                     Quantum State Name:
                   </label>
 
                   <select
-                    style={{ visibility: showingChildren ? "hidden" : "visible" }}
+                    style={{
+                      visibility: showingChildren ? "hidden" : "visible",
+                    }}
                     className="w-full p-1 mt-1 bg-white text-center text-sm text-black border-2 border-blue-300 rounded-md"
                     value={node.data.quantumStateName || quantumStateName}
                     onChange={(e) => handleStateChange(e, "quantumStateName")}
                   >
-                    <option value="Bell State φ+">{getDropdownLabel("Bell State φ+")}</option>
-                    <option value="Bell State φ-">{getDropdownLabel("Bell State φ-")}</option>
-                    <option value="Bell State ψ+">{getDropdownLabel("Bell State ψ+")}</option>
-                    <option value="Bell State ψ-">{getDropdownLabel("Bell State ψ-")}</option>
-                    <option value="Custom State">{getDropdownLabel("Custom State")}</option>
+                    <option value="Bell State φ+">
+                      {getDropdownLabel("Bell State φ+")}
+                    </option>
+                    <option value="Bell State φ-">
+                      {getDropdownLabel("Bell State φ-")}
+                    </option>
+                    <option value="Bell State ψ+">
+                      {getDropdownLabel("Bell State ψ+")}
+                    </option>
+                    <option value="Bell State ψ-">
+                      {getDropdownLabel("Bell State ψ-")}
+                    </option>
+                    <option value="Custom State">
+                      {getDropdownLabel("Custom State")}
+                    </option>
                     <option value="GHZ">{getDropdownLabel("GHZ")}</option>
-                    <option value="Uniform Superposition">{getDropdownLabel("Uniform Superposition")}</option>
-                    <option value="W-State">{getDropdownLabel("W-State")}</option>
+                    <option value="Uniform Superposition">
+                      {getDropdownLabel("Uniform Superposition")}
+                    </option>
+                    <option value="W-State">
+                      {getDropdownLabel("W-State")}
+                    </option>
                   </select>
                 </>
               )}
@@ -667,17 +693,23 @@ const icon =
 
           <div className="custom-node-port-in mb-3 mt-2">
             <div className="relative flex flex-col overflow-visible">
-              {(node.data.label === "Encode Value" || node.data.label === "Basis Encoding" || node.data.label === "Custom Encoding" || node.data.label === "Angle Encoding" || node.data.label === "Amplitude Encoding" || node.data.label === "Matrix Encoding" || node.data.label === "Schmidt Decomposition") && (
+              {(node.data.label === "Encode Value" ||
+                node.data.label === "Basis Encoding" ||
+                node.data.label === "Custom Encoding" ||
+                node.data.label === "Angle Encoding" ||
+                node.data.label === "Amplitude Encoding" ||
+                node.data.label === "Matrix Encoding" ||
+                node.data.label === "Schmidt Decomposition") && (
                 <div
                   className="relative p-2 mb-1"
                   style={{
                     backgroundColor: classicalConstructColor,
-                    width: '120px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'flex-start',
-                    borderTopRightRadius: '20px',
-                    borderBottomRightRadius: '20px',
+                    width: "120px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "flex-start",
+                    borderTopRightRadius: "20px",
+                    borderBottomRightRadius: "20px",
                   }}
                 >
                   <Handle
@@ -685,7 +717,7 @@ const icon =
                     id={`classicalHandleStatePreparationInput0${node.id}`}
                     position={Position.Left}
                     className="z-10 classical-circle-port-operation !bg-orange-300 !border-black -left-[8px]"
-                    style={{ top: '50%', transform: 'translateY(-50%)' }}
+                    style={{ top: "50%", transform: "translateY(-50%)" }}
                   />
                   <div className="flex flex-col items-center w-full leading-tight">
                     <span className="text-black text-sm">
@@ -703,10 +735,10 @@ const icon =
                   <div
                     className="relative p-2 mb-1"
                     style={{
-                      width: '120px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'flex-start',
+                      width: "120px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "flex-start",
                     }}
                   >
                     <div
@@ -723,19 +755,28 @@ const icon =
                         "z-10 ancilla-port-in w-4 transform rotate-45 -left-[8px]",
                         isAncillaConnected
                           ? "!bg-green-100 !border-solid !border-black"
-                          : "!bg-gray-200 !border-dashed !border-black"
+                          : "!bg-gray-200 !border-dashed !border-black",
                       )}
-                      style={{ zIndex: 1, top: '50% !important', transform: 'translateY(-50%) rotate(45deg)' }}
+                      style={{
+                        zIndex: 1,
+                        top: "50% !important",
+                        transform: "translateY(-50%) rotate(45deg)",
+                      }}
                     />
-                    <span className="text-black text-sm text-center w-full" style={{ zIndex: 1 }}>Ancilla</span>
+                    <span
+                      className="text-black text-sm text-center w-full"
+                      style={{ zIndex: 1 }}
+                    >
+                      Ancilla
+                    </span>
                   </div>
                   <div
                     className="relative p-2"
                     style={{
-                      width: '120px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'flex-start',
+                      width: "120px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "flex-start",
                     }}
                   >
                     <div
@@ -752,11 +793,21 @@ const icon =
                         "z-10 ancilla-port-in w-4 transform rotate-45 -left-[8px]",
                         isDirtyAncillaConnected
                           ? "!bg-green-100 !border-solid !border-black"
-                          : "!bg-gray-200 !border-dashed !border-black"
+                          : "!bg-gray-200 !border-dashed !border-black",
                       )}
-                      style={{ zIndex: 1, top: '50% !important', transform: 'translateY(-50%) rotate(45deg)' }}
+                      style={{
+                        zIndex: 1,
+                        top: "50% !important",
+                        transform: "translateY(-50%) rotate(45deg)",
+                      }}
                     />
-                    <span className="text-black text-sm text-center w-full" style={{ zIndex: 1 }}> Dirty Ancilla</span>
+                    <span
+                      className="text-black text-sm text-center w-full"
+                      style={{ zIndex: 1 }}
+                    >
+                      {" "}
+                      Dirty Ancilla
+                    </span>
                   </div>
                 </div>
               )}
@@ -776,7 +827,9 @@ const icon =
                   setOutputs={setOutputs}
                   edges={edges}
                   sizeError={sizeError || missingSizeError}
-                  outputIdentifierError={(outputIdentifierError || startsWithDigitError)}
+                  outputIdentifierError={
+                    outputIdentifierError || startsWithDigitError
+                  }
                   updateNodeValue={updateNodeValue}
                   setOutputIdentifierError={setOutputIdentifierError}
                   setSizeError={setSizeError}
@@ -784,7 +837,13 @@ const icon =
                   active={true}
                 />
               )}
-              {(node.data.label === "Encode Value" || node.data.label === "Custom Encoding" || node.data.label === "Basis Encoding" || node.data.label === "Amplitude Encoding" || node.data.label === "Angle Encoding" || node.data.label === "Matrix Encoding" || node.data.label === "Schmidt Decomposition") && (
+              {(node.data.label === "Encode Value" ||
+                node.data.label === "Custom Encoding" ||
+                node.data.label === "Basis Encoding" ||
+                node.data.label === "Amplitude Encoding" ||
+                node.data.label === "Angle Encoding" ||
+                node.data.label === "Matrix Encoding" ||
+                node.data.label === "Schmidt Decomposition") && (
                 <OutputPort
                   node={node}
                   index={0}
@@ -794,7 +853,9 @@ const icon =
                   setOutputs={setOutputs}
                   edges={edges}
                   sizeError={sizeError}
-                  outputIdentifierError={(outputIdentifierError || startsWithDigitError)}
+                  outputIdentifierError={
+                    outputIdentifierError || startsWithDigitError
+                  }
                   updateNodeValue={updateNodeValue}
                   setOutputIdentifierError={setOutputIdentifierError}
                   setSizeError={setSizeError}
@@ -807,23 +868,9 @@ const icon =
 
           {ancillaMode && (
             <div>
-              <AncillaPort
-                node={node}
-                edges={edges}
-                dirty={false}
-                index={1}
-              />
-              <AncillaPort
-                node={node}
-                edges={edges}
-                dirty={true}
-                index={2}
-              />
-              <UncomputePort
-                node={node}
-                edges={edges}
-                index={3}
-              />
+              <AncillaPort node={node} edges={edges} dirty={false} index={1} />
+              <AncillaPort node={node} edges={edges} dirty={true} index={2} />
+              <UncomputePort node={node} edges={edges} index={3} />
             </div>
           )}
         </div>
