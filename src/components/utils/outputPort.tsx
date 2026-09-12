@@ -1,9 +1,16 @@
-import { Handle, Position } from 'reactflow';
+import { Handle, Position } from "reactflow";
 import { cn } from "@/lib/utils";
-import { findDuplicateOutputIdentifiersInsideNode, isUniqueIdentifier } from "../utils/utils";
+import {
+  findDuplicateOutputIdentifiersInsideNode,
+  isUniqueIdentifier,
+} from "../utils/utils";
 import { Node } from "reactflow";
-import { useEffect, useMemo, useRef } from 'react';
-import { AlgorithmNode, ClassicalAlgorithmNode, classicalConstructColor } from '@/constants';
+import { useEffect, useMemo, useRef } from "react";
+import {
+  AlgorithmNode,
+  ClassicalAlgorithmNode,
+  classicalConstructColor,
+} from "@/constants";
 
 interface OutputPortProps {
   node: Node;
@@ -38,7 +45,7 @@ export default function OutputPort({
   sizeError,
   sizeRequired = false,
   setSizeError,
-  active
+  active,
 }: OutputPortProps) {
   const isClassical = type === "classical";
   const isAncilla = type === "ancilla";
@@ -55,7 +62,7 @@ export default function OutputPort({
   const wasBellState = useRef(false);
   const outputIdentifier = outputs[index]?.identifier || "";
   const outputSize = outputs[index]?.size || "";
-  const isConnected = edges.some(edge => edge.sourceHandle === handleId);
+  const isConnected = edges.some((edge) => edge.sourceHandle === handleId);
   const outputType = node.data.outputType || "";
 
   // Handle numeric size change and validation
@@ -72,15 +79,19 @@ export default function OutputPort({
   // Get input type for classical arithmetic operator
   const getInputType = (inputIndex: number) => {
     const handleId = `classicalHandleOperationInput${inputIndex}${node.id}`;
-    const edge = edges.find(e => e.target === node.id && e.targetHandle === handleId);
+    const edge = edges.find(
+      (e) => e.target === node.id && e.targetHandle === handleId,
+    );
     if (!edge) return "any";
 
-    const sourceNode = nodes.find(n => n.id === edge.source);
+    const sourceNode = nodes.find((n) => n.id === edge.source);
     if (!sourceNode) return "any";
 
     if (sourceNode.type === "measurementNode") return "array";
-    if (sourceNode.data?.outputs?.[0]?.value !== undefined) return typeof sourceNode.data.outputs[0].value;
-    if (sourceNode.type === "dataTypeNode") return sourceNode.data?.dataType ?? "any";
+    if (sourceNode.data?.outputs?.[0]?.value !== undefined)
+      return typeof sourceNode.data.outputs[0].value;
+    if (sourceNode.type === "dataTypeNode")
+      return sourceNode.data?.dataType ?? "any";
 
     return "any";
   };
@@ -94,7 +105,10 @@ export default function OutputPort({
       outputType = node.data?.dataType ?? "array";
     }
     // Classical Arithmetic Operator: infer from inputs
-    else if (type === "classical" && node.data.label?.includes("Arithmetic Operator")) {
+    else if (
+      type === "classical" &&
+      node.data.label?.includes("Arithmetic Operator")
+    ) {
       const t0 = getInputType(0);
       const t1 = getInputType(1);
 
@@ -104,27 +118,29 @@ export default function OutputPort({
       else outputType = "any";
     }
     // Other classical operators
-    else if (type === "classical" && node.data.label?.includes("Bitwise Operator")) {
+    else if (
+      type === "classical" &&
+      node.data.label?.includes("Bitwise Operator")
+    ) {
       outputType = "bit";
-    }
-    else if (node.data.label?.includes("Comparison Operator")) {
+    } else if (node.data.label?.includes("Comparison Operator")) {
       outputType = "boolean";
-    }
-    else if (node.data.label?.includes("Min & Max Operator")) {
+    } else if (node.data.label?.includes("Min & Max Operator")) {
       outputType = "number";
     }
     // Quantum or fallback
     else if (type === "quantum" || type === "ancilla") {
       outputType = "quantum register";
-    }
-    else if (type === "classical" && (node.type === "algorithmNode" || node.type === "classicalAlgorithmNode")) {
+    } else if (
+      type === "classical" &&
+      (node.type === "algorithmNode" || node.type === "classicalAlgorithmNode")
+    ) {
       outputType = "any"; // default value
 
       if (node?.data?.outputTypes && node.data.outputTypes[index] != null) {
         outputType = node.data.outputTypes[index];
       }
-    }
-    else if (node.type.startsWith("editable")) {
+    } else if (node.type.startsWith("editable")) {
       outputType = "any";
       const nodeOutputType = node.data?.outputType;
       if (nodeOutputType) {
@@ -137,11 +153,15 @@ export default function OutputPort({
           // node.data.outputType is a string
           outputType = nodeOutputType;
         } else {
-          console.log("ERROR: index is", index, "but node.data.outputType is", nodeOutputType)
+          console.log(
+            "ERROR: index is",
+            index,
+            "but node.data.outputType is",
+            nodeOutputType,
+          );
         }
       }
-    }
-    else if (type === "classical") {
+    } else if (type === "classical") {
       outputType = "array";
     }
 
@@ -156,14 +176,19 @@ export default function OutputPort({
       const updatedOutputTypes = { ...node.data.outputTypes };
       updatedOutputTypes[index] = displayedOutputType;
       updateNodeValue(node.id, "outputTypes", updatedOutputTypes);
-      console.log("Updated node outputType in store:", node.id, displayedOutputType);
+      console.log(
+        "Updated node outputType in store:",
+        node.id,
+        displayedOutputType,
+      );
     }
   }, [displayedOutputType, node.id, node.data.outputTypes, updateNodeValue]);
 
   useEffect(() => {
     const isNowBellState = node.data.quantumStateName?.includes("Bell State");
     const updatedOutputs = [...outputs];
-    if (!updatedOutputs[index]) updatedOutputs[index] = { identifier: "", size: "" };
+    if (!updatedOutputs[index])
+      updatedOutputs[index] = { identifier: "", size: "" };
 
     if (isNowBellState) {
       updatedOutputs[index] = { ...updatedOutputs[index], size: "2" };
@@ -185,7 +210,7 @@ export default function OutputPort({
   }, [node.data.quantumStateName]);
 
   const rawType = displayedOutputType;
-  console.log("raw type", rawType)
+  console.log("raw type", rawType);
 
   const normalizedType =
     rawType === "String" || rawType === "File"
@@ -200,40 +225,45 @@ export default function OutputPort({
           backgroundColor: isClassical
             ? classicalConstructColor
             : isAncilla
-              ? 'rgba(137, 218, 131, 0.2)'
-              : 'rgba(105, 145, 210, 0.2)',
+              ? "rgba(137, 218, 131, 0.2)"
+              : "rgba(105, 145, 210, 0.2)",
           width: "180px",
-          borderRadius: isClassical ? '16px' : '0px',
+          borderRadius: isClassical ? "16px" : "0px",
         }}
       >
         <div className="w-full flex justify-between items-center">
-          <span className="text-left text-sm text-black font-semibold">Output:</span>
+          <span className="text-left text-sm text-black font-semibold">
+            Output:
+          </span>
           <span className="text-[10px] text-gray-600">
             type: {normalizedType}
           </span>
         </div>
 
         <div className="flex items-center justify-between w-full space-x-2">
-          <label className="text-sm text-black" style={{ paddingLeft: '15px' }}>Identifier</label>
+          <label className="text-sm text-black" style={{ paddingLeft: "15px" }}>
+            Identifier
+          </label>
           <input
             type="text"
-            className={`p-1 text-sm text-black opacity-75 w-20 text-center rounded-full border ${outputIdentifierError
-              ? 'bg-red-500 border-red-500'
-              : isClassical
-                ? 'bg-white border-orange-500'
-                : isAncilla
-                  ? 'bg-white border-green-500'
-                  : 'bg-white border-blue-500'
-              }`}
+            className={`p-1 text-sm text-black opacity-75 w-20 text-center rounded-full border ${
+              outputIdentifierError
+                ? "bg-red-500 border-red-500"
+                : isClassical
+                  ? "bg-white border-orange-500"
+                  : isAncilla
+                    ? "bg-white border-green-500"
+                    : "bg-white border-blue-500"
+            }`}
             value={outputIdentifier}
             onChange={(e) => {
               const nextValue = e.target.value;
               const updatedOutputs = [...outputs];
-              
+
               if (!updatedOutputs[index]) {
                 updatedOutputs[index] = { identifier: "", size: "" };
               }
-              
+
               updatedOutputs[index] = {
                 ...updatedOutputs[index],
                 identifier: nextValue,
@@ -260,32 +290,38 @@ export default function OutputPort({
         </div>
 
         <div className="flex items-center justify-between w-full space-x-2">
-          <label className="text-sm text-black" style={{ paddingLeft: '15px' }}>Size</label>
+          <label className="text-sm text-black" style={{ paddingLeft: "15px" }}>
+            Size
+          </label>
           <input
             type="text"
-            className={`p-1 text-sm text-black opacity-75 w-20 text-center rounded-full border ${sizeError
-              ? 'bg-red-500 border-red-500'
-              : isClassical
-                ? `bg-white border-orange-500 ${sizeRequired ? '' : 'border-dashed'}`
-                : isAncilla
-                  ? `bg-white border-green-500 ${sizeRequired ? '' : 'border-dashed'}`
-                  : `bg-white border-blue-500 ${sizeRequired ? '' : 'border-dashed'}`
-              }`}
+            className={`p-1 text-sm text-black opacity-75 w-20 text-center rounded-full border ${
+              sizeError
+                ? "bg-red-500 border-red-500"
+                : isClassical
+                  ? `bg-white border-orange-500 ${sizeRequired ? "" : "border-dashed"}`
+                  : isAncilla
+                    ? `bg-white border-green-500 ${sizeRequired ? "" : "border-dashed"}`
+                    : `bg-white border-blue-500 ${sizeRequired ? "" : "border-dashed"}`
+            }`}
             value={
-              node.data.quantumStateName?.includes("Bell State") 
-                ? "2" 
-                : (outputSize || node.data.outputs?.[index]?.size || "")
+              node.data.quantumStateName?.includes("Bell State")
+                ? "2"
+                : outputSize || node.data.outputs?.[index]?.size || ""
             }
             readOnly={node.data.quantumStateName?.includes("Bell State")}
             onChange={(e) => {
               const nextSizeValue = e.target.value;
               const updatedOutputs = [...outputs];
-              
+
               if (!updatedOutputs[index]) {
                 updatedOutputs[index] = { identifier: "", size: "" };
               }
-              
-              updatedOutputs[index] = { ...updatedOutputs[index], size: nextSizeValue };
+
+              updatedOutputs[index] = {
+                ...updatedOutputs[index],
+                size: nextSizeValue,
+              };
 
               // Run size constraints handler validation
               handleYChange(nextSizeValue, "size");
@@ -314,15 +350,19 @@ export default function OutputPort({
               : isAncilla
                 ? "!bg-green-100 !border-black rotate-45"
                 : "!bg-blue-300 !border-black",
-            (active || isConnected)
-              ? `border-solid ${isClassical
-                ? "!bg-orange-300 !border-black"
-                : isAncilla
-                  ? "!bg-green-100 !border-black rotate-45"
-                  : "!bg-blue-300 !border-black"}`
-              : "!bg-gray-200 !border-dashed !border-gray-500"
+            active || isConnected
+              ? `border-solid ${
+                  isClassical
+                    ? "!bg-orange-300 !border-black"
+                    : isAncilla
+                      ? "!bg-green-100 !border-black rotate-45"
+                      : "!bg-blue-300 !border-black"
+                }`
+              : "!bg-gray-200 !border-dashed !border-gray-500",
           )}
-          isConnectable={edges.filter(edge => edge.sourceHandle === handleId).length < 1}
+          isConnectable={
+            edges.filter((edge) => edge.sourceHandle === handleId).length < 1
+          }
           isConnectableEnd={false}
         />
       )}
@@ -348,9 +388,13 @@ export function handleOutputIdentifierChange({
   const value = e.target.value;
   node.data["outputIdentifier"] = value;
   updateNodeValue(node.id, "outputIdentifier", value);
-  const selectedNode = nodes.find(n => n.id === node.id);
+  const selectedNode = nodes.find((n) => n.id === node.id);
 
-  if (/^\d/.test(value) || (!isUniqueIdentifier(nodes, value, node.id) || findDuplicateOutputIdentifiersInsideNode(nodes, selectedNode, value))) {
+  if (
+    /^\d/.test(value) ||
+    !isUniqueIdentifier(nodes, value, node.id) ||
+    findDuplicateOutputIdentifiersInsideNode(nodes, selectedNode, value)
+  ) {
     setOutputIdentifierError(true);
   } else {
     setOutputIdentifierError(false);
