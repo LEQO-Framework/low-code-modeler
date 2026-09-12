@@ -66,7 +66,6 @@ export function findDuplicateOutputIdentifiersInsideNode(
   currentNode,
   identifier,
 ) {
-  const node = nodes.find((n) => n.id === currentNode?.id);
 
   if (
     !currentNode ||

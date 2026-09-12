@@ -58,10 +58,6 @@ function cabs2(a: Complex): number {
   return a.re * a.re + a.im * a.im;
 }
 
-function cscale(a: Complex, s: number): Complex {
-  return { re: a.re * s, im: a.im * s };
-}
-
 const SQRT2_INV = 1 / Math.sqrt(2);
 
 // ---------------------------------------------------------------------------
