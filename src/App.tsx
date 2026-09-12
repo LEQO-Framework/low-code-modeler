@@ -3096,7 +3096,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     }
 
     const confirmed = window.confirm(
-      `Delete domain profile \"${profileToDelete.name}\"?`,
+      `Delete domain profile "${profileToDelete.name}"?`,
     );
     if (!confirmed) {
       return;
