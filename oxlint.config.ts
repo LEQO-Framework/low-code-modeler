@@ -2,8 +2,8 @@ import { defineConfig } from "oxlint";
 
 export default defineConfig({
   categories: {
-    correctness: "warn", // once cleaned up, change to "error"
-    suspicious: "off", // evaluate after correctness is cleaned up
+    correctness: "error",
+    suspicious: "off",
     pedantic: "off",
     perf: "off",
     style: "off",
@@ -12,11 +12,9 @@ export default defineConfig({
   },
 
   rules: {
-    "eslint/no-unused-vars": "warn",
-
-    // Enable later
-    "unicorn/no-new-array": "off",
-    "unicorn/no-useless-spread": "off",
+    "eslint/no-unused-vars": "error",
+    "unicorn/no-new-array": "warn",
+    "unicorn/no-useless-spread": "warn",
     "unicorn/no-useless-length-check": "off",
     "typescript/no-wrapper-object-types": "off",
   },
