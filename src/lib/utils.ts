@@ -6,7 +6,6 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-let id = 0;
 const getId = () => crypto.randomUUID();
 
 export function handleDragOver(event: React.DragEvent<HTMLDivElement>) {
@@ -37,54 +36,20 @@ export async function handleOnDrop(
   if (reactFlowWrapper) {
     const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
     const type = event.dataTransfer.getData("application/reactflow");
-    const dataType = event.dataTransfer.getData(
-      "application/reactflow/dataType",
-    );
     const label = event.dataTransfer.getData("application/reactflow/label");
     const pluginDataStr = event.dataTransfer.getData(
       "application/reactflow/pluginData",
     );
-
-    console.log(type);
-    console.log(dataType);
 
     // check if the dropped element is valid
     if (typeof type === "undefined" || !type) {
       return;
     }
 
-    const def = findNodeDefinition(type, label, categories);
-    console.log(def);
-    console.log(categories);
-    const compactOptions = def.compactOptions;
-
     const position = reactFlowInstance.project({
       x: event.clientX - reactFlowBounds.left,
       y: event.clientY - reactFlowBounds.top,
     });
-    const newNode = {
-      id: getId(),
-      type,
-      position,
-      data: {
-        label: label,
-        inputs: [],
-        children: [],
-        implementation: "",
-        implementationType: "",
-        uncomputeImplementationType: "",
-        uncomputeImplementation: "",
-        completionGuaranteed: def?.completionGuaranteed ?? false,
-        compactOptions: compactOptions,
-        ...(def.properties && { properties: def.properties }),
-        ...(def.constraints && { constraints: def.constraints }),
-        ...(def.mapping && { mapping: def.mapping }),
-        ...(def.description && { description: def.description }),
-        ...(def.outputType && { outputType: def.outputType }),
-        ...(def.icon && { icon: def.icon }),
-        ...(def.isDataType && { isDataType: def.isDataType }),
-      },
-    };
 
     // For plugin nodes, create node with plugin data
     if (type === "pluginNode" && pluginDataStr) {
