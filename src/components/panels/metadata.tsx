@@ -30,14 +30,13 @@ export const MetadataPanel = ({
     };
 
     onUpdateMetadata(updatedMetadata);
-
   }
 
   function handlePositiveNumberChange(
-    event: React.ChangeEvent<HTMLInputElement>
+    event: React.ChangeEvent<HTMLInputElement>,
   ) {
     const { id, value } = event.target;
-    console.log(value)
+    console.log(value);
     if (value === "") {
       onUpdateMetadata({ ...metadata, [id]: "" });
       return;
@@ -49,7 +48,6 @@ export const MetadataPanel = ({
       onUpdateMetadata({ ...metadata, [id]: numericValue });
     }
   }
-
 
   function handleCheckboxChange(event: React.ChangeEvent<HTMLInputElement>) {
     const { id, checked } = event.target;
@@ -72,8 +70,6 @@ export const MetadataPanel = ({
     onUpdateMetadata(updatedMetadata);
   }
 
-
-
   return (
     <>
       <aside className="flex flex-col w-full h-full overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
@@ -82,8 +78,7 @@ export const MetadataPanel = ({
             onClick={() => {
               setSelectedNode(null);
             }}
-          >
-          </button>
+          ></button>
           <h2 className="flex-grow text-center">Model Information</h2>
         </div>
         <hr />
@@ -120,9 +115,10 @@ export const MetadataPanel = ({
               ))}
 
               <div className="mt-4 border-t pt-4">
-                <h3 className="text-lg font-semibold text-gray-700">Optimization</h3>
+                <h3 className="text-lg font-semibold text-gray-700">
+                  Optimization
+                </h3>
                 <div className="space-y-4">
-
                   <div>
                     <label className="inline-flex items-center">
                       <input
@@ -132,7 +128,9 @@ export const MetadataPanel = ({
                         onChange={handleCheckboxChange}
                         className="form-checkbox"
                       />
-                      <span className="ml-2 text-sm text-gray-700">Enable Width Optimization</span>
+                      <span className="ml-2 text-sm text-gray-700">
+                        Enable Width Optimization
+                      </span>
                     </label>
                     {metadata.optimizeWidth && (
                       <div className="mt-2">
@@ -163,7 +161,9 @@ export const MetadataPanel = ({
                         onChange={handleCheckboxChange}
                         className="form-checkbox"
                       />
-                      <span className="ml-2 text-sm text-gray-700">Enable Depth Optimization</span>
+                      <span className="ml-2 text-sm text-gray-700">
+                        Enable Depth Optimization
+                      </span>
                     </label>
                     {metadata.optimizeDepth && (
                       <div className="mt-2">
