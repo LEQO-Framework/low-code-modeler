@@ -58,12 +58,12 @@ export const MetadataPanel = ({
     };
 
     if (id === "optimizeWidth" && !checked) {
-      const { width, ...rest } = updatedMetadata;
+      const { width: _width, ...rest } = updatedMetadata;
       updatedMetadata = rest;
     }
 
     if (id === "optimizeDepth" && !checked) {
-      const { depth, ...rest } = updatedMetadata;
+      const { depth: _depth, ...rest } = updatedMetadata;
       updatedMetadata = rest;
     }
 
