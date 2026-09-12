@@ -2392,7 +2392,7 @@ If none apply, return { "algorithms": [] }.
   }, [lassoMode, reactFlowInstance]);
 
   // TODO: unused
-  const handleConnect = useCallback(
+  const _handleConnect = useCallback(
     (connection: Connection) => {
       const sourceNode = reactFlowInstance.getNode(connection.source ?? "");
       const targetNode = reactFlowInstance.getNode(connection.target ?? "");
