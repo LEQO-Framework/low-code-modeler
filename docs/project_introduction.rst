@@ -106,3 +106,20 @@ Detailed descriptions and examples for each construct type are provided in the c
    modelingconstructs_controlStructureNodes
    modelingconstructs_customNodes
    modelingconstructs_mlNodes
+
+
+Math Mode, QASM Editor, and Grouping
+------------------------------------
+
+In addition to the modeling constructs, the tool provides features that support
+working with larger models and understanding the mathematical behavior of a
+modeled circuit. The Math Mode and the QASM Code Editor are disabled by default
+and are enabled through the *Experience Mode* panel.
+
+.. toctree::
+   :maxdepth: 1
+   :titlesonly:
+
+   mathmode
+   qasmeditor
+   grouping

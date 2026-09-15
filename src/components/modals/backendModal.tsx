@@ -24,7 +24,7 @@ export const SendRequestModal = ({
     if ((containsPlaceholder||containsWorkflowNodes) && (compilationTarget === "qasm" || compilationTarget === "qiskit")) {
       setCompilationTarget("workflow");
     }
-  }, [containsPlaceholder, compilationTarget, setCompilationTarget, containsWorkflowNodes]);
+  }, [containsPlaceholder, containsWorkflowNodes, compilationTarget, setCompilationTarget]);
 
   return (
     <Modal
@@ -44,18 +44,20 @@ export const SendRequestModal = ({
     >
       <div className="space-y-4">
         <div>
-          <label className="block mb-1 font-semibold">
-            Compilation Target
-          </label>
+          <label className="block mb-1 font-semibold">Compilation Target</label>
           <select
             className="select select-bordered w-full"
             value={compilationTarget}
             onChange={(e) => setCompilationTarget(e.target.value)}
           >
             <option value="workflow">Workflow</option>
-            <option value="qasm" disabled={containsPlaceholder||containsWorkflowNodes}>
-              OpenQASM3 {containsPlaceholder ? "(not available, placeholder present)" : ""}
-              {containsWorkflowNodes ? "(not available, Machine Learning, File or String node present)" : ""}
+            <option value="qasm" disabled={containsPlaceholder || containsWorkflowNodes}>
+              OpenQASM3{" "}
+              {containsPlaceholder
+                ? "(not available, placeholder present)"
+                : containsWorkflowNodes
+                ? "(not available, Machine Learning, File or String node present)"
+                : ""}
             </option>
           </select>
         </div>

@@ -1,15 +1,15 @@
-import { memo, useState, useRef, useEffect } from "react";
-import { Handle, Position, Node, Edge } from "reactflow";
+import { memo, useState, useEffect, useMemo } from "react";
+import { Node, Edge } from "reactflow";
 import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
 import OutputPort from "../utils/outputPort";
-import { cn } from "@/lib/utils";
 import { awareness } from "@/yjs";
+import { computeQubitIndices } from "@/lib/qubitIndexing";
 
 const selector = (state: {
   selectedNode: Node | null;
-  edges: Edge[],
-  nodes: Node[],
+  edges: Edge[];
+  nodes: Node[];
   updateNodeValue: (nodeId: string, field: string, nodeVal: string) => void;
   setSelectedNode: (node: Node | null) => void;
 }) => ({
@@ -17,62 +17,38 @@ const selector = (state: {
   edges: state.edges,
   nodes: state.nodes,
   updateNodeValue: state.updateNodeValue,
-  setSelectedNode: state.setSelectedNode
+  setSelectedNode: state.setSelectedNode,
 });
 
 export const QubitNode = memo((node: Node) => {
-  const [x, setX] = useState("");
-  const [y, setY] = useState("");
-  const [error, setError] = useState(false);
-  const [yError, setYError] = useState(false);
   const [outputs, setOutputs] = useState(node.data.outputs || []);
 
   const { data, selected } = node;
-  const xRef = useRef(null);
-  const yRef = useRef(null);
 
-  const { selectedNode, nodes, updateNodeValue, setSelectedNode, edges } = useStore(selector, shallow);
+  const { nodes, updateNodeValue, setSelectedNode, edges } =
+    useStore(selector, shallow);
   const [outputIdentifierError, setOutputIdentifierError] = useState(false);
-  const [outputIdentifier, setOutputIdentifier] = useState("");
-  const [operation, setOperation] = useState("");
-  const [showingChildren, setShowingChildren] = useState(false);
   const [sizeError, setSizeError] = useState(false);
-
-  const handleXChange = (e) => {
-    let value = e.target.value.trim();
-
-    if (data.dataType === "int") {
-      if (!/^-?\d+$/.test(value) && value !== "") {
-        setError(true);
-        setX(value);
-        return;
-      }
-    }
-
-    setError(false);
-    setX(value);
-    node.data["size"] = value;
-    updateNodeValue(node.id, "size", value);
-  };
-
-
-  const handleYChange = (e) => {
-    const value = e.target.value;
-    if (!/^[a-zA-Z_]/.test(value) && value !== "") {
-      setYError(true);
-    } else {
-      setYError(false);
-    }
-    setY(value);
-    node.data["outputIdentifier"] = value;
-    updateNodeValue(node.id, "outputIdentifier", value);
-    setSelectedNode(node);
-  };
 
   const id = node.id;
 
-  const [remoteHighlightColor, setRemoteHighlightColor] = useState<string | null>(null);
-  const [selectingUserName, setSelectingUserName] = useState<string | null>(null); // technically not needed, could extend functionality to also show user name next to highlighted node
+  // Register-Index, den dieser Qubit-Node beim tatsächlichen Kompilieren bekäme
+  // (gleiche Gruppierungs-/Sortierlogik wie componentAnalyzer.ts / backend.ts).
+  // Wird bei jeder Änderung an nodes/edges neu berechnet, damit der Badge immer aktuell ist,
+  // egal auf welchem Weg (Drag&Drop, Duplizieren, QASM-Import, ...) der Node hinzugefügt wurde.
+  const qubitIndexLabel = useMemo(() => {
+    const indices = computeQubitIndices(nodes, edges);
+    const start = indices.get(id);
+    if (start === undefined) return null;
+
+    const rawSize = parseInt(String(data?.size), 10);
+    const size = Number.isFinite(rawSize) && rawSize > 0 ? rawSize : 1;
+    return size > 1 ? `${start}\u2013${start + size - 1}` : `${start}`;
+  }, [nodes, edges, id, data?.size]);
+
+  const [remoteHighlightColor, setRemoteHighlightColor] = useState<
+    string | null
+  >(null);
 
   useEffect(() => {
     const checkRemoteSelection = () => {
@@ -80,10 +56,7 @@ export const QubitNode = memo((node: Node) => {
       let foundName: string | null = null;
 
       // Loop through all active client states in the room
-      awareness.getStates().forEach((state: any, clientId: number) => {
-        // Skip your own client ID so you don't highlight it with your own color
-        // if (clientId === awareness.clientID) return;
-
+      awareness.getStates().forEach((state: any) => {
         // Check if a peer has selected this specific node ID
         if (state.cursor && state.cursor.mySelectedNodeId === id) {
           foundColor = state.cursor.color;
@@ -92,7 +65,6 @@ export const QubitNode = memo((node: Node) => {
       });
 
       setRemoteHighlightColor(foundColor);
-      setSelectingUserName(foundName);
       console.log("COLOR", foundColor, foundName);
     };
 
@@ -110,18 +82,46 @@ export const QubitNode = memo((node: Node) => {
 
   return (
     <div className="grand-parent">
-      <div className={"w-[350px] h-[170px] rounded-none bg-white  border border-solid border-gray-700 shadow-md"}
+      <div
+        className={
+          "w-[350px] h-[170px] rounded-none bg-white  border border-solid border-gray-700 shadow-md relative"
+        }
         style={{
-          borderColor: remoteHighlightColor ? remoteHighlightColor : (selected ? "#3B82F6" : "#374151"),
+          borderColor: remoteHighlightColor
+            ? remoteHighlightColor
+            : selected
+              ? "#3B82F6"
+              : "#374151",
           boxShadow: remoteHighlightColor
             ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}` // Glowing aura ring
             : undefined,
-        }}>
-        <div className="w-full flex items-center" style={{ height: '52px' }}>
-          <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
-            <img src="qubitIcon.png" alt="icon" className="w-[40px] h-[40px] object-contain flex-shrink-0" />
+        }}
+      >
+        {qubitIndexLabel !== null && (
+          <div
+            className="absolute bottom-1 right-1.5 text-xs font-mono font-semibold text-gray-500 bg-white/80 rounded px-1 leading-tight pointer-events-none select-none"
+            title={`Register-Index: q${qubitIndexLabel}`}
+          >
+            q{qubitIndexLabel}
+          </div>
+        )}
+        <div className="w-full flex items-center" style={{ height: "52px" }}>
+          <div
+            className="w-full bg-blue-300 py-1 px-2 flex items-center"
+            style={{ height: "inherit" }}
+          >
+            <img
+              src="qubitIcon.png"
+              alt="icon"
+              className="w-[40px] h-[40px] object-contain flex-shrink-0"
+            />
             <div className="h-full w-[1px] bg-black mx-2" />
-            <span className="truncate font-semibold leading-none" style={{ paddingLeft: '75px' }}>{data.label}</span>
+            <span
+              className="truncate font-semibold leading-none"
+              style={{ paddingLeft: "75px" }}
+            >
+              {data.label}
+            </span>
           </div>
         </div>
         <div className="custom-node-port-out">

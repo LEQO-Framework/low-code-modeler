@@ -6,7 +6,11 @@ import { AddNodePanel } from "./panels";
 
 type PanelProps = {
   ancillaMode: any;
-  onAddNode?: (def: any, customPosition?: { x: number; y: number }, pluginData?: any) => void;
+  onAddNode?: (
+    def: any,
+    customPosition?: { x: number; y: number },
+    pluginData?: any,
+  ) => void;
 };
 
 const selector = (state: { selectedNode: Node | null }) => ({
@@ -24,6 +28,6 @@ export const Palette = ({ ancillaMode, onAddNode }: PanelProps) => {
   );
 };
 
-const getPanel = (type: string): React.ComponentType<PanelProps> => {
-      return AddNodePanel;
+const getPanel = (_type: string): React.ComponentType<PanelProps> => {
+  return AddNodePanel;
 };

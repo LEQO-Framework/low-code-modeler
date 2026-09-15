@@ -22,3 +22,7 @@ dist-ssr
 *.sln
 *.sw?
 .env
+.env*
+
+# Oxlint reports
+oxlint-report.json
