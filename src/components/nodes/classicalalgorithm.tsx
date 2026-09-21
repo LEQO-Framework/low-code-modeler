@@ -25,18 +25,30 @@ const selector = (state: any) => ({
 
 export const ClassicalAlgorithmNode = memo((node: Node) => {
   const { data, selected } = node;
+
   const numberInputs = data.numberClassicalInputs || 0;
   const numberOutputs = data.numberClassicalOutputs || 0;
 
-  const { edges, nodes, updateNodeValue, setSelectedNode, ancillaMode } =
-    useStore(selector, shallow);
+  const {
+    edges,
+    nodes,
+    updateNodeValue,
+    setSelectedNode,
+    ancillaMode,
+  } = useStore(selector, shallow);
+
   const updateNodeInternals = useUpdateNodeInternals();
 
   const [outputs, setOutputs] = useState(data.outputs || []);
-  const [sizeErrors, setSizeErrors] = useState<{ [key: number]: boolean }>({});
+
+  const [sizeErrors, setSizeErrors] = useState<{
+    [key: number]: boolean;
+  }>({});
+
   const [outputIdentifierErrors, setOutputIdentifierErrors] = useState<{
     [key: number]: boolean;
   }>({});
+
   const [isEditingLabel, setIsEditingLabel] = useState(false);
   const [editableLabel, setEditableLabel] = useState(data.label || "");
 
@@ -56,6 +68,7 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
   useEffect(() => {
     updateNodeInternals(node.id);
     setSelectedNode(node);
+
     console.log("update classical algorithm handles");
   }, [ancillaMode]);
 
@@ -63,9 +76,11 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
     const handleId = `classicalHandleOperationInput${inputIndex}${node.id}`;
 
     const edge = edges.find((e) => e.targetHandle === handleId);
+
     if (!edge) return "any";
 
     const sourceNode = nodes.find((n) => n.id === edge.source);
+
     if (!sourceNode) return "any";
 
     if (sourceNode.type === "dataTypeNode") {
@@ -76,14 +91,15 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
   };
 
   useEffect(() => {
-    //const selectedNode = nodes.find(n => n.id === node.id);
-    let selectedNode = node;
+    const selectedNode = node;
+
     const newErrors: { [key: number]: boolean } = {};
     const newSizeErrors: { [key: number]: boolean } = {};
 
     outputs.forEach((output: any, index: number) => {
       const outputIdentifier = output?.identifier?.trim();
       const size = output?.size?.trim();
+
       if (!outputIdentifier) return;
 
       const duplicates = findDuplicateOutputIdentifier(
@@ -92,16 +108,21 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
         selectedNode,
         outputIdentifier,
       );
+
       let isDuplicate = false;
+
       for (const [key] of duplicates.entries()) {
         if (
           Array.isArray(key) &&
-          key.some((item: any) => item.identifier === outputIdentifier)
+          key.some(
+            (item: any) => item.identifier === outputIdentifier,
+          )
         ) {
           isDuplicate = true;
           break;
         }
       }
+
       isDuplicate =
         isDuplicate ||
         findDuplicateOutputIdentifiersInsideNode(
@@ -109,6 +130,7 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
           selectedNode,
           outputIdentifier,
         );
+
       const startsWithDigit = /^\d/.test(outputIdentifier);
 
       newErrors[index] = startsWithDigit || isDuplicate;
@@ -124,6 +146,7 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
 
   const baseHeight = !ancillaMode ? 50 : 200;
   const extraHeightPerVariable = 130;
+
   const dynamicHeight =
     baseHeight +
     2 * 40 +
@@ -133,18 +156,18 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
 
   const id = node.id;
 
-  const [_remoteHighlightColor, setRemoteHighlightColor] = useState<
-    string | null
-  >(null);
+  const [_remoteHighlightColor, setRemoteHighlightColor] =
+    useState<string | null>(null);
 
   useEffect(() => {
     const checkRemoteSelection = () => {
       let foundColor: string | null = null;
 
-      // Loop through all active client states in the room
       awareness.getStates().forEach((state: any) => {
-        // Check if a peer has selected this specific node ID
-        if (state.cursor && state.cursor.mySelectedNodeId === id) {
+        if (
+          state.cursor &&
+          state.cursor.mySelectedNodeId === id
+        ) {
           foundColor = state.cursor.color;
         }
       });
@@ -152,17 +175,14 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
       setRemoteHighlightColor(foundColor);
     };
 
-    // Run once immediately on mount
     checkRemoteSelection();
 
-    // 3. Listen to remote awareness updates
     awareness.on("change", checkRemoteSelection);
 
-    // Clean up listener when the node unmounts
     return () => {
       awareness.off("change", checkRemoteSelection);
     };
-  }, [id]); // Re-run if node ID changes
+  }, [id]);
 
   return (
     <div
@@ -182,10 +202,12 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
           borderRadius: "28px",
         }}
       >
+        {/* Error indicator */}
         {(Object.values(outputIdentifierErrors).some(Boolean) ||
           Object.values(sizeErrors).some(Boolean)) && (
           <div className="absolute top-2 right-[-40px] group z-20">
             <AlertCircle className="text-red-600 w-5 h-5" />
+
             <div className="absolute top-5 left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
               One or more outputs have errors (duplicate ID or size is not a
               number).
@@ -193,14 +215,28 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
           </div>
         )}
 
-        <div className="relative w-full h-[52px] overflow-hidden rounded-t-[28px]">
-          <div className="w-full h-full bg-orange-300 flex items-center py-1 px-2">
+        {/* Header */}
+        <div className="relative w-full h-[52px] overflow-visible rounded-t-[28px]">
+          {/* Implementation icon */}
+          {node.data.implementation && (
             <img
-              src="classicalAlgorithmIcon.png"
-              alt="icon"
+              src="/implementation-icon.png"
+              alt="Implementation"
+              className="absolute -top-4 -right-4 z-50 w-8 h-8 object-contain"
+            />
+          )}
+
+          <div className="w-full h-full bg-orange-300 flex items-center py-1 px-2 rounded-t-[28px]">
+            {/* Classical algorithm icon */}
+            <img
+              src="/classicalAlgorithmIcon.png"
+              alt="Classical Algorithm"
               className="w-[42px] h-[42px] object-contain flex-shrink-0"
             />
+
             <div className="h-full w-[1px] bg-black mx-2" />
+
+            {/* Label */}
             {isEditingLabel ? (
               <input
                 autoFocus
@@ -209,15 +245,22 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
                 onChange={(e) => setEditableLabel(e.target.value)}
                 onBlur={handleLabelChange}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") handleLabelChange();
+                  if (e.key === "Enter") {
+                    handleLabelChange();
+                  }
                 }}
                 className="font-semibold leading-none bg-white border border-gray-400 px-2 py-1 rounded"
-                style={{ paddingLeft: "25px", width: "100%" }}
+                style={{
+                  paddingLeft: "25px",
+                  width: "100%",
+                }}
               />
             ) : (
               <span
                 className="font-semibold leading-none cursor-pointer"
-                style={{ paddingLeft: "25px" }}
+                style={{
+                  paddingLeft: "25px",
+                }}
                 onClick={() => setIsEditingLabel(true)}
               >
                 {editableLabel}
@@ -226,6 +269,7 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
           </div>
         </div>
 
+        {/* Inputs */}
         <div className="mt-[5px] flex flex-col relative z-0">
           {Array.from({ length: numberInputs }).map((_, index) => (
             <div
@@ -243,13 +287,18 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
                 id={`classicalHandleOperationInput${index}${node.id}`}
                 position={Position.Left}
                 className="z-10 classical-circle-port-operation !bg-orange-300 !border-black -left-[8px]"
-                style={{ top: "50%", transform: "translateY(-50%)" }}
+                style={{
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                }}
               />
+
               <div className="flex flex-col text-center w-full leading-tight">
                 <span className="text-black text-sm">
                   {node.data.inputs?.[index]?.outputIdentifier ||
                     `Input ${index + 1}`}
                 </span>
+
                 <span className="text-[10px] text-gray-600">
                   type: {getInputType(index)?.toLowerCase()}
                 </span>
@@ -257,23 +306,29 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
             </div>
           ))}
         </div>
+
+        {/* Outputs */}
         <div className="custom-node-port-out">
           {Array.from({ length: numberOutputs }).map((_, index) => (
             <div
               key={`output-wrapper-${index}`}
               className="absolute left-0 w-full z-10"
-              style={{ top: `${outputsStartTop + index * outputHeight}px` }}
+              style={{
+                top: `${outputsStartTop + index * outputHeight}px`,
+              }}
             >
               <OutputPort
                 key={`output-port-${index}`}
                 node={node}
                 index={index}
-                type={"classical"}
+                type="classical"
                 nodes={nodes}
                 outputs={outputs}
                 setOutputs={setOutputs}
                 edges={edges}
-                outputIdentifierError={outputIdentifierErrors[index]}
+                outputIdentifierError={
+                  outputIdentifierErrors[index]
+                }
                 updateNodeValue={updateNodeValue}
                 setOutputIdentifierError={(error) =>
                   setOutputIdentifierErrors((prev) => ({
@@ -283,7 +338,10 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
                 }
                 sizeError={sizeErrors[index]}
                 setSizeError={(error) =>
-                  setSizeErrors((prev) => ({ ...prev, [index]: error }))
+                  setSizeErrors((prev) => ({
+                    ...prev,
+                    [index]: error,
+                  }))
                 }
                 setSelectedNode={setSelectedNode}
                 active={true}
