@@ -40,7 +40,6 @@ interface ToolbarProps {
   onSaveAsTemplate: () => void;
   onManageTemplates: () => void;
   onGroupSelected: () => void;
-  onLoadQasm: (qasm: string) => void;
   generateModel: () => void;
   openOpenQASM: () => void;
 }
