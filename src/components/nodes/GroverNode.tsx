@@ -44,7 +44,7 @@ export const GroverNode = memo((node: Node) => {
   const [missingTargetStatesError, setMissingTargetStatesError] =
     useState(false);
   useEffect(() => {
-    setMissingQubitsError(numQubitsStr.trim() === "");
+    setMissingQubitsError(String(numQubitsStr).trim() === "");
     setMissingTargetStatesError(targetStates.trim() === "");
   }, [numQubitsStr, targetStates]);
 
@@ -253,7 +253,7 @@ export const GroverNode = memo((node: Node) => {
                 }}
               />
               <p className="text-[10px] text-gray-500 mt-1 text-center">
-                Max index: {(1 << (parseInt(numQubitsStr, 10) || 1)) - 1}
+                Max index: {(1 << (parseInt(String(numQubitsStr), 10) || 1)) - 1}
               </p>
             </div>
 
