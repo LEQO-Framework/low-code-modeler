@@ -149,6 +149,7 @@ const ALGORITHM_PATTERNS = {
 };
 export default function AiModal({
   quantumAlgorithmModalStep,
+  _isDetectingAlgorithms,
   quantumAlgorithms,
   detectQuantumAlgorithms,
   handleQuantumAlgorithmModalClose,
