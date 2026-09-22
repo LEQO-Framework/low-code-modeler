@@ -12,7 +12,6 @@ import {
   GateNode,
   GroverDiffuserNode,
   GroverNode,
-  GroupNode,
   IfElseNode,
   InverseQFTNode,
   MCMTGateNode,
@@ -32,11 +31,9 @@ import {
   minMaxOperatorLabel,
   comparisonOperatorLabel,
   bitwiseOperatorLabel,
-  controlStructureNodes,
   multi_qubit_gates,
   non_parameterized_one_qubit,
   non_parameterized_two_qubit,
-  NodeTypes,
   qubitLabel,
 } from "@/constants";
 import { ArrowLeft } from "lucide-react";
@@ -354,7 +351,6 @@ const selector = (state: {
 export const TextPanel = () => {
   const {
     selectedNode,
-    updateNodeLabel,
     updateNodeValue,
     setSelectedNode,
     completionGuaranteed,
@@ -371,8 +367,8 @@ export const TextPanel = () => {
     }
   }, [selectedNode]);
 
-  const [fileName, setFileName] = useState("");
-  const [uncomputeFileName, setUncomputeFileName] = useState("");
+  const [_fileName, setFileName] = useState("");
+  const [_uncomputeFileName, setUncomputeFileName] = useState("");
   const [implementationContent, setImplementationContent] = useState("");
 
   console.log(selectedNode);
@@ -412,11 +408,6 @@ export const TextPanel = () => {
     return normalized < 0 ? normalized + 360 : normalized;
   };
 
-  const normalizeRadians = (rad) => {
-    const normalized = rad % (2 * Math.PI);
-    return normalized < 0 ? normalized + 2 * Math.PI : normalized;
-  };
-
   const degToRad = (deg) =>
     (normalizeDegrees(parseFloat(deg)) * Math.PI) / 180;
 
@@ -430,7 +421,7 @@ export const TextPanel = () => {
       const sanitized = expr.replace(/π|pi/gi, `${Math.PI}`);
 
       return sanitized;
-    } catch (e) {
+    } catch {
       return NaN;
     }
   };
@@ -1506,13 +1497,7 @@ export const ImplementationFields: React.FC<
 
   const fileNameKey = `${prefix}${
     isUncompute ? "FileName" : "fileName"
-  }`;
-
-  const implementationTypeKey = `${prefix}${
-    isUncompute
-      ? "ImplementationType"
-      : "implementationType"
-  }`;
+  }`;;
 
   return (
     <>
