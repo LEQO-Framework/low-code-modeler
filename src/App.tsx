@@ -4689,7 +4689,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
       <AiModal
         quantumAlgorithmModalStep={quantumAlgorithmModalStep}
         quantumAlgorithms={quantumAlgorithms}
-        isDetectingAlgorithms={isDetectingAlgorithms}
+        _isDetectingAlgorithms={isDetectingAlgorithms}
         detectQuantumAlgorithms={detectQuantumAlgorithms}
         handleQuantumAlgorithmModalClose={handleQuantumAlgorithmModalClose}
         setQuantumAlgorithmModalStep={setQuantumAlgorithmModalStep}
