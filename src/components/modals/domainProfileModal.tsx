@@ -38,6 +38,7 @@ interface NodeProfileProperty {
   name: string;
   type: string;
 }
+
 interface NodeProfileConstraint {
   propertyName: string;
   constraint: string;
@@ -47,8 +48,8 @@ interface NodeProfileConstraint {
 /**
  * Convert a profile revision from the repository into the editor's flat node
  * list. The repository groups blocks by category, the editor keeps one list and
- * carries the category on each node, so this is the inverse of what Save Profile
- * does. Fields the repository format does not carry, such as the icon, fall back
+ * carries the category on each node, so this is the inverse of what Save Profile does.
+ * Fields the repository format does not carry, such as the icon, fall back
  * to the same defaults the file import uses.
  */
 function toEditableNodes(
@@ -201,10 +202,14 @@ function ConstraintEditor({
 
   const propertyOptions = (availableProperties || []).flatMap((prop) => {
     const base = [prop.name];
-    // Check if type contains 'array' or '[]'
-    if (prop.type.toLowerCase().includes("array") || prop.type.includes("[]")) {
+
+    if (
+      prop.type.toLowerCase().includes("array") ||
+      prop.type.includes("[]")
+    ) {
       base.push(`length(${prop.name})`);
     }
+
     return base;
   });
 
@@ -218,6 +223,7 @@ function ConstraintEditor({
     value: any,
   ) => {
     const newConstraints = [...constraints];
+
     const finalValue =
       field === "constraint" && value === "is required"
         ? ""
@@ -230,6 +236,7 @@ function ConstraintEditor({
       [field]: value,
       value: finalValue,
     };
+
     onChange(newConstraints);
   };
 
@@ -255,7 +262,6 @@ function ConstraintEditor({
             </button>
 
             <div className="grid grid-cols-3 gap-2">
-              {/* Property Name */}
               <div>
                 <label className="block text-[10px] font-bold text-gray-500 uppercase">
                   Property
@@ -275,7 +281,7 @@ function ConstraintEditor({
                   ))}
                 </select>
               </div>
-              {/* Constraint */}
+
               <div>
                 <label className="block text-[10px] font-bold text-gray-500 uppercase">
                   Constraint
@@ -295,13 +301,17 @@ function ConstraintEditor({
                   ))}
                 </select>
               </div>
-              {/* Value */}
+
               <div>
                 <label className="block text-[10px] font-bold text-gray-500 uppercase">
                   Value
                 </label>
                 <input
-                  className={`w-full border rounded px-1 py-0.5 text-xs ${isRequiredType ? "bg-gray-200 cursor-not-allowed text-transparent" : "bg-white"}`}
+                  className={`w-full border rounded px-1 py-0.5 text-xs ${
+                    isRequiredType
+                      ? "bg-gray-200 cursor-not-allowed text-transparent"
+                      : "bg-white"
+                  }`}
                   value={con.value}
                   disabled={isRequiredType}
                   placeholder={isRequiredType ? "-" : "Value..."}
@@ -332,8 +342,10 @@ const staticMappingOptions = {
   QAOA: "QAOA",
   VQE: "VQE",
   QAE: "QAE",
-}; // with descriptions
+};
+
 const dynamicMappingOptions = extractNodeLabels(categories);
+
 const mappingOptions: Record<string, string> = {
   ...staticMappingOptions,
   ...dynamicMappingOptions,
@@ -372,6 +384,7 @@ function OutputTypeEditor({
             value={type}
             onChange={(e) => updateType(idx, e.target.value)}
           />
+
           <button
             type="button"
             onClick={() => removeType(idx)}
@@ -392,7 +405,6 @@ function OutputTypeEditor({
     </div>
   );
 }
-
 function MappingGroup({
   selected,
   onToggle,
@@ -403,7 +415,10 @@ function MappingGroup({
   onRemove: () => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -413,11 +428,37 @@ function MappingGroup({
         !dropdownRef.current.contains(event.target as Node)
       ) {
         setIsOpen(false);
+        setSearchTerm("");
       }
     };
+
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+
+    return () =>
+      document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Focus the search input when the dropdown opens
+  useEffect(() => {
+    if (isOpen) {
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 0);
+    }
+  }, [isOpen]);
+
+  const filteredOptions = Object.entries(mappingOptions).filter(
+    ([option, desc]) => {
+      const search = searchTerm.trim().toLowerCase();
+
+      if (!search) return true;
+
+      return (
+        option.toLowerCase().includes(search) ||
+        desc.toLowerCase().includes(search)
+      );
+    },
+  );
 
   return (
     <div
@@ -427,58 +468,120 @@ function MappingGroup({
       <div className="flex-1">
         {/* Dropdown Trigger */}
         <button
-          onClick={() => setIsOpen(!isOpen)}
+          type="button"
+          onClick={() => {
+            setIsOpen((prev) => !prev);
+
+            if (isOpen) {
+              setSearchTerm("");
+            }
+          }}
           className="w-full flex items-center justify-between bg-white border rounded px-2 py-1.5 text-xs hover:border-blue-400 transition-colors"
         >
-          <span>
-            {selected.length > 0 ? selected.join(" + ") : "Select mapping..."}
+          <span className="truncate">
+            {selected.length > 0
+              ? selected.join(" + ")
+              : "Select mapping..."}
           </span>
+
           <ChevronDown
             size={14}
-            className={`transition-transform ${isOpen ? "rotate-180" : ""}`}
+            className={`flex-shrink-0 transition-transform ${
+              isOpen ? "rotate-180" : ""
+            }`}
           />
         </button>
 
         {/* Dropdown Menu */}
         {isOpen && (
-          <div className="absolute z-[100] mt-1 w-full bg-white border rounded-md shadow-lg max-h-48 overflow-y-auto">
-            {Object.entries(mappingOptions).map(([option, desc]) => {
-              const isChecked = selected.includes(option);
-              return (
-                <div
-                  key={option}
-                  title={desc}
-                  onClick={() => onToggle(option)}
-                  className="flex items-center gap-2 px-3 py-2 hover:bg-blue-50 cursor-pointer text-xs"
-                >
-                  <div
-                    className={`w-4 h-4 border rounded flex items-center justify-center ${isChecked ? "bg-blue-500 border-blue-500" : "bg-white"}`}
-                  >
-                    {isChecked && <Check size={10} className="text-white" />}
-                  </div>
-                  <span
-                    className={
-                      isChecked ? "font-bold text-blue-700" : "text-gray-700"
-                    }
-                  >
-                    {option}
-                  </span>
+          <div className="absolute z-[100] mt-1 w-full bg-white border rounded-md shadow-lg overflow-hidden">
+            {/* Search */}
+            <div className="p-2 border-b bg-gray-50">
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") {
+                    setIsOpen(false);
+                    setSearchTerm("");
+                  }
+                }}
+                placeholder="Type to search..."
+                className="w-full border rounded px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+              />
+            </div>
+
+            {/* Results */}
+            <div className="max-h-48 overflow-y-auto">
+              {filteredOptions.length === 0 ? (
+                <div className="px-3 py-3 text-xs text-gray-400 text-center">
+                  No matching mappings
                 </div>
-              );
-            })}
+              ) : (
+                filteredOptions.map(([option, desc]) => {
+                  const isChecked = selected.includes(option);
+
+                  return (
+                    <div
+                      key={option}
+                      title={desc}
+                      onClick={() => onToggle(option)}
+                      className="flex items-center gap-2 px-3 py-2 hover:bg-blue-50 cursor-pointer text-xs"
+                    >
+                      <div
+                        className={`w-4 h-4 border rounded flex items-center justify-center flex-shrink-0 ${
+                          isChecked
+                            ? "bg-blue-500 border-blue-500"
+                            : "bg-white"
+                        }`}
+                      >
+                        {isChecked && (
+                          <Check
+                            size={10}
+                            className="text-white"
+                          />
+                        )}
+                      </div>
+
+                      <div className="min-w-0">
+                        <div
+                          className={
+                            isChecked
+                              ? "font-bold text-blue-700 truncate"
+                              : "text-gray-700 truncate"
+                          }
+                        >
+                          {option}
+                        </div>
+
+                        {desc && desc !== option && (
+                          <div className="text-[10px] text-gray-400 truncate">
+                            {desc}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
           </div>
         )}
       </div>
 
       <button
+        type="button"
         onClick={onRemove}
-        className="bg-red-100 text-red-600 rounded-full p-1 hover:bg-red-200" // TODO: evtl.  nicht rot, an templateModal anpassen
+        className="bg-red-100 text-red-600 rounded-full p-1 hover:bg-red-200"
       >
         <Trash2 size={12} />
       </button>
     </div>
   );
 }
+
 
 export function MappingEditor({
   mappings,
@@ -496,6 +599,7 @@ export function MappingEditor({
     } else {
       newMappings[groupIdx] = [...currentGroup, val].sort();
     }
+
     onChange(newMappings);
   };
 
@@ -554,37 +658,80 @@ export default function DomainProfileTableModal({
     null,
   );
 
-  // Reset localNodes and profileName when closed, or load the selected profile while open.
+  // NEW:
+  // Holds the duplicate warning shown inside the modal.
+  const [duplicateWarning, setDuplicateWarning] = useState<{
+    originalName: string;
+    versionedName: string;
+  } | null>(null);
+
   useEffect(() => {
     if (!open) {
       setLocalNodes([]);
       setProfileName("");
       setDraggedProfileIndex(null);
+      setDuplicateWarning(null);
       return;
     }
 
     if (initialProfile) {
       setProfileName(initialProfile.name);
       setLocalNodes(toEditableNodesFromDomainProfile(initialProfile));
+      setDuplicateWarning(null);
       return;
     }
 
     setProfileName("");
     setLocalNodes([]);
+    setDuplicateWarning(null);
   }, [open, initialProfile]);
 
-  const saveProfile = () => {
+  /**
+   * Find the next available version name.
+   *
+   * Example:
+   * Test
+   * Test v2
+   * Test v3
+   *
+   * If all three exist, this returns Test v4.
+   */
+  const getVersionedProfileName = (name: string): string => {
+    const normalizedNames = profiles.map((profile) =>
+      profile.name.trim().toLowerCase(),
+    );
+
+    let version = 2;
+    let candidate = `${name} v${version}`;
+
+    while (normalizedNames.includes(candidate.toLowerCase())) {
+      version++;
+      candidate = `${name} v${version}`;
+    }
+
+    return candidate;
+  };
+
+  /**
+   * Actually creates and saves the profile.
+   * This is kept separate from saveProfile so that the duplicate warning
+   * can ask the user whether they want the versioned name.
+   */
+  const saveProfileWithName = (finalName: string) => {
     // group nodes by category into the CategoryEntry format
     const domainBlocks = localNodes.reduce(
       (acc, node) => {
         const cat = node.category || "Uncategorized";
+
         if (!acc[cat]) {
           acc[cat] = {
             description: "",
             content: [],
           };
         }
-        const type = EditableNode; //TODO: different types for different categories?
+
+        const type = EditableNode;
+
         const nodeData = {
           label: node.label,
           description: node.description,
@@ -608,12 +755,38 @@ export default function DomainProfileTableModal({
     );
 
     const newProfile: DomainProfile = {
-      name: profileName || "Untitled Profile",
+      name: finalName,
       domainBlocks: domainBlocks,
     };
 
     onSave(newProfile);
     onClose();
+  };
+
+  /**
+   * This is called ONLY when the user clicks Save Profile.
+   */
+  const saveProfile = () => {
+    const requestedName = profileName.trim() || "Untitled Profile";
+
+    const existingProfile = profiles.find(
+      (profile) =>
+        profile.name.trim().toLowerCase() ===
+        requestedName.toLowerCase(),
+    );
+
+    if (existingProfile) {
+      const versionedName = getVersionedProfileName(requestedName);
+
+      setDuplicateWarning({
+        originalName: requestedName,
+        versionedName,
+      });
+
+      return;
+    }
+
+    saveProfileWithName(requestedName);
   };
 
   const updateNode = (
@@ -633,7 +806,7 @@ export default function DomainProfileTableModal({
     const newNode: EditableNodeProfile = {
       label: "",
       description: "",
-      icon: "QAOA.png", //TODO: default Icon definieren
+      icon: "QAOA.png",
       visible: true,
       outputType: "",
       category: "",
@@ -644,6 +817,7 @@ export default function DomainProfileTableModal({
       originalDescription: "",
       originalIcon: "",
     };
+
     setLocalNodes([...localNodes, newNode]);
   };
 
@@ -655,7 +829,9 @@ export default function DomainProfileTableModal({
     if (!file) return;
 
     const reader = new FileReader();
+
     reader.onload = () => updateNode(index, "icon", reader.result);
+
     reader.readAsDataURL(file);
   };
 
@@ -671,13 +847,23 @@ export default function DomainProfileTableModal({
 
   const exportProfile = (profile: DomainProfile) => {
     const nodes = toEditableNodesFromDomainProfile(profile);
-    const dataStr = JSON.stringify({ name: profile.name, nodes }, null, 2);
-    const blob = new Blob([dataStr], { type: "application/json" });
+    const dataStr = JSON.stringify(
+      { name: profile.name, nodes },
+      null,
+      2,
+    );
+
+    const blob = new Blob([dataStr], {
+      type: "application/json",
+    });
+
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
+
     a.href = url;
     a.download = `${profile.name || "domain_profile"}.json`;
     a.click();
+
     URL.revokeObjectURL(url);
   };
 
@@ -689,9 +875,18 @@ export default function DomainProfileTableModal({
       className="max-w-6xl"
       footer={
         <div className="space-x-2">
-          <button className="btn btn-primary" onClick={saveProfile}>
+          <button
+            className={`btn ${
+              duplicateWarning
+                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                : "btn-primary"
+            }`}
+            onClick={saveProfile}
+            disabled={!!duplicateWarning}
+          >
             Save Profile
           </button>
+
           <button className="btn btn-secondary" onClick={onClose}>
             Cancel
           </button>
@@ -705,10 +900,12 @@ export default function DomainProfileTableModal({
               <h3 className="text-sm font-semibold text-gray-900">
                 Saved Profiles
               </h3>
+
               <p className="text-xs text-gray-500">
                 Edit, duplicate, export, delete or reorder the stored profiles.
               </p>
             </div>
+
             <span className="text-xs text-gray-500">
               {profiles.length} total
             </span>
@@ -728,7 +925,11 @@ export default function DomainProfileTableModal({
                   onDragOver={(event) => event.preventDefault()}
                   onDrop={() => handleDropProfile(index)}
                   onDragEnd={() => setDraggedProfileIndex(null)}
-                  className={`flex items-center gap-3 rounded border bg-white px-3 py-2 shadow-sm transition ${editingProfileIndex === index ? "border-blue-500 ring-2 ring-blue-200" : "border-gray-200"}`}
+                  className={`flex items-center gap-3 rounded border bg-white px-3 py-2 shadow-sm transition ${
+                    editingProfileIndex === index
+                      ? "border-blue-500 ring-2 ring-blue-200"
+                      : "border-gray-200"
+                  }`}
                 >
                   <span
                     className="cursor-grab text-gray-400"
@@ -736,15 +937,18 @@ export default function DomainProfileTableModal({
                   >
                     <GripVertical size={16} />
                   </span>
+
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-medium text-gray-900">
                       {profile.name}
                     </div>
+
                     <div className="text-xs text-gray-500">
                       {Object.keys(profile.domainBlocks ?? {}).length}{" "}
                       categories
                     </div>
                   </div>
+
                   <button
                     type="button"
                     className="rounded border border-blue-200 px-2 py-1 text-xs font-medium text-blue-700 hover:bg-blue-50"
@@ -752,6 +956,7 @@ export default function DomainProfileTableModal({
                   >
                     Edit
                   </button>
+
                   <button
                     type="button"
                     className="rounded border border-gray-200 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
@@ -759,6 +964,7 @@ export default function DomainProfileTableModal({
                   >
                     Duplicate
                   </button>
+
                   <button
                     type="button"
                     className="rounded border border-blue-200 px-2 py-1 text-xs font-medium text-blue-700 hover:bg-blue-50"
@@ -766,6 +972,7 @@ export default function DomainProfileTableModal({
                   >
                     Export
                   </button>
+
                   <button
                     type="button"
                     className="rounded border border-red-200 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50"
@@ -780,12 +987,23 @@ export default function DomainProfileTableModal({
         </section>
 
         <div className="flex justify-start items-center gap-2">
-          <span className="px-4 py-2 font-semibold">Domain Profile Name</span>
+          <span className="px-4 py-2 font-semibold">
+            Domain Profile Name
+          </span>
+
           <input
             className="border rounded px-2 py-1"
             value={profileName}
             placeholder="Insert name..."
-            onChange={(e) => setProfileName(e.target.value)}
+            onChange={(e) => {
+              setProfileName(e.target.value);
+
+              // If the user changes the name after seeing the warning,
+              // remove the warning and allow Save Profile again.
+              if (duplicateWarning) {
+                setDuplicateWarning(null);
+              }
+            }}
           />
 
           <button
@@ -803,12 +1021,21 @@ export default function DomainProfileTableModal({
                 null,
                 2,
               );
-              const blob = new Blob([dataStr], { type: "application/json" });
+
+              const blob = new Blob([dataStr], {
+                type: "application/json",
+              });
+
               const url = URL.createObjectURL(blob);
               const a = document.createElement("a");
+
               a.href = url;
-              a.download = `${profileName || "domain_profile"}.json`;
+              a.download = `${
+                profileName || "domain_profile"
+              }.json`;
+
               a.click();
+
               URL.revokeObjectURL(url);
             }}
             className="flex items-center gap-1 bg-blue-600 text-white px-3 py-1 rounded-md hover:bg-blue-700 text-sm"
@@ -816,8 +1043,7 @@ export default function DomainProfileTableModal({
             Export Profile
           </button>
 
-          {/* Load a revision from the shared repository. Renders nothing when
-              VITE_DOMAIN_PROFILES_URL is unset. */}
+          {/* Load a revision from the shared repository. */}
           <DomainProfileRepositoryPicker
             onLoad={(profile) => {
               setProfileName(
@@ -825,13 +1051,16 @@ export default function DomainProfileTableModal({
                   ? `${profile.name} v${profile.version}`
                   : profile.name,
               );
+
               setLocalNodes(toEditableNodes(profile));
+              setDuplicateWarning(null);
             }}
           />
 
           {/* Import Button */}
           <label className="flex items-center gap-1 bg-blue-500 text-white px-3 py-1 rounded-md hover:bg-blue-700 text-sm cursor-pointer">
             Import Profile
+
             <input
               type="file"
               accept="application/json"
@@ -839,16 +1068,18 @@ export default function DomainProfileTableModal({
               onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (!file) return;
+
                 const reader = new FileReader();
+
                 reader.onload = () => {
                   try {
                     const json = JSON.parse(reader.result as string);
+
                     if (!json.name || !Array.isArray(json.nodes)) {
                       alert("Invalid domain profile JSON.");
                       return;
                     }
 
-                    // Map imported nodes to ensure defaults
                     const sanitizedNodes: EditableNodeProfile[] =
                       json.nodes.map((n: any) => ({
                         label: n.label || "",
@@ -861,24 +1092,87 @@ export default function DomainProfileTableModal({
                         constraints: n.constraints || [],
                         mapping: n.mapping || [[]],
 
-                        originalLabel: n.originalLabel || n.label || "",
+                        originalLabel:
+                          n.originalLabel || n.label || "",
+
                         originalDescription:
-                          n.originalDescription || n.description || "",
-                        originalIcon: n.originalIcon || n.icon || "",
+                          n.originalDescription ||
+                          n.description ||
+                          "",
+
+                        originalIcon:
+                          n.originalIcon ||
+                          n.icon ||
+                          "",
                       }));
 
                     setProfileName(json.name);
                     setLocalNodes(sanitizedNodes);
+                    setDuplicateWarning(null);
                   } catch (err) {
                     console.error(err);
                     alert("Failed to parse JSON file.");
                   }
                 };
+
                 reader.readAsText(file);
               }}
             />
           </label>
         </div>
+
+        {/* Duplicate warning */}
+        {duplicateWarning && (
+          <div className="rounded-lg border border-yellow-300 bg-yellow-50 p-4">
+            <div className="flex items-start gap-3">
+              <div className="flex-1">
+                <h3 className="text-sm font-semibold text-yellow-900">
+                  Profile name already exists
+                </h3>
+
+                <p className="mt-1 text-sm text-yellow-800">
+                  A profile named{" "}
+                  <strong>
+                    "{duplicateWarning.originalName}"
+                  </strong>{" "}
+                  already exists.
+                </p>
+
+                <p className="mt-1 text-sm text-yellow-800">
+                  Would you like to save this profile as{" "}
+                  <strong>
+                    "{duplicateWarning.versionedName}"
+                  </strong>
+                  ?
+                </p>
+
+                <div className="mt-3 flex gap-2">
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={() => {
+                      saveProfileWithName(
+                        duplicateWarning.versionedName,
+                      );
+
+                      setDuplicateWarning(null);
+                    }}
+                  >
+                    Save as {duplicateWarning.versionedName}
+                  </button>
+
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => setDuplicateWarning(null)}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="max-h-[40vh] overflow-auto">
           <table className="table-auto w-full border border-gray-300 rounded-md">
@@ -891,11 +1185,6 @@ export default function DomainProfileTableModal({
                 <th className="p-2 border w-32">Properties</th>
                 <th className="p-2 border w-32">Constraints</th>
                 <th className="p-2 border w-24">Mapping</th>
-                {/* <th className="p-2 border">Description</th>
-                    <th className="p-2 border w-20 text-center">
-                      Visible
-                    </th>
-                    <th className="p-2 border w-24">Actions</th> */}
               </tr>
             </thead>
 
@@ -925,15 +1214,19 @@ export default function DomainProfileTableModal({
                         }
                       />
                     </td>
+
                     {/* Icon */}
                     <td className="relative group w-24 h-24 bg-white border rounded shrink-0 overflow-hidden p-2 border text-center">
                       <img
                         src={
-                          Array.isArray(node.icon) ? node.icon[0] : node.icon
+                          Array.isArray(node.icon)
+                            ? node.icon[0]
+                            : node.icon
                         }
                         className="w-full h-full object-contain p-1"
                         alt="icon"
                       />
+
                       <label className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity">
                         <input
                           type="file"
@@ -941,15 +1234,18 @@ export default function DomainProfileTableModal({
                           accept="image/*"
                           onChange={(e) => handleIconUpload(e, idx)}
                         />
+
                         <ImageIcon className="w-5 h-5 text-white" />
                       </label>
                     </td>
-                    {/* Category (in palette panel)*/}
+
+                    {/* Category */}
                     <td className="p-2 border">
                       <label
                         htmlFor="profile-select"
                         className="text-sm font-medium whitespace-nowrap"
                       ></label>
+
                       <select
                         id="profile-select"
                         value={node.category}
@@ -962,15 +1258,23 @@ export default function DomainProfileTableModal({
                           Choose a category...
                         </option>
 
-                        <option key={"dataTypes"} value={"dataTypes"}>
+                        <option
+                          key={"dataTypes"}
+                          value={"dataTypes"}
+                        >
                           Data Types
                         </option>
-                        <option key={"operators"} value={"Operators"}>
+
+                        <option
+                          key={"operators"}
+                          value={"Operators"}
+                        >
                           Operators
                         </option>
                       </select>
                     </td>
-                    {/* Output Type: String */}
+
+                    {/* Output Type */}
                     <td className="p-2 border text-center">
                       <OutputTypeEditor
                         outputTypes={
@@ -984,31 +1288,45 @@ export default function DomainProfileTableModal({
                       />
                     </td>
 
-                    {/* Properties  */}
+                    {/* Properties */}
                     <td className="p-2 border text-center">
                       <PropertyEditor
                         properties={node.properties || []}
                         onChange={(newProperties) =>
-                          updateNode(idx, "properties", newProperties)
+                          updateNode(
+                            idx,
+                            "properties",
+                            newProperties,
+                          )
                         }
                       />
                     </td>
-                    {/* Constraints  */}
+
+                    {/* Constraints */}
                     <td className="p-2 border text-center">
                       <ConstraintEditor
                         constraints={node.constraints || []}
                         availableProperties={node.properties || []}
                         onChange={(newConstraints) =>
-                          updateNode(idx, "constraints", newConstraints)
+                          updateNode(
+                            idx,
+                            "constraints",
+                            newConstraints,
+                          )
                         }
                       />
                     </td>
-                    {/* Mappings  */}
+
+                    {/* Mappings */}
                     <td className="p-2 border text-center">
                       <MappingEditor
                         mappings={node.mapping}
                         onChange={(newMappings) =>
-                          updateNode(idx, "mapping", newMappings)
+                          updateNode(
+                            idx,
+                            "mapping",
+                            newMappings,
+                          )
                         }
                       />
                     </td>
