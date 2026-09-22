@@ -51,10 +51,11 @@ const NODE_EXPLANATIONS: Record<string, string> = {
   [MCMTGateNode]:
     "Applies a gate to one or more target qubits only if all control qubits are in the |1⟩ state. Configure the number of control and target qubits and select the gate matrix.",
 
-  [AlgorithmNode]: "Runs a custom quantum algorithm defined in a QASM file.",
+  [AlgorithmNode]:
+    "Runs a custom quantum algorithm defined in a QASM file.",
 
   [ClassicalAlgorithmNode]:
-    "Runs a custom classical algorithm defined in a Python file.",
+    "Runs a custom classical algorithm defined in a QASM file.",
 
   [DeutschJozsaNode]:
     "Implements the Deutsch-Jozsa algorithm, which determines whether a function always returns the same value or returns different values for half of its inputs. Select the input size and the function type.",
@@ -86,7 +87,8 @@ const NODE_EXPLANATIONS: Record<string, string> = {
   [MergerNode]:
     "Merges quantum registers into a single register according to a QASM definition.",
 
-  [OperatorNode]: "Applies one or more quantum gates to the selected qubits.",
+  [OperatorNode]:
+    "Applies one or more quantum gates to the selected qubits.",
 
   [ClassicalOutputOperationNode]:
     "Performs an operation on classical measurement results before passing them to the next node.",
@@ -100,82 +102,84 @@ const NODE_EXPLANATIONS: Record<string, string> = {
   [ClassicalOperatorNode]:
     "Performs classical operations on the input and returns classical output.",
 
-  [PluginNode]: "Executes functionality provided by the plugin.",
+  [PluginNode]:
+    "Executes functionality provided by the plugin.",
 
   [EditableNode]:
     "A customizable node that can be configured to perform user-defined operations.",
 };
 
-const GATE_PARAMETER_EXPLANATION =
-  "You can enter values such as 'pi', which are then transformed into their numerical values. Changing units automatically converts the current parameter value and normalizes it to either 360° (deg) or 2π (rad).\nConversion formula: rad = (deg × π)/180°. ";
-
 const GATE_EXPLANATIONS: Record<string, string> = {
-  [parameterized_one_qubit[0]]:
-    "X-axis rotation by an angle (rad or deg)." +
-    "\n\n" +
-    GATE_PARAMETER_EXPLANATION,
-  [parameterized_one_qubit[1]]:
-    "Y-axis rotation by an angle (rad or deg)." +
-    "\n\n" +
-    GATE_PARAMETER_EXPLANATION,
-  [parameterized_one_qubit[2]]:
-    "Z-axis rotation by an angle (rad or deg)." +
-    "\n\n" +
-    GATE_PARAMETER_EXPLANATION,
+  [parameterized_one_qubit[0]]: "X-axis rotation by an angle (rad or deg).",
+  [parameterized_one_qubit[1]]: "Y-axis rotation by an angle (rad or deg).",
+  [parameterized_one_qubit[2]]: "Z-axis rotation by an angle (rad or deg).",
 
   [parameterized_one_qubit[3]]:
-    "Applies a phase shift of an angle (rad or deg) to the |1⟩ state." +
-    "\n\n" +
-    GATE_PARAMETER_EXPLANATION,
+    "Applies a phase shift of an angle (rad or deg) to the |1⟩ state.",
+
   [parameterized_two_qubit[0]]:
-    "If control qubit is in state |1⟩, applies a phase shift of an angle (rad or deg) to the |1⟩ state." +
-    "\n\n" +
-    GATE_PARAMETER_EXPLANATION,
+    "If control qubit is in state |1⟩, applies a phase shift of an angle (rad or deg) to the |1⟩ state.",
 
   [parameterized_two_qubit[1]]:
-    "If control qubit is in state |1⟩, apply X-axis rotation by an angle (rad or deg)." +
-    "\n\n" +
-    GATE_PARAMETER_EXPLANATION,
+    "If control qubit is in state |1⟩, apply X-axis rotation by an angle (rad or deg).",
+
   [parameterized_two_qubit[2]]:
-    "If control qubit is in state |1⟩, apply Y-axis rotation by an angle (rad or deg)." +
-    "\n\n" +
-    GATE_PARAMETER_EXPLANATION,
+    "If control qubit is in state |1⟩, apply Y-axis rotation by an angle (rad or deg).",
+
   [parameterized_two_qubit[3]]:
-    "If control qubit is in state |1⟩, apply Z-axis rotation by an angle (rad or deg)." +
-    "\n\n" +
-    GATE_PARAMETER_EXPLANATION,
+    "If control qubit is in state |1⟩, apply Z-axis rotation by an angle (rad or deg).",
+
   ["CU"]:
     "If control qubit is in state |1⟩, apply the U-gate. Set the matrix for the U-gate in the 'Matrix' field.",
 
   [non_parameterized_one_qubit[0]]:
     "Creates superposition by applying a Hadamard transform.",
-  [non_parameterized_one_qubit[1]]: "Applies a π/4 phase shift.",
-  [non_parameterized_one_qubit[2]]: "Flips |0⟩ and |1⟩ states.",
-  [non_parameterized_one_qubit[3]]: "Applies a π rotation around the Y-axis.",
-  [non_parameterized_one_qubit[4]]: "Applies a π phase flip to the |1⟩ state.",
+
+  [non_parameterized_one_qubit[1]]:
+    "Applies a π/4 phase shift.",
+
+  [non_parameterized_one_qubit[2]]:
+    "Flips |0⟩ and |1⟩ states.",
+
+  [non_parameterized_one_qubit[3]]:
+    "Applies a π rotation around the Y-axis.",
+
+  [non_parameterized_one_qubit[4]]:
+    "Applies a π phase flip to the |1⟩ state.",
+
   [non_parameterized_one_qubit[5]]:
     "Applies a π/2 phase shift to the |1⟩ state.",
+
   [non_parameterized_one_qubit[6]]:
     "Creates superposition by applying a π/2 rotation around the X-axis.",
+
   [non_parameterized_one_qubit[7]]:
     "Inverse S gate; removes a π/2 phase shift.",
+
   [non_parameterized_one_qubit[8]]:
     "Inverse T gate; removes a π/4 phase shift.",
 
   [non_parameterized_two_qubit[0]]:
     "If control qubit is in state |1⟩, flips |0⟩ and |1⟩ states of the target qubit.",
-  [non_parameterized_two_qubit[1]]: "Swaps the states of two qubits.",
+
+  [non_parameterized_two_qubit[1]]:
+    "Swaps the states of two qubits.",
+
   [non_parameterized_two_qubit[2]]:
     "If control qubit is in state |1⟩, applies a π rotation around the Y-axis to the target qubit.",
+
   [non_parameterized_two_qubit[3]]:
     "If control qubit is in state |1⟩, applies a π phase flip to the |1⟩ state of the target qubit.",
+
   [non_parameterized_two_qubit[4]]:
     "If control qubit is in state |1⟩, applies the H gate to the target qubit.",
 
   [multi_qubit_gates[0]]:
     "If both control qubits are in state |1⟩, flips |0⟩ and |1⟩ states of the target qubit.",
+
   [multi_qubit_gates[1]]:
     "If control qubit is in state |1⟩, swaps the states of the two target qubits.",
+
   [qubitLabel]: "Represents an individual qubit in the circuit.",
 };
 
@@ -184,8 +188,7 @@ const DATA_TYPE_EXPLANATIONS: Record<string, string> = {
   ["boolean"]: "True or false value.",
   ["Number"]: "Numeric value.",
   ["Array"]: "List of values, separated by a comma.",
-  ["File"]:
-    "Data loaded from a file. Specify the file path in the 'Value' field.",
+  ["File"]: "Data loaded from a file. Specify the file path in the 'Value' field.",
   ["String"]: "Text data.",
 };
 
@@ -198,11 +201,89 @@ const STATE_PREPERATION_EXPLANATIONS: Record<string, string> = {
 
   ["Angle Encoding"]:
     "Encodes an array of classical values into a quantum state using rotation gates. For each input value xi, the corresponding qubit is rotated by RY(2xi).",
+
   ["Amplitude Encoding"]:
     "Encodes an array of numbers using less qubits than basis encoding but requires more depth.",
-  ["Matrix Encoding"]: "Encodes a non-unitary matrix into a unitary matrix.",
+
+  ["Matrix Encoding"]:
+    "Encodes a non-unitary matrix into a unitary matrix.",
+
   ["Prepare State"]:
     "Initializes the quantum register in a predefined quantum state, such as a basis state, Bell state, GHZ state or W state. Specify size if the state is not a Bell state.",
+};
+
+/**
+ * Returns all mappings from a node.
+ *
+ * EditableNode mappings can be represented either as:
+ * - string[]
+ * - string[][]
+ *
+ * Flattening here makes the implementation logic independent
+ * of the exact mapping structure.
+ */
+const getNodeMappings = (selectedNode: Node | null): string[] => {
+  if (!selectedNode?.data?.mapping) {
+    return [];
+  }
+
+  const mapping = selectedNode.data.mapping;
+
+  if (Array.isArray(mapping)) {
+    return mapping
+      .flat(Infinity)
+      .filter(
+        (value: unknown): value is string => typeof value === "string",
+      );
+  }
+
+  return [];
+};
+
+/**
+ * Determines which custom implementation, if any, an EditableNode needs.
+ *
+ * Custom Quantum Operator:
+ *   - QASM or Python
+ *
+ * Custom Classical Operator:
+ *   - Python only
+ *
+ * Any other mapping:
+ *   - no implementation field
+ */
+const getEditableNodeImplementationType = (
+  selectedNode: Node | null,
+): "quantum" | "classical" | null => {
+  if (!selectedNode || selectedNode.type !== EditableNode) {
+    return null;
+  }
+
+  const mappings = getNodeMappings(selectedNode).map((mapping) =>
+    mapping.trim().toLowerCase(),
+  );
+
+  const hasCustomQuantumOperator = mappings.some(
+    (mapping) =>
+      mapping === "custom quantum operator" ||
+      mapping.includes("custom quantum operator"),
+  );
+
+  const hasCustomClassicalOperator = mappings.some(
+    (mapping) =>
+      mapping === "custom classical operator" ||
+      mapping.includes("custom classical operator"),
+  );
+
+  if (hasCustomQuantumOperator) {
+    return "quantum";
+  }
+
+  if (hasCustomClassicalOperator) {
+    return "classical";
+  }
+
+  return null;
 };
 
 const getNodeExplanation = (selectedNode: Node | null) => {
@@ -231,6 +312,15 @@ const getNodeExplanation = (selectedNode: Node | null) => {
       STATE_PREPERATION_EXPLANATIONS[selectedNode.data.label] ??
       "Error: No explanation available for state preperation node: " +
         selectedNode.data.label
+    );
+  }
+
+  // For EditableNode the explanation may have been customized by the user.
+  if (selectedNode.type === EditableNode) {
+    return (
+      selectedNode.data.explanation ??
+      NODE_EXPLANATIONS[EditableNode] ??
+      ""
     );
   }
 
@@ -280,7 +370,9 @@ export const TextPanel = () => {
   const [_fileName, setFileName] = useState("");
   const [_uncomputeFileName, setUncomputeFileName] = useState("");
   const [implementationContent, setImplementationContent] = useState("");
+
   console.log(selectedNode);
+
   const validFields = [
     "gamma",
     "lambda",
@@ -306,6 +398,9 @@ export const TextPanel = () => {
     "numTargets",
     "matrix",
     "controlValue",
+    "explanation",
+    "implementationLanguage",
+    "implementationFileName",
   ];
 
   const normalizeDegrees = (deg) => {
@@ -313,39 +408,19 @@ export const TextPanel = () => {
     return normalized < 0 ? normalized + 360 : normalized;
   };
 
-  const normalizeRadians = (rad) => {
-    const normalized = rad % (2 * Math.PI);
-    return normalized < 0 ? normalized + 2 * Math.PI : normalized;
-  };
+  const degToRad = (deg) =>
+    (normalizeDegrees(parseFloat(deg)) * Math.PI) / 180;
 
-  const degToRad = (deg) => (normalizeDegrees(parseFloat(deg)) * Math.PI) / 180;
+  const radToDeg = (rad) =>
+    normalizeDegrees((parseFloat(rad) * 180) / Math.PI);
 
-  const radToDeg = (rad) => normalizeDegrees((parseFloat(rad) * 180) / Math.PI);
-
-  const safeEval = (expr: number | String) => {
+  const safeEval = (expr) => {
     try {
-      if (typeof expr === "number") return expr;
-      if (expr.trim() === "") return NaN;
       console.log(expr);
 
-      // Convert commas to dots ("0,5" -> "0.5")
-      let sanitized = expr.toLowerCase().replace(/,/g, ".");
+      const sanitized = expr.replace(/π|pi/gi, `${Math.PI}`);
 
-      // Validate input: Only allow numbers, math operators, dots, spaces, and "pi" / "π"
-      if (!/^[0-9+\-*/(). piπ\s]+$/.test(sanitized)) {
-        return NaN;
-      }
-
-      // Replace pi/π with Math.PI
-      // and insert '*' between a number and Math.PI (e.g., "2pi" -> "2*Math.PI")
-      sanitized = expr
-        .replace(/π|pi/g, "Math.PI")
-        .replace(/(\d)(Math\.PI)/g, "$1*$2");
-
-      // Safely evaluate the math string
-      const result = new Function(`"use strict"; return (${sanitized})`)();
-
-      return result;
+      return sanitized;
     } catch {
       return NaN;
     }
@@ -353,45 +428,23 @@ export const TextPanel = () => {
 
   const handleParameterChange = (value) => {
     const evaluated = safeEval(value);
+
     console.log(evaluated);
+
     if (!isNaN(evaluated)) {
       const storedValue =
         selectedNode.data.parameterType === "degree"
           ? degToRad(value)
           : radToDeg(value);
+
       handleNumberChange("parameter", "" + storedValue);
     } else {
       handleNumberChange("parameter", evaluated);
     }
   };
 
-  // executed when gate parameter field is exited
-  const handleBlurForGateParameters = (
-    e: React.FocusEvent<HTMLInputElement>,
-  ) => {
-    const currentValue = e.target.value;
-
-    // If the input is empty, exit early
-    if (currentValue === "") return;
-
-    const numericValue = safeEval(currentValue);
-
-    if (!isNaN(numericValue)) {
-      const isDegree = selectedNode.data.parameterType === "degree";
-
-      // Normalize based on the parameter type
-      const normalizedValue = isDegree
-        ? normalizeDegrees(numericValue)
-        : normalizeRadians(numericValue);
-
-      // Update parameter with normalized value
-      handleNumberChange("parameter", normalizedValue.toString());
-    } else {
-      handleNumberChange("parameter", "");
-    }
-  };
-
   let validMinValue = 0;
+
   if (
     selectedNode?.type === "splitterNode" ||
     selectedNode?.type === "mergerNode"
@@ -412,20 +465,25 @@ export const TextPanel = () => {
         updateNodeValue(selectedNode.id, field, value);
         handleParameterChange(selectedNode.data.parameter);
       }
+
       if (field === "implementation") {
         setImplementationContent(value);
       }
+
       console.log(value);
       console.log(field);
+
       if (validFields.includes(field)) {
         selectedNode.data[field] = value;
         updateNodeValue(selectedNode.id, field, value);
-      }
-      // funktioniert nicht ganz richtig, man kann Eingabe nicht mit delete key löschen.
-      else if (!isNaN(Number(value))) {
+      } else if (!isNaN(Number(value))) {
         if (Number(value) < validMinValue) {
           selectedNode.data[field] = Number(validMinValue);
-          updateNodeValue(selectedNode.id, field, String(validMinValue));
+          updateNodeValue(
+            selectedNode.id,
+            field,
+            String(validMinValue),
+          );
         } else {
           selectedNode.data[field] = Number(value);
           updateNodeValue(selectedNode.id, field, value);
@@ -440,26 +498,80 @@ export const TextPanel = () => {
   ) {
     if (event.target.files && selectedNode) {
       const file = event.target.files[0];
+
       const reader = new FileReader();
 
       reader.onload = function (e) {
         const fileContent = e.target?.result as string;
+
         if (field === "uncomputeImplementation") {
           selectedNode.data.uncomputeImplementation = fileContent;
-          updateNodeValue(selectedNode.id, field, fileContent);
-          updateNodeValue(selectedNode.id, "uncomputeFileName", file.name);
+          updateNodeValue(
+            selectedNode.id,
+            field,
+            fileContent,
+          );
+
+          updateNodeValue(
+            selectedNode.id,
+            "uncomputeFileName",
+            file.name,
+          );
+
           setUncomputeFileName(file.name);
         } else {
           selectedNode.data.implementation = fileContent;
-          updateNodeValue(selectedNode.id, "implementation", fileContent);
-          updateNodeValue(selectedNode.id, "fileName", file.name);
+
+          updateNodeValue(
+            selectedNode.id,
+            "implementation",
+            fileContent,
+          );
+
+          updateNodeValue(
+            selectedNode.id,
+            "fileName",
+            file.name,
+          );
+
           setFileName(file.name);
+
+          // EditableNode-specific implementation metadata.
+          if (selectedNode.type === EditableNode) {
+            updateNodeValue(
+              selectedNode.id,
+              "implementationFileName",
+              file.name,
+            );
+
+            const extension = file.name
+              .split(".")
+              .pop()
+              ?.toLowerCase();
+
+            if (extension === "qasm") {
+              updateNodeValue(
+                selectedNode.id,
+                "implementationLanguage",
+                "qasm",
+              );
+            } else if (extension === "py") {
+              updateNodeValue(
+                selectedNode.id,
+                "implementationLanguage",
+                "python",
+              );
+            }
+          }
         }
       };
 
       reader.readAsText(file);
     }
   }
+
+  const editableImplementationType =
+    getEditableNodeImplementationType(selectedNode);
 
   return (
     <>
@@ -472,8 +584,12 @@ export const TextPanel = () => {
           >
             <ArrowLeft />
           </button>
-          <h2 className="flex-grow text-center">Properties Panel</h2>
+
+          <h2 className="flex-grow text-center">
+            Properties Panel
+          </h2>
         </div>
+
         <hr />
 
         {selectedNode && (
@@ -485,11 +601,41 @@ export const TextPanel = () => {
               Explanation
             </label>
 
-            <div className="mt-1 min-h-28 border border-gray-300 rounded-md sm:text-sm p-2 bg-gray-50 text-gray-700 whitespace-pre-line">
-              {getNodeExplanation(selectedNode)}
-            </div>
+            {selectedNode.type === EditableNode ? (
+              <textarea
+                id="nodeExplanation"
+                name="nodeExplanation"
+                value={
+                  selectedNode.data.explanation ??
+                  NODE_EXPLANATIONS[EditableNode] ??
+                  ""
+                }
+                onChange={(e) =>
+                  handleNumberChange(
+                    "explanation",
+                    e.target.value,
+                  )
+                }
+                className="mt-1 border border-gray-300 rounded-md sm:text-sm p-2 bg-white text-gray-700 w-full min-h-28 resize-y focus:outline-none focus:ring-2 focus:ring-blue-400"
+                placeholder="Enter an explanation for this custom node..."
+              />
+            ) : (
+              <div className="mt-1 min-h-28 border border-gray-300 rounded-md sm:text-sm p-2 bg-gray-50 text-gray-700">
+                {getNodeExplanation(selectedNode)}
+              </div>
+            )}
           </div>
         )}
+
+        {selectedNode?.type === EditableNode &&
+          editableImplementationType && (
+            <EditableNodeImplementationFields
+              selectedNode={selectedNode}
+              implementationType={editableImplementationType}
+              handleNumberChange={handleNumberChange}
+              handleFileUpload={handleFileUpload}
+            />
+          )}
 
         {selectedNode?.type === "positionNode" && (
           <div className="p-2 mt-3">
@@ -499,13 +645,16 @@ export const TextPanel = () => {
             >
               Value
             </label>
+
             <div className="mt-1">
               <input
                 type="text"
                 id="value"
                 name="value"
                 value={selectedNode.data.value || ""}
-                onChange={(e) => handleNumberChange("value", e.target.value)}
+                onChange={(e) =>
+                  handleNumberChange("value", e.target.value)
+                }
                 className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
                 placeholder="Enter a number"
               />
@@ -521,25 +670,47 @@ export const TextPanel = () => {
             >
               Encoding Type
             </label>
+
             <div className="mt-1">
               <select
                 id="encodingType"
                 name="encodingType"
-                value={selectedNode.data.encodingType || "Amplitude Encoding"}
+                value={
+                  selectedNode.data.encodingType ||
+                  "Amplitude Encoding"
+                }
                 onChange={(e) =>
-                  handleNumberChange("encodingType", e.target.value)
+                  handleNumberChange(
+                    "encodingType",
+                    e.target.value,
+                  )
                 }
                 className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
               >
                 {!completionGuaranteed && (
-                  <option value="Amplitude Encoding">Amplitude Encoding</option>
+                  <option value="Amplitude Encoding">
+                    Amplitude Encoding
+                  </option>
                 )}
-                <option value="Angle Encoding">Angle Encoding</option>
-                <option value="Basis Encoding">Basis Encoding</option>
-                <option value="Custom Encoding">Custom Encoding</option>
+
+                <option value="Angle Encoding">
+                  Angle Encoding
+                </option>
+
+                <option value="Basis Encoding">
+                  Basis Encoding
+                </option>
+
+                <option value="Custom Encoding">
+                  Custom Encoding
+                </option>
+
                 {!completionGuaranteed && (
-                  <option value="Matrix Encoding">Matrix Encoding</option>
+                  <option value="Matrix Encoding">
+                    Matrix Encoding
+                  </option>
                 )}
+
                 {!completionGuaranteed && (
                   <option value="Schmidt Decomposition">
                     Schmidt Decomposition
@@ -548,8 +719,10 @@ export const TextPanel = () => {
               </select>
             </div>
 
-            {selectedNode.data.encodingType !== "Basis Encoding" &&
-              selectedNode.data.encodingType !== "Angle Encoding" && (
+            {selectedNode.data.encodingType !==
+              "Basis Encoding" &&
+              selectedNode.data.encodingType !==
+                "Angle Encoding" && (
                 <>
                   <label
                     className="block text-sm font-medium text-start text-gray-700 mt-2"
@@ -557,6 +730,7 @@ export const TextPanel = () => {
                   >
                     Bound
                   </label>
+
                   <div className="mt-1">
                     <input
                       type="text"
@@ -564,7 +738,10 @@ export const TextPanel = () => {
                       name="bound"
                       value={selectedNode.data.bound || ""}
                       onChange={(e) =>
-                        handleNumberChange("bound", e.target.value)
+                        handleNumberChange(
+                          "bound",
+                          e.target.value,
+                        )
                       }
                       className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
                       placeholder="Enter bound"
@@ -574,6 +751,7 @@ export const TextPanel = () => {
               )}
           </div>
         )}
+
         {selectedNode?.data.label === "Prepare State" && (
           <div className="p-2 mt-3">
             <label
@@ -582,34 +760,61 @@ export const TextPanel = () => {
             >
               Quantum State Name
             </label>
+
             <div className="mt-1">
               <select
                 id="quantumStateName"
                 name="quantumStateName"
-                value={selectedNode.data.quantumStateName || "Bell State φ+"}
+                value={
+                  selectedNode.data.quantumStateName ||
+                  "Bell State φ+"
+                }
                 onChange={(e) =>
-                  handleNumberChange("quantumStateName", e.target.value)
+                  handleNumberChange(
+                    "quantumStateName",
+                    e.target.value,
+                  )
                 }
                 className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
               >
-                <option value="Bell State φ+">Bell State ϕ+</option>
-                <option value="Bell State φ-">Bell State ϕ-</option>
-                <option value="Bell State ψ+">Bell State ψ+</option>
-                <option value="Bell State ψ-">Bell State ψ-</option>
-                <option value="Custom State">Custom State</option>
+                <option value="Bell State φ+">
+                  Bell State ϕ+
+                </option>
+
+                <option value="Bell State φ-">
+                  Bell State ϕ-
+                </option>
+
+                <option value="Bell State ψ+">
+                  Bell State ψ+
+                </option>
+
+                <option value="Bell State ψ-">
+                  Bell State ψ-
+                </option>
+
+                <option value="Custom State">
+                  Custom State
+                </option>
+
                 <option value="GHZ">GHZ State</option>
+
                 <option value="Uniform Superposition">
                   Uniform Superposition
                 </option>
+
                 <option value="W-State">W-State</option>
               </select>
             </div>
           </div>
         )}
+
         {(selectedNode?.type === OperatorNode ||
           selectedNode?.type === ClassicalOperatorNode) && (
           <div className="p-2 mt-3">
-            {selectedNode.data.label.includes("Arithmetic Operator") && (
+            {selectedNode.data.label.includes(
+              "Arithmetic Operator",
+            ) && (
               <>
                 <label
                   className="block text-sm font-medium text-start text-gray-700 mt-2"
@@ -617,27 +822,47 @@ export const TextPanel = () => {
                 >
                   Arithmetic Operator
                 </label>
+
                 <div className="mt-1">
                   <select
                     id="arithmeticOperator"
                     name="arithmeticOperator"
-                    value={selectedNode.data.operator || "+"}
+                    value={
+                      selectedNode.data.operator || "+"
+                    }
                     onChange={(e) =>
-                      handleNumberChange("operator", e.target.value)
+                      handleNumberChange(
+                        "operator",
+                        e.target.value,
+                      )
                     }
                     className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
                   >
                     <option value="+">+</option>
-                    {!completionGuaranteed && <option value="-">-</option>}
-                    {!completionGuaranteed && <option value="/">/</option>}
-                    {!completionGuaranteed && <option value="*">*</option>}
-                    {!completionGuaranteed && <option value="**">**</option>}
+
+                    {!completionGuaranteed && (
+                      <option value="-">-</option>
+                    )}
+
+                    {!completionGuaranteed && (
+                      <option value="/">/</option>
+                    )}
+
+                    {!completionGuaranteed && (
+                      <option value="*">*</option>
+                    )}
+
+                    {!completionGuaranteed && (
+                      <option value="**">**</option>
+                    )}
                   </select>
                 </div>
               </>
             )}
 
-            {selectedNode.data.label.includes(comparisonOperatorLabel) && (
+            {selectedNode.data.label.includes(
+              comparisonOperatorLabel,
+            ) && (
               <>
                 <label
                   className="block text-sm font-medium text-start text-gray-700 mt-2"
@@ -645,13 +870,19 @@ export const TextPanel = () => {
                 >
                   Comparison Operator
                 </label>
+
                 <div className="mt-1">
                   <select
                     id="comparisonOperator"
                     name="comparisonOperator"
-                    value={selectedNode.data.operator || "≤"}
+                    value={
+                      selectedNode.data.operator || "≤"
+                    }
                     onChange={(e) =>
-                      handleNumberChange("operator", e.target.value)
+                      handleNumberChange(
+                        "operator",
+                        e.target.value,
+                      )
                     }
                     className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
                   >
@@ -666,7 +897,9 @@ export const TextPanel = () => {
               </>
             )}
 
-            {selectedNode.data.label.includes(minMaxOperatorLabel) && (
+            {selectedNode.data.label.includes(
+              minMaxOperatorLabel,
+            ) && (
               <>
                 <label
                   className="block text-sm font-medium text-start text-gray-700 mt-2"
@@ -674,13 +907,19 @@ export const TextPanel = () => {
                 >
                   Min/Max Operator
                 </label>
+
                 <div className="mt-1">
                   <select
                     id="minMaxOperator"
                     name="minMaxOperator"
-                    value={selectedNode.data.operator || "min"}
+                    value={
+                      selectedNode.data.operator || "min"
+                    }
                     onChange={(e) =>
-                      handleNumberChange("operator", e.target.value)
+                      handleNumberChange(
+                        "operator",
+                        e.target.value,
+                      )
                     }
                     className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
                   >
@@ -691,7 +930,9 @@ export const TextPanel = () => {
               </>
             )}
 
-            {selectedNode.data.label.includes(bitwiseOperatorLabel) && (
+            {selectedNode.data.label.includes(
+              bitwiseOperatorLabel,
+            ) && (
               <>
                 <label
                   className="block text-sm font-medium text-start text-gray-700 mt-2"
@@ -699,22 +940,26 @@ export const TextPanel = () => {
                 >
                   Bitwise Operator
                 </label>
+
                 <div className="mt-1">
                   <select
                     id="minMaxOperator"
                     name="minMaxOperator"
-                    value={selectedNode.data.operator || "min"}
+                    value={
+                      selectedNode.data.operator || "min"
+                    }
                     onChange={(e) =>
-                      handleNumberChange("operator", e.target.value)
+                      handleNumberChange(
+                        "operator",
+                        e.target.value,
+                      )
                     }
                     className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
                   >
-                    <>
-                      <option value="|">OR</option>
-                      <option value="&">AND</option>
-                      <option value="~">INVERT</option>
-                      <option value="^">XOR</option>
-                    </>
+                    <option value="|">OR</option>
+                    <option value="&">AND</option>
+                    <option value="~">INVERT</option>
+                    <option value="^">XOR</option>
                   </select>
                 </div>
               </>
@@ -725,7 +970,9 @@ export const TextPanel = () => {
                 selectedNode={selectedNode}
                 handleNumberChange={handleNumberChange}
                 handleFileUpload={handleFileUpload}
-                implementationContent={implementationContent}
+                implementationContent={
+                  implementationContent
+                }
                 type=""
               />
             )}
@@ -742,14 +989,20 @@ export const TextPanel = () => {
                 >
                   Register Name
                 </label>
+
                 <div className="mt-1">
                   <input
                     type="text"
                     id="registerName"
                     name="registerName"
-                    value={selectedNode.data.registerName || ""}
+                    value={
+                      selectedNode.data.registerName || ""
+                    }
                     onChange={(e) =>
-                      handleNumberChange("registerName", e.target.value)
+                      handleNumberChange(
+                        "registerName",
+                        e.target.value,
+                      )
                     }
                     className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
                     placeholder="Enter register name"
@@ -758,39 +1011,42 @@ export const TextPanel = () => {
               </>
             )}
 
-            {
-              <>
-                <label
-                  className="block text-sm font-medium text-start text-gray-700 mt-2"
-                  htmlFor="basis"
-                >
-                  Basis
-                </label>
-                <div className="mt-1">
-                  <input
-                    type="text"
-                    id="basis"
-                    name="basis"
-                    value={selectedNode.data.basis || ""}
-                    onChange={(e) => {
-                      const value = e.target.value.toUpperCase();
+            <>
+              <label
+                className="block text-sm font-medium text-start text-gray-700 mt-2"
+                htmlFor="basis"
+              >
+                Basis
+              </label>
 
-                      if (/^[XYZ]*$/.test(value)) {
-                        handleNumberChange("basis", value);
-                      }
-                    }}
-                    className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                    placeholder="e.g. XYZ"
-                  />
-                </div>
-                {selectedNode.data.basis &&
-                  !/^[XYZ]+$/.test(selectedNode.data.basis.toUpperCase()) && (
-                    <p className="text-red-500 text-xs mt-1">
-                      Basis may only contain X, Y, or Z.
-                    </p>
-                  )}
-              </>
-            }
+              <div className="mt-1">
+                <input
+                  type="text"
+                  id="basis"
+                  name="basis"
+                  value={selectedNode.data.basis || ""}
+                  onChange={(e) => {
+                    const value =
+                      e.target.value.toUpperCase();
+
+                    if (/^[XYZ]*$/.test(value)) {
+                      handleNumberChange("basis", value);
+                    }
+                  }}
+                  className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
+                  placeholder="e.g. XYZ"
+                />
+              </div>
+
+              {selectedNode.data.basis &&
+                !/^[XYZ]+$/.test(
+                  selectedNode.data.basis.toUpperCase(),
+                ) && (
+                  <p className="text-red-500 text-xs mt-1">
+                    Basis may only contain X, Y, or Z.
+                  </p>
+                )}
+            </>
 
             <ImplementationFields
               selectedNode={selectedNode}
@@ -804,9 +1060,12 @@ export const TextPanel = () => {
 
         {selectedNode?.type === "gateNode" && (
           <>
-            {/* Single-parameter gates */}
-            {(parameterized_one_qubit.includes(selectedNode.data.label) ||
-              parameterized_two_qubit.includes(selectedNode.data.label)) && (
+            {(parameterized_one_qubit.includes(
+              selectedNode.data.label,
+            ) ||
+              parameterized_two_qubit.includes(
+                selectedNode.data.label,
+              )) && (
               <div className="p-2 mt-3">
                 <label
                   className="block text-sm font-medium text-start text-gray-700"
@@ -814,20 +1073,24 @@ export const TextPanel = () => {
                 >
                   Parameter
                 </label>
+
                 <div className="mt-1">
                   <input
-                    type="text"
+                    type="number"
                     id="parameter"
                     name="parameter"
                     value={
-                      selectedNode.data.parameterType === "degree"
+                      selectedNode.data.parameterType ===
+                      "degree"
                         ? selectedNode.data.parameter
                         : selectedNode.data.parameter || ""
                     }
                     onChange={(e) =>
-                      handleNumberChange("parameter", e.target.value)
+                      handleNumberChange(
+                        "parameter",
+                        e.target.value,
+                      )
                     }
-                    onBlur={handleBlurForGateParameters}
                     className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
                     placeholder="Enter parameter"
                   />
@@ -839,13 +1102,19 @@ export const TextPanel = () => {
                 >
                   Parameter Type
                 </label>
+
                 <div className="mt-1">
                   <select
                     id="parameterType"
                     name="parameterType"
-                    value={selectedNode.data.parameterType || ""}
+                    value={
+                      selectedNode.data.parameterType || ""
+                    }
                     onChange={(e) =>
-                      handleNumberChange("parameterType", e.target.value)
+                      handleNumberChange(
+                        "parameterType",
+                        e.target.value,
+                      )
                     }
                     className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
                   >
@@ -864,13 +1133,19 @@ export const TextPanel = () => {
                 >
                   Control Value
                 </label>
+
                 <div className="mt-1">
                   <select
                     id="controlValue"
                     name="controlValue"
-                    value={selectedNode.data.controlValue || ""}
+                    value={
+                      selectedNode.data.controlValue || ""
+                    }
                     onChange={(e) =>
-                      handleNumberChange("controlValue", e.target.value)
+                      handleNumberChange(
+                        "controlValue",
+                        e.target.value,
+                      )
                     }
                     className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
                   >
@@ -885,16 +1160,20 @@ export const TextPanel = () => {
                 >
                   Matrix
                 </label>
+
                 <div className="mt-1">
                   <input
                     id="matrix"
                     name="matrix"
                     value={selectedNode.data.matrix || ""}
                     onChange={(e) =>
-                      handleNumberChange("matrix", e.target.value)
+                      handleNumberChange(
+                        "matrix",
+                        e.target.value,
+                      )
                     }
                     className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                  ></input>
+                  />
                 </div>
               </div>
             )}
@@ -920,17 +1199,25 @@ export const TextPanel = () => {
                     >
                       {label}
                     </label>
+
                     <input
                       type="text"
                       id={`param-${key}`}
                       name={`param-${key}`}
                       value={
-                        selectedNode.data.parameterType === "degree"
-                          ? radToDeg(selectedNode.data[key] || 0)
+                        selectedNode.data.parameterType ===
+                        "degree"
+                          ? radToDeg(
+                              selectedNode.data[key] || 0,
+                            )
                           : selectedNode.data[key] || ""
                       }
-                      onChange={(e) => handleNumberChange(key, e.target.value)}
-                      //onBlur={TODO} //not implemented for multi-parameter gates
+                      onChange={(e) =>
+                        handleNumberChange(
+                          key,
+                          e.target.value,
+                        )
+                      }
                       className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
                       placeholder={`Enter ${label}`}
                     />
@@ -943,13 +1230,19 @@ export const TextPanel = () => {
                 >
                   Parameter Type
                 </label>
+
                 <div className="mt-1">
                   <select
                     id="parameterType"
                     name="parameterType"
-                    value={selectedNode.data.parameterType || ""}
+                    value={
+                      selectedNode.data.parameterType || ""
+                    }
                     onChange={(e) =>
-                      handleNumberChange("parameterType", e.target.value)
+                      handleNumberChange(
+                        "parameterType",
+                        e.target.value,
+                      )
                     }
                     className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
                   >
@@ -965,88 +1258,6 @@ export const TextPanel = () => {
         {(selectedNode?.type === AlgorithmNode ||
           selectedNode?.type === ClassicalAlgorithmNode) && (
           <div className="p-2 mt-3">
-            {/* <label
-              className="block text-sm font-medium text-start text-gray-700"
-              htmlFor="numberQuantumInputs"
-            >
-              Number of Quantum Inputs
-            </label>
-            <div className="mt-1">
-              <input
-                type="number"
-                id="numberQuantumInputs"
-                name="numberQuantumInputs"
-                value={selectedNode.data.numberQuantumInputs || ""
-                }
-                onChange={(e) =>
-                  handleNumberChange("numberQuantumInputs", e.target.value)
-                }
-                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                placeholder="Enter numberQuantumInputs"
-              />
-            </div>
-
-            <label
-              className="block text-sm font-medium text-start text-gray-700"
-              htmlFor="numberClassicalInputs"
-            >
-              Number of Classical Inputs
-            </label>
-            <div className="mt-1">
-              <input
-                type="number"
-                id="numberClassicalInputs"
-                name="numberClassicalInputs"
-                value={selectedNode.data.numberClassicalInputs || ""
-                }
-                onChange={(e) =>
-                  handleNumberChange("numberClassicalInputs", e.target.value)
-                }
-                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                placeholder="Enter numberClassicalInputs"
-              />
-            </div>
-
-            <label
-              className="block text-sm font-medium text-start text-gray-700"
-              htmlFor="numberQuantumOutputs"
-            >
-              Number of Quantum Outputs
-            </label>
-            <div className="mt-1">
-              <input
-                type="number"
-                id="numberQuantumOutputs"
-                name="numberQuantumOutputs"
-                value={selectedNode.data.numberQuantumOutputs || ""
-                }
-                onChange={(e) =>
-                  handleNumberChange("numberQuantumOutputs", e.target.value)
-                }
-                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                placeholder="Enter numberQuantumOutputs"
-              />
-            </div>
-            <label
-              className="block text-sm font-medium text-start text-gray-700"
-              htmlFor="numberClassicalOutputs"
-            >
-              Number of Classical Outputs
-            </label>
-            <div className="mt-1">
-              <input
-                type="number"
-                id="numberClassicalOutputs"
-                name="numberClassicalOutputs"
-                value={selectedNode.data.numberClassicalOutputs || ""
-                }
-                onChange={(e) =>
-                  handleNumberChange("numberClassicalOutputs", e.target.value)
-                }
-                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                placeholder="Enter numberClassicalOutputs"
-              />
-            </div> */}
             <ImplementationFields
               selectedNode={selectedNode}
               handleNumberChange={handleNumberChange}
@@ -1056,28 +1267,9 @@ export const TextPanel = () => {
             />
           </div>
         )}
+
         {selectedNode?.type === "splitterNode" && (
           <div className="p-2 mt-3">
-            {/* <label
-              className="block text-sm font-medium text-start text-gray-700"
-              htmlFor="numberOutputs"
-            >
-              Number of Outputs
-            </label>
-            <div className="mt-1">
-              <input
-                type="text"
-                id="numberOutputs"
-                name="numberOutputs"
-                value={selectedNode.data.numberOutputs || ""
-                }
-                onChange={(e) =>
-                  handleNumberChange("numberOutputs", e.target.value)
-                }
-                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                placeholder="Enter numberOutputs"
-              />
-            </div> */}
             <ImplementationFields
               selectedNode={selectedNode}
               handleNumberChange={handleNumberChange}
@@ -1087,29 +1279,9 @@ export const TextPanel = () => {
             />
           </div>
         )}
+
         {selectedNode?.type === "mergerNode" && (
           <div className="p-2 mt-3">
-            {/*             <label
-              className="block text-sm font-medium text-start text-gray-700"
-              htmlFor="numberInputs"
-            >
-              Number of Inputs
-            </label>
-            <div className="mt-1">
-              <input
-                type="text"
-                id="numberInputs"
-                name="numberInputs"
-                value={selectedNode.data.numberInputs || ""
-                }
-                onChange={(e) =>
-                  handleNumberChange("numberInputs", e.target.value)
-                }
-                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                placeholder="Enter numberInputs"
-              />
-            </div> */}
-
             <ImplementationFields
               selectedNode={selectedNode}
               handleNumberChange={handleNumberChange}
@@ -1119,6 +1291,7 @@ export const TextPanel = () => {
             />
           </div>
         )}
+
         {selectedNode?.type === ControlStructureNode && (
           <div className="p-2 mt-3">
             <label
@@ -1127,6 +1300,7 @@ export const TextPanel = () => {
             >
               Condition
             </label>
+
             <div className="mt-1">
               <input
                 type="text"
@@ -1134,52 +1308,15 @@ export const TextPanel = () => {
                 name="condition"
                 value={selectedNode.data.condition || ""}
                 onChange={(e) =>
-                  handleNumberChange("condition", e.target.value)
+                  handleNumberChange(
+                    "condition",
+                    e.target.value,
+                  )
                 }
                 className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
                 placeholder="Enter condition"
               />
             </div>
-            {/* <label
-              className="block text-sm font-medium text-start text-gray-700"
-              htmlFor="numberClassicalInputs"
-            >
-              Number of Classical Inputs
-            </label>
-            <div className="mt-1">
-              <input
-                type="text"
-                id="numberClassicalInputs"
-                name="numberClassicalInputs"
-                value={selectedNode.data.numberClassicalInputs || ""
-                }
-                onChange={(e) =>
-                  handleNumberChange("numberClassicalInputs", e.target.value)
-                }
-                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                placeholder="Enter numberClassicalInputs"
-              />
-            </div>
-            <label
-              className="block text-sm font-medium text-start text-gray-700"
-              htmlFor="numberQuantumInputs"
-            >
-              Number of Quantum Inputs
-            </label>
-            <div className="mt-1">
-              <input
-                type="text"
-                id="numberQuantumInputs"
-                name="numberQuantumInputs"
-                value={selectedNode.data.numberQuantumInputs || ""
-                }
-                onChange={(e) =>
-                  handleNumberChange("numberQuantumInputs", e.target.value)
-                }
-                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                placeholder="Enter numberQuantumInputs"
-              />
-            </div> */}
           </div>
         )}
 
@@ -1191,6 +1328,7 @@ export const TextPanel = () => {
             >
               Condition
             </label>
+
             <div className="mt-1">
               <input
                 type="text"
@@ -1198,52 +1336,15 @@ export const TextPanel = () => {
                 name="condition"
                 value={selectedNode.data.condition || ""}
                 onChange={(e) =>
-                  handleNumberChange("condition", e.target.value)
+                  handleNumberChange(
+                    "condition",
+                    e.target.value,
+                  )
                 }
                 className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
                 placeholder="Enter condition"
               />
             </div>
-            {/* <label
-              className="block text-sm font-medium text-start text-gray-700"
-              htmlFor="numberClassicalInputs"
-            >
-              Number of Classical Inputs
-            </label>
-            <div className="mt-1">
-              <input
-                type="text"
-                id="numberClassicalInputs"
-                name="numberClassicalInputs"
-                value={selectedNode.data.numberClassicalInputs || ""
-                }
-                onChange={(e) =>
-                  handleNumberChange("numberClassicalInputs", e.target.value)
-                }
-                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                placeholder="Enter numberClassicalInputs"
-              />
-            </div>
-            <label
-              className="block text-sm font-medium text-start text-gray-700"
-              htmlFor="numberQuantumInputs"
-            >
-              Number of Quantum Inputs
-            </label>
-            <div className="mt-1">
-              <input
-                type="text"
-                id="numberQuantumInputs"
-                name="numberQuantumInputs"
-                value={selectedNode.data.numberQuantumInputs || ""
-                }
-                onChange={(e) =>
-                  handleNumberChange("numberQuantumInputs", e.target.value)
-                }
-                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                placeholder="Enter numberQuantumInputs"
-              />
-            </div> */}
           </div>
         )}
       </aside>
@@ -1251,9 +1352,124 @@ export const TextPanel = () => {
   );
 };
 
+interface EditableNodeImplementationFieldsProps {
+  selectedNode: Node;
+  implementationType: "quantum" | "classical";
+  handleNumberChange: (
+    field: string,
+    value: string,
+  ) => void;
+  handleFileUpload: (
+    event: React.ChangeEvent<HTMLInputElement>,
+    field: string,
+  ) => void;
+}
+
+const EditableNodeImplementationFields: React.FC<
+  EditableNodeImplementationFieldsProps
+> = ({
+  selectedNode,
+  implementationType,
+  handleNumberChange,
+  handleFileUpload,
+}) => {
+  const isQuantum = implementationType === "quantum";
+
+  const implementation = selectedNode.data.implementation || "";
+  const fileName =
+    selectedNode.data.implementationFileName ||
+    selectedNode.data.fileName ||
+    "";
+
+  const language =
+    selectedNode.data.implementationLanguage ||
+    "";
+
+  return (
+    <div className="p-2 mt-3 border border-gray-200 rounded-md bg-gray-50">
+      <label className="block text-sm font-medium text-start text-gray-700">
+        Custom Implementation
+      </label>
+
+      <p className="text-xs text-gray-500 mt-1 mb-3">
+        {isQuantum
+          ? "Custom Quantum Operator: upload a QASM or Python implementation."
+          : "Custom Classical Operator: upload a Python implementation."}
+      </p>
+
+      <label
+        className="block text-sm font-medium text-start text-gray-700"
+        htmlFor="editableNodeImplementationFile"
+      >
+        Upload Implementation
+      </label>
+
+      <div className="mt-1">
+        <input
+          type="file"
+          id="editableNodeImplementationFile"
+          name="editableNodeImplementationFile"
+          accept={
+            isQuantum
+              ? ".qasm,.py,text/x-python,application/x-python"
+              : ".py,text/x-python,application/x-python"
+          }
+          onChange={(e) =>
+            handleFileUpload(
+              e,
+              "implementation",
+            )
+          }
+          className="border block w-full border-gray-300 rounded-md sm:text-sm p-2 bg-white"
+        />
+      </div>
+
+      {fileName && (
+        <div className="mt-1 text-xs text-gray-500">
+          File: {fileName}
+        </div>
+      )}
+
+      {language && (
+        <div className="mt-1 text-xs text-gray-500">
+          Language: {language === "qasm" ? "QASM" : "Python"}
+        </div>
+      )}
+
+      <label
+        className="block text-sm font-medium text-start text-gray-700 mt-3"
+        htmlFor="editableNodeImplementation"
+      >
+        Implementation
+      </label>
+
+      <textarea
+        id="editableNodeImplementation"
+        name="editableNodeImplementation"
+        value={implementation}
+        onChange={(e) =>
+          handleNumberChange(
+            "implementation",
+            e.target.value,
+          )
+        }
+        className="border block w-full border-gray-300 rounded-md sm:text-sm p-2 h-48 overflow-auto bg-white font-mono text-xs"
+        placeholder={
+          isQuantum
+            ? "Upload a .qasm or .py file, or enter the implementation manually..."
+            : "Upload a .py file, or enter the Python implementation manually..."
+        }
+      />
+    </div>
+  );
+};
+
 interface ImplementationFieldsProps {
   selectedNode: any;
-  handleNumberChange: (field: string, value: string) => void;
+  handleNumberChange: (
+    field: string,
+    value: string,
+  ) => void;
   handleFileUpload: (
     event: React.ChangeEvent<HTMLInputElement>,
     field: string,
@@ -1262,7 +1478,9 @@ interface ImplementationFieldsProps {
   type?: "" | "uncompute";
 }
 
-export const ImplementationFields: React.FC<ImplementationFieldsProps> = ({
+export const ImplementationFields: React.FC<
+  ImplementationFieldsProps
+> = ({
   selectedNode,
   handleNumberChange,
   handleFileUpload,
@@ -1270,33 +1488,43 @@ export const ImplementationFields: React.FC<ImplementationFieldsProps> = ({
   type = "",
 }) => {
   const isUncompute = type === "uncompute";
-  console.log("type")
-  const isClassical = selectedNode.type.includes("classical");
 
   const prefix = isUncompute ? "uncompute" : "";
-  const implementationKey = `${prefix}${isUncompute ? "Implementation" : "implementation"}`;
-  const fileNameKey = `${prefix}${isUncompute ? "FileName" : "fileName"}`;
+
+  const implementationKey = `${prefix}${
+    isUncompute ? "Implementation" : "implementation"
+  }`;
+
+  const fileNameKey = `${prefix}${
+    isUncompute ? "FileName" : "fileName"
+  }`;;
+
   return (
     <>
+      {/** Currently we only support one file type */}
+
       <label
         className="block text-sm font-medium text-start text-gray-700 mt-2"
         htmlFor={`${prefix}FileUpload`}
       >
         {isUncompute
           ? "Upload Uncompute Implementation File"
-         : isClassical ? "Upload Python File"
-          : "Upload QASM File or Python File"}
+          : "Upload QASM File"}
       </label>
+
       <div className="mt-1">
         <input
           type="file"
-          accept={isClassical? ".py" : ".qasm,.py" }
+          accept=".qasm"
           id={`${prefix}FileUpload`}
           name={`${prefix}FileUpload`}
-          onChange={(e) => handleFileUpload(e, implementationKey)}
+          onChange={(e) =>
+            handleFileUpload(e, implementationKey)
+          }
           className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
         />
       </div>
+
       <span className="text-sm text-gray-500">
         {selectedNode.data[fileNameKey]}
       </span>
@@ -1309,11 +1537,20 @@ export const ImplementationFields: React.FC<ImplementationFieldsProps> = ({
           ? "Uncompute Implementation Content"
           : "Implementation Content"}
       </label>
+
       <textarea
         id={`${implementationKey}Content`}
         name={`${implementationKey}Content`}
-        value={selectedNode.data[implementationKey] || implementationContent}
-        onChange={(e) => handleNumberChange(implementationKey, e.target.value)}
+        value={
+          selectedNode.data[implementationKey] ||
+          implementationContent
+        }
+        onChange={(e) =>
+          handleNumberChange(
+            implementationKey,
+            e.target.value,
+          )
+        }
         className="border block w-full border-gray-300 rounded-md sm:text-sm p-2 h-32 overflow-auto"
         placeholder="File content will appear here or enter manually"
       />

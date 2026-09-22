@@ -86,7 +86,7 @@ export const AddNodePanel = ({ onAddNode }: AddNodePanelProps) => {
       [consts.templates]: {
         ...baseCategories[consts.templates],
         content: {
-          "Standard Templates": baseCategories[consts.templates].content,
+          "Standard Templates": baseCategories[consts.templates]?.content,
           "User Templates": userTemplates,
         }
       }
@@ -667,17 +667,28 @@ export const AddNodePanel = ({ onAddNode }: AddNodePanelProps) => {
   };
 
   const allNodes = Object.values(categories).flatMap(({ content }) => {
+    console.log("content:", content);
+
     if (Array.isArray(content)) {
       return content;
-    } else {
-      return Object.values(content).flatMap((group) =>
-        Array.isArray(group)
-          ? group
-          : Object.values(group).flat()
-      );
     }
-  });
 
+    if (!content || typeof content !== "object") {
+      return [];
+    }
+
+    return Object.values(content).flatMap((group) => {
+      if (Array.isArray(group)) {
+        return group;
+      }
+
+      if (!group || typeof group !== "object") {
+        return [];
+      }
+
+      return Object.values(group).flat();
+    });
+  });
   const filteredNodes = searchQuery
     ? (() => {
       const query = searchQuery.toLowerCase();
@@ -707,20 +718,28 @@ export const AddNodePanel = ({ onAddNode }: AddNodePanelProps) => {
     })()
     : [];
 
-  const filterNodeGroup = (nodeGroup: any): Node[] => {
-    if (Array.isArray(nodeGroup)) {
-      return nodeGroup.filter(
-        (node: Node) =>
-          !(!ancillaMode && node.type === "ancillaNode") &&
-          (completionGuaranteed ? node.completionGuaranteed : true) &&
-          node.compactOptions?.includes(compact)
-      );
-    } else {
-      return Object.values(nodeGroup).flatMap((group: any) =>
-        filterNodeGroup(group)
-      );
-    }
-  };
+const filterNodeGroup = (nodeGroup: any): Node[] => {
+  if (!nodeGroup) {
+    return [];
+  }
+
+  if (Array.isArray(nodeGroup)) {
+    return nodeGroup.filter(
+      (node: Node) =>
+        (ancillaMode || node.type !== "ancillaNode") &&
+        (completionGuaranteed ? node.completionGuaranteed : true) &&
+        node.compactOptions?.includes(compact)
+    );
+  }
+
+  if (typeof nodeGroup !== "object") {
+    return [];
+  }
+
+  return Object.values(nodeGroup).flatMap((group: any) =>
+    filterNodeGroup(group)
+  );
+};
 //   useEffect(() => {
 //   console.log(
 //     "All node labels:",
