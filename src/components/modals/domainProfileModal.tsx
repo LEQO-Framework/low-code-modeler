@@ -12,6 +12,7 @@ import {
 import { EditableNode } from "@/constants";
 import { DomainProfileRepositoryPicker } from "./domainProfileRepositoryPicker";
 import { RepositoryDomainProfile } from "../../services/domainProfileRepository";
+import { createPortal } from "react-dom";
 
 export interface EditableNodeProfile {
   label: string;
@@ -293,7 +294,7 @@ function ConstraintEditor({
 
     const finalValue =
       field === "constraint" &&
-      value === "is required"
+        value === "is required"
         ? ""
         : field === "value"
           ? value
@@ -396,11 +397,10 @@ function ConstraintEditor({
                 </label>
 
                 <input
-                  className={`w-full border rounded px-1 py-0.5 text-xs ${
-                    isRequiredType
+                  className={`w-full border rounded px-1 py-0.5 text-xs ${isRequiredType
                       ? "bg-gray-200 cursor-not-allowed text-transparent"
                       : "bg-white"
-                  }`}
+                    }`}
                   value={con.value}
                   disabled={isRequiredType}
                   placeholder={
@@ -516,7 +516,7 @@ function OutputTypeEditor({
   );
 }
 
-function MappingGroup({
+export function MappingGroup({
   selected,
   onToggle,
   onRemove,
@@ -526,24 +526,140 @@ function MappingGroup({
   onRemove: () => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [searchTerm, setSearchTerm] =
-    useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [highlightedIndex, setHighlightedIndex] = useState(0);
+  const [dropdownStyle, setDropdownStyle] =
+    useState<React.CSSProperties>({});
 
-  const dropdownRef =
-    useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
-  const searchInputRef =
-    useRef<HTMLInputElement>(null);
+  const filteredOptions = Object.entries(mappingOptions).filter(
+    ([option, desc]) => {
+      const search = searchTerm.trim().toLowerCase();
 
+      if (!search) return true;
+
+      return (
+        option.toLowerCase().includes(search) ||
+        desc.toLowerCase().includes(search)
+      );
+    },
+  );
+
+  /**
+   * Positioniert das Dropdown relativ zum Mapping-Button.
+   */
+  const updateDropdownPosition = () => {
+    if (!buttonRef.current) return;
+
+    const rect = buttonRef.current.getBoundingClientRect();
+
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+
+    // Wenn unten nicht genug Platz ist, öffnen wir nach oben.
+    const openUp =
+      spaceBelow < 350 && spaceAbove > spaceBelow;
+
+    const maxHeight = Math.min(
+      500,
+      Math.max(
+        250,
+        openUp
+          ? spaceAbove - 16
+          : spaceBelow - 16,
+      ),
+    );
+
+    setDropdownStyle({
+      position: "fixed",
+      left: rect.left,
+      width: Math.max(rect.width, 320),
+      zIndex: 9999,
+      maxHeight,
+
+      ...(openUp
+        ? {
+            bottom:
+              window.innerHeight -
+              rect.top +
+              4,
+          }
+        : {
+            top: rect.bottom + 4,
+          }),
+    });
+  };
+
+  /**
+   * Dropdown-Position beim Scrollen des Modal-Inhalts
+   * und beim Resize aktualisieren.
+   */
   useEffect(() => {
+    if (!isOpen) return;
+
+    updateDropdownPosition();
+
+    const handleScroll = () => {
+      updateDropdownPosition();
+    };
+
+    const handleResize = () => {
+      updateDropdownPosition();
+    };
+
+    window.addEventListener(
+      "scroll",
+      handleScroll,
+      true,
+    );
+
+    window.addEventListener(
+      "resize",
+      handleResize,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "scroll",
+        handleScroll,
+        true,
+      );
+
+      window.removeEventListener(
+        "resize",
+        handleResize,
+      );
+    };
+  }, [isOpen]);
+
+  /**
+   * Click außerhalb schließt das Dropdown.
+   *
+   * Wichtig:
+   * "click" statt "mousedown", damit ein Scrollen
+   * nicht sofort das Dropdown schließt.
+   */
+  useEffect(() => {
+    if (!isOpen) return;
+
     const handleClickOutside = (
       event: MouseEvent,
     ) => {
+      const target = event.target as Node;
+
+      const clickedButton =
+        buttonRef.current?.contains(target);
+
+      const clickedMenu =
+        menuRef.current?.contains(target);
+
       if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(
-          event.target as Node,
-        )
+        !clickedButton &&
+        !clickedMenu
       ) {
         setIsOpen(false);
         setSearchTerm("");
@@ -551,175 +667,383 @@ function MappingGroup({
     };
 
     document.addEventListener(
-      "mousedown",
+      "click",
       handleClickOutside,
     );
 
-    return () =>
+    return () => {
       document.removeEventListener(
-        "mousedown",
+        "click",
         handleClickOutside,
       );
-  }, []);
-
-  useEffect(() => {
-    if (isOpen) {
-      setTimeout(() => {
-        searchInputRef.current?.focus();
-      }, 0);
-    }
+    };
   }, [isOpen]);
 
-  const filteredOptions =
-    Object.entries(mappingOptions).filter(
-      ([option, desc]) => {
-        const search =
-          searchTerm.trim().toLowerCase();
+  /**
+   * Suche fokussieren, wenn Dropdown geöffnet wird.
+   */
+  useEffect(() => {
+    if (!isOpen) return;
 
-        if (!search) return true;
+    setTimeout(() => {
+      searchInputRef.current?.focus();
+    }, 0);
+  }, [isOpen]);
 
-        return (
-          option
-            .toLowerCase()
-            .includes(search) ||
-          desc
-            .toLowerCase()
-            .includes(search)
-        );
-      },
-    );
+  /**
+   * Highlight immer auf gültigen Eintrag setzen,
+   * wenn sich die Suche verändert.
+   */
+  useEffect(() => {
+    setHighlightedIndex(0);
+  }, [searchTerm]);
+
+  /**
+   * Aktuell hervorgehobenen Eintrag sichtbar machen.
+   */
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const menu = menuRef.current;
+
+    if (!menu) return;
+
+    const optionElements =
+      menu.querySelectorAll(
+        "[data-mapping-option]",
+      );
+
+    const active =
+      optionElements[
+        highlightedIndex
+      ] as HTMLElement | undefined;
+
+    active?.scrollIntoView({
+      block: "nearest",
+    });
+  }, [
+    highlightedIndex,
+    isOpen,
+    filteredOptions.length,
+  ]);
+
+  /**
+   * Tastatur-Navigation.
+   */
+  const handleKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+  ) => {
+    if (e.key === "Escape") {
+      e.preventDefault();
+
+      setIsOpen(false);
+      setSearchTerm("");
+
+      return;
+    }
+
+    if (
+      e.key === "ArrowDown"
+    ) {
+      e.preventDefault();
+
+      if (
+        filteredOptions.length ===
+        0
+      ) {
+        return;
+      }
+
+      setHighlightedIndex(
+        (prev) =>
+          prev <
+          filteredOptions.length -
+            1
+            ? prev + 1
+            : 0,
+      );
+
+      return;
+    }
+
+    if (
+      e.key === "ArrowUp"
+    ) {
+      e.preventDefault();
+
+      if (
+        filteredOptions.length ===
+        0
+      ) {
+        return;
+      }
+
+      setHighlightedIndex(
+        (prev) =>
+          prev > 0
+            ? prev - 1
+            : filteredOptions.length -
+              1,
+      );
+
+      return;
+    }
+
+    if (
+      e.key === "Enter"
+    ) {
+      e.preventDefault();
+
+      const option =
+        filteredOptions[
+          highlightedIndex
+        ]?.[0];
+
+      if (option) {
+        onToggle(option);
+      }
+
+      return;
+    }
+  };
+
+  const handleToggle = (
+    option: string,
+  ) => {
+    onToggle(option);
+  };
 
   return (
     <div
-      className="relative mb-2 flex items-center gap-2 group"
       ref={dropdownRef}
+      className="relative mb-2 flex items-center gap-2 group"
     >
-      <div className="flex-1">
+      <div className="flex-1 min-w-0">
+        {/* Mapping Button */}
         <button
+          ref={buttonRef}
           type="button"
           onClick={() => {
-            setIsOpen((prev) => !prev);
+            const next =
+              !isOpen;
 
-            if (isOpen) {
+            setIsOpen(next);
+
+            if (!next) {
               setSearchTerm("");
             }
           }}
           className="w-full flex items-center justify-between bg-white border rounded px-2 py-1.5 text-xs hover:border-blue-400 transition-colors"
         >
           <span className="truncate">
-            {selected.length > 0
-              ? selected.join(" + ")
+            {selected.length >
+            0
+              ? selected.join(
+                  " + ",
+                )
               : "Select mapping..."}
           </span>
 
           <ChevronDown
             size={14}
             className={`flex-shrink-0 transition-transform ${
-              isOpen ? "rotate-180" : ""
+              isOpen
+                ? "rotate-180"
+                : ""
             }`}
           />
         </button>
 
-        {isOpen && (
-          <div className="absolute z-[100] mt-1 w-full bg-white border rounded-md shadow-lg overflow-hidden">
-            <div className="p-2 border-b bg-gray-50">
-              <input
-                ref={searchInputRef}
-                type="text"
-                value={searchTerm}
-                onChange={(e) =>
-                  setSearchTerm(
-                    e.target.value,
-                  )
-                }
-                onKeyDown={(e) => {
-                  if (e.key === "Escape") {
-                    setIsOpen(false);
-                    setSearchTerm("");
+        {/* Dropdown */}
+        {isOpen &&
+          typeof document !==
+            "undefined" &&
+          createPortal(
+            <div
+              ref={menuRef}
+              style={
+                dropdownStyle
+              }
+              className="bg-white border border-gray-200 rounded-md shadow-2xl overflow-hidden"
+            >
+              {/* Search */}
+              <div className="p-2 border-b bg-gray-50">
+                <input
+                  ref={
+                    searchInputRef
                   }
-                }}
-                placeholder="Type to search..."
-                className="w-full border rounded px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
-              />
-            </div>
+                  type="text"
+                  value={
+                    searchTerm
+                  }
+                  onChange={(e) =>
+                    setSearchTerm(
+                      e.target
+                        .value,
+                    )
+                  }
+                  onKeyDown={
+                    handleKeyDown
+                  }
+                  placeholder="Type to search..."
+                  className="w-full border rounded px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+                />
 
-            <div className="max-h-48 overflow-y-auto">
-              {filteredOptions.length === 0 ? (
-                <div className="px-3 py-3 text-xs text-gray-400 text-center">
-                  No matching mappings
+                {/* Kleine Hilfe */}
+                <div className="mt-1.5 text-[10px] text-gray-400">
+                  ↑ ↓ navigate ·
+                  Enter select ·
+                  Esc close
                 </div>
-              ) : (
-                filteredOptions.map(
-                  ([option, desc]) => {
-                    const isChecked =
-                      selected.includes(
+              </div>
+
+              {/* Mapping Liste */}
+              <div className="max-h-[500px] overflow-y-auto">
+                {filteredOptions.length ===
+                0 ? (
+                  <div className="px-3 py-5 text-xs text-gray-400 text-center">
+                    No matching
+                    mappings
+                  </div>
+                ) : (
+                  filteredOptions.map(
+                    (
+                      [
                         option,
-                      );
+                        desc,
+                      ],
+                      index,
+                    ) => {
+                      const isChecked =
+                        selected.includes(
+                          option,
+                        );
 
-                    return (
-                      <div
-                        key={option}
-                        title={desc}
-                        onClick={() =>
-                          onToggle(option)
-                        }
-                        className="flex items-center gap-2 px-3 py-2 hover:bg-blue-50 cursor-pointer text-xs"
-                      >
+                      const isHighlighted =
+                        index ===
+                        highlightedIndex;
+
+                      return (
                         <div
-                          className={`w-4 h-4 border rounded flex items-center justify-center flex-shrink-0 ${
-                            isChecked
-                              ? "bg-blue-500 border-blue-500"
-                              : "bg-white"
-                          }`}
-                        >
-                          {isChecked && (
-                            <Check
-                              size={10}
-                              className="text-white"
-                            />
-                          )}
-                        </div>
-
-                        <div className="min-w-0">
-                          <div
-                            className={
-                              isChecked
-                                ? "font-bold text-blue-700 truncate"
-                                : "text-gray-700 truncate"
+                          key={
+                            option
+                          }
+                          data-mapping-option
+                          title={
+                            desc
+                          }
+                          onMouseEnter={() =>
+                            setHighlightedIndex(
+                              index,
+                            )
+                          }
+                          onClick={() =>
+                            handleToggle(
+                              option,
+                            )
+                          }
+                          className={`
+                            flex items-start gap-2
+                            px-3 py-2.5
+                            cursor-pointer
+                            text-xs
+                            border-b border-gray-50
+                            transition-colors
+                            ${
+                              isHighlighted
+                                ? "bg-blue-50"
+                                : "hover:bg-blue-50"
                             }
+                          `}
+                        >
+                          {/* Checkbox */}
+                          <div
+                            className={`
+                              w-4 h-4 mt-0.5
+                              border rounded
+                              flex items-center
+                              justify-center
+                              flex-shrink-0
+                              ${
+                                isChecked
+                                  ? "bg-blue-500 border-blue-500"
+                                  : "bg-white border-gray-300"
+                              }
+                            `}
                           >
-                            {option}
+                            {isChecked && (
+                              <Check
+                                size={
+                                  10
+                                }
+                                className="text-white"
+                              />
+                            )}
                           </div>
 
-                          {desc &&
-                            desc !==
-                              option && (
-                              <div className="text-[10px] text-gray-400 truncate">
-                                {desc}
-                              </div>
-                            )}
+                          {/* Mapping Text */}
+                          <div className="min-w-0 flex-1">
+                            <div
+                              className={
+                                isChecked
+                                  ? "font-bold text-blue-700 break-words"
+                                  : "text-gray-700 break-words"
+                              }
+                            >
+                              {
+                                option
+                              }
+                            </div>
+
+                            {desc &&
+                              desc !==
+                                option && (
+                                <div className="text-[10px] text-gray-400 mt-0.5 break-words">
+                                  {
+                                    desc
+                                  }
+                                </div>
+                              )}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  },
-                )
-              )}
-            </div>
-          </div>
-        )}
+                      );
+                    },
+                  )
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="border-t bg-gray-50 px-3 py-1.5 text-[10px] text-gray-400 flex justify-between">
+                <span>
+                  {
+                    filteredOptions.length
+                  }{" "}
+                  mappings
+                </span>
+
+                <span>
+                  {
+                    selected.length
+                  }{" "}
+                  selected
+                </span>
+              </div>
+            </div>,
+            document.body,
+          )}
       </div>
 
+      {/* Remove */}
       <button
         type="button"
         onClick={onRemove}
-        className="bg-red-100 text-red-600 rounded-full p-1 hover:bg-red-200"
+        className="bg-red-100 text-red-600 rounded-full p-1 hover:bg-red-200 flex-shrink-0"
       >
         <Trash2 size={12} />
       </button>
     </div>
   );
 }
-
 export function MappingEditor({
   mappings,
   onChange,
@@ -761,7 +1085,7 @@ export function MappingEditor({
     );
 
   return (
-    <div className="min-w-[200px] p-1">
+    <div className="min-w-[300px] p-1">
       {mappings.map((group, idx) => (
         <MappingGroup
           key={idx}
@@ -962,7 +1286,7 @@ export default function DomainProfileTableModal({
           profile.name
             .trim()
             .toLowerCase() ===
-            requestedName.toLowerCase(),
+          requestedName.toLowerCase(),
       );
 
     if (existingProfile) {
@@ -1051,7 +1375,7 @@ export default function DomainProfileTableModal({
     if (
       draggedProfileIndex === null ||
       draggedProfileIndex ===
-        targetIndex
+      targetIndex
     ) {
       setDraggedProfileIndex(null);
       return;
@@ -1096,10 +1420,9 @@ export default function DomainProfileTableModal({
       document.createElement("a");
 
     a.href = url;
-    a.download = `${
-      profile.name ||
+    a.download = `${profile.name ||
       "domain_profile"
-    }.json`;
+      }.json`;
 
     a.click();
 
@@ -1116,12 +1439,11 @@ export default function DomainProfileTableModal({
         <div className="flex items-center justify-between w-full">
           <div className="text-xs text-gray-500">
             {activeTab === "saved"
-              ? `${profiles.length} saved profile${
-                  profiles.length ===
-                  1
-                    ? ""
-                    : "s"
-                }`
+              ? `${profiles.length} saved profile${profiles.length ===
+                1
+                ? ""
+                : "s"
+              }`
               : profileName
                 ? `Editing: ${profileName}`
                 : "New domain profile"}
@@ -1129,11 +1451,10 @@ export default function DomainProfileTableModal({
 
           <div className="space-x-2">
             <button
-              className={`btn ${
-                duplicateWarning
+              className={`btn ${duplicateWarning
                   ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                   : "btn-primary"
-              }`}
+                }`}
               onClick={saveProfile}
               disabled={
                 !!duplicateWarning ||
@@ -1162,22 +1483,20 @@ export default function DomainProfileTableModal({
               onClick={() =>
                 setActiveTab("saved")
               }
-              className={`relative px-5 py-3 text-sm font-medium transition-colors ${
-                activeTab === "saved"
+              className={`relative px-5 py-3 text-sm font-medium transition-colors ${activeTab === "saved"
                   ? "text-blue-600"
                   : "text-gray-500 hover:text-gray-800"
-              }`}
+                }`}
             >
               Saved Profiles
 
               {profiles.length > 0 && (
                 <span
-                  className={`ml-2 inline-flex min-w-5 h-5 items-center justify-center rounded-full px-1.5 text-[10px] ${
-                    activeTab ===
-                    "saved"
+                  className={`ml-2 inline-flex min-w-5 h-5 items-center justify-center rounded-full px-1.5 text-[10px] ${activeTab ===
+                      "saved"
                       ? "bg-blue-100 text-blue-700"
                       : "bg-gray-100 text-gray-500"
-                  }`}
+                    }`}
                 >
                   {profiles.length}
                 </span>
@@ -1193,21 +1512,20 @@ export default function DomainProfileTableModal({
               onClick={() =>
                 setActiveTab("create")
               }
-              className={`relative px-5 py-3 text-sm font-medium transition-colors ${
-                activeTab === "create"
+              className={`relative px-5 py-3 text-sm font-medium transition-colors ${activeTab === "create"
                   ? "text-blue-600"
                   : "text-gray-500 hover:text-gray-800"
-              }`}
+                }`}
             >
               {editingProfileIndex !==
-              null
+                null
                 ? "Edit Profile"
                 : "Create Profile"}
 
               {activeTab ===
                 "create" && (
-                <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-blue-600 rounded-full" />
-              )}
+                  <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-blue-600 rounded-full" />
+                )}
             </button>
           </div>
         </div>
@@ -1296,12 +1614,11 @@ export default function DomainProfileTableModal({
                             null,
                           )
                         }
-                        className={`flex items-center gap-3 rounded-lg border bg-white px-4 py-3 shadow-sm transition ${
-                          editingProfileIndex ===
-                          index
+                        className={`flex items-center gap-3 rounded-lg border bg-white px-4 py-3 shadow-sm transition ${editingProfileIndex ===
+                            index
                             ? "border-blue-500 ring-2 ring-blue-200"
                             : "border-gray-200 hover:border-gray-300"
-                        }`}
+                          }`}
                       >
                         <span
                           className="cursor-grab text-gray-400 hover:text-gray-600"
@@ -1322,7 +1639,7 @@ export default function DomainProfileTableModal({
                           <div className="text-xs text-gray-500 mt-0.5">
                             {Object.keys(
                               profile.domainBlocks ??
-                                {},
+                              {},
                             ).length}{" "}
                             categories
                           </div>
@@ -1468,10 +1785,9 @@ export default function DomainProfileTableModal({
                         );
 
                       a.href = url;
-                      a.download = `${
-                        profileName ||
+                      a.download = `${profileName ||
                         "domain_profile"
-                      }.json`;
+                        }.json`;
 
                       a.click();
 
@@ -1757,7 +2073,7 @@ export default function DomainProfileTableModal({
 
                     <tbody>
                       {localNodes.length ===
-                      0 ? (
+                        0 ? (
                         <tr>
                           <td
                             colSpan={7}
@@ -1810,7 +2126,7 @@ export default function DomainProfileTableModal({
                                       node.icon,
                                     )
                                       ? node
-                                          .icon[0]
+                                        .icon[0]
                                       : node.icon
                                   }
                                   className="w-full h-full object-contain p-1"
@@ -1883,10 +2199,10 @@ export default function DomainProfileTableModal({
                                     )
                                       ? node.outputType
                                       : [
-                                          node.outputType,
-                                        ].filter(
-                                          Boolean,
-                                        )
+                                        node.outputType,
+                                      ].filter(
+                                        Boolean,
+                                      )
                                   }
                                   onChange={(
                                     newTypes,
@@ -1973,4 +2289,4 @@ export default function DomainProfileTableModal({
       </div>
     </Modal>
   );
-                    }
+}
