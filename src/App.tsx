@@ -3767,15 +3767,7 @@ useEffect(() => {
 
   let modelName: string | null = null;
 
-  // Old option: /models/model_d
-  const match = pathname.match(/^\/models\/([^/]+)$/);
-
-  if (match) {
-    modelName = decodeURIComponent(match[1]);
-  }
-
   // New option: /?model=model_d
-  // Only use this if the old /models/... route wasn't matched.
   if (!modelName) {
     modelName = searchParams.get("model");
   }
@@ -3788,7 +3780,7 @@ useEffect(() => {
   loadModelFromUrl(modelName);
 
   // Clean the URL after loading.
-  if (match || searchParams.has("model")) {
+  if (searchParams.has("model")) {
     window.history.replaceState({}, "", "/");
   }
 }, [reactFlowInstance, loadModelFromUrl]);
