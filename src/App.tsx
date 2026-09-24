@@ -3640,6 +3640,46 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     }
   };
 
+  const loadModelFromUrl = useCallback(
+  (modelName: string) => {
+    console.log(modelName);
+
+    switch (modelName.toLowerCase()) {
+      case "model_d":
+        console.log("load quantum k-means");
+        loadFlow(quantum_k_means_algorithm);
+        break;
+
+      default:
+        console.warn(`Unknown model: ${modelName}`);
+    }
+  },
+  [loadFlow],
+);
+
+useEffect(() => {
+  if (!reactFlowInstance) return;
+
+  console.log("pathname:", window.location.pathname);
+
+  const match = window.location.pathname.match(
+    /^\/models\/([^/]+)$/
+  );
+
+  if (!match) return;
+
+  const modelName = decodeURIComponent(match[1]);
+
+  if (modelName.toLowerCase() !== "model_d") {
+    return;
+  }
+
+  window.history.replaceState({}, "", "/");
+
+  // Load the model using the existing loading logic
+  loadModelFromUrl(modelName);
+}, [reactFlowInstance, loadModelFromUrl]);
+
   const onNodeDrag = React.useCallback(
     (event: React.MouseEvent, node: Node, nodes: Node[]) => {
       console.log(reactFlowInstance.getNodes());
