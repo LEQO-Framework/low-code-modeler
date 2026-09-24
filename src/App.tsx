@@ -98,6 +98,7 @@ import PromptFlowModal from "./components/modals/promptFlowModal";
 import ShortcutHelpModal from "./components/modals/shortcutHelpModal";
 import { generateFlow, sendToMistral } from "./generation";
 import { openQasmToFlow } from "./qasmConverter";
+import { bell_state_phi_plus } from "./constants/exampleModels";
 
 const selector = (state: {
   nodes: Node[];
@@ -3649,7 +3650,10 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
         console.log("load quantum k-means");
         loadFlow(quantum_k_means_algorithm);
         break;
-
+      case "model_e":
+        console.log("load quantum k-means");
+        loadFlow(bell_state_phi_plus);
+        break;
       default:
         console.warn(`Unknown model: ${modelName}`);
     }
@@ -3670,7 +3674,7 @@ useEffect(() => {
 
   const modelName = decodeURIComponent(match[1]);
 
-  if (modelName.toLowerCase() !== "model_d") {
+  if (modelName.toLowerCase() !== "model_d" && modelName.toLowerCase() !== "model_e") {
     return;
   }
 
