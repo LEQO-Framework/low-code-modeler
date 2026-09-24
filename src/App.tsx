@@ -3755,30 +3755,44 @@ const loadModelFromUrl = useCallback(
   [loadFlow],
 );
 
+
 useEffect(() => {
   if (!reactFlowInstance) return;
 
-  console.log("pathname:", window.location.pathname);
+  const pathname = window.location.pathname;
+  const searchParams = new URLSearchParams(window.location.search);
 
-  const match = window.location.pathname.match(
-    /^\/models\/([^/]+)$/
-  );
+  console.log("pathname:", pathname);
+  console.log("search:", window.location.search);
 
-  if (!match) return;
+  let modelName: string | null = null;
 
-  const modelName = decodeURIComponent(match[1]);
+  // Old option: /models/model_d
+  const match = pathname.match(/^\/models\/([^/]+)$/);
 
- const model = modelName.toLowerCase();
-
-  if (model < "model_a" || model > "model_x") {
-    return;
+  if (match) {
+    modelName = decodeURIComponent(match[1]);
   }
 
-  window.history.replaceState({}, "", "/");
+  // New option: /?model=model_d
+  // Only use this if the old /models/... route wasn't matched.
+  if (!modelName) {
+    modelName = searchParams.get("model");
+  }
 
-  // Load the model using the existing loading logic
+  if (!modelName) return;
+
+  console.log("Loading model:", modelName);
+
+  // Let loadModelFromUrl() / switch handle whether the model exists.
   loadModelFromUrl(modelName);
+
+  // Clean the URL after loading.
+  if (match || searchParams.has("model")) {
+    window.history.replaceState({}, "", "/");
+  }
 }, [reactFlowInstance, loadModelFromUrl]);
+
 
   const onNodeDrag = React.useCallback(
     (event: React.MouseEvent, node: Node, nodes: Node[]) => {
