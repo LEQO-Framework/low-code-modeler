@@ -98,6 +98,7 @@ import PromptFlowModal from "./components/modals/promptFlowModal";
 import ShortcutHelpModal from "./components/modals/shortcutHelpModal";
 import { generateFlow, sendToMistral } from "./generation";
 import { openQasmToFlow } from "./qasmConverter";
+import { amplitude_encoding, angle_encoding, basis_encoding, bell_state_phi_plus, classical_clustering, conditional_quantum_model, custom_quantum_operator, empty_model, encode_value, first_measurement, ghz, grover_building_blocks, grover_circuit_level, hello_quantum, multi_controlled_gates, quantum_arithmetic, quantum_clustering, quantum_fourier_transform } from "./constants/exampleModels";
 
 const selector = (state: {
   nodes: Node[];
@@ -3639,6 +3640,151 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
       console.log("Metadata loaded:", dataToSet);
     }
   };
+
+const loadModelFromUrl = useCallback(
+  (modelName: string) => {
+    console.log(modelName);
+
+    switch (modelName.toLowerCase()) {
+      // Starters
+      case "model_a":
+        loadFlow(empty_model);
+        break;
+
+      case "model_b":
+        loadFlow(hello_quantum);
+        break;
+
+      case "model_c":
+        loadFlow(first_measurement);
+        break;
+
+      // Circuit-Level Examples
+      case "model_d":
+        loadFlow(quantum_k_means_algorithm);
+        break;
+
+      case "model_e":
+        loadFlow(bell_state_phi_plus);
+        break;
+
+      case "model_f":
+        loadFlow(ghz);
+        break;
+
+      // Encoding Examples
+      case "model_h":
+        loadFlow(basis_encoding);
+        break;
+
+      case "model_i":
+        loadFlow(angle_encoding);
+        break;
+
+      case "model_j":
+        loadFlow(amplitude_encoding);
+        break;
+
+      case "model_k":
+        loadFlow(encode_value);
+        break;
+
+      // Quantum Algorithms
+      case "model_l":
+        loadFlow(grover_circuit_level);
+        break;
+
+      case "model_m":
+        loadFlow(grover_building_blocks);
+        break;
+
+      case "model_n":
+        loadFlow(grover_algorithm);
+        break;
+
+      case "model_o":
+        loadFlow(quantum_fourier_transform);
+        break;
+
+      case "model_p":
+        loadFlow(hadamard_test_real_part);
+        break;
+
+      case "model_q":
+        loadFlow(hadamard_test_imaginary_part);
+        break;
+
+      case "model_r":
+        loadFlow(swap_test);
+        break;
+
+      case "model_s":
+        loadFlow(qaoa);
+        break;
+
+      // Quantum Machine Learning
+      case "model_t":
+        loadFlow(quantum_clustering);
+        break;
+
+      case "model_u":
+        loadFlow(classical_clustering);
+        break;
+
+      // Advanced Examples
+      case "model_v":
+        loadFlow(multi_controlled_gates);
+        break;
+
+      case "model_w":
+        loadFlow(quantum_arithmetic);
+        break;
+
+      case "model_x":
+        loadFlow(conditional_quantum_model);
+        break;
+
+      case "model_y":
+        loadFlow(custom_quantum_operator);
+        break;
+
+      default:
+        console.warn(`Unknown model: ${modelName}`);
+    }
+  },
+  [loadFlow],
+);
+
+
+useEffect(() => {
+  if (!reactFlowInstance) return;
+
+  const pathname = window.location.pathname;
+  const searchParams = new URLSearchParams(window.location.search);
+
+  console.log("pathname:", pathname);
+  console.log("search:", window.location.search);
+
+  let modelName: string | null = null;
+
+  // New option: /?model=model_d
+  if (!modelName) {
+    modelName = searchParams.get("model");
+  }
+
+  if (!modelName) return;
+
+  console.log("Loading model:", modelName);
+
+  // Let loadModelFromUrl() / switch handle whether the model exists.
+  loadModelFromUrl(modelName);
+
+  // Clean the URL after loading.
+  if (searchParams.has("model")) {
+    window.history.replaceState({}, "", "/");
+  }
+}, [reactFlowInstance, loadModelFromUrl]);
+
 
   const onNodeDrag = React.useCallback(
     (event: React.MouseEvent, node: Node, nodes: Node[]) => {
