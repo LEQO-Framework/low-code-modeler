@@ -1,6 +1,6 @@
 export const empty_model = {
   "metadata": {
-    "version": "1.0.0",
+    "version": "1.0.1",
     "name": "Empty model",
     "description": "Start with an empty quantum model and build your workflow from scratch.",
     "author": "",
