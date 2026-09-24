@@ -98,7 +98,7 @@ import PromptFlowModal from "./components/modals/promptFlowModal";
 import ShortcutHelpModal from "./components/modals/shortcutHelpModal";
 import { generateFlow, sendToMistral } from "./generation";
 import { openQasmToFlow } from "./qasmConverter";
-import { bell_state_phi_plus } from "./constants/exampleModels";
+import { amplitude_encoding, angle_encoding, basis_encoding, bell_state_phi_plus, classical_clustering, conditional_quantum_model, custom_quantum_operator, empty_model, encode_value, first_measurement, ghz, grover_building_blocks, grover_circuit_level, hello_quantum, multi_controlled_gates, quantum_arithmetic, quantum_clustering, quantum_fourier_transform } from "./constants/exampleModels";
 
 const selector = (state: {
   nodes: Node[];
@@ -3641,19 +3641,113 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     }
   };
 
-  const loadModelFromUrl = useCallback(
+const loadModelFromUrl = useCallback(
   (modelName: string) => {
     console.log(modelName);
 
     switch (modelName.toLowerCase()) {
+      // Starters
+      case "model_a":
+        loadFlow(empty_model);
+        break;
+
+      case "model_b":
+        loadFlow(hello_quantum);
+        break;
+
+      case "model_c":
+        loadFlow(first_measurement);
+        break;
+
+      // Circuit-Level Examples
       case "model_d":
-        console.log("load quantum k-means");
         loadFlow(quantum_k_means_algorithm);
         break;
+
       case "model_e":
-        console.log("load quantum k-means");
         loadFlow(bell_state_phi_plus);
         break;
+
+      case "model_f":
+        loadFlow(ghz);
+        break;
+
+      // Encoding Examples
+      case "model_h":
+        loadFlow(basis_encoding);
+        break;
+
+      case "model_i":
+        loadFlow(angle_encoding);
+        break;
+
+      case "model_j":
+        loadFlow(amplitude_encoding);
+        break;
+
+      case "model_k":
+        loadFlow(encode_value);
+        break;
+
+      // Quantum Algorithms
+      case "model_l":
+        loadFlow(grover_circuit_level);
+        break;
+
+      case "model_m":
+        loadFlow(grover_building_blocks);
+        break;
+
+      case "model_n":
+        loadFlow(grover_algorithm);
+        break;
+
+      case "model_o":
+        loadFlow(quantum_fourier_transform);
+        break;
+
+      case "model_p":
+        loadFlow(hadamard_test_real_part);
+        break;
+
+      case "model_q":
+        loadFlow(hadamard_test_imaginary_part);
+        break;
+
+      case "model_r":
+        loadFlow(swap_test);
+        break;
+
+      case "model_s":
+        loadFlow(qaoa);
+        break;
+
+      // Quantum Machine Learning
+      case "model_t":
+        loadFlow(quantum_clustering);
+        break;
+
+      case "model_u":
+        loadFlow(classical_clustering);
+        break;
+
+      // Advanced Examples
+      case "model_v":
+        loadFlow(multi_controlled_gates);
+        break;
+
+      case "model_w":
+        loadFlow(quantum_arithmetic);
+        break;
+
+      case "model_x":
+        loadFlow(conditional_quantum_model);
+        break;
+
+      case "model_y":
+        loadFlow(custom_quantum_operator);
+        break;
+
       default:
         console.warn(`Unknown model: ${modelName}`);
     }
@@ -3674,7 +3768,9 @@ useEffect(() => {
 
   const modelName = decodeURIComponent(match[1]);
 
-  if (modelName.toLowerCase() !== "model_d" && modelName.toLowerCase() !== "model_e") {
+ const model = modelName.toLowerCase();
+
+  if (model < "model_a" || model > "model_x") {
     return;
   }
 
