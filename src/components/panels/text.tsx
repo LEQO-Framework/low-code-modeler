@@ -311,6 +311,18 @@ const INPUT_OUTPUT_EXPLANATIONS: Record<
     output:
       "Execution of either the true branch or the false branch based on the condition.",
   },
+  ["Quantum Clustering"]: {
+    input:
+      "Entity points data, the desired number of clusters, and optionally the convergence tolerance and maximum number of iterations.",
+    output:
+      "The entity points grouped into the specified number of clusters.",
+  },
+  ["Classical Clustering"]: {
+    input:
+      "Entity points data, the desired number of clusters, the relative residual tolerance, and the maximum number of iterations.",
+    output:
+      "The entity points grouped into the specified number of clusters.",
+  },
 };
 
 type ExperienceLevel = "explorer" | "pioneer";
@@ -759,11 +771,44 @@ const PROPERTIES_EXPLANATIONS: Record<
       implementation: {
         description:
           "Provides an optional custom implementation of the conditional operation.",
-        minExperienceLevel: "pioneer",
+        minExperienceLevel: "explorer",
       },
     },
   },
 
+  ["Quantum Clustering"]: {
+  required: {
+    variant: {
+      description:
+        "Specifies the quantum clustering variant used to perform the clustering operation.",
+    },
+  },
+
+  optional: {
+    implementation: {
+      description:
+        "Provides an optional custom implementation of the clustering operation.",
+      minExperienceLevel: "explorer",
+    },
+  },
+},
+
+["Classical Clustering"]: {
+  required: {
+    algorithm: {
+      description:
+        "Specifies the classical clustering algorithm used to group the input data.",
+    },
+  },
+
+  optional: {
+    implementation: {
+      description:
+        "Provides an optional custom implementation of the clustering operation.",
+      minExperienceLevel: "explorer",
+    },
+  },
+},
   [EditableNode]: {
     required: {
       implementation: {
