@@ -36,6 +36,7 @@ import {
   non_parameterized_two_qubit,
   qubitLabel,
 } from "@/constants";
+import { tempoTraceBatchFromJSON } from "@mistralai/mistralai/esm/models/components";
 import { ArrowLeft } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Node } from "reactflow";
@@ -214,6 +215,8 @@ const STATE_PREPERATION_EXPLANATIONS: Record<string, string> = {
 
   ["Matrix Encoding"]:
     "Encodes a non-unitary matrix into a unitary matrix.",
+  ["Schmidt Decomposition"]:
+    "Computes the Schmidt coefficients.",
 
   ["Prepare State"]:
     "Initializes the quantum register in a predefined quantum state, such as a basis state, Bell state, GHZ state or W state. Specify size if the state is not a Bell state.",
@@ -275,26 +278,26 @@ const INPUT_OUTPUT_EXPLANATIONS: Record<
       "Classical measurement results corresponding to the measured qubits.",
   },
 
-  ["Arithmetic Operator"]: {
-    input: "Classical numeric values.",
+  ["Quantum Arithmetic Operator"]: {
+    input: "Quantum states",
     output:
       "The result of applying the selected arithmetic operation.",
   },
 
-  ["Comparison Operator"]: {
+  ["Quantum Comparison Operator"]: {
     input: "Classical values to compare.",
     output:
       "A Boolean result indicating whether the selected comparison is true or false.",
   },
 
-  ["Min/Max Operator"]: {
+  ["Quantum Min/Max Operator"]: {
     input: "A collection of comparable values.",
     output:
       "The minimum or maximum value according to the selected operation.",
   },
 
-  ["Bitwise Operator"]: {
-    input: "Binary or integer values.",
+  ["Quantum Bitwise Operator"]: {
+    input: "Quantum states",
     output:
       "The result of applying the selected bitwise operation.",
   },
@@ -551,7 +554,7 @@ const PROPERTIES_EXPLANATIONS: Record<
     },
   },
 
-  ["Arithmetic Operator"]: {
+  ["Quantum Arithmetic Operator"]: {
     required: {
       operator: {
         description:
@@ -562,13 +565,13 @@ const PROPERTIES_EXPLANATIONS: Record<
     optional: {
       implementation: {
         description:
-          "Provides an optional custom implementation of the classical operation.",
-        minExperienceLevel: "pioneer",
+          "Provides an optional custom implementation of the quantum operation.",
+        minExperienceLevel: "explorer",
       },
     },
   },
 
-  ["Comparison Operator"]: {
+  ["Quantum Comparison Operator"]: {
     required: {
       operator: {
         description:
@@ -579,8 +582,8 @@ const PROPERTIES_EXPLANATIONS: Record<
     optional: {
       implementation: {
         description:
-          "Provides an optional custom implementation of the comparison operation.",
-        minExperienceLevel: "pioneer",
+          "Provides an optional custom implementation of the quantum operation.",
+        minExperienceLevel: "explorer",
       },
     },
   },
@@ -742,73 +745,152 @@ const PROPERTIES_EXPLANATIONS: Record<
     },
   },
 
-  ["Control Structure"]: {
-    required: {
-      condition: {
-        description:
-          "Defines the condition used to determine whether the controlled workflow section should execute.",
-      },
-    },
-
-    optional: {
-      implementation: {
-        description:
-          "Provides an optional custom implementation of the control structure.",
-        minExperienceLevel: "pioneer",
-      },
-    },
-  },
-
-  ["If Else"]: {
+  ["If-Then-Else"]: {
     required: {
       condition: {
         description:
           "Defines the condition used to select between the true and false branches.",
       },
+    }
+  },
+
+  ["Repeat"]: {
+    required: {
+      condition: {
+        description:
+          "Defines the condition used to determine whether the controlled process section should execute.",
+      },
+    }
+  },
+
+  ["Quantum Clustering"]: {
+    required: {
+      variant: {
+        description:
+          "Specifies the quantum clustering variant used to perform the clustering operation.",
+      },
     },
 
     optional: {
       implementation: {
         description:
-          "Provides an optional custom implementation of the conditional operation.",
+          "Provides an optional custom implementation of the clustering operation.",
         minExperienceLevel: "explorer",
       },
     },
   },
 
-  ["Quantum Clustering"]: {
-  required: {
-    variant: {
-      description:
-        "Specifies the quantum clustering variant used to perform the clustering operation.",
+  ["Classical Clustering"]: {
+    required: {
+      algorithm: {
+        description:
+          "Specifies the classical clustering algorithm used to group the input data.",
+      },
+    },
+
+    optional: {
+      implementation: {
+        description:
+          "Provides an optional custom implementation of the clustering operation.",
+        minExperienceLevel: "explorer",
+      },
+    },
+  },
+  ["Deutsch-Jozsa"]: {
+    required: {
+      "Number of Qubits": {
+        description:
+          "Specifies the number of input qubits used by the Deutsch-Jozsa algorithm.",
+      },
+      behaviorType: {
+        description:
+          "Specifies whether the function is constant or balanced.",
+      },
+      balancedMask: {
+        description:
+          "Specifies the mask used to define the balanced function when the behavior type is set to balanced.",
+      },
+    },
+
+    optional: {
+      implementation: {
+        description:
+          "Provides an optional custom implementation of the Deutsch-Jozsa algorithm.",
+        minExperienceLevel: "explorer",
+      },
     },
   },
 
-  optional: {
-    implementation: {
-      description:
-        "Provides an optional custom implementation of the clustering operation.",
-      minExperienceLevel: "explorer",
+  ["Grover's Search Algorithm"]: {
+    required: {
+      numberOfElements: {
+        description:
+          "Specifies the total number of elements in the search space.",
+      },
+      elementsToSearch: {
+        description:
+          "Specifies the elements that Grover's algorithm should search for.",
+      },
     },
-  },
-},
 
-["Classical Clustering"]: {
-  required: {
-    algorithm: {
-      description:
-        "Specifies the classical clustering algorithm used to group the input data.",
+    optional: {
+      iterations: {
+        description:
+          "Specifies the number of Grover iterations to perform. If not provided, the algorithm computes the optimal number of Grover iterations.",
+      },
+      implementation: {
+        description:
+          "Provides an optional custom implementation of Grover's search algorithm.",
+        minExperienceLevel: "explorer",
+      },
     },
   },
 
-  optional: {
-    implementation: {
-      description:
-        "Provides an optional custom implementation of the clustering operation.",
-      minExperienceLevel: "explorer",
+  ["Grover Oracle"]: {
+    required: {
+      oracleMode: {
+        description:
+          "Specifies how the oracle marks the selected elements: using a phase oracle or a Boolean oracle.",
+      },
+      markedElements: {
+        description:
+          "Specifies the elements that the oracle marks as solutions for the quantum algorithm.",
+      },
+    },
+
+    optional: {
+      implementation: {
+        description:
+          "Provides an optional custom implementation of the oracle.",
+        minExperienceLevel: "explorer",
+      },
     },
   },
-},
+
+  ["QAOA Ansatz"]: {
+    required: {
+      problem: {
+        description:
+          "Specifies the optimization problem to solve, such as MaxCut, Max-2-SAT, or graph coloring.",
+      },
+      optimizer: {
+        description:
+          "Specifies the classical optimizer used to optimize the QAOA parameters.",
+      },
+      layers: {
+        description:
+          "Specifies the number of QAOA layers (p) used in the circuit.",
+      },
+    },
+
+    optional: {
+      implementation: {
+        description:
+          "Provides an optional custom implementation of the QAOA algorithm.",
+        minExperienceLevel: "explorer",
+      },
+    },
+  },
   [EditableNode]: {
     required: {
       implementation: {
