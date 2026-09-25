@@ -775,7 +775,7 @@ const filterNodeGroup = (nodeGroup: any): Node[] => {
                     experienceLevel === "explorer" && operatorIcons[node.label]
                       ? operatorIcons[node.label]
                       : Array.isArray(node.icon)
-                        ? node.type === consts.GateNode
+                        ? node.type === consts.GateNode || node.type === consts.QubitNode
                           ? node.icon[experienceLevel === "explorer" ? 1 : 0]
                           : node.icon[ancillaMode ? 1 : 0]
                         : node.icon

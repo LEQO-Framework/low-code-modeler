@@ -151,7 +151,7 @@ export const GroverDiffuserNode = memo((node: Node) => {
                 className={cn(
                   "z-10 circle-port-op !bg-blue-300 !border-gray-400 !absolute !top-1/2 !-translate-y-1/2 -left-[8px]",
                   isConnected
-                    ? "!border-solid !border-black !bg-blue-400"
+                    ? "!border-solid !border-black !bg-blue-300"
                     : "!border-dashed !bg-gray-200",
                 )}
                 style={{ width: 12, height: 12 }}
