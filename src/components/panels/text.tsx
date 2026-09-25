@@ -52,10 +52,10 @@ const NODE_EXPLANATIONS: Record<string, string> = {
     "Applies a gate to one or more target qubits only if all control qubits are in the |1⟩ state. Configure the number of control and target qubits and select the gate matrix.",
 
   [AlgorithmNode]:
-    "Runs a custom quantum algorithm defined in a QASM file.",
+    "Runs a custom quantum algorithm defined in a QASM file. For more inputs or outputs, right click on the block.",
 
   [ClassicalAlgorithmNode]:
-    "Runs a custom classical algorithm defined in a QASM file.",
+    "Runs a custom classical algorithm defined in a QASM file. For more inputs or outputs, right click on the block.",
 
   [DeutschJozsaNode]:
     "Implements the Deutsch-Jozsa algorithm, which determines whether a function always returns the same value or returns different values for half of its inputs. Select the input size and the function type.",
@@ -79,7 +79,7 @@ const NODE_EXPLANATIONS: Record<string, string> = {
     "Creates one or more ancilla qubits. Ancilla qubits are temporary helper qubits used during quantum computations.",
 
   [QubitNode]:
-    "Creates a quantum register. Set the number of qubits in the register.",
+    "Creates a quantum register. Set the size (number of qubits) in the output register.",
 
   [SplitterNode]:
     "Splits a quantum register into separate registers according to a OpenQASM definition. Right click on the node to add more outputs.",
@@ -519,6 +519,25 @@ const PROPERTIES_EXPLANATIONS: Record<
       },
     }
   },
+  ["Custom Classical Operator"]: {
+    required: {
+      implementation: {
+        description:
+          "Defines the custom implementation executed by the classical operator.",
+        minExperienceLevel: "explorer",
+      },
+    },
+  },
+
+  ["Custom Quantum Operator"]: {
+    required: {
+      implementation: {
+        description:
+          "Defines the custom implementation executed by the quantum operator.",
+        minExperienceLevel: "explorer",
+      },
+    },
+  },
 
   ["Arithmetic Operator"]: {
     required: {
@@ -632,6 +651,59 @@ const PROPERTIES_EXPLANATIONS: Record<
         description:
           "Provides an optional custom implementation of the MCMT Gate operation.",
         minExperienceLevel: "explorer",
+      },
+    },
+  },
+  ["bit"]: {
+    required: {
+      value: {
+        description:
+          "Specifies the binary value of the data. A bit can contain either 0 or 1.",
+      },
+    },
+  },
+
+  ["boolean"]: {
+    required: {
+      value: {
+        description:
+          "Specifies the logical value of the data. A Boolean can be either true or false.",
+      },
+    },
+  },
+
+  ["String"]: {
+    required: {
+      value: {
+        description:
+          "Specifies the text value stored by the data.",
+      },
+    },
+  },
+
+  ["File"]: {
+    required: {
+      value: {
+        description:
+          "Specifies the file path used to load the data from a file.",
+      },
+    },
+  },
+
+  ["Number"]: {
+    required: {
+      value: {
+        description:
+          "Specifies the numeric value stored by the data.",
+      },
+    },
+  },
+
+  ["Array"]: {
+    required: {
+      value: {
+        description:
+          "Specifies a list of values stored by the data. Values should be separated by commas.",
       },
     },
   },
@@ -1504,9 +1576,9 @@ export const TextPanel = () => {
                     )
                   }
                   className={`flex-1 px-3 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab ===
-                      "information"
-                      ? "border-blue-500 text-blue-600"
-                      : "border-transparent text-gray-500 hover:text-gray-700"
+                    "information"
+                    ? "border-blue-500 text-blue-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700"
                     }`}
                 >
                   Information
@@ -1526,9 +1598,9 @@ export const TextPanel = () => {
                       )
                     }
                     className={`flex-1 px-3 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab ===
-                        "properties"
-                        ? "border-blue-500 text-blue-600"
-                        : "border-transparent text-gray-500 hover:text-gray-700"
+                      "properties"
+                      ? "border-blue-500 text-blue-600"
+                      : "border-transparent text-gray-500 hover:text-gray-700"
                       }`}
                   >
                     Properties
@@ -2614,13 +2686,13 @@ export const ImplementationFields: React.FC<
       : "";
 
     const implementationKey = `${prefix}${isUncompute
-        ? "Implementation"
-        : "implementation"
+      ? "Implementation"
+      : "implementation"
       }`;
 
     const fileNameKey = `${prefix}${isUncompute
-        ? "FileName"
-        : "fileName"
+      ? "FileName"
+      : "fileName"
       }`;
 
     return (
