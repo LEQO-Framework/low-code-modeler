@@ -573,10 +573,10 @@ export const StatePreparationNode = memo((node: Node) => {
                   </select>
 
                   {!node.data.encodingType.includes("Basis") &&
-                    !node.data.encodingType.includes("Angle") && (
+                    !node.data.encodingType.includes("Angle") && !node.data.encodingType.includes("Custom") && (
                       <>
                         <label className="text-sm text-black block mt-2">
-                          Bound:
+                          Error Bound:
                         </label>
                         <input
                           className="w-full p-1 mt-1 text-sm text-center text-black border-2 border-blue-300 rounded-full"
@@ -610,12 +610,11 @@ export const StatePreparationNode = memo((node: Node) => {
               )}
 
               {(node.data.label === "Amplitude Encoding" ||
-                node.data.label === "Custom Encoding" ||
                 node.data.label === "Matrix Encoding" ||
                 node.data.label === "Schmidt Decomposition") && (
                 <>
                   <label className="text-sm text-black block mt-2">
-                    Bound:
+                    Error Bound:
                   </label>
                   <input
                     className="w-full p-1 mt-1 text-sm text-center text-black border-2 border-blue-300 rounded-full"
