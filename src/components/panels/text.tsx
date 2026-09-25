@@ -36,7 +36,6 @@ import {
   non_parameterized_two_qubit,
   qubitLabel,
 } from "@/constants";
-import { tempoTraceBatchFromJSON } from "@mistralai/mistralai/esm/models/components";
 import { ArrowLeft } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Node } from "reactflow";
@@ -279,7 +278,7 @@ const INPUT_OUTPUT_EXPLANATIONS: Record<
   },
 
   ["Quantum Arithmetic Operator"]: {
-    input: "Quantum states",
+    input: "Two quantum states.",
     output:
       "The result of applying the selected arithmetic operation.",
   },
@@ -297,7 +296,7 @@ const INPUT_OUTPUT_EXPLANATIONS: Record<
   },
 
   ["Quantum Bitwise Operator"]: {
-    input: "Quantum states",
+    input: "Two quantum states.",
     output:
       "The result of applying the selected bitwise operation.",
   },
@@ -325,6 +324,20 @@ const INPUT_OUTPUT_EXPLANATIONS: Record<
       "Entity points data, the desired number of clusters, the relative residual tolerance, and the maximum number of iterations.",
     output:
       "The entity points grouped into the specified number of clusters.",
+  },
+
+  ["QAOA Ansatz"]: {
+    input:
+      "The graph edges defining the optimization problem, along with the beta and gamma parameters for each QAOA layer.",
+    output:
+      "A quantum state encoding an approximate solution to the optimization problem.",
+  },
+
+  ["Grover Oracle"]: {
+    input:
+      "A quantum register on which the oracle acts (optional).",
+    output:
+      "The quantum register with the marked elements flipped, either in state or in phase.",
   },
 };
 
@@ -988,6 +1001,15 @@ const getPropertyExplanations = (
   );
 };
 
+/**
+ * Returns the input/output explanation for the currently selected node.
+ *
+ * Some node types (quantum registers, classical data types, and gate
+ * nodes) describe their input/output behavior structurally rather than
+ * per-label, so those are handled first. Multi-control/multi-qubit gates
+ * get an extra note that all inputs must be of the same size. Everything
+ * else falls back to the per-label lookup table.
+ */
 const getInputOutputExplanations = (
   selectedNode: Node | null,
 ): NodeInputOutputExplanation => {
@@ -996,6 +1018,84 @@ const getInputOutputExplanations = (
   }
 
   const label = selectedNode.data?.label;
+
+  // Quantum register / qubit array nodes: output only.
+  if (selectedNode.type === QubitNode) {
+    return {
+      output:
+        "A quantum register containing the specified number of qubits.",
+    };
+  }
+
+  // Classical data type nodes: output only.
+  if (selectedNode.type === DataTypeNode) {
+    return {
+      output: "The classical value defined for this data type.",
+    };
+  }
+   if (selectedNode.type === SplitterNode) {
+    return {
+      input: "A quantum register of length n",
+      output: "n individual qubits",
+    };
+  }
+
+  if (selectedNode.type === MergerNode) {
+    return {
+      output: "A quantum register of length n",
+      input: "n individual qubits",
+    };
+  }
+
+  if (selectedNode.type === DeutschJozsaNode) {
+    return {
+      output: "An oracle that detects if the function is balanced or constant.",
+    };
+  }
+
+  if (selectedNode.type === GroverNode) {
+    return {
+      output: "An oracle that detects if the function is balanced or constant.",
+    };
+  }
+
+  if (selectedNode.type === GroverDiffuserNode) {
+    return {
+      input: "A quantum register where the elements that need to be found are marked.",
+      output: "A quantum register where the probability of the marked elements is amplified and others reduced.",
+    };
+  }
+
+  // Gate nodes: quantum state in, quantum state out. Multi-control /
+  // multi-qubit gates additionally require same-sized inputs.
+  if ((selectedNode.type === GateNode) || (selectedNode.type === QFTNode) || (selectedNode.type === InverseQFTNode)) {
+    if (
+      label &&
+      multi_qubit_gates.includes(label)
+    ) {
+      return {
+        input:
+          "Quantum states for the control and target qubits. All inputs must be of the same size.",
+        output:
+          "The quantum state after the gate has been applied.",
+      };
+    }
+
+    return {
+      input: "A quantum state.",
+      output:
+        "The quantum state after the gate has been applied.",
+    };
+  }
+
+   if (selectedNode.type === MCMTGateNode) {
+    return {
+        input:
+          "Quantum states for the control and target qubits. All inputs must be of the same size.",
+        output:
+          "The quantum state after the gate has been applied.",
+      };
+  }
 
   if (
     label &&
