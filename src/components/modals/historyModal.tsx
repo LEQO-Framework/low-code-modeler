@@ -57,7 +57,7 @@ export const HistoryModal = ({
   const [selectedJob, setSelectedJob] = useState<HistoryItem | null>(null);
   const [isPromptModalOpen, setIsPromptModalOpen] = useState(false);
 
-  const [noMeasurementMap, setNoMeasurementMap] = useState<Record<string, boolean>>({});
+  const [noMeasurementMap, _setNoMeasurementMap] = useState<Record<string, boolean>>({});
   const [loadingMap, setLoadingMap] = useState<Record<string, boolean>>({});
   const [compilationTargets, setCompilationTargets] = useState<Record<string, string | null>>({});
 
@@ -97,22 +97,13 @@ export const HistoryModal = ({
     setReportJobId(null);
   };
 
-  const containsMeasurement = (qasm: string) => /\bmeasure\b/i.test(qasm);
-
-  const createJsonLink = (data: any) => {
-    if (!data) return null;
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-    return URL.createObjectURL(blob);
-  };
-
-
   const handleLoadModel = (job: HistoryItem) => {
     if (job.result) {
       try {
         const parsed = typeof job.result === "string" ? JSON.parse(job.result) : job.result;
         loadFlow(parsed);
         onClose();
-      } catch (e) {
+      } catch {
         showToast("Failed to load model: Invalid JSON", "error");
       }
     }

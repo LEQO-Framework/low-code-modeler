@@ -24,7 +24,6 @@ import { QubitNode } from "@/components/nodes/qubit";
 import { QAOANode } from "@/components/nodes/qaoaNode";
 import { ClassicalOperationNode } from "@/components/nodes/classicalOperation";
 import { GroupNode } from "@/components/nodes/group";
-import * as consts from "@/constants";
 import { EditableNode } from "@/components/nodes/editableNode";
 import { QFTNode } from "@/components/nodes/qft";
 import { InverseQFTNode } from "@/components/nodes/qftInverse";

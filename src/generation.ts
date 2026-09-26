@@ -1,6 +1,5 @@
 import { Mistral } from "@mistralai/mistralai";
 import { openQasmToFlow } from "./qasmConverter";
-import { generateOpenQASMFromFlow } from "./qasmUtils";
 import { startCompile } from "./backend";
 
 type ChatContent =
@@ -568,22 +567,11 @@ function getNodeConfig(
     inputs_classical?: string[];
     inputs_quantum?: string[];
     condition?: string;
-    then?: any[];
-    else?: any[];
+    thenBlocks?: any[];
+    elseBlocks?: any[];
     number?: number;
     repeat?: any[];
-  },
-  nodeId: string,
-  allBlocks: Array<{
-    id: string;
-    step: string;
-    inputs: string[];
-    outputs: string[];
-    state?: string;
-    value?: string | number;
-    variant?: string;
-  }>
-) {
+  }) {
   const identifiers = [block.id.toLowerCase().replace(/[^a-z0-9]/g, '')];
 
   switch (block.step) {
@@ -1184,8 +1172,8 @@ function parseQLCMNotation(qlcmNotation: string): Array<{
   inputs_classical?: string[];
   inputs_quantum?: string[];
   condition?: string;
-  then?: any[];
-  else?: any[];
+  thenBlocks?: any[];
+  elseBlocks?: any[];
   number?: number;
   repeat?: any[];
 }> {
@@ -1200,8 +1188,8 @@ function parseQLCMNotation(qlcmNotation: string): Array<{
     inputs_classical?: string[];
     inputs_quantum?: string[];
     condition?: string;
-    then?: any[];
-    else?: any[];
+    thenBlocks?: any[];
+    elseBlocks?: any[];
     number?: number;
     repeat?: any[];
   }> = [];
@@ -1242,7 +1230,7 @@ function parseSingleBlock(blockStr: string): any {
   const inputsMatch = blockStr.match(/inputs:\s*\[([^\]]*)\]/);
   const outputsMatch = blockStr.match(/outputs:\s*\[([^\]]*)\]/);
   const stateMatch = blockStr.match(/state:\s*"([^"]+)"/);
-  const valueMatch = blockStr.match(/value:\s*"([^"]+)"|value:\s*([^\s,\[\]]+)/);
+  const valueMatch = blockStr.match(/value:\s*"([^"]+)"|value:\s*([^\s,[\]]+)/);
   const variantMatch = blockStr.match(/variant:\s*"([^"]+)"/);
   const inputsClassicalMatch = blockStr.match(/inputs_classical:\s*\[([^\]]*)\]/);
   const inputsQuantumMatch = blockStr.match(/inputs_quantum:\s*\[([^\]]*)\]/);
@@ -1255,14 +1243,14 @@ function parseSingleBlock(blockStr: string): any {
   const inputs = inputsMatch
     ? inputsMatch[1]
       .split(',')
-      .map(s => s.trim().replace(/[\[\]"]/g, ''))
+      .map(s => s.trim().replace(/[[\]"]/g, ''))
       .filter(s => s)
     : [];
 
   const outputs = outputsMatch
     ? outputsMatch[1]
       .split(',')
-      .map(s => s.trim().replace(/[\[\]"]/g, ''))
+      .map(s => s.trim().replace(/[[\]"]/g, ''))
       .filter(s => s)
     : [];
 
@@ -1283,14 +1271,14 @@ function parseSingleBlock(blockStr: string): any {
   const inputs_classical = inputsClassicalMatch
     ? inputsClassicalMatch[1]
       .split(',')
-      .map(s => s.trim().replace(/[\[\]"]/g, ''))
+      .map(s => s.trim().replace(/[[\]"]/g, ''))
       .filter(s => s)
     : [];
 
   const inputs_quantum = inputsQuantumMatch
     ? inputsQuantumMatch[1]
       .split(',')
-      .map(s => s.trim().replace(/[\[\]"]/g, ''))
+      .map(s => s.trim().replace(/[[\]"]/g, ''))
       .filter(s => s)
     : [];
 
@@ -1303,7 +1291,7 @@ function parseSingleBlock(blockStr: string): any {
   let repeatBlocks: any[] = [];
 
   // Use a more robust regex to capture nested blocks
-  const thenMatch = blockStr.match(/then:\s*\[([\s\S]*?)(?=\s*else:\s*\[|\s*\]\s*$)/);
+  const thenMatch = blockStr.match(/thenBlocks:\s*\[([\s\S]*?)(?=\s*elseBlocks:\s*\[|\s*\]\s*$)/);
   if (thenMatch) {
     try {
       const thenContent = `[${thenMatch[1].trim()}]`;
@@ -1345,8 +1333,8 @@ function parseSingleBlock(blockStr: string): any {
     inputs_quantum,
     condition,
     number,
-    then: thenBlocks,
-    else: elseBlocks,
+    thenBlocks: thenBlocks,
+    elseBlocks: elseBlocks,
     repeat: repeatBlocks
   };
 }

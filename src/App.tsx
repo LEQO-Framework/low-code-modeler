@@ -96,7 +96,6 @@ import VersioningPanel from "./components/modals/versioningModal";
 import { EdgeChange } from "@xyflow/react";
 import PromptFlowModal from "./components/modals/promptFlowModal";
 import ShortcutHelpModal from "./components/modals/shortcutHelpModal";
-import { generateFlow, sendToMistral } from "./generation";
 import { openQasmToFlow } from "./qasmConverter";
 import { amplitude_encoding, angle_encoding, basis_encoding, bell_state_phi_plus, classical_clustering, conditional_quantum_model, custom_quantum_operator, empty_model, encode_value, first_measurement, ghz, grover_building_blocks, grover_circuit_level, hello_quantum, multi_controlled_gates, quantum_arithmetic, quantum_clustering, quantum_fourier_transform } from "./constants/exampleModels";
 
@@ -634,8 +633,6 @@ If none apply, return { "algorithms": [] }.
   const [isQunicornOpen, setIsQunicornOpen] = useState(false);
   const [isPromptModalOpen, setIsPromptModalOpen] = useState(false);
   const [stateTest, setStateTest] = useState(1);
-  const [loadingQunicorn, setLoadingQunicorn] = useState(true);
-  const [statusQunicorn, setStatusQunicorn] = useState(null);
   const [ancillaModelingOn, setAncillaModelingOn] = useState(false);
   const [, setExperienceLevelOn] = useState("explorer");
   const [compactVisualization, setCompactVisualization] = useState(false);
@@ -1220,7 +1217,7 @@ If none apply, return { "algorithms": [] }.
 
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [isHistoryOpen, setHistoryOpen] = useState(false);
-  const [historyLoading, setHistoryLoading] = useState(false);
+  const [_historyLoading, setHistoryLoading] = useState(false);
   const [selectedJob, setSelectedJob] = useState<HistoryItem | null>(null);
 
 

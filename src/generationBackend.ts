@@ -71,7 +71,7 @@ export function waitForJob(
   });
 }
 
-export async function generate(prompt: string, generationMode: string, onUpdate?: (job: JobResponse) => void) {
+export async function generate(prompt: string, generationMode: string, _onUpdate?: (job: JobResponse) => void) {
   const { jobId } = await createGenerationJob(prompt, generationMode);
   return jobId;
 }

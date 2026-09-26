@@ -2,15 +2,6 @@ import { useState, useEffect } from "react";
 import Modal from "./Modal";
 import { Toast } from "./toast";
 
-type InputNode = {
-  name: string;
-  type: "string" | "number" | "boolean" | "select" | "bit" | "statePreparation" | "file" | "size" | "array" | "targetStates" | "numQubits" | "condition" | "repeatCount" | "oracleType" | "balancedMask" | "constantValue" | "angle" | "qaoaProblem";
-  options?: string[];
-  label: string;
-  id: string;
-  isBellState?: boolean;
-};
-
 interface PromptFlowModalProps {
   open: boolean;
   onClose: () => void;
@@ -30,15 +21,12 @@ export default function PromptFlowModal({
   onClose,
   showToast,
   stepTest,
-  mistralToken,
-  loadFlow,
-  lowcodeBackendEndpoint,
   jobId,
   missingValues = [],
   onMissingValuesSubmitted,
   onSubmitPrompt,
 }: PromptFlowModalProps) {
-  const [step, setStep] = useState(1);
+  const [_step, setStep] = useState(1);
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
   const [generationMode, setGenerationMode] = useState<"compact" | "circuit">("compact");
