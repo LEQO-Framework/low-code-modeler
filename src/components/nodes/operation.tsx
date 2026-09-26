@@ -206,22 +206,6 @@ export const OperationNode = memo((node: Node) => {
         </div>
       )}
 
-      {sizeError && (
-        <div className="absolute top-2 right-[-40px] group z-20">
-          <AlertCircle className="text-red-600 w-5 h-5" />
-          <div
-            className="absolute left-[25px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap"
-            style={{
-              top: !(outputIdentifierError || startsWithDigitError)
-                ? "35px"
-                : "80px",
-            }}
-          >
-            Size is not a positive integer
-          </div>
-        </div>
-      )}
-
       <div
         className={"w-[320px] bg-white border border-solid shadow-md"}
         style={{

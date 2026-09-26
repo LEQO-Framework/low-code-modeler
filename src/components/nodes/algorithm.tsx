@@ -10,7 +10,7 @@ import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
 import AncillaPort from "../utils/ancillaPort";
 import UncomputePort from "../utils/uncomputePort";
-import OutputPort from "../utils/outputPort";
+import OutputPort, { isPositiveIntegerSize } from "../utils/outputPort";
 import { cn } from "@/lib/utils";
 import {
   ancillaConstructColor,
@@ -136,7 +136,8 @@ export const AlgorithmNode = memo((node: Node) => {
     outputs.forEach((output, index) => {
       const outputIdentifier = output?.identifier?.trim();
       console.log("Outputidentifier", outputIdentifier);
-      const size = output?.size?.trim();
+      const size = String(output?.size ?? "").trim();
+      sizeErrors[index] = size !== "" && !isPositiveIntegerSize(size);
       if (!outputIdentifier) return;
       const duplicates = findDuplicateOutputIdentifier(
         nodes,
@@ -179,9 +180,6 @@ export const AlgorithmNode = memo((node: Node) => {
       newErrors[index] = startsWithDigit || isDuplicate;
       console.log(newErrors);
       console.log(newErrors[index]);
-      if (!size) return;
-      const startsWithDigitSize = !/^\d/.test(size);
-      sizeErrors[index] = startsWithDigitSize;
     });
 
     setOutputIdentifierErrors(newErrors);

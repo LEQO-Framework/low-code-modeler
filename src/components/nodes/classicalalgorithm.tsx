@@ -2,7 +2,7 @@ import { memo, useEffect, useState } from "react";
 import { Handle, Position, Node, useUpdateNodeInternals } from "reactflow";
 import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
-import OutputPort from "../utils/outputPort";
+import OutputPort, { isPositiveIntegerSize } from "../utils/outputPort";
 import { cn } from "@/lib/utils";
 import { classicalConstructColor } from "@/constants";
 import {
@@ -98,7 +98,10 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
 
     outputs.forEach((output: any, index: number) => {
       const outputIdentifier = output?.identifier?.trim();
-      const size = output?.size?.trim();
+      const size = String(output?.size ?? "").trim();
+      if (size !== "") {
+        newSizeErrors[index] = !isPositiveIntegerSize(size);
+      }
 
       if (!outputIdentifier) return;
 
@@ -135,9 +138,6 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
 
       newErrors[index] = startsWithDigit || isDuplicate;
 
-      if (size) {
-        newSizeErrors[index] = !/^\d/.test(size);
-      }
     });
 
     setOutputIdentifierErrors(newErrors);

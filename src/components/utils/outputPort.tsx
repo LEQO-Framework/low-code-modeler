@@ -7,6 +7,7 @@ import {
 import { Node } from "reactflow";
 import { useEffect, useMemo, useRef } from "react";
 import { classicalConstructColor } from "@/constants";
+import { AlertCircle } from "lucide-react";
 
 interface OutputPortProps {
   node: Node;
@@ -23,8 +24,12 @@ interface OutputPortProps {
   sizeError: boolean;
   sizeRequired?: boolean;
   setSizeError: (error: boolean) => void;
+  showSizeErrorAlert?: boolean;
   active: boolean;
 }
+
+export const isPositiveIntegerSize = (value: string) =>
+  value.trim() !== "" && /^\d+$/.test(value.trim()) && Number(value) > 0;
 
 export default function OutputPort({
   node,
@@ -41,6 +46,7 @@ export default function OutputPort({
   sizeError,
   sizeRequired = false,
   setSizeError,
+  showSizeErrorAlert = true,
   active,
 }: OutputPortProps) {
   const isClassical = type === "classical";
@@ -62,12 +68,13 @@ export default function OutputPort({
 
   // Handle numeric size change and validation
   const handleYChange = (value: string, field: string) => {
-    const num = Number(value);
-    const hasError = value !== "" && (!/^\d+$/.test(value) || num <= 0);
+    const trimmedValue = value.trim();
+    const num = Number(trimmedValue);
+    const hasError = trimmedValue !== "" && !isPositiveIntegerSize(value);
     setSizeError(hasError);
 
     node.data[field] = value;
-    updateNodeValue(node.id, field, num);
+    updateNodeValue(node.id, field, trimmedValue === "" ? "" : num);
     setSelectedNode(node);
   };
 
@@ -214,6 +221,14 @@ export default function OutputPort({
 
   return (
     <div className="relative flex items-center justify-end space-x-0 mt-1">
+      {showSizeErrorAlert && sizeError && (
+        <div className="absolute top-2 right-[-40px] group z-20">
+          <AlertCircle className="text-red-600 w-5 h-5" />
+          <div className="absolute top-12 left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
+            Size must be a positive integer
+          </div>
+        </div>
+      )}
       <div
         className="flex flex-col items-end space-y-1 relative p-2"
         style={{

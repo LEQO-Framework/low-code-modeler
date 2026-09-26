@@ -826,6 +826,7 @@ export const StatePreparationNode = memo((node: Node) => {
                   setOutputs={setOutputs}
                   edges={edges}
                   sizeError={sizeError || missingSizeError}
+                  showSizeErrorAlert={false}
                   outputIdentifierError={
                     outputIdentifierError || startsWithDigitError
                   }
@@ -852,6 +853,7 @@ export const StatePreparationNode = memo((node: Node) => {
                   setOutputs={setOutputs}
                   edges={edges}
                   sizeError={sizeError}
+                  showSizeErrorAlert={false}
                   outputIdentifierError={
                     outputIdentifierError || startsWithDigitError
                   }
