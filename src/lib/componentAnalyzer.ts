@@ -32,11 +32,9 @@ export interface DiracComponent {
 export function findConnectedComponents(
   nodes: Node[],
   edges: Edge[],
-  allNodes?: Node[]
+  allNodes?: Node[],
 ): Node[][] {
-  const activeNodes = nodes.filter(
-    (n) => n.type !== "groupNode"
-  );
+  const activeNodes = nodes.filter((n) => n.type !== "groupNode");
 
   if (activeNodes.length === 0) return [];
 
@@ -51,12 +49,18 @@ export function findConnectedComponents(
     const targetNode = fullNodes.find((n) => n.id === edge.target);
 
     if (sourceNode?.type === "groupNode" || targetNode?.type === "groupNode") {
-      const sourceChildren = sourceNode?.type === "groupNode"
-        ? activeNodes.filter((n) => n.parentNode === sourceNode.id)
-        : sourceNode ? [sourceNode] : [];
-      const targetChildren = targetNode?.type === "groupNode"
-        ? activeNodes.filter((n) => n.parentNode === targetNode.id)
-        : targetNode ? [targetNode] : [];
+      const sourceChildren =
+        sourceNode?.type === "groupNode"
+          ? activeNodes.filter((n) => n.parentNode === sourceNode.id)
+          : sourceNode
+            ? [sourceNode]
+            : [];
+      const targetChildren =
+        targetNode?.type === "groupNode"
+          ? activeNodes.filter((n) => n.parentNode === targetNode.id)
+          : targetNode
+            ? [targetNode]
+            : [];
 
       for (const src of sourceChildren) {
         for (const tgt of targetChildren) {
@@ -117,33 +121,6 @@ export function findConnectedComponents(
 }
 
 /**
- * Determines the group name of a component: the group name if all nodes belong to the
- * same group, otherwise null.
- */
-function getComponentGroupInfo(
-  componentNodes: Node[],
-  allNodes: Node[]
-): { label: string | null; color: string; groupId: string | null } {
-  const parentIds = new Set(
-    componentNodes.map((n) => n.parentNode).filter(Boolean)
-  );
-
-  if (parentIds.size === 1) {
-    const groupId = [...parentIds][0]!;
-    const groupNode = allNodes.find((n) => n.id === groupId);
-    if (groupNode) {
-      return {
-        label: groupNode.data?.label || "Group",
-        color: groupNode.data?.color || "#6366f1",
-        groupId,
-      };
-    }
-  }
-
-  return { label: null, color: "#6366f1", groupId: null };
-}
-
-/**
  * Collects all child nodes reachable from a group target.
  */
 function collectReachableNodes(
@@ -151,9 +128,9 @@ function collectReachableNodes(
   allNodes: Node[],
   activeNodes: Node[],
   edges: Edge[],
-  visitedGroups: Set<string> = new Set()
+  visitedGroups: Set<string> = new Set(),
 ): Node[] {
-  const tgtNode = allNodes.find(n => n.id === targetId);
+  const tgtNode = allNodes.find((n) => n.id === targetId);
   if (!tgtNode) return [];
 
   const result: Node[] = [];
@@ -161,17 +138,33 @@ function collectReachableNodes(
   if (tgtNode.type === "groupNode") {
     if (visitedGroups.has(tgtNode.id)) return [];
     visitedGroups.add(tgtNode.id);
-    const children = activeNodes.filter(n => n.parentNode === tgtNode.id);
+    const children = activeNodes.filter((n) => n.parentNode === tgtNode.id);
     result.push(...children);
     // Weiter durch ausgehende Edges
-    for (const nextEdge of edges.filter(e => e.source === tgtNode.id)) {
-      result.push(...collectReachableNodes(nextEdge.target, allNodes, activeNodes, edges, visitedGroups));
+    for (const nextEdge of edges.filter((e) => e.source === tgtNode.id)) {
+      result.push(
+        ...collectReachableNodes(
+          nextEdge.target,
+          allNodes,
+          activeNodes,
+          edges,
+          visitedGroups,
+        ),
+      );
     }
   } else {
     result.push(tgtNode);
     // Weiter durch ausgehende Edges
-    for (const nextEdge of edges.filter(e => e.source === tgtNode.id)) {
-      result.push(...collectReachableNodes(nextEdge.target, allNodes, activeNodes, edges, visitedGroups));
+    for (const nextEdge of edges.filter((e) => e.source === tgtNode.id)) {
+      result.push(
+        ...collectReachableNodes(
+          nextEdge.target,
+          allNodes,
+          activeNodes,
+          edges,
+          visitedGroups,
+        ),
+      );
     }
   }
 
@@ -191,10 +184,11 @@ function collectReachableNodes(
  * display in qubit.tsx via src/lib/qubitIndexing.ts), so that the two ALWAYS use exactly
  * the same grouping and ordering and cannot drift apart.
  */
-export function computeOrderedComponents(nodes: Node[], edges: Edge[]): Node[][] {
-  const activeNodes = nodes.filter(
-    (n) => n.type !== "groupNode"
-  );
+export function computeOrderedComponents(
+  nodes: Node[],
+  edges: Edge[],
+): Node[][] {
+  const activeNodes = nodes.filter((n) => n.type !== "groupNode");
   if (activeNodes.length === 0) return [];
 
   // find the connected components, taking group edges into account
@@ -202,122 +196,24 @@ export function computeOrderedComponents(nodes: Node[], edges: Edge[]): Node[][]
 
   // helper: determine the target group ID of an edge
   const getEdgeTargetGroupId = (edge: Edge): string => {
-    const tgtNode = nodes.find(n => n.id === edge.target);
-    return tgtNode?.type === "groupNode" ? tgtNode.id : (tgtNode?.parentNode ?? edge.target);
-  };
-
-  // for each group, check whether its outputs go to different targets
-  const splitGroupComponents = (groupId: string, groupNodes: Node[]): Node[][] => {
-    const groupNodeIds = new Set(groupNodes.map(n => n.id));
-
-    // external edges originating from this group
-    const externalEdges = edges.filter(e => {
-      const srcNode = nodes.find(n => n.id === e.source);
-      // edge starts at the group node itself
-      if (srcNode?.type === "groupNode" && srcNode.id === groupId) return true;
-      // edge leaves the group from a child node
-      if (groupNodeIds.has(e.source)) {
-        const tgtNode = nodes.find(n => n.id === e.target);
-        return !groupNodeIds.has(e.target) && tgtNode?.parentNode !== groupId;
-      }
-      return false;
-    });
-
-    if (externalEdges.length <= 1) return [groupNodes];
-
-    // Ziele bestimmen
-    const targetGroups = new Set(externalEdges.map(e => getEdgeTargetGroupId(e)));
-    if (targetGroups.size <= 1) return [groupNodes];
-
-    // edges internal to the group
-    const internalEdges = edges.filter(
-      e => groupNodeIds.has(e.source) && groupNodeIds.has(e.target)
-    );
-    const internalTargets = new Set(internalEdges.map(e => e.target));
-
-    // for every external edge, find the corresponding child node and collect all
-    // connected nodes by walking the internal edges backwards via BFS
-    const subComponents: Node[][] = [];
-    const assignedNodes = new Set<string>();
-
-    for (const edge of externalEdges) {
-      const srcNode = nodes.find(n => n.id === edge.source);
-
-      // find the child node this edge originates from
-      let sourceKindNode: Node | undefined;
-
-      if (srcNode?.type === "groupNode") {
-        // proxy handle: the handle ID contains the child node ID
-        const handleId = edge.sourceHandle ?? "";
-        sourceKindNode = groupNodes.find(n => handleId.includes(n.id));
-
-        // fallback: find the child node that is not an internal target and
-        // leads to this destination, matched by index
-        if (!sourceKindNode) {
-          const outputNodes = groupNodes.filter(n => !internalTargets.has(n.id) && n.type !== "qubitNode" && n.type !== "groupNode");
-          const edgeIndex = externalEdges.indexOf(edge);
-          sourceKindNode = outputNodes[edgeIndex] ?? outputNodes[0];
-        }
-      } else {
-        sourceKindNode = srcNode;
-      }
-
-      if (!sourceKindNode) continue;
-
-      // backwards BFS: find all nodes leading to this source node
-      const subComponent: Node[] = [];
-      const visited = new Set<string>();
-      const queue = [sourceKindNode.id];
-      visited.add(sourceKindNode.id);
-
-      while (queue.length > 0) {
-        const currentId = queue.shift()!;
-        const currentNode = groupNodes.find(n => n.id === currentId);
-        if (currentNode) subComponent.push(currentNode);
-
-        // forward neighbours (internal)
-        for (const e of internalEdges) {
-          if (e.source === currentId && !visited.has(e.target)) {
-            visited.add(e.target);
-            queue.push(e.target);
-          }
-        }
-        // backward neighbours (internal)
-        for (const e of internalEdges) {
-          if (e.target === currentId && !visited.has(e.source)) {
-            visited.add(e.source);
-            queue.push(e.source);
-          }
-        }
-      }
-
-      subComponent.forEach(n => assignedNodes.add(n.id));
-      if (subComponent.length > 0) subComponents.push(subComponent);
-    }
-
-    // unassigned nodes go into the first sub-component
-    const unassigned = groupNodes.filter(n => !assignedNodes.has(n.id));
-    if (unassigned.length > 0 && subComponents.length > 0) {
-      subComponents[0].push(...unassigned);
-    } else if (unassigned.length > 0) {
-      subComponents.push(unassigned);
-    }
-
-    return subComponents.length > 0 ? subComponents : [groupNodes];
+    const tgtNode = nodes.find((n) => n.id === edge.target);
+    return tgtNode?.type === "groupNode"
+      ? tgtNode.id
+      : (tgtNode?.parentNode ?? edge.target);
   };
 
   // identify groups whose outputs go to several different targets
   const groupsWithMultipleTargets = new Set<string>();
   for (const node of nodes) {
     if (node.type !== "groupNode") continue;
-    const outEdges = edges.filter(e => e.source === node.id);
+    const outEdges = edges.filter((e) => e.source === node.id);
     if (outEdges.length <= 1) continue;
-    const targets = new Set(outEdges.map(e => getEdgeTargetGroupId(e)));
+    const targets = new Set(outEdges.map((e) => getEdgeTargetGroupId(e)));
     if (targets.size > 1) groupsWithMultipleTargets.add(node.id);
   }
 
   // check whether the canvas contains any groups at all
-  const hasGroups = nodes.some(n => n.type === "groupNode");
+  const hasGroups = nodes.some((n) => n.type === "groupNode");
 
   let components: Node[][];
 
@@ -335,13 +231,17 @@ export function computeOrderedComponents(nodes: Node[], edges: Edge[]): Node[][]
       let rootId: string | null = null;
       while (current?.parentNode) {
         rootId = current.parentNode;
-        current = nodes.find(x => x.id === current!.parentNode);
+        current = nodes.find((x) => x.id === current!.parentNode);
       }
       return rootId;
     };
 
     for (const component of rawComponents) {
-      const parentIds = [...new Set(component.map(n => n.parentNode).filter(Boolean) as string[])];
+      const parentIds = [
+        ...new Set(
+          component.map((n) => n.parentNode).filter(Boolean) as string[],
+        ),
+      ];
 
       if (parentIds.length === 0) {
         // truly standalone component: no node has a parentNode
@@ -355,14 +255,16 @@ export function computeOrderedComponents(nodes: Node[], edges: Edge[]): Node[][]
 
       // determine the component's root group(s), taking nested groups into account
       const rootGroupIds = new Set(
-        component.map(n => getRootGroupId(n)).filter(Boolean) as string[]
+        component.map((n) => getRootGroupId(n)).filter(Boolean) as string[],
       );
 
       if (rootGroupIds.size === 1) {
         // all nodes of the component belong to the same root group, directly or through nesting
         const rootGroupId = [...rootGroupIds][0];
         if (groupComponentMap.has(rootGroupId)) {
-          mergedComponents[groupComponentMap.get(rootGroupId)!].push(...component);
+          mergedComponents[groupComponentMap.get(rootGroupId)!].push(
+            ...component,
+          );
         } else {
           groupComponentMap.set(rootGroupId, mergedComponents.length);
           mergedComponents.push([...component]);
@@ -386,19 +288,26 @@ export function computeOrderedComponents(nodes: Node[], edges: Edge[]): Node[][]
     const usedNodeIds = new Set<string>();
 
     for (const splitGroupId of groupsWithMultipleTargets) {
-      const outEdges = edges.filter(e => e.source === splitGroupId);
-      const groupKindNodes = activeNodes.filter(n => n.parentNode === splitGroupId);
-      const internalEdges = edges.filter(
-        e => groupKindNodes.some(n => n.id === e.source) &&
-             groupKindNodes.some(n => n.id === e.target)
+      const outEdges = edges.filter((e) => e.source === splitGroupId);
+      const groupKindNodes = activeNodes.filter(
+        (n) => n.parentNode === splitGroupId,
       );
-      const internalTargets = new Set(internalEdges.map(e => e.target));
+      const internalEdges = edges.filter(
+        (e) =>
+          groupKindNodes.some((n) => n.id === e.source) &&
+          groupKindNodes.some((n) => n.id === e.target),
+      );
+      const internalTargets = new Set(internalEdges.map((e) => e.target));
 
       for (const outEdge of outEdges) {
         const handleId = outEdge.sourceHandle ?? "";
-        let sourceKindNode = groupKindNodes.find(n => handleId.includes(n.id));
+        let sourceKindNode = groupKindNodes.find((n) =>
+          handleId.includes(n.id),
+        );
         if (!sourceKindNode) {
-          const outputNodes = groupKindNodes.filter(n => !internalTargets.has(n.id) && n.type !== "qubitNode");
+          const outputNodes = groupKindNodes.filter(
+            (n) => !internalTargets.has(n.id) && n.type !== "qubitNode",
+          );
           const idx = outEdges.indexOf(outEdge);
           sourceKindNode = outputNodes[idx] ?? outputNodes[0];
         }
@@ -411,26 +320,38 @@ export function computeOrderedComponents(nodes: Node[], edges: Edge[]): Node[][]
         visited.add(sourceKindNode.id);
         while (queue.length > 0) {
           const currentId = queue.shift()!;
-          const n = groupKindNodes.find(n => n.id === currentId);
+          const n = groupKindNodes.find((n) => n.id === currentId);
           if (n) subNodes.push(n);
           for (const e of internalEdges) {
-            if (e.source === currentId && !visited.has(e.target)) { visited.add(e.target); queue.push(e.target); }
-            if (e.target === currentId && !visited.has(e.source)) { visited.add(e.source); queue.push(e.source); }
+            if (e.source === currentId && !visited.has(e.target)) {
+              visited.add(e.target);
+              queue.push(e.target);
+            }
+            if (e.target === currentId && !visited.has(e.source)) {
+              visited.add(e.source);
+              queue.push(e.source);
+            }
           }
         }
 
         // collect the target nodes reachable through the edge
-        const targetNodes = collectReachableNodes(outEdge.target, nodes, activeNodes, edges, new Set([splitGroupId]));
+        const targetNodes = collectReachableNodes(
+          outEdge.target,
+          nodes,
+          activeNodes,
+          edges,
+          new Set([splitGroupId]),
+        );
 
         const allSubNodes = [...subNodes, ...targetNodes];
-        allSubNodes.forEach(n => usedNodeIds.add(n.id));
+        allSubNodes.forEach((n) => usedNodeIds.add(n.id));
         components.push(allSubNodes);
       }
     }
 
     // remaining components from rawComponents that were not part of a split group
     for (const comp of rawComponents) {
-      const notUsed = comp.filter(n => !usedNodeIds.has(n.id));
+      const notUsed = comp.filter((n) => !usedNodeIds.has(n.id));
       if (notUsed.length > 0) components.push(notUsed);
     }
   }
@@ -446,7 +367,9 @@ export function computeOrderedComponents(nodes: Node[], edges: Edge[]): Node[][]
     return ax - bx;
   };
 
-  return components.map((componentNodes) => [...componentNodes].sort(sortByVisualPosition));
+  return components.map((componentNodes) =>
+    [...componentNodes].sort(sortByVisualPosition),
+  );
 }
 
 /**
@@ -457,7 +380,7 @@ export async function analyzeComponents(
   edges: Edge[],
   backendUrl: string,
   metadata: any,
-  compilationTarget: string
+  compilationTarget: string,
 ): Promise<DiracComponent[]> {
   // activeNodes is captured below as a closure variable by expandEdges/findChild
   const activeNodes = nodes.filter((n) => n.type !== "groupNode");
@@ -472,52 +395,70 @@ export async function analyzeComponents(
     const result: Edge[] = [];
 
     for (const edge of edges) {
-      const srcNode = nodes.find(n => n.id === edge.source);
-      const tgtNode = nodes.find(n => n.id === edge.target);
+      const srcNode = nodes.find((n) => n.id === edge.source);
+      const tgtNode = nodes.find((n) => n.id === edge.target);
 
       if (srcNode?.type === "groupNode" || tgtNode?.type === "groupNode") {
         // find the matching child node from the handle ID
-          
 
-        const findChild = (handleId: string | null, groupId: string): Node | undefined => {
-        if (!handleId) return undefined;
-        const children = activeNodes.filter(n => n.parentNode === groupId);
-        
-        // check whether the handle ID contains a child node ID
-        const match = children.find(n => handleId.includes(n.id));
-        if (match) return match;
-        
-        // fallback: find the first node without an internal input,
-        // i.e. the entry node of the group
-        if (handleId.includes("groupInput")) {
-          const internalEdges = edges.filter(
-            e => children.some(c => c.id === e.source) && children.some(c => c.id === e.target)
-          );
-          const internalTargets = new Set(internalEdges.map(e => e.target));
-          // a node that is not an internal target is the entry node
-          return children.find(n => !internalTargets.has(n.id) && n.type !== "qubitNode")
-            ?? children[0];
-        }
-        if (handleId.includes("groupOutput")) {
-          const internalEdges = edges.filter(
-            e => children.some(c => c.id === e.source) && children.some(c => c.id === e.target)
-          );
-          const internalSources = new Set(internalEdges.map(e => e.source));
-          // a node that is not an internal source is the exit node
-          return children.find(n => !internalSources.has(n.id))
-            ?? children[children.length - 1];
-        }
-        return children[0];
-      };
+        const findChild = (
+          handleId: string | null,
+          groupId: string,
+        ): Node | undefined => {
+          if (!handleId) return undefined;
+          const children = activeNodes.filter((n) => n.parentNode === groupId);
 
-        const realSrc = srcNode?.type === "groupNode"
-          ? findChild(edge.sourceHandle, srcNode.id)
-          : srcNode;
-        const realTgt = tgtNode?.type === "groupNode"
-          ? findChild(edge.targetHandle, tgtNode.id)
-          : tgtNode;
+          // check whether the handle ID contains a child node ID
+          const match = children.find((n) => handleId.includes(n.id));
+          if (match) return match;
 
-        if (realSrc && realTgt && nodeIds.has(realSrc.id) && nodeIds.has(realTgt.id)) {
+          // fallback: find the first node without an internal input,
+          // i.e. the entry node of the group
+          if (handleId.includes("groupInput")) {
+            const internalEdges = edges.filter(
+              (e) =>
+                children.some((c) => c.id === e.source) &&
+                children.some((c) => c.id === e.target),
+            );
+            const internalTargets = new Set(internalEdges.map((e) => e.target));
+            // a node that is not an internal target is the entry node
+            return (
+              children.find(
+                (n) => !internalTargets.has(n.id) && n.type !== "qubitNode",
+              ) ?? children[0]
+            );
+          }
+          if (handleId.includes("groupOutput")) {
+            const internalEdges = edges.filter(
+              (e) =>
+                children.some((c) => c.id === e.source) &&
+                children.some((c) => c.id === e.target),
+            );
+            const internalSources = new Set(internalEdges.map((e) => e.source));
+            // a node that is not an internal source is the exit node
+            return (
+              children.find((n) => !internalSources.has(n.id)) ??
+              children[children.length - 1]
+            );
+          }
+          return children[0];
+        };
+
+        const realSrc =
+          srcNode?.type === "groupNode"
+            ? findChild(edge.sourceHandle, srcNode.id)
+            : srcNode;
+        const realTgt =
+          tgtNode?.type === "groupNode"
+            ? findChild(edge.targetHandle, tgtNode.id)
+            : tgtNode;
+
+        if (
+          realSrc &&
+          realTgt &&
+          nodeIds.has(realSrc.id) &&
+          nodeIds.has(realTgt.id)
+        ) {
           const newSourceHandle = edge.sourceHandle?.includes("groupOutput")
             ? `quantumHandleGateOutput0${realSrc.id}`
             : edge.sourceHandle;
@@ -542,12 +483,14 @@ export async function analyzeComponents(
 
   // determine label and color of a component
   const getComponentInfo = (componentNodes: Node[]) => {
-    const parentIds = new Set(componentNodes.map(n => n.parentNode).filter(Boolean) as string[]);
+    const parentIds = new Set(
+      componentNodes.map((n) => n.parentNode).filter(Boolean) as string[],
+    );
 
     if (parentIds.size === 1) {
       // all nodes are in the same group
       const groupId = [...parentIds][0];
-      const groupNode = nodes.find(n => n.id === groupId);
+      const groupNode = nodes.find((n) => n.id === groupId);
       return {
         label: groupNode?.data?.label || "Group",
         color: groupNode?.data?.color || "#6366f1",
@@ -555,8 +498,8 @@ export async function analyzeComponents(
       };
     } else if (parentIds.size > 1) {
       // Nodes aus mehreren Gruppen → zusammengesetzter Name
-      const groupNames = [...parentIds].map(gid => {
-        const g = nodes.find(n => n.id === gid);
+      const groupNames = [...parentIds].map((gid) => {
+        const g = nodes.find((n) => n.id === gid);
         return g?.data?.label || "Group";
       });
       return {
@@ -568,32 +511,14 @@ export async function analyzeComponents(
     return { label: null, color: "#6366f1", groupId: null };
   };
 
-  // build the jobs
-  //
-  // IMPORTANT: componentNodes arrives in creation order (the order of the React state
-  // array), NOT in visual canvas order. When several unconnected subgraphs are merged into
-  // the same group (see above), the backend would assign register indices by array
-  // position, which produces a wrong mapping as soon as a node is duplicated and only
-  // later connected to a different qubit that sits higher up on the canvas. Sorting by
-  // visual position before sending (Y first, X as the tie-breaker) makes "higher up on the
-  // canvas" reliably map to lower register indices.
-  const sortByVisualPosition = (a: Node, b: Node): number => {
-    const ay = a.positionAbsolute?.y ?? a.position.y;
-    const by = b.positionAbsolute?.y ?? b.position.y;
-    if (ay !== by) return ay - by;
-    const ax = a.positionAbsolute?.x ?? a.position.x;
-    const bx = b.positionAbsolute?.x ?? b.position.x;
-    return ax - bx;
-  };
-
   const jobs = components.map((componentNodes) => {
     const info = getComponentInfo(componentNodes);
     return {
       label: info.label,
       groupId: info.groupId,
       color: info.color,
-      originalNodeIds: componentNodes.map(n => n.id),
-      jobNodes: componentNodes.map(n => ({
+      originalNodeIds: componentNodes.map((n) => n.id),
+      jobNodes: componentNodes.map((n) => ({
         ...n,
         parentNode: undefined,
         extent: undefined,
@@ -612,7 +537,7 @@ export async function analyzeComponents(
           metadata,
           job.jobNodes,
           job.jobEdges,
-          compilationTarget
+          compilationTarget,
         );
 
         if (!response.ok) throw new Error(`Backend error: ${response.status}`);
@@ -635,7 +560,6 @@ export async function analyzeComponents(
           qasm,
           error: null,
         } as DiracComponent;
-
       } catch (e) {
         return {
           index,
@@ -648,7 +572,7 @@ export async function analyzeComponents(
           error: e instanceof Error ? e.message : "Unknown error",
         } as DiracComponent;
       }
-    })
+    }),
   );
 
   return results.map((result, index) => {
@@ -674,7 +598,7 @@ async function pollForResult(
   statusUrl: string,
   resultUrl: string,
   maxWaitMs = 60000,
-  intervalMs = 1000
+  intervalMs = 1000,
 ): Promise<string | null> {
   const start = Date.now();
 
@@ -689,14 +613,22 @@ async function pollForResult(
 
     console.log("Komponente Status:", status);
 
-    if (status === "completed" || status === "SUCCESS" || status === "success" || status === "DONE") {
+    if (
+      status === "completed" ||
+      status === "SUCCESS" ||
+      status === "success" ||
+      status === "DONE"
+    ) {
       // fetch the result; App.tsx reads the response text directly as QASM
       const resultRes = await fetch(resultUrl);
       if (!resultRes.ok) throw new Error(`Result-Fehler: ${resultRes.status}`);
 
       // try plain text first (QASM directly), then JSON
       const resultText = await resultRes.text();
-      console.log("Komponente Result (erste 100 Zeichen):", resultText.slice(0, 100));
+      console.log(
+        "Komponente Result (erste 100 Zeichen):",
+        resultText.slice(0, 100),
+      );
 
       // if it looks like QASM, return it as is
       if (resultText.includes("OPENQASM") || resultText.includes("qubit")) {
@@ -718,11 +650,15 @@ async function pollForResult(
       }
     }
 
-    if (status === "failed" || status === "FAILED" || status === "ERROR" || status === "error") {
+    if (
+      status === "failed" ||
+      status === "FAILED" ||
+      status === "ERROR" ||
+      status === "error"
+    ) {
       throw new Error(`Backend-Job fehlgeschlagen: ${status}`);
     }
   }
 
   throw new Error("Timeout: Backend hat nicht rechtzeitig geantwortet");
 }
-

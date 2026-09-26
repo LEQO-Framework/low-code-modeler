@@ -1,4 +1,4 @@
-import { ancillaConstructColor, quantumConstructColor } from '@/constants';
+import { ancillaConstructColor } from '@/constants';
 import { Handle, Position } from 'reactflow';
 import React from 'react';
 import { cn } from '@/lib/utils';

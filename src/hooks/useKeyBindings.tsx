@@ -21,17 +21,30 @@ export default function useKeyBindings({
 }) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+
+      if (
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target.isContentEditable
+      ) {
+        return;
+      }
+
+      const selection = window.getSelection();
+      if (selection && !selection.isCollapsed) {
+        return;
+      }
+
       const key = e.key?.toLowerCase();
       const ctrlOrMeta = e.ctrlKey || e.metaKey; // CtrlKey Windows/Linux, MetaKey Mac
 
       switch (true) {
         case ctrlOrMeta && key === "z": {
-          console.log("registered");
           undo();
           break;
         }
         case ctrlOrMeta && key === "y": {
-          console.log("registered");
           redo();
           break;
         }

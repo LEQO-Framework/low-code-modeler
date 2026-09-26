@@ -1,12 +1,3 @@
-import React, { useState } from "react";
-import {
-  Button,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger
-} from "./ui";
-
 import {
   FilePlus,
   FolderOpen,
@@ -20,17 +11,18 @@ import {
   FileJson,
   ImageIcon,
   LayoutTemplate,
-  PuzzleIcon,
-  LucidePuzzle,
-  Puzzle,
-  Group,
-  BoxSelect,
-  BrainCircuit,
   Search,
   BadgeCheck,
+  MessageSquareIcon,
 } from "lucide-react";
 
-
+import {
+  Button,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "./ui";
 
 interface ToolbarProps {
   onSave: () => void;
@@ -42,25 +34,23 @@ interface ToolbarProps {
   createDomainProfile: () => void;
   sendToBackend: () => void;
   startQuantumAlgorithmSelection: () => void;
-  uploadPatternSolution: () => void,
-  openPatternSolution: () => void,
-  //sendToQunicorn: () => void;
+  uploadPatternSolution: () => void;
+  openPatternSolution: () => void;
   openHistory: () => void;
   startTour: () => void;
   onSaveAsTemplate: () => void;
   onManageTemplates: () => void;
   onGroupSelected: () => void;
-  onLoadQasm: (qasm: string) => void;
   generateModel: () => void;
   openOpenQASM: () => void;
 }
 
-const Toolbar: React.FC<ToolbarProps> = ({
+export default function Toolbar({
   onSave,
   onRestore,
   onSaveAsSVG,
-  uploadDiagram,
   onOpenConfig,
+  uploadDiagram,
   onLoadJson,
   createDomainProfile,
   sendToBackend,
@@ -71,133 +61,288 @@ const Toolbar: React.FC<ToolbarProps> = ({
   startTour,
   onSaveAsTemplate,
   onManageTemplates,
-  onGroupSelected,
-  onLoadQasm,
-  generateModel, 
-  openOpenQASM
-}) => {
-  const [saveIsOpen, setSaveIsOpen] = useState(false);
-
-  const handleQasmUpload = () => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = ".qasm,.txt";
-    input.onchange = async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) return;
-      const text = await file.text();
-      onLoadQasm(text);
-    };
-    input.click();
-  };
+  generateModel,
+  openOpenQASM,
+}: ToolbarProps) {
   return (
-    <div className="flex items-center justify-between bg-gray-100 p-4 border-b border-gray-300 h-[56px]">
-      <div className="flex items-center">
-        <img src="Logo.png" alt="Logo" className="h-8 w-20" />
-        <span className="font-semibold text-lg">Qonstruct</span>
-        <div className="ml-[170px] flex gap-2">
-          <Button size="sm" onClick={onLoadJson} title="Open a new diagram">
-            <FilePlus className="w-4 h-4 mr-2" />
-          </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="sm" variant="default" className="focus:ring-0 focus-visible:ring-0 outline-none">
-                <FolderOpen className="w-4 h-4 mr-2" />
-                <ChevronDown className="w-4 h-4 ml-2" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" onCloseAutoFocus={(e) => e.preventDefault()}>
-              <DropdownMenuItem onClick={onRestore} title="Open a file">
-                <FileJson className="w-4 h-4 mr-2" />
-                <span>File</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={openPatternSolution} title="Open a pattern solution">
-                <ImageIcon className="w-4 h-4 mr-2" />
-                <span>Pattern Solution</span>
-              </DropdownMenuItem>            
-              <DropdownMenuItem onClick={openOpenQASM} title="Open a pattern solution">
-                <ImageIcon className="w-4 h-4 mr-2" />
-                <span>OpenQASM</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="sm" variant="default" className="focus:ring-0 focus-visible:ring-0 outline-none">
-                <Save className="w-4 h-4 mr-2" />
+    <div className="bg-gray-100 border-b border-gray-300 px-4 h-[70px] overflow-hidden">
+      <div className="flex items-center h-full">
 
-                <ChevronDown className="w-4 h-4 ml-2" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" onCloseAutoFocus={(e) => e.preventDefault()}>
-              <DropdownMenuItem onClick={onSave} title="Download the current diagram as JSON">
-                <FileJson className="w-4 h-4 mr-2" />
-                <span>as JSON</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={onSaveAsSVG} title="Download the current diagram as SVG">
-                <ImageIcon className="w-4 h-4 mr-2" />
-                <span>as SVG</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={onSaveAsTemplate} title="Save the current diagram as a custom user template">
-                <LayoutTemplate className="w-4 h-4 mr-2" />
-                <span>as User Template</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="sm" variant="default" className="focus:ring-0 focus-visible:ring-0 outline-none">
-                <UploadCloud className="w-4 h-4 mr-2" />
-                <ChevronDown className="w-4 h-4 ml-2" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" onCloseAutoFocus={(e) => e.preventDefault()}>
-              <DropdownMenuItem onClick={uploadDiagram} title="Upload the current diagram to GitHub">
-                <FileJson className="w-4 h-4 mr-2" />
-                <span>File</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={uploadPatternSolution} title="Upload the current diagram as pattern solution">
-                <ImageIcon className="w-4 h-4 mr-2" />
-                <span>Pattern Solution</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <Button size="sm" onClick={onManageTemplates} title="Manage all custom user templates">
-            <LayoutTemplate className="w-4 h-4 mr-2" /> Manage Templates
-          </Button>
-          <Button size="sm" onClick={onOpenConfig} title="Configure the editor and the endpoints">
-            <Settings className="w-4 h-4 mr-2" /> Configuration
-          </Button>
-          <Button size="sm" onClick={createDomainProfile} title="Create domain profiles and manage them.">
-            <BadgeCheck className="w-4 h-4 mr-2" /> Manage Domain Profiles
-          </Button>
-          <Button className="backend-button" size="sm" onClick={sendToBackend} title="Send the diagram to the backend">
-            <Send className="w-4 h-4 mr-2" /> Send to Backend
-          </Button>
-              
+        {/* Qonstruct */}
+        <div className="flex items-center gap-2 shrink-0">
+          <img src="Logo2.png" alt="Qonstruct" className="h-8 w-16" />
 
-          <Button size="sm" onClick={startQuantumAlgorithmSelection}>
-            <Search className="w-4 h-4 mr-2" /> Detect Algorithm
-          </Button>
-          {/**<Button size="sm" onClick={generateModel} title="Generate a model based on user input.">
-            <BrainCircuit className="w-4 h-4 mr-2" />
-            Generate Model
-          </Button>**/
-          }
-          <Button size="sm" onClick={openHistory} title="Display the history">
-            <Clock className="w-4 h-4 mr-2" />
-            History
-          </Button>
+          <span className="text-lg font-semibold text-gray-800">
+            Qonstruct
+          </span>
+        </div>
 
-          <Button size="sm" onClick={startTour} title="Start guided tour">
-            <HelpCircle className="w-4 h-4 mr-2" />
-            Help
-          </Button>
+        <div className="h-full flex items-center text-gray-400 text-xl shrink-0 ml-[20px]">
+          |
+        </div>
+
+        {/* Toolbar categories */}
+        <div className="ml-[20px] flex items-start gap-3 h-full overflow-x-auto">
+
+          {/* Start */}
+          <div className="flex flex-col items-center justify-center h-full shrink-0">
+            <span className="text-[11px] font-semibold text-gray-600 mb-1">
+              Start
+            </span>
+
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onRestore}
+                title="Open New Diagram"
+                className="border border-gray-300 hover:bg-gray-200"
+              >
+                <FilePlus className="h-4 w-4 mr-1" />
+              </Button>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    title="Open Diagram"
+                    className="border border-gray-300 hover:bg-gray-200"
+                  >
+                    <FolderOpen className="h-4 w-4 mr-1" />
+                    <ChevronDown className="h-3 w-3 ml-1" />
+                  </Button>
+                </DropdownMenuTrigger>
+
+                <DropdownMenuContent>
+                  <DropdownMenuItem onClick={uploadDiagram}>
+                    <FolderOpen className="h-4 w-4 mr-2" />
+                    Open Diagram
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem onClick={onLoadJson}>
+                    <FileJson className="h-4 w-4 mr-2" />
+                    Open JSON
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem onClick={openOpenQASM}>
+                    <FileJson className="h-4 w-4 mr-2" />
+                    Open OpenQASM
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    title="Save Diagram"
+                    className="border border-gray-300 hover:bg-gray-200"
+                  >
+                    <Save className="h-4 w-4 mr-1" />
+                    <ChevronDown className="h-3 w-3 ml-1" />
+                  </Button>
+                </DropdownMenuTrigger>
+
+                <DropdownMenuContent>
+                  <DropdownMenuItem onClick={onSave}>
+                    <Save className="h-4 w-4 mr-2" />
+                    Save Diagram
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem onClick={onSaveAsSVG}>
+                    <ImageIcon className="h-4 w-4 mr-2" />
+                    Save as SVG
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem onClick={onSaveAsTemplate}>
+                    <LayoutTemplate className="h-4 w-4 mr-2" />
+                    Save as Template
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    title="Upload to GitHub"
+                    className="border border-gray-300 hover:bg-gray-200"
+                  >
+                    <UploadCloud className="h-4 w-4 mr-1" />
+                    <ChevronDown className="h-3 w-3 ml-1" />
+                  </Button>
+                </DropdownMenuTrigger>
+
+                <DropdownMenuContent>
+                  <DropdownMenuItem onClick={uploadPatternSolution}>
+                    <UploadCloud className="h-4 w-4 mr-2" />
+                    Upload File
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem onClick={openPatternSolution}>
+                    <FolderOpen className="h-4 w-4 mr-2" />
+                    Upload Pattern Solution
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onOpenConfig}
+                title="Configuration"
+                className="border border-gray-300 hover:bg-gray-200"
+              >
+                <Settings className="h-4 w-4 mr-1" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Separator */}
+          <div className="h-full flex items-center text-gray-400 text-xl shrink-0">
+            |
+          </div>
+
+          {/* User Templates */}
+          <div className="flex flex-col items-center justify-center h-full shrink-0">
+            <span className="text-[11px] font-semibold text-gray-600 mb-1">
+              User Templates
+            </span>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onManageTemplates}
+              title="Manage Templates"
+              className="border border-gray-300 hover:bg-gray-200"
+            >
+              <LayoutTemplate className="h-4 w-4 mr-1" />
+              Template Library
+            </Button>
+          </div>
+
+          {/* Separator */}
+          <div className="h-full flex items-center text-gray-400 text-xl shrink-0">
+            |
+          </div>
+
+          {/* Domain Profiles */}
+          <div className="flex flex-col items-center justify-center h-full shrink-0">
+            <span className="text-[11px] font-semibold text-gray-600 mb-1">
+              Domain Profiles
+            </span>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={createDomainProfile}
+              title="Manage Domain Profiles"
+              className="border border-gray-300 hover:bg-gray-200"
+            >
+              <BadgeCheck className="h-4 w-4 mr-1" />
+              Profile Manager
+            </Button>
+          </div>
+
+          {/* Separator */}
+          <div className="h-full flex items-center text-gray-400 text-xl shrink-0">
+            |
+          </div>
+
+          {/* AI Features */}
+          <div className="flex flex-col items-center justify-center h-full shrink-0">
+            <span className="text-[11px] font-semibold text-gray-600 mb-1">
+              AI Features
+            </span>
+
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={startQuantumAlgorithmSelection}
+                title="Detects from a natural language description which low-code model can be used"
+                className="border border-gray-300 hover:bg-gray-200"
+              >
+                <Search className="h-4 w-4 mr-1" />
+                Algorithm Detection
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={generateModel}
+                title="Generates from a natural language description a low-code model"
+                className="border border-gray-300 hover:bg-gray-200"
+              >
+                <MessageSquareIcon className="h-4 w-4 mr-1" />
+                Model Generation
+              </Button>
+            </div>
+          </div>
+          {/* Separator */}
+          <div className="h-full flex items-center text-gray-400 text-xl shrink-0">
+            |
+          </div>
+
+          {/* Transformation & Execution */}
+          <div className="flex flex-col items-center justify-center h-full shrink-0">
+            <span className="text-[11px] font-semibold text-gray-600 mb-1">
+              Transformation &amp; Execution
+            </span>
+
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={sendToBackend}
+                title="Transformation of the model into a quantum circuit or workflow"
+                className="border border-gray-300 hover:bg-gray-200"
+              >
+                <Send className="h-4 w-4 mr-1" />
+                Model Transformation
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={openHistory}
+                title="Execute the transformed models"
+                className="border border-gray-300 hover:bg-gray-200"
+              >
+                <Clock className="h-4 w-4 mr-1" />
+                History
+              </Button>
+            </div>
+          </div>
+
+
+          {/* Separator */}
+          <div className="h-full flex items-center text-gray-400 text-xl shrink-0">
+            |
+          </div>
+
+          {/* Help */}
+          <div className="flex flex-col items-center justify-center h-full shrink-0">
+            <span className="text-[11px] font-semibold text-gray-600 mb-1">
+              Help
+            </span>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={startTour}
+              title="Help"
+              className="border border-gray-300 hover:bg-gray-200"
+            >
+              <HelpCircle className="h-4 w-4 mr-1" />
+            </Button>
+          </div>
+
         </div>
       </div>
     </div>
   );
-};
-
-
-export default Toolbar;
+}

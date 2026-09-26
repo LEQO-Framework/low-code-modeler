@@ -1,11 +1,20 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { useReactFlow, Node, useStore, useUpdateNodeInternals } from "reactflow";
-import { FaTrash, FaCopy, FaPlus, FaMinus, FaReact, FaCaretRight } from "react-icons/fa";
+import {
+  useReactFlow,
+  Node,
+  useStore,
+  useUpdateNodeInternals,
+} from "reactflow";
+import {
+  FaTrash,
+  FaCopy,
+  FaPlus,
+  FaMinus,
+  FaReact,
+  FaCaretRight,
+} from "react-icons/fa";
 import { FaGear } from "react-icons/fa6";
 import { v4 as uuid } from "uuid";
-import { Button } from "./ui";
-import { IPortData } from "@/components/nodes/model";
-import { MergerNode } from "@/constants";
 
 interface ContextMenuProps {
   id: string;
@@ -17,29 +26,30 @@ interface ContextMenuProps {
   styles?: React.CSSProperties; // Optional styles for customization
 }
 
-const generateRandomId = () => {
-  return `${Math.random().toString(36).substr(2, 9)}-${Date.now()}`;
-};
-
-
-
 export const ContextMenu: React.FC<ContextMenuProps> = ({
   id,
   top,
   left,
-  right,
-  bottom,
   onAction,
   styles = {},
 }) => {
-  const { getNode, getNodes, getEdges, setNodes, addNodes, setEdges, addEdges, getEdge } = useReactFlow();
+  const {
+    getNode,
+    getNodes,
+    getEdges,
+    setNodes,
+    addNodes,
+    setEdges,
+    addEdges,
+    getEdge,
+  } = useReactFlow();
   // safe fallback: getNode(id) returns undefined for edge context menus
   const type = getNode(id)?.type || "edge";
   const updateNodeInternals = useUpdateNodeInternals();
 
   // all hooks must run unconditionally BEFORE any early return (rules of hooks)
   const node = useStore(
-    useCallback((state) => state.nodeInternals.get(id), [id])
+    useCallback((state) => state.nodeInternals.get(id), [id]),
   );
   const edge = getEdge(id);
 
@@ -47,17 +57,28 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
     const normalized = { ...data };
     // normalize outputTypes/inputTypes/dataType
     if (Array.isArray(normalized.outputTypes))
-      normalized.outputTypes = normalized.outputTypes.map((t: string) => t.toLowerCase());
+      normalized.outputTypes = normalized.outputTypes.map((t: string) =>
+        t.toLowerCase(),
+      );
     if (Array.isArray(normalized.inputTypes))
-      normalized.inputTypes = normalized.inputTypes.map((t: string) => t.toLowerCase());
+      normalized.inputTypes = normalized.inputTypes.map((t: string) =>
+        t.toLowerCase(),
+      );
     if (typeof normalized.dataType === "string")
       normalized.dataType = normalized.dataType.toLowerCase();
     // generate new unique identifiers, matching the generator used in store.ts
     const newId = () => `q${Math.floor(100000 + Math.random() * 900000)}`;
-    if (Array.isArray(normalized.identifiers) && normalized.identifiers.length > 0) {
+    if (
+      Array.isArray(normalized.identifiers) &&
+      normalized.identifiers.length > 0
+    ) {
       normalized.identifiers = normalized.identifiers.map(() => newId());
     }
-    if (normalized.outputIdentifier !== undefined && normalized.outputIdentifier !== "") {
+    // Regenerate outputIdentifier if present
+    if (
+      normalized.outputIdentifier !== undefined &&
+      normalized.outputIdentifier !== ""
+    ) {
       normalized.outputIdentifier = newId();
     }
     // IMPORTANT: data.inputs/data.outputs track the incoming and outgoing connections
@@ -84,22 +105,25 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
     if (node.type === "groupNode") {
       const allNodes = getNodes();
       const allEdges = getEdges();
-      const childNodes = allNodes.filter(n => n.parentNode === id);
+      const childNodes = allNodes.filter((n) => n.parentNode === id);
 
       const newGroupId = uuid();
       const idMap = new Map<string, string>();
       idMap.set(id, newGroupId);
-      childNodes.forEach(child => idMap.set(child.id, uuid()));
+      childNodes.forEach((child) => idMap.set(child.id, uuid()));
 
       const newGroupNode: Node = {
         ...node,
         id: newGroupId,
         data: regenerateIdentifiers(node.data),
-        position: { x: node.position.x + offset.x, y: node.position.y + offset.y },
+        position: {
+          x: node.position.x + offset.x,
+          y: node.position.y + offset.y,
+        },
         selected: false,
       };
 
-      const newChildNodes: Node[] = childNodes.map(child => ({
+      const newChildNodes: Node[] = childNodes.map((child) => ({
         ...child,
         id: idMap.get(child.id)!,
         data: regenerateIdentifiers(child.data),
@@ -108,9 +132,9 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
       }));
 
       const internalEdges = allEdges.filter(
-        e => idMap.has(e.source) && idMap.has(e.target)
+        (e) => idMap.has(e.source) && idMap.has(e.target),
       );
-      const newEdges = internalEdges.map(e => ({
+      const newEdges = internalEdges.map((e) => ({
         ...e,
         id: uuid(),
         source: idMap.get(e.source)!,
@@ -127,7 +151,10 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
         ...node,
         id: uuid(),
         data: regenerateIdentifiers(node.data),
-        position: { x: node.position.x + offset.x, y: node.position.y + offset.y },
+        position: {
+          x: node.position.x + offset.x,
+          y: node.position.y + offset.y,
+        },
         selected: false,
       };
       addNodes([newNode]);
@@ -143,8 +170,12 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
     let changed = true;
     while (changed) {
       changed = false;
-      allNodes.forEach(n => {
-        if (n.parentNode && idsToDelete.has(n.parentNode) && !idsToDelete.has(n.id)) {
+      allNodes.forEach((n) => {
+        if (
+          n.parentNode &&
+          idsToDelete.has(n.parentNode) &&
+          !idsToDelete.has(n.id)
+        ) {
           idsToDelete.add(n.id);
           changed = true;
         }
@@ -165,49 +196,92 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
         .filter((n) => !idsToDelete.has(n.id))
         .map((n) => {
           if (!Array.isArray(n.data?.inputs)) return n;
-          const hasStaleInput = n.data.inputs.some((inp: any) => idsToDelete.has(inp?.id));
+          const hasStaleInput = n.data.inputs.some((inp: any) =>
+            idsToDelete.has(inp?.id),
+          );
           if (!hasStaleInput) return n;
           return {
             ...n,
             data: {
               ...n.data,
-              inputs: n.data.inputs.filter((inp: any) => !idsToDelete.has(inp?.id)),
+              inputs: n.data.inputs.filter(
+                (inp: any) => !idsToDelete.has(inp?.id),
+              ),
             },
           };
-        })
+        }),
     );
-    setEdges((edges) => edges.filter(
-      (e) => !idsToDelete.has(e.source) && !idsToDelete.has(e.target) && e.id !== id
-    ));
+    setEdges((edges) =>
+      edges.filter(
+        (e) =>
+          !idsToDelete.has(e.source) &&
+          !idsToDelete.has(e.target) &&
+          e.id !== id,
+      ),
+    );
     if (onAction) onAction("delete", id);
   }, [id, getNodes, setNodes, setEdges, onAction]);
 
   // TODO: use the correct field (numberInputs for merger nodes) - pass it as an argument?
-  const incrementNodeDataField = useCallback((field: string, min_value: number) => {
-    const node = getNode(id);
-    setNodes((nodes) =>
-      nodes.map((n) =>
-        n.id === id
-          ? { ...n, data: { ...n.data, [field]: n.data[field] ? Number(n.data[field]) + 1 : min_value + 1 } }
-          : n
-      )
-    );
-    updateNodeInternals(id);
-  }, [id, getNode, setNodes, onAction]);
+  const incrementNodeDataField = useCallback(
+    (field: string, min_value: number) => {
+      const node = getNode(id);
+      console.log(
+        "[INCREMENT] field value",
+        field,
+        "field value type",
+        typeof node.data[field],
+      );
+      setNodes((nodes) =>
+        nodes.map((n) =>
+          n.id === id
+            ? {
+                ...n,
+                data: {
+                  ...n.data,
+                  [field]: n.data[field]
+                    ? Number(n.data[field]) + 1
+                    : min_value + 1,
+                },
+              }
+            : n,
+        ),
+      );
+      updateNodeInternals(id);
+    },
+    [id, getNode, setNodes, onAction],
+  );
 
+  const decrementNodeDataField = useCallback(
+    (field: string, min_value: number) => {
+      const node = getNode(id);
+      console.log(
+        "[DECREMENT] field value",
+        node.data[field],
+        "field value type",
+        typeof node.data[field],
+      );
+      setNodes((nodes) =>
+        nodes.map((n) =>
+          n.id === id
+            ? {
+                ...n,
+                data: {
+                  ...n.data,
+                  [field]:
+                    Number(n.data[field]) > min_value
+                      ? Number(n.data[field]) - 1
+                      : min_value,
+                },
+              }
+            : n,
+        ),
+      );
+      updateNodeInternals(id);
+    },
+    [id, getNode, setNodes, onAction],
+  );
 
-  const decrementNodeDataField = useCallback((field: string, min_value: number) => {
-    const node = getNode(id);
-    setNodes((nodes) =>
-      nodes.map((n) =>
-        n.id === id
-          ? { ...n, data: { ...n.data, [field]: Number(n.data[field]) > min_value ? Number(n.data[field]) - 1 : min_value } }
-          : n
-      )
-    );
-    updateNodeInternals(id);
-  }, [id, getNode, setNodes, onAction]);
-  
   const [submenuInputAddOpen, setSubmenuInputAddOpen] = useState(false);
   const [submenuInputRemoveOpen, setSubmenuInputRemoveOpen] = useState(false);
   const [submenuOutputAddOpen, setSubmenuOutputAddOpen] = useState(false);
@@ -223,24 +297,24 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
     }
   }, [node?.id, node?.data?.["numberClassicalInputs"], updateNodeInternals]);
 
-  const toggleSubmenuInputAdd = useCallback((e: React.MouseEvent) => {
+  const _toggleSubmenuInputAdd = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
-    setSubmenuInputAddOpen(prev => !prev);
+    setSubmenuInputAddOpen((prev) => !prev);
   }, []);
 
   const toggleSubmenuInputRemove = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
-    setSubmenuInputRemoveOpen(prev => !prev);
+    setSubmenuInputRemoveOpen((prev) => !prev);
   }, []);
 
-  const toggleSubmenuOutputAdd = useCallback((e: React.MouseEvent) => {
+  const _toggleSubmenuOutputAdd = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
-    setSubmenuOutputAddOpen(prev => !prev);
+    setSubmenuOutputAddOpen((prev) => !prev);
   }, []);
 
-  const toggleSubmenuOutputRemove = useCallback((e: React.MouseEvent) => {
+  const _toggleSubmenuOutputRemove = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
-    setSubmenuOutputRemoveOpen(prev => !prev);
+    setSubmenuOutputRemoveOpen((prev) => !prev);
   }, []);
 
   // hoveredBtn is a hook and must be declared BEFORE the early return below;
@@ -264,21 +338,22 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   // optional chaining: id may be an edge ID, in which case node is undefined
   const quantumInputs = Number(node?.data["numberQuantumInputs"] ?? 0);
   const hasQuantumInputs = quantumInputs > minInput || false;
-  const hasClassicalInputs = node?.data["numberClassicalInputs"] > minInput || false;
-  const hasQuantumOutputs = node?.data["numberQuantumOutputs"] > minOutput || false;
-  const hasClassicalOutputs = node?.data["numberClassicalOutputs"] > minOutput || false;
+  const hasClassicalInputs =
+    node?.data["numberClassicalInputs"] > minInput || false;
+  const hasQuantumOutputs =
+    node?.data["numberQuantumOutputs"] > minOutput || false;
+  const hasClassicalOutputs =
+    node?.data["numberClassicalOutputs"] > minOutput || false;
   const hasInputs = node?.data["numberInputs"] > minInput || false;
   const hasOutputs = node?.data["numberOutputs"] > minOutput || false;
-  const hasQFTInputs = node?.data["numberOutputs"] > minInput || false;
 
   const hoverProps = (key: string, isDanger = false) => ({
     onMouseEnter: () => setHoveredBtn(key),
     onMouseLeave: () => setHoveredBtn(null),
     style: {
       ...(isDanger ? deleteButtonStyle : buttonStyle),
-      backgroundColor: hoveredBtn === key
-        ? isDanger ? "#fef2f2" : "#f3f4f6"
-        : "transparent",
+      backgroundColor:
+        hoveredBtn === key ? (isDanger ? "#fef2f2" : "#f3f4f6") : "transparent",
     },
   });
 
@@ -293,12 +368,14 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
         {...hoverProps("duplicate")}
       >
         <FaCopy style={iconStyle} /> Duplicate
-      </button>
+      </button>,
     );
   }
   buttons.push(
     <React.Fragment key="delete-section">
-      <div style={{ height: "1px", backgroundColor: "#e5e7eb", margin: "4px 0" }} />
+      <div
+        style={{ height: "1px", backgroundColor: "#e5e7eb", margin: "4px 0" }}
+      />
       <button
         onClick={deleteNode}
         aria-label={type === "edge" ? "Delete Edge" : "Delete Node"}
@@ -306,7 +383,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
       >
         <FaTrash style={iconStyle} /> Delete
       </button>
-    </React.Fragment>
+    </React.Fragment>,
   );
 
   if (type === "ifElseNode" || type === "controlStructureNode") {
@@ -315,25 +392,29 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
         style={{ ...menuStyle, top, left, ...styles }}
         className="context-menu"
       >
-
         <div
-          style={{ position: 'relative' }}
+          style={{ position: "relative" }}
           onMouseEnter={() => setSubmenuInputAddOpen(true)}
-          onMouseLeave={() => setSubmenuInputAddOpen(false)}>
+          onMouseLeave={() => setSubmenuInputAddOpen(false)}
+        >
           <button
             style={{
               ...buttonStyle,
               justifyContent: "space-between",
             }}
           >
-            <span style={{
-              display: "flex",
-              alignItems: "center",
-            }}><FaPlus style={iconStyle} /> Add Input</span> <FaCaretRight />
+            <span
+              style={{
+                display: "flex",
+                alignItems: "center",
+              }}
+            >
+              <FaPlus style={iconStyle} /> Add Input
+            </span>{" "}
+            <FaCaretRight />
           </button>
           {submenuInputAddOpen && (
-            <div
-              style={submenuStyle}>
+            <div style={submenuStyle}>
               <button
                 onClick={() => incrementNodeDataField("numberQuantumInputs", 1)}
                 style={buttonStyle}
@@ -342,7 +423,9 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
                 <FaReact style={iconStyle} /> Quantum
               </button>
               <button
-                onClick={() => incrementNodeDataField("numberClassicalInputs", 1)}
+                onClick={() =>
+                  incrementNodeDataField("numberClassicalInputs", 1)
+                }
                 style={buttonStyle}
                 aria-label="Add Classical Input"
               >
@@ -351,40 +434,56 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
             </div>
           )}
         </div>
-        {(hasQuantumInputs || hasClassicalInputs) && <div style={{ position: 'relative' }}
-          onMouseEnter={() => setSubmenuInputRemoveOpen(true)}
-          onMouseLeave={() => setSubmenuInputRemoveOpen(false)}>
-          <button
-            style={{
-              ...buttonStyle,
-              justifyContent: "space-between",
-            }}
+        {(hasQuantumInputs || hasClassicalInputs) && (
+          <div
+            style={{ position: "relative" }}
+            onMouseEnter={() => setSubmenuInputRemoveOpen(true)}
+            onMouseLeave={() => setSubmenuInputRemoveOpen(false)}
           >
-            <span style={{
-              display: "flex",
-              alignItems: "center",
-            }}><FaMinus style={iconStyle} /> Remove Input </span> <FaCaretRight />
-          </button>
-          {submenuInputRemoveOpen && (
-            <div
-              style={submenuStyle}>
-              {hasQuantumInputs && <button
-                onClick={() => decrementNodeDataField("numberQuantumInputs", 1)}
-                style={buttonStyle}
-                aria-label="Remove Quantum Input"
+            <button
+              style={{
+                ...buttonStyle,
+                justifyContent: "space-between",
+              }}
+            >
+              <span
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                }}
               >
-                <FaReact style={iconStyle} /> Quantum
-              </button>}
-              {hasClassicalInputs && <button
-                onClick={() => decrementNodeDataField("numberClassicalInputs", 1)}
-                style={buttonStyle}
-                aria-label="Remove Classical Input"
-              >
-                <FaGear style={iconStyle} /> Classical
-              </button>}
-            </div>
-          )}
-        </div>}
+                <FaMinus style={iconStyle} /> Remove Input{" "}
+              </span>{" "}
+              <FaCaretRight />
+            </button>
+            {submenuInputRemoveOpen && (
+              <div style={submenuStyle}>
+                {hasQuantumInputs && (
+                  <button
+                    onClick={() =>
+                      decrementNodeDataField("numberQuantumInputs", 1)
+                    }
+                    style={buttonStyle}
+                    aria-label="Remove Quantum Input"
+                  >
+                    <FaReact style={iconStyle} /> Quantum
+                  </button>
+                )}
+                {hasClassicalInputs && (
+                  <button
+                    onClick={() =>
+                      decrementNodeDataField("numberClassicalInputs", 1)
+                    }
+                    style={buttonStyle}
+                    aria-label="Remove Classical Input"
+                  >
+                    <FaGear style={iconStyle} /> Classical
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
         {buttons}
       </div>
     );
@@ -394,25 +493,29 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
         style={{ ...menuStyle, top, left, ...styles }}
         className="context-menu"
       >
-
         <div
-          style={{ position: 'relative' }}
+          style={{ position: "relative" }}
           onMouseEnter={() => setSubmenuInputAddOpen(true)}
-          onMouseLeave={() => setSubmenuInputAddOpen(false)}>
+          onMouseLeave={() => setSubmenuInputAddOpen(false)}
+        >
           <button
             style={{
               ...buttonStyle,
               justifyContent: "space-between",
             }}
           >
-            <span style={{
-              display: "flex",
-              alignItems: "center",
-            }}><FaPlus style={iconStyle} /> Add Input</span> <FaCaretRight />
+            <span
+              style={{
+                display: "flex",
+                alignItems: "center",
+              }}
+            >
+              <FaPlus style={iconStyle} /> Add Input
+            </span>{" "}
+            <FaCaretRight />
           </button>
           {submenuInputAddOpen && (
-            <div
-              style={submenuStyle}>
+            <div style={submenuStyle}>
               <button
                 onClick={() => incrementNodeDataField("numberQuantumInputs", 0)}
                 style={buttonStyle}
@@ -421,7 +524,9 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
                 <FaReact style={iconStyle} /> Quantum
               </button>
               <button
-                onClick={() => incrementNodeDataField("numberClassicalInputs", 0)}
+                onClick={() =>
+                  incrementNodeDataField("numberClassicalInputs", 0)
+                }
                 style={buttonStyle}
                 aria-label="Add Classical Input"
               >
@@ -431,32 +536,41 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
           )}
         </div>
         <div
-          style={{ position: 'relative' }}
+          style={{ position: "relative" }}
           onMouseEnter={() => setSubmenuOutputAddOpen(true)}
-          onMouseLeave={() => setSubmenuOutputAddOpen(false)}>
+          onMouseLeave={() => setSubmenuOutputAddOpen(false)}
+        >
           <button
             style={{
               ...buttonStyle,
               justifyContent: "space-between",
             }}
           >
-            <span style={{
-              display: "flex",
-              alignItems: "center",
-            }}><FaPlus style={iconStyle} /> Add Output</span> <FaCaretRight />
+            <span
+              style={{
+                display: "flex",
+                alignItems: "center",
+              }}
+            >
+              <FaPlus style={iconStyle} /> Add Output
+            </span>{" "}
+            <FaCaretRight />
           </button>
           {submenuOutputAddOpen && (
-            <div
-              style={submenuStyle}>
+            <div style={submenuStyle}>
               <button
-                onClick={() => incrementNodeDataField("numberQuantumOutputs", 0)}
+                onClick={() =>
+                  incrementNodeDataField("numberQuantumOutputs", 0)
+                }
                 style={buttonStyle}
                 aria-label="Add Quantum Output"
               >
                 <FaReact style={iconStyle} /> Quantum
               </button>
               <button
-                onClick={() => incrementNodeDataField("numberClassicalOutputs", 0)}
+                onClick={() =>
+                  incrementNodeDataField("numberClassicalOutputs", 0)
+                }
                 style={buttonStyle}
                 aria-label="Add Classical Output"
               >
@@ -465,76 +579,108 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
             </div>
           )}
         </div>
-        {(hasQuantumInputs || hasClassicalInputs) && <div style={{ position: 'relative' }}
-          onMouseEnter={() => setSubmenuInputRemoveOpen(true)}
-          onMouseLeave={() => setSubmenuInputRemoveOpen(false)}>
-          <button
-            onClick={toggleSubmenuInputRemove}
-            style={{
-              ...buttonStyle,
-              justifyContent: "space-between",
-            }}
+        {(hasQuantumInputs || hasClassicalInputs) && (
+          <div
+            style={{ position: "relative" }}
+            onMouseEnter={() => setSubmenuInputRemoveOpen(true)}
+            onMouseLeave={() => setSubmenuInputRemoveOpen(false)}
           >
-            <span style={{
-              display: "flex",
-              alignItems: "center",
-            }}><FaMinus style={iconStyle} /> Remove Input </span> <FaCaretRight />
-          </button>
-          {submenuInputRemoveOpen && (
-            <div
-              style={submenuStyle}>
-              {hasQuantumInputs && <button
-                onClick={() => decrementNodeDataField("numberQuantumInputs", 0)}
-                style={buttonStyle}
-                aria-label="Remove Quantum Input"
+            <button
+              onClick={toggleSubmenuInputRemove}
+              style={{
+                ...buttonStyle,
+                justifyContent: "space-between",
+              }}
+            >
+              <span
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                }}
               >
-                <FaReact style={iconStyle} /> Quantum
-              </button>}
-              {hasClassicalInputs && <button
-                onClick={() => decrementNodeDataField("numberClassicalInputs", 0)}
-                style={buttonStyle}
-                aria-label="Remove Classical Input"
-              >
-                <FaGear style={iconStyle} /> Classical
-              </button>}
-            </div>
-          )}
-        </div>}
-        {(hasQuantumOutputs || hasClassicalOutputs) && <div style={{ position: 'relative' }}
-          onMouseEnter={() => setSubmenuOutputRemoveOpen(true)}
-          onMouseLeave={() => setSubmenuOutputRemoveOpen(false)}>
-          <button
-            onClick={toggleSubmenuInputRemove}
-            style={{
-              ...buttonStyle,
-              justifyContent: "space-between",
-            }}
+                <FaMinus style={iconStyle} /> Remove Input{" "}
+              </span>{" "}
+              <FaCaretRight />
+            </button>
+            {submenuInputRemoveOpen && (
+              <div style={submenuStyle}>
+                {hasQuantumInputs && (
+                  <button
+                    onClick={() =>
+                      decrementNodeDataField("numberQuantumInputs", 0)
+                    }
+                    style={buttonStyle}
+                    aria-label="Remove Quantum Input"
+                  >
+                    <FaReact style={iconStyle} /> Quantum
+                  </button>
+                )}
+                {hasClassicalInputs && (
+                  <button
+                    onClick={() =>
+                      decrementNodeDataField("numberClassicalInputs", 0)
+                    }
+                    style={buttonStyle}
+                    aria-label="Remove Classical Input"
+                  >
+                    <FaGear style={iconStyle} /> Classical
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+        {(hasQuantumOutputs || hasClassicalOutputs) && (
+          <div
+            style={{ position: "relative" }}
+            onMouseEnter={() => setSubmenuOutputRemoveOpen(true)}
+            onMouseLeave={() => setSubmenuOutputRemoveOpen(false)}
           >
-            <span style={{
-              display: "flex",
-              alignItems: "center",
-            }}><FaMinus style={iconStyle} /> Remove Output </span> <FaCaretRight />
-          </button>
-          {submenuOutputRemoveOpen && (
-            <div
-              style={submenuStyle}>
-              {hasQuantumOutputs && <button
-                onClick={() => decrementNodeDataField("numberQuantumOutputs", 0)}
-                style={buttonStyle}
-                aria-label="Remove Quantum Output"
+            <button
+              onClick={toggleSubmenuInputRemove}
+              style={{
+                ...buttonStyle,
+                justifyContent: "space-between",
+              }}
+            >
+              <span
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                }}
               >
-                <FaReact style={iconStyle} /> Quantum
-              </button>}
-              {hasClassicalOutputs && <button
-                onClick={() => decrementNodeDataField("numberClassicalOutputs", 0)}
-                style={buttonStyle}
-                aria-label="Remove Classical Output"
-              >
-                <FaGear style={iconStyle} /> Classical
-              </button>}
-            </div>
-          )}
-        </div>}
+                <FaMinus style={iconStyle} /> Remove Output{" "}
+              </span>{" "}
+              <FaCaretRight />
+            </button>
+            {submenuOutputRemoveOpen && (
+              <div style={submenuStyle}>
+                {hasQuantumOutputs && (
+                  <button
+                    onClick={() =>
+                      decrementNodeDataField("numberQuantumOutputs", 0)
+                    }
+                    style={buttonStyle}
+                    aria-label="Remove Quantum Output"
+                  >
+                    <FaReact style={iconStyle} /> Quantum
+                  </button>
+                )}
+                {hasClassicalOutputs && (
+                  <button
+                    onClick={() =>
+                      decrementNodeDataField("numberClassicalOutputs", 0)
+                    }
+                    style={buttonStyle}
+                    aria-label="Remove Classical Output"
+                  >
+                    <FaGear style={iconStyle} /> Classical
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
         {buttons}
       </div>
     );
@@ -544,7 +690,6 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
         style={{ ...menuStyle, top, left, ...styles }}
         className="context-menu"
       >
-
         <div>
           <button
             onClick={() => incrementNodeDataField("numberClassicalInputs", 0)}
@@ -560,24 +705,28 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
           >
             <FaPlus style={iconStyle} /> Add Classical Output
           </button>
-          {hasClassicalInputs && <button
-            onClick={() => decrementNodeDataField("numberClassicalInputs", 0)}
-            style={buttonStyle}
-            aria-label="Remove Classical Input"
-          >
-            <FaMinus style={iconStyle} /> Remove Classical Input
-          </button>}
-          {hasClassicalOutputs && <button
-            onClick={() => decrementNodeDataField("numberClassicalOutputs", 0)}
-            style={buttonStyle}
-            aria-label="Remove Classical Output"
-          >
-            <FaMinus style={iconStyle} /> Remove Classical Output
-          </button>}
+          {hasClassicalInputs && (
+            <button
+              onClick={() => decrementNodeDataField("numberClassicalInputs", 0)}
+              style={buttonStyle}
+              aria-label="Remove Classical Input"
+            >
+              <FaMinus style={iconStyle} /> Remove Classical Input
+            </button>
+          )}
+          {hasClassicalOutputs && (
+            <button
+              onClick={() =>
+                decrementNodeDataField("numberClassicalOutputs", 0)
+              }
+              style={buttonStyle}
+              aria-label="Remove Classical Output"
+            >
+              <FaMinus style={iconStyle} /> Remove Classical Output
+            </button>
+          )}
         </div>
-        <div>
-          {buttons}
-        </div>
+        <div>{buttons}</div>
       </div>
     );
   } else if (type === "mergerNode") {
@@ -586,7 +735,6 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
         style={{ ...menuStyle, top, left, ...styles }}
         className="context-menu"
       >
-
         <div>
           <button
             onClick={() => incrementNodeDataField("numberInputs", 2)}
@@ -595,29 +743,25 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
           >
             <FaPlus style={iconStyle} /> Add Input
           </button>
-          {hasInputs && <button
-            onClick={() => decrementNodeDataField("numberInputs", 0)}
-            style={buttonStyle}
-            aria-label="Remove Input"
-          >
-            <FaMinus style={iconStyle} /> Remove Input
-          </button>}
+          {hasInputs && (
+            <button
+              onClick={() => decrementNodeDataField("numberInputs", 0)}
+              style={buttonStyle}
+              aria-label="Remove Input"
+            >
+              <FaMinus style={iconStyle} /> Remove Input
+            </button>
+          )}
         </div>
-        <div>
-          {buttons}
-        </div>
+        <div>{buttons}</div>
       </div>
     );
-  } 
-  
-  
-  else if (type === "splitterNode") {
+  } else if (type === "splitterNode") {
     return (
       <div
         style={{ ...menuStyle, top, left, ...styles }}
         className="context-menu"
       >
-
         <div>
           <button
             onClick={() => incrementNodeDataField("numberOutputs", 2)}
@@ -626,21 +770,20 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
           >
             <FaPlus style={iconStyle} /> Add Output
           </button>
-          {hasOutputs && <button
-            onClick={() => decrementNodeDataField("numberOutputs", 2)}
-            style={buttonStyle}
-            aria-label="Remove Output"
-          >
-            <FaMinus style={iconStyle} /> Remove Output
-          </button>}
+          {hasOutputs && (
+            <button
+              onClick={() => decrementNodeDataField("numberOutputs", 2)}
+              style={buttonStyle}
+              aria-label="Remove Output"
+            >
+              <FaMinus style={iconStyle} /> Remove Output
+            </button>
+          )}
         </div>
-        <div>
-          {buttons}
-        </div>
+        <div>{buttons}</div>
       </div>
     );
-  } 
-  else if (type ==="edge"){
+  } else if (type === "edge") {
     return (
       <div
         style={{
@@ -662,21 +805,16 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
         <p style={{ margin: "0.5em", fontSize: "14px", color: "#666" }}>
           <small>Edge: {id}</small>
         </p>
-        <div>
-          {buttons}
-        </div>
+        <div>{buttons}</div>
       </div>
     );
-  }else {
+  } else {
     return (
       <div
         style={{ ...menuStyle, top, left, ...styles }}
         className="context-menu"
       >
-
-        <div>
-          {buttons}
-        </div>
+        <div>{buttons}</div>
       </div>
     );
   }
@@ -722,9 +860,9 @@ const iconStyle: React.CSSProperties = {
 };
 
 const submenuStyle: React.CSSProperties = {
-  position: 'absolute',
+  position: "absolute",
   top: 0,
-  left: '100%',
+  left: "100%",
   backgroundColor: "#fff",
   border: "1px solid #ddd",
   borderRadius: "8px",

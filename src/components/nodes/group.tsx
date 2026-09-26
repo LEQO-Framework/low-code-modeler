@@ -379,7 +379,7 @@ export const GroupNode = memo((node: Node) => {
 
   // remote highlight: indicates whether another user currently has this node selected
   const [remoteHighlightColor, setRemoteHighlightColor] = useState<string | null>(null);
-  const [selectingUserName, setSelectingUserName] = useState<string | null>(null);
+  const [_selectingUserName, setSelectingUserName] = useState<string | null>(null);
 
   useEffect(() => {
     const checkRemoteSelection = () => {

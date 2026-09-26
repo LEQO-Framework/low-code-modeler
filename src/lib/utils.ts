@@ -2,13 +2,10 @@ import { ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { CategoryEntry } from "@/components/panels/categories";
 
-
-
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-let id = 0;
 const getId = () => crypto.randomUUID();
 
 export function handleDragOver(event: React.DragEvent<HTMLDivElement>) {
@@ -18,7 +15,7 @@ export function handleDragOver(event: React.DragEvent<HTMLDivElement>) {
 
 export function isPointInBox(
   point: { x: number; y: number },
-  box: { x: number; y: number; width: number; height: number }
+  box: { x: number; y: number; width: number; height: number },
 ) {
   return (
     point.x >= box.x &&
@@ -39,41 +36,20 @@ export async function handleOnDrop(
   if (reactFlowWrapper) {
     const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
     const type = event.dataTransfer.getData("application/reactflow");
-    const dataType = event.dataTransfer.getData("application/reactflow/dataType");
     const label = event.dataTransfer.getData("application/reactflow/label");
-    const pluginDataStr = event.dataTransfer.getData("application/reactflow/pluginData");
-
-    console.log(type)
-    console.log(dataType)
+    const pluginDataStr = event.dataTransfer.getData(
+      "application/reactflow/pluginData",
+    );
 
     // check if the dropped element is valid
     if (typeof type === "undefined" || !type) {
       return;
     }
 
-    const def = findNodeDefinition(type, label, categories);
-    console.log(def)
-    console.log(categories)
-    const compactOptions = def.compactOptions;
-
     const position = reactFlowInstance.project({
       x: event.clientX - reactFlowBounds.left,
       y: event.clientY - reactFlowBounds.top,
     });
-    const newNode = {
-      id: getId(),
-      type,
-      position,
-      data: { label: label, inputs: [], children: [], implementation: "", implementationType: "", uncomputeImplementationType: "", uncomputeImplementation: "", completionGuaranteed: def?.completionGuaranteed ?? false, compactOptions: compactOptions,
-        ...(def.properties && { properties: def.properties }),
-        ...(def.constraints && { constraints: def.constraints }),
-        ...(def.mapping && { mapping: def.mapping }),
-        ...(def.description && { description: def.description }),
-        ...(def.outputType && { outputType: def.outputType }),
-        ...(def.icon && { icon: def.icon }),
-        ...(def.isDataType && {isDataType: def.isDataType}),
-       }
-    };
 
     // For plugin nodes, create node with plugin data
     if (type === "pluginNode" && pluginDataStr) {
@@ -82,10 +58,10 @@ export async function handleOnDrop(
 
         // Determine display name
         let displayName = pluginData.name;
-        if (pluginData.name === 'classical-k-means') {
-          displayName = 'Classical Clustering';
-        } else if (pluginData.name === 'quantum-k-means') {
-          displayName = 'Quantum Clustering';
+        if (pluginData.name === "classical-k-means") {
+          displayName = "Classical Clustering";
+        } else if (pluginData.name === "quantum-k-means") {
+          displayName = "Quantum Clustering";
         }
 
         // Try to fetch full plugin metadata from API, but fallback to mock data if it fails
@@ -111,17 +87,21 @@ export async function handleOnDrop(
             uncomputeImplementationType: "",
             uncomputeImplementation: "",
             // Set default clustering algorithm for k-means nodes
-            clusteringAlgorithm: (pluginData.name === 'classical-k-means' || pluginData.name === 'quantum-k-means') ? 'k-means' : undefined
-          }
+            clusteringAlgorithm:
+              pluginData.name === "classical-k-means" ||
+              pluginData.name === "quantum-k-means"
+                ? "k-means"
+                : undefined,
+          },
         };
 
         setNodes(newNode);
       } catch (error) {
-        console.error('Error creating plugin node:', error);
+        console.error("Error creating plugin node:", error);
       }
     } else {
       // Standard node creation for non-plugin nodes
-      const def = findNodeDefinition(type, label,categories);
+      const def = findNodeDefinition(type, label, categories);
       console.log(def);
 
       const compactOptions = def?.compactOptions ?? [true, false];
@@ -139,8 +119,8 @@ export async function handleOnDrop(
           uncomputeImplementationType: "",
           uncomputeImplementation: "",
           completionGuaranteed: def?.completionGuaranteed ?? false,
-          compactOptions: compactOptions
-        }
+          compactOptions: compactOptions,
+        },
       };
 
       setNodes(newNode);
@@ -148,23 +128,28 @@ export async function handleOnDrop(
   }
 }
 
-export function findNodeDefinition(type: string, label: string, categories: Record<string, CategoryEntry>) {
-
+export function findNodeDefinition(
+  type: string,
+  label: string,
+  categories: Record<string, CategoryEntry>,
+) {
   for (const cat of Object.values(categories)) {
     const content = cat.content;
 
     if (Array.isArray(content)) {
-      const match = content.find(n => n.type === type && n.label === label);
+      const match = content.find((n) => n.type === type && n.label === label);
       if (match) return match;
     } else {
       for (const sub of Object.values(content)) {
         if (Array.isArray(sub)) {
-          const match = sub.find(n => n.type === type && n.label === label);
+          const match = sub.find((n) => n.type === type && n.label === label);
           if (match) return match;
         } else {
           for (const subsub of Object.values(sub)) {
             if (Array.isArray(subsub)) {
-              const match = subsub.find(n => n.type === type && n.label === label);
+              const match = subsub.find(
+                (n) => n.type === type && n.label === label,
+              );
               if (match) return match;
             }
           }

@@ -27,8 +27,6 @@ interface ExperienceModePanelProps {
 export default function ExperienceModePanel({
   expanded,
   onToggleExpanded,
-  ancillaModelingOn,
-  onToggleAncilla,
   experienceLevel,
   onExperienceLevelChange,
   compactVisualization,

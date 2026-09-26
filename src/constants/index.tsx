@@ -145,6 +145,10 @@ export const non_parameterized_two_qubit = [
 export const multi_qubit_gates = [
   "Toffoli",
   "CSWAP",
+  "CRX(θ)",
+  "CRZ(θ)",
+  "CRY(θ)",
+  ...non_parameterized_two_qubit
 ];
 
 export const quantum_types = [
