@@ -12,6 +12,9 @@
 // Types
 // ---------------------------------------------------------------------------
 
+import { analyzeGrover } from "./groverSegments";
+
+
 export interface Complex {
   re: number;
   im: number;
@@ -439,11 +442,11 @@ export function parseQasm(qasm: string): {
   }
 
   if (totalQubits === 0) {
-    warnings.push('Kein Qubit-Register gefunden. Standardmäßig 1 Qubit angenommen.');
+    warnings.push('No qubit register found. Defaulting to 1 qubit.');
     totalQubits = 1;
   }
   if (totalQubits > 16) {
-    warnings.push(`Zu viele Qubits (${totalQubits}). Maximal 16 unterstützt.`);
+    warnings.push(`Too many qubits (${totalQubits}). A maximum of 16 is supported.`);
     totalQubits = Math.min(totalQubits, 16);
   }
 
@@ -553,7 +556,7 @@ export function parseQasm(qasm: string): {
         .filter((q): q is number => q !== null);
 
       if (qubits.length <= numControls) {
-        warnings.push(`Multi-Controlled Gate "${baseGate}": zu wenige Qubits aufgelöst — übersprungen.`);
+        warnings.push(`Multi-controlled gate "${baseGate}": too few qubits resolved — skipped.`);
         continue;
       }
 
@@ -606,7 +609,7 @@ export function simulate(
     if (gate.name.startsWith('mc_')) {
       const applied = applyParsedMultiControlledGate(sv, numQubits, gate);
       if (applied === null) {
-        warnings.push(`Multi-Controlled Gate mit unbekanntem Basis-Gate "${gate.name.slice(3)}" — übersprungen.`);
+        warnings.push(`Multi-controlled gate with unknown base gate "${gate.name.slice(3)}" — skipped.`);
         continue;
       }
       sv = applied;
@@ -712,7 +715,7 @@ export function simulate(
         // measurements are ignored by this symbolic simulator
         break;
       default:
-        warnings.push(`Unbekanntes Gate: "${gate.name}" — übersprungen.`);
+        warnings.push(`Unknown gate: "${gate.name}" — skipped.`);
     }
   }
 
@@ -814,7 +817,7 @@ export function statevectorToDirac(
   }
 
   if (terms.length === 0) {
-    warnings.push('Statevector ist Null – möglicherweise nach Kollaps durch Messung.');
+    warnings.push('Statevector is zero, possibly after a measurement collapse.');
     return { terms, latex: '0', unicode: '0', numQubits, warnings, globalPhaseNote };
   }
 
@@ -915,6 +918,44 @@ export function qasmToDirac(qasm: string): DiracResult {
 // Intermediate step API
 // ---------------------------------------------------------------------------
 
+/**
+ * Determines which basis states a Grover oracle marks, and therefore M.
+ *
+ * The oracle is by definition the operation that inverts the phase of exactly the
+ * searched states. Applying it to the equal superposition over the Grover register and
+ * comparing the amplitudes before and after therefore reveals the marked states, without
+ * any assumption about how the oracle is built internally.
+ *
+ * Returns the marked basis states, restricted to the bits of the Grover register.
+ */
+function evaluateGroverMarkedStates(
+  numQubits: number,
+  gates: ParsedGate[],
+  groverQubits: number[],
+  oracleRange: { start: number; end: number }
+): string[] {
+  if (groverQubits.length === 0) return [];
+
+  // Equal superposition over the Grover register; all other qubits stay in |0>.
+  const superposition: ParsedGate[] = groverQubits.map(q => ({ name: 'h', qubits: [q], params: [] }));
+  const oracle = gates.slice(oracleRange.start, oracleRange.end + 1);
+
+  const { sv: before } = simulate(numQubits, superposition);
+  const { sv: after } = simulate(numQubits, [...superposition, ...oracle]);
+
+  const marked: string[] = [];
+  for (let i = 0; i < before.length; i++) {
+    const norm = cabs2(before[i]);
+    if (norm < THRESHOLD) continue;
+    // Real part of after/before; a marked state picks up a phase of -1.
+    const ratioRe = (after[i].re * before[i].re + after[i].im * before[i].im) / norm;
+    if (ratioRe >= -0.5) continue;
+    const bits = i.toString(2).padStart(numQubits, '0');
+    marked.push(groverQubits.map(q => bits[q]).join(''));
+  }
+  return marked;
+}
+
 export interface DiracStep {
   /** Gate label for the arrow (unicode), e.g. "H₀ ⊗ I₁". */
   gateLabel: string;
@@ -924,8 +965,11 @@ export interface DiracStep {
   unicode: string;
   /** Dirac notation after this step (LaTeX). */
   latex: string;
-  /** Canvas node ID this gate originated from, used for step-click highlighting, if known. */
+    /** Canvas node ID this gate originated from, used for step-click highlighting, if known. */
   nodeId?: string;
+  /** Grover component this gate belongs to; undefined unless a Grover node was detected. */
+  component?: string;
+  
 }
 
 export interface DiracStepsResult {
@@ -934,6 +978,12 @@ export interface DiracStepsResult {
   /** All steps, each with its gate label and the resulting state. */
   steps: DiracStep[];
   numQubits: number;
+  /** Number of Grover iterations found, 0 if the model contains no Grover node. */
+  groverIterations: number;
+  /** Qubits of the detected Grover register, empty if none. */
+  groverQubits: number[];
+  /** Basis states marked by the oracle, restricted to the Grover register's bits. */
+  groverMarkedStates: string[];
   warnings: string[];
 }
 
@@ -1002,9 +1052,12 @@ function formatGateLabel(gate: ParsedGate, numQubits: number): string {
     case 'sx':   return buildTensor('√X', [q[0]]);
     case 'rx':   return buildTensor(`Rₓ(${paramStr(p[0])})`, [q[0]]);
     case 'ry':   return buildTensor(`Rᵧ(${paramStr(p[0])})`, [q[0]]);
+    // p and u1 are phase gates, not z-rotations: P(l) = diag(1, e^il) whereas
+    // Rz(t) = diag(e^-it/2, e^it/2). They are labelled Rz here because the simulation
+    // applies gateRZ to all three, so a "P" label would not match what is computed.
     case 'rz':
-    case 'p':    return buildTensor(`Rᵤ(${paramStr(p[0])})`, [q[0]]);
-    case 'u1':   return buildTensor(`Rᵤ(${paramStr(p[0])})`, [q[0]]);
+    case 'p':
+    case 'u1':   return buildTensor(`Rz(${paramStr(p[0])})`, [q[0]]);
     case 'u2':   return buildTensor(`U2`, [q[0]]);
     case 'u3':
     case 'u':    return buildTensor(`U3`, [q[0]]);
@@ -1017,13 +1070,13 @@ function formatGateLabel(gate: ParsedGate, numQubits: number): string {
     case 'cp':   return buildTensor(`CP(${paramStr(p[0])})`, [q[0], q[1]]);
     case 'crx':  return buildTensor(`CRₓ(${paramStr(p[0])})`, [q[0], q[1]]);
     case 'cry':  return buildTensor(`CRᵧ(${paramStr(p[0])})`, [q[0], q[1]]);
-    case 'crz':  return buildTensor(`CRᵤ(${paramStr(p[0])})`, [q[0], q[1]]);
+    case 'crz':  return buildTensor(`CRz(${paramStr(p[0])})`, [q[0], q[1]]);
     case 'cu':   return buildTensor('CU', [q[0], q[1]]);
     case 'ccx':
     case 'toffoli': return buildTensor('Toffoli', [q[0], q[1], q[2]]);
     case 'cswap':
     case 'fredkin': return buildTensor('CSWAP', [q[0], q[1], q[2]]);
-    case 'measure': return `Messung q${sub(q[0])}`;
+    case 'measure': return `Measure q${sub(q[0])}`;
     default: {
       // multi-controlled gates from the ctrl(N) @ gate modifier syntax: "mc_z" -> "MCZ"
       if (gate.name.startsWith('mc_')) {
@@ -1094,7 +1147,8 @@ function formatGateLabelLatex(gate: ParsedGate, numQubits: number): string {
     case 'rx':   return buildTensorLatex(`R_x(${paramLatex(p[0])})`, [q[0]]);
     case 'ry':   return buildTensorLatex(`R_y(${paramLatex(p[0])})`, [q[0]]);
     case 'rz':
-    case 'p':    return buildTensorLatex(`R_z(${paramLatex(p[0])})`, [q[0]]);
+    case 'p':
+    case 'u1':   return buildTensorLatex(`R_z(${paramLatex(p[0])})`, [q[0]]);
     case 'cx':
     case 'cnot': return buildTensorLatex('\\text{CNOT}', [q[0], q[1]]);
     case 'cy':   return buildTensorLatex('\\text{CY}', [q[0], q[1]]);
@@ -1145,8 +1199,17 @@ export function qasmToDiracSteps(qasm: string): DiracStepsResult {
 
   const steps: DiracStep[] = [];
 
+  // Grover components (superposition / oracle / diffusion operator), detected per canvas
+  // node. Yields an empty lookup and 0 iterations if the model contains no Grover node.
+  const grover = analyzeGrover(gates);
+  // M and the marked states are derived from the oracle itself rather than assumed.
+  const groverMarkedStates = grover.oracleRange
+    ? evaluateGroverMarkedStates(numQubits, gates, grover.qubits, grover.oracleRange)
+    : [];
+
   // apply the gates one by one and store the state after each step
-  for (const gate of gates) {
+  for (let gateIndex = 0; gateIndex < gates.length; gateIndex++) {
+    const gate = gates[gateIndex];
     const [q0, q1] = gate.qubits;
     const [p0, p1, p2] = gate.params;
 
@@ -1190,13 +1253,13 @@ export function qasmToDiracSteps(qasm: string): DiracStepsResult {
         if (gate.name.startsWith('mc_')) {
           const applied = applyParsedMultiControlledGate(sv, numQubits, gate);
           if (applied === null) {
-            simWarnings.push(`Multi-Controlled Gate mit unbekanntem Basis-Gate "${gate.name.slice(3)}" — übersprungen.`);
+            simWarnings.push(`Multi-controlled gate with unknown base gate "${gate.name.slice(3)}" — skipped.`);
             continue;
           }
           sv = applied;
           break;
         }
-        simWarnings.push(`Unbekanntes Gate: "${gate.name}" — übersprungen.`);
+        simWarnings.push(`Unknown gate: "${gate.name}" — skipped.`);
         continue;
     }
 
@@ -1207,6 +1270,7 @@ export function qasmToDiracSteps(qasm: string): DiracStepsResult {
       unicode: stepResult.unicode,
       latex: stepResult.latex,
       nodeId: gate.nodeId,
+      component: grover.lookup[gateIndex],
     });
   }
 
@@ -1214,6 +1278,9 @@ export function qasmToDiracSteps(qasm: string): DiracStepsResult {
     initial: { unicode: initialResult.unicode, latex: initialResult.latex },
     steps,
     numQubits,
+    groverIterations: grover.iterations,
+    groverQubits: grover.qubits,
+    groverMarkedStates,
     warnings: [...parseWarnings, ...simWarnings],
   };
 }
