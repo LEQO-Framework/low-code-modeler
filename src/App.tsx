@@ -96,7 +96,6 @@ import VersioningPanel from "./components/modals/versioningModal";
 import { EdgeChange } from "@xyflow/react";
 import PromptFlowModal from "./components/modals/promptFlowModal";
 import ShortcutHelpModal from "./components/modals/shortcutHelpModal";
-import { generateFlow, sendToMistral } from "./generation";
 import { openQasmToFlow } from "./qasmConverter";
 import { amplitude_encoding, angle_encoding, basis_encoding, bell_state_phi_plus, classical_clustering, conditional_quantum_model, custom_quantum_operator, empty_model, encode_value, first_measurement, ghz, grover_building_blocks, grover_circuit_level, hello_quantum, multi_controlled_gates, quantum_arithmetic, quantum_clustering, quantum_fourier_transform } from "./constants/exampleModels";
 
@@ -251,7 +250,7 @@ function App() {
   );
   const [camundaEndpoint, setCamundaEndpoint] = useState(
     import.meta.env.VITE_CAMUNDA7_ENDPOINT ||
-      "http://localhost:8090/engine-rest",
+    "http://localhost:8090/engine-rest",
   );
 
   const [openAIToken, setOpenAIToken] = useState(
@@ -269,7 +268,7 @@ function App() {
 
   const [patternAtlasApiEndpoint, setPatternAtlasApiEndpoint] = useState(
     import.meta.env.VITE_PATTERN_ATLAS_API ||
-      "http://localhost:1977/patternatlas/patternLanguages/af7780d5-1f97-4536-8da7-4194b093ab1d",
+    "http://localhost:1977/patternatlas/patternLanguages/af7780d5-1f97-4536-8da7-4194b093ab1d",
   );
   const [patternAtlasUiEndpoint, setPatternAtlasUiEndpoint] = useState(
     import.meta.env.VITE_PATTERN_ATLAS_UI || "http://localhost:1978",
@@ -633,6 +632,7 @@ If none apply, return { "algorithms": [] }.
   const [modalStep, setModalStep] = useState(1);
   const [isQunicornOpen, setIsQunicornOpen] = useState(false);
   const [isPromptModalOpen, setIsPromptModalOpen] = useState(false);
+  const [stateTest, setStateTest] = useState(1);
   const [ancillaModelingOn, setAncillaModelingOn] = useState(false);
   const [, setExperienceLevelOn] = useState("explorer");
   const [compactVisualization, setCompactVisualization] = useState(false);
@@ -718,7 +718,7 @@ If none apply, return { "algorithms": [] }.
 
       if (
         JSON.stringify(currentLocalState.nodes) !==
-          JSON.stringify(sharedNodes) ||
+        JSON.stringify(sharedNodes) ||
         JSON.stringify(currentLocalState.edges) !== JSON.stringify(sharedEdges)
       ) {
         useStore.setState({
@@ -904,49 +904,49 @@ If none apply, return { "algorithms": [] }.
     content: string;
     placement?: Placement;
   }[] = [
-    {
-      target: ".toolbar-container",
-      content:
-        "This is the toolbar where you can save, restore, or send your diagrams.",
-    },
-    {
-      target: ".backend-button",
-      content:
-        "This transforms the model into QASM code or workflows, which can then be executed on quantum devices or on a workflow engine.",
-    },
-    {
-      target: ".palette-container",
-      content:
-        "This is the palette, where you can drag and drop blocks. Quantum blocks are depicted in blue and classical blocks are depicted in orange.",
-      placement: "right",
-    },
-    {
-      target: ".react-flow__pane",
-      content: "This is the main diagram canvas.",
-      placement: "top-start",
-    },
-    {
-      target: ".experience-mode",
-      content:
-        "This panel allows you to configure the editor based on your preferences.",
-      placement: "right",
-    },
-    {
-      target: ".classical-node",
-      content: "This is a classical node that requires a value.",
-    },
-    {
-      target: ".grand-parent",
-      content:
-        "This value is then encoded via the state preparation block into a quantum state.",
-    },
-    {
-      target: ".currentPanel-container",
-      content:
-        "This is the properties panel, where you can configure the properties of blocks or the model.",
-      placement: "left",
-    },
-  ];
+      {
+        target: ".toolbar-container",
+        content:
+          "This is the toolbar where you can save, restore, or send your diagrams.",
+      },
+      {
+        target: ".backend-button",
+        content:
+          "This transforms the model into QASM code or workflows, which can then be executed on quantum devices or on a workflow engine.",
+      },
+      {
+        target: ".palette-container",
+        content:
+          "This is the palette, where you can drag and drop blocks. Quantum blocks are depicted in blue and classical blocks are depicted in orange.",
+        placement: "right",
+      },
+      {
+        target: ".react-flow__pane",
+        content: "This is the main diagram canvas.",
+        placement: "top-start",
+      },
+      {
+        target: ".experience-mode",
+        content:
+          "This panel allows you to configure the editor based on your preferences.",
+        placement: "right",
+      },
+      {
+        target: ".classical-node",
+        content: "This is a classical node that requires a value.",
+      },
+      {
+        target: ".grand-parent",
+        content:
+          "This value is then encoded via the state preparation block into a quantum state.",
+      },
+      {
+        target: ".currentPanel-container",
+        content:
+          "This is the properties panel, where you can configure the properties of blocks or the model.",
+        placement: "left",
+      },
+    ];
 
   const [, setProcessingModalOpen] = useState(false);
 
@@ -1217,30 +1217,88 @@ If none apply, return { "algorithms": [] }.
 
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [isHistoryOpen, setHistoryOpen] = useState(false);
-  const [, setHistoryLoading] = useState(false);
+  const [_historyLoading, setHistoryLoading] = useState(false);
+  const [selectedJob, setSelectedJob] = useState<HistoryItem | null>(null);
+
 
   const fetchHistory = async () => {
     setHistoryLoading(true);
-    try {
-      const response = await fetch(`${lowcodeBackendEndpoint}/results`, {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-      });
 
-      if (!response.ok) {
-        console.error("Failed to fetch history:", response.statusText);
-        return;
+    try {
+      let generationItems: HistoryItem[] = [];
+      let executionItems: HistoryItem[] = [];
+
+      // Fetch generation jobs
+      try {
+        const jobsRes = await fetch(`http://localhost:3000/jobs`, {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        });
+
+        if (jobsRes.ok) {
+          const jobs = await jobsRes.json();
+
+          generationItems = (jobs || []).map((job: any) => ({
+            uuid: job.id,
+            name: "Generation Job",
+            description: job.prompt,
+            status: job.status,
+            created: job.createdAt,
+            type: "generation",
+            result: job.result,
+            semanticScore: job.semanticScore,
+            missingValues: job.missingValues,
+            links: {
+              request: `http://localhost:3000/job/${job.id}/request`,
+              result: `http://localhost:3000/job/${job.id}/result`,
+            },
+          }));
+        } else {
+          console.error("Failed to fetch generation jobs:", jobsRes.status);
+        }
+      } catch (err) {
+        console.error("Error fetching generation jobs:", err);
       }
 
-      const data: HistoryItem[] = await response.json();
-      console.log(data);
-      setHistory(data);
+      // Fetch execution results
+      try {
+        const response = await fetch(`${lowcodeBackendEndpoint}/results`, {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+
+          executionItems = (data || []).map((job: any) => ({
+            uuid: job.uuid,
+            name: job.name,
+            description: job.description,
+            status: job.status,
+            created: job.created,
+            type: "execution",
+            links: job.links,
+          }));
+        } else {
+          console.error(
+            "Failed to fetch execution history:",
+            response.status,
+            response.statusText
+          );
+        }
+      } catch (err) {
+        console.error("Error fetching execution history:", err);
+      }
+
+      // Works even if one or both arrays are empty
+      setHistory([...generationItems, ...executionItems]);
     } catch (err) {
       console.error("Error fetching history:", err);
     } finally {
       setHistoryLoading(false);
     }
   };
+
 
   const openHistoryModal = async () => {
     await fetchHistory();
@@ -1270,6 +1328,7 @@ If none apply, return { "algorithms": [] }.
     warnings: ValidationItem[];
     errors: ValidationItem[];
   }
+
 
   function validateFlow(flow): ValidationResult {
     const warnings: ValidationItem[] = [];
@@ -3007,6 +3066,58 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     }
   }
 
+  const handleGenerateModel = async (prompt: string, generationMode: "compact" | "circuit") => {
+    if (!prompt.trim()) return;
+
+    setLoading(true);
+    showToast("Your model is now being generated.", "info");
+
+    try {
+      // Send the prompt to your backend
+      const response = await fetch(`http://localhost:3000/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt,
+          generationMode,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to start model generation");
+      }
+
+      const newJob = await response.json();
+
+      // Add the new job to the history
+      const newHistoryItem: HistoryItem = {
+        uuid: newJob.id,
+        name: "Generation Job",
+        description: prompt,
+        status: newJob.status || "Pending",
+        created: new Date().toISOString(),
+        type: "generation",
+        result: null,
+        semanticScore: 0,
+        missingValues: newJob.missingValues || [],
+        links: {
+          request: `http://localhost:3000/jobs/${newJob.id}/request`,
+          result: `http://localhost:3000/jobs/${newJob.id}/result`,
+        },
+      };
+
+      setHistory((prevHistory) => [newHistoryItem, ...prevHistory]);
+
+      showToast("Model generation started successfully!", "success");
+      return newJob;
+    } catch (err: any) {
+      showToast(`Failed to generate model: ${err.message}`, "error");
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   async function handleSaveClick() {
     if (!reactFlowInstance) {
       console.error("React Flow instance is not initialized.");
@@ -3076,8 +3187,8 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
       editingDomainProfileIndex === null
         ? [...allDomainProfiles, newProfile]
         : allDomainProfiles.map((profile, index) =>
-            index === editingDomainProfileIndex ? newProfile : profile,
-          );
+          index === editingDomainProfileIndex ? newProfile : profile,
+        );
 
     setAllDomainProfiles(updatedProfiles);
 
@@ -3956,6 +4067,20 @@ useEffect(() => {
     });
   };
 
+  const handleAddMissingValues = (job: HistoryItem) => {
+    setSelectedJob(job);
+    setStateTest(2);
+    setIsPromptModalOpen(true);
+
+  };
+
+  const handleClosePromptModal = () => {
+    setIsPromptModalOpen(false);
+    setSelectedJob(null);
+    setStateTest(1);
+  };
+
+
   const onToggleAncilla = () => {
     //setAncillaModelingOn(!ancillaModelingOn);
     //setAncillaMode(!ancillaModelingOn);
@@ -4168,7 +4293,7 @@ useEffect(() => {
         ) {
           console.error(
             "Invalid size of deployed process definitions list: " +
-              Object.values(result["deployedProcessDefinitions"] || {}).length,
+            Object.values(result["deployedProcessDefinitions"] || {}).length,
           );
           return { status: "failed" };
         }
@@ -4793,14 +4918,33 @@ useEffect(() => {
 
       <PromptFlowModal
         open={isPromptModalOpen}
+        stepTest={stateTest}
+        onClose={handleClosePromptModal}
+        showToast={showToast}
         mistralToken={mistralToken}
-        onClose={(flow) => {
-          setIsPromptModalOpen(false);
-          if (flow) loadFlow(flow);
-          setIsPromptModalOpen(false);
+        loadFlow={loadFlow}
+        lowcodeBackendEndpoint={lowcodeBackendEndpoint}
+        jobId={selectedJob?.uuid}
+        missingValues={selectedJob?.missingValues || []}
+        onMissingValuesSubmitted={async (jobId: string, values: Array<{ id: string; value: any; type: string }>) => {
+          try {
+            const response = await fetch(`http://localhost:3000/job/${jobId}/submit-missing-values`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ missingValues: values }),
+            });
+            if (!response.ok) {
+              throw new Error("Failed to submit missing values");
+            }
+            showToast("Missing values submitted successfully! Model generation resumed.", "success");
+            await fetchHistory();
+            handleClosePromptModal();
+          } catch (error: any) {
+            console.error("Error submitting missing values:", error);
+            showToast(`Failed to submit missing values: ${error.message}`, "error");
+          }
         }}
-        sendToMistral={sendToMistral}
-        generateFlow={generateFlow}
+        onSubmitPrompt={handleGenerateModel}
       />
 
       {patternGraph && (
@@ -4846,6 +4990,12 @@ useEffect(() => {
         open={isHistoryOpen}
         onClose={() => setHistoryOpen(false)}
         history={history}
+        loadFlow={loadFlow}
+        showToast={showToast}
+        lowcodeBackendEndpoint={lowcodeBackendEndpoint}
+        fetchHistory={fetchHistory}
+        onAddMissingValues={handleAddMissingValues}
+        onRefresh={fetchHistory}
         onExecute={async (item) => {
           console.log(item);
           setHistoryOpen(false);
@@ -4861,14 +5011,12 @@ useEffect(() => {
 
             // If the model is a workflow
             if (compilationTarget === "workflow") {
-              //store the workflow data in your state
               setWorkflow(modelData);
               const resultResponse = await fetch(item.links.result);
               const workflow = await resultResponse.text();
 
-              // agentic subprocess is only a feature supported by camunda 8
               if (hasMultipleMappingsInFlow(modelData)) {
-                //sendWorkflowForDeployment(workflow);
+                // sendWorkflowForDeployment(workflow);
               }
               await deployWorkflowToCamunda("process-workflow", workflow);
 
@@ -4890,24 +5038,23 @@ useEffect(() => {
                     QUANTME_NAMESPACE_PULL,
                   );
                 } catch (err) {
-                  console.error("QRMS upload failed:", err);
+                  console.error("Service template creation failed:", err);
                 }
               }
-
               return;
             }
 
             setIsQunicornOpen(true);
             const resultResponse = await fetch(item.links.result);
-            if (!resultResponse.ok)
-              throw new Error("Failed to fetch QASM result");
-
+            if (!resultResponse.ok) throw new Error("Failed to fetch QASM result");
             const qasmText = await resultResponse.text();
             setOpenQASMCode(qasmText);
           } catch (error) {
             console.error("Error handling execution:", error);
+            showToast(`Error executing model: ${error.message}`, "error");  // NEW: Show error toast
           }
         }}
+        onSubmitPrompt={handleGenerateModel}
       />
 
       <main className="flex flex-col lg:flex-row h-[calc(100vh_-_60px)]">

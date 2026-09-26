@@ -154,7 +154,6 @@ export const categories: Record<string, CategoryEntry> = {
           }
         },
       ],
-
       "Algorithmic Blocks": [
         { label: "QFT", aliases: ["Quantum Fourier Transform"], type: consts.QFTNode, icon: ["QFT_palette.png"], description: "Quantum Fourier Transform.", completionGuaranteed: true, compactOptions: [true, false] },
         { label: "Inverse QFT", aliases: ["IQFT"], type: consts.InverseQFTNode, icon: ["InverseQFT_palette.png"], description: "Inverse QFT.", completionGuaranteed: true, compactOptions: [true, false] },
