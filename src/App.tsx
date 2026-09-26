@@ -97,7 +97,26 @@ import { EdgeChange } from "@xyflow/react";
 import PromptFlowModal from "./components/modals/promptFlowModal";
 import ShortcutHelpModal from "./components/modals/shortcutHelpModal";
 import { openQasmToFlow } from "./qasmConverter";
-import { amplitude_encoding, angle_encoding, basis_encoding, bell_state_phi_plus, classical_clustering, conditional_quantum_model, custom_quantum_operator, empty_model, encode_value, first_measurement, ghz, grover_building_blocks, grover_circuit_level, hello_quantum, multi_controlled_gates, quantum_arithmetic, quantum_clustering, quantum_fourier_transform } from "./constants/exampleModels";
+import {
+  amplitude_encoding,
+  angle_encoding,
+  basis_encoding,
+  bell_state_phi_plus,
+  classical_clustering,
+  conditional_quantum_model,
+  custom_quantum_operator,
+  empty_model,
+  encode_value,
+  first_measurement,
+  ghz,
+  grover_building_blocks,
+  grover_circuit_level,
+  hello_quantum,
+  multi_controlled_gates,
+  quantum_arithmetic,
+  quantum_clustering,
+  quantum_fourier_transform,
+} from "./constants/exampleModels";
 
 const selector = (state: {
   nodes: Node[];
@@ -250,7 +269,7 @@ function App() {
   );
   const [camundaEndpoint, setCamundaEndpoint] = useState(
     import.meta.env.VITE_CAMUNDA7_ENDPOINT ||
-    "http://localhost:8090/engine-rest",
+      "http://localhost:8090/engine-rest",
   );
 
   const [openAIToken, setOpenAIToken] = useState(
@@ -268,7 +287,7 @@ function App() {
 
   const [patternAtlasApiEndpoint, setPatternAtlasApiEndpoint] = useState(
     import.meta.env.VITE_PATTERN_ATLAS_API ||
-    "http://localhost:1977/patternatlas/patternLanguages/af7780d5-1f97-4536-8da7-4194b093ab1d",
+      "http://localhost:1977/patternatlas/patternLanguages/af7780d5-1f97-4536-8da7-4194b093ab1d",
   );
   const [patternAtlasUiEndpoint, setPatternAtlasUiEndpoint] = useState(
     import.meta.env.VITE_PATTERN_ATLAS_UI || "http://localhost:1978",
@@ -308,8 +327,6 @@ function App() {
         componentId: node.id,
         top: event.clientY,
         left: event.clientX,
-        //top: node.position.y+0.5*node.height, //passt nicht
-        //left: node.position.x-0.5*node.width, //passt nicht
       });
     },
     [],
@@ -323,8 +340,6 @@ function App() {
         componentId: edge.id,
         top: event.clientY,
         left: event.clientX,
-        //top: node.position.y+0.5*node.height, //passt nicht
-        //left: node.position.x-0.5*node.width, //passt nicht
       });
     },
     [],
@@ -336,7 +351,7 @@ function App() {
       const targetHandle = edge.targetHandle;
       const targetNode = nodes.find((n) => n.id === targetNodeId);
 
-      // GroupNodes und Nodes ohne inputs überspringen
+      // Skip GroupNodes and nodes without inputs
       if (
         !targetNode ||
         !targetNode.data?.inputs ||
@@ -440,12 +455,6 @@ function App() {
     console.warn("OpenAI init failed, continuing without it:", e);
     client = null;
   }
-
-  /*
-    const client = new OpenAI({
-      apiKey: openAIToken, dangerouslyAllowBrowser: true
-    });
-  */
 
   const detectQuantumAlgorithms = async (
     userInput: string,
@@ -637,7 +646,6 @@ If none apply, return { "algorithms": [] }.
   const [, setExperienceLevelOn] = useState("explorer");
   const [compactVisualization, setCompactVisualization] = useState(false);
   const [collaborationModeOn, setCollaborationModeOn] = useState(false);
-  //const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
   const [toast, setToast] = useState<{
     message: React.ReactNode;
     type: "success" | "error" | "info";
@@ -718,7 +726,7 @@ If none apply, return { "algorithms": [] }.
 
       if (
         JSON.stringify(currentLocalState.nodes) !==
-        JSON.stringify(sharedNodes) ||
+          JSON.stringify(sharedNodes) ||
         JSON.stringify(currentLocalState.edges) !== JSON.stringify(sharedEdges)
       ) {
         useStore.setState({
@@ -904,49 +912,49 @@ If none apply, return { "algorithms": [] }.
     content: string;
     placement?: Placement;
   }[] = [
-      {
-        target: ".toolbar-container",
-        content:
-          "This is the toolbar where you can save, restore, or send your diagrams.",
-      },
-      {
-        target: ".backend-button",
-        content:
-          "This transforms the model into QASM code or workflows, which can then be executed on quantum devices or on a workflow engine.",
-      },
-      {
-        target: ".palette-container",
-        content:
-          "This is the palette, where you can drag and drop blocks. Quantum blocks are depicted in blue and classical blocks are depicted in orange.",
-        placement: "right",
-      },
-      {
-        target: ".react-flow__pane",
-        content: "This is the main diagram canvas.",
-        placement: "top-start",
-      },
-      {
-        target: ".experience-mode",
-        content:
-          "This panel allows you to configure the editor based on your preferences.",
-        placement: "right",
-      },
-      {
-        target: ".classical-node",
-        content: "This is a classical node that requires a value.",
-      },
-      {
-        target: ".grand-parent",
-        content:
-          "This value is then encoded via the state preparation block into a quantum state.",
-      },
-      {
-        target: ".currentPanel-container",
-        content:
-          "This is the properties panel, where you can configure the properties of blocks or the model.",
-        placement: "left",
-      },
-    ];
+    {
+      target: ".toolbar-container",
+      content:
+        "This is the toolbar where you can save, restore, or send your diagrams.",
+    },
+    {
+      target: ".backend-button",
+      content:
+        "This transforms the model into QASM code or workflows, which can then be executed on quantum devices or on a workflow engine.",
+    },
+    {
+      target: ".palette-container",
+      content:
+        "This is the palette, where you can drag and drop blocks. Quantum blocks are depicted in blue and classical blocks are depicted in orange.",
+      placement: "right",
+    },
+    {
+      target: ".react-flow__pane",
+      content: "This is the main diagram canvas.",
+      placement: "top-start",
+    },
+    {
+      target: ".experience-mode",
+      content:
+        "This panel allows you to configure the editor based on your preferences.",
+      placement: "right",
+    },
+    {
+      target: ".classical-node",
+      content: "This is a classical node that requires a value.",
+    },
+    {
+      target: ".grand-parent",
+      content:
+        "This value is then encoded via the state preparation block into a quantum state.",
+    },
+    {
+      target: ".currentPanel-container",
+      content:
+        "This is the properties panel, where you can configure the properties of blocks or the model.",
+      placement: "left",
+    },
+  ];
 
   const [, setProcessingModalOpen] = useState(false);
 
@@ -1043,13 +1051,13 @@ If none apply, return { "algorithms": [] }.
             const children = allNodes.filter(
               (n) => n.parentNode === groupId && n.type !== "groupNode",
             );
-            // Prüfe ob Handle-ID eine Kind-Node ID enthält
+            // check whether the handle ID contains a child node ID
             const match = children.find((n) => handleId.includes(n.id));
             if (match) return match;
-            // Fallback: wenn es ein Gruppen-Handle ist (groupInput/groupOutput)
-            // dann ersten/letzten Kind-Node nehmen
+            // fallback: for a group handle (groupInput/groupOutput),
+            // take the first or last child node
             if (handleId.includes("groupInput")) {
-              // Ersten Kind-Node mit freiem Input nehmen
+              // take the first child node with a free input
               return (
                 children.find(
                   (n) => n.type === "gateNode" && n.data?.inputs?.length > 0,
@@ -1057,7 +1065,7 @@ If none apply, return { "algorithms": [] }.
               );
             }
             if (handleId.includes("groupOutput")) {
-              // Letzten Kind-Node nehmen (Output)
+              // take the last child node (output)
               return children[children.length - 1];
             }
             return children[0];
@@ -1089,7 +1097,7 @@ If none apply, return { "algorithms": [] }.
                   : tgtNode;
 
               if (realSrc && realTgt) {
-                // Generiere die korrekten Handle-IDs wenn es Gruppen-Handles waren
+                // build the correct handle IDs if these were group handles
                 const newSourceHandle = edge.sourceHandle?.includes(
                   "groupOutput",
                 )
@@ -1220,7 +1228,6 @@ If none apply, return { "algorithms": [] }.
   const [_historyLoading, setHistoryLoading] = useState(false);
   const [selectedJob, setSelectedJob] = useState<HistoryItem | null>(null);
 
-
   const fetchHistory = async () => {
     setHistoryLoading(true);
 
@@ -1283,7 +1290,7 @@ If none apply, return { "algorithms": [] }.
           console.error(
             "Failed to fetch execution history:",
             response.status,
-            response.statusText
+            response.statusText,
           );
         }
       } catch (err) {
@@ -1298,7 +1305,6 @@ If none apply, return { "algorithms": [] }.
       setHistoryLoading(false);
     }
   };
-
 
   const openHistoryModal = async () => {
     await fetchHistory();
@@ -1328,7 +1334,6 @@ If none apply, return { "algorithms": [] }.
     warnings: ValidationItem[];
     errors: ValidationItem[];
   }
-
 
   function validateFlow(flow): ValidationResult {
     const warnings: ValidationItem[] = [];
@@ -2282,7 +2287,7 @@ If none apply, return { "algorithms": [] }.
         return;
       }
 
-      // Drag-to-Group für groupNode
+      // drag-to-group for groupNode
       if (node.type !== "groupNode") {
         try {
           const currentNodes = reactFlowInstance.getNodes();
@@ -2291,7 +2296,7 @@ If none apply, return { "algorithms": [] }.
             reactFlowInstance.setNodes(updatedNodes);
           }
         } catch {
-          // Node nicht gefunden – kein Update nötig
+          // node not found, no update needed
         }
       }
 
@@ -2468,19 +2473,19 @@ If none apply, return { "algorithms": [] }.
           ? "#93C5FD"
           : "#F5A843";
 
-        // Falls source/target eine Gruppe ist, das eigentliche Kind-Node anhand des Handle-Suffix auflösen,
-        // damit die Edge direkt auf die Kind-Node zeigt statt auf die Gruppe selbst.
-        // Handle-IDs enden immer auf die Node-ID, z.B. "...StatePreparationInput0<nodeId>".
+        // If source or target is a group, resolve the actual child node from the handle suffix so
+        // that the edge points directly at the child node instead of at the group itself.
+        // Handle IDs always end with the node ID, e.g. "...StatePreparationInput0<nodeId>".
         const resolveRealNodeId = (
           groupId: string | null | undefined,
           handleId: string | null | undefined,
         ): string | null => {
           if (!handleId) return null;
           const allNodes = reactFlowInstance.getNodes();
-          // Kandidaten: alle Nodes deren ID am Ende der Handle-ID steht
+          // candidates: all nodes whose ID appears at the end of the handle ID
           const candidates = allNodes.filter((n) => handleId.endsWith(n.id));
           if (candidates.length === 0) return null;
-          // Längste Übereinstimmung wählen (vermeidet Teilstring-Fehltreffer bei ähnlichen IDs)
+          // pick the longest match to avoid substring mismatches between similar IDs
           candidates.sort((a, b) => b.id.length - a.id.length);
           return candidates[0].id;
         };
@@ -2755,19 +2760,19 @@ If none apply, return { "algorithms": [] }.
     (deletedNodes: Node[]) => {
       setContextMenu((prev) => ({ ...prev, visible: false })); // contextMenu disappears when node is deleted
 
-      // Handle-Bounds der Geschwister-Nodes neu berechnen lassen,
-      // damit Connects nach dem Löschen eines Nodes (z.B. innerhalb einer Gruppe) wieder funktionieren.
+      // Recompute the handle bounds of the sibling nodes so that connecting works again
+      // after a node has been deleted, e.g. from inside a group.
       const deletedIds = new Set(deletedNodes.map((n) => n.id));
       const affectedParentIds = new Set(
         deletedNodes.map((n) => n.parentNode).filter(Boolean) as string[],
       );
 
-      // Kurze Verzögerung damit React Flow den neuen Node/Edge-State zuerst übernimmt
+      // short delay so React Flow applies the new node/edge state first
       requestAnimationFrame(() => {
         const remainingNodes = reactFlowInstance.getNodes();
         remainingNodes.forEach((node) => {
           if (deletedIds.has(node.id)) return;
-          // Geschwister-Nodes (gleiche Gruppe) und die Gruppe selbst aktualisieren
+          // update the sibling nodes (same group) and the group itself
           if (
             (node.parentNode && affectedParentIds.has(node.parentNode)) ||
             affectedParentIds.has(node.id)
@@ -3066,7 +3071,10 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     }
   }
 
-  const handleGenerateModel = async (prompt: string, generationMode: "compact" | "circuit") => {
+  const handleGenerateModel = async (
+    prompt: string,
+    generationMode: "compact" | "circuit",
+  ) => {
     if (!prompt.trim()) return;
 
     setLoading(true);
@@ -3187,8 +3195,8 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
       editingDomainProfileIndex === null
         ? [...allDomainProfiles, newProfile]
         : allDomainProfiles.map((profile, index) =>
-          index === editingDomainProfileIndex ? newProfile : profile,
-        );
+            index === editingDomainProfileIndex ? newProfile : profile,
+          );
 
     setAllDomainProfiles(updatedProfiles);
 
@@ -3752,150 +3760,148 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     }
   };
 
-const loadModelFromUrl = useCallback(
-  (modelName: string) => {
-    console.log(modelName);
+  const loadModelFromUrl = useCallback(
+    (modelName: string) => {
+      console.log(modelName);
 
-    switch (modelName.toLowerCase()) {
-      // Starters
-      case "model_a":
-        loadFlow(empty_model);
-        break;
+      switch (modelName.toLowerCase()) {
+        // Starters
+        case "model_a":
+          loadFlow(empty_model);
+          break;
 
-      case "model_b":
-        loadFlow(hello_quantum);
-        break;
+        case "model_b":
+          loadFlow(hello_quantum);
+          break;
 
-      case "model_c":
-        loadFlow(first_measurement);
-        break;
+        case "model_c":
+          loadFlow(first_measurement);
+          break;
 
-      // Circuit-Level Examples
-      case "model_d":
-        loadFlow(quantum_k_means_algorithm);
-        break;
+        // Circuit-Level Examples
+        case "model_d":
+          loadFlow(quantum_k_means_algorithm);
+          break;
 
-      case "model_e":
-        loadFlow(bell_state_phi_plus);
-        break;
+        case "model_e":
+          loadFlow(bell_state_phi_plus);
+          break;
 
-      case "model_f":
-        loadFlow(ghz);
-        break;
+        case "model_f":
+          loadFlow(ghz);
+          break;
 
-      // Encoding Examples
-      case "model_h":
-        loadFlow(basis_encoding);
-        break;
+        // Encoding Examples
+        case "model_h":
+          loadFlow(basis_encoding);
+          break;
 
-      case "model_i":
-        loadFlow(angle_encoding);
-        break;
+        case "model_i":
+          loadFlow(angle_encoding);
+          break;
 
-      case "model_j":
-        loadFlow(amplitude_encoding);
-        break;
+        case "model_j":
+          loadFlow(amplitude_encoding);
+          break;
 
-      case "model_k":
-        loadFlow(encode_value);
-        break;
+        case "model_k":
+          loadFlow(encode_value);
+          break;
 
-      // Quantum Algorithms
-      case "model_l":
-        loadFlow(grover_circuit_level);
-        break;
+        // Quantum Algorithms
+        case "model_l":
+          loadFlow(grover_circuit_level);
+          break;
 
-      case "model_m":
-        loadFlow(grover_building_blocks);
-        break;
+        case "model_m":
+          loadFlow(grover_building_blocks);
+          break;
 
-      case "model_n":
-        loadFlow(grover_algorithm);
-        break;
+        case "model_n":
+          loadFlow(grover_algorithm);
+          break;
 
-      case "model_o":
-        loadFlow(quantum_fourier_transform);
-        break;
+        case "model_o":
+          loadFlow(quantum_fourier_transform);
+          break;
 
-      case "model_p":
-        loadFlow(hadamard_test_real_part);
-        break;
+        case "model_p":
+          loadFlow(hadamard_test_real_part);
+          break;
 
-      case "model_q":
-        loadFlow(hadamard_test_imaginary_part);
-        break;
+        case "model_q":
+          loadFlow(hadamard_test_imaginary_part);
+          break;
 
-      case "model_r":
-        loadFlow(swap_test);
-        break;
+        case "model_r":
+          loadFlow(swap_test);
+          break;
 
-      case "model_s":
-        loadFlow(qaoa);
-        break;
+        case "model_s":
+          loadFlow(qaoa);
+          break;
 
-      // Quantum Machine Learning
-      case "model_t":
-        loadFlow(quantum_clustering);
-        break;
+        // Quantum Machine Learning
+        case "model_t":
+          loadFlow(quantum_clustering);
+          break;
 
-      case "model_u":
-        loadFlow(classical_clustering);
-        break;
+        case "model_u":
+          loadFlow(classical_clustering);
+          break;
 
-      // Advanced Examples
-      case "model_v":
-        loadFlow(multi_controlled_gates);
-        break;
+        // Advanced Examples
+        case "model_v":
+          loadFlow(multi_controlled_gates);
+          break;
 
-      case "model_w":
-        loadFlow(quantum_arithmetic);
-        break;
+        case "model_w":
+          loadFlow(quantum_arithmetic);
+          break;
 
-      case "model_x":
-        loadFlow(conditional_quantum_model);
-        break;
+        case "model_x":
+          loadFlow(conditional_quantum_model);
+          break;
 
-      case "model_y":
-        loadFlow(custom_quantum_operator);
-        break;
+        case "model_y":
+          loadFlow(custom_quantum_operator);
+          break;
 
-      default:
-        console.warn(`Unknown model: ${modelName}`);
+        default:
+          console.warn(`Unknown model: ${modelName}`);
+      }
+    },
+    [loadFlow],
+  );
+
+  useEffect(() => {
+    if (!reactFlowInstance) return;
+
+    const pathname = window.location.pathname;
+    const searchParams = new URLSearchParams(window.location.search);
+
+    console.log("pathname:", pathname);
+    console.log("search:", window.location.search);
+
+    let modelName: string | null = null;
+
+    // New option: /?model=model_d
+    if (!modelName) {
+      modelName = searchParams.get("model");
     }
-  },
-  [loadFlow],
-);
 
+    if (!modelName) return;
 
-useEffect(() => {
-  if (!reactFlowInstance) return;
+    console.log("Loading model:", modelName);
 
-  const pathname = window.location.pathname;
-  const searchParams = new URLSearchParams(window.location.search);
+    // Let loadModelFromUrl() / switch handle whether the model exists.
+    loadModelFromUrl(modelName);
 
-  console.log("pathname:", pathname);
-  console.log("search:", window.location.search);
-
-  let modelName: string | null = null;
-
-  // New option: /?model=model_d
-  if (!modelName) {
-    modelName = searchParams.get("model");
-  }
-
-  if (!modelName) return;
-
-  console.log("Loading model:", modelName);
-
-  // Let loadModelFromUrl() / switch handle whether the model exists.
-  loadModelFromUrl(modelName);
-
-  // Clean the URL after loading.
-  if (searchParams.has("model")) {
-    window.history.replaceState({}, "", "/");
-  }
-}, [reactFlowInstance, loadModelFromUrl]);
-
+    // Clean the URL after loading.
+    if (searchParams.has("model")) {
+      window.history.replaceState({}, "", "/");
+    }
+  }, [reactFlowInstance, loadModelFromUrl]);
 
   const onNodeDrag = React.useCallback(
     (event: React.MouseEvent, node: Node, nodes: Node[]) => {
@@ -4059,9 +4065,6 @@ useEffect(() => {
     setExperienceLevelOn(event);
     const bool_value = experienceLevel === "pioneer" ? false : true; // if previous experience level was pioneer...
     setCompactVisualization(bool_value);
-    //setAncillaMode(bool_value)
-    //setAncillaModelingOn(bool_value)
-    //updateNodeInternals since ancilla mode changes number of handles
     nodes.forEach((node) => {
       updateNodeInternals(node.id);
     });
@@ -4071,7 +4074,6 @@ useEffect(() => {
     setSelectedJob(job);
     setStateTest(2);
     setIsPromptModalOpen(true);
-
   };
 
   const handleClosePromptModal = () => {
@@ -4080,15 +4082,7 @@ useEffect(() => {
     setStateTest(1);
   };
 
-
-  const onToggleAncilla = () => {
-    //setAncillaModelingOn(!ancillaModelingOn);
-    //setAncillaMode(!ancillaModelingOn);
-    //updateNodeInternals since ancilla mode changes number of handles
-    //nodes.forEach((node) => {
-    //updateNodeInternals(node.id);
-    //})
-  };
+  const onToggleAncilla = () => {};
 
   const onToggleCollaborationMode = useCallback(() => {
     const nextMode = !collaborationModeOn;
@@ -4184,7 +4178,7 @@ useEffect(() => {
   };
 
   const getCircuitSvg = (): Promise<string> => {
-    // Vor dem Screenshot zentrieren
+    // center the view before taking the screenshot
     reactFlowInstance.fitView({ padding: 0.1 });
 
     return new Promise((resolve, reject) => {
@@ -4225,8 +4219,8 @@ useEffect(() => {
   const handleGroupSelected = useCallback(() => {
     const currentNodes = reactFlowInstance.getNodes();
 
-    // React Flow speichert selected manchmal als separate Liste
-    // Hole ausgewählte Nodes über das selection-System
+    // React Flow sometimes keeps the selection in a separate list,
+    // so read the selected nodes through the selection systemmRe
     const selectedNodes = currentNodes.filter(
       (n) => n.selected || reactFlowInstance.getNode(n.id)?.selected,
     );
@@ -4293,7 +4287,7 @@ useEffect(() => {
         ) {
           console.error(
             "Invalid size of deployed process definitions list: " +
-            Object.values(result["deployedProcessDefinitions"] || {}).length,
+              Object.values(result["deployedProcessDefinitions"] || {}).length,
           );
           return { status: "failed" };
         }
@@ -4700,25 +4694,6 @@ useEffect(() => {
       console.log("ADD EDGE HISTORY", historyArray.toArray());
       console.log("shared nodes", Array.from(nodesMap.values()));
       console.log("shared edges", Array.from(edgesMap.values()));
-      // für jeden Cursor? Nicht nur einmal??
-      // Object.entries(cursors).map(([clientId, cursor]) => {
-      //   const displayName = Number(clientId) === myClientId ? "Me" : cursor.name;
-
-      //   // Store name in a variable for history usage
-      //   //const userName = cursor.name;
-
-      //   historyArray.push([{
-      //     type: "edge-added",
-      //     source: edge.source,
-      //     target: edge.target,
-      //     edgeId: edge.id,
-      //     //user: cursor.name,
-      //     userId: myClientId,
-      //     user: userName,
-      //     timestamp: Date.now(),
-      //   }]);
-      //   console.log("ADD EDGE HISTORY", historyArray);
-      // });
     },
     [awareness, myClientId, cursors],
   );
@@ -4822,7 +4797,6 @@ useEffect(() => {
           sendToBackend={handleOpenValidation}
           createDomainProfile={() => openDomainProfileEditor()}
           startQuantumAlgorithmSelection={startQuantumAlgorithmSelection}
-          //sendToQunicorn={() => setIsQunicornOpen(true)}
           openHistory={() => openHistoryModal()}
           startTour={() => {
             startTour();
@@ -4926,22 +4900,34 @@ useEffect(() => {
         lowcodeBackendEndpoint={lowcodeBackendEndpoint}
         jobId={selectedJob?.uuid}
         missingValues={selectedJob?.missingValues || []}
-        onMissingValuesSubmitted={async (jobId: string, values: Array<{ id: string; value: any; type: string }>) => {
+        onMissingValuesSubmitted={async (
+          jobId: string,
+          values: Array<{ id: string; value: any; type: string }>,
+        ) => {
           try {
-            const response = await fetch(`http://localhost:3000/job/${jobId}/submit-missing-values`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ missingValues: values }),
-            });
+            const response = await fetch(
+              `http://localhost:3000/job/${jobId}/submit-missing-values`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ missingValues: values }),
+              },
+            );
             if (!response.ok) {
               throw new Error("Failed to submit missing values");
             }
-            showToast("Missing values submitted successfully! Model generation resumed.", "success");
+            showToast(
+              "Missing values submitted successfully! Model generation resumed.",
+              "success",
+            );
             await fetchHistory();
             handleClosePromptModal();
           } catch (error: any) {
             console.error("Error submitting missing values:", error);
-            showToast(`Failed to submit missing values: ${error.message}`, "error");
+            showToast(
+              `Failed to submit missing values: ${error.message}`,
+              "error",
+            );
           }
         }}
         onSubmitPrompt={handleGenerateModel}
@@ -5046,12 +5032,13 @@ useEffect(() => {
 
             setIsQunicornOpen(true);
             const resultResponse = await fetch(item.links.result);
-            if (!resultResponse.ok) throw new Error("Failed to fetch QASM result");
+            if (!resultResponse.ok)
+              throw new Error("Failed to fetch QASM result");
             const qasmText = await resultResponse.text();
             setOpenQASMCode(qasmText);
           } catch (error) {
             console.error("Error handling execution:", error);
-            showToast(`Error executing model: ${error.message}`, "error");  // NEW: Show error toast
+            showToast(`Error executing model: ${error.message}`, "error"); // NEW: Show error toast
           }
         }}
         onSubmitPrompt={handleGenerateModel}

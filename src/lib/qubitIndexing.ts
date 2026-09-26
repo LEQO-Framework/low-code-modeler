@@ -1,37 +1,26 @@
 /**
- * qubitIndexing.ts
- * Platzierung: src/lib/qubitIndexing.ts
+ * Computes, for every qubit node on the canvas, the register index it would actually
+ * receive when compiled by the backend - the real index, not just a simple visual
+ * numbering.
  *
- * Berechnet für jeden QubitNode auf dem Canvas den Register-Index, den er auch beim
- * tatsächlichen Kompilieren zum Backend bekommen würde (Variante 2: "echter" Index,
- * nicht nur simple visuelle Durchnummerierung).
- *
- * WICHTIG: Nutzt dieselbe computeOrderedComponents-Funktion wie componentAnalyzer.ts
- * (Komponenten-Gruppierung + Sortierung nach visueller Position), damit die hier
- * angezeigten Indizes garantiert mit dem übereinstimmen, was beim Senden ans Backend
- * tatsächlich passiert. Falls sich die Gruppierungs-/Sortierlogik künftig ändert, muss
- * das NUR in computeOrderedComponents angepasst werden - diese Datei zieht automatisch nach.
+ * IMPORTANT: this uses the same computeOrderedComponents function as componentAnalyzer.ts
+ * (component grouping plus sorting by visual position), so the indices shown here are
+ * guaranteed to match what happens when the model is sent to the backend. If the grouping
+ * or sorting logic ever changes, it only has to be changed in computeOrderedComponents and
+ * this file follows automatically.
  */
 
 import { Node, Edge } from "reactflow";
 import { computeOrderedComponents } from "./componentAnalyzer";
 
 /**
- * Liefert eine Map von Node-ID -> Start-Index im Register für jeden QubitNode.
- *
- * Ein einzelner QubitNode kann laut node.data.size mehr als 1 Qubit umfassen
- * (Standard: 1, falls size fehlt/ungültig ist). In diesem Fall ist der zurückgegebene
- * Wert der STARTINDEX des belegten Bereichs (z.B. size=2 -> belegt Indizes {start, start+1}).
- * Nicht-Qubit-Nodes (Gates, DataType-Nodes, etc.) tauchen in der Map nicht auf.
- */
-/**
- * Prüft ob ein Node eine "Qubit-Quelle" ist, die einen eigenen Register-Index belegt.
- * Zwei Fälle werden erkannt:
- * 1. type === "qubitNode": der "klassische" QubitNode aus qubit.tsx.
- * 2. type === "gateNode" && data.label === "Qubit Circuit": im "Experience Mode" werden
- *    Qubit-Quellen über die generische GateNode-Komponente (gate.tsx) gerendert, erkennbar
- *    ausschließlich am label "Qubit Circuit" (siehe isQubit-Check dort). Ohne diesen Fall
- *    würde computeQubitIndices im Experience Mode gar keine Qubits finden.
+ * Checks whether a node is a "qubit source" that occupies a register index of its own.
+ * Two cases are recognized:
+ * 1. type === "qubitNode": the classic qubit node from qubit.tsx.
+ * 2. type === "gateNode" && data.label === "Qubit Circuit": in Experience Mode, qubit
+ *    sources are rendered through the generic GateNode component (gate.tsx) and can only
+ *    be identified by the label "Qubit Circuit" (see the isQubit check there). Without
+ *    this case, computeQubitIndices would not find any qubits in Experience Mode.
  */
 function isQubitSourceNode(node: Node): boolean {
   if (node.type === "qubitNode") return true;
@@ -63,9 +52,12 @@ export function computeQubitIndices(
 }
 
 /**
- * Liefert für einen einzelnen QubitNode ein Label für die Anzeige (z.B. "0" oder "0–1"
- * bei einem Register mit size > 1), oder null falls der Node nicht gefunden wird / kein
- * QubitNode ist.
+ * Returns a display label for a single qubit node, e.g. "0" or "0–1" for a register with
+ * size > 1. Returns null if the node cannot be found or is not a qubit source.
+ *
+ * A single qubit node can span more than one qubit via node.data.size (defaulting to 1 if
+ * size is missing or invalid); the index in the map is then the START index of the range
+ * it occupies, e.g. size = 2 occupies {start, start + 1}.
  */
 export function getQubitIndexLabel(
   nodeId: string,

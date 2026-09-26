@@ -1,34 +1,49 @@
-/**
- * qasmToNodes.ts
- * Platzierung: src/lib/qasmToNodes.ts
- */
-
 import { Node, Edge, MarkerType } from "reactflow";
 import { v4 as uuid } from "uuid";
 
 const GATE_LABEL_MAP: Record<string, string> = {
-  h: "H", x: "X", y: "Y", z: "Z",
-  s: "S", t: "T", sdg: "S†", tdg: "T†",
-  cx: "CNOT", cnot: "CNOT", cz: "CZ", cy: "CY", ch: "CH",
-  swap: "SWAP", ccx: "Toffoli", cswap: "CSWAP",
-  rx: "RX(θ)", ry: "RY(θ)", rz: "RZ(θ)",
-  crx: "CRX(θ)", cry: "CRY(θ)", crz: "CRZ(θ)",
-  u1: "U1(λ)", u2: "U2(φ,λ)", u3: "U3(θ,φ,λ)",
-  p: "P(λ)", cp: "CP(λ)", id: "I",
+  h: "H",
+  x: "X",
+  y: "Y",
+  z: "Z",
+  s: "S",
+  t: "T",
+  sdg: "S†",
+  tdg: "T†",
+  cx: "CNOT",
+  cnot: "CNOT",
+  cz: "CZ",
+  cy: "CY",
+  ch: "CH",
+  swap: "SWAP",
+  ccx: "Toffoli",
+  cswap: "CSWAP",
+  rx: "RX(θ)",
+  ry: "RY(θ)",
+  rz: "RZ(θ)",
+  crx: "CRX(θ)",
+  cry: "CRY(θ)",
+  crz: "CRZ(θ)",
+  u1: "U1(λ)",
+  u2: "U2(φ,λ)",
+  u3: "U3(θ,φ,λ)",
+  p: "P(λ)",
+  cp: "CP(λ)",
+  id: "I",
 };
 
 interface ParsedGate {
   name: string;
   label: string;
-  qubits: number[]; // globale Qubit-Indizes
+  qubits: number[]; // global qubit indices
   params?: string;
 }
 
 export function qasmToNodes(qasm: string): { nodes: Node[]; edges: Edge[] } {
-  const lines = qasm.split("\n").map(l => l.trim());
+  const lines = qasm.split("\n").map((l) => l.trim());
 
-  // Qubit-Register parsen (QASM 2 + 3)
-  const qubitMap = new Map<string, number>(); // variablenname → globaler Index
+  // parse the qubit registers (QASM 2 and 3)
+  const qubitMap = new Map<string, number>(); // variable name -> global index
   let totalQubits = 0;
 
   // QASM 3: qubit[2] leqo_reg → leqo_reg[0], leqo_reg[1]
@@ -55,9 +70,9 @@ export function qasmToNodes(qasm: string): { nodes: Node[]; edges: Edge[] } {
 
   if (totalQubits === 0) totalQubits = 1;
 
-  // LEQO-spezifisch: let-Statements parsen
-  // "let varName = register[{idx}]" → varName → globaler Index
-  const varMap = new Map<string, number>(); // varName → globaler Qubit-Index
+  // LEQO specific: parse the let statements
+  // "let varName = register[{idx}]" -> varName -> global index
+  const varMap = new Map<string, number>(); // varName -> global qubit index
   for (const line of lines) {
     // let leqo_xxx_q0 = leqo_reg[{0}];
     const letMatch = line.match(/^let\s+(\S+)\s*=\s*(\w+)\[\{?(\d+)\}?\]/);
@@ -70,19 +85,28 @@ export function qasmToNodes(qasm: string): { nodes: Node[]; edges: Edge[] } {
     }
   }
 
-  // Gates parsen
+  // parse the gates
   const gates: ParsedGate[] = [];
 
   for (const line of lines) {
-    // Kommentare und Direktiven überspringen
-    if (!line || line.startsWith("//") || line.startsWith("/*") ||
-        line.startsWith("*") || line.startsWith("OPENQASM") ||
-        line.startsWith("include") || line.startsWith("let") ||
-        line.startsWith("@") || line.startsWith("creg") ||
-        line.startsWith("bit") || line.startsWith("measure") ||
-        line.startsWith("barrier")) continue;
+    // skip comments and directives
+    if (
+      !line ||
+      line.startsWith("//") ||
+      line.startsWith("/*") ||
+      line.startsWith("*") ||
+      line.startsWith("OPENQASM") ||
+      line.startsWith("include") ||
+      line.startsWith("let") ||
+      line.startsWith("@") ||
+      line.startsWith("creg") ||
+      line.startsWith("bit") ||
+      line.startsWith("measure") ||
+      line.startsWith("barrier")
+    )
+      continue;
 
-    // Gate mit Parametern: rx(0.5) varName
+    // gate with parameters: rx(0.5) varName
     const paramMatch = line.match(/^(\w+)\(([^)]*)\)\s+(.+)/);
     if (paramMatch) {
       const name = paramMatch[1].toLowerCase();
@@ -90,37 +114,51 @@ export function qasmToNodes(qasm: string): { nodes: Node[]; edges: Edge[] } {
       const qubitsStr = paramMatch[3].replace(";", "");
       const qubits = resolveQubits(qubitsStr, qubitMap, varMap);
       if (qubits.length > 0) {
-        gates.push({ name, label: GATE_LABEL_MAP[name] ?? name.toUpperCase(), qubits, params });
+        gates.push({
+          name,
+          label: GATE_LABEL_MAP[name] ?? name.toUpperCase(),
+          qubits,
+          params,
+        });
       }
       continue;
     }
 
-    // Gate ohne Parameter: h varName oder cx varName, varName2
+    // gate without parameters: h varName, or cx varName, varName2
     const gateMatch = line.match(/^([a-z]\w*)\s+(.+)/);
     if (gateMatch) {
       const name = gateMatch[1].toLowerCase();
-      if (["openqasm", "include", "gate", "if", "let", "qubit", "qreg"].includes(name)) continue;
+      if (
+        ["openqasm", "include", "gate", "if", "let", "qubit", "qreg"].includes(
+          name,
+        )
+      )
+        continue;
       const qubitsStr = gateMatch[2].replace(";", "");
       const qubits = resolveQubits(qubitsStr, qubitMap, varMap);
       if (qubits.length > 0) {
-        gates.push({ name, label: GATE_LABEL_MAP[name] ?? name.toUpperCase(), qubits });
+        gates.push({
+          name,
+          label: GATE_LABEL_MAP[name] ?? name.toUpperCase(),
+          qubits,
+        });
       }
     }
   }
 
-  // Nodes und Edges erstellen
+  // build the nodes and edges
   const SPACING_X = 200;
   const SPACING_Y = 160;
   const START_X = 100;
   const START_Y = 80;
 
   const lastNodePerQubit = new Map<number, string>();
-  const lastHandlePerQubit = new Map<number, string>(); // letzter Output-Handle pro Qubit
+  const lastHandlePerQubit = new Map<number, string>(); // last output handle per qubit
   const columnPerQubit = new Map<number, number>();
   const nodes: Node[] = [];
   const edges: Edge[] = [];
 
-  // Qubit-Start-Nodes (|0⟩)
+  // qubit source nodes (|0⟩)
   for (let i = 0; i < totalQubits; i++) {
     const id = uuid();
     const outputHandle = `quantumHandleGateOutput0${id}`;
@@ -148,10 +186,10 @@ export function qasmToNodes(qasm: string): { nodes: Node[]; edges: Edge[] } {
     columnPerQubit.set(i, 1);
   }
 
-  // Gate-Nodes
+  // gate nodes
   for (const gate of gates) {
     const id = uuid();
-    const col = Math.max(...gate.qubits.map(q => columnPerQubit.get(q) ?? 1));
+    const col = Math.max(...gate.qubits.map((q) => columnPerQubit.get(q) ?? 1));
     const minQ = Math.min(...gate.qubits);
     const maxQ = Math.max(...gate.qubits);
     const centerY = START_Y + ((minQ + maxQ) / 2) * SPACING_Y;
@@ -170,7 +208,7 @@ export function qasmToNodes(qasm: string): { nodes: Node[]; edges: Edge[] } {
           targetHandle: `quantumHandleGateInput${i}${id}`,
           identifiers: [`q${q}`],
         })),
-        identifiers: gate.qubits.map(q => `q${q}`),
+        identifiers: gate.qubits.map((q) => `q${q}`),
         parameter: gate.params ?? "0",
         inputTypes: gate.qubits.map(() => "quantum register"),
         outputTypes: gate.qubits.map(() => "quantum register"),
@@ -183,11 +221,12 @@ export function qasmToNodes(qasm: string): { nodes: Node[]; edges: Edge[] } {
       },
     });
 
-    // Eine Edge pro beteiligtem Qubit, vom letzten Node dieses Qubits zum neuen Gate-Node
+    // one edge per involved qubit, from that qubit's last node to the new gate node
     for (let i = 0; i < gate.qubits.length; i++) {
       const q = gate.qubits[i];
       const prevId = lastNodePerQubit.get(q);
-      const prevHandle = lastHandlePerQubit.get(q) ?? `quantumHandleGateOutput0${prevId}`;
+      const prevHandle =
+        lastHandlePerQubit.get(q) ?? `quantumHandleGateOutput0${prevId}`;
       if (prevId) {
         edges.push({
           id: uuid(),
@@ -196,10 +235,15 @@ export function qasmToNodes(qasm: string): { nodes: Node[]; edges: Edge[] } {
           sourceHandle: prevHandle,
           targetHandle: `quantumHandleGateInput${i}${id}`,
           type: "quantumEdge",
-          markerEnd: { type: MarkerType.ArrowClosed, width: 20, height: 20, color: "#93C5FD" },
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            width: 20,
+            height: 20,
+            color: "#93C5FD",
+          },
         });
       }
-      // Dieser Gate-Node wird zum neuen "letzten Node" für diesen Qubit
+      // this gate node becomes the new "last node" for this qubit
       lastNodePerQubit.set(q, id);
       lastHandlePerQubit.set(q, `quantumHandleGateOutput${i}${id}`);
       columnPerQubit.set(q, col + 1);
@@ -212,9 +256,9 @@ export function qasmToNodes(qasm: string): { nodes: Node[]; edges: Edge[] } {
 function resolveQubits(
   qubitsStr: string,
   qubitMap: Map<string, number>,
-  varMap: Map<string, number>
+  varMap: Map<string, number>,
 ): number[] {
-  const parts = qubitsStr.split(",").map(s => s.trim());
+  const parts = qubitsStr.split(",").map((s) => s.trim());
   const result: number[] = [];
 
   for (const part of parts) {
@@ -223,14 +267,22 @@ function resolveQubits(
     if (idxMatch) {
       const key = `${idxMatch[1]}[${idxMatch[2]}]`;
       const idx = qubitMap.get(key);
-      if (idx !== undefined) { result.push(idx); continue; }
+      if (idx !== undefined) {
+        result.push(idx);
+        continue;
+      }
     }
-    // Variable aus let-Statement
+    // variable from a let statement
     const varIdx = varMap.get(part);
-    if (varIdx !== undefined) { result.push(varIdx); continue; }
-    // Ganzes Register
+    if (varIdx !== undefined) {
+      result.push(varIdx);
+      continue;
+    }
+    // whole register
     for (const [key, idx] of qubitMap.entries()) {
-      if (key.startsWith(part + "[")) { result.push(idx); }
+      if (key.startsWith(part + "[")) {
+        result.push(idx);
+      }
     }
   }
 

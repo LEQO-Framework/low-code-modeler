@@ -44,10 +44,10 @@ export function getBlochVector(
 }
 
 /**
- * Entanglement Persistence (von-Neumann-Entropie der reduzierten Dichtematrix) für ein
- * einzelnes Qubit. Dieselbe Berechnung wie unter jeder Bloch-Sphäre angezeigt, hier als
- * eigenständige Funktion exportiert, damit sie auch außerhalb (z.B. im Properties-Tab)
- * ohne Duplikation genutzt werden kann.
+ * Entanglement persistence (von Neumann entropy of the reduced density matrix) for a
+ * single qubit. This is the same computation that is shown below each Bloch sphere,
+ * exported as a standalone function so it can be reused elsewhere (e.g. in the
+ * Properties tab) without duplication.
  */
 export function getEntanglementPersistence(
   statevector: { re: number; im: number }[],
@@ -64,26 +64,26 @@ export function getEntanglementPersistence(
 }
 
 /**
- * Exakte Prüfung, ob ein n-Qubit-Zustand VOLLSTÄNDIG separabel ist, d.h. sich als
- * |psi_1> ⊗ |psi_2> ⊗ ... ⊗ |psi_n> schreiben lässt (jedes Qubit unabhängig von allen anderen).
+ * Exact check whether an n-qubit state is FULLY separable, i.e. whether it can be written
+ * as |psi_1> ⊗ |psi_2> ⊗ ... ⊗ |psi_n> (every qubit independent of all the others).
  *
- * Methode: für jedes einzelne Qubit wird die Bipartition "dieses Qubit vs. der Rest" geprüft.
- * Ein Qubit ist genau dann unverschränkt mit dem Rest des Systems, wenn sein Bloch-Vektor
- * Länge 1 hat (reiner Zustand der reduzierten Dichtematrix, Schmidt-Rang 1 für diese
- * Bipartition). Ist das für JEDES Qubit der Fall, ist der Gesamtzustand vollständig separabel.
- * Sobald auch nur ein einziges Qubit eine Bloch-Vektor-Länge < 1 hat, ist es mit mindestens
- * einem anderen Qubit verschränkt, und der Gesamtzustand gilt als entangled.
+ * Method: for every single qubit the bipartition "this qubit vs. the rest" is checked.
+ * A qubit is unentangled from the rest of the system exactly when its Bloch vector has
+ * length 1 (pure reduced density matrix, Schmidt rank 1 for that bipartition). If this
+ * holds for EVERY qubit, the overall state is fully separable. As soon as a single qubit
+ * has a Bloch vector length < 1, it is entangled with at least one other qubit and the
+ * overall state counts as entangled.
  *
- * Das ist exakt (keine Heuristik) und deckt insbesondere den Fall ab, dass ein Zustand mit
- * mehreren Termen in der Dirac-Summe trotzdem ein reines Tensorprodukt sein kann
- * (z.B. zwei unabhängige H-Gates ohne CNOT: 4 Terme, aber vollständig separabel).
+ * This is exact rather than a heuristic, and in particular it covers the case where a
+ * state with several terms in the Dirac sum is still a pure tensor product (e.g. two
+ * independent H gates without a CNOT: 4 terms, yet fully separable).
  */
 export function isStateFullySeparable(
   statevector: { re: number; im: number }[],
   numQubits: number
 ): boolean {
-  if (numQubits < 2) return true; // ein einzelnes Qubit ist per Definition nicht "verschränkt"
-  const EPSILON = 1e-4; // etwas großzügiger wegen numerischer Artefakte aus der Statevector-Simulation
+  if (numQubits < 2) return true; // a single qubit is by definition not "entangled"
+  const EPSILON = 1e-4; // slightly generous to absorb numerical artifacts from the simulation
   for (let q = 0; q < numQubits; q++) {
     const bloch = getBlochVector(statevector, numQubits, q);
     const r = Math.sqrt(bloch.x * bloch.x + bloch.y * bloch.y + bloch.z * bloch.z);
@@ -93,30 +93,29 @@ export function isStateFullySeparable(
 }
 
 /**
- * Entanglement Persistence für n-Qubit-Zustände ("persistency of entanglement", Briegel &
- * Raussendorf 2001): die minimale Anzahl lokaler Messungen, bis der Restzustand garantiert
- * vollständig separabel ist. Eine allgemeine, exakte Berechnung ist algorithmisch aufwändig
- * (Suche über alle Qubit-Teilmengen und alle möglichen Messergebnisse). Stattdessen werden
- * hier die bekannten Standardfälle per Muster erkannt, für die der Wert in der Literatur
- * bekannt ist - in allen anderen Fällen wird null (= nicht berechenbar) zurückgegeben, statt
- * einen falschen Wert vorzutäuschen.
+ * Entanglement persistence for n-qubit states ("persistency of entanglement", Briegel &
+ * Raussendorf 2001): the minimum number of local measurements after which the remaining
+ * state is guaranteed to be fully separable. A general exact computation is expensive
+ * (searching over all qubit subsets and all possible measurement outcomes). Instead, the
+ * standard cases whose value is known from the literature are recognized by pattern here;
+ * in every other case null (= not computable) is returned rather than faking a value.
  *
- * Erkannte Muster (terms = alle Basiszustände mit Amplitude != 0):
- * - Separabel (0 lokale Messungen nötig): bereits über isStateFullySeparable abgedeckt.
- * - GHZ-artig (inkl. aller 4 Bell-Zustands-Varianten bei n=2): genau 2 Terme mit gleichem
- *   Betrag, deren Basiszustände sich in JEDEM Qubit unterscheiden (bitweises Komplement,
- *   beliebige relative Phase) -> Persistence = 1.
- * - W-Zustand: genau n Terme mit gleichem Betrag, jeder Term hat Hamming-Gewicht 1 (genau
- *   ein Qubit auf |1>) -> Persistence = n-1.
+ * Recognized patterns (terms = all basis states with amplitude != 0):
+ * - Separable (0 local measurements needed): already covered by isStateFullySeparable.
+ * - GHZ-like (including all four Bell state variants for n=2): exactly 2 terms of equal
+ *   magnitude whose basis states differ in EVERY qubit (bitwise complement, arbitrary
+ *   relative phase) -> persistence = 1.
+ * - W state: exactly n terms of equal magnitude, each with Hamming weight 1 (exactly one
+ *   qubit set to |1>) -> persistence = n-1.
  */
 export function getMultiQubitPersistence(
   terms: { basisState: string; amplitude: { re: number; im: number } }[],
   numQubits: number
 ): number | null {
-  if (numQubits < 2) return null; // Einzelqubit-Fall wird separat über getEntanglementPersistence behandelt
+  if (numQubits < 2) return null; // the single-qubit case is handled by getEntanglementPersistence
 
   const EPSILON = 1e-6;
-  // Numerische Artefakte: Terme mit Amplitude < 1% der maximalen Amplitude ignorieren
+  // numerical artifacts: ignore terms below 1% of the largest amplitude
   const maxMag = Math.max(...terms.map(t => Math.hypot(t.amplitude.re, t.amplitude.im)));
   const nonzero = terms.filter(
     (t) => Math.hypot(t.amplitude.re, t.amplitude.im) > Math.max(1e-9, maxMag * 0.01)
@@ -128,7 +127,7 @@ export function getMultiQubitPersistence(
     return list.every((t) => Math.abs(Math.hypot(t.amplitude.re, t.amplitude.im) - ref) < EPSILON);
   };
 
-  // GHZ-artiges Muster (deckt alle Bell-Varianten bei n=2 mit ab)
+  // GHZ-like pattern (also covers all Bell variants for n = 2)
   if (nonzero.length === 2 && sameMagnitude(nonzero)) {
     const [a, b] = nonzero;
     let isComplement = true;
@@ -138,7 +137,7 @@ export function getMultiQubitPersistence(
     if (isComplement) return 1;
   }
 
-  // W-Zustands-Muster
+  // W state pattern
   if (nonzero.length === numQubits && sameMagnitude(nonzero)) {
     const isWPattern = nonzero.every(
       (t) => t.basisState.split("").filter((c) => c === "1").length === 1
@@ -146,7 +145,7 @@ export function getMultiQubitPersistence(
     if (isWPattern) return numQubits - 1;
   }
 
-  return null; // kein bekanntes Muster -> nicht berechenbar
+  return null; // no known pattern -> not computable
 }
 
 function SingleBlochSphere({ bloch, label }: { bloch: { x: number; y: number; z: number }; label: string }) {
@@ -164,7 +163,7 @@ function SingleBlochSphere({ bloch, label }: { bloch: { x: number; y: number; z:
   const thetaDeg = Math.round(theta * 180 / Math.PI);
   const phiDeg = Math.round(((phi * 180 / Math.PI) + 360) % 360);
 
-  // π-Darstellung: rundet auf bekannte Vielfache von π/4 (0°, 45°, 90°, 135°, 180°, 225°, 270°, 315°, 360°)
+  // π representation: maps known multiples of π/4 (0°, 45°, 90°, 135°, 180°, 225°, 270°, 315°, 360°)
   const toPiStr = (deg: number): string => {
     const known: Record<number, string> = {
       0: "0", 45: "π/4", 90: "π/2", 135: "3π/4",
@@ -175,7 +174,7 @@ function SingleBlochSphere({ bloch, label }: { bloch: { x: number; y: number; z:
   const thetaPi = toPiStr(thetaDeg);
   const phiPi   = toPiStr(phiDeg);
 
-  // Symbolische Zustandsformel mit eingesetzten Winkeln:
+  // symbolic state formula with the angles substituted in:
   // |psi> = cos(theta/2)|0> + e^{i*phi}*sin(theta/2)|1>
   const cosHalfTheta = Math.cos(theta / 2);
   const sinHalfTheta = Math.sin(theta / 2);
@@ -185,18 +184,18 @@ function SingleBlochSphere({ bloch, label }: { bloch: { x: number; y: number; z:
   };
   const thetaLabel = thetaPi ? `${thetaPi} (${thetaDeg}°)` : `${thetaDeg}°`;
   const phiLabel   = phiPi   ? `${phiPi} (${phiDeg}°)`   : `${phiDeg}°`;
-  // In der Formel selbst π statt Gradzahl verwenden, wenn eine bekannte π-Entsprechung existiert
-  // (z.B. "cos(π/2)" statt "cos(180°/2)"); nur wenn kein bekanntes Vielfaches von π/4 vorliegt,
-  // wird auf die Gradzahl zurückgefallen.
+  // use π inside the formula itself whenever a known π equivalent exists (e.g. "cos(π/2)"
+  // instead of "cos(180°/2)"); fall back to degrees only when the angle is not a known
+  // multiple of π/4.
   const thetaFormulaStr = thetaPi ?? `${thetaDeg}°`;
   const phiFormulaStr = phiPi ?? `${phiDeg}°`;
   const stateFormula = `|ψ⟩ = cos(${thetaFormulaStr}/2)|0⟩ + e^(i·${phiFormulaStr})·sin(${thetaFormulaStr}/2)|1⟩ ≈ ${fmt(cosHalfTheta)}|0⟩ + e^(i·${phiFormulaStr})·${fmt(sinHalfTheta)}|1⟩`;
 
-  // Entanglement Persistence (von-Neumann-Entropie der reduzierten Dichtematrix dieses Qubits).
-  // Eigenwerte der reduzierten 2x2-Dichtematrix ergeben sich aus der Bloch-Vektor-Laenge r:
-  // lambda_{1,2} = (1 +/- r) / 2. S = -sum(lambda_i * log2(lambda_i)), in Bits (Standardkonvention
-  // der Quanteninformatik, analog Nielsen & Chuang). S=0 -> reiner/unverschraenkter Zustand,
-  // S=1 -> maximal gemischt (z.B. ein Qubit eines Bell-Paares).
+  // Entanglement persistence (von Neumann entropy of this qubit's reduced density matrix).
+  // The eigenvalues of the reduced 2x2 density matrix follow from the Bloch vector length r:
+  // lambda_{1,2} = (1 +/- r) / 2. S = -sum(lambda_i * log2(lambda_i)), in bits (the standard
+  // convention in quantum information, cf. Nielsen & Chuang). S=0 -> pure/unentangled state,
+  // S=1 -> maximally mixed (e.g. one qubit of a Bell pair).
   const r = Math.min(1, Math.sqrt(bloch.x * bloch.x + bloch.y * bloch.y + bloch.z * bloch.z));
   const lambda1 = (1 + r) / 2;
   const lambda2 = (1 - r) / 2;
@@ -212,9 +211,9 @@ function SingleBlochSphere({ bloch, label }: { bloch: { x: number; y: number; z:
     scene.background = new THREE.Color(0xfafafa);
 
     const camera = new THREE.PerspectiveCamera(38, W / H, 0.1, 100);
-    // Kamera weiter weg positionieren (gleiche Blickrichtung, ~40% mehr Abstand) als vorher
-    // (1.5, 1.2, 2.5), damit um die Einheitskugel (Radius 1) mehr sichtbarer Rand entsteht
-    // und sie nicht fast den gesamten Frame ausfüllt ("zu nah").
+    // camera pulled back from the previous (1.5, 1.2, 2.5) by roughly 40% along the same
+    // viewing direction, so that some margin remains around the unit sphere instead of it
+    // filling almost the entire frame.
     camera.position.set(2.1, 1.68, 3.5);
     camera.lookAt(0, 0, 0);
 

@@ -90,17 +90,17 @@ const getHandleIndex = (nodeId: string, handleId: string) => {
 };
 
 /**
- * Ermittelt den tatsächlichen "Owner"-Knoten eines Handles anhand der im
- * handleId-String eingebetteten ID (z.B. "quantumHandleGateOutput0<nodeId>").
+ * Resolves the actual owner node of a handle from the ID embedded in the handle string
+ * (e.g. "quantumHandleGateOutput0<nodeId>").
  *
- * Wichtig bei Gruppen: Ein Gruppen-Proxy-Handle wird DOM-technisch der Gruppe
- * zugeordnet (connection.source/target = groupId), aber die im handleId
- * eingebettete ID gehört dem eigentlichen Kind-Knoten innerhalb der Gruppe
- * (siehe group.tsx: outputHandleId = `quantumHandleGateOutput0${child.id}`).
- * Ohne diese Auflösung würden getNodeOutputType/getNodeInputType/getHandleIndex
- * fälschlich auf die Gruppe selbst zugreifen, deren data.outputTypes/inputTypes
- * nicht zu den Proxy-Handle-Indizes der Kind-Knoten passen (oder gar nicht
- * existieren) - das verhindert jede Verbindung von/zu Gruppen-Handles.
+ * This matters for groups: a group proxy handle belongs to the group as far as the DOM is
+ * concerned (connection.source/target = groupId), but the ID embedded in the handle ID
+ * belongs to the actual child node inside the group (see group.tsx:
+ * outputHandleId = `quantumHandleGateOutput0${child.id}`). Without this resolution,
+ * getNodeOutputType/getNodeInputType/getHandleIndex would wrongly look at the group
+ * itself, whose data.outputTypes/inputTypes do not match the proxy handle indices of the
+ * child nodes (or do not exist at all), which blocks every connection to or from a group
+ * handle.
  */
 const resolveHandleOwnerId = (
   nodes: Node[],
@@ -736,8 +736,8 @@ export const useStore = create<RFState>()(
           nodeId: string,
           handleId?: string,
         ): string => {
-          // Bei Gruppen-Proxy-Handles gehört handleId dem eigentlichen Kind-Knoten,
-          // nicht der Gruppe (nodeId) selbst - siehe resolveHandleOwnerId-Kommentar oben.
+          // For group proxy handles, handleId belongs to the actual child node rather than to
+          // the group (nodeId) itself; see the comment on resolveHandleOwnerId above.
           const effectiveId = resolveHandleOwnerId(
             get().nodes,
             nodeId,
@@ -809,8 +809,8 @@ export const useStore = create<RFState>()(
         };
 
         const getNodeInputType = (nodeId: string, handleId: string) => {
-          // Siehe resolveHandleOwnerId-Kommentar: bei Gruppen-Proxy-Handles gehört
-          // handleId dem Kind-Knoten, nicht der Gruppe (nodeId).
+          // See the comment on resolveHandleOwnerId: for group proxy handles, handleId
+          // belongs to the child node, not to the group (nodeId).
           const effectiveId = resolveHandleOwnerId(
             get().nodes,
             nodeId,
@@ -1147,8 +1147,8 @@ export const useStore = create<RFState>()(
         console.log("Current Edges:", get().edges);
         console.log("New History Item:", newHistoryItem);
         const getOutputIndex = (sourceHandle: string, nodeDataSource: Node) => {
-          // Bei Gruppen-Proxy-Handles gehört sourceHandle dem Kind-Knoten, nicht der
-          // Gruppe (nodeDataSource) - siehe resolveHandleOwnerId-Kommentar oben.
+          // For group proxy handles, sourceHandle belongs to the child node rather than to
+          // the group (nodeDataSource); see the comment on resolveHandleOwnerId above.
           const effectiveId = resolveHandleOwnerId(
             get().nodes,
             nodeDataSource.id,
@@ -1261,10 +1261,10 @@ export const useStore = create<RFState>()(
           console.log(connection.source);
 
           console.log(nodeDataSource);
-          // Absicherung: nodeDataTarget kann z.B. eine Gruppe sein, deren data-Objekt
-          // (anders als bei echten Gate-Knoten) kein inputs-Array besitzt. Ohne diese
-          // Initialisierung würde .find()/.push() weiter unten eine Exception werfen
-          // und jede Verbindung zu Gruppen-Proxy-Handles stillschweigend abbrechen.
+          // Safeguard: nodeDataTarget can be a group, whose data object (unlike that of a real
+          // gate node) has no inputs array. Without this initialization, the .find()/.push()
+          // calls below would throw and silently abort every connection to a group proxy
+          // handle.
           if (!nodeDataTarget.data.inputs) nodeDataTarget.data.inputs = [];
           const existingInput = nodeDataTarget.data.inputs.find(
             (input) =>
@@ -1461,8 +1461,8 @@ export const useStore = create<RFState>()(
                 console.log(sourceIdentifier);
 
                 if (!targetData.inputs) targetData.inputs = [];
-                // Absicherung: targetData.inputTypes kann bei Gruppen-Proxy-Handles fehlen
-                // (Gruppen führen kein eigenes inputTypes-Array wie echte Gate-Knoten).
+                // Safeguard: targetData.inputTypes can be missing for group proxy handles,
+                // since groups do not maintain an inputTypes array like real gate nodes do.
                 if (!targetData.inputTypes) targetData.inputTypes = [];
 
                 const inputIndex = targetData.inputs.findIndex(
@@ -1605,8 +1605,8 @@ export const useStore = create<RFState>()(
         console.log("Updating node value for:", nodeId);
         console.log("Identifier:", identifier, "New Value:", nodeVal);
         const getOutputIndex = (sourceHandle: string, nodeDataSource: Node) => {
-          // Bei Gruppen-Proxy-Handles gehört sourceHandle dem Kind-Knoten, nicht der
-          // Gruppe (nodeDataSource) - siehe resolveHandleOwnerId-Kommentar oben.
+          // For group proxy handles, sourceHandle belongs to the child node rather than to
+          // the group (nodeDataSource); see the comment on resolveHandleOwnerId above.
           const effectiveId = resolveHandleOwnerId(
             get().nodes,
             nodeDataSource.id,

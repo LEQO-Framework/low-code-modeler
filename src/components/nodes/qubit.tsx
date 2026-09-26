@@ -27,19 +27,18 @@ export const QubitNode = memo((node: Node) => {
 
   const { data, selected } = node;
 
-  const {
-    nodes,
-    updateNodeValue,
-    setSelectedNode,
-    edges,
-    experienceLevel,
-  } = useStore(selector, shallow);
+  const { nodes, updateNodeValue, setSelectedNode, edges, experienceLevel } =
+    useStore(selector, shallow);
 
   const [outputIdentifierError, setOutputIdentifierError] = useState(false);
   const [sizeError, setSizeError] = useState(false);
 
   const id = node.id;
 
+  // Register index this qubit node would receive during actual compilation (same grouping
+  // and sorting logic as componentAnalyzer.ts / backend.ts). Recomputed on every change to
+  // nodes/edges so the badge always stays up to date, no matter how the node was added
+  // (drag & drop, duplication, QASM import, ...).
   const qubitIndexLabel = useMemo(() => {
     const indices = computeQubitIndices(nodes, edges);
     const start = indices.get(id);
@@ -48,9 +47,7 @@ export const QubitNode = memo((node: Node) => {
     const rawSize = parseInt(String(data?.size), 10);
     const size = Number.isFinite(rawSize) && rawSize > 0 ? rawSize : 1;
 
-    return size > 1
-      ? `${start}\u2013${start + size - 1}`
-      : `${start}`;
+    return size > 1 ? `${start}\u2013${start + size - 1}` : `${start}`;
   }, [nodes, edges, id, data?.size]);
 
   const [remoteHighlightColor, setRemoteHighlightColor] = useState<
@@ -83,13 +80,9 @@ export const QubitNode = memo((node: Node) => {
 
   const isExplorer = experienceLevel === "explorer";
 
-  const nodeLabel = isExplorer
-    ? "Qubit Array"
-    : "Quantum Register";
+  const nodeLabel = isExplorer ? "Qubit Array" : "Quantum Register";
 
-  const nodeImage = isExplorer
-    ? "qubitArray.png"
-    : "quantumregister.png";
+  const nodeImage = isExplorer ? "qubitArray.png" : "quantumregister.png";
 
   return (
     <div className="grand-parent">
@@ -115,10 +108,7 @@ export const QubitNode = memo((node: Node) => {
           </div>
         )}
 
-        <div
-          className="w-full flex items-center"
-          style={{ height: "52px" }}
-        >
+        <div className="w-full flex items-center" style={{ height: "52px" }}>
           <div
             className="w-full bg-blue-300 py-1 px-2 flex items-center"
             style={{ height: "inherit" }}
