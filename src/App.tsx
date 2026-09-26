@@ -96,8 +96,27 @@ import VersioningPanel from "./components/modals/versioningModal";
 import { EdgeChange } from "@xyflow/react";
 import PromptFlowModal from "./components/modals/promptFlowModal";
 import ShortcutHelpModal from "./components/modals/shortcutHelpModal";
-import { generateFlow, sendToMistral } from "./generation";
 import { openQasmToFlow } from "./qasmConverter";
+import {
+  amplitude_encoding,
+  angle_encoding,
+  basis_encoding,
+  bell_state_phi_plus,
+  classical_clustering,
+  conditional_quantum_model,
+  custom_quantum_operator,
+  empty_model,
+  encode_value,
+  first_measurement,
+  ghz,
+  grover_building_blocks,
+  grover_circuit_level,
+  hello_quantum,
+  multi_controlled_gates,
+  quantum_arithmetic,
+  quantum_clustering,
+  quantum_fourier_transform,
+} from "./constants/exampleModels";
 
 const selector = (state: {
   nodes: Node[];
@@ -622,6 +641,7 @@ If none apply, return { "algorithms": [] }.
   const [modalStep, setModalStep] = useState(1);
   const [isQunicornOpen, setIsQunicornOpen] = useState(false);
   const [isPromptModalOpen, setIsPromptModalOpen] = useState(false);
+  const [stateTest, setStateTest] = useState(1);
   const [ancillaModelingOn, setAncillaModelingOn] = useState(false);
   const [, setExperienceLevelOn] = useState("explorer");
   const [compactVisualization, setCompactVisualization] = useState(false);
@@ -1205,24 +1225,80 @@ If none apply, return { "algorithms": [] }.
 
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [isHistoryOpen, setHistoryOpen] = useState(false);
-  const [, setHistoryLoading] = useState(false);
+  const [_historyLoading, setHistoryLoading] = useState(false);
+  const [selectedJob, setSelectedJob] = useState<HistoryItem | null>(null);
 
   const fetchHistory = async () => {
     setHistoryLoading(true);
-    try {
-      const response = await fetch(`${lowcodeBackendEndpoint}/results`, {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-      });
 
-      if (!response.ok) {
-        console.error("Failed to fetch history:", response.statusText);
-        return;
+    try {
+      let generationItems: HistoryItem[] = [];
+      let executionItems: HistoryItem[] = [];
+
+      // Fetch generation jobs
+      try {
+        const jobsRes = await fetch(`http://localhost:3000/jobs`, {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        });
+
+        if (jobsRes.ok) {
+          const jobs = await jobsRes.json();
+
+          generationItems = (jobs || []).map((job: any) => ({
+            uuid: job.id,
+            name: "Generation Job",
+            description: job.prompt,
+            status: job.status,
+            created: job.createdAt,
+            type: "generation",
+            result: job.result,
+            semanticScore: job.semanticScore,
+            missingValues: job.missingValues,
+            links: {
+              request: `http://localhost:3000/job/${job.id}/request`,
+              result: `http://localhost:3000/job/${job.id}/result`,
+            },
+          }));
+        } else {
+          console.error("Failed to fetch generation jobs:", jobsRes.status);
+        }
+      } catch (err) {
+        console.error("Error fetching generation jobs:", err);
       }
 
-      const data: HistoryItem[] = await response.json();
-      console.log(data);
-      setHistory(data);
+      // Fetch execution results
+      try {
+        const response = await fetch(`${lowcodeBackendEndpoint}/results`, {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+
+          executionItems = (data || []).map((job: any) => ({
+            uuid: job.uuid,
+            name: job.name,
+            description: job.description,
+            status: job.status,
+            created: job.created,
+            type: "execution",
+            links: job.links,
+          }));
+        } else {
+          console.error(
+            "Failed to fetch execution history:",
+            response.status,
+            response.statusText,
+          );
+        }
+      } catch (err) {
+        console.error("Error fetching execution history:", err);
+      }
+
+      // Works even if one or both arrays are empty
+      setHistory([...generationItems, ...executionItems]);
     } catch (err) {
       console.error("Error fetching history:", err);
     } finally {
@@ -2995,6 +3071,61 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     }
   }
 
+  const handleGenerateModel = async (
+    prompt: string,
+    generationMode: "compact" | "circuit",
+  ) => {
+    if (!prompt.trim()) return;
+
+    setLoading(true);
+    showToast("Your model is now being generated.", "info");
+
+    try {
+      // Send the prompt to your backend
+      const response = await fetch(`http://localhost:3000/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt,
+          generationMode,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to start model generation");
+      }
+
+      const newJob = await response.json();
+
+      // Add the new job to the history
+      const newHistoryItem: HistoryItem = {
+        uuid: newJob.id,
+        name: "Generation Job",
+        description: prompt,
+        status: newJob.status || "Pending",
+        created: new Date().toISOString(),
+        type: "generation",
+        result: null,
+        semanticScore: 0,
+        missingValues: newJob.missingValues || [],
+        links: {
+          request: `http://localhost:3000/jobs/${newJob.id}/request`,
+          result: `http://localhost:3000/jobs/${newJob.id}/result`,
+        },
+      };
+
+      setHistory((prevHistory) => [newHistoryItem, ...prevHistory]);
+
+      showToast("Model generation started successfully!", "success");
+      return newJob;
+    } catch (err: any) {
+      showToast(`Failed to generate model: ${err.message}`, "error");
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   async function handleSaveClick() {
     if (!reactFlowInstance) {
       console.error("React Flow instance is not initialized.");
@@ -3629,6 +3760,149 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     }
   };
 
+  const loadModelFromUrl = useCallback(
+    (modelName: string) => {
+      console.log(modelName);
+
+      switch (modelName.toLowerCase()) {
+        // Starters
+        case "model_a":
+          loadFlow(empty_model);
+          break;
+
+        case "model_b":
+          loadFlow(hello_quantum);
+          break;
+
+        case "model_c":
+          loadFlow(first_measurement);
+          break;
+
+        // Circuit-Level Examples
+        case "model_d":
+          loadFlow(quantum_k_means_algorithm);
+          break;
+
+        case "model_e":
+          loadFlow(bell_state_phi_plus);
+          break;
+
+        case "model_f":
+          loadFlow(ghz);
+          break;
+
+        // Encoding Examples
+        case "model_h":
+          loadFlow(basis_encoding);
+          break;
+
+        case "model_i":
+          loadFlow(angle_encoding);
+          break;
+
+        case "model_j":
+          loadFlow(amplitude_encoding);
+          break;
+
+        case "model_k":
+          loadFlow(encode_value);
+          break;
+
+        // Quantum Algorithms
+        case "model_l":
+          loadFlow(grover_circuit_level);
+          break;
+
+        case "model_m":
+          loadFlow(grover_building_blocks);
+          break;
+
+        case "model_n":
+          loadFlow(grover_algorithm);
+          break;
+
+        case "model_o":
+          loadFlow(quantum_fourier_transform);
+          break;
+
+        case "model_p":
+          loadFlow(hadamard_test_real_part);
+          break;
+
+        case "model_q":
+          loadFlow(hadamard_test_imaginary_part);
+          break;
+
+        case "model_r":
+          loadFlow(swap_test);
+          break;
+
+        case "model_s":
+          loadFlow(qaoa);
+          break;
+
+        // Quantum Machine Learning
+        case "model_t":
+          loadFlow(quantum_clustering);
+          break;
+
+        case "model_u":
+          loadFlow(classical_clustering);
+          break;
+
+        // Advanced Examples
+        case "model_v":
+          loadFlow(multi_controlled_gates);
+          break;
+
+        case "model_w":
+          loadFlow(quantum_arithmetic);
+          break;
+
+        case "model_x":
+          loadFlow(conditional_quantum_model);
+          break;
+
+        case "model_y":
+          loadFlow(custom_quantum_operator);
+          break;
+
+        default:
+          console.warn(`Unknown model: ${modelName}`);
+      }
+    },
+    [loadFlow],
+  );
+
+  useEffect(() => {
+    if (!reactFlowInstance) return;
+
+    const pathname = window.location.pathname;
+    const searchParams = new URLSearchParams(window.location.search);
+
+    console.log("pathname:", pathname);
+    console.log("search:", window.location.search);
+
+    let modelName: string | null = null;
+
+    // New option: /?model=model_d
+    if (!modelName) {
+      modelName = searchParams.get("model");
+    }
+
+    if (!modelName) return;
+
+    console.log("Loading model:", modelName);
+
+    // Let loadModelFromUrl() / switch handle whether the model exists.
+    loadModelFromUrl(modelName);
+
+    // Clean the URL after loading.
+    if (searchParams.has("model")) {
+      window.history.replaceState({}, "", "/");
+    }
+  }, [reactFlowInstance, loadModelFromUrl]);
+
   const onNodeDrag = React.useCallback(
     (event: React.MouseEvent, node: Node, nodes: Node[]) => {
       console.log(reactFlowInstance.getNodes());
@@ -3794,6 +4068,18 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     nodes.forEach((node) => {
       updateNodeInternals(node.id);
     });
+  };
+
+  const handleAddMissingValues = (job: HistoryItem) => {
+    setSelectedJob(job);
+    setStateTest(2);
+    setIsPromptModalOpen(true);
+  };
+
+  const handleClosePromptModal = () => {
+    setIsPromptModalOpen(false);
+    setSelectedJob(null);
+    setStateTest(1);
   };
 
   const onToggleAncilla = () => {};
@@ -4606,14 +4892,45 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
 
       <PromptFlowModal
         open={isPromptModalOpen}
+        stepTest={stateTest}
+        onClose={handleClosePromptModal}
+        showToast={showToast}
         mistralToken={mistralToken}
-        onClose={(flow) => {
-          setIsPromptModalOpen(false);
-          if (flow) loadFlow(flow);
-          setIsPromptModalOpen(false);
+        loadFlow={loadFlow}
+        lowcodeBackendEndpoint={lowcodeBackendEndpoint}
+        jobId={selectedJob?.uuid}
+        missingValues={selectedJob?.missingValues || []}
+        onMissingValuesSubmitted={async (
+          jobId: string,
+          values: Array<{ id: string; value: any; type: string }>,
+        ) => {
+          try {
+            const response = await fetch(
+              `http://localhost:3000/job/${jobId}/submit-missing-values`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ missingValues: values }),
+              },
+            );
+            if (!response.ok) {
+              throw new Error("Failed to submit missing values");
+            }
+            showToast(
+              "Missing values submitted successfully! Model generation resumed.",
+              "success",
+            );
+            await fetchHistory();
+            handleClosePromptModal();
+          } catch (error: any) {
+            console.error("Error submitting missing values:", error);
+            showToast(
+              `Failed to submit missing values: ${error.message}`,
+              "error",
+            );
+          }
         }}
-        sendToMistral={sendToMistral}
-        generateFlow={generateFlow}
+        onSubmitPrompt={handleGenerateModel}
       />
 
       {patternGraph && (
@@ -4648,7 +4965,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
       <AiModal
         quantumAlgorithmModalStep={quantumAlgorithmModalStep}
         quantumAlgorithms={quantumAlgorithms}
-        isDetectingAlgorithms={isDetectingAlgorithms}
+        _isDetectingAlgorithms={isDetectingAlgorithms}
         detectQuantumAlgorithms={detectQuantumAlgorithms}
         handleQuantumAlgorithmModalClose={handleQuantumAlgorithmModalClose}
         setQuantumAlgorithmModalStep={setQuantumAlgorithmModalStep}
@@ -4659,6 +4976,12 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
         open={isHistoryOpen}
         onClose={() => setHistoryOpen(false)}
         history={history}
+        loadFlow={loadFlow}
+        showToast={showToast}
+        lowcodeBackendEndpoint={lowcodeBackendEndpoint}
+        fetchHistory={fetchHistory}
+        onAddMissingValues={handleAddMissingValues}
+        onRefresh={fetchHistory}
         onExecute={async (item) => {
           console.log(item);
           setHistoryOpen(false);
@@ -4674,14 +4997,12 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
 
             // If the model is a workflow
             if (compilationTarget === "workflow") {
-              //store the workflow data in your state
               setWorkflow(modelData);
               const resultResponse = await fetch(item.links.result);
               const workflow = await resultResponse.text();
 
-              // agentic subprocess is only a feature supported by camunda 8
               if (hasMultipleMappingsInFlow(modelData)) {
-                //sendWorkflowForDeployment(workflow);
+                // sendWorkflowForDeployment(workflow);
               }
               await deployWorkflowToCamunda("process-workflow", workflow);
 
@@ -4703,10 +5024,9 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
                     QUANTME_NAMESPACE_PULL,
                   );
                 } catch (err) {
-                  console.error("QRMS upload failed:", err);
+                  console.error("Service template creation failed:", err);
                 }
               }
-
               return;
             }
 
@@ -4714,13 +5034,14 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
             const resultResponse = await fetch(item.links.result);
             if (!resultResponse.ok)
               throw new Error("Failed to fetch QASM result");
-
             const qasmText = await resultResponse.text();
             setOpenQASMCode(qasmText);
           } catch (error) {
             console.error("Error handling execution:", error);
+            showToast(`Error executing model: ${error.message}`, "error"); // NEW: Show error toast
           }
         }}
+        onSubmitPrompt={handleGenerateModel}
       />
 
       <main className="flex flex-col lg:flex-row h-[calc(100vh_-_60px)]">

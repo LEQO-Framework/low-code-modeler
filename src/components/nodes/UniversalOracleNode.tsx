@@ -46,6 +46,7 @@ export const UniversalOracleNode = memo((node: Node) => {
   useEffect(() => {
     setMissingTargetStatesError(targetStates.trim() === "");
   }, [targetStates]);
+
   // Monitor room workspace users and roles
   useEffect(() => {
     const checkUserRoles = () => {
@@ -73,26 +74,40 @@ export const UniversalOracleNode = memo((node: Node) => {
     };
   }, []);
 
+  // Get the size from the connected input register.
+  // If no upstream node provides a size, return undefined so that
+  // numeric marked states are not considered out of bounds.
   const getRegisterSize = (
     currentNodeId: string,
     visited = new Set<string>(),
-  ): number => {
-    if (visited.has(currentNodeId)) return 3;
+  ): number | undefined => {
+    if (visited.has(currentNodeId)) return undefined;
     visited.add(currentNodeId);
 
     const incomingEdge = edges.find((e) => e.target === currentNodeId);
-    if (!incomingEdge) return 3;
+    if (!incomingEdge) return undefined;
 
     const sourceNode = nodes.find((n) => n.id === incomingEdge.source);
-    if (!sourceNode) return 3;
+    if (!sourceNode) return undefined;
 
-    if (sourceNode.data?.size) return parseInt(sourceNode.data.size, 10);
+    if (sourceNode.data?.size !== undefined && sourceNode.data?.size !== "") {
+      const parsedSize = parseInt(sourceNode.data.size, 10);
+
+      if (!Number.isNaN(parsedSize)) {
+        return parsedSize;
+      }
+    }
 
     return getRegisterSize(sourceNode.id, visited);
   };
 
   const inferredQubits = getRegisterSize(id);
-  const maxAllowedIndex = (1 << inferredQubits) - 1;
+
+  // Only calculate a maximum index when the input register has a size.
+  const maxAllowedIndex =
+    inferredQubits !== undefined && inferredQubits >= 0
+      ? (1 << inferredQubits) - 1
+      : undefined;
 
   const handleChange = (field: string, value: any) => {
     data[field] = value;
@@ -121,14 +136,26 @@ export const UniversalOracleNode = memo((node: Node) => {
 
     const numericValues = values.filter((v) => /^\d+$/.test(v));
 
-    const hasOutOfBounds = numericValues.some(
-      (idx) => parseInt(idx, 10) < 0 || parseInt(idx, 10) > maxAllowedIndex,
-    );
+    // Only perform the out-of-bounds check when the connected
+    // input register actually provides a size.
+    const hasOutOfBounds =
+      maxAllowedIndex !== undefined &&
+      numericValues.some(
+        (idx) =>
+          parseInt(idx, 10) < 0 ||
+          parseInt(idx, 10) > maxAllowedIndex,
+      );
 
-    setFormatError(hasOutOfBounds);
+    // Check for duplicate marked states
+    const normalizedValues = values.map((value) => value.toLowerCase());
+    const hasDuplicateStates =
+      new Set(normalizedValues).size !== normalizedValues.length;
+
+    setFormatError(hasOutOfBounds || hasDuplicateStates);
   }, [targetStates, maxAllowedIndex]);
 
   const isConnected = edges.some((edge) => edge.target === id);
+
   const [remoteHighlightColor, setRemoteHighlightColor] = useState<
     string | null
   >(null);
@@ -151,14 +178,42 @@ export const UniversalOracleNode = memo((node: Node) => {
     // Run once immediately on mount
     checkRemoteSelection();
 
-    // 3. Listen to remote awareness updates
+    // Listen to remote awareness updates
     awareness.on("change", checkRemoteSelection);
 
     // Clean up listener when the node unmounts
     return () => {
       awareness.off("change", checkRemoteSelection);
     };
-  }, [id]); // Re-run if node ID changes
+  }, [id]);
+
+  // Check whether the marked states contain duplicates for the error message.
+  const hasDuplicateStates = (() => {
+    if (!targetStates.trim()) return false;
+
+    const values = targetStates.split(",").map((value) => value.trim());
+    const normalizedValues = values.map((value) => value.toLowerCase());
+
+    return new Set(normalizedValues).size !== normalizedValues.length;
+  })();
+
+  // Check whether a numeric marked state is outside the input register size.
+  const hasOutOfBoundsState = (() => {
+    if (!targetStates.trim() || maxAllowedIndex === undefined) {
+      return false;
+    }
+
+    const values = targetStates.split(",").map((value) => value.trim());
+
+    return values
+      .filter((value) => /^\d+$/.test(value))
+      .some(
+        (value) =>
+          parseInt(value, 10) < 0 ||
+          parseInt(value, 10) > maxAllowedIndex,
+      );
+  })();
+
   return (
     <div className="grand-parent" style={{ width: 320, height: 420 }}>
       <div className="grand-parent">
@@ -175,7 +230,7 @@ export const UniversalOracleNode = memo((node: Node) => {
                 ? "#3B82F6"
                 : "#374151",
             boxShadow: remoteHighlightColor
-              ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}` // Glowing aura ring
+              ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}`
               : undefined,
             height: `420px`,
           }}
@@ -193,13 +248,18 @@ export const UniversalOracleNode = memo((node: Node) => {
           {formatError && (
             <div className="absolute top-2 right-[-40px] group z-20">
               <AlertCircle className="text-red-600 w-5 h-5" />
+
               <div
                 className="absolute left-[30px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[220px] whitespace-nowrap"
                 style={{
                   top: missingTargetStatesError ? "50px" : "35px",
                 }}
               >
-                Invalid format or out-of-bounds state index.
+                {hasDuplicateStates
+                  ? "The same marked state cannot be specified more than once."
+                  : hasOutOfBoundsState
+                    ? "Marked state is out of bounds for the input register size."
+                    : "Invalid format or out-of-bounds state index."}
               </div>
             </div>
           )}
@@ -215,7 +275,9 @@ export const UniversalOracleNode = memo((node: Node) => {
                 alt="Oracle icon"
                 className="w-[40px] h-[40px] object-contain flex-shrink-0"
               />
+
               <div className="h-full w-[1px] bg-black mx-2" />
+
               <div className="flex flex-col justify-center pl-2 leading-tight select-none w-full">
                 {mixedView ? (
                   <span className="font-semibold text-xs text-blue-900 block">
@@ -240,6 +302,7 @@ export const UniversalOracleNode = memo((node: Node) => {
               <label className="text-xs font-normal text-gray-700">
                 Oracle Mode:
               </label>
+
               <select
                 className="w-full p-1 mt-1 bg-white rounded-full text-center text-sm text-black border-2 border-blue-200 outline-none focus:border-blue-400 transition-colors"
                 value={mode}
@@ -260,7 +323,7 @@ export const UniversalOracleNode = memo((node: Node) => {
 
               <input
                 type="text"
-                placeholder="e.g. 0, 3, A, target1"
+                placeholder="e.g. 0, 3, A"
                 className={cn(
                   "w-full p-1 mt-1 text-sm text-center text-black border-2 rounded-full outline-none transition-colors",
                   formatError
@@ -269,7 +332,10 @@ export const UniversalOracleNode = memo((node: Node) => {
                 )}
                 value={node.data.targetStates || targetStates}
                 onChange={(e) => {
-                  const val = e.target.value.replace(/[^a-zA-Z0-9,\s]/g, "");
+                  const val = e.target.value.replace(
+                    /[^a-zA-Z0-9,\s]/g,
+                    "",
+                  );
 
                   setTargetStates(val);
                   updateNodeValue(node.id, "targetStates", val);
@@ -285,7 +351,10 @@ export const UniversalOracleNode = memo((node: Node) => {
           <div className="mt-2 flex flex-col space-y-2">
             <div
               className={cn("relative p-2 flex items-center")}
-              style={{ width: "140px", background: quantumConstructColor }}
+              style={{
+                width: "140px",
+                background: quantumConstructColor,
+              }}
             >
               <Handle
                 type="target"
@@ -294,16 +363,18 @@ export const UniversalOracleNode = memo((node: Node) => {
                 className={cn(
                   "z-10 circle-port-op !bg-blue-300 !border-gray-400 !absolute !top-1/2 !-translate-y-1/2 -left-[8px]",
                   isConnected
-                    ? "!border-solid !border-black !bg-blue-400"
+                    ? "!border-solid !border-black !bg-blue-300"
                     : "!border-dashed !bg-gray-200",
                 )}
                 style={{ width: 12, height: 12 }}
                 isConnectable={!isConnected}
               />
+
               <div className="flex flex-col w-full text-center leading-tight">
                 <span className="text-black text-sm truncate">
                   {node.data.inputs?.[0]?.outputIdentifier || "Register"}
                 </span>
+
                 <span className="text-[10px] text-gray-600">
                   type: quantum register
                 </span>

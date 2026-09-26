@@ -15,7 +15,6 @@ import { MeasurementNode } from "@/components/nodes/measurement";
 import { OperationNode } from "@/components/nodes/operation";
 import { StatePreparationNode } from "@/components/nodes/statepreparation";
 import { UncomputeNode } from "@/components/nodes/uncompute";
-import { MCMTGateNode } from "@/components/nodes/mcmtGate";
 import { Edge } from "reactflow";
 import { ControlStructureNode } from "@/components/nodes/controlstructure";
 import { SplitterNode } from "@/components/nodes/splitter";
@@ -25,10 +24,11 @@ import { QubitNode } from "@/components/nodes/qubit";
 import { QAOANode } from "@/components/nodes/qaoaNode";
 import { ClassicalOperationNode } from "@/components/nodes/classicalOperation";
 import { GroupNode } from "@/components/nodes/group";
-import * as consts from "@/constants";
 import { EditableNode } from "@/components/nodes/editableNode";
 import { QFTNode } from "@/components/nodes/qft";
 import { InverseQFTNode } from "@/components/nodes/qftInverse";
+import * as consts from "@/constants";
+import { MCMTGateNode } from "@/components/nodes/mcmtGate";
 
 export const nodesConfig = {
   initialNodes: [] as unknown as Node[],

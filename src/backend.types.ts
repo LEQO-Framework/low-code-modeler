@@ -307,7 +307,24 @@ export interface components {
              * Gate
              * @enum {string}
              */
-            gate: "cnot" | "toffoli" | "h" | "t" | "x" | "y" | "z" | "sx" | "s" | "tdg" | "sdg";
+            gate:
+                | "cnot"
+                | "toffoli"
+                | "h"
+                | "t"
+                | "x"
+                | "y"
+                | "z"
+                | "sx"
+                | "s"
+                | "tdg"
+                | "sdg"
+                | "id"
+                | "cy"
+                | "cswap"
+                | "cz"
+                | "ch"
+                | "swap";
         };
         ControlledUGateNode: {
             /** Id */
@@ -537,7 +554,18 @@ export interface components {
              * Gate
              * @enum {string}
              */
-            gate: "rx" | "ry" | "rz";
+            gate:
+  | "rx"
+  | "ry"
+  | "rz"
+  | "p"
+  | "cp"
+  | "crx"
+  | "cry"
+  | "crz"
+  | "u1"
+  | "u2"
+  | "u3";
             /** Parameter */
             parameter: number;
         };

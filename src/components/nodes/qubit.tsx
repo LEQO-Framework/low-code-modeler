@@ -10,12 +10,14 @@ const selector = (state: {
   selectedNode: Node | null;
   edges: Edge[];
   nodes: Node[];
+  experienceLevel: string;
   updateNodeValue: (nodeId: string, field: string, nodeVal: string) => void;
   setSelectedNode: (node: Node | null) => void;
 }) => ({
   selectedNode: state.selectedNode,
   edges: state.edges,
   nodes: state.nodes,
+  experienceLevel: state.experienceLevel,
   updateNodeValue: state.updateNodeValue,
   setSelectedNode: state.setSelectedNode,
 });
@@ -25,8 +27,9 @@ export const QubitNode = memo((node: Node) => {
 
   const { data, selected } = node;
 
-  const { nodes, updateNodeValue, setSelectedNode, edges } =
+  const { nodes, updateNodeValue, setSelectedNode, edges, experienceLevel } =
     useStore(selector, shallow);
+
   const [outputIdentifierError, setOutputIdentifierError] = useState(false);
   const [sizeError, setSizeError] = useState(false);
 
@@ -43,6 +46,7 @@ export const QubitNode = memo((node: Node) => {
 
     const rawSize = parseInt(String(data?.size), 10);
     const size = Number.isFinite(rawSize) && rawSize > 0 ? rawSize : 1;
+
     return size > 1 ? `${start}\u2013${start + size - 1}` : `${start}`;
   }, [nodes, edges, id, data?.size]);
 
@@ -55,9 +59,7 @@ export const QubitNode = memo((node: Node) => {
       let foundColor: string | null = null;
       let foundName: string | null = null;
 
-      // Loop through all active client states in the room
       awareness.getStates().forEach((state: any) => {
-        // Check if a peer has selected this specific node ID
         if (state.cursor && state.cursor.mySelectedNodeId === id) {
           foundColor = state.cursor.color;
           foundName = state.cursor.name;
@@ -68,24 +70,24 @@ export const QubitNode = memo((node: Node) => {
       console.log("COLOR", foundColor, foundName);
     };
 
-    // Run once immediately on mount
     checkRemoteSelection();
-
-    // 3. Listen to remote awareness updates
     awareness.on("change", checkRemoteSelection);
 
-    // Clean up listener when the node unmounts
     return () => {
       awareness.off("change", checkRemoteSelection);
     };
-  }, [id]); // Re-run if node ID changes
+  }, [id]);
+
+  const isExplorer = experienceLevel === "explorer";
+
+  const nodeLabel = isExplorer ? "Qubit Array" : "Quantum Register";
+
+  const nodeImage = isExplorer ? "qubitArray.png" : "quantumregister.png";
 
   return (
     <div className="grand-parent">
       <div
-        className={
-          "w-[350px] h-[170px] rounded-none bg-white  border border-solid border-gray-700 shadow-md relative"
-        }
+        className="w-[350px] h-[170px] rounded-none bg-white border border-solid border-gray-700 shadow-md relative"
         style={{
           borderColor: remoteHighlightColor
             ? remoteHighlightColor
@@ -93,7 +95,7 @@ export const QubitNode = memo((node: Node) => {
               ? "#3B82F6"
               : "#374151",
           boxShadow: remoteHighlightColor
-            ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}` // Glowing aura ring
+            ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}`
             : undefined,
         }}
       >
@@ -105,25 +107,29 @@ export const QubitNode = memo((node: Node) => {
             q{qubitIndexLabel}
           </div>
         )}
+
         <div className="w-full flex items-center" style={{ height: "52px" }}>
           <div
             className="w-full bg-blue-300 py-1 px-2 flex items-center"
             style={{ height: "inherit" }}
           >
             <img
-              src="qubitIcon.png"
-              alt="icon"
+              src={nodeImage}
+              alt={nodeLabel}
               className="w-[40px] h-[40px] object-contain flex-shrink-0"
             />
+
             <div className="h-full w-[1px] bg-black mx-2" />
+
             <span
-              className="truncate font-semibold leading-none"
+              className="font-semibold leading-none"
               style={{ paddingLeft: "75px" }}
             >
-              {data.label}
+              {nodeLabel}
             </span>
           </div>
         </div>
+
         <div className="custom-node-port-out">
           <OutputPort
             node={node}

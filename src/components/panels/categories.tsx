@@ -154,7 +154,6 @@ export const categories: Record<string, CategoryEntry> = {
           }
         },
       ],
-
       "Algorithmic Blocks": [
         { label: "QFT", aliases: ["Quantum Fourier Transform"], type: consts.QFTNode, icon: ["QFT_palette.png"], description: "Quantum Fourier Transform.", completionGuaranteed: true, compactOptions: [true, false] },
         { label: "Inverse QFT", aliases: ["IQFT"], type: consts.InverseQFTNode, icon: ["InverseQFT_palette.png"], description: "Inverse QFT.", completionGuaranteed: true, compactOptions: [true, false] },
@@ -184,7 +183,7 @@ export const categories: Record<string, CategoryEntry> = {
       ],
       "Quantum Datatypes": [
         { label: "Ancilla", dataType: consts.AncillaNode, type: consts.AncillaNode, icon: "PaletteIcon_Ancilla.png", description: "Helper qubit used temporarily in a computation.", completionGuaranteed: false, compactOptions: [true, false] },
-        { label: "Qubit", dataType: consts.QubitNode, type: consts.QubitNode, icon: "PaletteIcon_Qubit.png", description: "Basic unit of quantum information.", completionGuaranteed: true, compactOptions: [true, false] },
+        { label: "Qubit Array", dataType: consts.QubitNode, type: consts.QubitNode, icon: ["PaletteIcon_QuantumRegister.png","PaletteIcon_QubitArray.png"], description: "Basic unit of quantum information.", completionGuaranteed: true, compactOptions: [true, false] },
       ],
     },
   },

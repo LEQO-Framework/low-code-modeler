@@ -234,8 +234,7 @@ export const ControlStructureNode = memo((node: Node) => {
                   </div>
                 </div>
                 <span className="text-sm block mt-3">Number:</span>
-                <Input
-                  size="small"
+                <input
                   placeholder="Enter condition"
                   className="mt-1 w-[80%] text-center"
                   style={{ fontSize: "12px", height: "22px" }}
