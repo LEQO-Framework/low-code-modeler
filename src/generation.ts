@@ -348,7 +348,7 @@ function qlcmNotationToJSON(qlcmNotation: string): string {
     const nodeId = generateId();
     nodeIdMap.set(block.id, nodeId);
 
-    const nodeConfig = getNodeConfig(block, nodeId, blocks);
+    const nodeConfig = getNodeConfig(block);
 
     const node = {
       id: nodeId,

@@ -1,7 +1,7 @@
 import { Node, Edge } from "reactflow";
 
 // Helper to map node types (copy from backend.ts)
-function mapNode(node: Node, allNodes: Node[]): any {
+function mapNode(node: Node, allNodes: any): any {
   if (node.data.implementation) {
     return {
       id: node.id,
