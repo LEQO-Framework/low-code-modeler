@@ -1,5 +1,3 @@
-import { initialEdges } from "."
-
 export const quantum_k_means_algorithm = {
   "metadata": {
     "version": "1.0.0",

@@ -1,0 +1,35 @@
+name: Oxlint
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize]
+    paths-ignore:
+      - "*.md"
+      - "*.json"
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - "*.md"
+      - "*.json"
+
+jobs:
+  lint:
+    name: Lint (Oxlint)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Run Oxlint
+        run: npx oxlint .

@@ -3,7 +3,6 @@ import { Node, Handle, Position } from "reactflow";
 import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
 import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
 import OutputPort from "../utils/outputPort";
 import { quantumConstructColor } from "@/constants";
 import { awareness } from "@/yjs"; // Imported the room awareness configuration
@@ -13,12 +12,13 @@ const selector = (state: any) => ({
   nodes: state.nodes,
   edges: state.edges,
   setSelectedNode: state.setSelectedNode,
-  experienceLevel: state.experienceLevel
+  experienceLevel: state.experienceLevel,
 });
 
 export const GroverDiffuserNode = memo((node: Node) => {
   const { id, data, selected } = node;
-  const { updateNodeValue, nodes, edges, setSelectedNode, experienceLevel } = useStore(selector, shallow);
+  const { updateNodeValue, nodes, edges, setSelectedNode, experienceLevel } =
+    useStore(selector, shallow);
 
   const [outputs, setOutputs] = useState(data.outputs || []);
   const [outputIdentifierError, setOutputIdentifierError] = useState(false);
@@ -26,8 +26,8 @@ export const GroverDiffuserNode = memo((node: Node) => {
 
   // Added context state tracking for room collaborative view states
   const [mixedView, setMixedView] = useState(false);
-  const [hasPioneerUser, setHasPioneerUser] = useState(false);
-  const [hasExplorerUser, setHasExplorerUser] = useState(false);
+  const [_hasPioneerUser, setHasPioneerUser] = useState(false);
+  const [_hasExplorerUser, setHasExplorerUser] = useState(false);
 
   // Monitor awareness states for active users and their selected roles
   useEffect(() => {
@@ -56,30 +56,23 @@ export const GroverDiffuserNode = memo((node: Node) => {
     };
   }, []);
 
-
-  const [remoteHighlightColor, setRemoteHighlightColor] = useState<string | null>(null);
-  const [selectingUserName, setSelectingUserName] = useState<string | null>(null); // technically not needed, could extend functionality to also show user name next to highlighted node
+  const [remoteHighlightColor, setRemoteHighlightColor] = useState<
+    string | null
+  >(null);
 
   useEffect(() => {
     const checkRemoteSelection = () => {
       let foundColor: string | null = null;
-      let foundName: string | null = null;
 
       // Loop through all active client states in the room
-      awareness.getStates().forEach((state: any, clientId: number) => {
-        // Skip your own client ID so you don't highlight it with your own color
-        // if (clientId === awareness.clientID) return;
-
+      awareness.getStates().forEach((state: any) => {
         // Check if a peer has selected this specific node ID
         if (state.cursor && state.cursor.mySelectedNodeId === id) {
           foundColor = state.cursor.color;
-          foundName = state.cursor.name;
         }
       });
 
       setRemoteHighlightColor(foundColor);
-      setSelectingUserName(foundName);
-      console.log("COLOR", foundColor, foundName);
     };
 
     // Run once immediately on mount
@@ -94,31 +87,35 @@ export const GroverDiffuserNode = memo((node: Node) => {
     };
   }, [id]); // Re-run if node ID changes
 
-  const isConnected = edges.some(edge => edge.target === id);
+  const isConnected = edges.some((edge) => edge.target === id);
 
   return (
-    <div
-      className="grand-parent"
-      style={{ width: 320, height: 250 }}
-    >
+    <div className="grand-parent" style={{ width: 320, height: 250 }}>
       <div className="grand-parent">
         <div
           className={cn(
             "w-[320px] bg-white border border-solid border-gray-700 shadow-md relative",
             selected && "border-blue-500",
-            mixedView && "border-purple-400"
+            mixedView && "border-purple-400",
           )}
           style={{
-            borderColor: remoteHighlightColor ? remoteHighlightColor : (selected ? "#3B82F6" : "#374151"),
+            borderColor: remoteHighlightColor
+              ? remoteHighlightColor
+              : selected
+                ? "#3B82F6"
+                : "#374151",
             boxShadow: remoteHighlightColor
               ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}` // Glowing aura ring
               : undefined,
-            height: `250px`
-          }}>
-
+            height: `250px`,
+          }}
+        >
           {/* HEADER */}
-          <div className="w-full flex items-center" style={{ height: '52px' }}>
-            <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
+          <div className="w-full flex items-center" style={{ height: "52px" }}>
+            <div
+              className="w-full bg-blue-300 py-1 px-2 flex items-center"
+              style={{ height: "inherit" }}
+            >
               <img
                 src="diffusionIcon.png"
                 alt="Grover icon"
@@ -135,9 +132,7 @@ export const GroverDiffuserNode = memo((node: Node) => {
                     Emphasize Marked Target(s)
                   </span>
                 ) : (
-                  <span className="font-semibold text-sm">
-                    Grover Diffuser
-                  </span>
+                  <span className="font-semibold text-sm">Grover Diffuser</span>
                 )}
               </div>
             </div>
@@ -146,8 +141,7 @@ export const GroverDiffuserNode = memo((node: Node) => {
           {/* QUANTUM INPUT PORT */}
           <div className="mt-4 flex flex-col space-y-2">
             <div
-              className={cn(
-                "relative p-2 flex items-center")}
+              className={cn("relative p-2 flex items-center")}
               style={{ width: "140px", background: quantumConstructColor }}
             >
               <Handle
@@ -158,7 +152,7 @@ export const GroverDiffuserNode = memo((node: Node) => {
                   "z-10 circle-port-op !bg-blue-300 !border-gray-400 !absolute !top-1/2 !-translate-y-1/2 -left-[8px]",
                   isConnected
                     ? "!border-solid !border-black !bg-blue-400"
-                    : "!border-dashed !bg-gray-200"
+                    : "!border-dashed !bg-gray-200",
                 )}
                 style={{ width: 12, height: 12 }}
                 isConnectable={!isConnected}

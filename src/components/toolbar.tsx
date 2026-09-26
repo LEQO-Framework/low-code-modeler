@@ -1,10 +1,9 @@
-import React, { useState } from "react";
 import {
   Button,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
 } from "./ui";
 
 import {
@@ -20,17 +19,9 @@ import {
   FileJson,
   ImageIcon,
   LayoutTemplate,
-  PuzzleIcon,
-  LucidePuzzle,
-  Puzzle,
-  Group,
-  BoxSelect,
-  BrainCircuit,
   Search,
   BadgeCheck,
 } from "lucide-react";
-
-
 
 interface ToolbarProps {
   onSave: () => void;
@@ -42,9 +33,8 @@ interface ToolbarProps {
   createDomainProfile: () => void;
   sendToBackend: () => void;
   startQuantumAlgorithmSelection: () => void;
-  uploadPatternSolution: () => void,
-  openPatternSolution: () => void,
-  //sendToQunicorn: () => void;
+  uploadPatternSolution: () => void;
+  openPatternSolution: () => void;
   openHistory: () => void;
   startTour: () => void;
   onSaveAsTemplate: () => void;
@@ -71,25 +61,8 @@ const Toolbar: React.FC<ToolbarProps> = ({
   startTour,
   onSaveAsTemplate,
   onManageTemplates,
-  onGroupSelected,
-  onLoadQasm,
-  generateModel, 
-  openOpenQASM
+  openOpenQASM,
 }) => {
-  const [saveIsOpen, setSaveIsOpen] = useState(false);
-
-  const handleQasmUpload = () => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = ".qasm,.txt";
-    input.onchange = async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) return;
-      const text = await file.text();
-      onLoadQasm(text);
-    };
-    input.click();
-  };
   return (
     <div className="flex items-center justify-between bg-gray-100 p-4 border-b border-gray-300 h-[56px]">
       <div className="flex items-center">
@@ -101,21 +74,34 @@ const Toolbar: React.FC<ToolbarProps> = ({
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button size="sm" variant="default" className="focus:ring-0 focus-visible:ring-0 outline-none">
+              <Button
+                size="sm"
+                variant="default"
+                className="focus:ring-0 focus-visible:ring-0 outline-none"
+              >
                 <FolderOpen className="w-4 h-4 mr-2" />
                 <ChevronDown className="w-4 h-4 ml-2" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" onCloseAutoFocus={(e) => e.preventDefault()}>
+            <DropdownMenuContent
+              align="end"
+              onCloseAutoFocus={(e) => e.preventDefault()}
+            >
               <DropdownMenuItem onClick={onRestore} title="Open a file">
                 <FileJson className="w-4 h-4 mr-2" />
                 <span>File</span>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={openPatternSolution} title="Open a pattern solution">
+              <DropdownMenuItem
+                onClick={openPatternSolution}
+                title="Open a pattern solution"
+              >
                 <ImageIcon className="w-4 h-4 mr-2" />
                 <span>Pattern Solution</span>
-              </DropdownMenuItem>            
-              <DropdownMenuItem onClick={openOpenQASM} title="Open a pattern solution">
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={openOpenQASM}
+                title="Open a pattern solution"
+              >
                 <ImageIcon className="w-4 h-4 mr-2" />
                 <span>OpenQASM</span>
               </DropdownMenuItem>
@@ -123,22 +109,38 @@ const Toolbar: React.FC<ToolbarProps> = ({
           </DropdownMenu>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button size="sm" variant="default" className="focus:ring-0 focus-visible:ring-0 outline-none">
+              <Button
+                size="sm"
+                variant="default"
+                className="focus:ring-0 focus-visible:ring-0 outline-none"
+              >
                 <Save className="w-4 h-4 mr-2" />
 
                 <ChevronDown className="w-4 h-4 ml-2" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" onCloseAutoFocus={(e) => e.preventDefault()}>
-              <DropdownMenuItem onClick={onSave} title="Download the current diagram as JSON">
+            <DropdownMenuContent
+              align="end"
+              onCloseAutoFocus={(e) => e.preventDefault()}
+            >
+              <DropdownMenuItem
+                onClick={onSave}
+                title="Download the current diagram as JSON"
+              >
                 <FileJson className="w-4 h-4 mr-2" />
                 <span>as JSON</span>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={onSaveAsSVG} title="Download the current diagram as SVG">
+              <DropdownMenuItem
+                onClick={onSaveAsSVG}
+                title="Download the current diagram as SVG"
+              >
                 <ImageIcon className="w-4 h-4 mr-2" />
                 <span>as SVG</span>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={onSaveAsTemplate} title="Save the current diagram as a custom user template">
+              <DropdownMenuItem
+                onClick={onSaveAsTemplate}
+                title="Save the current diagram as a custom user template"
+              >
                 <LayoutTemplate className="w-4 h-4 mr-2" />
                 <span>as User Template</span>
               </DropdownMenuItem>
@@ -146,35 +148,64 @@ const Toolbar: React.FC<ToolbarProps> = ({
           </DropdownMenu>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button size="sm" variant="default" className="focus:ring-0 focus-visible:ring-0 outline-none">
+              <Button
+                size="sm"
+                variant="default"
+                className="focus:ring-0 focus-visible:ring-0 outline-none"
+              >
                 <UploadCloud className="w-4 h-4 mr-2" />
                 <ChevronDown className="w-4 h-4 ml-2" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" onCloseAutoFocus={(e) => e.preventDefault()}>
-              <DropdownMenuItem onClick={uploadDiagram} title="Upload the current diagram to GitHub">
+            <DropdownMenuContent
+              align="end"
+              onCloseAutoFocus={(e) => e.preventDefault()}
+            >
+              <DropdownMenuItem
+                onClick={uploadDiagram}
+                title="Upload the current diagram to GitHub"
+              >
                 <FileJson className="w-4 h-4 mr-2" />
                 <span>File</span>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={uploadPatternSolution} title="Upload the current diagram as pattern solution">
+              <DropdownMenuItem
+                onClick={uploadPatternSolution}
+                title="Upload the current diagram as pattern solution"
+              >
                 <ImageIcon className="w-4 h-4 mr-2" />
                 <span>Pattern Solution</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button size="sm" onClick={onManageTemplates} title="Manage all custom user templates">
+          <Button
+            size="sm"
+            onClick={onManageTemplates}
+            title="Manage all custom user templates"
+          >
             <LayoutTemplate className="w-4 h-4 mr-2" /> Manage Templates
           </Button>
-          <Button size="sm" onClick={onOpenConfig} title="Configure the editor and the endpoints">
+          <Button
+            size="sm"
+            onClick={onOpenConfig}
+            title="Configure the editor and the endpoints"
+          >
             <Settings className="w-4 h-4 mr-2" /> Configuration
           </Button>
-          <Button size="sm" onClick={createDomainProfile} title="Create domain profiles and manage them.">
+          <Button
+            size="sm"
+            onClick={createDomainProfile}
+            title="Create domain profiles and manage them."
+          >
             <BadgeCheck className="w-4 h-4 mr-2" /> Manage Domain Profiles
           </Button>
-          <Button className="backend-button" size="sm" onClick={sendToBackend} title="Send the diagram to the backend">
+          <Button
+            className="backend-button"
+            size="sm"
+            onClick={sendToBackend}
+            title="Send the diagram to the backend"
+          >
             <Send className="w-4 h-4 mr-2" /> Send to Backend
           </Button>
-              
 
           <Button size="sm" onClick={startQuantumAlgorithmSelection}>
             <Search className="w-4 h-4 mr-2" /> Detect Algorithm
@@ -182,8 +213,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
           {/**<Button size="sm" onClick={generateModel} title="Generate a model based on user input.">
             <BrainCircuit className="w-4 h-4 mr-2" />
             Generate Model
-          </Button>**/
-          }
+          </Button>**/}
           <Button size="sm" onClick={openHistory} title="Display the history">
             <Clock className="w-4 h-4 mr-2" />
             History
@@ -198,6 +228,5 @@ const Toolbar: React.FC<ToolbarProps> = ({
     </div>
   );
 };
-
 
 export default Toolbar;

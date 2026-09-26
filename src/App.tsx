@@ -1,14 +1,18 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import ReactFlow, {
   Background,
   BackgroundVariant,
   Controls,
   Edge,
   Node,
-  ReactFlowProvider,
   MiniMap,
   getNodesBounds,
-  Panel,
   useUpdateNodeInternals,
   SelectionMode,
   Connection,
@@ -17,23 +21,38 @@ import ReactFlow, {
   NodeChange,
 } from "reactflow";
 import "reactflow/dist/style.css";
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from "uuid";
 import { nodesMap, edgesMap, ydoc, awareness, yProvider } from "@/yjs";
 import { ContextMenu, CustomPanel, Palette } from "./components";
 import Toolbar from "./components/toolbar";
 import { nodesConfig, tutorial } from "./config/site";
 import { useStore } from "./config/store";
 import { useShallow } from "zustand/react/shallow";
-import { findNodeDefinition, handleDragOver, handleOnDrop } from "./lib/utils";
+import { findNodeDefinition, handleDragOver } from "./lib/utils";
 import useKeyBindings from "./hooks/useKeyBindings";
 import { toSvg } from "html-to-image";
 import { initialDiagram } from "./config/site";
 import Modal, { NewDiagramModal } from "./Modal";
-import './index.css';
-import { Placement } from 'react-joyride';
+import "./index.css";
+import { Placement } from "react-joyride";
 import { startCompile } from "./backend";
-import { ancillaConstructColor, classicalConstructColor, ClassicalOperatorNode, controlFlowConstructColor, grover, hadamard_test_imaginary_part, hadamard_test_real_part, qaoa, quantum_types, quantumConstructColor, swap_test, quantum_k_means, custom_template, TEMPLATE_STORAGE_KEY, templates, PluginNode } from "./constants";
-import Joyride from 'react-joyride';
+import {
+  ancillaConstructColor,
+  classicalConstructColor,
+  ClassicalOperatorNode,
+  controlFlowConstructColor,
+  grover,
+  hadamard_test_imaginary_part,
+  hadamard_test_real_part,
+  qaoa,
+  quantumConstructColor,
+  swap_test,
+  quantum_k_means,
+  custom_template,
+  templates,
+  PluginNode,
+} from "./constants";
+import Joyride from "react-joyride";
 import { ConfigModal } from "./components/modals/configModal";
 import { QunicornModal } from "./components/modals/qunicornModal";
 import { SendRequestModal } from "./components/modals/backendModal";
@@ -43,18 +62,35 @@ import { HistoryItem, HistoryModal } from "./components/modals/historyModal";
 import { ValidationModal } from "./components/modals/validationModal";
 import AiModal from "./components/modals/aiModal";
 import OpenAI from "openai";
-import { grover_algorithm, hadamard_test_imaginary_part_algorithm, hadamard_test_real_part_algorithm, qaoa_algorithm, swap_test_algorithm, quantum_k_means_algorithm } from "./constants/templates";
-import JSZip, { JSZipObject } from "jszip";
-import { createDeploymentModel, createNodeType, createServiceTemplate, updateNodeType, updateServiceTemplate } from "./winery";
-import custom from "./components/nodes/custom";
-import { categories, CategoryEntry, Template } from "./components/panels/categories";
+import {
+  grover_algorithm,
+  hadamard_test_imaginary_part_algorithm,
+  hadamard_test_real_part_algorithm,
+  qaoa_algorithm,
+  swap_test_algorithm,
+  quantum_k_means_algorithm,
+} from "./constants/templates";
+import JSZip from "jszip";
+import {
+  createDeploymentModel,
+  createNodeType,
+  createServiceTemplate,
+  updateNodeType,
+  updateServiceTemplate,
+} from "./winery";
+import {
+  categories,
+  CategoryEntry,
+  Template,
+} from "./components/panels/categories";
 import { ManageTemplateModal } from "./components/modals/templateModal";
 import { v4 as uuid } from "uuid";
-import DomainProfileModal, { DomainProfile } from "./components/modals/domainProfileModal";
+import DomainProfileModal, {
+  DomainProfile,
+} from "./components/modals/domainProfileModal";
 import { PatternSelectionModal } from "./components/modals/patternSelectionModal";
 import { PatternImplementationSelectionModal } from "./components/modals/patternImplementationSelectionModal";
-import { groupSelectedNodes, ungroupNodes, handleNodeDropOnGroup } from "./lib/groupHandler";
-import { qasmToNodes } from "./lib/qasmToNodes";
+import { groupSelectedNodes, handleNodeDropOnGroup } from "./lib/groupHandler";
 import UserCountPanel from "./components/modals/userAwareness";
 import VersioningPanel from "./components/modals/versioningModal";
 import { EdgeChange } from "@xyflow/react";
@@ -159,15 +195,12 @@ function App() {
     setExperienceLevel,
     setAncillaMode,
     setCompletionGuaranteed,
-    setContainsPlaceholder,
     setSelectedNode,
     setNodes,
     updateNodeValue,
     updateParent,
     updateChildren,
-    setEdges,
   } = useStore(useShallow(selector));
-
 
   // TODO: don't use if no collab mode
 
@@ -176,20 +209,18 @@ function App() {
     name: "My Model",
     description: "This is a model.",
     author: "",
-    containsPlaceholder: false
+    containsPlaceholder: false,
   });
-
 
   const historyArray = ydoc.getArray<any>("history");
   const [versioningHistory, setVersioningHistory] = useState<any[]>([]);
-
 
   const [nodesI, setNodesI] = useState<Node[]>([]);
   const [edgesI, setEdgesI] = useState<Edge[]>([]);
   useEffect(() => {
     const update = () => {
       setVersioningHistory([...historyArray.toArray()]);
-      console.log(versioningHistory)
+      console.log(versioningHistory);
     };
 
     historyArray.observe(update);
@@ -201,44 +232,49 @@ function App() {
   const [userName, setUserName] = useState<string>("Default Name");
 
   const onUserNameChange = (newName) => {
-    console.log("newName", newName)
+    console.log("newName", newName);
     setUserName(newName);
     const currentCursorState = awareness.getLocalState()?.cursor || {};
-    awareness.setLocalStateField("cursor", { ...currentCursorState, name: newName }) //update only name
-    console.log("cursors", cursors)
+    awareness.setLocalStateField("cursor", {
+      ...currentCursorState,
+      name: newName,
+    }); //update only name
+    console.log("cursors", cursors);
   };
 
-  const [menu, setMenu] = useState(null);
+  const [, setMenu] = useState(null);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [isManageTemplatesOpen, setIsManageTemplatesOpen] = useState(false);
   const [nisqAnalyzerEndpoint, setNisqAnalyzerEndpoint] = useState(
-    import.meta.env.VITE_NISQ_ANALYZER || "http://localhost:8098/nisq-analyzer"
+    import.meta.env.VITE_NISQ_ANALYZER || "http://localhost:8098/nisq-analyzer",
   );
   const [camundaEndpoint, setCamundaEndpoint] = useState(
-    import.meta.env.VITE_CAMUNDA7_ENDPOINT || "http://localhost:8090/engine-rest"
+    import.meta.env.VITE_CAMUNDA7_ENDPOINT ||
+      "http://localhost:8090/engine-rest",
   );
 
   const [openAIToken, setOpenAIToken] = useState(
-    import.meta.env.VITE_OPENAI_TOKEN
+    import.meta.env.VITE_OPENAI_TOKEN,
   );
   const [mistralToken, setMistralToken] = useState(
-    import.meta.env.VITE_MISTRAL_TOKEN
+    import.meta.env.VITE_MISTRAL_TOKEN,
   );
   const [qunicornEndpoint, setQunicornEndpoint] = useState(
-    import.meta.env.VITE_QUNICORN || "http://localhost:8080"
+    import.meta.env.VITE_QUNICORN || "http://localhost:8080",
   );
   const [lowcodeBackendEndpoint, setLowcodeBackendEndpoint] = useState(
-    import.meta.env.VITE_LOW_CODE_BACKEND || "http://localhost:8000"
+    import.meta.env.VITE_LOW_CODE_BACKEND || "http://localhost:8000",
   );
 
   const [patternAtlasApiEndpoint, setPatternAtlasApiEndpoint] = useState(
-    import.meta.env.VITE_PATTERN_ATLAS_API || "http://localhost:1977/patternatlas/patternLanguages/af7780d5-1f97-4536-8da7-4194b093ab1d"
+    import.meta.env.VITE_PATTERN_ATLAS_API ||
+      "http://localhost:1977/patternatlas/patternLanguages/af7780d5-1f97-4536-8da7-4194b093ab1d",
   );
   const [patternAtlasUiEndpoint, setPatternAtlasUiEndpoint] = useState(
-    import.meta.env.VITE_PATTERN_ATLAS_UI || "http://localhost:1978"
+    import.meta.env.VITE_PATTERN_ATLAS_UI || "http://localhost:1978",
   );
   const [qcAtlasEndpoint, setQcAtlasEndpoint] = useState(
-    import.meta.env.VITE_QC_ATLAS || "http://localhost:6626"
+    import.meta.env.VITE_QC_ATLAS || "http://localhost:6626",
   );
   const [activeTab, setActiveTab] = useState("editor");
   const [warningExecution, setWarningExecution] = useState(false);
@@ -254,15 +290,15 @@ function App() {
     left: 0,
   });
 
-
   const [cursors, setCursors] = useState<{
     [clientId: number]: {
-      name: string; x: number, y: number, color: string
-    }
+      name: string;
+      x: number;
+      y: number;
+      color: string;
+    };
   }>({});
   const [myClientId, setMyClientId] = useState<number | null>(null);
-
-
 
   const onNodeContextMenu = useCallback(
     (event: React.MouseEvent, node: Node) => {
@@ -272,11 +308,9 @@ function App() {
         componentId: node.id,
         top: event.clientY,
         left: event.clientX,
-        //top: node.position.y+0.5*node.height, //passt nicht
-        //left: node.position.x-0.5*node.width, //passt nicht
       });
     },
-    []
+    [],
   );
 
   const onEdgeContextMenu = useCallback(
@@ -287,25 +321,30 @@ function App() {
         componentId: edge.id,
         top: event.clientY,
         left: event.clientX,
-        //top: node.position.y+0.5*node.height, //passt nicht
-        //left: node.position.x-0.5*node.width, //passt nicht
       });
     },
-    []
+    [],
   );
 
   const onEdgesDelete = (edges: Edge[]) => {
-  edges.forEach((edge) => {
-    const targetNodeId = edge.target;
-    const targetHandle = edge.targetHandle;
-    const targetNode = nodes.find(n => n.id === targetNodeId);
+    edges.forEach((edge) => {
+      const targetNodeId = edge.target;
+      const targetHandle = edge.targetHandle;
+      const targetNode = nodes.find((n) => n.id === targetNodeId);
 
-    // GroupNodes und Nodes ohne inputs überspringen
-    if (!targetNode || !targetNode.data?.inputs || targetNode.type === "groupNode") return;
+      // Skip GroupNodes and nodes without inputs
+      if (
+        !targetNode ||
+        !targetNode.data?.inputs ||
+        targetNode.type === "groupNode"
+      )
+        return;
 
-    const newInputs = targetNode.data.inputs.filter((i: any) => i.targetHandle !== targetHandle);
-    updateNodeValue(targetNodeId, "inputs", newInputs);
-  });
+      const newInputs = targetNode.data.inputs.filter(
+        (i: any) => i.targetHandle !== targetHandle,
+      );
+      updateNodeValue(targetNodeId, "inputs", newInputs);
+    });
   };
 
   const handleAction = (action: string, nodeId: string) => {
@@ -313,15 +352,25 @@ function App() {
     setContextMenu((prev) => ({ ...prev, visible: false }));
   };
 
-
-  const [validationResult, setValidationResult] = useState({ warnings: [], errors: [] });
+  const [validationResult, setValidationResult] = useState({
+    warnings: [],
+    errors: [],
+  });
   const [isValidationOpen, setIsValidationOpen] = useState(false);
-  const [githubRepositoryOwner, setGithubRepositoryOwner] = useState(import.meta.env.VITE_GITHUB_REPO_OWNER);
-  const [githubRepositoryName, setGithubRepositoryName] = useState(import.meta.env.VITE_GITHUB_REPO_NAME);
-  const [githubBranch, setGithubBranch] = useState(import.meta.env.VITE_GITHUB_REPO_BRANCH);
-  const [githubToken, setGithubToken] = useState(import.meta.env.VITE_GITHUB_TOKEN);
+  const [githubRepositoryOwner, setGithubRepositoryOwner] = useState(
+    import.meta.env.VITE_GITHUB_REPO_OWNER,
+  );
+  const [githubRepositoryName, setGithubRepositoryName] = useState(
+    import.meta.env.VITE_GITHUB_REPO_NAME,
+  );
+  const [githubBranch, setGithubBranch] = useState(
+    import.meta.env.VITE_GITHUB_REPO_BRANCH,
+  );
+  const [githubToken, setGithubToken] = useState(
+    import.meta.env.VITE_GITHUB_TOKEN,
+  );
   const [openqasmCode, setOpenQASMCode] = useState("");
-  const [showResultModal, setShowResultModal] = useState(false);
+  const [, setShowResultModal] = useState(false);
 
   const [selectedDevice, setSelectedDevice] = useState("aer_simulator");
   const [provider, setProvider] = useState("IBM");
@@ -329,17 +378,14 @@ function App() {
   const [numShots, setNumShots] = useState(1024);
   const [accessToken, setAccessToken] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
-  const [errorJobMessage, setErrorJobMessage] = useState("");
+  const [, setErrorJobMessage] = useState("");
   const [isPatternModalOpen, setIsPatternModalOpen] = useState(false);
-  const [isPatternImplementationOpen, setIsPatternImplementationOpen] = useState(false);
-  const [isOpenQASMOpen, setIsOpenQASMOpen] = useState(false);
-  const [selectedPatternId, setSelectedPatternId] = useState<string | null>(null);
+  const [isPatternImplementationOpen, setIsPatternImplementationOpen] =
+    useState(false);
   const [lassoMode, setLassoMode] = useState(false);
-  
+
   const [mathMode, setMathMode] = useState(false);
   const [qasmEditorMode, setQasmEditorMode] = useState(false);
-
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [isLoadJsonModalOpen, setIsLoadJsonModalOpen] = useState(false);
   const [isPaletteOpen, setIsPaletteOpen] = useState(true);
@@ -349,13 +395,30 @@ function App() {
   const [jobId, setJobId] = useState(null);
   const [quantumAlgorithmModalStep, setQuantumAlgorithmModalStep] = useState(0);
   const [domainProfileOpen, setDomainProfileOpen] = useState(false);
+  const [editingDomainProfileIndex, setEditingDomainProfileIndex] = useState<
+    number | null
+  >(null);
+  const [editingDomainProfile, setEditingDomainProfile] =
+    useState<DomainProfile | null>(null);
   const [quantumAlgorithms, setQuantumAlgorithms] = useState([
-    { name: "Quantum Approximate Optimization Algorithm (QAOA)", configCount: 0, patternGraphPng: "patterns/qaoa_patterngraph.png" },
+    {
+      name: "Quantum Approximate Optimization Algorithm (QAOA)",
+      configCount: 0,
+      patternGraphPng: "patterns/qaoa_patterngraph.png",
+    },
     { name: "SWAP Test", configCount: 0, patternGraphPng: null },
     { name: "Hadamard Test", configCount: 0, patternGraphPng: null },
-    { name: "Grover's Algorithm", configCount: 0, patternGraphPng: "patterns/grover_patterngraph.png" },
+    {
+      name: "Grover's Algorithm",
+      configCount: 0,
+      patternGraphPng: "patterns/grover_patterngraph.png",
+    },
     { name: "Uniform Superposition", configCount: 0, patternGraphPng: null },
-    { name: "Initialization", configCount: 0, patternGraphPng: "patterns/initialization_patterngraph.png" },
+    {
+      name: "Initialization",
+      configCount: 0,
+      patternGraphPng: "patterns/initialization_patterngraph.png",
+    },
   ]);
 
   const [patternGraph, setPatternGraph] = useState(null);
@@ -364,21 +427,19 @@ function App() {
   let client: OpenAI | null = null;
   try {
     if (openAIToken) {
-      client = new OpenAI({ apiKey: openAIToken, dangerouslyAllowBrowser: true });
+      client = new OpenAI({
+        apiKey: openAIToken,
+        dangerouslyAllowBrowser: true,
+      });
     }
   } catch (e) {
     console.warn("OpenAI init failed, continuing without it:", e);
     client = null;
   }
 
-  /*
-    const client = new OpenAI({
-      apiKey: openAIToken, dangerouslyAllowBrowser: true
-    });
-  */
-
-
-  const detectQuantumAlgorithms = async (userInput: string): Promise<string | null> => {
+  const detectQuantumAlgorithms = async (
+    userInput: string,
+  ): Promise<string | null> => {
     try {
       setIsDetectingAlgorithms(true);
 
@@ -397,7 +458,7 @@ function App() {
         "Amplitude Encoding",
         "Angle Encoding",
         "Initialization",
-        "Dynamic Circuits"
+        "Dynamic Circuits",
       ];
 
       setQuantumAlgorithms(quantumAlgorithms);
@@ -436,9 +497,12 @@ If none apply, return { "algorithms": [] }.
 
         const parsed = JSON.parse(response.output_text);
 
-        if (!Array.isArray(parsed.algorithms)) throw new Error("Invalid response format");
+        if (!Array.isArray(parsed.algorithms))
+          throw new Error("Invalid response format");
 
-        setQuantumAlgorithms(parsed.algorithms.map((name: string) => ({ name })));
+        setQuantumAlgorithms(
+          parsed.algorithms.map((name: string) => ({ name })),
+        );
 
         return null;
       } catch (sendError: any) {
@@ -451,16 +515,9 @@ If none apply, return { "algorithms": [] }.
     }
   };
 
-
-  function viewPatternGraph(algo) {
-    setPatternGraph(algo.patternGraphPng);
-  }
-
-
   const handleQuantumAlgorithmModalClose = () => {
     setQuantumAlgorithmModalStep(0);
-  }
-
+  };
 
   globalThis.setCamundaEndpoint = setCamundaEndpoint;
   globalThis.setNisqAnalyzerEndpoint = setNisqAnalyzerEndpoint;
@@ -495,7 +552,7 @@ If none apply, return { "algorithms": [] }.
   };
 
   const handleSave = (newValues) => {
-    console.log(newValues)
+    console.log(newValues);
     setCamundaEndpoint(newValues.tempCamundaEndpoint);
     setNisqAnalyzerEndpoint(newValues.tempNisqAnalyzerEndpoint);
     setOpenAIToken(newValues.tempOpenAIToken);
@@ -529,8 +586,6 @@ If none apply, return { "algorithms": [] }.
     setIsManageTemplatesOpen(false);
   };
 
-
-
   const cancelLoadJson = () => {
     setIsLoadJsonModalOpen(false);
   };
@@ -538,7 +593,6 @@ If none apply, return { "algorithms": [] }.
   const [deploymentId, setDeploymentId] = useState(null);
 
   const [expanded, setExpanded] = useState(false);
-  const [completionGuaranteedOption, setCompletionGuaranteedOption] = useState("Yes");
 
   const { undo } = useStore((state) => ({
     undo: state.undo,
@@ -551,7 +605,9 @@ If none apply, return { "algorithms": [] }.
   const ref = useRef(null);
   const hasLoadedFromUrl = useRef(false);
   const lastSelectedNodes = useRef<Node[]>([]);
-  const copiedSelectionRef = useRef<{ nodes: Node[]; edges: Edge[] } | null>(null);
+  const copiedSelectionRef = useRef<{ nodes: Node[]; edges: Edge[] } | null>(
+    null,
+  );
   const pasteCountRef = useRef(0);
 
   const onDragOver = React.useCallback(
@@ -561,36 +617,31 @@ If none apply, return { "algorithms": [] }.
     [],
   );
   const [modalOpen, setModalOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState("");
+  const [, setLoading] = useState(false);
+  const [, setStatus] = useState("");
   const [modalStep, setModalStep] = useState(1);
   const [isQunicornOpen, setIsQunicornOpen] = useState(false);
   const [isPromptModalOpen, setIsPromptModalOpen] = useState(false);
-  const [loadingQunicorn, setLoadingQunicorn] = useState(true);
-  const [statusQunicorn, setStatusQunicorn] = useState(null);
   const [ancillaModelingOn, setAncillaModelingOn] = useState(false);
-  const [experienceLevelOn, setExperienceLevelOn] = useState("explorer");
+  const [, setExperienceLevelOn] = useState("explorer");
   const [compactVisualization, setCompactVisualization] = useState(false);
   const [collaborationModeOn, setCollaborationModeOn] = useState(false);
-  //const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
   const [toast, setToast] = useState<{
     message: React.ReactNode;
     type: "success" | "error" | "info";
   } | null>(null);
 
-  const [workflow, setWorkflow] = useState("");
- const [panelWidth, setPanelWidth] = useState(350);
+  const [, setWorkflow] = useState("");
+  const [panelWidth, setPanelWidth] = useState(350);
 
   const updateNodeInternals = useUpdateNodeInternals();
 
-
   const showToast = (
     message: React.ReactNode,
-    type: "success" | "error" | "info"
+    type: "success" | "error" | "info",
   ) => {
     setToast({ message, type });
   };
-
 
   useEffect(() => {
     if (typeError) {
@@ -601,7 +652,12 @@ If none apply, return { "algorithms": [] }.
   const isSyncingFromRemote = useRef(false);
 
   const stripTransientNodeState = useCallback((node: Node) => {
-    const { selected, dragging, positionAbsolute, ...rest } = node as Node & {
+    const {
+      selected: _selected,
+      dragging: _dragging,
+      positionAbsolute: _positionAbsolute,
+      ...rest
+    } = node as Node & {
       selected?: boolean;
       dragging?: boolean;
       positionAbsolute?: { x: number; y: number };
@@ -619,21 +675,25 @@ If none apply, return { "algorithms": [] }.
       isSyncingFromRemote.current = true;
 
       const localNodes = useStore.getState().nodes;
-      const localNodesById = new Map<string, Node>(localNodes.map((node: Node) => [node.id, node]));
+      const localNodesById = new Map<string, Node>(
+        localNodes.map((node: Node) => [node.id, node]),
+      );
 
-      const sharedNodes: any = Array.from(nodesMap.values()).map((sharedNode: any) => {
-        const localNode = localNodesById.get(sharedNode.id);
+      const sharedNodes: any = Array.from(nodesMap.values()).map(
+        (sharedNode: any) => {
+          const localNode = localNodesById.get(sharedNode.id);
 
-        if (!localNode) {
-          return sharedNode;
-        }
+          if (!localNode) {
+            return sharedNode;
+          }
 
-        return {
-          ...sharedNode,
-          selected: localNode.selected,
-          dragging: localNode.dragging,
-        };
-      });
+          return {
+            ...sharedNode,
+            selected: localNode.selected,
+            dragging: localNode.dragging,
+          };
+        },
+      );
       const sharedEdges: any = Array.from(edgesMap.values());
 
       // Update the local rendering tracking arrays
@@ -644,16 +704,20 @@ If none apply, return { "algorithms": [] }.
       // Stringify check to prevent triggering an infinite state update loop.
       const currentLocalState = useStore.getState();
 
-      if (JSON.stringify(currentLocalState.nodes) !== JSON.stringify(sharedNodes) ||
-        JSON.stringify(currentLocalState.edges) !== JSON.stringify(sharedEdges)) {
-
+      if (
+        JSON.stringify(currentLocalState.nodes) !==
+          JSON.stringify(sharedNodes) ||
+        JSON.stringify(currentLocalState.edges) !== JSON.stringify(sharedEdges)
+      ) {
         useStore.setState({
           nodes: sharedNodes,
           edges: sharedEdges,
         });
       }
       // reset flag
-      setTimeout(() => { isSyncingFromRemote.current = false; }, 50);
+      setTimeout(() => {
+        isSyncingFromRemote.current = false;
+      }, 50);
     };
 
     // Listen to remote changes on the Yjs maps
@@ -669,7 +733,6 @@ If none apply, return { "algorithms": [] }.
     };
   }, [collaborationModeOn]);
 
-
   // EFFECT 2: Local-to-Remote (Zustand to Yjs)
   useEffect(() => {
     if (!collaborationModeOn || isSyncingFromRemote.current) return;
@@ -682,7 +745,10 @@ If none apply, return { "algorithms": [] }.
         const nodeData = stripTransientNodeState(node);
 
         const remoteNode = nodesMap.get(node.id);
-        if (!remoteNode || JSON.stringify(remoteNode) !== JSON.stringify(nodeData)) {
+        if (
+          !remoteNode ||
+          JSON.stringify(remoteNode) !== JSON.stringify(nodeData)
+        ) {
           nodesMap.set(node.id, nodeData);
         }
       });
@@ -697,7 +763,10 @@ If none apply, return { "algorithms": [] }.
       // Sync local Zustand edges to the network map
       edges.forEach((edge) => {
         const remoteEdge = edgesMap.get(edge.id);
-        if (!remoteEdge || JSON.stringify(remoteEdge) !== JSON.stringify(edge)) {
+        if (
+          !remoteEdge ||
+          JSON.stringify(remoteEdge) !== JSON.stringify(edge)
+        ) {
           edgesMap.set(edge.id, edge);
         }
       });
@@ -737,9 +806,8 @@ If none apply, return { "algorithms": [] }.
 
   // }, [collaborationModeOn]);
 
-  // needed? 
+  // needed?
   useEffect(() => {
-
     const updateCursors = () => {
       const newCursors: typeof cursors = {};
       awareness.getStates().forEach((state: any, clientId: number) => {
@@ -755,21 +823,29 @@ If none apply, return { "algorithms": [] }.
       setCursors(newCursors);
     };
 
-
     awareness.on("change", updateCursors);
     updateCursors();
 
-    console.log("CURSORS", cursors)
+    console.log("CURSORS", cursors);
 
     return () => awareness.off("change", updateCursors);
   }, []);
 
   useEffect(() => {
-
     if (collaborationModeOn) {
       // Generate a random username
-      const randomNames = ["Alice", "Bob", "Charlie", "Dana", "Eve", "Frank", "Grace", "Hugo"];
-      const randomUsername = randomNames[Math.floor(Math.random() * randomNames.length)];
+      const randomNames = [
+        "Alice",
+        "Bob",
+        "Charlie",
+        "Dana",
+        "Eve",
+        "Frank",
+        "Grace",
+        "Hugo",
+      ];
+      const randomUsername =
+        randomNames[Math.floor(Math.random() * randomNames.length)];
       // Store local clientId
       setMyClientId(awareness.clientID);
 
@@ -781,19 +857,17 @@ If none apply, return { "algorithms": [] }.
         y: 0,
         color: color,
         name: randomUsername,
-        role: experienceLevel
+        role: experienceLevel,
       });
 
       awareness.setLocalStateField("locks", {
-        nodeIds: []
+        nodeIds: [],
       });
 
-      // set initial user name  
+      // set initial user name
       setUserName(randomUsername);
-      console.log("CURSORS", cursors)
+      console.log("CURSORS", cursors);
     }
-
-
   }, [collaborationModeOn]);
 
   // Sync local Zustand store changes to Yjs Awareness state fields
@@ -811,56 +885,58 @@ If none apply, return { "algorithms": [] }.
     });
   }, [experienceLevel]);
 
-
   const [runTour, setRunTour] = useState(false);
-  const [joyrideStepId, setJoyRideStepId] = useState(0);
 
   const joyrideSteps: {
     target: string;
     content: string;
     placement?: Placement;
   }[] = [
-      {
-        target: '.toolbar-container',
-        content: 'This is the toolbar where you can save, restore, or send your diagrams.',
-      },
-      {
-        target: '.backend-button',
-        content: 'This transforms the model into QASM code or workflows, which can then be executed on quantum devices or on a workflow engine.',
-      },
-      {
-        target: '.palette-container',
-        content: 'This is the palette, where you can drag and drop blocks. Quantum blocks are depicted in blue and classical blocks are depicted in orange.',
-        placement: "right"
-      },
-      {
-        target: '.react-flow__pane',
-        content: 'This is the main diagram canvas.',
-        placement: "top-start"
-      },
-      {
-        target: '.experience-mode',
-        content: 'This panel allows you to configure the editor based on your preferences.',
-        placement: "right"
-      },
-      {
-        target: '.classical-node',
-        content: 'This is a classical node that requires a value.',
+    {
+      target: ".toolbar-container",
+      content:
+        "This is the toolbar where you can save, restore, or send your diagrams.",
+    },
+    {
+      target: ".backend-button",
+      content:
+        "This transforms the model into QASM code or workflows, which can then be executed on quantum devices or on a workflow engine.",
+    },
+    {
+      target: ".palette-container",
+      content:
+        "This is the palette, where you can drag and drop blocks. Quantum blocks are depicted in blue and classical blocks are depicted in orange.",
+      placement: "right",
+    },
+    {
+      target: ".react-flow__pane",
+      content: "This is the main diagram canvas.",
+      placement: "top-start",
+    },
+    {
+      target: ".experience-mode",
+      content:
+        "This panel allows you to configure the editor based on your preferences.",
+      placement: "right",
+    },
+    {
+      target: ".classical-node",
+      content: "This is a classical node that requires a value.",
+    },
+    {
+      target: ".grand-parent",
+      content:
+        "This value is then encoded via the state preparation block into a quantum state.",
+    },
+    {
+      target: ".currentPanel-container",
+      content:
+        "This is the properties panel, where you can configure the properties of blocks or the model.",
+      placement: "left",
+    },
+  ];
 
-      },
-      {
-        target: '.grand-parent',
-        content: 'This value is then encoded via the state preparation block into a quantum state.',
-
-      },
-      {
-        target: '.currentPanel-container',
-        content: 'This is the properties panel, where you can configure the properties of blocks or the model.',
-        placement: "left"
-      }
-    ];
-
-  const [isProcessingModalOpen, setProcessingModalOpen] = useState(false);
+  const [, setProcessingModalOpen] = useState(false);
 
   // TODO: Change here to workflow
   const [compilationTarget, setCompilationTarget] = useState("qasm");
@@ -895,7 +971,7 @@ If none apply, return { "algorithms": [] }.
       if (!node.mapping || node.mapping.length === 0) continue;
 
       // Convert each sub-array to a string
-      const mappingStrings = node.mapping.map(arr => arr.join('+'));
+      const mappingStrings = node.mapping.map((arr) => arr.join("+"));
 
       // Check unique mappings
       const uniqueMappings = new Set(mappingStrings);
@@ -919,8 +995,6 @@ If none apply, return { "algorithms": [] }.
       showToast("Workflow request for model " + id + " submitted.", "info");
     }
 
-
-
     try {
       const validMetadata = {
         ...metadata,
@@ -932,82 +1006,107 @@ If none apply, return { "algorithms": [] }.
       console.log(validMetadata);
       console.log(metadata);
 
-    
-    const response = await startCompile(
-      lowcodeBackendEndpoint,
-      validMetadata,
-      reactFlowInstance.getNodes().map(n => ({
-        ...n,
-        parentNode: undefined,
-        extent: undefined,
-        position: n.positionAbsolute ?? n.position,
-      })).filter(n => n.type !== "groupNode"),
-      (() => {
-        const allNodes = reactFlowInstance.getNodes();
-        const allEdges = reactFlowInstance.getEdges();
-        const expandedEdges: typeof allEdges = [];
+      const response = await startCompile(
+        lowcodeBackendEndpoint,
+        validMetadata,
+        reactFlowInstance
+          .getNodes()
+          .map((n) => ({
+            ...n,
+            parentNode: undefined,
+            extent: undefined,
+            position: n.positionAbsolute ?? n.position,
+          }))
+          .filter((n) => n.type !== "groupNode"),
+        (() => {
+          const allNodes = reactFlowInstance.getNodes();
+          const allEdges = reactFlowInstance.getEdges();
+          const expandedEdges: typeof allEdges = [];
 
-        const findNodeFromHandle = (handleId: string | null, groupId: string): Node | undefined => {
-          if (!handleId) return undefined;
-          const children = allNodes.filter(n => n.parentNode === groupId && n.type !== "groupNode");
-          // check whether the handle ID contains a child node ID
-          const match = children.find(n => handleId.includes(n.id));
-          if (match) return match;
-          // fallback: for a group handle (groupInput/groupOutput),
-          // take the first or last child node
-          if (handleId.includes("groupInput")) {
-            // take the first child node with a free input
-            return children.find(n => n.type === "gateNode" && n.data?.inputs?.length > 0)
-              ?? children[0];
+          const findNodeFromHandle = (
+            handleId: string | null,
+            groupId: string,
+          ): Node | undefined => {
+            if (!handleId) return undefined;
+            const children = allNodes.filter(
+              (n) => n.parentNode === groupId && n.type !== "groupNode",
+            );
+            // check whether the handle ID contains a child node ID
+            const match = children.find((n) => handleId.includes(n.id));
+            if (match) return match;
+            // fallback: for a group handle (groupInput/groupOutput),
+            // take the first or last child node
+            if (handleId.includes("groupInput")) {
+              // take the first child node with a free input
+              return (
+                children.find(
+                  (n) => n.type === "gateNode" && n.data?.inputs?.length > 0,
+                ) ?? children[0]
+              );
+            }
+            if (handleId.includes("groupOutput")) {
+              // take the last child node (output)
+              return children[children.length - 1];
+            }
+            return children[0];
+          };
+
+          for (const edge of allEdges) {
+            const srcNode = allNodes.find((n) => n.id === edge.source);
+            const tgtNode = allNodes.find((n) => n.id === edge.target);
+
+            if (
+              srcNode?.type === "groupNode" ||
+              tgtNode?.type === "groupNode"
+            ) {
+              const realSrc =
+                srcNode?.type === "groupNode"
+                  ? (findNodeFromHandle(edge.sourceHandle, srcNode.id) ??
+                    allNodes.filter(
+                      (n) =>
+                        n.parentNode === srcNode.id && n.type !== "groupNode",
+                    )[0])
+                  : srcNode;
+              const realTgt =
+                tgtNode?.type === "groupNode"
+                  ? (findNodeFromHandle(edge.targetHandle, tgtNode.id) ??
+                    allNodes.filter(
+                      (n) =>
+                        n.parentNode === tgtNode.id && n.type !== "groupNode",
+                    )[0])
+                  : tgtNode;
+
+              if (realSrc && realTgt) {
+                // build the correct handle IDs if these were group handles
+                const newSourceHandle = edge.sourceHandle?.includes(
+                  "groupOutput",
+                )
+                  ? `quantumHandleGateOutput0${realSrc.id}`
+                  : edge.sourceHandle;
+                const newTargetHandle = edge.targetHandle?.includes(
+                  "groupInput",
+                )
+                  ? `quantumHandleGateInput0${realTgt.id}`
+                  : edge.targetHandle;
+
+                expandedEdges.push({
+                  ...edge,
+                  id: `expanded-${edge.id}`,
+                  source: realSrc.id,
+                  target: realTgt.id,
+                  sourceHandle: newSourceHandle,
+                  targetHandle: newTargetHandle,
+                });
+              }
+            } else {
+              expandedEdges.push(edge);
+            }
           }
-          if (handleId.includes("groupOutput")) {
-            // take the last child node (output)
-            return children[children.length - 1];
-          }
-          return children[0];
-        };
-
-
-        for (const edge of allEdges) {
-          const srcNode = allNodes.find(n => n.id === edge.source);
-          const tgtNode = allNodes.find(n => n.id === edge.target);
-
-          if (srcNode?.type === "groupNode" || tgtNode?.type === "groupNode") {
-            const realSrc = srcNode?.type === "groupNode"
-              ? findNodeFromHandle(edge.sourceHandle, srcNode.id)
-                ?? allNodes.filter(n => n.parentNode === srcNode.id && n.type !== "groupNode")[0]
-              : srcNode;
-            const realTgt = tgtNode?.type === "groupNode"
-              ? findNodeFromHandle(edge.targetHandle, tgtNode.id)
-                ?? allNodes.filter(n => n.parentNode === tgtNode.id && n.type !== "groupNode")[0]
-              : tgtNode;
-
-            if (realSrc && realTgt) {
-              // build the correct handle IDs if these were group handles
-              const newSourceHandle = edge.sourceHandle?.includes("groupOutput")
-                ? `quantumHandleGateOutput0${realSrc.id}`
-                : edge.sourceHandle;
-              const newTargetHandle = edge.targetHandle?.includes("groupInput")
-                ? `quantumHandleGateInput0${realTgt.id}`
-                : edge.targetHandle;
-
-              expandedEdges.push({
-                ...edge,
-                id: `expanded-${edge.id}`,
-                source: realSrc.id,
-                target: realTgt.id,
-                sourceHandle: newSourceHandle,
-                targetHandle: newTargetHandle,
-              });
-            } } else {
-            expandedEdges.push(edge);
-          }
-        }
-        return expandedEdges;
-      })(),
-      compilationTarget
-    );
-      console.log(response)
+          return expandedEdges;
+        })(),
+        compilationTarget,
+      );
+      console.log(response);
 
       const jsonData = await response.json();
       const uuid = jsonData["uuid"];
@@ -1050,8 +1149,13 @@ If none apply, return { "algorithms": [] }.
               if (attempts < maxAttempts) {
                 setTimeout(check, delay);
               } else {
-                console.error("Max polling attempts reached. Operation did not complete.");
-                showToast("Max polling attempts for model " + id + " reached.", "error");
+                console.error(
+                  "Max polling attempts reached. Operation did not complete.",
+                );
+                showToast(
+                  "Max polling attempts for model " + id + " reached.",
+                  "error",
+                );
                 reject("Max polling attempts reached");
               }
             } catch (error) {
@@ -1085,22 +1189,23 @@ If none apply, return { "algorithms": [] }.
       setTimeout(() => {
         setStatus("completed");
         setLoading(false);
-        showToast("Result for model " + id + " is available.", "success"); 
+        showToast("Result for model " + id + " is available.", "success");
       }, 3000);
       setStatus("completed");
       setLoading(false);
-
-
     } catch (error) {
       console.error("Error sending data:", error);
-      showToast("Error during result generation for model " + id + ".", "error");
+      showToast(
+        "Error during result generation for model " + id + ".",
+        "error",
+      );
       setLoading(false);
     }
   };
 
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [isHistoryOpen, setHistoryOpen] = useState(false);
-  const [historyLoading, setHistoryLoading] = useState(false);
+  const [, setHistoryLoading] = useState(false);
 
   const fetchHistory = async () => {
     setHistoryLoading(true);
@@ -1116,7 +1221,7 @@ If none apply, return { "algorithms": [] }.
       }
 
       const data: HistoryItem[] = await response.json();
-      console.log(data)
+      console.log(data);
       setHistory(data);
     } catch (err) {
       console.error("Error fetching history:", err);
@@ -1137,11 +1242,11 @@ If none apply, return { "algorithms": [] }.
     //updateNodeInternals since ancilla mode changes number of handles
     nodes.forEach((node) => {
       updateNodeInternals(node.id);
-    })
-    console.log("load tutorial")
+    });
+    console.log("load tutorial");
     overwriteFlow(tutorial);
-    console.log("load toturial")
-  }
+    console.log("load toturial");
+  };
 
   interface ValidationItem {
     nodeId: string;
@@ -1164,23 +1269,24 @@ If none apply, return { "algorithms": [] }.
     // Map targetNodeId => sourceNodeIds[]
     const nodeConnections = new Map<string, string[]>();
     flow.edges?.forEach((edge) => {
-      if (!nodeConnections.has(edge.target)) nodeConnections.set(edge.target, []);
+      if (!nodeConnections.has(edge.target))
+        nodeConnections.set(edge.target, []);
       nodeConnections.get(edge.target)?.push(edge.source);
     });
 
-    console.log(flow.edges)
+    console.log(flow.edges);
 
     // Map sourceNodeId => targetNodeIds[] for output checks
     const outgoingConnections = new Map<string, string[]>();
     flow.edges?.forEach((edge) => {
-      if (!outgoingConnections.has(edge.source)) outgoingConnections.set(edge.source, []);
+      if (!outgoingConnections.has(edge.source))
+        outgoingConnections.set(edge.source, []);
       outgoingConnections.get(edge.source)?.push(edge.target);
     });
 
-    // Existing node validation 
+    // Existing node validation
     flow.nodes?.forEach((node) => {
-      const { outputIdentifier, label, inputs, outputSize, condition, operator } =
-        node.data || {};
+      const { outputIdentifier, label, condition, operator } = node.data || {};
       const connectedSources = nodeConnections.get(node.id) || [];
       const inputCount = connectedSources.length;
 
@@ -1189,7 +1295,7 @@ If none apply, return { "algorithms": [] }.
         return sourceNode !== undefined;
       });
 
-      // Output Identifier Checks 
+      // Output Identifier Checks
       if (outputIdentifier && /^[0-9]/.test(outputIdentifier)) {
         errors.push({
           nodeId: node.id,
@@ -1211,7 +1317,7 @@ If none apply, return { "algorithms": [] }.
         }
       }
 
-      // Gate / Operator Validation 
+      // Gate / Operator Validation
       const twoQubitGates = [
         "CNOT",
         "SWAP",
@@ -1229,8 +1335,10 @@ If none apply, return { "algorithms": [] }.
 
       if (
         twoQubitGates.includes(label) ||
-        ((node.type === "quantumOperatorNode" || node.type === "classicalOperatorNode") &&
-          !minMaxOperators.includes(operator) && operator !== "INVERT")
+        ((node.type === "quantumOperatorNode" ||
+          node.type === "classicalOperatorNode") &&
+          !minMaxOperators.includes(operator) &&
+          operator !== "INVERT")
       ) {
         if (inputCount !== 2) {
           errors.push({
@@ -1239,7 +1347,10 @@ If none apply, return { "algorithms": [] }.
             description: `Node "${node.id}" with label "${label}" requires exactly 2 inputs, but got ${inputCount}.`,
           });
         }
-        if (node.data.label === "Quantum Comparison Operator" || node.data.label === "Quantum Min & Max Operator") {
+        if (
+          node.data.label === "Quantum Comparison Operator" ||
+          node.data.label === "Quantum Min & Max Operator"
+        ) {
           warnings.push({
             nodeId: node.id,
             nodeType: node.type,
@@ -1252,10 +1363,12 @@ If none apply, return { "algorithms": [] }.
             description: `Node "${node.id}" (${node.data.label}) produces a quantum state but its output is not used.`,
           });
         }
-
       }
 
-      if (node.data.label === "Qubit" && (node.data.size === undefined || node.data.size === 0)) {
+      if (
+        node.data.label === "Qubit" &&
+        (node.data.size === undefined || node.data.size === 0)
+      ) {
         errors.push({
           nodeId: node.id,
           nodeType: node.type,
@@ -1288,7 +1401,7 @@ If none apply, return { "algorithms": [] }.
           });
         }
 
-        // Warn if Min/Max operator has no output connection 
+        // Warn if Min/Max operator has no output connection
         const outgoing = outgoingConnections.get(node.id) || [];
         if (outgoing.length === 0) {
           warnings.push({
@@ -1299,12 +1412,15 @@ If none apply, return { "algorithms": [] }.
         }
       }
 
-      // State Preparation Node 
+      // State Preparation Node
       if (node.type === "statePreparationNode") {
         if (
-          ["Encode Value", "Basis Encoding", "Angle Encoding", "Amplitude Encoding"].includes(
-            node.data.label
-          )
+          [
+            "Encode Value",
+            "Basis Encoding",
+            "Angle Encoding",
+            "Amplitude Encoding",
+          ].includes(node.data.label)
         ) {
           const hasClassical = connectedSources.some((srcId) => {
             const sourceNode: any = nodesById.get(srcId);
@@ -1317,7 +1433,10 @@ If none apply, return { "algorithms": [] }.
               description: `Node "${node.id}" has no classical data input connected.`,
             });
           }
-          if (node.data.encodingType === "Custom Encoding" && !node.data.implementation) {
+          if (
+            node.data.encodingType === "Custom Encoding" &&
+            !node.data.implementation
+          ) {
             errors.push({
               nodeId: node.id,
               nodeType: node.type,
@@ -1334,7 +1453,10 @@ If none apply, return { "algorithms": [] }.
               description: `Node "${node.id}" has no quantum register size specified.`,
             });
           }
-          if (node.data.quantumStateName === "Custom State" && !node.data.implementation) {
+          if (
+            node.data.quantumStateName === "Custom State" &&
+            !node.data.implementation
+          ) {
             errors.push({
               nodeId: node.id,
               nodeType: node.type,
@@ -1344,27 +1466,37 @@ If none apply, return { "algorithms": [] }.
         }
 
         // MCMT Gate validation
-        if (node.type === "mcmt-gate" || node.data?.label === "MCMT Gate" || node.type === "MCMTGateNode") {
+        if (
+          node.type === "mcmt-gate" ||
+          node.data?.label === "MCMT Gate" ||
+          node.type === "MCMTGateNode"
+        ) {
           const numControls = parseInt(node.data.numControls, 10) || 1;
           const numTargets = parseInt(node.data.numTargets, 10) || 1;
           const expectedInputsCount = numControls + numTargets;
 
-          const connectedEdges = edges.filter((edge) => edge.target === node.id);
+          const connectedEdges = edges.filter(
+            (edge) => edge.target === node.id,
+          );
 
           const prefix = "quantumHandleInput";
           const connectedIndices = new Set(
             connectedEdges
               .map((edge) => {
-                if (edge.targetHandle && edge.targetHandle.startsWith(prefix) && edge.targetHandle.endsWith(node.id)) {
+                if (
+                  edge.targetHandle &&
+                  edge.targetHandle.startsWith(prefix) &&
+                  edge.targetHandle.endsWith(node.id)
+                ) {
                   const indexStr = edge.targetHandle.substring(
                     prefix.length,
-                    edge.targetHandle.length - node.id.length
+                    edge.targetHandle.length - node.id.length,
                   );
                   return parseInt(indexStr, 10);
                 }
                 return null;
               })
-              .filter((idx) => idx !== null)
+              .filter((idx) => idx !== null),
           );
 
           const missingIndices: number[] = [];
@@ -1376,9 +1508,10 @@ If none apply, return { "algorithms": [] }.
 
           if (missingIndices.length > 0) {
             const firstMissing = missingIndices[0];
-            const missingLabel = firstMissing < numControls
-              ? `Control ${firstMissing}`
-              : `Target ${firstMissing - numControls}`;
+            const missingLabel =
+              firstMissing < numControls
+                ? `Control ${firstMissing}`
+                : `Target ${firstMissing - numControls}`;
 
             errors.push({
               nodeId: node.id,
@@ -1398,7 +1531,7 @@ If none apply, return { "algorithms": [] }.
         }
       }
 
-      // DataTypeNode: warn if no output connection 
+      // DataTypeNode: warn if no output connection
       if (node.type === "dataTypeNode") {
         const outgoing = outgoingConnections.get(node.id) || [];
         if (outgoing.length === 0) {
@@ -1410,12 +1543,8 @@ If none apply, return { "algorithms": [] }.
         }
       }
 
-      // Measurement Node 
+      // Measurement Node
       if (node.type === "measurementNode") {
-        const missingRegister = connectedSources.every((srcId) => {
-          const sourceNode: any = nodesById.get(srcId);
-          return sourceNode?.type !== "qubitNode" && sourceNode?.type !== "gateNode";
-        });
         if (!node?.data?.indices) {
           warnings.push({
             nodeId: node.id,
@@ -1445,7 +1574,7 @@ If none apply, return { "algorithms": [] }.
         }
       }
 
-      // Control / If Nodes 
+      // Control / If Nodes
       if (node.type === "ifElseNode") {
         const hasClassical = connectedSources.some((srcId) => {
           const sourceNode: any = nodesById.get(srcId);
@@ -1483,7 +1612,10 @@ If none apply, return { "algorithms": [] }.
       }
 
       // Algorithm / Custom Nodes
-      if (node.type === "algorithmNode" || node.type === "classicalAlgorithmNode") {
+      if (
+        node.type === "algorithmNode" ||
+        node.type === "classicalAlgorithmNode"
+      ) {
         const expectedInputs = node.data?.numberInputs || 0;
         const actualInputs = connectedSources.length;
         if (actualInputs < expectedInputs) {
@@ -1493,7 +1625,6 @@ If none apply, return { "algorithms": [] }.
             description: `Node "${label}" requires ${expectedInputs} input(s), but only ${actualInputs} connected.`,
           });
         }
-
 
         // Quantum outputs check based on numberQuantumOutputs
         const numberQuantumOutputs = node.data?.numberQuantumOutputs || 0;
@@ -1510,17 +1641,13 @@ If none apply, return { "algorithms": [] }.
       }
 
       if (node.data?.label === "QFT" || node.type === "qftNode") {
-        const qubitCount =
-          parseInt(node.data?.numberOutputs || "3");
-
-        const incoming = nodeConnections.get(node.id) || [];
-        const outgoing = outgoingConnections.get(node.id) || [];
+        const qubitCount = parseInt(node.data?.numberOutputs || "3");
 
         for (let i = 0; i < qubitCount; i++) {
           const handleId = `quantumHandleQFTInput${i}${node.id}`;
 
           const isConnected = flow.edges?.some(
-            (e) => e.targetHandle === handleId
+            (e) => e.targetHandle === handleId,
           );
 
           if (!isConnected) {
@@ -1535,9 +1662,7 @@ If none apply, return { "algorithms": [] }.
         for (let i = 0; i < qubitCount; i++) {
           const handleId = `qftOut${i}${node.id}`;
 
-          const isUsed = flow.edges?.some(
-            (e) => e.sourceHandle === handleId
-          );
+          const isUsed = flow.edges?.some((e) => e.sourceHandle === handleId);
 
           if (!isUsed) {
             warnings.push({
@@ -1550,7 +1675,10 @@ If none apply, return { "algorithms": [] }.
       }
 
       // Universal Oracle Validation
-      if (node.type === "oracleNode" || node.data?.label === "Universal Oracle") {
+      if (
+        node.type === "oracleNode" ||
+        node.data?.label === "Universal Oracle"
+      ) {
         const connectedInput = connectedSources.length > 0;
 
         if (!connectedInput) {
@@ -1578,22 +1706,19 @@ If none apply, return { "algorithms": [] }.
             nodeType: node.type,
             description: `Universal Oracle "${node.id}" requires at least one marked state.`,
           });
-        }
-        else if (!/^\d+(?:\s*,\s*\d+)*$/.test(targetStates.trim())) {
+        } else if (!/^\d+(?:\s*,\s*\d+)*$/.test(targetStates.trim())) {
           errors.push({
             nodeId: node.id,
             nodeType: node.type,
             description: `Universal Oracle "${node.id}" marked states must be comma-separated integers.`,
           });
-        }
-        else {
-
+        } else {
           // Find input register size
           let registerSize = 3;
 
           const source = connectedSources
-            .map(src => nodesById.get(src))
-            .find(n => n?.data?.size);
+            .map((src) => nodesById.get(src))
+            .find((n) => n?.data?.size);
 
           if (source?.data?.size) {
             registerSize = parseInt(source.data.size, 10);
@@ -1606,48 +1731,39 @@ If none apply, return { "algorithms": [] }.
             .map((x: string) => parseInt(x.trim(), 10))
             .some((x: number) => x < 0 || x > maxState);
 
-
           if (invalidState) {
             errors.push({
               nodeId: node.id,
               nodeType: node.type,
-              description:
-                `Universal Oracle "${node.id}" contains marked states outside register range 0-${maxState}.`,
+              description: `Universal Oracle "${node.id}" contains marked states outside register range 0-${maxState}.`,
             });
           }
         }
-
 
         const outgoing = outgoingConnections.get(node.id) || [];
         if (outgoing.length === 0) {
           warnings.push({
             nodeId: node.id,
             nodeType: node.type,
-            description:
-              `Universal Oracle "${node.id}" output is not connected.`,
+            description: `Universal Oracle "${node.id}" output is not connected.`,
           });
         }
       }
-
-
 
       // Deutsch-Jozsa Validation
       if (
         node.type === "deutsch-jozsa" ||
         node.data?.label === "Deutsch-Jozsa Algorithm"
       ) {
-
         const numQubits = parseInt(node.data?.numQubits, 10);
 
         if (!numQubits || numQubits <= 0) {
           errors.push({
             nodeId: node.id,
             nodeType: node.type,
-            description:
-              `Deutsch-Jozsa node "${node.id}" requires a valid number of qubits.`,
+            description: `Deutsch-Jozsa node "${node.id}" requires a valid number of qubits.`,
           });
         }
-
 
         const oracleType = node.data?.oracleType;
 
@@ -1655,34 +1771,27 @@ If none apply, return { "algorithms": [] }.
           errors.push({
             nodeId: node.id,
             nodeType: node.type,
-            description:
-              `Deutsch-Jozsa node "${node.id}" has invalid oracle type "${oracleType}".`,
+            description: `Deutsch-Jozsa node "${node.id}" has invalid oracle type "${oracleType}".`,
           });
         }
 
-
         if (oracleType === "balanced") {
-
           const mask = parseInt(node.data?.balancedMask, 10);
 
           if (isNaN(mask)) {
             errors.push({
               nodeId: node.id,
               nodeType: node.type,
-              description:
-                `Deutsch-Jozsa balanced oracle requires a mask value.`,
+              description: `Deutsch-Jozsa balanced oracle requires a mask value.`,
             });
-          }
-          else if (numQubits && mask >= (1 << numQubits)) {
+          } else if (numQubits && mask >= 1 << numQubits) {
             errors.push({
               nodeId: node.id,
               nodeType: node.type,
-              description:
-                `Deutsch-Jozsa balanced mask ${mask} exceeds ${numQubits}-qubit input range.`,
+              description: `Deutsch-Jozsa balanced mask ${mask} exceeds ${numQubits}-qubit input range.`,
             });
           }
         }
-
 
         if (
           oracleType === "constant" &&
@@ -1691,11 +1800,9 @@ If none apply, return { "algorithms": [] }.
           errors.push({
             nodeId: node.id,
             nodeType: node.type,
-            description:
-              `Deutsch-Jozsa constant value must be either 0 or 1.`,
+            description: `Deutsch-Jozsa constant value must be either 0 or 1.`,
           });
         }
-
 
         const outgoing = outgoingConnections.get(node.id) || [];
 
@@ -1703,12 +1810,10 @@ If none apply, return { "algorithms": [] }.
           warnings.push({
             nodeId: node.id,
             nodeType: node.type,
-            description:
-              `Deutsch-Jozsa node "${node.id}" output is not connected.`,
+            description: `Deutsch-Jozsa node "${node.id}" output is not connected.`,
           });
         }
       }
-
 
       if (node.type === "universal-oracle") {
         const markedStates = node.data?.targetStates;
@@ -1717,29 +1822,21 @@ If none apply, return { "algorithms": [] }.
           errors.push({
             nodeId: node.id,
             nodeType: node.type,
-            description:
-              `Grover node "${node.id}" requires marked states.`,
+            description: `Grover node "${node.id}" requires marked states.`,
           });
         }
-
       }
       // Grover Algorithm Validation
-      if (
-        node.type === "grover" ||
-        node.data?.label === "Grover Algorithm"
-      ) {
-
+      if (node.type === "grover" || node.data?.label === "Grover Algorithm") {
         const numQubits = parseInt(node.data?.numQubits, 10);
 
         if (!numQubits || numQubits <= 0) {
           errors.push({
             nodeId: node.id,
             nodeType: node.type,
-            description:
-              `Grover node "${node.id}" requires a valid number of qubits.`,
+            description: `Grover node "${node.id}" requires a valid number of qubits.`,
           });
         }
-
 
         const iterations = Number(node.data?.iterations);
 
@@ -1747,11 +1844,9 @@ If none apply, return { "algorithms": [] }.
           errors.push({
             nodeId: node.id,
             nodeType: node.type,
-            description:
-              `Grover iteration count must be greater than zero.`,
+            description: `Grover iteration count must be greater than zero.`,
           });
         }
-
 
         const markedStates = node.data?.targetStates;
 
@@ -1759,31 +1854,24 @@ If none apply, return { "algorithms": [] }.
           errors.push({
             nodeId: node.id,
             nodeType: node.type,
-            description:
-              `Grover node "${node.id}" requires marked states.`,
+            description: `Grover node "${node.id}" requires marked states.`,
           });
-        }
-        else if (numQubits) {
-
+        } else if (numQubits) {
           const maxState = (1 << numQubits) - 1;
 
-          const invalid =
-            markedStates
-              .split(",")
-              .map((x: string) => parseInt(x.trim(), 10))
-              .some((x: number) => x > maxState);
-
+          const invalid = markedStates
+            .split(",")
+            .map((x: string) => parseInt(x.trim(), 10))
+            .some((x: number) => x > maxState);
 
           if (invalid) {
             errors.push({
               nodeId: node.id,
               nodeType: node.type,
-              description:
-                `Grover marked states exceed the ${numQubits}-qubit range (0-${maxState}).`,
+              description: `Grover marked states exceed the ${numQubits}-qubit range (0-${maxState}).`,
             });
           }
         }
-
 
         const outgoing = outgoingConnections.get(node.id) || [];
 
@@ -1791,19 +1879,21 @@ If none apply, return { "algorithms": [] }.
           warnings.push({
             nodeId: node.id,
             nodeType: node.type,
-            description:
-              `Grover node "${node.id}" output is not connected.`,
+            description: `Grover node "${node.id}" output is not connected.`,
           });
         }
       }
       // Plugin Node Validation
       if (node.type === "pluginNode") {
         const dataInputs = node.data?.dataInputs || [];
-        const pluginEdges = flow.edges?.filter((e) => e.target === node.id) || [];
+        const pluginEdges =
+          flow.edges?.filter((e) => e.target === node.id) || [];
 
         dataInputs.forEach((input: any, index: number) => {
           const handleId = `classicalHandlePluginInput${index}${node.id}`;
-          const connectedEdge = pluginEdges.find((e) => e.targetHandle === handleId);
+          const connectedEdge = pluginEdges.find(
+            (e) => e.targetHandle === handleId,
+          );
 
           if (input.required && !connectedEdge) {
             errors.push({
@@ -1816,10 +1906,18 @@ If none apply, return { "algorithms": [] }.
           if (connectedEdge) {
             const sourceNode: any = nodesById.get(connectedEdge.source);
             if (sourceNode) {
-              const sourceOutputType = (sourceNode.data?.outputTypes?.[0] ?? "any").toLowerCase();
-              const expectedType = (node.data?.inputTypes?.[index] ?? "any").toLowerCase();
+              const sourceOutputType = (
+                sourceNode.data?.outputTypes?.[0] ?? "any"
+              ).toLowerCase();
+              const expectedType = (
+                node.data?.inputTypes?.[index] ?? "any"
+              ).toLowerCase();
 
-              if (expectedType !== "any" && sourceOutputType !== "any" && sourceOutputType !== expectedType) {
+              if (
+                expectedType !== "any" &&
+                sourceOutputType !== "any" &&
+                sourceOutputType !== expectedType
+              ) {
                 errors.push({
                   nodeId: node.id,
                   nodeType: node.type,
@@ -1830,13 +1928,12 @@ If none apply, return { "algorithms": [] }.
           }
         });
       }
-
     });
 
-    // Gate node connection to measurement 
+    // Gate node connection to measurement
     const gateNodes = flow.nodes?.filter((n) => n.type === "gateNode") || [];
     const measurementNodes = new Set(
-      flow.nodes?.filter((n) => n.type === "measurementNode").map((n) => n.id)
+      flow.nodes?.filter((n) => n.type === "measurementNode").map((n) => n.id),
     );
 
     const visited = new Set<string>();
@@ -1847,7 +1944,8 @@ If none apply, return { "algorithms": [] }.
       if (measurementNodes.has(nodeId)) return true;
 
       const outputs =
-        flow.edges?.filter((e) => e.source === nodeId).map((e) => e.target) || [];
+        flow.edges?.filter((e) => e.source === nodeId).map((e) => e.target) ||
+        [];
       return outputs.some((outId) => reachesMeasurement(outId));
     }
 
@@ -1866,39 +1964,39 @@ If none apply, return { "algorithms": [] }.
       });
     }
 
-
-
-
-
     return { warnings, errors };
   }
 
   // Checks if there are any Nodes conflicting with QASM
   const [containsWorkflowNodes, setContainsWorkflowNodes] = useState(false);
   function checkContainsWorkflowNodes(flow): boolean {
-    return flow.nodes?.some((node) => (node.type == "dataTypeNode" && ["String", "File"].includes(node.data?.dataType)) || ["pluginNode"].includes(node.type));
-  };
+    return flow.nodes?.some(
+      (node) =>
+        (node.type == "dataTypeNode" &&
+          ["String", "File"].includes(node.data?.dataType)) ||
+        ["pluginNode"].includes(node.type),
+    );
+  }
 
   const startQuantumAlgorithmSelection = () => {
     setQuantumAlgorithmModalStep(1);
-  }
+  };
 
   const handleOpenValidation = () => {
     if (!reactFlowInstance) return;
 
     const flow = reactFlowInstance.toObject();
     const result = validateFlow(flow);
-    console.log(flow)
+    console.log(flow);
     setContainsWorkflowNodes(checkContainsWorkflowNodes(flow));
 
     setValidationResult(result);
     setIsValidationOpen(true);
   };
 
-
   const startTour3 = () => {
     overwriteFlow(modeledDiagram);
-  }
+  };
 
   const startTour = () => {
     setRunTour(true);
@@ -1907,43 +2005,47 @@ If none apply, return { "algorithms": [] }.
     //updateNodeInternals since ancilla mode changes number of handles
     nodes.forEach((node) => {
       updateNodeInternals(node.id);
-    })
-    console.log("load tutorial")
-    console.log("load toturial")
-  }
+    });
+    console.log("load tutorial");
+    console.log("load toturial");
+  };
   const handleDeploy = async () => {
     setIsQunicornOpen(true);
     setLoading(true);
-    console.log(qunicornEndpoint)
+    console.log(qunicornEndpoint);
 
     try {
       let program = {
-        "programs": [
+        programs: [
           {
             //"quantumCircuit": "OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[2];\ncreg meas[2];\nh q[0];\ncx q[0],q[1];\nbarrier q[0],q[1];\nmeasure q[0] -> meas[0];\nmeasure q[1] -> meas[1];",
-            "quantumCircuit": openqasmCode,
+            quantumCircuit: openqasmCode,
             //"quantumCircuit": "OPENQASM 2.0;include 'qelib1.inc';qreg q[6];creg c[6];gate oracle(q0, q1, q2, q3, q4, q5) {    x q0;    x q1;    x q2;    x q3;    x q4;    x q5;        h q5;    ccx q3, q4, q5;    cx q2, q3;    cx q1, q2;    cx q0, q1;    h q5;    x q0;    x q1;    x q2;    x q3;    x q4;    x q5;}gate diffusion(q0, q1, q2, q3, q4, q5) {    h q0;    h q1;    h q2;    h q3;    h q4;    h q5;        x q0;    x q1;    x q2;    x q3;    x q4;    x q5;        h q5;    ccx q3, q4, q5;    cx q2, q3;    cx q1, q2;    cx q0, q1;    h q5;        x q0;    x q1;    x q2;    x q3;    x q4;    x q5;        h q0;    h q1;    h q2;    h q3;    h q4;    h q5;}h q[0];h q[1];h q[2];h q[3];h q[4];h q[5];oracle(q[0], q[1], q[2], q[3], q[4], q[5]);diffusion(q[0], q[1], q[2], q[3], q[4], q[5]);oracle(q[0], q[1], q[2], q[3], q[4], q[5]);diffusion(q[0], q[1], q[2], q[3], q[4], q[5]);oracle(q[0], q[1], q[2], q[3], q[4], q[5]);diffusion(q[0], q[1], q[2], q[3], q[4], q[5]);oracle(q[0], q[1], q[2], q[3], q[4], q[5]);diffusion(q[0], q[1], q[2], q[3], q[4], q[5]);oracle(q[0], q[1], q[2], q[3], q[4], q[5]);diffusion(q[0], q[1], q[2], q[3], q[4], q[5]);oracle(q[0], q[1], q[2], q[3], q[4], q[5]);diffusion(q[0], q[1], q[2], q[3], q[4], q[5]);measure q[0] -> c[0];measure q[1] -> c[1];measure q[2] -> c[2];measure q[3] -> c[3];measure q[4] -> c[4];measure q[5] -> c[5];",
-            "assemblerLanguage": "QASM3",
-            "pythonFilePath": "",
-            "pythonFileMetadata": ""
-          }
+            assemblerLanguage: "QASM3",
+            pythonFilePath: "",
+            pythonFileMetadata: "",
+          },
         ],
-        "name": "DeploymentName"
+        name: "DeploymentName",
       };
-      console.log(openqasmCode)
+      console.log(openqasmCode);
       const regex = /^qubit\[\d+\]\s+\w+;$/gm;
       const qubitMatches = openqasmCode.match(regex);
-      console.log(qubitMatches)
+      console.log(qubitMatches);
 
       if (qubitMatches) {
-        const qubitIndices = qubitMatches.map(m => parseInt(m.match(/\d+/)[0], 10));
-        console.log(qubitIndices)
+        const qubitIndices = qubitMatches.map((m) =>
+          parseInt(m.match(/\d+/)[0], 10),
+        );
+        console.log(qubitIndices);
         const maxQubitIndex = Math.max(...qubitIndices);
 
         // Example: trigger warning if any qubit index >= 30
         if (maxQubitIndex >= 30) {
           setWarningExecution(true);
-          console.warn(`⚠️ Warning: High qubit index detected (${maxQubitIndex})`);
+          console.warn(
+            `⚠️ Warning: High qubit index detected (${maxQubitIndex})`,
+          );
         }
       }
       let response = await fetch(qunicornEndpoint + "/deployments/", {
@@ -1956,29 +2058,27 @@ If none apply, return { "algorithms": [] }.
       console.log(data["id"]);
       setDeploymentId(data["id"]);
       setModalStep(2);
-      //pollStatus(response["Location"]);
     } catch (error) {
       console.error("Error sending data:", error);
       setLoading(false);
     }
   };
 
-
   const handleCreateJob = async () => {
     setLoading(true);
 
     try {
       let program = {
-        "name": "JobName",
-        "providerName": provider,
-        "deviceName": selectedDevice,
-        "shots": numShots,
-        "errorMitigation": "none",
-        "cutToWidth": null,
-        "token": accessToken,
-        "type": "RUNNER",
-        "deploymentId": deploymentId
-      }
+        name: "JobName",
+        providerName: provider,
+        deviceName: selectedDevice,
+        shots: numShots,
+        errorMitigation: "none",
+        cutToWidth: null,
+        token: accessToken,
+        type: "RUNNER",
+        deploymentId: deploymentId,
+      };
 
       let response = await fetch(qunicornEndpoint + "/jobs/", {
         method: "POST",
@@ -2007,8 +2107,7 @@ If none apply, return { "algorithms": [] }.
     setErrorMessage(null);
 
     try {
-
-      const url = `${qunicornEndpoint}/${jobId.startsWith('/') ? jobId.slice(1) : jobId}`;
+      const url = `${qunicornEndpoint}/${jobId.startsWith("/") ? jobId.slice(1) : jobId}`;
 
       let getdata = null;
 
@@ -2035,7 +2134,11 @@ If none apply, return { "algorithms": [] }.
       let tries = 0;
       const maxTries = 20;
 
-      while (getdata.state !== "FINISHED" && getdata.state !== "ERROR" && tries < maxTries) {
+      while (
+        getdata.state !== "FINISHED" &&
+        getdata.state !== "ERROR" &&
+        tries < maxTries
+      ) {
         tries++;
 
         await new Promise((r) => setTimeout(r, 10000));
@@ -2058,7 +2161,7 @@ If none apply, return { "algorithms": [] }.
           return;
         }
 
-        setProgress(Math.min(((tries / maxTries) * 100), 100));
+        setProgress(Math.min((tries / maxTries) * 100, 100));
       }
 
       if (getdata.state !== "FINISHED") {
@@ -2073,42 +2176,20 @@ If none apply, return { "algorithms": [] }.
       setTimeout(() => {
         setProgress(100);
         setAlreadyExecuted(true);
-        console.log(getdata.results[1])
+        console.log(getdata.results[1]);
         let counts = getdata.results[1].data;
-        console.log(counts)
+        console.log(counts);
         const chartData = Object.entries(counts || {}).map(([key, value]) => ({
           register: parseInt(key, 16), // TODO: add hex value
           value: Number(value) * 100,
         }));
         setChartData(chartData);
       }, 2000);
-      //pollStatus(response["Location"]);
     } catch (error) {
       console.error("Error sending data:", error);
       setLoading(false);
     }
   };
-
-
-  const pollStatus = async () => {
-    const interval = setInterval(async () => {
-      try {
-        const response = await fetch(lowcodeBackendEndpoint + "/status");
-        const result = await response.json();
-        setStatus(result);
-
-        if (result.status === "complete") {
-          clearInterval(interval);
-          setLoading(false);
-        }
-      } catch (error) {
-        console.error("Error polling status:", error);
-        clearInterval(interval);
-        setLoading(false);
-      }
-    }, 3000);
-  };
-
 
   const onNodeDragStop = useCallback(
     /**
@@ -2131,45 +2212,46 @@ If none apply, return { "algorithms": [] }.
       }
 
       // drag-to-group for groupNode
-    if (node.type !== "groupNode") {
-          try {
-            const currentNodes = reactFlowInstance.getNodes();
-            const updatedNodes = handleNodeDropOnGroup(node, currentNodes);
-            if (updatedNodes !== currentNodes) {
-              reactFlowInstance.setNodes(updatedNodes);
-            }
-          } catch (e) {
-            // node not found, no update needed
+      if (node.type !== "groupNode") {
+        try {
+          const currentNodes = reactFlowInstance.getNodes();
+          const updatedNodes = handleNodeDropOnGroup(node, currentNodes);
+          if (updatedNodes !== currentNodes) {
+            reactFlowInstance.setNodes(updatedNodes);
           }
+        } catch {
+          // node not found, no update needed
+        }
       }
-    
 
       console.log("onNodeDrag");
       console.log(node);
-      let nodeT = nodes[0];
       nodes.forEach((nd) => {
         // Check if there's a group node in the array of nodes on the screen
-        if ((nd.type === "controlStructureNode" || nd.type === "ifElseNode") && node.type !== "controlStructureNode" && node.type !== "ifElseNode") {
+        if (
+          (nd.type === "controlStructureNode" || nd.type === "ifElseNode") &&
+          node.type !== "controlStructureNode" &&
+          node.type !== "ifElseNode"
+        ) {
           //safety check to make sure there's a height and width
           console.log(node);
           console.log(nd.id);
-          let intersectionNodes = reactFlowInstance.getIntersectingNodes(node).map((n) => n.id);
-          console.log(intersectionNodes)
+          let intersectionNodes = reactFlowInstance
+            .getIntersectingNodes(node)
+            .map((n) => n.id);
+          console.log(intersectionNodes);
 
           // Check if the dragged node is inside the group
           if (intersectionNodes[0] == nd.id) {
             console.log(nd);
-            const rec = { height: nd.height, width: nd.width, ...nd.position };
 
             //Check if dragged node isn't already a child to the group
             if (!node.parentNode) {
-
-              console.log("update node")
+              console.log("update node");
               node.parentNode = nd.id;
               // node cannot be moved outside parent
               node.extent = "parent";
               node.expandParent = true;
-
 
               node.position = {
                 x: node.positionAbsolute.x - nd.position.x,
@@ -2178,25 +2260,26 @@ If none apply, return { "algorithms": [] }.
 
               // Get the main node
               const mainNode = document.querySelector<HTMLDivElement>(
-                'div.react-flow__node-controlStructureNode'
+                "div.react-flow__node-controlStructureNode",
               );
 
               if (mainNode) {
                 // Get the first child div (grand-parent where you set width)
-                const firstChild = mainNode.querySelector<HTMLDivElement>(
-                  'div.grand-parent'
-                );
+                const firstChild =
+                  mainNode.querySelector<HTMLDivElement>("div.grand-parent");
 
-                console.log('Main node:', mainNode);
-                console.log('First child (grand-parent):', firstChild);
+                console.log("Main node:", mainNode);
+                console.log("First child (grand-parent):", firstChild);
                 if (firstChild) {
-                  console.log()
+                  console.log();
 
                   // Get the current minWidth from computed styles
-                  const currentMinWidth = window.getComputedStyle(firstChild).minWidth;
+                  const currentMinWidth =
+                    window.getComputedStyle(firstChild).minWidth;
 
                   // Get the current minWidth from computed styles
-                  const currentHeight = window.getComputedStyle(firstChild).height;
+                  const currentHeight =
+                    window.getComputedStyle(firstChild).height;
                   // Parse it into a number
                   const currentMinWidthValue = parseFloat(currentMinWidth);
                   // Add 100 to it
@@ -2205,9 +2288,12 @@ If none apply, return { "algorithms": [] }.
                   // Parse it into a number
                   const currentHeightValue = parseFloat(currentHeight);
                   console.log(currentHeightValue);
-                  console.log(node.height)
+                  console.log(node.height);
 
-                  const newHeight = node.height + 200 > currentHeightValue ? currentHeightValue + 100 : currentHeightValue + 100;
+                  const newHeight =
+                    node.height + 200 > currentHeightValue
+                      ? currentHeightValue + 100
+                      : currentHeightValue + 100;
 
                   // Set it back with "px"
                   firstChild.style.minWidth = `${newMinWidth}px`;
@@ -2215,14 +2301,12 @@ If none apply, return { "algorithms": [] }.
                   console.log(`Updated minWidth to ${newMinWidth}px`);
                 }
               } else {
-                console.error('Main node not found');
+                console.error("Main node not found");
               }
-
 
               //nd.style.width = 10;
               console.log(node);
               //intersectionNodes[0].width = 1000;
-              nodeT = node;
               updateParent(node.id, nd.id, node.position);
               updateChildren(node.parentNode, node.id);
               //updateNodeValue(node.id, "hidden", "true")
@@ -2232,118 +2316,147 @@ If none apply, return { "algorithms": [] }.
           }
         }
       });
-      
-      //setNodes(nodeT);
+
       if (node.id == contextMenu.componentId) {
-        console.log("moving context menu for node", node.id)
-        setContextMenu((prev) => ({ ...prev, left: evt.clientX, top: evt.clientY }));
-      }
-    }, [nodes, setContextMenu]);
-
-    
-
-
-      const onSelectionChange = useCallback(({ nodes: selectedNodes }: { nodes: Node[] }) => {
-        if (selectedNodes.length === 0) return;
-
-        // Selektierte top-level Nodes (GroupNodes + normale Nodes ohne Parent) merken
-        lastSelectedNodes.current = selectedNodes.filter(n => !n.parentNode);
-
-        // Kind-Nodes (keine GroupNodes) deselektieren
-        const groupedSelected = selectedNodes.filter(
-          (n) => n.parentNode && n.type !== "groupNode"
-        );
-        if (groupedSelected.length > 0) {
-          reactFlowInstance.setNodes((nds: Node[]) =>
-            nds.map((n) => {
-              if (n.parentNode && n.type !== "groupNode") {
-                return { ...n, selected: false };
-              }
-              return n;
-            })
-          );
-        }
-
-        // Collaboration: Sperren für ausgewählte Nodes broadcasten
-        if (collaborationModeOn) {
-          const lockedIds = selectedNodes.map((n) => n.id);
-          awareness.setLocalStateField("locks", { nodeIds: lockedIds });
-          console.log("locked ids", lockedIds);
-        }
-      }, [reactFlowInstance, collaborationModeOn]);
-
-      const onSelectionEnd = useCallback(() => {
-        if (!lassoMode) return;
-        const currentNodes = reactFlowInstance.getNodes();
-        const currentEdges = reactFlowInstance.getEdges();
-
-        // Selektierte Nodes aus ref verwenden
-        const selectedIds = new Set(lastSelectedNodes.current.map(n => n.id));
-        const nodesWithSelection = currentNodes.map(n => ({
-          ...n,
-          selected: selectedIds.has(n.id),
+        console.log("moving context menu for node", node.id);
+        setContextMenu((prev) => ({
+          ...prev,
+          left: evt.clientX,
+          top: evt.clientY,
         }));
-
-      const updatedNodes = groupSelectedNodes(nodesWithSelection, currentEdges);
-      if (updatedNodes !== nodesWithSelection) {
-        reactFlowInstance.setNodes(updatedNodes);
-        setLassoMode(false);
       }
-    }, [lassoMode, reactFlowInstance]);
+    },
+    [nodes, setContextMenu],
+  );
 
-    const handleConnect = useCallback((connection: Connection) => {
-  const sourceNode = reactFlowInstance.getNode(connection.source ?? "");
-  const targetNode = reactFlowInstance.getNode(connection.target ?? "");
+  const onSelectionChange = useCallback(
+    ({ nodes: selectedNodes }: { nodes: Node[] }) => {
+      if (selectedNodes.length === 0) return;
 
-  if (sourceNode?.type === "groupNode" || targetNode?.type === "groupNode") {
-    const edgeType = connection.sourceHandle?.includes("quantum") ? "quantumEdge" : "classicalEdge";
-    const color = connection.sourceHandle?.includes("quantum") ? "#93C5FD" : "#F5A843";
+      // Selektierte top-level Nodes (GroupNodes + normale Nodes ohne Parent) merken
+      lastSelectedNodes.current = selectedNodes.filter((n) => !n.parentNode);
 
-    // If source or target is a group, resolve the actual child node from the handle suffix so
-    // that the edge points directly at the child node instead of at the group itself.
-    // Handle IDs always end with the node ID, e.g. "...StatePreparationInput0<nodeId>".
-    const resolveRealNodeId = (groupId: string | null | undefined, handleId: string | null | undefined): string | null => {
-      if (!handleId) return null;
-      const allNodes = reactFlowInstance.getNodes();
-      // candidates: all nodes whose ID appears at the end of the handle ID
-      const candidates = allNodes.filter((n) => handleId.endsWith(n.id));
-      if (candidates.length === 0) return null;
-      // pick the longest match to avoid substring mismatches between similar IDs
-      candidates.sort((a, b) => b.id.length - a.id.length);
-      return candidates[0].id;
-    };
+      // Kind-Nodes (keine GroupNodes) deselektieren
+      const groupedSelected = selectedNodes.filter(
+        (n) => n.parentNode && n.type !== "groupNode",
+      );
+      if (groupedSelected.length > 0) {
+        reactFlowInstance.setNodes((nds: Node[]) =>
+          nds.map((n) => {
+            if (n.parentNode && n.type !== "groupNode") {
+              return { ...n, selected: false };
+            }
+            return n;
+          }),
+        );
+      }
 
-    let realSource = connection.source;
-    let realTarget = connection.target;
+      // Collaboration: Sperren für ausgewählte Nodes broadcasten
+      if (collaborationModeOn) {
+        const lockedIds = selectedNodes.map((n) => n.id);
+        awareness.setLocalStateField("locks", { nodeIds: lockedIds });
+        console.log("locked ids", lockedIds);
+      }
+    },
+    [reactFlowInstance, collaborationModeOn],
+  );
 
-    if (sourceNode?.type === "groupNode") {
-      realSource = resolveRealNodeId(sourceNode.id, connection.sourceHandle) ?? connection.source;
+  const onSelectionEnd = useCallback(() => {
+    if (!lassoMode) return;
+    const currentNodes = reactFlowInstance.getNodes();
+    const currentEdges = reactFlowInstance.getEdges();
+
+    // Selektierte Nodes aus ref verwenden
+    const selectedIds = new Set(lastSelectedNodes.current.map((n) => n.id));
+    const nodesWithSelection = currentNodes.map((n) => ({
+      ...n,
+      selected: selectedIds.has(n.id),
+    }));
+
+    const updatedNodes = groupSelectedNodes(nodesWithSelection, currentEdges);
+    if (updatedNodes !== nodesWithSelection) {
+      reactFlowInstance.setNodes(updatedNodes);
+      setLassoMode(false);
     }
-    if (targetNode?.type === "groupNode") {
-      realTarget = resolveRealNodeId(targetNode.id, connection.targetHandle) ?? connection.target;
-    }
+  }, [lassoMode, reactFlowInstance]);
 
-    reactFlowInstance.addEdges([{
-      ...connection,
-      source: realSource,
-      target: realTarget,
-      id: `edge-group-${Date.now()}`,
-      type: edgeType,
-      markerEnd: { type: "arrowclosed", width: 20, height: 20, color, hidden: false },
-    }]);
-    return;
-  }
+  // TODO: unused
+  const _handleConnect = useCallback(
+    (connection: Connection) => {
+      const sourceNode = reactFlowInstance.getNode(connection.source ?? "");
+      const targetNode = reactFlowInstance.getNode(connection.target ?? "");
 
-  onConnect(connection);
-}, [reactFlowInstance, onConnect]);
+      if (
+        sourceNode?.type === "groupNode" ||
+        targetNode?.type === "groupNode"
+      ) {
+        const edgeType = connection.sourceHandle?.includes("quantum")
+          ? "quantumEdge"
+          : "classicalEdge";
+        const color = connection.sourceHandle?.includes("quantum")
+          ? "#93C5FD"
+          : "#F5A843";
 
+        // If source or target is a group, resolve the actual child node from the handle suffix so
+        // that the edge points directly at the child node instead of at the group itself.
+        // Handle IDs always end with the node ID, e.g. "...StatePreparationInput0<nodeId>".
+        const resolveRealNodeId = (
+          groupId: string | null | undefined,
+          handleId: string | null | undefined,
+        ): string | null => {
+          if (!handleId) return null;
+          const allNodes = reactFlowInstance.getNodes();
+          // candidates: all nodes whose ID appears at the end of the handle ID
+          const candidates = allNodes.filter((n) => handleId.endsWith(n.id));
+          if (candidates.length === 0) return null;
+          // pick the longest match to avoid substring mismatches between similar IDs
+          candidates.sort((a, b) => b.id.length - a.id.length);
+          return candidates[0].id;
+        };
 
+        let realSource = connection.source;
+        let realTarget = connection.target;
 
-    const currentCategories: Record<string, CategoryEntry> = useMemo(() => {
+        if (sourceNode?.type === "groupNode") {
+          realSource =
+            resolveRealNodeId(sourceNode.id, connection.sourceHandle) ??
+            connection.source;
+        }
+        if (targetNode?.type === "groupNode") {
+          realTarget =
+            resolveRealNodeId(targetNode.id, connection.targetHandle) ??
+            connection.target;
+        }
+
+        reactFlowInstance.addEdges([
+          {
+            ...connection,
+            source: realSource,
+            target: realTarget,
+            id: `edge-group-${Date.now()}`,
+            type: edgeType,
+            markerEnd: {
+              type: "arrowclosed",
+              width: 20,
+              height: 20,
+              color,
+              hidden: false,
+            },
+          },
+        ]);
+        return;
+      }
+
+      onConnect(connection);
+    },
+    [reactFlowInstance, onConnect],
+  );
+
+  const currentCategories: Record<string, CategoryEntry> = useMemo(() => {
     const domainProfileNames = allDomainProfiles.map((p) => p.name);
     const index = domainProfileNames.indexOf(domainProfile);
-    console.log("domainProfile", domainProfile)
-    console.log("index", index)
+    console.log("domainProfile", domainProfile);
+    console.log("index", index);
     if (index > -1) {
       return allDomainProfiles[index].domainBlocks;
     } else {
@@ -2351,118 +2464,102 @@ If none apply, return { "algorithms": [] }.
     }
   }, [domainProfile, allDomainProfiles]);
 
-  const addNodeToCanvas = useCallback((def: any, customPosition?: { x: number, y: number }, pluginData?: any) => {
-    if (!reactFlowInstance || !reactFlowWrapper.current) return;
+  const addNodeToCanvas = useCallback(
+    (def: any, customPosition?: { x: number; y: number }, pluginData?: any) => {
+      if (!reactFlowInstance || !reactFlowWrapper.current) return;
 
-    const getId = () => crypto.randomUUID();
-    
-    // Calculate position: Use custom position or center of the canvas
-    const position = customPosition || reactFlowInstance.project({
-      x: reactFlowWrapper.current.clientWidth / 2,
-      y: reactFlowWrapper.current.clientHeight / 2,
-    });
+      const getId = () => crypto.randomUUID();
 
-    const compactOptions = def?.compactOptions ?? [];
+      // Calculate position: Use custom position or center of the canvas
+      const position =
+        customPosition ||
+        reactFlowInstance.project({
+          x: reactFlowWrapper.current.clientWidth / 2,
+          y: reactFlowWrapper.current.clientHeight / 2,
+        });
 
+      const compactOptions = def?.compactOptions ?? [];
 
-    const newNode = {
-      id: getId(),
-      type: def.type,
-      position,
+      const newNode = {
+        id: getId(),
+        type: def.type,
+        position,
 
-      selected: false,
-      selectable: true,
-      draggable: true,
+        selected: false,
+        selectable: true,
+        draggable: true,
 
-      data: {
-        label: def.label,
+        data: {
+          label: def.label,
 
-        inputs: [],
-        outputs: [],
+          inputs: [],
+          outputs: [],
 
-        children: [],
+          children: [],
 
-        implementation: "",
-        implementationType: "",
-        uncomputeImplementationType: "",
-        uncomputeImplementation: "",
+          implementation: "",
+          implementationType: "",
+          uncomputeImplementationType: "",
+          uncomputeImplementation: "",
 
-        completionGuaranteed:
-          def?.completionGuaranteed ?? false,
+          completionGuaranteed: def?.completionGuaranteed ?? false,
 
-        compactOptions,
+          compactOptions,
 
+          // =====================================
+          // PLUGIN NODE DATA
+          // =====================================
+          ...(def.type === PluginNode && {
+            pluginName: pluginData?.name,
 
-        // =====================================
-        // PLUGIN NODE DATA
-        // =====================================
-        ...(def.type === PluginNode && {
-          pluginName: pluginData?.name,
+            dataInputs: pluginData?.mockDataInputs ?? [],
 
-          dataInputs:
-            pluginData?.mockDataInputs ?? [],
+            dataOutputs: pluginData?.mockDataOutputs ?? [],
+          }),
 
-          dataOutputs:
-            pluginData?.mockDataOutputs ?? [],
-        }),
+          ...(def?.properties && {
+            properties: def.properties,
+          }),
 
+          ...(def?.constraints && {
+            constraints: def.constraints,
+          }),
 
-        ...(def?.properties && {
-          properties: def.properties,
-        }),
+          ...(def?.mapping && {
+            mapping: def.mapping,
+          }),
 
-        ...(def?.constraints && {
-          constraints: def.constraints,
-        }),
+          ...(def?.description && {
+            description: def.description,
+          }),
 
-        ...(def?.mapping && {
-          mapping: def.mapping,
-        }),
+          ...(def?.outputType && {
+            outputType: def.outputType,
+          }),
 
-        ...(def?.description && {
-          description: def.description,
-        }),
+          ...(def?.icon && {
+            icon: def.icon,
+          }),
 
-        ...(def?.outputType && {
-          outputType: def.outputType,
-        }),
+          ...(def?.isDataType && {
+            isDataType: def.isDataType,
+          }),
+        },
+      };
 
-        ...(def?.icon && {
-          icon: def.icon,
-        }),
+      console.log("CREATED NODE", newNode);
 
-        ...(def?.isDataType && {
-          isDataType: def.isDataType,
-        }),
-      },
-    };
+      // Update local Zustand Store
+      setNodes(newNode);
 
+      // Update Yjs Collaborative Store
 
-    console.log("CREATED NODE", newNode);
-
-    // Update local Zustand Store
-    setNodes(newNode);
-
-    // Update Yjs Collaborative Store
-
-      const activeName =
-        cursors[myClientId]?.name ||
-        userName ||
-        "unknown";
-
+      const activeName = cursors[myClientId]?.name || userName || "unknown";
 
       if (collaborationModeOn) {
+        console.log("ON DROP: collab mode on", collaborationModeOn);
 
-        console.log(
-          "ON DROP: collab mode on",
-          collaborationModeOn
-        );
-
-        nodesMap.set(
-          newNode.id,
-          newNode
-        );
-
+        nodesMap.set(newNode.id, newNode);
 
         historyArray.push([
           {
@@ -2475,27 +2572,25 @@ If none apply, return { "algorithms": [] }.
           },
         ]);
 
+        console.log("ADD NODE HISTORY", historyArray.toArray());
 
-        console.log(
-          "ADD NODE HISTORY",
-          historyArray.toArray()
-        );
+        console.log("shared nodes", Array.from(nodesMap.values()));
 
-        console.log(
-          "shared nodes",
-          Array.from(nodesMap.values())
-        );
-
-        console.log(
-          "shared edges",
-          Array.from(edgesMap.values())
-        );
+        console.log("shared edges", Array.from(edgesMap.values()));
       }
-    
-    // Optional: Pan the camera to the newly added node
-    // reactFlowInstance.setCenter(position.x, position.y, { zoom: 1, duration: 700 });
 
-  }, [reactFlowInstance, setNodes, collaborationModeOn, cursors, myClientId, userName]);
+      // Optional: Pan the camera to the newly added node
+      // reactFlowInstance.setCenter(position.x, position.y, { zoom: 1, duration: 700 });
+    },
+    [
+      reactFlowInstance,
+      setNodes,
+      collaborationModeOn,
+      cursors,
+      myClientId,
+      userName,
+    ],
+  );
 
   const onDrop = React.useCallback(
     (event: any) => {
@@ -2526,9 +2621,7 @@ If none apply, return { "algorithms": [] }.
         return;
       } else if (label.startsWith(custom_template)) {
         const userTemplateFlowData = JSON.parse(
-          event.dataTransfer.getData(
-            "application/reactflow/templateFlowData"
-          )
+          event.dataTransfer.getData("application/reactflow/templateFlowData"),
         );
 
         if (userTemplateFlowData) {
@@ -2547,9 +2640,6 @@ If none apply, return { "algorithms": [] }.
       const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
 
       const type = event.dataTransfer.getData("application/reactflow");
-      const dataType = event.dataTransfer.getData(
-        "application/reactflow/dataType"
-      );
 
       if (!type) {
         return;
@@ -2563,16 +2653,12 @@ If none apply, return { "algorithms": [] }.
       // GET PLUGIN METADATA HERE
       // ================================
       const pluginDataRaw = event.dataTransfer.getData(
-        "application/reactflow/pluginData"
+        "application/reactflow/pluginData",
       );
 
-      const pluginData = pluginDataRaw
-        ? JSON.parse(pluginDataRaw)
-        : null;
-
+      const pluginData = pluginDataRaw ? JSON.parse(pluginDataRaw) : null;
 
       console.log("PLUGIN DATA FROM DROP", pluginData);
-
 
       // Get drop position
       const position = reactFlowInstance.project({
@@ -2584,7 +2670,6 @@ If none apply, return { "algorithms": [] }.
       addNodeToCanvas(def, position, pluginData);
 
       console.log("nodes", nodes);
-
     },
     [
       reactFlowInstance,
@@ -2592,40 +2677,39 @@ If none apply, return { "algorithms": [] }.
       currentCategories,
       collaborationModeOn,
       cursors,
-    ]
+    ],
   );
 
-  const onNodesDelete = useCallback((deletedNodes: Node[]) => {
-    setContextMenu((prev) => ({ ...prev, visible: false })); // contextMenu disappears when node is deleted
+  const onNodesDelete = useCallback(
+    (deletedNodes: Node[]) => {
+      setContextMenu((prev) => ({ ...prev, visible: false })); // contextMenu disappears when node is deleted
 
-    // Recompute the handle bounds of the sibling nodes so that connecting works again
-    // after a node has been deleted, e.g. from inside a group.
-    const deletedIds = new Set(deletedNodes.map((n) => n.id));
-    const affectedParentIds = new Set(
-      deletedNodes.map((n) => n.parentNode).filter(Boolean) as string[]
-    );
+      // Recompute the handle bounds of the sibling nodes so that connecting works again
+      // after a node has been deleted, e.g. from inside a group.
+      const deletedIds = new Set(deletedNodes.map((n) => n.id));
+      const affectedParentIds = new Set(
+        deletedNodes.map((n) => n.parentNode).filter(Boolean) as string[],
+      );
 
-    // short delay so React Flow applies the new node/edge state first
-    requestAnimationFrame(() => {
-      const remainingNodes = reactFlowInstance.getNodes();
-      remainingNodes.forEach((node) => {
-        if (deletedIds.has(node.id)) return;
-        // update the sibling nodes (same group) and the group itself
-        if (
-          (node.parentNode && affectedParentIds.has(node.parentNode)) ||
-          affectedParentIds.has(node.id)
-        ) {
-          updateNodeInternals(node.id);
-        }
+      // short delay so React Flow applies the new node/edge state first
+      requestAnimationFrame(() => {
+        const remainingNodes = reactFlowInstance.getNodes();
+        remainingNodes.forEach((node) => {
+          if (deletedIds.has(node.id)) return;
+          // update the sibling nodes (same group) and the group itself
+          if (
+            (node.parentNode && affectedParentIds.has(node.parentNode)) ||
+            affectedParentIds.has(node.id)
+          ) {
+            updateNodeInternals(node.id);
+          }
+        });
       });
-    });
-  }, [setContextMenu, reactFlowInstance, updateNodeInternals]);
-
-
-  const flowKey = "example-flow";
+    },
+    [setContextMenu, reactFlowInstance, updateNodeInternals],
+  );
 
   async function uploadToGitHub() {
-
     let flowId = `model-${Date.now()}`;
     const repoOwner = githubRepositoryOwner;
     const repo = githubRepositoryName;
@@ -2656,21 +2740,28 @@ If none apply, return { "algorithms": [] }.
       }
     } catch (error) {
       console.error("Error checking file existence:", error);
-      showToast("Upload failed. Credentials or repository fields incorrect.", "error");
+      showToast(
+        "Upload failed. Credentials or repository fields incorrect.",
+        "error",
+      );
       return { success: false };
     }
 
-    console.log(containsPlaceholder)
+    console.log(containsPlaceholder);
 
-    let fileContent = JSON.stringify({
-      metadata: {
-        ...metadata,
-        containsPlaceholder: containsPlaceholder,
-        id: flowId,
-        timestamp: new Date().toISOString(),
+    let fileContent = JSON.stringify(
+      {
+        metadata: {
+          ...metadata,
+          containsPlaceholder: containsPlaceholder,
+          id: flowId,
+          timestamp: new Date().toISOString(),
+        },
+        flow: reactFlowInstance.toObject(),
       },
-      flow: reactFlowInstance.toObject(),
-    }, null, 2);
+      null,
+      2,
+    );
 
     const payload: any = {
       message: `Upload ${flowId} from quantum low-code modeler`,
@@ -2695,7 +2786,10 @@ If none apply, return { "algorithms": [] }.
 
       if (uploadResponse.ok) {
         console.log(`File ${flowId} uploaded to GitHub successfully.`);
-        showToast("Model with id " + flowId + " uploaded successfully!", "success");
+        showToast(
+          "Model with id " + flowId + " uploaded successfully!",
+          "success",
+        );
         return { success: true };
       } else {
         const errorData = await uploadResponse.json();
@@ -2721,124 +2815,23 @@ If none apply, return { "algorithms": [] }.
     awareness.setLocalStateField("cursor", {
       ...awareness.getLocalState()?.cursor,
       x,
-      y
+      y,
     });
   };
 
-  async function registerAndUploadToGitHub(patternId, patternName, overwriteImplementationId, solutionId) {
+  async function registerAndUploadToGitHub(
+    patternId: string,
+    patternName: string,
+    overwriteImplementationId,
+    solutionId,
+  ) {
     const flowId = `flow-${Date.now()}`;
     const modelFileName = `${flowId}.json`;
-    const sqlPath = 'example-data/SQL/backup-files/2_pattern_solutions.sql';
-    const modelPath = 'example-data/models';
-
-
-    // 1. Prepare Model Content
-    const modelContent = JSON.stringify({
-      metadata: {
-        ...metadata,
-        containsPlaceholder: containsPlaceholder,
-        id: flowId,
-        timestamp: new Date().toISOString(),
-      },
-      flow: reactFlowInstance.toObject(),
-    }, null, 2);
-
-    // 2. Generate SQL for registration
-
-    const ids = {
-      algo: crypto.randomUUID(),
-      fileId: crypto.randomUUID(),
-      fileImplementationId: crypto.randomUUID(),
-      filePackageId: crypto.randomUUID(),
-      data: crypto.randomUUID(),
-      package: crypto.randomUUID(),
-    };
-
-    const toHex = (str: string) => {
-      const encoder = new TextEncoder();         // Encode string to bytes
-      const bytes = encoder.encode(str);
-      return '\\x' + Array.from(bytes)           // Convert each byte to hex
-        .map(b => b.toString(16).padStart(2, '0'))
-        .join('');
-    };
-
-    console.log(toHex(ids.algo));
-
-
-    const sqlAppend = `
--- Register ${modelFileName}
-INSERT INTO public.knowledge_artifact (id, creation_date, last_modified_at) VALUES ('${ids.algo}', NULL, NULL);
-INSERT INTO public.knowledge_artifact (id, creation_date, last_modified_at) VALUES ('${ids.package}', NULL, NULL);
-INSERT INTO public.knowledge_artifact (id, creation_date, last_modified_at) VALUES ('${ids.fileId}', NULL, NULL);
-INSERT INTO public.algorithm (acronym, algo_parameter, assumptions, computation_model, input_format, intent, name, output_format, problem, solution, id) VALUES (NULL, NULL, NULL, NULL, NULL, NULL, 'QML Implementation', NULL, NULL, NULL, '${ids.algo}');
-INSERT INTO public.quantum_algorithm (nisq_ready, quantum_computation_model, speed_up, id) VALUES (false, 0, NULL, '${ids.algo}');
-INSERT INTO public.quantum_algorithm (nisq_ready, quantum_computation_model, id) VALUES (false, 0, '${ids.algo}');
-INSERT INTO public.implementation (assumptions, contributors, dependencies, description, input_format, license, link, name, technology, output_format, parameter, problem_statement, version, id, implemented_algorithm_id) VALUES (NULL, NULL, NULL, NULL, NULL, NULL, NULL, '${patternName} low-code solution', NULL, NULL, NULL, NULL, NULL, '${ids.package}', '${ids.algo}');
-INSERT INTO public.pattern_uris (implementation_id, pattern_uri) VALUES ('${ids.package}', 'patternLanguages/af7780d5-1f97-4536-8da7-4194b093ab1d/patterns/${patternId}');
-INSERT INTO public.file (fileurl, mime_type, name, id) VALUES ('${modelFileName}', 'application/json', '${modelFileName}', '${ids.fileId}');
-INSERT INTO public.file_data (id, data, file_id) VALUES ('${ids.data}', '${toHex(modelContent)}', '${ids.fileId}');
-INSERT INTO public.implementation_package (dtype, id, description, name, package_type, implementation_id, type) VALUES ('FileImplementationPackage', '${ids.fileImplementationId}', '${patternName} solution', 'Pattern low_code_modeler package', 0, '${ids.package}', 'low_code_modeler');
-INSERT INTO public.implementation_package_file (file_id, implementation_package_id) VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
-
-`;
-
-    const headers = {
-      Authorization: `token ${githubToken}`,
-      Accept: "application/vnd.github.v3+json",
-      "Content-Type": "application/json",
-    };
-
-    try {
-      // 3. Update SQL Seed File via API
-      const sqlUrl = `https://api.github.com/repos/${githubRepositoryOwner}/${githubRepositoryName}/contents/${sqlPath}`;
-      const sqlGet = await fetch(`${sqlUrl}?ref=${githubBranch}`, { headers });
-
-      if (sqlGet.ok) {
-        const { content, sha } = await sqlGet.json();
-        const updatedSql = atob(content) + sqlAppend;
-
-        await fetch(sqlUrl, {
-          method: "PUT",
-          headers,
-          body: JSON.stringify({
-            message: `Register ${modelFileName} in seed data`,
-            content: btoa(updatedSql),
-            sha,
-            branch: githubBranch
-          }),
-        });
-      }
-
-      // 4. Upload the Model JSON File
-      const modelUrl = `https://api.github.com/repos/${githubRepositoryOwner}/${githubRepositoryName}/contents/${modelPath}/${modelFileName}`;
-      const modelUpload = await fetch(modelUrl, {
-        method: "PUT",
-        headers,
-        body: JSON.stringify({
-          message: `Upload model ${flowId}`,
-          content: btoa(modelContent),
-          branch: githubBranch
-        }),
-      });
-
-      if (modelUpload.ok) {
-        console.log("Database registration and model upload successful.");
-        return { success: true, flowId };
-      }
-    } catch (error) {
-      console.error("GitHub API Error:", error);
-      return { success: false };
-    }
-  }
-
-  async function registerAndUploadToGitHub2(patternId: string, patternName: string, overwriteImplementationId, solutionId) {
-    const flowId = `flow-${Date.now()}`;
-    const modelFileName = `${flowId}.json`;
-    const sqlPath = 'example-data/SQL/backup-files/2_pattern_solutions.sql';
-    const modelPath = 'example-data/models';
+    const sqlPath = "example-data/SQL/backup-files/2_pattern_solutions.sql";
+    const modelPath = "example-data/models";
 
     console.log(overwriteImplementationId);
-    console.log(solutionId)
+    console.log(solutionId);
     const headers = {
       Authorization: `token ${githubToken}`,
       Accept: "application/vnd.github.v3+json",
@@ -2848,21 +2841,28 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
     // ------------------------
     // Generate model content
     // ------------------------
-    const modelContent = JSON.stringify({
-      metadata: {
-        ...metadata,
-        id: flowId,
-        timestamp: new Date().toISOString(),
+    const modelContent = JSON.stringify(
+      {
+        metadata: {
+          ...metadata,
+          id: flowId,
+          timestamp: new Date().toISOString(),
+        },
+        ...reactFlowInstance.toObject(),
       },
-      ...reactFlowInstance.toObject(),
-    }, null, 2);
+      null,
+      2,
+    );
 
     const toHex = (str: string) => {
       const encoder = new TextEncoder();
       const bytes = encoder.encode(str);
-      return '\\x' + Array.from(bytes)
-        .map(b => b.toString(16).padStart(2, '0'))
-        .join('');
+      return (
+        "\\x" +
+        Array.from(bytes)
+          .map((b) => b.toString(16).padStart(2, "0"))
+          .join("")
+      );
     };
 
     const hexData = toHex(modelContent);
@@ -2884,18 +2884,17 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
       // ------------------------
       const packageFileRegex = new RegExp(
         `INSERT INTO public\\.implementation_package_file\\s*\\([^)]*\\)\\s*VALUES\\s*\\('([^']+)'\\s*,\\s*'([^']+)'\\);`,
-        'g'
+        "g",
       );
 
-
-
       console.log(solutionId);
-      console.log(overwriteImplementationId)
+      console.log(overwriteImplementationId);
 
-      const match = [...sqlContent.matchAll(packageFileRegex)]
-        .find(m => m[2] === solutionId);
+      const match = [...sqlContent.matchAll(packageFileRegex)].find(
+        (m) => m[2] === solutionId,
+      );
 
-      console.log(match)
+      console.log(match);
 
       if (match) {
         // =========================================
@@ -2906,17 +2905,20 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
 
         // Replace file_data hex
         const fileDataRegex = new RegExp(
-          `INSERT INTO public\\.file_data \\(id, data, file_id\\) VALUES \\('([^']+)', '\\\\x[0-9a-f]*', '${fileId}'\\);`
+          `INSERT INTO public\\.file_data \\(id, data, file_id\\) VALUES \\('([^']+)', '\\\\x[0-9a-f]*', '${fileId}'\\);`,
         );
 
         sqlContent = sqlContent.replace(
           fileDataRegex,
           (full, dataId) =>
-            `INSERT INTO public.file_data (id, data, file_id) VALUES ('${dataId}', '${hexData}', '${fileId}');`
+            `INSERT INTO public.file_data (id, data, file_id) VALUES ('${dataId}', '${hexData}', '${fileId}');`,
         );
 
         console.log("Existing implementation updated.");
-        showToast("Update existing implementation for " + patternName, "success");
+        showToast(
+          "Update existing implementation for " + patternName,
+          "success",
+        );
       } else {
         // =========================================
         // CREATE NEW ENTRY
@@ -2962,7 +2964,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
           message: `Register or update ${modelFileName}`,
           content: btoa(sqlContent),
           sha,
-          branch: githubBranch
+          branch: githubBranch,
         }),
       });
 
@@ -2977,20 +2979,21 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
         body: JSON.stringify({
           message: `Upload model ${flowId}`,
           content: btoa(modelContent),
-          branch: githubBranch
+          branch: githubBranch,
         }),
       });
 
       console.log("SQL + Model upload successful.");
       return { success: true, flowId };
-
     } catch (error) {
       console.error("GitHub API Error:", error);
-      showToast("Upload of implementation for " + patternName + " failed.", "error");
+      showToast(
+        "Upload of implementation for " + patternName + " failed.",
+        "error",
+      );
       return { success: false };
     }
   }
-
 
   async function handleSaveClick() {
     if (!reactFlowInstance) {
@@ -3019,14 +3022,12 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     });
     const defaultAction = document.dispatchEvent(event);
     console.log(`defaultAction: ${defaultAction}`);
-    if (!defaultAction)
-      return;
+    if (!defaultAction) return;
 
     // Create a downloadable JSON file
     const jsonBlob = new Blob([JSON.stringify(flowWithMetadata, null, 2)], {
       type: "application/json",
     });
-    const jsonString = JSON.stringify(flowWithMetadata, null, 2);
     const downloadUrl = URL.createObjectURL(jsonBlob);
     const link = document.createElement("a");
     link.href = downloadUrl;
@@ -3039,28 +3040,122 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     console.log("Flow saved:", flowWithMetadata);
   }
 
-  const handleSaveDomainProfile = (newProfile: DomainProfile) => {
-    const updatedProfiles = [...allDomainProfiles, newProfile]
-    setAllDomainProfiles(updatedProfiles);
-    console.log("Profile saved and appended:", newProfile);
+  const openDomainProfileEditor = (
+    profile: DomainProfile | null = null,
+    index: number | null = null,
+  ) => {
+    setEditingDomainProfileIndex(index);
+    setEditingDomainProfile(profile);
+    setDomainProfileOpen(true);
   };
 
+  const closeDomainProfileEditor = () => {
+    setDomainProfileOpen(false);
+    setEditingDomainProfileIndex(null);
+    setEditingDomainProfile(null);
+  };
 
+  const handleSaveDomainProfile = (newProfile: DomainProfile) => {
+    const previousProfile =
+      editingDomainProfileIndex !== null
+        ? allDomainProfiles[editingDomainProfileIndex]
+        : null;
+    const updatedProfiles =
+      editingDomainProfileIndex === null
+        ? [...allDomainProfiles, newProfile]
+        : allDomainProfiles.map((profile, index) =>
+            index === editingDomainProfileIndex ? newProfile : profile,
+          );
+
+    setAllDomainProfiles(updatedProfiles);
+
+    if (editingDomainProfileIndex === null) {
+      setDomainProfile(newProfile.name);
+    } else if (previousProfile && domainProfile === previousProfile.name) {
+      setDomainProfile(newProfile.name);
+    }
+
+    console.log("Profile saved:", newProfile);
+  };
+
+  const handleDeleteDomainProfile = (index: number) => {
+    const profileToDelete = allDomainProfiles[index];
+    if (!profileToDelete) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Delete domain profile "${profileToDelete.name}"?`,
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    const updatedProfiles = allDomainProfiles.filter(
+      (_, profileIndex) => profileIndex !== index,
+    );
+    setAllDomainProfiles(updatedProfiles);
+
+    if (domainProfile === profileToDelete.name) {
+      setDomainProfile(updatedProfiles[0]?.name ?? "standard");
+    }
+
+    if (editingDomainProfileIndex === index) {
+      closeDomainProfileEditor();
+    }
+  };
+
+  const handleReorderDomainProfiles = (fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex) {
+      return;
+    }
+
+    const nextProfiles = [...allDomainProfiles];
+    const [movedProfile] = nextProfiles.splice(fromIndex, 1);
+    nextProfiles.splice(toIndex, 0, movedProfile);
+    setAllDomainProfiles(nextProfiles);
+  };
+
+  const handleDuplicateDomainProfile = (index: number) => {
+    const sourceProfile = allDomainProfiles[index];
+    if (!sourceProfile) {
+      return;
+    }
+
+    const clonedProfile = structuredClone(sourceProfile);
+    const baseName = `${sourceProfile.name} (Copy)`;
+    const existingNames = new Set(
+      allDomainProfiles.map((profile) => profile.name),
+    );
+    let duplicateName = baseName;
+    let copyIndex = 2;
+
+    while (existingNames.has(duplicateName)) {
+      duplicateName = `${baseName} ${copyIndex}`;
+      copyIndex += 1;
+    }
+
+    clonedProfile.name = duplicateName;
+
+    const nextProfiles = [...allDomainProfiles];
+    nextProfiles.splice(index + 1, 0, clonedProfile);
+    setAllDomainProfiles(nextProfiles);
+  };
 
   const handleSaveAsTemplate = () => {
-    console.log("Saving User Template")
+    console.log("Saving User Template");
     if (!reactFlowInstance) {
       console.error("React Flow instance is not initialized.");
       return;
       // TODO: toast error message
     }
     let templateFlow = reactFlowInstance.toObject();
-    console.log(templateFlow)
+    console.log(templateFlow);
     // add metadata to templateFlow
     templateFlow = {
       ...templateFlow,
       metadata: metadata,
-    }
+    };
     const date = Date.now();
     const timestamp = new Date().toISOString();
     const newTemplate: Template = {
@@ -3073,9 +3168,9 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
       id: `flow-${date}`,
       timestamp: timestamp,
       name: metadata.name, // get name from meta data
-      flowData: templateFlow
-    }
-    console.log(newTemplate)
+      flowData: templateFlow,
+    };
+    console.log(newTemplate);
     // save metadata to userTemplates
     addUserTemplate(newTemplate);
   };
@@ -3095,7 +3190,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
             data: {
               ...node.data,
             },
-          }))
+          })),
         );
         console.log("Nodes restored.");
       }
@@ -3104,10 +3199,9 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
         console.log("Edges restored.");
       }
 
-
       const { x = 0, y = 0, zoom = 1 } = flow.viewport || {};
       reactFlowInstance.setViewport({ x, y, zoom });
-      
+
       if (flow.metadata) {
         setMetadata(flow.metadata);
         console.log("Metadata restored:", flow.metadata);
@@ -3117,13 +3211,12 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     const event = new CustomEvent("lcm-open", {
       cancelable: true,
       detail: {
-        restoreFlow
+        restoreFlow,
       },
     });
     const defaultAction = document.dispatchEvent(event);
     console.log(`defaultAction: ${defaultAction}`);
-    if (!defaultAction)
-      return;
+    if (!defaultAction) return;
 
     const fileInput = document.createElement("input");
     fileInput.type = "file";
@@ -3140,7 +3233,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
       reader.onload = (e) => {
         try {
           const flow = openQasmToFlow(e.target?.result as string);
-          console.log(flow)
+          console.log(flow);
 
           restoreFlow(flow);
         } catch (error) {
@@ -3175,7 +3268,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
             data: {
               ...node.data,
             },
-          }))
+          })),
         );
         console.log("Nodes restored.");
       }
@@ -3183,7 +3276,6 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
         reactFlowInstance.setEdges(flow.edges || []);
         console.log("Edges restored.");
       }
-
 
       const { x = 0, y = 0, zoom = 1 } = flow.viewport || {};
       reactFlowInstance.setViewport({ x, y, zoom });
@@ -3197,13 +3289,12 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     const event = new CustomEvent("lcm-open", {
       cancelable: true,
       detail: {
-        restoreFlow
+        restoreFlow,
       },
     });
     const defaultAction = document.dispatchEvent(event);
     console.log(`defaultAction: ${defaultAction}`);
-    if (!defaultAction)
-      return;
+    if (!defaultAction) return;
 
     const fileInput = document.createElement("input");
     fileInput.type = "file";
@@ -3248,7 +3339,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
       currentNodes.map((node) => ({
         ...node,
         selected: false,
-      }))
+      })),
     );
     setSelectedNode(null);
   }, [reactFlowInstance, setSelectedNode]);
@@ -3258,14 +3349,17 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
       return;
     }
 
-    const selectedNodes = (reactFlowInstance.getNodes() as Node[]).filter((node) => node.selected);
+    const selectedNodes = (reactFlowInstance.getNodes() as Node[]).filter(
+      (node) => node.selected,
+    );
     if (!selectedNodes.length) {
       return;
     }
 
     const selectedNodeIds = new Set(selectedNodes.map((node) => node.id));
     const selectedEdges = (reactFlowInstance.getEdges() as Edge[]).filter(
-      (edge) => selectedNodeIds.has(edge.source) && selectedNodeIds.has(edge.target)
+      (edge) =>
+        selectedNodeIds.has(edge.source) && selectedNodeIds.has(edge.target),
     );
 
     copiedSelectionRef.current = {
@@ -3327,7 +3421,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
       currentNodes.map((node) => ({
         ...node,
         selected: false,
-      }))
+      })),
     );
 
     reactFlowInstance.addNodes(newNodes);
@@ -3342,7 +3436,9 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     }
 
     copySelectedNodes();
-    const selectedNodes = (reactFlowInstance.getNodes() as Node[]).filter((node) => node.selected);
+    const selectedNodes = (reactFlowInstance.getNodes() as Node[]).filter(
+      (node) => node.selected,
+    );
     if (!selectedNodes.length) {
       return;
     }
@@ -3362,7 +3458,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
       currentNodes.map((node) => ({
         ...node,
         selected: true,
-      }))
+      })),
     );
   }, [reactFlowInstance]);
 
@@ -3382,51 +3478,39 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     clearSelection: clearCurrentSelection,
   });
 
-  const [mySelectedNodeId, setMySelectedNodeId] = useState<string | null>(null);
+  const [, setMySelectedNodeId] = useState<string | null>(null);
 
-  // Iterate over all active collaborative tabs to see what nodes are currently targeted
-  const getActiveSelections = useCallback(() => {
-    const selections: { [clientId: number]: string } = {};
+  const handleClick = useCallback(
+    (event: React.MouseEvent, node: Node) => {
+      if (collaborationModeOn && awareness) {
+        const currentCursorState = awareness.getLocalState()?.cursor || {};
+        console.log(currentCursorState);
+        console.log(node.id);
+        let findAny = false;
+        awareness.getStates().forEach((state: any) => {
+          // Skip your own client ID so you don't highlight it with your own color
+          console.log(state.cursor);
 
-    awareness.getStates().forEach((state: any, clientId: number) => {
-      if (state?.cursor?.mySelectedNodeId) {
-        selections[clientId] = state.cursor.mySelectedNodeId;
-      }
-    });
-
-    return selections;
-  }, [awareness]);
-
-  const handleClick = useCallback((event: React.MouseEvent, node: Node) => {
-    if (collaborationModeOn && awareness) {
-      const currentCursorState = awareness.getLocalState()?.cursor || {};
-      console.log(currentCursorState)
-      console.log(node.id);
-      let findAny = false;
-      awareness.getStates().forEach((state: any, clientId: number) => {
-        // Skip your own client ID so you don't highlight it with your own color
-        // if (clientId === awareness.clientID) return;
-        console.log(state.cursor)
-
-
-        // Check if a peer has selected this specific node ID
-        if (state.cursor && state.cursor.mySelectedNodeId === node.id) {
-          findAny = true;
-          return;
-        }
-      });
-      if (!findAny) {
-        // Write the currently selected node directly into this tab's unique Yjs cursor object
-        awareness.setLocalStateField("cursor", {
-          ...currentCursorState,
-          mySelectedNodeId: node.id
+          // Check if a peer has selected this specific node ID
+          if (state.cursor && state.cursor.mySelectedNodeId === node.id) {
+            findAny = true;
+            return;
+          }
         });
+        if (!findAny) {
+          // Write the currently selected node directly into this tab's unique Yjs cursor object
+          awareness.setLocalStateField("cursor", {
+            ...currentCursorState,
+            mySelectedNodeId: node.id,
+          });
+        }
       }
-    }
 
-    // Keep your normal single-user state if necessary
-    setSelectedNode(node);
-  }, [collaborationModeOn, awareness, setSelectedNode]);
+      // Keep your normal single-user state if necessary
+      setSelectedNode(node);
+    },
+    [collaborationModeOn, awareness, setSelectedNode],
+  );
 
   const [modeledDiagram, setModeledDiagram] = useState(null);
 
@@ -3462,8 +3546,8 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
       console.error("React Flow instance is not initialized.");
       return;
     }
-    console.log(flow.initialEdges)
-    console.log(flow.nodes)
+    console.log(flow.initialEdges);
+    console.log(flow.nodes);
     if (flow.nodes) {
       reactFlowInstance.setNodes(
         flow.nodes?.map((node: Node) => ({
@@ -3471,7 +3555,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
           data: {
             ...node.data,
           },
-        }))
+        })),
       );
     }
     if (flow.initialEdges) {
@@ -3484,20 +3568,21 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     console.log("load flow nodes", nodes);
     console.log(edges);
 
-    // Reset the viewport 
+    // Reset the viewport
     const { x = 0, y = 0, zoom = 1 } = flow.viewport || {};
-    console.log(flow.viewport)
+    console.log(flow.viewport);
     reactFlowInstance.setViewport({ x, y, zoom });
 
-    console.log(flow.metadata)
+    console.log(flow.metadata);
     // Set the metadata (if any) - assuming initialDiagram has metadata
     if (flow.metadata) {
       // If metadata is an array, unpack it
-      const dataToSet = Array.isArray(flow.metadata) ? flow.metadata[0] : flow.metadata;
+      const dataToSet = Array.isArray(flow.metadata)
+        ? flow.metadata[0]
+        : flow.metadata;
       setMetadata(dataToSet);
       console.log("Metadata loaded:", dataToSet);
     }
-
   };
 
   // Function to load the flow in addition to all nodes and edges already on the canvas
@@ -3506,8 +3591,8 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
       console.error("React Flow instance is not initialized.");
       return;
     }
-    console.log(flow.initialEdges)
-    console.log(flow.nodes)
+    console.log(flow.initialEdges);
+    console.log(flow.nodes);
     if (flow.nodes) {
       reactFlowInstance.setNodes(
         flow.nodes?.map((node: Node) => ({
@@ -3515,7 +3600,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
           data: {
             ...node.data,
           },
-        }))
+        })),
       );
     }
     if (flow.initialEdges) {
@@ -3532,142 +3617,152 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     const { x = 0, y = 0, zoom = 1 } = flow.viewport || {};
     reactFlowInstance.setViewport({ x, y, zoom });
 
-    console.log(flow.metadata)
+    console.log(flow.metadata);
     // Set the metadata (if any) - assuming initialDiagram has metadata
     if (flow.metadata) {
       // If metadata is an array, unpack it
-      const dataToSet = Array.isArray(flow.metadata) ? flow.metadata[0] : flow.metadata;
+      const dataToSet = Array.isArray(flow.metadata)
+        ? flow.metadata[0]
+        : flow.metadata;
       setMetadata(dataToSet);
       console.log("Metadata loaded:", dataToSet);
     }
-
   };
 
-    const onNodeDrag = React.useCallback((event: React.MouseEvent, node: Node, nodes: Node[]) => {
-    console.log(reactFlowInstance.getNodes())
-    const currentNodes = reactFlowInstance.getNodes();
-    console.log(node.position.x);
-    console.log(helperLines)
-    console.log(event.clientX)
-    if (collaborationModeOn) {
-      let findAny = false;
+  const onNodeDrag = React.useCallback(
+    (event: React.MouseEvent, node: Node, nodes: Node[]) => {
+      console.log(reactFlowInstance.getNodes());
+      const currentNodes = reactFlowInstance.getNodes();
+      console.log(node.position.x);
+      console.log(helperLines);
+      console.log(event.clientX);
+      if (collaborationModeOn) {
+        let findAny = false;
 
-      awareness.getStates().forEach((state: any, clientId: number) => {
-        // Skip your own client ID so you don't highlight it with your own color
-        // if (clientId === awareness.clientID) return;
-        console.log(state.cursor)
+        awareness.getStates().forEach((state: any) => {
+          // Skip your own client ID so you don't highlight it with your own color
+          console.log(state.cursor);
 
-
-        // Check if a peer has selected this specific node ID
-        if (state.cursor && state.cursor.mySelectedNodeId === node.id) {
-          findAny = true;
+          // Check if a peer has selected this specific node ID
+          if (state.cursor && state.cursor.mySelectedNodeId === node.id) {
+            findAny = true;
+            return;
+          }
+        });
+        if (!findAny) {
           return;
         }
-      });
-      if (!findAny) {
-        return;
       }
-    }
-    let verticalLine = null;
-    let horizontalLine = null;
+      let verticalLine = null;
+      let horizontalLine = null;
 
-    console.log(verticalLine);
-    console.log(horizontalLine)
-    const bounds = getNodesBounds(currentNodes);
-    console.log(bounds);
-    const { x, y, zoom } = reactFlowInstance.getViewport();
-    console.log(x);
-    console.log(y);
-    const snapThreshold = 0; // Adjust threshold for snapping
-    console.log(ref.current?.getBoundingClientRect())
-    const boundingRect = ref.current?.getBoundingClientRect()
-    const cneter = reactFlowInstance.screenToFlowPosition({
-      x: boundingRect.x + boundingRect.width,
-      y: boundingRect.y + boundingRect.height
-    })
-    console.log(cneter)
-    const screenY = reactFlowInstance.flowToScreenPosition({ x: node.position.x, y: node.position.y });
-    console.log(screenY);
-    console.log(reactFlowInstance.getZoom())
-
-    // Find closest nodes for alignment
-    currentNodes.forEach((otherNode) => {
-      if (otherNode.id === node.id) return;
-
-      // Check for horizontal alignment
-      if (Math.abs(node.position.y - otherNode.position.y) === snapThreshold) {
-        console.log("horizontalLine")
-        const screen = reactFlowInstance.flowToScreenPosition({ x: node.position.x, y: node.position.y });
-        console.log(screen);
-        horizontalLine = screen.y - 70;
-      }
-    });
-
-    // Only update helperLines if there's alignment
-    if (verticalLine !== null) {
-      setHelperLines({
-        x: verticalLine,
-        y: null
+      console.log(verticalLine);
+      console.log(horizontalLine);
+      const bounds = getNodesBounds(currentNodes);
+      console.log(bounds);
+      const { x, y } = reactFlowInstance.getViewport();
+      console.log(x);
+      console.log(y);
+      const snapThreshold = 0; // Adjust threshold for snapping
+      console.log(ref.current?.getBoundingClientRect());
+      const boundingRect = ref.current?.getBoundingClientRect();
+      const cneter = reactFlowInstance.screenToFlowPosition({
+        x: boundingRect.x + boundingRect.width,
+        y: boundingRect.y + boundingRect.height,
       });
-    }
-    if (horizontalLine !== null) {
-
-      setHelperLines({
-        x: null,
-        y: horizontalLine
+      console.log(cneter);
+      const screenY = reactFlowInstance.flowToScreenPosition({
+        x: node.position.x,
+        y: node.position.y,
       });
-    }
-    if (horizontalLine === null && verticalLine === null) {
+      console.log(screenY);
+      console.log(reactFlowInstance.getZoom());
 
-      setHelperLines({
-        x: null,
-        y: null
-      });
-    }
-    console.log(helperLines)
-    console.log(node.position.x)
+      // Find closest nodes for alignment
+      currentNodes.forEach((otherNode) => {
+        if (otherNode.id === node.id) return;
 
-
-    console.log(reactFlowInstance)
-    const intersections = reactFlowInstance.getIntersectingNodes(node).map((n) => n.id);
-    console.log(intersections)
-    //updateNodeValue
-    console.log("trest")
-    console.log(intersections)
-    console.log(nodes);
-    let oldPosition = node.position;
-    currentNodes.forEach((nd) => {
-      console.log("check")
-      console.log(nd.id);
-      console.log(node.id);
-      console.log(node.parentNode)
-      if (node.parentNode && nd.id !== node.id) {
-        console.log("parent nicht nzkk")
-        const relativeX = node.positionAbsolute.x - nd.position.x;
-        const relativeY = node.positionAbsolute.y - nd.position.y;
-        console.warn("Hier drin")
-
-        const isForbidden = node.data?.scope === "if" && relativeY > nd.height / 2;
-
-        if (isForbidden) {
-          const maxY = relativeY > nd.height / 2;
-
-          console.warn("Cannot drop node in the right half due to 'if' constraint.");
-          return;
-
+        // Check for horizontal alignment
+        if (
+          Math.abs(node.position.y - otherNode.position.y) === snapThreshold
+        ) {
+          console.log("horizontalLine");
+          const screen = reactFlowInstance.flowToScreenPosition({
+            x: node.position.x,
+            y: node.position.y,
+          });
+          console.log(screen);
+          horizontalLine = screen.y - 70;
         }
+      });
+
+      // Only update helperLines if there's alignment
+      if (verticalLine !== null) {
+        setHelperLines({
+          x: verticalLine,
+          y: null,
+        });
       }
-    })
-    // move contextmenu with dragged node if it belongs to that node
-    // if other node is dragged: make context menu invisible
-    if (node.id == contextMenu.componentId) {
-      console.log("drag contextmenu to nodeid: ", node.id)
-      setContextMenu((prev) => ({ ...prev, top: event.clientY, left: event.clientX }))
-    } else {
-      setContextMenu((prev) => ({ ...prev, visible: false }))
-    }
-  }
-    , [reactFlowInstance, helperLines, nodes, setContextMenu]);
+      if (horizontalLine !== null) {
+        setHelperLines({
+          x: null,
+          y: horizontalLine,
+        });
+      }
+      if (horizontalLine === null && verticalLine === null) {
+        setHelperLines({
+          x: null,
+          y: null,
+        });
+      }
+      console.log(helperLines);
+      console.log(node.position.x);
+
+      console.log(reactFlowInstance);
+      const intersections = reactFlowInstance
+        .getIntersectingNodes(node)
+        .map((n) => n.id);
+      console.log(intersections);
+      //updateNodeValue
+      console.log("trest");
+      console.log(intersections);
+      console.log(nodes);
+      currentNodes.forEach((nd) => {
+        console.log("check");
+        console.log(nd.id);
+        console.log(node.id);
+        console.log(node.parentId);
+        if (node.parentId && nd.id !== node.id) {
+          console.log("parent nicht nzkk");
+          const relativeY = node.positionAbsolute.y - nd.position.y;
+          console.warn("Hier drin");
+
+          const isForbidden =
+            node.data?.scope === "if" && relativeY > nd.height / 2;
+
+          if (isForbidden) {
+            console.warn(
+              "Cannot drop node in the right half due to 'if' constraint.",
+            );
+            return;
+          }
+        }
+      });
+      // move contextmenu with dragged node if it belongs to that node
+      // if other node is dragged: make context menu invisible
+      if (node.id == contextMenu.componentId) {
+        console.log("drag contextmenu to nodeid: ", node.id);
+        setContextMenu((prev) => ({
+          ...prev,
+          top: event.clientY,
+          left: event.clientX,
+        }));
+      } else {
+        setContextMenu((prev) => ({ ...prev, visible: false }));
+      }
+    },
+    [reactFlowInstance, helperLines, nodes, setContextMenu],
+  );
 
   const onPaneClick = useCallback(() => {
     setSelectedNode(null);
@@ -3675,11 +3770,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
       updateNodeValue(node.id, "selected", "false");
     }
 
-
-
     if (!collaborationModeOn) return;
-    let findAny = false;
-    const currentCursorState = awareness.getLocalState()?.cursor || {};
 
     setMenu(null);
     setContextMenu((prev) => ({ ...prev, visible: false })); // contextMenu disappears when clicking on pane
@@ -3698,26 +3789,14 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
   const onExperienceLevelChange = (event) => {
     setExperienceLevel(event);
     setExperienceLevelOn(event);
-    const bool_value = (experienceLevel === "pioneer") ? false : true; // if previous experience level was pioneer...
-    setCompactVisualization(bool_value)
-    //setAncillaMode(bool_value)
-    //setAncillaModelingOn(bool_value)
-    //updateNodeInternals since ancilla mode changes number of handles
+    const bool_value = experienceLevel === "pioneer" ? false : true; // if previous experience level was pioneer...
+    setCompactVisualization(bool_value);
     nodes.forEach((node) => {
       updateNodeInternals(node.id);
-    })
+    });
   };
 
-
-
-  const onToggleAncilla = () => {
-    //setAncillaModelingOn(!ancillaModelingOn);
-    //setAncillaMode(!ancillaModelingOn);
-    //updateNodeInternals since ancilla mode changes number of handles
-    //nodes.forEach((node) => {
-    //updateNodeInternals(node.id);
-    //})
-  }
+  const onToggleAncilla = () => {};
 
   const onToggleCollaborationMode = useCallback(() => {
     const nextMode = !collaborationModeOn;
@@ -3730,12 +3809,22 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
       // Sync room data immediately to overwrite offline state
       useStore.setState({
         nodes: Array.from(nodesMap.values()),
-        edges: Array.from(edgesMap.values())
+        edges: Array.from(edgesMap.values()),
       });
 
       // Generate a random username
-      const randomNames = ["Alice", "Bob", "Charlie", "Dana", "Eve", "Frank", "Grace", "Hugo"];
-      const randomUsername = randomNames[Math.floor(Math.random() * randomNames.length)];
+      const randomNames = [
+        "Alice",
+        "Bob",
+        "Charlie",
+        "Dana",
+        "Eve",
+        "Frank",
+        "Grace",
+        "Hugo",
+      ];
+      const randomUsername =
+        randomNames[Math.floor(Math.random() * randomNames.length)];
       // Store local clientId
       setMyClientId(awareness.clientID);
 
@@ -3746,20 +3835,19 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
         x: 0,
         y: 0,
         color: color,
-        name: randomUsername
+        name: randomUsername,
       });
 
       awareness.setLocalStateField("locks", {
-        nodeIds: []
+        nodeIds: [],
       });
 
-      // set initial user name  
+      // set initial user name
       setUserName(randomUsername);
-      console.log("CURSORS", cursors)
+      console.log("CURSORS", cursors);
 
       setNodesI(Array.from(nodesMap.values()));
       setEdgesI(Array.from(edgesMap.values()));
-
     } else {
       // collaboration mode has been turned off
       // delete cursor from awareness state
@@ -3770,8 +3858,6 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
       setUserName("");
       // reset canvas
       // overwriteFlow(initialDiagram);
-
-
     }
   }, [collaborationModeOn, userName]);
 
@@ -3787,11 +3873,14 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
         if (node.classList?.contains("react-flow__minimap")) return false;
         if (node.classList?.contains("react-flow__controls")) return false;
         if (node.classList?.contains("react-flow__panel")) return false;
-        if (typeof node.className === "string" && node.className.includes("react-flow__panel")) return false;
-        
+        if (
+          typeof node.className === "string" &&
+          node.className.includes("react-flow__panel")
+        )
+          return false;
 
         return true;
-      }
+      },
     })
       .then((dataUrl) => {
         const a = document.createElement("a");
@@ -3804,53 +3893,59 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
 
   const getCircuitSvg = (): Promise<string> => {
     // center the view before taking the screenshot
-  reactFlowInstance.fitView({ padding: 0.1 });
+    reactFlowInstance.fitView({ padding: 0.1 });
 
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      toSvg(ref.current, {
-        filter: (node) => {
-          if (!node) return false;
-          if (node.classList?.contains("react-flow__minimap")) return false;
-          if (node.classList?.contains("react-flow__controls")) return false;
-          if (node.classList?.contains("react-flow__panel")) return false;
-          if (typeof node.className === "string" && node.className.includes("react-flow__panel")) return false;
-          if (node.classList?.contains("lasso-button")) return false;
-          if (typeof node.className === "string" && node.className.includes("lasso")) return false;
-          if (node instanceof HTMLElement && node.style.display === "none") return false;
-          return true;
-        },
-      })
-        .then((dataUrl) => resolve(dataUrl))  // ← Data-URL direkt zurückgeben
-        .catch(reject);
-    }, 300);
-})
-};
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        toSvg(ref.current, {
+          filter: (node) => {
+            if (!node) return false;
+            if (node.classList?.contains("react-flow__minimap")) return false;
+            if (node.classList?.contains("react-flow__controls")) return false;
+            if (node.classList?.contains("react-flow__panel")) return false;
+            if (
+              typeof node.className === "string" &&
+              node.className.includes("react-flow__panel")
+            )
+              return false;
+            if (node.classList?.contains("lasso-button")) return false;
+            if (
+              typeof node.className === "string" &&
+              node.className.includes("lasso")
+            )
+              return false;
+            if (node instanceof HTMLElement && node.style.display === "none")
+              return false;
+            return true;
+          },
+        })
+          .then((dataUrl) => resolve(dataUrl)) // ← Data-URL direkt zurückgeben
+          .catch(reject);
+      }, 300);
+    });
+  };
 
   const getModel = useCallback(() => {
     return reactFlowInstance.toObject();
   }, [reactFlowInstance]);
 
-
-
-  // handler functions for grouping nodes
+  //Handler-Funktionen für Gruppierung von Nodes
   const handleGroupSelected = useCallback(() => {
     const currentNodes = reactFlowInstance.getNodes();
-      
+
     // React Flow sometimes keeps the selection in a separate list,
-    // so read the selected nodes through the selection system
+    // so read the selected nodes through the selection systemmRe
     const selectedNodes = currentNodes.filter(
-      (n) => n.selected || reactFlowInstance.getNode(n.id)?.selected
+      (n) => n.selected || reactFlowInstance.getNode(n.id)?.selected,
     );
-    
+
     console.log("Selected nodes:", selectedNodes.length);
-    
+
     if (selectedNodes.length < 2) {
       showToast("Select at least 2 nodes to group.", "info");
       return;
     }
-   
-    
+
     const currentEdges = reactFlowInstance.getEdges();
     const updatedNodes = groupSelectedNodes(currentNodes, currentEdges);
     if (updatedNodes !== currentNodes) {
@@ -3861,41 +3956,8 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     }
   }, [reactFlowInstance, showToast]);
 
-  const handleLoadQasm = useCallback((qasm: string) => {
-    const { nodes: newNodes, edges: newEdges } = qasmToNodes(qasm);
-
-    // fill in the node data the store expects
-    const enrichedNodes = newNodes.map(n => ({
-      ...n,
-      data: {
-        ...n.data,
-        inputTypes: n.data.inputs?.length > 0 ? ["quantum register"] : [],
-        outputTypes: ["quantum register"],
-        children: [],
-        implementation: "",
-        implementationType: "",
-        uncomputeImplementationType: "",
-        uncomputeImplementation: "",
-        completionGuaranteed: true,
-      }
-    }));
-
-  reactFlowInstance.setNodes(newNodes);
-  reactFlowInstance.setEdges(newEdges);
-  reactFlowInstance.fitView();
-}, [reactFlowInstance]);
-
-
-
-
-  async function deployWorkflowToCamunda(
-    workflowName,
-    workflowXml,
-    viewMap
-  ) {
-    console.log(
-      "Deploying workflow to Camunda Engine"
-    );
+  async function deployWorkflowToCamunda(workflowName, workflowXml) {
+    console.log("Deploying workflow to Camunda Engine");
 
     // add required form data fields
     const form = new FormData();
@@ -3908,7 +3970,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     if (!fileName.endsWith(".bpmn")) {
       fileName = fileName + ".bpmn";
     }
-    console.log(workflowXml)
+    console.log(workflowXml);
 
     // add diagram to the body
     const bpmnFile = new File([workflowXml], fileName, { type: "text/xml" });
@@ -3916,16 +3978,11 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
 
     // make the request and wait for the response of the deployment endpoint
     try {
-      console.log(
-        "Deploying to Camunda Engine: "
-      );
-      const response = await fetch(
-        camundaEndpoint + "/deployment/create",
-        {
-          method: "POST",
-          body: form,
-        }
-      );
+      console.log("Deploying to Camunda Engine: ");
+      const response = await fetch(camundaEndpoint + "/deployment/create", {
+        method: "POST",
+        body: form,
+      });
       showToast("Deployment of workflow started ", "info");
 
       if (response.ok) {
@@ -3934,7 +3991,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
         console.info("Deployment provides result: ", result);
         console.info(
           "Deployment successful with deployment id: %s",
-          result["id"]
+          result["id"],
         );
         console.log(result["deployedProcessDefinitions"]);
 
@@ -3944,11 +4001,14 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
         ) {
           console.error(
             "Invalid size of deployed process definitions list: " +
-            Object.values(result["deployedProcessDefinitions"] || {}).length
+              Object.values(result["deployedProcessDefinitions"] || {}).length,
           );
           return { status: "failed" };
         }
-        const baseCamundaUrl = camundaEndpoint?.replace(/\/engine-rest\/?$/, "");
+        const baseCamundaUrl = camundaEndpoint?.replace(
+          /\/engine-rest\/?$/,
+          "",
+        );
         showToast(
           <>
             Workflow is deployed at{" "}
@@ -3961,19 +4021,19 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
               Camunda
             </a>
           </>,
-          "success"
+          "success",
         );
 
         return {
           status: "deployed",
           deployedProcessDefinition: Object.values(
-            result["deployedProcessDefinitions"] || {}
+            result["deployedProcessDefinitions"] || {},
           )[0],
         };
       } else {
         console.error(
           "Deployment of workflow returned invalid status code: %s",
-          response.status
+          response.status,
         );
 
         return {
@@ -4058,65 +4118,15 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     }
   }
 
-  /**
-   * Configuration for the new pattern solution entry
-   */
-  const NEW_FILE_NAME = 'new-workflow.json';
-  const NEW_FILE_CONTENT = {
-    metadata: { version: "1.0.0", name: "New Workflow" },
-    nodes: [],
-    edges: []
-  };
-  const PACKAGE_TYPE = 'workflow_editor';
-  const ALGO_NAME = 'New Algorithm Entry';
-  const IMPL_NAME = 'New Implementation Entry';
-
-  /**
-   * Helper to convert JSON to Postgres Hex format (\x...)
-   */
-  const toHex = (obj: any) => '\\x' + Buffer.from(JSON.stringify(obj)).toString('hex');
-
-  function generateAppendSql() {
-    const ka_algo_id = uuidv4();
-    const ka_impl_id = uuidv4();
-    const ka_file_id = uuidv4();
-    const ka_pkg_id = uuidv4();
-    const file_data_id = uuidv4();
-    let fileContent = JSON.stringify({
-      metadata: {
-        ...metadata,
-        containsPlaceholder: containsPlaceholder,
-        id: "flow123",
-        timestamp: new Date().toISOString(),
-      },
-      flow: reactFlowInstance.toObject(),
-    }, null, 2);
-
-    return `
-
--- Additional manual registration for ${NEW_FILE_NAME}
-INSERT INTO public.knowledge_artifact (id) VALUES ('${ka_algo_id}');
-INSERT INTO public.knowledge_artifact (id) VALUES ('${ka_impl_id}');
-INSERT INTO public.knowledge_artifact (id) VALUES ('${ka_file_id}');
-INSERT INTO public.knowledge_artifact (id) VALUES ('${ka_pkg_id}');
-
-INSERT INTO public.algorithm (name, id) VALUES ('${ALGO_NAME}', '${ka_algo_id}');
-INSERT INTO public.quantum_algorithm (nisq_ready, quantum_computation_model, id) VALUES (false, 0, '${ka_algo_id}');
-INSERT INTO public.implementation (name, id, implemented_algorithm_id) VALUES ('${IMPL_NAME}', '${ka_impl_id}', '${ka_algo_id}');
-
-INSERT INTO public.implementation_package (id, type) VALUES ('${ka_pkg_id}', '${PACKAGE_TYPE}');
-
-INSERT INTO public.file (fileurl, mime_type, name, id) VALUES ('${NEW_FILE_NAME}', 'application/json', '${NEW_FILE_NAME}', '${ka_file_id}');
-INSERT INTO public.file_data (id, data, file_id) VALUES ('${file_data_id}', '${toHex(fileContent)}', '${ka_file_id}');
-
-INSERT INTO public.implementation_package_file (file_id, implementation_package_id) VALUES ('${ka_file_id}', '${ka_pkg_id}');
-`;
-  }
-
-
-  async function createServiceTemplates(serviceDeploymentModelsUrl: string, namespace: string): Promise<void> {
+  async function createServiceTemplates(
+    serviceDeploymentModelsUrl: string,
+    namespace: string,
+  ): Promise<void> {
     const res = await fetch(serviceDeploymentModelsUrl);
-    if (!res.ok) throw new Error(`Failed to fetch service deployment models: ${res.statusText}`);
+    if (!res.ok)
+      throw new Error(
+        `Failed to fetch service deployment models: ${res.statusText}`,
+      );
 
     // Load ZIP into JSZip
     const arrayBuffer = await res.arrayBuffer();
@@ -4125,7 +4135,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
     // Extract folder names
     const folderNames = new Set<string>();
 
-    for (const [path, entry] of Object.entries(zip.files)) {
+    for (const [path] of Object.entries(zip.files)) {
       const match = path.match(/^(Activity_[^/]+)/);
       if (match) {
         folderNames.add(match[1]);
@@ -4134,9 +4144,8 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
 
     console.log(`Found service deployment folders:`, Array.from(folderNames));
 
-
     const masterZip = await JSZip.loadAsync(arrayBuffer);
-    // Process each folder 
+    // Process each folder
     for (const [path, entry] of Object.entries(masterZip.files)) {
       if (entry.dir) continue;
       if (!path.endsWith(".zip")) continue;
@@ -4151,7 +4160,7 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
 
       // Find service.zip inside activity ZIP
       const serviceEntry = Object.values(activityZip.files).find(
-        (f) => !f.dir && f.name.endsWith("service.zip")
+        (f) => !f.dir && f.name.endsWith("service.zip"),
       );
 
       if (!serviceEntry) {
@@ -4161,7 +4170,9 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
 
       // Extract service.zip as Blob
       const serviceArrayBuffer = await serviceEntry.async("arraybuffer");
-      const serviceBlob = new Blob([serviceArrayBuffer], { type: "application/zip" });
+      const serviceBlob = new Blob([serviceArrayBuffer], {
+        type: "application/zip",
+      });
 
       // Create deployment model
       const versionUrl = `http://localhost:8093/winery/servicetemplates/${activityName}`;
@@ -4172,137 +4183,140 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
         "http://opentosca.org/artifacttemplates",
         "{http://opentosca.org/artifacttypes}DockerContainerArtifact",
         "service.zip",
-        versionUrl
+        versionUrl,
       );
       const OPENTOSCA_NAMESPACE_NODETYPE = "http://opentosca.org/nodetypes";
       const QUANTME_NAMESPACE_PULL = "http://quantil.org/quantme/pull";
 
       // Create service template
-      let serviceTemplate = await createServiceTemplate(activityName, namespace);
+      let _serviceTemplate = await createServiceTemplate(
+        activityName,
+        namespace,
+      );
       await createNodeType(
         activityName + "Container",
-        OPENTOSCA_NAMESPACE_NODETYPE
+        OPENTOSCA_NAMESPACE_NODETYPE,
       );
       await updateNodeType(
         activityName + "Container",
-        OPENTOSCA_NAMESPACE_NODETYPE
+        OPENTOSCA_NAMESPACE_NODETYPE,
       );
-      serviceTemplate = await updateServiceTemplate(
+      _serviceTemplate = await updateServiceTemplate(
         activityName,
-        QUANTME_NAMESPACE_PULL
+        QUANTME_NAMESPACE_PULL,
       );
       console.log(`Service template created for: ${activityName}`);
     }
-
   }
 
+  const onNodesChangeSync = useCallback(
+    (changes: NodeChange[]) => {
+      console.log("Incoming changes:", changes);
 
-  const onNodesChangeSync = useCallback((changes: NodeChange[]) => {
-    console.log("Incoming changes:", changes);
+      // 🔒 Build global lock map
+      const states = awareness.getStates();
+      const lockMap = new Map<string, number>();
 
-    // 🔒 Build global lock map
-    const states = awareness.getStates();
-    const lockMap = new Map<string, number>();
+      states.forEach((state: any, clientId: number) => {
+        if (state?.locks?.nodeIds) {
+          state.locks.nodeIds.forEach((nodeId: string) => {
+            lockMap.set(nodeId, clientId);
+          });
+        }
+      });
 
-    states.forEach((state: any, clientId: number) => {
-      if (state?.locks?.nodeIds) {
-        state.locks.nodeIds.forEach((nodeId: string) => {
-          lockMap.set(nodeId, clientId);
-        });
-      }
-    });
+      // 🚫 Filter unauthorized changes safely
+      const allowedChanges = changes.filter((change) => {
+        if (!hasId(change)) return true;
 
-    // 🚫 Filter unauthorized changes safely
-    const allowedChanges = changes.filter((change) => {
-      if (!hasId(change)) return true;
+        // Always allow your own selection changes to proceed without lock blocks
+        if (change.type === "select") return true;
 
-      // Always allow your own selection changes to proceed without lock blocks
-      if (change.type === 'select') return true;
+        const owner = lockMap.get(change.id);
+        return !owner || owner === myClientId;
+      });
 
-      const owner = lockMap.get(change.id);
-      return !owner || owner === myClientId;
-    });
+      // 🧠 Apply changes against the latest React Flow node snapshot.
+      const currentNodes = reactFlowInstance?.getNodes?.() ?? nodesI;
+      const updatedNodes = applyNodeChanges(allowedChanges, currentNodes);
+      console.log(
+        "SELECTION STATES AFTER CHANGE",
+        updatedNodes.filter((n) => n.selected).map((n) => n.id),
+      );
 
-    // 🧠 Apply changes against the latest React Flow node snapshot.
-    const currentNodes = reactFlowInstance?.getNodes?.() ?? nodesI;
-    const updatedNodes = applyNodeChanges(allowedChanges, currentNodes);
-    console.log(
-      "SELECTION STATES AFTER CHANGE",
-      updatedNodes
-        .filter(n => n.selected)
-        .map(n => n.id)
-    );
+      setNodesI(updatedNodes);
+      updatedNodes.forEach((node) =>
+        nodesMap.set(node.id, stripTransientNodeState(node)),
+      );
 
-    setNodesI(updatedNodes);
-    updatedNodes.forEach((node) => nodesMap.set(node.id, stripTransientNodeState(node)));
+      // 🔁 Sync with React Flow
+      onNodesChange(allowedChanges);
+      // get user name (from cursors) for history
+      //const clientUserName = cursors[myClientId]?.name || "unknown";
+      // Handle deletions
+      const activeName = cursors[myClientId]?.name || userName || "unknown";
+      allowedChanges.forEach((change) => {
+        if (
+          (change.type === "remove" || change.type === "reset") &&
+          hasId(change)
+        ) {
+          console.log("NODES MAP", Array.from(nodesMap.values()));
+          const nodeId = change.id;
+          const nodeLabel =
+            Array.from(nodesMap.values()).find((node) => node.id === nodeId)
+              ?.data?.label || "unknown";
+          console.log(nodesMap);
+          console.log("Node deleted:", nodeId);
 
-    // 🔁 Sync with React Flow
-    onNodesChange(allowedChanges);
-    // get user name (from cursors) for history
-    //const clientUserName = cursors[myClientId]?.name || "unknown";
-    // Handle deletions
-    const activeName = cursors[myClientId]?.name || userName || "unknown";
-    allowedChanges.forEach((change) => {
-      if ((change.type === "remove" || change.type === "reset") && hasId(change)) {
-        console.log("NODES MAP", Array.from(nodesMap.values()))
-        const nodeId = change.id;
-        const nodeLabel = Array.from(nodesMap.values()).find((node) => node.id === nodeId)?.data?.label || "unknown"
-        console.log(nodesMap);
-        console.log("Node deleted:", nodeId);
+          nodesMap.delete(nodeId);
 
-        nodesMap.delete(nodeId);
+          // remove connected edges
+          edgesMap.forEach((edge: Edge, edgeId: string) => {
+            if (edge.source === nodeId || edge.target === nodeId) {
+              edgesMap.delete(edgeId);
+            }
+          });
 
-        // remove connected edges
-        edgesMap.forEach((edge: Edge, edgeId: string) => {
-          if (edge.source === nodeId || edge.target === nodeId) {
-            edgesMap.delete(edgeId);
-          }
-        });
-
-        historyArray.push([{
-          type: "node-deleted",
-          nodeId: nodeId,
-          label: nodeLabel,
-          userId: myClientId,
-          user: activeName,
-          timestamp: Date.now(),
-        }]);
-        console.log("REMOVE NODE HISTORY", historyArray.toArray())
-        console.log("shared nodes", Array.from(nodesMap.values()))
-        console.log("shared edges", Array.from(edgesMap.values()))
-      }
-    });
-
-  }, [nodesI, awareness, myClientId, cursors]);
-
+          historyArray.push([
+            {
+              type: "node-deleted",
+              nodeId: nodeId,
+              label: nodeLabel,
+              userId: myClientId,
+              user: activeName,
+              timestamp: Date.now(),
+            },
+          ]);
+          console.log("REMOVE NODE HISTORY", historyArray.toArray());
+          console.log("shared nodes", Array.from(nodesMap.values()));
+          console.log("shared edges", Array.from(edgesMap.values()));
+        }
+      });
+    },
+    [nodesI, awareness, myClientId, cursors],
+  );
 
   function hasId(
-    change: NodeChange | EdgeChange
+    change: NodeChange | EdgeChange,
   ): change is (NodeChange | EdgeChange) & { id: string } {
     return "id" in change;
   }
 
-  const getGlobalLocks = () => {
-    const states = awareness.getStates();
-
-    const lockMap = new Map<string, number>();
-
-    states.forEach((state, clientId) => {
-      if (state?.locks?.nodeIds) {
-        state.locks.nodeIds.forEach((nodeId: string) => {
-          lockMap.set(nodeId, clientId);
-        });
-      }
-    });
-
-    return lockMap;
-  };
-
   // broadcast selection via awareness
   useEffect(() => {
     if (collaborationModeOn) {
-      const randomNames = ["Alice", "Bob", "Charlie", "Dana", "Eve", "Frank", "Grace", "Hugo"];
-      const randomUsername = randomNames[Math.floor(Math.random() * randomNames.length)];
+      const randomNames = [
+        "Alice",
+        "Bob",
+        "Charlie",
+        "Dana",
+        "Eve",
+        "Frank",
+        "Grace",
+        "Hugo",
+      ];
+      const randomUsername =
+        randomNames[Math.floor(Math.random() * randomNames.length)];
       setMyClientId(awareness.clientID);
 
       const color = "#" + Math.floor(Math.random() * 16777215).toString(16);
@@ -4314,104 +4328,89 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
         color: color,
         name: randomUsername,
         role: experienceLevel,
-        mySelectedNodeId: null // <-- Track the selection cleanly inside the user's cursor scope
+        mySelectedNodeId: null, // <-- Track the selection cleanly inside the user's cursor scope
       });
 
       awareness.setLocalStateField("locks", {
-        nodeIds: []
+        nodeIds: [],
       });
 
       setUserName(randomUsername);
     }
   }, [collaborationModeOn]);
 
-  const onConnectSync = useCallback((params: Connection) => {
-    console.log(params)
-    let type = "classicalEdge";
-    let color = "#F5A843"; // default classical color
+  const onConnectSync = useCallback(
+    (params: Connection) => {
+      console.log(params);
+      let type = "classicalEdge";
+      let color = "#F5A843"; // default classical color
 
-    // Quantum edge
-    if (
-      (params.sourceHandle.includes("quantumHandle") || params.sourceHandle.includes("sideQuantumHandle")) &&
-      params.targetHandle.includes("quantumHandle")
-    ) {
-      type = "quantumEdge";
-      color = "#93C5FD";
-    }
+      // Quantum edge
+      if (
+        (params.sourceHandle.includes("quantumHandle") ||
+          params.sourceHandle.includes("sideQuantumHandle")) &&
+        params.targetHandle.includes("quantumHandle")
+      ) {
+        type = "quantumEdge";
+        color = "#93C5FD";
+      }
 
-    // Ancilla edge
-    if (
-      (params.sourceHandle.includes("ancilla") || params.sourceHandle.includes("dirtyAncilla")) &&
-      (params.targetHandle.includes("ancilla") || params.targetHandle.includes("dirtyAncilla"))
-    ) {
-      type = "ancillaEdge";
-      color = "#86EFAC";
-    }
+      // Ancilla edge
+      if (
+        (params.sourceHandle.includes("ancilla") ||
+          params.sourceHandle.includes("dirtyAncilla")) &&
+        (params.targetHandle.includes("ancilla") ||
+          params.targetHandle.includes("dirtyAncilla"))
+      ) {
+        type = "ancillaEdge";
+        color = "#86EFAC";
+      }
 
-    const edge: Edge = {
-      ...params,
-      id: uuid(),
-      type,
-      markerEnd: {
-        type: MarkerType.ArrowClosed,
-        width: 20,
-        height: 20,
-        color: color,
-      },
-      style: { stroke: color },
-    };
+      const edge: Edge = {
+        ...params,
+        id: uuid(),
+        type,
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          width: 20,
+          height: 20,
+          color: color,
+        },
+        style: { stroke: color },
+      };
 
+      // 1. Update local Zustand store (your existing store logic)
+      onConnect(params);
 
-    // 1. Update local Zustand store (your existing store logic)
-    onConnect(params);
+      // 2. Save edge to Yjs shared map
+      edgesMap.set(edge.id, edge);
+      // get user name (from cursors) for history
+      //const userName = cursors[myClientId]?.name || "unknown";
+      // get source and target node label
+      const sourceNode =
+        nodes.find((n) => n.id === edge.source)?.data?.label || edge.source;
+      const targetNode =
+        nodes.find((n) => n.id === edge.target)?.data?.label || edge.target;
+      // get target node label
 
-    // 2. Save edge to Yjs shared map
-    edgesMap.set(edge.id, edge);
-    // get user name (from cursors) for history
-    //const userName = cursors[myClientId]?.name || "unknown";
-    // get source and target node label
-    const sourceNode = nodes.find((n) => n.id === edge.source)?.data?.label || edge.source
-    const targetNode = nodes.find((n) => n.id === edge.target)?.data?.label || edge.target
-    // get target node label
-
-
-    historyArray.push([{
-      type: "edge-added",
-      source: sourceNode,
-      target: targetNode,
-      edgeId: edge.id,
-      //user: cursor.name,
-      userId: myClientId,
-      user: userName,
-      timestamp: Date.now(),
-    }]);
-    console.log("ADD EDGE HISTORY", historyArray.toArray());
-    console.log("shared nodes", Array.from(nodesMap.values()))
-    console.log("shared edges", Array.from(edgesMap.values()))
-    // für jeden Cursor? Nicht nur einmal??
-    // Object.entries(cursors).map(([clientId, cursor]) => {
-    //   const displayName = Number(clientId) === myClientId ? "Me" : cursor.name;
-
-    //   // Store name in a variable for history usage
-    //   //const userName = cursor.name;
-
-    //   historyArray.push([{
-    //     type: "edge-added",
-    //     source: edge.source,
-    //     target: edge.target,
-    //     edgeId: edge.id,
-    //     //user: cursor.name,
-    //     userId: myClientId,
-    //     user: userName,
-    //     timestamp: Date.now(),
-    //   }]);
-    //   console.log("ADD EDGE HISTORY", historyArray);
-    // });
-
-
-  }, [awareness, myClientId, cursors
-
-  ]);
+      historyArray.push([
+        {
+          type: "edge-added",
+          source: sourceNode,
+          target: targetNode,
+          edgeId: edge.id,
+          //user: cursor.name,
+          userId: myClientId,
+          user: userName,
+          timestamp: Date.now(),
+        },
+      ]);
+      console.log("ADD EDGE HISTORY", historyArray.toArray());
+      console.log("shared nodes", Array.from(nodesMap.values()));
+      console.log("shared edges", Array.from(edgesMap.values()));
+    },
+    [awareness, myClientId, cursors],
+  );
 
   return (
     <>
@@ -4423,16 +4422,16 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
         showProgress
         styles={{
           options: {
-            primaryColor: '#007bff',
+            primaryColor: "#007bff",
             zIndex: 10000,
           },
         }}
         callback={(data) => {
-          const { status, index, type } = data;
+          const { index, type } = data;
           console.log("HELP");
           console.log(index);
           console.log(type);
-          if (type === 'step:before' && index === 0) {
+          if (type === "step:before" && index === 0) {
             // open both side panels if they're not opened
 
             setIsPaletteOpen(true);
@@ -4449,45 +4448,46 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
             console.log(validMetadata);
             console.log(metadata);
 
-            const flowWithMetadata = { metadata: validMetadata, ...fileContent };
+            const flowWithMetadata = {
+              metadata: validMetadata,
+              ...fileContent,
+            };
             setModeledDiagram(JSON.stringify(flowWithMetadata));
             //setExpanded(true);
           }
-          if (type === 'step:before' && index === 3) {
+          if (type === "step:before" && index === 3) {
             startTour2();
             setExpanded(true);
           }
-          if (type === 'step:before' && index === 4) {
-
+          if (type === "step:before" && index === 4) {
             const id = "086a4f77-2562-44d3-b0df-7cfe83ae369a";
-            const node = nodes.find(n => n.id === id);
+            const node = nodes.find((n) => n.id === id);
             setSelectedNode(node);
             console.log("NODES", nodes);
             console.log("SELECTED NODE", node);
           }
-          if (type === 'step:before' && index === 5) {
+          if (type === "step:before" && index === 5) {
             setExpanded(false);
             const id = "e2a719bf-516c-4601-84d1-de643b05ea02";
-            const node = nodes.find(n => n.id === id);
+            const node = nodes.find((n) => n.id === id);
             setSelectedNode(node);
             console.log("NODES", nodes);
             console.log("SELECTED NODE", node);
           }
-          if (type === 'step:before' && index === 6) {
+          if (type === "step:before" && index === 6) {
             setExpanded(false);
             setSelectedNode(null);
           }
-          if (type === 'step:after' && index === 7) {
+          if (type === "step:after" && index === 7) {
             startTour3();
-
           }
-          if (['finished', 'skipped'].includes(data.status)) {
+          if (["finished", "skipped"].includes(data.status)) {
             setRunTour(false);
 
             setExpanded(false);
-            const toolbar = document.querySelector('.toolbar-container');
+            const toolbar = document.querySelector(".toolbar-container");
             if (toolbar) {
-              (toolbar as HTMLElement).style.overflowX = 'auto';
+              (toolbar as HTMLElement).style.overflowX = "auto";
             }
             if (modeledDiagram) {
               console.log("Load old diagram.");
@@ -4507,22 +4507,27 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
           uploadPatternSolution={() => setIsPatternModalOpen(true)}
           openPatternSolution={() => setIsPatternImplementationOpen(true)}
           openOpenQASM={handleOpenQASMClick}
-          onLoadQasm={handleLoadQasm}
-          //uploadPatternSolution={() => registerAndUploadToGitHub()}
           onLoadJson={handleLoadJson}
           sendToBackend={handleOpenValidation}
-          createDomainProfile={() => setDomainProfileOpen(true)}
+          createDomainProfile={() => openDomainProfileEditor()}
           startQuantumAlgorithmSelection={startQuantumAlgorithmSelection}
-          //sendToQunicorn={() => setIsQunicornOpen(true)}
           openHistory={() => openHistoryModal()}
-          startTour={() => { startTour(); }}
+          startTour={() => {
+            startTour();
+          }}
           onSaveAsTemplate={handleSaveAsTemplate}
           onManageTemplates={handleManageTemplates}
           onGroupSelected={handleGroupSelected}
           generateModel={() => setIsPromptModalOpen(true)}
         />
       </div>
-      {<NewDiagramModal open={isLoadJsonModalOpen} onClose={cancelLoadJson} onConfirm={confirmNewDiagram} />}
+      {
+        <NewDiagramModal
+          open={isLoadJsonModalOpen}
+          onClose={cancelLoadJson}
+          onConfirm={confirmNewDiagram}
+        />
+      }
 
       <ValidationModal
         open={isValidationOpen}
@@ -4534,10 +4539,10 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
         validationResult={validationResult}
       />
       <SendRequestModal
-    open={modalOpen}
-    onClose={() => setModalOpen(false)}
-    compilationTarget={compilationTarget}
-    containsPlaceholder={containsPlaceholder}
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        compilationTarget={compilationTarget}
+        containsPlaceholder={containsPlaceholder}
         containsWorkflowNodes={containsWorkflowNodes}
         setCompilationTarget={setCompilationTarget}
         sendToBackend={sendToBackend}
@@ -4611,22 +4616,33 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
         generateFlow={generateFlow}
       />
 
-
-
       {patternGraph && (
         <Modal
           title="Pattern Graph"
           open={true}
           onClose={() => setPatternGraph(null)}
         >
-          <img src={patternGraph} alt="Pattern graph" className="w-full rounded" />
+          <img
+            src={patternGraph}
+            alt="Pattern graph"
+            className="w-full rounded"
+          />
         </Modal>
       )}
 
       <DomainProfileModal
         open={domainProfileOpen}
-        onClose={() => setDomainProfileOpen(false)}
+        onClose={closeDomainProfileEditor}
         onSave={handleSaveDomainProfile}
+        initialProfile={editingDomainProfile}
+        profiles={allDomainProfiles}
+        editingProfileIndex={editingDomainProfileIndex}
+        onEditProfile={(index) =>
+          openDomainProfileEditor(allDomainProfiles[index] ?? null, index)
+        }
+        onDeleteProfile={handleDeleteDomainProfile}
+        onReorderProfiles={handleReorderDomainProfiles}
+        onDuplicateProfile={handleDuplicateDomainProfile}
       />
 
       <AiModal
@@ -4650,7 +4666,8 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
           try {
             // Fetch the model JSON from the request link to check compilation_target
             const requestResponse = await fetch(item.links.request);
-            if (!requestResponse.ok) throw new Error("Failed to fetch model file");
+            if (!requestResponse.ok)
+              throw new Error("Failed to fetch model file");
             const modelData = await requestResponse.json();
 
             const compilationTarget = modelData?.compilation_target;
@@ -4665,9 +4682,8 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
               // agentic subprocess is only a feature supported by camunda 8
               if (hasMultipleMappingsInFlow(modelData)) {
                 //sendWorkflowForDeployment(workflow);
-
               }
-              await deployWorkflowToCamunda("process-workflow", workflow, "");
+              await deployWorkflowToCamunda("process-workflow", workflow);
 
               // Upload the QRMS file to GitHub if available
               if (item.links?.qrms) {
@@ -4680,9 +4696,12 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
 
               if (item.links?.serviceDeploymentModels) {
                 try {
-                  const QUANTME_NAMESPACE_PULL = "http://quantil.org/quantme/pull";
-                  await createServiceTemplates(item.links.serviceDeploymentModels, QUANTME_NAMESPACE_PULL);
-
+                  const QUANTME_NAMESPACE_PULL =
+                    "http://quantil.org/quantme/pull";
+                  await createServiceTemplates(
+                    item.links.serviceDeploymentModels,
+                    QUANTME_NAMESPACE_PULL,
+                  );
                 } catch (err) {
                   console.error("QRMS upload failed:", err);
                 }
@@ -4693,21 +4712,19 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
 
             setIsQunicornOpen(true);
             const resultResponse = await fetch(item.links.result);
-            if (!resultResponse.ok) throw new Error("Failed to fetch QASM result");
+            if (!resultResponse.ok)
+              throw new Error("Failed to fetch QASM result");
 
             const qasmText = await resultResponse.text();
             setOpenQASMCode(qasmText);
-
           } catch (error) {
             console.error("Error handling execution:", error);
           }
         }}
       />
 
-
       <main className="flex flex-col lg:flex-row h-[calc(100vh_-_60px)]">
         <div className="relative flex h-[calc(100vh_-_60px)] border-gray-200 border">
-
           {/* Button zum Aufklappen */}
           {!isPaletteOpen && (
             <button
@@ -4722,7 +4739,12 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
           <div
             className={`transition-all duration-300 ${isPaletteOpen ? "w-[300px] lg:w-[350px]" : "w-0 overflow-hidden"}`}
           >
-            {isPaletteOpen && <Palette ancillaMode={ancillaModelingOn} onAddNode={addNodeToCanvas} />}
+            {isPaletteOpen && (
+              <Palette
+                ancillaMode={ancillaModelingOn}
+                onAddNode={addNodeToCanvas}
+              />
+            )}
           </div>
 
           {/* Button zum Einklappen  */}
@@ -4745,19 +4767,19 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
             ref={ref}
             nodes={collaborationModeOn ? nodesI : nodes}
             edges={collaborationModeOn ? edgesI : edges}
-
             // Selection
-            selectionOnDrag={lassoMode}        // ← Lasso nur wenn aktiv
-            panOnDrag={!lassoMode}             // ← Panning deaktivieren wenn Lasso aktiv
+            selectionOnDrag={lassoMode} // ← Lasso nur wenn aktiv
+            panOnDrag={!lassoMode} // ← Panning deaktivieren wenn Lasso aktiv
             selectionMode={SelectionMode.Partial} // ← Nodes die teilweise im Lasso sind auch
             deleteKeyCode={["Backspace", "Delete"]}
             multiSelectionKeyCode="Shift"
             selectionKeyCode="Shift"
             onSelectionEnd={onSelectionEnd}
             onSelectionChange={onSelectionChange}
-
             // Node events
-            onNodesChange={collaborationModeOn ? onNodesChangeSync : onNodesChange} // TODO: onNodesChange if no collab mode
+            onNodesChange={
+              collaborationModeOn ? onNodesChangeSync : onNodesChange
+            } // TODO: onNodesChange if no collab mode
             onNodeContextMenu={onNodeContextMenu}
             onNodeClick={(event: React.MouseEvent, node: Node) => {
               handleClick(event, node);
@@ -4765,57 +4787,55 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
             onNodeDrag={onNodeDrag}
             onNodeDragStop={onNodeDragStop}
             onNodesDelete={onNodesDelete} // TODO: weglassen oder onNodesDeleteSync erstellen?
-
             // Edge events
             onEdgeContextMenu={onEdgeContextMenu}
             onEdgesChange={onEdgesChange} // TODO: onEdgesChangeSync for collab mode (deletion of edge)
             onEdgesDelete={onEdgesDelete} // TODO: weglassen oder onEdgesDeleteSync erstellen?
             onConnect={collaborationModeOn ? onConnectSync : onConnect} // TODO: onConnect if no collab mode
             onConnectEnd={onConnectEnd}
-
             // Canvas
             onPaneClick={onPaneClick}
             onDrop={onDrop}
             onDragOver={onDragOver}
             onMouseMove={handleMouseMove}
             onClick={onClick}
-
             fitView
             fitViewOptions={{ maxZoom: 1 }}
             onInit={setReactFlowInstance}
             snapToGrid={true}
             nodeTypes={nodesConfig.nodeTypes}
             edgeTypes={nodesConfig.edgesTypes}
-          >{helperLines && (
-            <>
-              {helperLines.x !== null && (
-                <div
-                  style={{
-                    position: "absolute",
-                    left: helperLines.x,
-                    top: 0,
-                    height: "100%",
-                    width: "1px",
-                    background: "red",
-                    pointerEvents: "none"
-                  }}
-                />
-              )}
-              {helperLines.y !== null && (
-                <div
-                  style={{
-                    position: "absolute",
-                    top: helperLines.y, //(ref.current?.scrollTop || 0),
-                    left: 0,
-                    width: "100%",
-                    height: "1px",
-                    background: "red",
-                    pointerEvents: "none"
-                  }}
-                />
-              )}
-            </>
-          )}
+          >
+            {helperLines && (
+              <>
+                {helperLines.x !== null && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      left: helperLines.x,
+                      top: 0,
+                      height: "100%",
+                      width: "1px",
+                      background: "red",
+                      pointerEvents: "none",
+                    }}
+                  />
+                )}
+                {helperLines.y !== null && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: helperLines.y, //(ref.current?.scrollTop || 0),
+                      left: 0,
+                      width: "100%",
+                      height: "1px",
+                      background: "red",
+                      pointerEvents: "none",
+                    }}
+                  />
+                )}
+              </>
+            )}
 
             {/* Controls */}
             <Controls />
@@ -4825,18 +4845,22 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
               className="lasso-button"
               style={{
                 position: "absolute",
-                bottom: "130px",  // anbinden an Controls nicht möglich, daher Position separat festlegen
+                bottom: "130px", // anbinden an Controls nicht möglich, daher Position separat festlegen
                 left: "14px",
                 zIndex: 10,
               }}
               onMouseEnter={(e) => {
-              const tooltip = e.currentTarget.querySelector(".lasso-tooltip") as HTMLElement;
-              if (tooltip) tooltip.style.opacity = "1";
+                const tooltip = e.currentTarget.querySelector(
+                  ".lasso-tooltip",
+                ) as HTMLElement;
+                if (tooltip) tooltip.style.opacity = "1";
               }}
               onMouseLeave={(e) => {
-                const tooltip = e.currentTarget.querySelector(".lasso-tooltip") as HTMLElement;
+                const tooltip = e.currentTarget.querySelector(
+                  ".lasso-tooltip",
+                ) as HTMLElement;
                 if (tooltip) tooltip.style.opacity = "0";
-        }}
+              }}
             >
               <button
                 onClick={() => setLassoMode((v) => !v)}
@@ -4855,74 +4879,92 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
                   color: lassoMode ? "white" : "#374151",
                 }}
               >
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <ellipse cx="7" cy="6" rx="5" ry="4" strokeDasharray="3 1.5"/>
-                <line x1="11" y1="9" x2="13" y2="13"/>
-              </svg>
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 14 14"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                >
+                  <ellipse
+                    cx="7"
+                    cy="6"
+                    rx="5"
+                    ry="4"
+                    strokeDasharray="3 1.5"
+                  />
+                  <line x1="11" y1="9" x2="13" y2="13" />
+                </svg>
               </button>
-              <span style={{
-                position: "absolute",
-                left: "30px",
-                top: "50%",
-                transform: "translateY(-50%)",
-                background: "#1f2937",
-                color: "white",
-                fontSize: "11px",
-                padding: "2px 8px",
-                borderRadius: "4px",
-                whiteSpace: "nowrap",
-                pointerEvents: "none",
-                opacity: 0,
-                transition: "opacity 0.15s",
-              }}              
+              <span
+                style={{
+                  position: "absolute",
+                  left: "30px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "#1f2937",
+                  color: "white",
+                  fontSize: "11px",
+                  padding: "2px 8px",
+                  borderRadius: "4px",
+                  whiteSpace: "nowrap",
+                  pointerEvents: "none",
+                  opacity: 0,
+                  transition: "opacity 0.15s",
+                }}
               >
                 {lassoMode ? "Cancel grouping" : "Group selection"}
               </span>
             </div>
 
             <ShortcutHelpModal />
-            {Object.entries(cursors).length > 1 && collaborationModeOn && Object.entries(cursors).map(([clientId, cursor]) => { // TODO: only if collaborationMode false
-              const displayName = Number(clientId) === myClientId ? "Me" : cursor.name;
-              return (
-                <div
-                  key={clientId}
-                  style={{
-                    position: "absolute",
-                    left: cursor.x,
-                    top: cursor.y,
-                    pointerEvents: "none",
-                    transform: "translate(-50%, -50%)",
-                    zIndex: 999,
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                  }}
-                >
+            {Object.entries(cursors).length > 1 &&
+              collaborationModeOn &&
+              Object.entries(cursors).map(([clientId, cursor]) => {
+                // TODO: only if collaborationMode false
+                const displayName =
+                  Number(clientId) === myClientId ? "Me" : cursor.name;
+                return (
                   <div
+                    key={clientId}
                     style={{
-                      marginBottom: 4,
-                      fontSize: 12,
-                      color: "#fff",
-                      backgroundColor: cursor.color,
-                      padding: "1px 4px",
-                      borderRadius: 4,
-                      whiteSpace: "nowrap",
+                      position: "absolute",
+                      left: cursor.x,
+                      top: cursor.y,
+                      pointerEvents: "none",
+                      transform: "translate(-50%, -50%)",
+                      zIndex: 999,
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
                     }}
                   >
-                    {displayName}
+                    <div
+                      style={{
+                        marginBottom: 4,
+                        fontSize: 12,
+                        color: "#fff",
+                        backgroundColor: cursor.color,
+                        padding: "1px 4px",
+                        borderRadius: 4,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {displayName}
+                    </div>
+                    <div
+                      style={{
+                        width: 10,
+                        height: 10,
+                        borderRadius: "50%",
+                        backgroundColor: cursor.color,
+                        transition: "left 0.05s linear, top 0.05s linear",
+                      }}
+                    />
                   </div>
-                  <div
-                    style={{
-                      width: 10,
-                      height: 10,
-                      borderRadius: "50%",
-                      backgroundColor: cursor.color,
-                      transition: "left 0.05s linear, top 0.05s linear",
-                    }}
-                  />
-                </div>
-              );
-            })}
+                );
+              })}
             {toast && (
               <Toast
                 message={toast.message}
@@ -4935,10 +4977,22 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
             {isPatternModalOpen && (
               <PatternSelectionModal
                 onClose={() => setIsPatternModalOpen(false)}
-                onConfirm={(patternId, patternName, overwriteImplementationId, solutionId) => {
+                onConfirm={(
+                  patternId,
+                  patternName,
+                  overwriteImplementationId,
+                  solutionId,
+                ) => {
                   setIsPatternModalOpen(false);
-                  registerAndUploadToGitHub2(patternId, patternName, overwriteImplementationId, solutionId);
-                }} open={isPatternModalOpen} />
+                  registerAndUploadToGitHub(
+                    patternId,
+                    patternName,
+                    overwriteImplementationId,
+                    solutionId,
+                  );
+                }}
+                open={isPatternModalOpen}
+              />
             )}
 
             {isPatternImplementationOpen && (
@@ -4946,13 +5000,22 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
                 onClose={() => setIsPatternImplementationOpen(false)}
                 onConfirm={(patternId, patternName, json) => {
                   setIsPatternImplementationOpen(false);
-                  loadFlow(json)
-                }} open={isPatternImplementationOpen} />
+                  loadFlow(json);
+                }}
+                open={isPatternImplementationOpen}
+              />
             )}
 
-
-            {collaborationModeOn && (<UserCountPanel provider={yProvider} roomName="demo" />)}
-            {collaborationModeOn && (<VersioningPanel history={versioningHistory} experienceLevel={experienceLevel} myClientID={myClientId} />)}
+            {collaborationModeOn && (
+              <UserCountPanel provider={yProvider} roomName="demo" />
+            )}
+            {collaborationModeOn && (
+              <VersioningPanel
+                history={versioningHistory}
+                experienceLevel={experienceLevel}
+                myClientID={myClientId}
+              />
+            )}
 
             <ExperienceModePanel
               expanded={expanded}
@@ -4963,14 +5026,19 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
               onExperienceLevelChange={onExperienceLevelChange}
               //onExperienceLevelChange={(event) => { setExperienceLevel(event); setExperienceLevelOn(event); }}
               compactVisualization={compactVisualization}
-              onCompactVisualizationChange={() => { setCompactVisualization(!compact); setCompact(!compact) }}
+              onCompactVisualizationChange={() => {
+                setCompactVisualization(!compact);
+                setCompact(!compact);
+              }}
               completionGuaranteed={completionGuaranteed}
               onCompletionGuaranteedChange={setCompletionGuaranteed}
               domainProfile={domainProfile}
-              onDomainProfileChange={(event) => { setDomainProfile(event) }}
+              onDomainProfileChange={(event) => {
+                setDomainProfile(event);
+              }}
               domainProfileNames={allDomainProfiles.map((p) => p.name)}
               mathMode={mathMode}
-              onToggleMathMode={() => setMathMode((v) => !v)} 
+              onToggleMathMode={() => setMathMode((v) => !v)}
               qasmEditorMode={qasmEditorMode}
               onToggleQasmEditorMode={() => setQasmEditorMode((v) => !v)}
               collaborationMode={collaborationModeOn}
@@ -4983,34 +5051,40 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
               nodeClassName={(node) => {
                 let isDataType = node.data.isDataType;
 
-                if (node.type === 'dataTypeNode' || node.type === "classicalAlgorithmNode" || node.type === ClassicalOperatorNode || isDataType) return 'minimap-node-circle';
-                if (node.type === 'rounded') return 'minimap-node-rounded';
-                return 'minimap-node-default';
+                if (
+                  node.type === "dataTypeNode" ||
+                  node.type === "classicalAlgorithmNode" ||
+                  node.type === ClassicalOperatorNode ||
+                  isDataType
+                )
+                  return "minimap-node-circle";
+                if (node.type === "rounded") return "minimap-node-rounded";
+                return "minimap-node-default";
               }}
               nodeColor={(node) => {
                 switch (node.type) {
-                  case 'editableNode':
+                  case "editableNode":
                     return node.data.isDataType
                       ? classicalConstructColor
                       : quantumConstructColor;
-                  case 'dataTypeNode':
-                  case 'classicalAlgorithmNode':
+                  case "dataTypeNode":
+                  case "classicalAlgorithmNode":
                   case ClassicalOperatorNode:
-                  case 'rounded':
+                  case "rounded":
                     return classicalConstructColor;
-                  case 'ancillaNode':
+                  case "ancillaNode":
                     return ancillaConstructColor;
-                  case 'ifElseNode':
-                  case 'controlStructureNode':
+                  case "ifElseNode":
+                  case "controlStructureNode":
                     return controlFlowConstructColor;
                   default:
-                    return quantumConstructColor
+                    return quantumConstructColor;
                 }
               }}
               nodeComponent={({ className, x, y, width, height, color }) => {
-                const borderRadius = className.includes('circle')
+                const borderRadius = className.includes("circle")
                   ? 100
-                  : className.includes('rounded')
+                  : className.includes("rounded")
                     ? 15
                     : 0;
 
@@ -5043,91 +5117,93 @@ INSERT INTO public.implementation_package_file (file_id, implementation_package_
         </div>
 
         <div className="relative flex bg-gray-100 h-[calc(100vh_-_60px)] border-gray-200 border">
+          {/* Button zum Aufklappen*/}
+          {!isPanelOpen && (
+            <button
+              onClick={togglePanel}
+              style={{ width: "24px" }}
+              className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white p-2 rounded-l-lg shadow-md hover:bg-gray-600 z-50 right-0 ${isValidationOpen ? "hidden" : ""}`}
+            >
+              ←
+            </button>
+          )}
 
-  {/* Button zum Aufklappen*/}
-  {!isPanelOpen && (
-    <button
-      onClick={togglePanel}
-      style={{ width: "24px" }}
-      className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white p-2 rounded-l-lg shadow-md hover:bg-gray-600 z-50 right-0 ${isValidationOpen ? "hidden" : ""}`}
-    >
-      ←
-    </button>
-  )}
-
-      <div
-        className={`transition-all duration-300 relative ${isPanelOpen ? "" : "w-0 overflow-hidden"}`}
-        style={isPanelOpen ? { width: `${panelWidth}px` } : {}}>
-
-        {/* Drag-Handle */}
-        {isPanelOpen && (
           <div
-            onMouseDown={(e) => {
-              const startX = e.clientX;
-              const startWidth = panelWidth;
-              const onMove = (e: MouseEvent) => {
-                const newWidth = Math.min(900, Math.max(280, startWidth + (startX - e.clientX)));
-                setPanelWidth(newWidth);
-              };
-              const onUp = () => {
-                window.removeEventListener("mousemove", onMove);
-                window.removeEventListener("mouseup", onUp);
-                document.body.style.cursor = "";
-              };
-              document.body.style.cursor = "ew-resize";
-              window.addEventListener("mousemove", onMove);
-              window.addEventListener("mouseup", onUp);
-            }}
-            style={{
-              position: "absolute",
-              left: 0,
-              top: 0,
-              width: "6px",
-              height: "100%",
-              cursor: "ew-resize",
-              zIndex: 50,
-              borderLeft: "2px solid #e5e7eb",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#6366f1")}
-            onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#e5e7eb")}
-          />
-        )}
-
-        {/* Button zum Einklappen */}
-        {isPanelOpen && (
-          <button
-            onClick={togglePanel}
-            style={{ width: "24px", paddingLeft: "4px" }}
-            className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white text-center p-2 rounded-r-lg shadow-md hover:bg-gray-600 z-50 -left-0 ${isValidationOpen ? "hidden" : ""}`}
+            className={`transition-all duration-300 relative ${isPanelOpen ? "" : "w-0 overflow-hidden"}`}
+            style={isPanelOpen ? { width: `${panelWidth}px` } : {}}
           >
-            →
-          </button>
-        )}
+            {/* Drag-Handle */}
+            {isPanelOpen && (
+              <div
+                onMouseDown={(e) => {
+                  const startX = e.clientX;
+                  const startWidth = panelWidth;
+                  const onMove = (e: MouseEvent) => {
+                    const newWidth = Math.min(
+                      900,
+                      Math.max(280, startWidth + (startX - e.clientX)),
+                    );
+                    setPanelWidth(newWidth);
+                  };
+                  const onUp = () => {
+                    window.removeEventListener("mousemove", onMove);
+                    window.removeEventListener("mouseup", onUp);
+                    document.body.style.cursor = "";
+                  };
+                  document.body.style.cursor = "ew-resize";
+                  window.addEventListener("mousemove", onMove);
+                  window.addEventListener("mouseup", onUp);
+                }}
+                style={{
+                  position: "absolute",
+                  left: 0,
+                  top: 0,
+                  width: "6px",
+                  height: "100%",
+                  cursor: "ew-resize",
+                  zIndex: 50,
+                  borderLeft: "2px solid #e5e7eb",
+                }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.borderColor = "#6366f1")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.borderColor = "#e5e7eb")
+                }
+              />
+            )}
 
-        {isPanelOpen && (
-          <CustomPanel
-            metadata={metadata}
-            onUpdateMetadata={setMetadata}
-            mathMode={mathMode}
-            onWidthChange={setPanelWidth}
-            backendUrl={lowcodeBackendEndpoint}        
-            compilationTarget={compilationTarget}
-            qasmCode={openqasmCode}
-            onGetCircuitSvg={getCircuitSvg}
-            onSendToBackend={sendToBackend}
-            onGetModel={getModel}
-            qasmEditorMode={qasmEditorMode}
-          />
-        )}
-      </div>
-    </div>
+            {/* Button zum Einklappen */}
+            {isPanelOpen && (
+              <button
+                onClick={togglePanel}
+                style={{ width: "24px", paddingLeft: "4px" }}
+                className={`absolute top-1/2 transform -translate-y-1/2 bg-gray-400 text-white text-center p-2 rounded-r-lg shadow-md hover:bg-gray-600 z-50 -left-0 ${isValidationOpen ? "hidden" : ""}`}
+              >
+                →
+              </button>
+            )}
 
-
-
+            {isPanelOpen && (
+              <CustomPanel
+                metadata={metadata}
+                onUpdateMetadata={setMetadata}
+                mathMode={mathMode}
+                onWidthChange={setPanelWidth}
+                backendUrl={lowcodeBackendEndpoint}
+                compilationTarget={compilationTarget}
+                qasmCode={openqasmCode}
+                onGetCircuitSvg={getCircuitSvg}
+                onSendToBackend={sendToBackend}
+                onGetModel={getModel}
+                qasmEditorMode={qasmEditorMode}
+              />
+            )}
+          </div>
+        </div>
       </main>
     </>
   );
 }
-
 
 export default App;

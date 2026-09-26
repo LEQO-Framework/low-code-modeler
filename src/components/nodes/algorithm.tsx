@@ -1,14 +1,28 @@
 import { memo, useEffect, useState } from "react";
-import { Handle, Position, Node, Edge, getConnectedEdges, useUpdateNodeInternals } from "reactflow";
+import {
+  Handle,
+  Position,
+  Node,
+  Edge,
+  useUpdateNodeInternals,
+} from "reactflow";
 import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
 import AncillaPort from "../utils/ancillaPort";
 import UncomputePort from "../utils/uncomputePort";
 import OutputPort from "../utils/outputPort";
-import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { ancillaConstructColor, classicalConstructColor, dirtyAncillaHandle, dirtyConstructColor, quantumConstructColor } from "@/constants";
-import { findDuplicateOutputIdentifier, findDuplicateOutputIdentifiers, findDuplicateOutputIdentifiersInsideNode } from "../utils/utils";
+import {
+  ancillaConstructColor,
+  classicalConstructColor,
+  dirtyAncillaHandle,
+  dirtyConstructColor,
+  quantumConstructColor,
+} from "@/constants";
+import {
+  findDuplicateOutputIdentifier,
+  findDuplicateOutputIdentifiersInsideNode,
+} from "../utils/utils";
 import { AlertCircle } from "lucide-react";
 import { awareness } from "@/yjs";
 
@@ -29,14 +43,14 @@ const selector = (state: {
   updateNodeValue: state.updateNodeValue,
   setSelectedNode: state.setSelectedNode,
   setEdges: state.setEdges,
-  setNewEdges: state.setNewEdges
+  setNewEdges: state.setNewEdges,
 });
 
 export const AlgorithmNode = memo((node: Node) => {
   const { data, selected } = node;
   const id = node.id;
-  console.log(selected)
-  console.log(data.numberQuantumInputs)
+  console.log(selected);
+  console.log(data.numberQuantumInputs);
   const numberQuantumInputs = data.numberQuantumInputs || 0;
   const numberQuantumOutputs = data.numberQuantumOutputs || 0;
   const numberClassicalInputs = data.numberClassicalInputs || 0;
@@ -44,32 +58,25 @@ export const AlgorithmNode = memo((node: Node) => {
 
   const inputHandleCount = numberQuantumInputs + numberClassicalInputs;
   const outputHandleCount = numberQuantumOutputs + numberClassicalOutputs;
-  //console.log(handleCount)
 
-  const handleGap = 40;
-  const handleOffset = 15;
+  const {
+    edges,
+    nodes,
+    updateNodeValue,
+    setSelectedNode,
+    setNewEdges,
+    ancillaMode,
+  } = useStore(selector, shallow);
 
-  const nodeHeight = Math.max(handleOffset * 2 + inputHandleCount * handleGap + outputHandleCount * 80, 100);
-  const { edges, nodes, updateNodeValue, setSelectedNode, setNewEdges, setEdges, ancillaMode } = useStore(
-    selector,
-    shallow
-  );
-  const alledges = getConnectedEdges([node], edges);
-
-  const [inputs, setInputs] = useState(data.inputs || []);
   const [outputs, setOutputs] = useState(data.outputs || []);
-  const [classicalOutputs, setClassicalOutputs] = useState(data.classicalOutputs || []);
-  const [yError, setYError] = useState(false);
-  const [y, setY] = useState("");
-  const [outputIdentifierError, setOutputIdentifierError] = useState(false);
-  const [showingChildren, setShowingChildren] = useState(false);
   const [sizeErrors, setSizeErrors] = useState<{ [key: number]: boolean }>({});
-  const [classicalSizeErrors, setClassicalSizeErrors] = useState<{ [key: number]: boolean }>({});
+  const [classicalSizeErrors] = useState<{
+    [key: number]: boolean;
+  }>({});
   const [isEditingLabel, setIsEditingLabel] = useState(false);
   const [editableLabel, setEditableLabel] = useState(data.label || "");
   const updateNodeInternals = useUpdateNodeInternals();
   const [outputIdentifierErrors, setOutputIdentifierErrors] = useState({});
-  const [classicalOutputIdentifierErrors, setClassicalOutputIdentifierErrors] = useState({});
 
   const handleLabelChange = () => {
     setIsEditingLabel(false);
@@ -86,22 +93,29 @@ export const AlgorithmNode = memo((node: Node) => {
   useEffect(() => {
     updateNodeInternals(node.id);
     setSelectedNode(node);
-  }, [node.data.numberQuantumInputs, node.data.numberClassicalInputs, node.data.numberQuantumOutputs, node.data.numberClassicalOutputs]);
-
+  }, [
+    node.data.numberQuantumInputs,
+    node.data.numberClassicalInputs,
+    node.data.numberQuantumOutputs,
+    node.data.numberClassicalOutputs,
+  ]);
 
   const isAncillaConnected = edges.some(
-    edge => edge.target === node.id && edge.targetHandle === `ancillaHandleOperationInput2${node.id}`
+    (edge) =>
+      edge.target === node.id &&
+      edge.targetHandle === `ancillaHandleOperationInput2${node.id}`,
   );
 
   const isDirtyAncillaConnected = edges.some(
-    edge => edge.target === node.id && edge.targetHandle === `${dirtyAncillaHandle}OperationInput3${node.id}`
+    (edge) =>
+      edge.target === node.id &&
+      edge.targetHandle === `${dirtyAncillaHandle}OperationInput3${node.id}`,
   );
   const getInputType = (handleId: any) => {
-
-    const edge = edges.find(e => e.targetHandle === handleId);
+    const edge = edges.find((e) => e.targetHandle === handleId);
     if (!edge) return "any";
 
-    const sourceNode = nodes.find(n => n.id === edge.source);
+    const sourceNode = nodes.find((n) => n.id === edge.source);
     if (!sourceNode) return "any";
 
     if (sourceNode.type === "dataTypeNode") {
@@ -111,27 +125,25 @@ export const AlgorithmNode = memo((node: Node) => {
     return "any";
   };
 
-
   useEffect(() => {
-    const identifier = node.data.outputIdentifier;
-    console.log("nodes", nodes)
-    console.log("edges", edges)
-    //let selectedNode = nodes.find(n => n.id === node.id);
+    console.log("nodes", nodes);
+    console.log("edges", edges);
     let selectedNode = node;
     let newErrors = {};
-    console.log("ALGORITHM", outputs)
-    //const classicalOutputs = outputs.find(o => {o.type === "classical"})
-    //const quantumOutputs = outputs.find(o => {o.type === "quantum"})
-    //console.log("classical outputs", classicalOutputs)
-    //console.log("quantum outputs", quantumOutputs)
+    console.log("ALGORITHM", outputs);
 
     // quantum outputs
     outputs.forEach((output, index) => {
       const outputIdentifier = output?.identifier?.trim();
-      console.log("Outputidentifier", outputIdentifier)
+      console.log("Outputidentifier", outputIdentifier);
       const size = output?.size?.trim();
       if (!outputIdentifier) return;
-      const duplicates = findDuplicateOutputIdentifier(nodes, selectedNode.id, selectedNode, outputIdentifier);
+      const duplicates = findDuplicateOutputIdentifier(
+        nodes,
+        selectedNode.id,
+        selectedNode,
+        outputIdentifier,
+      );
       let isDuplicate = false;
       for (const [key] of duplicates.entries()) {
         if (
@@ -142,33 +154,48 @@ export const AlgorithmNode = memo((node: Node) => {
           break;
         }
       }
-      console.log(isDuplicate)
-      isDuplicate = isDuplicate || findDuplicateOutputIdentifiersInsideNode(nodes, selectedNode, outputIdentifier)
-      console.log(findDuplicateOutputIdentifiersInsideNode(nodes, selectedNode, outputIdentifier))
+      console.log(isDuplicate);
+      isDuplicate =
+        isDuplicate ||
+        findDuplicateOutputIdentifiersInsideNode(
+          nodes,
+          selectedNode,
+          outputIdentifier,
+        );
+      console.log(
+        findDuplicateOutputIdentifiersInsideNode(
+          nodes,
+          selectedNode,
+          outputIdentifier,
+        ),
+      );
       const startsWithDigit = /^\d/.test(outputIdentifier);
-      console.log(isDuplicate)
-      console.log(output)
+      console.log(isDuplicate);
+      console.log(output);
 
       console.log("set for identifier error");
-      console.log(outputIdentifier)
+      console.log(outputIdentifier);
       // Flag error if identifier is invalid or duplicated
       newErrors[index] = startsWithDigit || isDuplicate;
-      console.log(newErrors)
-      console.log(newErrors[index])
+      console.log(newErrors);
+      console.log(newErrors[index]);
       if (!size) return;
       const startsWithDigitSize = !/^\d/.test(size);
       sizeErrors[index] = startsWithDigitSize;
-    })
+    });
 
     setOutputIdentifierErrors(newErrors);
-    setSizeErrors(sizeErrors)
+    setSizeErrors(sizeErrors);
   }, [nodes, outputs, node.id]);
-
 
   const baseHeight = !ancillaMode ? 50 : 200;
   const extraHeightPerVariable = 130;
   const dynamicHeight =
-    baseHeight + 2 * 40 + 3 * 50 + (inputHandleCount * 50) + outputHandleCount * extraHeightPerVariable;
+    baseHeight +
+    2 * 40 +
+    3 * 50 +
+    inputHandleCount * 50 +
+    outputHandleCount * extraHeightPerVariable;
 
   // Ensure identifiers exist and match the number of outputs
   if (!data.identifiers) {
@@ -177,7 +204,9 @@ export const AlgorithmNode = memo((node: Node) => {
 
   // Add missing identifiers
   while (data.identifiers.length < outputHandleCount) {
-    data.identifiers.push("q" + Math.floor(100000 + Math.random() * 900000).toString());
+    data.identifiers.push(
+      "q" + Math.floor(100000 + Math.random() * 900000).toString(),
+    );
   }
 
   // Remove extra identifiers
@@ -186,16 +215,19 @@ export const AlgorithmNode = memo((node: Node) => {
     console.log(removedIdentifiers);
 
     // Clean up edges with sourceHandles related to removed identifiers
-    const edgesToRemove = edges.filter((edge) =>
-      !removedIdentifiers.some((id, index) =>
-        edge.sourceHandle === `quantumHandleGateOutput${numberQuantumOutputs + index + 1}${node.id}`
-      )
+    const edgesToRemove = edges.filter(
+      (edge) =>
+        !removedIdentifiers.some(
+          (id, index) =>
+            edge.sourceHandle ===
+            `quantumHandleGateOutput${numberQuantumOutputs + index + 1}${node.id}`,
+        ),
     );
-    console.log("EDGES")
-    console.log(edgesToRemove)
+    console.log("EDGES");
+    console.log(edgesToRemove);
 
     if (edgesToRemove.length > 0) {
-      console.log("remove edges")
+      console.log("remove edges");
       setNewEdges(edgesToRemove);
     }
 
@@ -203,8 +235,9 @@ export const AlgorithmNode = memo((node: Node) => {
   }
 
   //console.log(nodeHeight)
-  const [remoteHighlightColor, setRemoteHighlightColor] = useState<string | null>(null);
-  const [selectingUserName, setSelectingUserName] = useState<string | null>(null); // technically not needed, could extend functionality to also show user name next to highlighted node
+  const [remoteHighlightColor, setRemoteHighlightColor] = useState<
+    string | null
+  >(null);
 
   useEffect(() => {
     const checkRemoteSelection = () => {
@@ -212,9 +245,8 @@ export const AlgorithmNode = memo((node: Node) => {
       let foundName: string | null = null;
 
       // Loop through all active client states in the room
-      awareness.getStates().forEach((state: any, clientId: number) => {
+      awareness.getStates().forEach((state: any) => {
         // Skip your own client ID so you don't highlight it with your own color
-        // if (clientId === awareness.clientID) return;
 
         if (state.cursor && state.cursor.mySelectedNodeId === id) {
           foundColor = state.cursor.color;
@@ -223,7 +255,6 @@ export const AlgorithmNode = memo((node: Node) => {
       });
 
       setRemoteHighlightColor(foundColor);
-      setSelectingUserName(foundName);
       console.log("COLOR", foundColor, foundName);
     };
 
@@ -248,12 +279,17 @@ export const AlgorithmNode = memo((node: Node) => {
       }}
     >
       <div className="grand-parent">
-
         <div
-          className={"w-[320px] bg-white border border-solid border-gray-700 shadow-md"}
+          className={
+            "w-[320px] bg-white border border-solid border-gray-700 shadow-md"
+          }
           style={{
             height: `${dynamicHeight}px`,
-            borderColor: remoteHighlightColor ? remoteHighlightColor : (selected ? "#3B82F6" : "#374151"),
+            borderColor: remoteHighlightColor
+              ? remoteHighlightColor
+              : selected
+                ? "#3B82F6"
+                : "#374151",
             boxShadow: remoteHighlightColor
               ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}` // Glowing aura ring
               : undefined,
@@ -261,14 +297,14 @@ export const AlgorithmNode = memo((node: Node) => {
         >
           {(Object.values(outputIdentifierErrors).some(Boolean) ||
             Object.values(sizeErrors).some(Boolean)) && (
-              <div className="absolute top-2 right-[-40px] group z-20">
-                <AlertCircle className="text-red-600 w-5 h-5" />
-                <div className="absolute top-5 left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
-                  One or more outputs have errors (duplicate ID or size is not a number).
-                </div>
+            <div className="absolute top-2 right-[-40px] group z-20">
+              <AlertCircle className="text-red-600 w-5 h-5" />
+              <div className="absolute top-5 left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
+                One or more outputs have errors (duplicate ID or size is not a
+                number).
               </div>
-            )}
-
+            </div>
+          )}
 
           <div className="w-full flex items-center" style={{ height: "52px" }}>
             {node.data.implementation && (
@@ -325,8 +361,8 @@ export const AlgorithmNode = memo((node: Node) => {
                   style={{
                     backgroundColor: classicalConstructColor,
                     width: "120px",
-                    borderTopRightRadius: '20px',
-                    borderBottomRightRadius: '20px',
+                    borderTopRightRadius: "20px",
+                    borderBottomRightRadius: "20px",
                   }}
                 >
                   <Handle
@@ -338,10 +374,14 @@ export const AlgorithmNode = memo((node: Node) => {
                   />
                   <div className="flex flex-col text-center w-full leading-tight">
                     <span className="text-black text-sm">
-                      {node.data.inputs?.[index]?.outputIdentifier || `Input ${index + 1}`}
+                      {node.data.inputs?.[index]?.outputIdentifier ||
+                        `Input ${index + 1}`}
                     </span>
                     <span className="text-[10px] text-gray-600">
-                      type: {getInputType(`classicalHandleOperationInput${index}${node.id}`)}
+                      type:{" "}
+                      {getInputType(
+                        `classicalHandleOperationInput${index}${node.id}`,
+                      )}
                     </span>
                   </div>
                 </div>
@@ -367,7 +407,8 @@ export const AlgorithmNode = memo((node: Node) => {
                   />
                   <div className="flex flex-col text-center w-full leading-tight">
                     <span className="text-black text-sm">
-                      {node.data.inputs?.[index]?.outputIdentifier || `Input ${index + 1}`}
+                      {node.data.inputs?.[index]?.outputIdentifier ||
+                        `Input ${index + 1}`}
                     </span>
                     <span className="text-[10px] text-gray-600">
                       type: quantum register
@@ -375,7 +416,6 @@ export const AlgorithmNode = memo((node: Node) => {
                   </div>
                 </div>
               ))}
-
 
               {ancillaMode && (
                 <div>
@@ -400,9 +440,13 @@ export const AlgorithmNode = memo((node: Node) => {
                         "z-10 ancilla-port-in w-4 transform rotate-45 -left-[8px]",
                         isAncillaConnected
                           ? "!bg-green-100 !border-solid !border-black"
-                          : "!bg-gray-200 !border-dashed !border-black"
+                          : "!bg-gray-200 !border-dashed !border-black",
                       )}
-                      style={{ zIndex: 1, top: '50% !important', transform: 'translateY(-50%) rotate(45deg)' }}
+                      style={{
+                        zIndex: 1,
+                        top: "50% !important",
+                        transform: "translateY(-50%) rotate(45deg)",
+                      }}
                     />
                     <span
                       className="text-black text-sm text-center w-full"
@@ -432,9 +476,13 @@ export const AlgorithmNode = memo((node: Node) => {
                         "z-10 ancilla-port-in w-4 transform rotate-45 -left-[8px]",
                         isDirtyAncillaConnected
                           ? "!bg-green-100 !border-solid !border-black"
-                          : "!bg-gray-200 !border-dashed !border-black"
+                          : "!bg-gray-200 !border-dashed !border-black",
                       )}
-                      style={{ zIndex: 1, top: '50% !important', transform: 'translateY(-50%) rotate(45deg)' }}
+                      style={{
+                        zIndex: 1,
+                        top: "50% !important",
+                        transform: "translateY(-50%) rotate(45deg)",
+                      }}
                     />
                     <span
                       className="text-black text-sm text-center w-full"
@@ -443,10 +491,10 @@ export const AlgorithmNode = memo((node: Node) => {
                       Dirty Ancilla
                     </span>
                   </div>
-                </div>)}
+                </div>
+              )}
             </div>
           </div>
-
 
           <div className="custom-node-port-out">
             {Array.from({ length: numberClassicalOutputs }).map((_, index) => (
@@ -463,15 +511,18 @@ export const AlgorithmNode = memo((node: Node) => {
                 outputIdentifierError={outputIdentifierErrors[index]}
                 updateNodeValue={updateNodeValue}
                 setOutputIdentifierError={(error) =>
-                  setOutputIdentifierErrors(prev => ({ ...prev, [index]: error }))}
+                  setOutputIdentifierErrors((prev) => ({
+                    ...prev,
+                    [index]: error,
+                  }))
+                }
                 setSizeError={(error) =>
-                  setSizeErrors((prev) => ({ ...prev, [index]: error }))}
+                  setSizeErrors((prev) => ({ ...prev, [index]: error }))
+                }
                 setSelectedNode={setSelectedNode}
                 active={true}
               />
-            ))
-
-            }
+            ))}
             {/*           </div>
           <div className="custom-node-port-out"> */}
             {Array.from({ length: numberQuantumOutputs }).map((_, index) => (
@@ -484,27 +535,48 @@ export const AlgorithmNode = memo((node: Node) => {
                 outputs={outputs}
                 setOutputs={setOutputs}
                 edges={edges}
-                outputIdentifierError={outputIdentifierErrors[numberClassicalOutputs + index]}
+                outputIdentifierError={
+                  outputIdentifierErrors[numberClassicalOutputs + index]
+                }
                 updateNodeValue={updateNodeValue}
                 setOutputIdentifierError={(error) =>
-                  setOutputIdentifierErrors(prev => ({ ...prev, [numberClassicalOutputs + index]: error }))
+                  setOutputIdentifierErrors((prev) => ({
+                    ...prev,
+                    [numberClassicalOutputs + index]: error,
+                  }))
                 }
                 sizeError={sizeErrors[numberClassicalOutputs + index]}
                 setSizeError={(error) =>
-                  setSizeErrors((prev) => ({ ...prev, [numberClassicalOutputs + index]: error }))
+                  setSizeErrors((prev) => ({
+                    ...prev,
+                    [numberClassicalOutputs + index]: error,
+                  }))
                 }
                 setSelectedNode={setSelectedNode}
                 active={true}
               />
             ))}
-
           </div>
 
           {ancillaMode && (
             <div>
-              <AncillaPort node={node} edges={edges} dirty={false} index={outputHandleCount} />
-              <AncillaPort node={node} edges={edges} dirty={true} index={outputHandleCount + 1} />
-              <UncomputePort node={node} edges={edges} index={outputHandleCount + 2} />
+              <AncillaPort
+                node={node}
+                edges={edges}
+                dirty={false}
+                index={outputHandleCount}
+              />
+              <AncillaPort
+                node={node}
+                edges={edges}
+                dirty={true}
+                index={outputHandleCount + 1}
+              />
+              <UncomputePort
+                node={node}
+                edges={edges}
+                index={outputHandleCount + 2}
+              />
             </div>
           )}
         </div>

@@ -13,7 +13,7 @@ const GROUP_COLORS = [
 let colorIndex = 0;
 let groupCounter = 1;
 
-export function groupSelectedNodes(nodes: Node[], edges: Edge[]): Node[] {
+export function groupSelectedNodes(nodes: Node[], _edges: Edge[]): Node[] {
   // All selected nodes, including existing groups so that supergroups can be formed,
   // restricted to top level: nodes whose parent is also selected are left out.
   const selected = nodes.filter(

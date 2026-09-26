@@ -52,6 +52,30 @@ docker run --name low-code-modeler -p 4242:4242 \
 
 Afterwards the application is available in a browser on [http://localhost:4242](http://localhost:4242).
 
+## Linting
+
+This project uses Oxlint for static analysis of the codebase.
+
+Oxlint is included as a development dependency and is installed automatically when installing the project dependencies:
+
+```bash
+pnpm install
+```
+and can be run with 
+```bash
+pnpm exec oxlint .
+```
+
+Alternatively, one can use npm:
+```bash
+npm install
+npx oxlint .
+```
+
+The linting configuration is defined in `oxlint.config.ts`.
+
+Oxlint is also run automatically in GitHub Actions for pull requests targeting `main`.
+
 ## Directory Structure
 
 - docs – Contains documentation, use cases, and relevant guides.

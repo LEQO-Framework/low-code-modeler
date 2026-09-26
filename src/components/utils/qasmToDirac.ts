@@ -56,10 +56,6 @@ function cabs2(a: Complex): number {
   return a.re * a.re + a.im * a.im;
 }
 
-function cscale(a: Complex, s: number): Complex {
-  return { re: a.re * s, im: a.im * s };
-}
-
 const SQRT2_INV = 1 / Math.sqrt(2);
 
 // ---------------------------------------------------------------------------
@@ -874,7 +870,7 @@ export function marginalizeQubits(
 ): { basisState: string; probability: number }[] {
   // probability per reduced basis index
   const reducedSize = 1 << keepQubits.length;
-  const probs = new Array(reducedSize).fill(0);
+  const probs = Array.from({ length: reducedSize }, () => 0);
 
   for (let i = 0; i < sv.length; i++) {
     const p = cabs2(sv[i]);
