@@ -251,7 +251,7 @@ function App() {
   );
   const [camundaEndpoint, setCamundaEndpoint] = useState(
     import.meta.env.VITE_CAMUNDA7_ENDPOINT ||
-      "http://localhost:8090/engine-rest",
+    "http://localhost:8090/engine-rest",
   );
 
   const [openAIToken, setOpenAIToken] = useState(
@@ -269,7 +269,7 @@ function App() {
 
   const [patternAtlasApiEndpoint, setPatternAtlasApiEndpoint] = useState(
     import.meta.env.VITE_PATTERN_ATLAS_API ||
-      "http://localhost:1977/patternatlas/patternLanguages/af7780d5-1f97-4536-8da7-4194b093ab1d",
+    "http://localhost:1977/patternatlas/patternLanguages/af7780d5-1f97-4536-8da7-4194b093ab1d",
   );
   const [patternAtlasUiEndpoint, setPatternAtlasUiEndpoint] = useState(
     import.meta.env.VITE_PATTERN_ATLAS_UI || "http://localhost:1978",
@@ -721,7 +721,7 @@ If none apply, return { "algorithms": [] }.
 
       if (
         JSON.stringify(currentLocalState.nodes) !==
-          JSON.stringify(sharedNodes) ||
+        JSON.stringify(sharedNodes) ||
         JSON.stringify(currentLocalState.edges) !== JSON.stringify(sharedEdges)
       ) {
         useStore.setState({
@@ -907,49 +907,49 @@ If none apply, return { "algorithms": [] }.
     content: string;
     placement?: Placement;
   }[] = [
-    {
-      target: ".toolbar-container",
-      content:
-        "This is the toolbar where you can save, restore, or send your diagrams.",
-    },
-    {
-      target: ".backend-button",
-      content:
-        "This transforms the model into QASM code or workflows, which can then be executed on quantum devices or on a workflow engine.",
-    },
-    {
-      target: ".palette-container",
-      content:
-        "This is the palette, where you can drag and drop blocks. Quantum blocks are depicted in blue and classical blocks are depicted in orange.",
-      placement: "right",
-    },
-    {
-      target: ".react-flow__pane",
-      content: "This is the main diagram canvas.",
-      placement: "top-start",
-    },
-    {
-      target: ".experience-mode",
-      content:
-        "This panel allows you to configure the editor based on your preferences.",
-      placement: "right",
-    },
-    {
-      target: ".classical-node",
-      content: "This is a classical node that requires a value.",
-    },
-    {
-      target: ".grand-parent",
-      content:
-        "This value is then encoded via the state preparation block into a quantum state.",
-    },
-    {
-      target: ".currentPanel-container",
-      content:
-        "This is the properties panel, where you can configure the properties of blocks or the model.",
-      placement: "left",
-    },
-  ];
+      {
+        target: ".toolbar-container",
+        content:
+          "This is the toolbar where you can save, restore, or send your diagrams.",
+      },
+      {
+        target: ".backend-button",
+        content:
+          "This transforms the model into QASM code or workflows, which can then be executed on quantum devices or on a workflow engine.",
+      },
+      {
+        target: ".palette-container",
+        content:
+          "This is the palette, where you can drag and drop blocks. Quantum blocks are depicted in blue and classical blocks are depicted in orange.",
+        placement: "right",
+      },
+      {
+        target: ".react-flow__pane",
+        content: "This is the main diagram canvas.",
+        placement: "top-start",
+      },
+      {
+        target: ".experience-mode",
+        content:
+          "This panel allows you to configure the editor based on your preferences.",
+        placement: "right",
+      },
+      {
+        target: ".classical-node",
+        content: "This is a classical node that requires a value.",
+      },
+      {
+        target: ".grand-parent",
+        content:
+          "This value is then encoded via the state preparation block into a quantum state.",
+      },
+      {
+        target: ".currentPanel-container",
+        content:
+          "This is the properties panel, where you can configure the properties of blocks or the model.",
+        placement: "left",
+      },
+    ];
 
   const [, setProcessingModalOpen] = useState(false);
 
@@ -1223,59 +1223,77 @@ If none apply, return { "algorithms": [] }.
   const [historyLoading, setHistoryLoading] = useState(false);
   const [selectedJob, setSelectedJob] = useState<HistoryItem | null>(null);
 
+
   const fetchHistory = async () => {
     setHistoryLoading(true);
+
     try {
-      const jobsRes = await fetch(`http://localhost:3000/jobs`, {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-      });
+      let generationItems: HistoryItem[] = [];
+      let executionItems: HistoryItem[] = [];
 
-      if (!jobsRes.ok) {
-        console.error("Failed to fetch jobs");
-        return;
+      // Fetch generation jobs
+      try {
+        const jobsRes = await fetch(`http://localhost:3000/jobs`, {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        });
+
+        if (jobsRes.ok) {
+          const jobs = await jobsRes.json();
+
+          generationItems = (jobs || []).map((job: any) => ({
+            uuid: job.id,
+            name: "Generation Job",
+            description: job.prompt,
+            status: job.status,
+            created: job.createdAt,
+            type: "generation",
+            result: job.result,
+            semanticScore: job.semanticScore,
+            missingValues: job.missingValues,
+            links: {
+              request: `http://localhost:3000/job/${job.id}/request`,
+              result: `http://localhost:3000/job/${job.id}/result`,
+            },
+          }));
+        } else {
+          console.error("Failed to fetch generation jobs:", jobsRes.status);
+        }
+      } catch (err) {
+        console.error("Error fetching generation jobs:", err);
       }
 
-      const jobs = await jobsRes.json();
-      const generationItems: HistoryItem[] = jobs.map((job: any) => ({
-        uuid: job.id,
-        name: "Generation Job",
-        description: job.prompt,
-        status: job.status,
-        created: job.createdAt,
-        type: "generation",
-        result: job.result, // This is already a JSON string from the backend
-        semanticScore: job.semanticScore,
-        missingValues: job.missingValues,
-        links: {
-          request: `http://localhost:3000/job/${job.id}/request`,
-          result: `http://localhost:3000/job/${job.id}/result`,
-        },
-      }));
+      // Fetch execution results
+      try {
+        const response = await fetch(`${lowcodeBackendEndpoint}/results`, {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        });
 
-      const response = await fetch(`${lowcodeBackendEndpoint}/results`, {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-      });
+        if (response.ok) {
+          const data = await response.json();
 
-      if (!response.ok) {
-        console.error("Failed to fetch history:", response.statusText);
-        return;
+          executionItems = (data || []).map((job: any) => ({
+            uuid: job.uuid,
+            name: job.name,
+            description: job.description,
+            status: job.status,
+            created: job.created,
+            type: "execution",
+            links: job.links,
+          }));
+        } else {
+          console.error(
+            "Failed to fetch execution history:",
+            response.status,
+            response.statusText
+          );
+        }
+      } catch (err) {
+        console.error("Error fetching execution history:", err);
       }
 
-      const data: HistoryItem[] = await response.json();
-      console.log(data)
-      const executionItems: HistoryItem[] = data.map((job: any) => ({
-        uuid: job.uuid,
-        name: job.name,
-        description: job.description,
-        status: job.status,
-        created: job.created,
-        type: "execution",
-        links: job.links,
-      }));
-      console.log(data)
-
+      // Works even if one or both arrays are empty
       setHistory([...generationItems, ...executionItems]);
     } catch (err) {
       console.error("Error fetching history:", err);
@@ -1283,6 +1301,7 @@ If none apply, return { "algorithms": [] }.
       setHistoryLoading(false);
     }
   };
+
 
   const openHistoryModal = async () => {
     await fetchHistory();
@@ -3171,8 +3190,8 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
       editingDomainProfileIndex === null
         ? [...allDomainProfiles, newProfile]
         : allDomainProfiles.map((profile, index) =>
-            index === editingDomainProfileIndex ? newProfile : profile,
-          );
+          index === editingDomainProfileIndex ? newProfile : profile,
+        );
 
     setAllDomainProfiles(updatedProfiles);
 
@@ -4277,7 +4296,7 @@ useEffect(() => {
         ) {
           console.error(
             "Invalid size of deployed process definitions list: " +
-              Object.values(result["deployedProcessDefinitions"] || {}).length,
+            Object.values(result["deployedProcessDefinitions"] || {}).length,
           );
           return { status: "failed" };
         }
