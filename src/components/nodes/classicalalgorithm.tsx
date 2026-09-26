@@ -210,7 +210,7 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
 
             <div className="absolute top-5 left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
               One or more outputs have errors (duplicate ID or size is not a
-              number).
+              positive integer)
             </div>
           </div>
         )}
