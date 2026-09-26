@@ -12,7 +12,7 @@ import {
   FaMinus,
   FaReact,
   FaCaretRight,
-} from "react-icons/faS";
+} from "react-icons/fa";
 import { FaGear } from "react-icons/fa6";
 import { v4 as uuid } from "uuid";
 
