@@ -60,7 +60,6 @@ export default function Toolbar({
   startTour, 
   onSaveAsTemplate, 
   onManageTemplates, 
-  generateModel, 
   openOpenQASM, 
 }: ToolbarProps) { 
   return ( 
@@ -69,7 +68,7 @@ export default function Toolbar({
  
         {/* Qonstruct */} 
         <div className="flex items-center gap-2 shrink-0"> 
-          <img src="Logo.png" alt="Qonstruct" className="h-8 w-20" /> 
+          <img src="Logo2.png" alt="Qonstruct" className="h-8 w-16" /> 
  
           <span className="text-lg font-semibold text-gray-800"> 
             Qonstruct 
