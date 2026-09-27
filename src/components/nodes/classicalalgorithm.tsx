@@ -3,6 +3,10 @@ import { Handle, Position, Node, useUpdateNodeInternals } from "reactflow";
 import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
 import OutputPort, { isPositiveIntegerSize } from "../utils/outputPort";
+import {
+  hasCanonicalCustomOutputs,
+  normalizeCustomOutputs,
+} from "../utils/customOutputs";
 import { cn } from "@/lib/utils";
 import { classicalConstructColor } from "@/constants";
 import {
@@ -13,14 +17,11 @@ import { AlertCircle } from "lucide-react";
 import { awareness } from "@/yjs";
 
 const selector = (state: any) => ({
-  selectedNode: state.selectedNode,
   nodes: state.nodes,
   edges: state.edges,
   ancillaMode: state.ancillaMode,
   updateNodeValue: state.updateNodeValue,
   setSelectedNode: state.setSelectedNode,
-  setEdges: state.setEdges,
-  setNewEdges: state.setNewEdges,
 });
 
 export const ClassicalAlgorithmNode = memo((node: Node) => {
@@ -39,7 +40,14 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
 
   const updateNodeInternals = useUpdateNodeInternals();
 
-  const [outputs, setOutputs] = useState(data.outputs || []);
+  const initialOutputs = hasCanonicalCustomOutputs(
+    data.outputs,
+    0,
+    numberOutputs,
+  )
+    ? data.outputs
+    : normalizeCustomOutputs(data.outputs, 0, numberOutputs);
+  const [outputs, setOutputs] = useState(initialOutputs);
 
   const [sizeErrors, setSizeErrors] = useState<{
     [key: number]: boolean;
@@ -53,6 +61,21 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
   const [editableLabel, setEditableLabel] = useState(data.label || "");
   const contentRef = useRef<HTMLDivElement>(null);
   const [contentHeight, setContentHeight] = useState<number>();
+
+  useEffect(() => {
+    if (hasCanonicalCustomOutputs(data.outputs, 0, numberOutputs)) {
+      setOutputs(data.outputs);
+      return;
+    }
+
+    const normalizedOutputs = normalizeCustomOutputs(
+      data.outputs,
+      0,
+      numberOutputs,
+    );
+    setOutputs(normalizedOutputs);
+    updateNodeValue(node.id, "outputs", normalizedOutputs);
+  }, [data.outputs, node.id, numberOutputs, updateNodeValue]);
 
   const handleLabelChange = () => {
     setIsEditingLabel(false);

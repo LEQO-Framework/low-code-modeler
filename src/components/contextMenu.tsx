@@ -15,6 +15,7 @@ import {
 } from "react-icons/fa";
 import { FaGear } from "react-icons/fa6";
 import { v4 as uuid } from "uuid";
+import { normalizeCustomOutputs } from "./utils/customOutputs";
 
 interface ContextMenuProps {
   id: string;
@@ -226,9 +227,8 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   const incrementNodeDataField = useCallback(
     (field: string, min_value: number) => {
       const node = getNode(id);
-      const currentClassicalOutputs = Number(
-        node.data.numberClassicalOutputs || 0,
-      );
+      const isOutputField = field.includes("Outputs");
+      const outputType = field.includes("Quantum") ? "quantum" : "classical";
       console.log(
         "[INCREMENT] field value",
         field,
@@ -242,22 +242,22 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
                 ...n,
                 data: {
                   ...n.data,
-                  ...(n.type === "algorithmNode" &&
-                  field.includes("Outputs") &&
-                  Array.isArray(n.data.outputs)
+                  ...(isOutputField &&
+                  (n.type === "algorithmNode" ||
+                    n.type === "classicalAlgorithmNode")
                     ? {
-                        outputs: n.data.outputs.map(
-                          (output: any, index: number) =>
-                            output?.type
-                              ? output
-                              : {
-                                  ...output,
-                                  type:
-                                    index < currentClassicalOutputs
-                                      ? "classical"
-                                      : "quantum",
-                                },
-                        ),
+                        outputs: [
+                          ...normalizeCustomOutputs(
+                            n.data.outputs,
+                            Number(n.data.numberQuantumOutputs || 0),
+                            Number(n.data.numberClassicalOutputs || 0),
+                          ),
+                          {
+                            identifier: "",
+                            size: "",
+                            type: outputType,
+                          },
+                        ],
                       }
                     : {}),
                   [field]: n.data[field]
@@ -329,20 +329,12 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
                     : {
                         outputs: (() => {
                           let seen = 0;
-                                const outputs = (n.data.outputs || []).map(
-                                  (output: any, index: number) =>
-                                    output?.type
-                                      ? output
-                                      : {
-                                          ...output,
-                                          type:
-                                            index <
-                                            Number(n.data.numberClassicalOutputs || 0)
-                                              ? "classical"
-                                              : "quantum",
-                                        },
-                                );
-                                return outputs.filter(
+                          const outputs = normalizeCustomOutputs(
+                            n.data.outputs,
+                            Number(n.data.numberQuantumOutputs || 0),
+                            Number(n.data.numberClassicalOutputs || 0),
+                          );
+                          return outputs.filter(
                             (output: any) =>
                               output?.type !== portType || seen++ < nextValue,
                           );

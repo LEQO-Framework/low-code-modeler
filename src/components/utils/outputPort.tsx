@@ -75,8 +75,12 @@ export default function OutputPort({
     const hasError = trimmedValue !== "" && !isPositiveIntegerSize(value);
     setSizeError(hasError);
 
-    node.data[field] = value;
-    updateNodeValue(node.id, field, trimmedValue === "" ? "" : num);
+    const isCustomNode =
+      node.type === "algorithmNode" || node.type === "classicalAlgorithmNode";
+    if (!isCustomNode) {
+      node.data[field] = value;
+      updateNodeValue(node.id, field, trimmedValue === "" ? "" : num);
+    }
     setSelectedNode(node);
   };
 
@@ -195,7 +199,10 @@ export default function OutputPort({
       updatedOutputs[index] = { identifier: "", size: "" };
 
     if (isNowBellState) {
-      updatedOutputs[index] = { ...updatedOutputs[index], size: "2" };
+      updatedOutputs[index] = {
+        ...updatedOutputs[index],
+        size: "2",
+      };
       setOutputs(updatedOutputs);
       node.data.outputs = updatedOutputs;
       updateNodeValue(node.id, "size", "2");
@@ -203,7 +210,10 @@ export default function OutputPort({
       setSelectedNode(node);
       wasBellState.current = true;
     } else if (wasBellState.current && node.data.label === "Prepare State") {
-      updatedOutputs[index] = { ...updatedOutputs[index], size: "" };
+      updatedOutputs[index] = {
+        ...updatedOutputs[index],
+        size: "",
+      };
       setOutputs(updatedOutputs);
       node.data.outputs = updatedOutputs;
       updateNodeValue(node.id, "size", "");
@@ -211,7 +221,7 @@ export default function OutputPort({
       setSelectedNode(node);
       wasBellState.current = false;
     }
-  }, [node.data.quantumStateName]);
+  }, [node.data.quantumStateName, index]);
 
   const rawType = displayedOutputType;
   console.log("raw type", rawType);
@@ -273,7 +283,10 @@ export default function OutputPort({
               const updatedOutputs = [...outputs];
 
               if (!updatedOutputs[index]) {
-                updatedOutputs[index] = { identifier: "", size: "" };
+                updatedOutputs[index] = {
+                  identifier: "",
+                  size: "",
+                };
               }
 
               updatedOutputs[index] = {
@@ -319,7 +332,9 @@ export default function OutputPort({
             value={
               node.data.quantumStateName?.includes("Bell State")
                 ? "2"
-                : outputSize || node.data.outputs?.[index]?.size || ""
+                : outputSize ||
+                  node.data.outputs?.[index]?.size ||
+                  ""
             }
             readOnly={node.data.quantumStateName?.includes("Bell State")}
             onChange={(e) => {
@@ -327,7 +342,10 @@ export default function OutputPort({
               const updatedOutputs = [...outputs];
 
               if (!updatedOutputs[index]) {
-                updatedOutputs[index] = { identifier: "", size: "" };
+                updatedOutputs[index] = {
+                  identifier: "",
+                  size: "",
+                };
               }
 
               updatedOutputs[index] = {

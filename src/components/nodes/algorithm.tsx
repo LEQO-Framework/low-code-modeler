@@ -11,6 +11,10 @@ import { shallow } from "zustand/shallow";
 import AncillaPort from "../utils/ancillaPort";
 import UncomputePort from "../utils/uncomputePort";
 import OutputPort, { isPositiveIntegerSize } from "../utils/outputPort";
+import {
+  hasCanonicalCustomOutputs,
+  normalizeCustomOutputs,
+} from "../utils/customOutputs";
 import { cn } from "@/lib/utils";
 import {
   ancillaConstructColor,
@@ -27,22 +31,18 @@ import { AlertCircle } from "lucide-react";
 import { awareness } from "@/yjs";
 
 const selector = (state: {
-  selectedNode: Node | null;
   nodes: Node[];
   edges: Edge[];
   ancillaMode: boolean;
-  updateNodeValue: (nodeId: string, field: string, nodeVal: string) => void;
+  updateNodeValue: (nodeId: string, field: string, nodeVal: any) => void;
   setSelectedNode: (node: Node | null) => void;
-  setEdges: (edge: Edge) => void;
   setNewEdges: (newEdges: Edge[]) => void;
 }) => ({
-  selectedNode: state.selectedNode,
   nodes: state.nodes,
   edges: state.edges,
   ancillaMode: state.ancillaMode,
   updateNodeValue: state.updateNodeValue,
   setSelectedNode: state.setSelectedNode,
-  setEdges: state.setEdges,
   setNewEdges: state.setNewEdges,
 });
 
@@ -56,7 +56,6 @@ export const AlgorithmNode = memo((node: Node) => {
   const numberClassicalInputs = data.numberClassicalInputs || 0;
   const numberClassicalOutputs = data.numberClassicalOutputs || 0;
 
-  const inputHandleCount = numberQuantumInputs + numberClassicalInputs;
   const outputHandleCount = numberQuantumOutputs + numberClassicalOutputs;
 
   const {
@@ -68,7 +67,18 @@ export const AlgorithmNode = memo((node: Node) => {
     ancillaMode,
   } = useStore(selector, shallow);
 
-  const [outputs, setOutputs] = useState(data.outputs || []);
+  const initialOutputs = hasCanonicalCustomOutputs(
+    data.outputs,
+    numberQuantumOutputs,
+    numberClassicalOutputs,
+  )
+    ? data.outputs
+    : normalizeCustomOutputs(
+        data.outputs,
+        numberQuantumOutputs,
+        numberClassicalOutputs,
+      );
+  const [outputs, setOutputs] = useState(initialOutputs);
   const [sizeErrors, setSizeErrors] = useState<{ [key: number]: boolean }>({});
   const [isEditingLabel, setIsEditingLabel] = useState(false);
   const [editableLabel, setEditableLabel] = useState(data.label || "");
@@ -85,19 +95,39 @@ export const AlgorithmNode = memo((node: Node) => {
         `${type}HandleOperationInput${index}${node.id}`,
     );
 
-  const getOutputSlots = (type: "quantum" | "classical", count: number) => {
-    const slots = outputs
-      .map((output: any, index: number) => ({ output, index }))
-      .filter(
-        ({ output, index }: any) =>
-          (output?.type ||
-            (index < numberClassicalOutputs ? "classical" : "quantum")) ===
-          type,
-      );
+  useEffect(() => {
+    if (
+      hasCanonicalCustomOutputs(
+        data.outputs,
+        numberQuantumOutputs,
+        numberClassicalOutputs,
+      )
+    ) {
+      setOutputs(data.outputs);
+      return;
+    }
 
-    return Array.from({ length: count }, (_, index) =>
-      slots[index] || { output: undefined, index: outputs.length + index },
+    const normalizedOutputs = normalizeCustomOutputs(
+      data.outputs,
+      numberQuantumOutputs,
+      numberClassicalOutputs,
     );
+    setOutputs(normalizedOutputs);
+    updateNodeValue(node.id, "outputs", normalizedOutputs);
+  }, [
+    data.outputs,
+    node.id,
+    numberQuantumOutputs,
+    numberClassicalOutputs,
+    updateNodeValue,
+  ]);
+
+  const getOutputSlots = (type: "quantum" | "classical") => {
+    const slots: { output: any; index: number }[] = [];
+    outputs.forEach((output: any, index: number) => {
+      if (output.type === type) slots.push({ output, index });
+    });
+    return slots;
   };
 
   const handleLabelChange = () => {
@@ -528,7 +558,7 @@ export const AlgorithmNode = memo((node: Node) => {
           </div>
 
           <div className="custom-node-port-out">
-            {getOutputSlots("classical", numberClassicalOutputs).map(
+            {getOutputSlots("classical").map(
               ({ index: dataIndex }, index) => (
                 <OutputPort
                   key={`classical-output-port-${index}`}
@@ -562,7 +592,7 @@ export const AlgorithmNode = memo((node: Node) => {
             )}
             {/*           </div>
           <div className="custom-node-port-out"> */}
-            {getOutputSlots("quantum", numberQuantumOutputs).map(
+            {getOutputSlots("quantum").map(
               ({ index: dataIndex }, index) => (
                 <OutputPort
                   key={`quantum-output-port-${index}`}
