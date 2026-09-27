@@ -12,6 +12,7 @@ import { AlertCircle } from "lucide-react";
 interface OutputPortProps {
   node: Node;
   index?: number;
+  handleIndex?: number;
   type: string;
   nodes: Node[];
   outputs: any[];
@@ -34,6 +35,7 @@ export const isPositiveIntegerSize = (value: string) =>
 export default function OutputPort({
   node,
   index = 0,
+  handleIndex = index,
   type,
   nodes,
   outputs,
@@ -52,10 +54,10 @@ export default function OutputPort({
   const isClassical = type === "classical";
   const isAncilla = type === "ancilla";
   const handleId = isClassical
-    ? `classicalHandle${node.type}Output${index}${node.id}`
+    ? `classicalHandle${node.type}Output${handleIndex}${node.id}`
     : isAncilla
-      ? `ancillaHandleOutput${index}${node.id}`
-      : `quantumHandle${node.type}Output${index}${node.id}`;
+      ? `ancillaHandleOutput${handleIndex}${node.id}`
+      : `quantumHandle${node.type}Output${handleIndex}${node.id}`;
 
   const handleClass = isClassical
     ? "classical-circle-port-out"

@@ -1,4 +1,4 @@
-import { memo, useEffect, useState } from "react";
+import { memo, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Handle, Position, Node, useUpdateNodeInternals } from "reactflow";
 import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
@@ -51,12 +51,8 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
 
   const [isEditingLabel, setIsEditingLabel] = useState(false);
   const [editableLabel, setEditableLabel] = useState(data.label || "");
-
-  const headerHeight = 52;
-  const inputHeight = 30;
-  const inputsTotalHeight = numberInputs * inputHeight;
-  const outputHeight = 120;
-  const outputsStartTop = headerHeight + inputsTotalHeight + 10;
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [contentHeight, setContentHeight] = useState<number>();
 
   const handleLabelChange = () => {
     setIsEditingLabel(false);
@@ -144,15 +140,18 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
     setSizeErrors(newSizeErrors);
   }, [nodes, outputs, node.id]);
 
-  const baseHeight = !ancillaMode ? 50 : 200;
-  const extraHeightPerVariable = 130;
+  useLayoutEffect(() => {
+    const content = contentRef.current;
+    if (!content) return;
 
-  const dynamicHeight =
-    baseHeight +
-    2 * 40 +
-    3 * 50 +
-    numberInputs * 50 +
-    numberOutputs * extraHeightPerVariable;
+    const updateHeight = () => setContentHeight(content.scrollHeight);
+    updateHeight();
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(content);
+    return () => observer.disconnect();
+  }, []);
+
+  const dynamicHeight = contentHeight ?? 0;
 
   const id = node.id;
 
@@ -189,16 +188,16 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
       className="relative"
       style={{
         width: 320,
-        height: dynamicHeight,
+        height: dynamicHeight || undefined,
       }}
     >
       <div
+        ref={contentRef}
         className={cn(
           "w-[320px] bg-white border border-solid border-gray-700 shadow-md relative",
           selected && "border-blue-500",
         )}
         style={{
-          height: `${dynamicHeight}px`,
           borderRadius: "28px",
         }}
       >
@@ -308,14 +307,11 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
         </div>
 
         {/* Outputs */}
-        <div className="custom-node-port-out">
+        <div className="custom-node-port-out flex flex-col">
           {Array.from({ length: numberOutputs }).map((_, index) => (
             <div
               key={`output-wrapper-${index}`}
-              className="absolute left-0 w-full z-10"
-              style={{
-                top: `${outputsStartTop + index * outputHeight}px`,
-              }}
+              className="relative left-0 w-full z-10"
             >
               <OutputPort
                 key={`output-port-${index}`}
