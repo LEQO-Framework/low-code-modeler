@@ -25,16 +25,10 @@ export function normalizeCustomOutputs(
     const existingType = output?.type;
     let type: CustomOutputType;
 
-    if (
-      existingType === "quantum" &&
-      remainingQuantum > 0
-    ) {
+    if (existingType === "quantum" && remainingQuantum > 0) {
       type = "quantum";
       remainingQuantum--;
-    } else if (
-      existingType === "classical" &&
-      remainingClassical > 0
-    ) {
+    } else if (existingType === "classical" && remainingClassical > 0) {
       type = "classical";
       remainingClassical--;
     } else if (index < numberClassicalOutputs && remainingClassical > 0) {
@@ -49,7 +43,7 @@ export function normalizeCustomOutputs(
     }
 
     normalized.push({
-      ...(output || {}),
+      ...output,
       identifier: output?.identifier || "",
       size: output?.size || "",
       type,
