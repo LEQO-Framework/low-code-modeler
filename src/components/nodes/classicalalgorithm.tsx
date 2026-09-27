@@ -175,7 +175,7 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
   }, []);
 
   const dynamicHeight = contentHeight ?? 0;
-  const baseHeightPadding = 16;
+  const baseHeightPadding = 36;
 
   const id = node.id;
 

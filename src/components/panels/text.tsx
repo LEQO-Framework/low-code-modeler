@@ -52,10 +52,10 @@ const NODE_EXPLANATIONS: Record<string, string> = {
     "Applies a gate to one or more target qubits only if all control qubits are in the |1⟩ state. Configure the number of control and target qubits and select the gate matrix.",
 
   [AlgorithmNode]:
-    "Runs a custom quantum algorithm defined in a QASM file. For more inputs or outputs, right click on the block.",
+    "Runs a custom quantum algorithm defined in a QASM or Python file. For more inputs or outputs, right click on the block.",
 
   [ClassicalAlgorithmNode]:
-    "Runs a custom classical algorithm defined in a QASM file. For more inputs or outputs, right click on the block.",
+    "Runs a custom classical algorithm defined in a Python file. For more inputs or outputs, right click on the block.",
 
   [DeutschJozsaNode]:
     "Implements the Deutsch-Jozsa algorithm, which determines whether a function always returns the same value or returns different values for half of its inputs. Select the input size and the function type.",
@@ -2911,6 +2911,7 @@ export const ImplementationFields: React.FC<
     const prefix = isUncompute
       ? "uncompute"
       : "";
+    const isClassical = selectedNode.type.includes("classical");
 
     const implementationKey = `${prefix}${isUncompute
       ? "Implementation"
@@ -2930,13 +2931,14 @@ export const ImplementationFields: React.FC<
         >
           {isUncompute
             ? "Upload Uncompute Implementation File"
-            : "Upload QASM File"}
+            : isClassical ? "Upload Python File"
+          : "Upload QASM File or Python File"}
         </label>
 
         <div className="mt-1">
           <input
             type="file"
-            accept=".qasm"
+            accept={isClassical? ".py" : ".qasm,.py" }
             id={`${prefix}FileUpload`}
             name={`${prefix}FileUpload`}
             onChange={(e) =>

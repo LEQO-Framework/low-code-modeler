@@ -252,7 +252,7 @@ export const AlgorithmNode = memo((node: Node) => {
   }, []);
 
   const dynamicHeight = contentHeight ?? 0;
-  const baseHeightPadding = 16;
+  const baseHeightPadding = 36;
 
   // Ensure identifiers exist and match the number of outputs
   if (!data.identifiers) {
