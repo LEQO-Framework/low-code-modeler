@@ -165,14 +165,6 @@ export const MeasurementNode = memo((node: Node) => {
             </div>
           </div>
         )}
-        {(sizeError || classicalSizeError) && (
-          <div className="absolute top-2 right-[-50px] group z-20">
-            <AlertCircle className="text-red-600 w-5 h-5" />
-            <div className="absolute top-12 left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
-              Size is not an integer
-            </div>
-          </div>
-        )}
         {error && (
           <div className="absolute top-2 right-[-50px] group z-20">
             <AlertCircle className="text-red-600 w-5 h-5" />

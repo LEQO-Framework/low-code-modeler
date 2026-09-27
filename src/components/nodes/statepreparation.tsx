@@ -10,6 +10,7 @@ import {
 } from "reactflow";
 import { shallow } from "zustand/shallow";
 import OutputPort from "../utils/outputPort";
+import { isPositiveIntegerSize } from "../utils/outputPort";
 import UncomputePort from "../utils/uncomputePort";
 import AncillaPort from "../utils/ancillaPort";
 import {
@@ -50,6 +51,7 @@ const selector = (state: {
 
 export const StatePreparationNode = memo((node: Node) => {
   console.log("StatePreparation Node Beginning to exist");
+
   const [bound] = useState("");
   const [quantumStateName, setQuantumStateName] = useState("Bell State φ+");
   const [showingChildren] = useState(false);
@@ -62,10 +64,8 @@ export const StatePreparationNode = memo((node: Node) => {
   const [startsWithDigitError, setStartsWithDigitError] = useState(false);
   const [boundError, setBoundError] = useState(false);
 
-  // Tracking der Nutzer-Rollen-Kombination im Raum
   const [mixedView, setMixedView] = useState(false);
 
-  // Mapping-Tabelle: Welches Explorer-Verständnis-Label gehört zu welchem Pioneer-Standard-Label?
   const explorerLabelMap: Record<string, string> = {
     "Prepare State": "Prepare State",
     "Encode Value": "Encode Value",
@@ -107,6 +107,7 @@ export const StatePreparationNode = memo((node: Node) => {
             : encoding.includes("Schmidt")
               ? "schmidtDecompositionIcon.png"
               : "encodeValueIcon.png";
+
   const {
     updateNodeValue,
     setSelectedNode,
@@ -117,6 +118,8 @@ export const StatePreparationNode = memo((node: Node) => {
     compact,
     experienceLevel,
   } = useStore(selector, shallow);
+
+  const updateNodeInternals = useUpdateNodeInternals();
 
   useEffect(() => {
     const checkUserRoles = () => {
@@ -130,11 +133,8 @@ export const StatePreparationNode = memo((node: Node) => {
           if (state.cursor.role === "explorer") hasExplorer = true;
         }
       });
-      if (hasPioneer && hasExplorer) {
-        setMixedView(true);
-      } else {
-        setMixedView(false);
-      }
+
+      setMixedView(hasPioneer && hasExplorer);
     };
 
     checkUserRoles();
@@ -212,32 +212,58 @@ export const StatePreparationNode = memo((node: Node) => {
       edge.targetHandle === `${dirtyAncillaHandle}OperationInput3${node.id}`,
   );
 
+  /*
+   * Size validation.
+   *
+   * Generic rule:
+   * - non-empty size must be a positive integer
+   *
+   * State-specific rules:
+   * - GHZ / W-State: size >= 3
+   * - Uniform Superposition / Custom State: size >= 1
+   * - Prepare State without a size: required
+   *
+   * Bell State automatic sizing is intentionally preserved:
+   * for Bell states no local size error is generated here.
+   */
   useEffect(() => {
-    const value = node.data.size;
+    const value = String(node.data.size ?? "");
+    const trimmedValue = value.trim();
     const num = Number(value);
-    if (num === 0 && node.data.label === "Prepare State") {
-      setMissingSizeError(true);
-    } else if (quantumStateName === "GHZ" || quantumStateName === "W-State") {
-      const value = node.data.size;
-      const num = Number(value);
 
-      const isInvalid = value === "" || num < 3;
+    const hasInvalidSize = trimmedValue !== "" && !isPositiveIntegerSize(value);
+
+    if (node.data.label === "Prepare State" && trimmedValue === "") {
+      setMissingSizeError(true);
+      setSizeError(false);
+      return;
+    }
+
+    if (quantumStateName === "GHZ" || quantumStateName === "W-State") {
+      const isInvalid = trimmedValue === "" || hasInvalidSize || num < 3;
 
       setSizeError(isInvalid);
       setMissingSizeError(false);
-    } else if (
+      return;
+    }
+
+    if (
       quantumStateName === "Uniform Superposition" ||
       quantumStateName === "Custom State"
     ) {
-      const isInvalid = value === "" || num < 1;
+      const isInvalid = trimmedValue === "" || hasInvalidSize || num < 1;
 
       setSizeError(isInvalid);
       setMissingSizeError(false);
-    } else {
-      setSizeError(false);
-      setMissingSizeError(false);
+      return;
     }
-  }, [quantumStateName, node.data.size]);
+
+    // Bell State and other automatically determined sizes keep
+    // their existing behavior. Only explicitly invalid values
+    // should show the generic validation error.
+    setSizeError(hasInvalidSize);
+    setMissingSizeError(false);
+  }, [quantumStateName, node.data.size, node.data.label]);
 
   useEffect(() => {
     const encoding = node.data.encodingType;
@@ -342,7 +368,6 @@ export const StatePreparationNode = memo((node: Node) => {
 
   const { data, selected } = node;
   const id = node.id;
-  const updateNodeInternals = useUpdateNodeInternals();
 
   const baseHeight =
     data.label === "Prepare State"
@@ -377,7 +402,6 @@ export const StatePreparationNode = memo((node: Node) => {
     };
   }, [id]);
 
-  // Hilfsfunktion zur Generierung der Select-Options-Labels im MixedView-Modus
   const getDropdownLabel = (pioneerLabel: string) => {
     if (!mixedView) return pioneerLabel;
     const explorerLabel = quantumStateLabelMap[pioneerLabel] || pioneerLabel;
@@ -387,7 +411,10 @@ export const StatePreparationNode = memo((node: Node) => {
   return (
     <div
       className="grand-parent"
-      style={{ width: showingChildren ? 360 : 320, height: baseHeight }}
+      style={{
+        width: showingChildren ? 360 : 320,
+        height: baseHeight,
+      }}
     >
       <div className="grand-parent">
         <div
@@ -455,7 +482,14 @@ export const StatePreparationNode = memo((node: Node) => {
                     : "80px",
                 }}
               >
-                Size must be at least 3.
+                {node.data.label === "Prepare State" &&
+                (quantumStateName === "GHZ" || quantumStateName === "W-State")
+                  ? "Size must be at least 3."
+                  : node.data.label === "Prepare State" &&
+                      (quantumStateName === "Uniform Superposition" ||
+                        quantumStateName === "Custom State")
+                    ? "Size must be at least 1."
+                    : "Size must be a positive integer"}
               </div>
             </div>
           )}
@@ -573,7 +607,8 @@ export const StatePreparationNode = memo((node: Node) => {
                   </select>
 
                   {!node.data.encodingType.includes("Basis") &&
-                    !node.data.encodingType.includes("Angle") && !node.data.encodingType.includes("Custom") && (
+                    !node.data.encodingType.includes("Angle") &&
+                    !node.data.encodingType.includes("Custom") && (
                       <>
                         <label className="text-sm text-black block mt-2">
                           Error Bound:
@@ -716,7 +751,10 @@ export const StatePreparationNode = memo((node: Node) => {
                     id={`classicalHandleStatePreparationInput0${node.id}`}
                     position={Position.Left}
                     className="z-10 classical-circle-port-operation !bg-orange-300 !border-black -left-[8px]"
-                    style={{ top: "50%", transform: "translateY(-50%)" }}
+                    style={{
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                    }}
                   />
                   <div className="flex flex-col items-center w-full leading-tight">
                     <span className="text-black text-sm">
@@ -804,7 +842,6 @@ export const StatePreparationNode = memo((node: Node) => {
                       className="text-black text-sm text-center w-full"
                       style={{ zIndex: 1 }}
                     >
-                      {" "}
                       Dirty Ancilla
                     </span>
                   </div>
@@ -826,6 +863,7 @@ export const StatePreparationNode = memo((node: Node) => {
                   setOutputs={setOutputs}
                   edges={edges}
                   sizeError={sizeError || missingSizeError}
+                  showSizeErrorAlert={false}
                   outputIdentifierError={
                     outputIdentifierError || startsWithDigitError
                   }
@@ -852,6 +890,7 @@ export const StatePreparationNode = memo((node: Node) => {
                   setOutputs={setOutputs}
                   edges={edges}
                   sizeError={sizeError}
+                  showSizeErrorAlert={false}
                   outputIdentifierError={
                     outputIdentifierError || startsWithDigitError
                   }

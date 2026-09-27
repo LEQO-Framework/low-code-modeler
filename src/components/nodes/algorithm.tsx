@@ -10,7 +10,7 @@ import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
 import AncillaPort from "../utils/ancillaPort";
 import UncomputePort from "../utils/uncomputePort";
-import OutputPort from "../utils/outputPort";
+import OutputPort, { isPositiveIntegerSize } from "../utils/outputPort";
 import { cn } from "@/lib/utils";
 import {
   ancillaConstructColor,
@@ -70,9 +70,6 @@ export const AlgorithmNode = memo((node: Node) => {
 
   const [outputs, setOutputs] = useState(data.outputs || []);
   const [sizeErrors, setSizeErrors] = useState<{ [key: number]: boolean }>({});
-  const [classicalSizeErrors] = useState<{
-    [key: number]: boolean;
-  }>({});
   const [isEditingLabel, setIsEditingLabel] = useState(false);
   const [editableLabel, setEditableLabel] = useState(data.label || "");
   const updateNodeInternals = useUpdateNodeInternals();
@@ -129,14 +126,17 @@ export const AlgorithmNode = memo((node: Node) => {
     console.log("nodes", nodes);
     console.log("edges", edges);
     let selectedNode = node;
-    let newErrors = {};
+    const newErrors = {};
+    const newSizeErrors: { [key: number]: boolean } = {};
     console.log("ALGORITHM", outputs);
 
     // quantum outputs
     outputs.forEach((output, index) => {
       const outputIdentifier = output?.identifier?.trim();
       console.log("Outputidentifier", outputIdentifier);
-      const size = output?.size?.trim();
+      const size = String(output?.size ?? "").trim();
+      newSizeErrors[index] =
+        size !== "" && !isPositiveIntegerSize(size);
       if (!outputIdentifier) return;
       const duplicates = findDuplicateOutputIdentifier(
         nodes,
@@ -179,13 +179,10 @@ export const AlgorithmNode = memo((node: Node) => {
       newErrors[index] = startsWithDigit || isDuplicate;
       console.log(newErrors);
       console.log(newErrors[index]);
-      if (!size) return;
-      const startsWithDigitSize = !/^\d/.test(size);
-      sizeErrors[index] = startsWithDigitSize;
     });
 
     setOutputIdentifierErrors(newErrors);
-    setSizeErrors(sizeErrors);
+    setSizeErrors(newSizeErrors);
   }, [nodes, outputs, node.id]);
 
   const baseHeight = !ancillaMode ? 50 : 200;
@@ -301,7 +298,7 @@ export const AlgorithmNode = memo((node: Node) => {
               <AlertCircle className="text-red-600 w-5 h-5" />
               <div className="absolute top-5 left-[20px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
                 One or more outputs have errors (duplicate ID or size is not a
-                number).
+                positive number)
               </div>
             </div>
           )}
@@ -511,7 +508,7 @@ export const AlgorithmNode = memo((node: Node) => {
                 outputs={outputs}
                 setOutputs={setOutputs}
                 edges={edges}
-                sizeError={classicalSizeErrors[index]}
+                sizeError={sizeErrors[index]}
                 outputIdentifierError={outputIdentifierErrors[index]}
                 updateNodeValue={updateNodeValue}
                 setOutputIdentifierError={(error) =>
