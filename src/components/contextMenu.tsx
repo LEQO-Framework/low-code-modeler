@@ -15,6 +15,7 @@ import {
 } from "react-icons/fa";
 import { FaGear } from "react-icons/fa6";
 import { v4 as uuid } from "uuid";
+import { normalizeCustomOutputs } from "./utils/customOutputs";
 
 interface ContextMenuProps {
   id: string;
@@ -226,6 +227,8 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   const incrementNodeDataField = useCallback(
     (field: string, min_value: number) => {
       const node = getNode(id);
+      const isOutputField = field.includes("Outputs");
+      const outputType = field.includes("Quantum") ? "quantum" : "classical";
       console.log(
         "[INCREMENT] field value",
         field,
@@ -239,6 +242,24 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
                 ...n,
                 data: {
                   ...n.data,
+                  ...(isOutputField &&
+                  (n.type === "algorithmNode" ||
+                    n.type === "classicalAlgorithmNode")
+                    ? {
+                        outputs: [
+                          ...normalizeCustomOutputs(
+                            n.data.outputs,
+                            Number(n.data.numberQuantumOutputs || 0),
+                            Number(n.data.numberClassicalOutputs || 0),
+                          ),
+                          {
+                            identifier: "",
+                            size: "",
+                            type: outputType,
+                          },
+                        ],
+                      }
+                    : {}),
                   [field]: n.data[field]
                     ? Number(n.data[field]) + 1
                     : min_value + 1,
@@ -255,6 +276,34 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   const decrementNodeDataField = useCallback(
     (field: string, min_value: number) => {
       const node = getNode(id);
+      const nextValue = Math.max(
+        min_value,
+        Number(node.data[field] || 0) - 1,
+      );
+      const isInput = field.includes("Inputs");
+      const portType = field.includes("Quantum") ? "quantum" : "classical";
+      const handlePrefix = isInput
+        ? `${portType}HandleOperationInput`
+        : `${portType}Handle${node.type}Output`;
+      const removedHandle = `${handlePrefix}${nextValue}${id}`;
+      const removedEdgeIds = new Set(
+        getEdges()
+          .filter(
+            (edge) =>
+              edge.targetHandle === removedHandle ||
+              edge.sourceHandle === removedHandle,
+          )
+          .map((edge) => edge.id),
+      );
+
+      setEdges((edges) =>
+        edges.filter(
+          (edge) =>
+            edge.targetHandle !== removedHandle &&
+            edge.sourceHandle !== removedHandle,
+        ),
+      );
+
       console.log(
         "[DECREMENT] field value",
         node.data[field],
@@ -268,10 +317,29 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
                 ...n,
                 data: {
                   ...n.data,
-                  [field]:
-                    Number(n.data[field]) > min_value
-                      ? Number(n.data[field]) - 1
-                      : min_value,
+                  [field]: nextValue,
+                  ...(isInput
+                    ? {
+                        inputs: (n.data.inputs || []).filter(
+                                (input: any) =>
+                                  input.targetHandle !== removedHandle &&
+                                  !removedEdgeIds.has(input.edgeId),
+                        ),
+                      }
+                    : {
+                        outputs: (() => {
+                          let seen = 0;
+                          const outputs = normalizeCustomOutputs(
+                            n.data.outputs,
+                            Number(n.data.numberQuantumOutputs || 0),
+                            Number(n.data.numberClassicalOutputs || 0),
+                          );
+                          return outputs.filter(
+                            (output: any) =>
+                              output?.type !== portType || seen++ < nextValue,
+                          );
+                        })(),
+                      }),
                 },
               }
             : n,

@@ -1,8 +1,12 @@
-import { memo, useEffect, useState } from "react";
+import { memo, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Handle, Position, Node, useUpdateNodeInternals } from "reactflow";
 import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
 import OutputPort, { isPositiveIntegerSize } from "../utils/outputPort";
+import {
+  hasCanonicalCustomOutputs,
+  normalizeCustomOutputs,
+} from "../utils/customOutputs";
 import { cn } from "@/lib/utils";
 import { classicalConstructColor } from "@/constants";
 import {
@@ -13,14 +17,11 @@ import { AlertCircle } from "lucide-react";
 import { awareness } from "@/yjs";
 
 const selector = (state: any) => ({
-  selectedNode: state.selectedNode,
   nodes: state.nodes,
   edges: state.edges,
   ancillaMode: state.ancillaMode,
   updateNodeValue: state.updateNodeValue,
   setSelectedNode: state.setSelectedNode,
-  setEdges: state.setEdges,
-  setNewEdges: state.setNewEdges,
 });
 
 export const ClassicalAlgorithmNode = memo((node: Node) => {
@@ -39,7 +40,14 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
 
   const updateNodeInternals = useUpdateNodeInternals();
 
-  const [outputs, setOutputs] = useState(data.outputs || []);
+  const initialOutputs = hasCanonicalCustomOutputs(
+    data.outputs,
+    0,
+    numberOutputs,
+  )
+    ? data.outputs
+    : normalizeCustomOutputs(data.outputs, 0, numberOutputs);
+  const [outputs, setOutputs] = useState(initialOutputs);
 
   const [sizeErrors, setSizeErrors] = useState<{
     [key: number]: boolean;
@@ -51,12 +59,23 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
 
   const [isEditingLabel, setIsEditingLabel] = useState(false);
   const [editableLabel, setEditableLabel] = useState(data.label || "");
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [contentHeight, setContentHeight] = useState<number>();
 
-  const headerHeight = 52;
-  const inputHeight = 30;
-  const inputsTotalHeight = numberInputs * inputHeight;
-  const outputHeight = 120;
-  const outputsStartTop = headerHeight + inputsTotalHeight + 10;
+  useEffect(() => {
+    if (hasCanonicalCustomOutputs(data.outputs, 0, numberOutputs)) {
+      setOutputs(data.outputs);
+      return;
+    }
+
+    const normalizedOutputs = normalizeCustomOutputs(
+      data.outputs,
+      0,
+      numberOutputs,
+    );
+    setOutputs(normalizedOutputs);
+    updateNodeValue(node.id, "outputs", normalizedOutputs);
+  }, [data.outputs, node.id, numberOutputs, updateNodeValue]);
 
   const handleLabelChange = () => {
     setIsEditingLabel(false);
@@ -144,15 +163,19 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
     setSizeErrors(newSizeErrors);
   }, [nodes, outputs, node.id]);
 
-  const baseHeight = !ancillaMode ? 50 : 200;
-  const extraHeightPerVariable = 130;
+  useLayoutEffect(() => {
+    const content = contentRef.current;
+    if (!content) return;
 
-  const dynamicHeight =
-    baseHeight +
-    2 * 40 +
-    3 * 50 +
-    numberInputs * 50 +
-    numberOutputs * extraHeightPerVariable;
+    const updateHeight = () => setContentHeight(content.scrollHeight);
+    updateHeight();
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(content);
+    return () => observer.disconnect();
+  }, []);
+
+  const dynamicHeight = contentHeight ?? 0;
+  const baseHeightPadding = 36;
 
   const id = node.id;
 
@@ -189,16 +212,17 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
       className="relative"
       style={{
         width: 320,
-        height: dynamicHeight,
+        height: dynamicHeight || undefined,
       }}
     >
       <div
+        ref={contentRef}
         className={cn(
           "w-[320px] bg-white border border-solid border-gray-700 shadow-md relative",
           selected && "border-blue-500",
         )}
         style={{
-          height: `${dynamicHeight}px`,
+          paddingBottom: `${baseHeightPadding}px`,
           borderRadius: "28px",
         }}
       >
@@ -308,14 +332,11 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
         </div>
 
         {/* Outputs */}
-        <div className="custom-node-port-out">
+        <div className="custom-node-port-out flex flex-col">
           {Array.from({ length: numberOutputs }).map((_, index) => (
             <div
               key={`output-wrapper-${index}`}
-              className="absolute left-0 w-full z-10"
-              style={{
-                top: `${outputsStartTop + index * outputHeight}px`,
-              }}
+              className="relative left-0 w-full z-10"
             >
               <OutputPort
                 key={`output-port-${index}`}
