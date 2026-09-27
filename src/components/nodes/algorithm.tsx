@@ -222,6 +222,7 @@ export const AlgorithmNode = memo((node: Node) => {
   }, []);
 
   const dynamicHeight = contentHeight ?? 0;
+  const baseHeightPadding = 16;
 
   // Ensure identifiers exist and match the number of outputs
   if (!data.identifiers) {
@@ -310,6 +311,7 @@ export const AlgorithmNode = memo((node: Node) => {
             "w-[320px] bg-white border border-solid border-gray-700 shadow-md"
           }
           style={{
+            paddingBottom: `${baseHeightPadding}px`,
             borderColor: remoteHighlightColor
               ? remoteHighlightColor
               : selected

@@ -152,6 +152,7 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
   }, []);
 
   const dynamicHeight = contentHeight ?? 0;
+  const baseHeightPadding = 16;
 
   const id = node.id;
 
@@ -198,6 +199,7 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
           selected && "border-blue-500",
         )}
         style={{
+          paddingBottom: `${baseHeightPadding}px`,
           borderRadius: "28px",
         }}
       >
