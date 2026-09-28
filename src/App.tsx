@@ -4063,7 +4063,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
   const onExperienceLevelChange = (event) => {
     setExperienceLevel(event);
     setExperienceLevelOn(event);
-    const bool_value = experienceLevel === "pioneer" ? false : true; // if previous experience level was pioneer...
+    const bool_value = experienceLevel !== "pioneer"; // if previous experience level was pioneer...
     setCompactVisualization(bool_value);
     nodes.forEach((node) => {
       updateNodeInternals(node.id);
