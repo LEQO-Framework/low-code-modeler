@@ -98,12 +98,12 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   };
 
   const duplicateNode = useCallback(() => {
-    const node = getNode(id);
-    if (!node) return;
+    const nodeToDuplicate = getNode(id);
+    if (!nodeToDuplicate) return;
 
     const offset = { x: 50, y: 50 };
 
-    if (node.type === "groupNode") {
+    if (nodeToDuplicate.type === "groupNode") {
       const allNodes = getNodes();
       const allEdges = getEdges();
       const childNodes = allNodes.filter((n) => n.parentNode === id);
@@ -114,12 +114,12 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
       childNodes.forEach((child) => idMap.set(child.id, uuid()));
 
       const newGroupNode: Node = {
-        ...node,
+        ...nodeToDuplicate,
         id: newGroupId,
-        data: regenerateIdentifiers(node.data),
+        data: regenerateIdentifiers(nodeToDuplicate.data),
         position: {
-          x: node.position.x + offset.x,
-          y: node.position.y + offset.y,
+          x: nodeToDuplicate.position.x + offset.x,
+          y: nodeToDuplicate.position.y + offset.y,
         },
         selected: false,
       };
@@ -149,12 +149,12 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
       addEdges(newEdges);
     } else {
       const newNode: Node = {
-        ...node,
+        ...nodeToDuplicate,
         id: uuid(),
-        data: regenerateIdentifiers(node.data),
+        data: regenerateIdentifiers(nodeToDuplicate.data),
         position: {
-          x: node.position.x + offset.x,
-          y: node.position.y + offset.y,
+          x: nodeToDuplicate.position.x + offset.x,
+          y: nodeToDuplicate.position.y + offset.y,
         },
         selected: false,
       };
@@ -226,14 +226,14 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   // TODO: use the correct field (numberInputs for merger nodes) - pass it as an argument?
   const incrementNodeDataField = useCallback(
     (field: string, min_value: number) => {
-      const node = getNode(id);
+      const currentNode = getNode(id);
       const isOutputField = field.includes("Outputs");
       const outputType = field.includes("Quantum") ? "quantum" : "classical";
       console.log(
         "[INCREMENT] field value",
         field,
         "field value type",
-        typeof node.data[field],
+        typeof currentNode.data[field],
       );
       setNodes((nodes) =>
         nodes.map((n) =>
@@ -275,40 +275,40 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
 
   const decrementNodeDataField = useCallback(
     (field: string, min_value: number) => {
-      const node = getNode(id);
+      const currentNode = getNode(id);
       const nextValue = Math.max(
         min_value,
-        Number(node.data[field] || 0) - 1,
+        Number(currentNode.data[field] || 0) - 1,
       );
       const isInput = field.includes("Inputs");
       const portType = field.includes("Quantum") ? "quantum" : "classical";
       const handlePrefix = isInput
         ? `${portType}HandleOperationInput`
-        : `${portType}Handle${node.type}Output`;
+        : `${portType}Handle${currentNode.type}Output`;
       const removedHandle = `${handlePrefix}${nextValue}${id}`;
       const removedEdgeIds = new Set(
         getEdges()
           .filter(
-            (edge) =>
-              edge.targetHandle === removedHandle ||
-              edge.sourceHandle === removedHandle,
+            (candidateEdge) =>
+              candidateEdge.targetHandle === removedHandle ||
+              candidateEdge.sourceHandle === removedHandle,
           )
-          .map((edge) => edge.id),
+          .map((removedEdge) => removedEdge.id),
       );
 
       setEdges((edges) =>
         edges.filter(
-          (edge) =>
-            edge.targetHandle !== removedHandle &&
-            edge.sourceHandle !== removedHandle,
+          (remainingEdge) =>
+            remainingEdge.targetHandle !== removedHandle &&
+            remainingEdge.sourceHandle !== removedHandle,
         ),
       );
 
       console.log(
         "[DECREMENT] field value",
-        node.data[field],
+        currentNode.data[field],
         "field value type",
-        typeof node.data[field],
+        typeof currentNode.data[field],
       );
       setNodes((nodes) =>
         nodes.map((n) =>
