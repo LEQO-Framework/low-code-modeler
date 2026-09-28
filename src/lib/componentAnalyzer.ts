@@ -320,8 +320,8 @@ export function computeOrderedComponents(
         visited.add(sourceKindNode.id);
         while (queue.length > 0) {
           const currentId = queue.shift()!;
-          const n = groupKindNodes.find((n) => n.id === currentId);
-          if (n) subNodes.push(n);
+          const candidateNode = groupKindNodes.find((n) => n.id === currentId);
+          if (candidateNode) subNodes.push(candidateNode);
           for (const e of internalEdges) {
             if (e.source === currentId && !visited.has(e.target)) {
               visited.add(e.target);
