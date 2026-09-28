@@ -69,7 +69,7 @@ export function nodesToQasm(nodes: Node[], edges: Edge[]): string | null {
   if (qubitNodes.length === 0) return null;
 
   // determine the qubit order from the Y position
-  const sortedQubits = [...qubitNodes].sort((a, b) => {
+  const sortedQubits = [...qubitNodes].toSorted((a, b) => {
     const ay = a.positionAbsolute?.y ?? a.position.y;
     const by = b.positionAbsolute?.y ?? b.position.y;
     return ay - by;
@@ -111,7 +111,7 @@ export function nodesToQasm(nodes: Node[], edges: Edge[]): string | null {
 
   const queue = nonQubitGates
     .filter((g) => (inDegree.get(g.id) ?? 0) === 0)
-    .sort((a, b) => {
+    .toSorted((a, b) => {
       const ax = a.positionAbsolute?.x ?? a.position.x;
       const bx = b.positionAbsolute?.x ?? b.position.x;
       return ax - bx;
@@ -127,7 +127,7 @@ export function nodesToQasm(nodes: Node[], edges: Edge[]): string | null {
     visited.add(id);
     sortedGateIds.push(id);
 
-    const neighbors = (adjList.get(id) ?? []).sort((a, b) => {
+    const neighbors = (adjList.get(id) ?? []).toSorted((a, b) => {
       const an = nonQubitGates.find((g) => g.id === a);
       const bn = nonQubitGates.find((g) => g.id === b);
       const ax = an ? (an.positionAbsolute?.x ?? an.position.x) : 0;

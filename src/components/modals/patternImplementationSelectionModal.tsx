@@ -156,7 +156,7 @@ export const PatternImplementationSelectionModal = ({
     );
   });
 
-  const sortedCategories = Object.keys(groupedPatterns).sort((a, b) =>
+  const sortedCategories = Object.keys(groupedPatterns).toSorted((a, b) =>
     formatCategoryName(a).localeCompare(formatCategoryName(b))
   );
 

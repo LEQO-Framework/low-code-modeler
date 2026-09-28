@@ -1012,7 +1012,7 @@ function formatGateLabel(gate: ParsedGate, numQubits: number): string {
 
   const buildTensor = (gateName: string, gateQubits: number[]): string => {
     const gateSet = new Set(gateQubits);
-    const sorted = [...gateQubits].sort((a, b) => a - b);
+    const sorted = [...gateQubits].toSorted((a, b) => a - b);
     const minQ = sorted[0];
     const maxQ = sorted[sorted.length - 1];
 
@@ -1106,7 +1106,7 @@ function formatGateLabelLatex(gate: ParsedGate, numQubits: number): string {
 
   const buildTensorLatex = (gateName: string, gateQubits: number[]): string => {
     const gateSet = new Set(gateQubits);
-    const sorted = [...gateQubits].sort((a, b) => a - b);
+    const sorted = [...gateQubits].toSorted((a, b) => a - b);
     const minQ = sorted[0];
     const maxQ = sorted[sorted.length - 1];
 

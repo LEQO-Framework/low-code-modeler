@@ -1070,7 +1070,7 @@ export function MappingEditor({
       newMappings[groupIdx] = [
         ...currentGroup,
         val,
-      ].sort();
+      ].toSorted();
     }
 
     onChange(newMappings);

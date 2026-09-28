@@ -59,7 +59,7 @@ export function DomainProfileRepositoryPicker({
       const first = entries[0];
       if (first) {
         setDirectory(first.directory);
-        setVersion(first.latest || [...first.versions].sort(compareVersionsDescending)[0] || "");
+        setVersion(first.latest || [...first.versions].toSorted(compareVersionsDescending)[0] || "");
       } else {
         setDirectory("");
         setVersion("");
@@ -75,7 +75,7 @@ export function DomainProfileRepositoryPicker({
   };
 
   const selected = domains.find((entry) => entry.directory === directory);
-  const versions = selected ? [...selected.versions].sort(compareVersionsDescending) : [];
+  const versions = selected ? [...selected.versions].toSorted(compareVersionsDescending) : [];
 
   const load = async () => {
     const trimmedRepositoryUrl = repositoryUrl.trim();

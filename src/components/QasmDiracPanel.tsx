@@ -314,7 +314,7 @@ function buildGateExplanationsSection(stepsResult?: DiracStepsResult): string {
   for (const step of stepsResult.steps) {
     // Gate-Label bereinigen (z.B. "H₀" → "H", "I₀ ⊗ CNOT₀,₂" → ["I", "CNOT"])
     const label = step.gateLabel ?? step.gateLabelLatex ?? "";
-    const sortedKeys = Object.keys(GATE_DESCRIPTIONS).sort(
+    const sortedKeys = Object.keys(GATE_DESCRIPTIONS).toSorted(
       (a, b) => b.length - a.length,
     );
     for (const key of sortedKeys) {
@@ -519,7 +519,7 @@ ${
   // helper: find the matrix for a gate label
   const getGateMatrix = (gateLabelLatex: string): string | null => {
     // check longer keys first so that "CNOT" is matched before "T" and "NOT"
-    const sortedKeys = Object.keys(GATE_DESCRIPTIONS).sort(
+    const sortedKeys = Object.keys(GATE_DESCRIPTIONS).toSorted(
       (a, b) => b.length - a.length,
     );
     for (const key of sortedKeys) {

@@ -368,7 +368,7 @@ export function computeOrderedComponents(
   };
 
   return components.map((componentNodes) =>
-    [...componentNodes].sort(sortByVisualPosition),
+    [...componentNodes].toSorted(sortByVisualPosition),
   );
 }
 

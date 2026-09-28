@@ -153,7 +153,7 @@ export const PatternSelectionModal = ({
     groupedPatterns[category].sort((a, b) => a.name.localeCompare(b.name));
   });
 
-  const sortedCategories = Object.keys(groupedPatterns).sort((a, b) =>
+  const sortedCategories = Object.keys(groupedPatterns).toSorted((a, b) =>
     formatCategoryName(a).localeCompare(formatCategoryName(b))
   );
 

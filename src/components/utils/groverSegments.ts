@@ -124,7 +124,7 @@ export function detectGroverSegments(
   if (gates.length === 0) return null;
 
   // Qubits touched by this run, ascending.
-  const used = qubits ?? [...new Set(gates.flatMap((g) => g.qubits))].sort((a, b) => a - b);
+  const used = qubits ?? [...new Set(gates.flatMap((g) => g.qubits))].toSorted((a, b) => a - b);
   if (used.length < 2) return null;
 
   const segments: GroverSegment[] = [];
@@ -218,7 +218,7 @@ export function analyzeGrover(gates: SegmentableGate[]): GroverAnalysis {
           iterations,
           segments.filter((s) => s.kind === "diffusor").length
         );
-        groverQubits = [...new Set(run.flatMap((g) => g.qubits))].sort((a, b) => a - b);
+        groverQubits = [...new Set(run.flatMap((g) => g.qubits))].toSorted((a, b) => a - b);
         const firstOracle = segments.find((s) => s.kind === "oracle");
         if (firstOracle) {
           oracleRange = { start: i + firstOracle.start, end: i + firstOracle.end };
