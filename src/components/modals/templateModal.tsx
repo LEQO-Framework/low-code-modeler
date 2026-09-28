@@ -117,11 +117,11 @@ export const ManageTemplateModal = ({
           console.log("try");
           const text = await file.text();
           const json = JSON.parse(text);
-          const templates = Array.isArray(json) ? json : [json];
+          const importedTemplates = Array.isArray(json) ? json : [json];
 
           // check if valid json format
-          const valid = templates.filter((item) => isValidTemplate(item));
-          console.log(templates);
+          const valid = importedTemplates.filter((item) => isValidTemplate(item));
+          console.log(importedTemplates);
           console.log("valid", valid);
 
           if (valid.length === 0) {
