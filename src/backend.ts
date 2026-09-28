@@ -868,10 +868,10 @@ export const startCompile = async (
 };
 
 function map<const T extends Record<string, any>, K extends keyof T>(
-  map: T,
+  mapping: T,
   value: K,
 ): T[keyof T] {
-  if (Object.hasOwn(map, value)) return map[value];
+  if (Object.hasOwn(mapping, value)) return mapping[value];
 
   throw new Error(`Invalid value "${String(value)}"`);
 }
