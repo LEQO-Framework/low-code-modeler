@@ -86,9 +86,9 @@ export default function OutputPort({
 
   // Get input type for classical arithmetic operator
   const getInputType = (inputIndex: number) => {
-    const handleId = `classicalHandleOperationInput${inputIndex}${node.id}`;
+    const inputHandleId = `classicalHandleOperationInput${inputIndex}${node.id}`;
     const edge = edges.find(
-      (e) => e.target === node.id && e.targetHandle === handleId,
+      (e) => e.target === node.id && e.targetHandle === inputHandleId,
     );
     if (!edge) return "any";
 
