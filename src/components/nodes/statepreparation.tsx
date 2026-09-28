@@ -266,10 +266,10 @@ export const StatePreparationNode = memo((node: Node) => {
   }, [quantumStateName, node.data.size, node.data.label]);
 
   useEffect(() => {
-    const encoding = node.data.encodingType;
+    const currentEncoding = node.data.encodingType;
 
     const isArrayOnly =
-      encoding !== "Basis Encoding" && encoding !== "Custom Encoding";
+      currentEncoding !== "Basis Encoding" && currentEncoding !== "Custom Encoding";
 
     if (!isArrayOnly) return;
 

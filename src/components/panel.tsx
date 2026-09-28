@@ -485,8 +485,8 @@ function ComponentSection({
       }
     : undefined;
 
-  const handleStepClick = (nodeIds: string[]) => {
-    const idSet = new Set(nodeIds);
+  const handleStepClick = (stepNodeIds: string[]) => {
+    const idSet = new Set(stepNodeIds);
     setNodes((nds: Node[]) =>
       nds.map((n) => ({
         ...n,
