@@ -252,7 +252,7 @@ function SingleBlochSphere({ bloch, label }: { bloch: { x: number; y: number; z:
     pivot.add(meridian1);
 
     // Axes with arrows
-    const addAxis = (dir: THREE.Vector3, color: number, label: string, negLabel: string) => {
+    const addAxis = (dir: THREE.Vector3, color: number, positiveLabel: string, negLabel: string) => {
       const len = 1.35;
       const mat = new THREE.LineBasicMaterial({ color, linewidth: 2 });
       const geo = new THREE.BufferGeometry().setFromPoints([
@@ -282,7 +282,7 @@ function SingleBlochSphere({ bloch, label }: { bloch: { x: number; y: number; z:
         pivot.add(sprite);
       };
 
-      makeSprite(label, dir.clone().multiplyScalar(len + 0.2));
+      makeSprite(positiveLabel, dir.clone().multiplyScalar(len + 0.2));
       makeSprite(negLabel, dir.clone().multiplyScalar(-len * 0.6 - 0.2), 0.22);
     };
 
