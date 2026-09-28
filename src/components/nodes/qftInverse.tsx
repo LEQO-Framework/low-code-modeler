@@ -153,7 +153,7 @@ export const InverseQFTNode = memo((node: Node) => {
     const edgesToRemove = edges.filter(
       (edge) =>
         !removedIdentifiers.some(
-          (id, index) =>
+          (identifier, index) =>
             edge.sourceHandle ===
             `quantumHandleSplitterOutput${numberOutputs + index}${node.id}`,
         ),
