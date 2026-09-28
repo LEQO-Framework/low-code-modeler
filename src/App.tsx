@@ -345,8 +345,8 @@ function App() {
     [],
   );
 
-  const onEdgesDelete = (edges: Edge[]) => {
-    edges.forEach((edge) => {
+  const onEdgesDelete = (deletedEdges: Edge[]) => {
+    deletedEdges.forEach((edge) => {
       const targetNodeId = edge.target;
       const targetHandle = edge.targetHandle;
       const targetNode = nodes.find((n) => n.id === targetNodeId);
@@ -1129,9 +1129,9 @@ If none apply, return { "algorithms": [] }.
       console.log(response);
 
       const jsonData = await response.json();
-      const uuid = jsonData["uuid"];
+      const responseUuid = jsonData["uuid"];
       let location = jsonData["result"];
-      const statusUrl = `${lowcodeBackendEndpoint}/status/${uuid}`;
+      const statusUrl = `${lowcodeBackendEndpoint}/status/${responseUuid}`;
 
       console.log("Initial compile response:", jsonData);
 
@@ -1201,10 +1201,10 @@ If none apply, return { "algorithms": [] }.
       // TODO: change for workflow
       // TODO: add modals for service deployment
       // TODO: add QRMS upload
-      const openqasmCode = await result.text();
-      console.log("Received OpenQASM code:", openqasmCode);
+      const resultOpenqasmCode = await result.text();
+      console.log("Received OpenQASM code:", resultOpenqasmCode);
 
-      setOpenQASMCode(openqasmCode);
+      setOpenQASMCode(resultOpenqasmCode);
       setShowResultModal(true);
       setTimeout(() => {
         setStatus("completed");
@@ -2255,11 +2255,11 @@ If none apply, return { "algorithms": [] }.
         console.log(getdata.results[1]);
         let counts = getdata.results[1].data;
         console.log(counts);
-        const chartData = Object.entries(counts || {}).map(([key, value]) => ({
+        const computedChartData = Object.entries(counts || {}).map(([key, value]) => ({
           register: parseInt(key, 16), // TODO: add hex value
           value: Number(value) * 100,
         }));
-        setChartData(chartData);
+        setChartData(computedChartData);
       }, 2000);
     } catch (error) {
       console.error("Error sending data:", error);
@@ -3353,8 +3353,8 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     fileInput.type = "file";
     fileInput.accept = "application/txt";
 
-    fileInput.addEventListener("change", (event) => {
-      const file = (event.target as HTMLInputElement)?.files?.[0];
+    fileInput.addEventListener("change", (changeEvent) => {
+      const file = (changeEvent.target as HTMLInputElement)?.files?.[0];
       if (!file) {
         console.warn("No file selected.");
         return;
@@ -3431,8 +3431,8 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     fileInput.type = "file";
     fileInput.accept = "application/json";
 
-    fileInput.addEventListener("change", (event) => {
-      const file = (event.target as HTMLInputElement)?.files?.[0];
+    fileInput.addEventListener("change", (changeEvent) => {
+      const file = (changeEvent.target as HTMLInputElement)?.files?.[0];
       if (!file) {
         console.warn("No file selected.");
         return;
@@ -3904,7 +3904,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
   }, [reactFlowInstance, loadModelFromUrl]);
 
   const onNodeDrag = React.useCallback(
-    (event: React.MouseEvent, node: Node, nodes: Node[]) => {
+    (event: React.MouseEvent, node: Node, draggedNodes: Node[]) => {
       console.log(reactFlowInstance.getNodes());
       const currentNodes = reactFlowInstance.getNodes();
       console.log(node.position.x);
@@ -4000,7 +4000,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
       //updateNodeValue
       console.log("trest");
       console.log(intersections);
-      console.log(nodes);
+      console.log(draggedNodes);
       currentNodes.forEach((nd) => {
         console.log("check");
         console.log(nd.id);
@@ -4901,12 +4901,12 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
         jobId={selectedJob?.uuid}
         missingValues={selectedJob?.missingValues || []}
         onMissingValuesSubmitted={async (
-          jobId: string,
+          submittedJobId: string,
           values: Array<{ id: string; value: any; type: string }>,
         ) => {
           try {
             const response = await fetch(
-              `http://localhost:3000/job/${jobId}/submit-missing-values`,
+              `http://localhost:3000/job/${submittedJobId}/submit-missing-values`,
               {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -4993,10 +4993,10 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
               throw new Error("Failed to fetch model file");
             const modelData = await requestResponse.json();
 
-            const compilationTarget = modelData?.compilation_target;
+            const modelCompilationTarget = modelData?.compilation_target;
 
             // If the model is a workflow
-            if (compilationTarget === "workflow") {
+            if (modelCompilationTarget === "workflow") {
               setWorkflow(modelData);
               const resultResponse = await fetch(item.links.result);
               const workflow = await resultResponse.text();
@@ -5459,10 +5459,10 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
                 onMouseDown={(e) => {
                   const startX = e.clientX;
                   const startWidth = panelWidth;
-                  const onMove = (e: MouseEvent) => {
+                  const onMove = (moveEvent: MouseEvent) => {
                     const newWidth = Math.min(
                       900,
-                      Math.max(280, startWidth + (startX - e.clientX)),
+                      Math.max(280, startWidth + (startX - moveEvent.clientX)),
                     );
                     setPanelWidth(newWidth);
                   };
