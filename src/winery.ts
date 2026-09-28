@@ -119,7 +119,7 @@ export async function createServiceTemplate(name, namespace) {
     localname: name,
     namespace: namespace,
   };
-  const response = await fetch("http://localhost:8093/winery" + "/servicetemplates", {
+  const response = await fetch("http://localhost:8093/winery/servicetemplates", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
