@@ -955,7 +955,7 @@ async function svgToPngBase64(svgInput: string, scale = 2): Promise<string> {
       ? svgInput
       : URL.createObjectURL(new Blob([svgInput], { type: "image/svg+xml" }));
     const img = new Image();
-    img.onload = () => {
+    img.addEventListener("load", () => {
       const canvas = document.createElement("canvas");
       canvas.width = (img.naturalWidth || 1200) * scale;
       canvas.height = (img.naturalHeight || 800) * scale;
@@ -966,11 +966,11 @@ async function svgToPngBase64(svgInput: string, scale = 2): Promise<string> {
       ctx.drawImage(img, 0, 0);
       if (!svgInput.startsWith("data:")) URL.revokeObjectURL(objectUrl);
       resolve(canvas.toDataURL("image/png").split(",")[1]);
-    };
-    img.onerror = (e) => {
+    });
+    img.addEventListener("error", (e) => {
       if (!svgInput.startsWith("data:")) URL.revokeObjectURL(objectUrl);
       reject(e);
-    };
+    });
     img.src = objectUrl;
   });
 }

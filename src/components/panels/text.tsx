@@ -1675,7 +1675,7 @@ export const TextPanel = () => {
 
       const reader = new FileReader();
 
-      reader.onload = function (e) {
+      reader.addEventListener("load", function (e) {
         const fileContent =
           e.target?.result as string;
 
@@ -1751,7 +1751,7 @@ export const TextPanel = () => {
             }
           }
         }
-      };
+      });
 
       reader.readAsText(file);
     }

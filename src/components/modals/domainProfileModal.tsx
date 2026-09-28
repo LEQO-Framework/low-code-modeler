@@ -1359,12 +1359,13 @@ export default function DomainProfileTableModal({
 
     const reader = new FileReader();
 
-    reader.onload = () =>
+    reader.addEventListener("load", () =>
       updateNode(
         index,
         "icon",
         reader.result,
-      );
+      ),
+    );
 
     reader.readAsDataURL(file);
   };
@@ -1842,7 +1843,7 @@ export default function DomainProfileTableModal({
                         const reader =
                           new FileReader();
 
-                        reader.onload =
+                        reader.addEventListener("load",
                           () => {
                             try {
                               const json =
@@ -1932,7 +1933,8 @@ export default function DomainProfileTableModal({
                                 "Failed to parse JSON file.",
                               );
                             }
-                          };
+                          },
+                        );
 
                         reader.readAsText(
                           file,

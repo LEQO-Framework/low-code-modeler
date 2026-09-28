@@ -121,7 +121,7 @@ async function svgToPngBase64(svgInput: string, scale = 2): Promise<string> {
 
     const img = new Image();
 
-    img.onload = () => {
+    img.addEventListener("load", () => {
       const canvas = document.createElement("canvas");
       canvas.width = (img.naturalWidth || 1200) * scale;
       canvas.height = (img.naturalHeight || 800) * scale;
@@ -133,12 +133,12 @@ async function svgToPngBase64(svgInput: string, scale = 2): Promise<string> {
       if (!svgInput.startsWith("data:")) URL.revokeObjectURL(objectUrl);
       const base64 = canvas.toDataURL("image/png").split(",")[1];
       resolve(base64);
-    };
+    });
 
-    img.onerror = (e) => {
+    img.addEventListener("error", (e) => {
       if (!svgInput.startsWith("data:")) URL.revokeObjectURL(objectUrl);
       reject(e);
-    };
+    });
 
     img.src = objectUrl;
   });

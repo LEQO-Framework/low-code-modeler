@@ -3353,7 +3353,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     fileInput.type = "file";
     fileInput.accept = "application/txt";
 
-    fileInput.onchange = (event) => {
+    fileInput.addEventListener("change", (event) => {
       const file = (event.target as HTMLInputElement)?.files?.[0];
       if (!file) {
         console.warn("No file selected.");
@@ -3361,7 +3361,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
       }
 
       const reader = new FileReader();
-      reader.onload = (e) => {
+      reader.addEventListener("load", (e) => {
         try {
           const flow = openQasmToFlow(e.target?.result as string);
           console.log(flow);
@@ -3371,15 +3371,15 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
           console.error("Error parsing JSON file:", error);
           alert("Invalid JSON file. Please ensure it is a valid flow file.");
         }
-      };
+      });
 
-      reader.onerror = (err) => {
+      reader.addEventListener("error", (err) => {
         console.error("Error reading file:", err);
         alert("Failed to read file. Please try again.");
-      };
+      });
 
       reader.readAsText(file);
-    };
+    });
 
     fileInput.click();
   }
@@ -3431,7 +3431,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     fileInput.type = "file";
     fileInput.accept = "application/json";
 
-    fileInput.onchange = (event) => {
+    fileInput.addEventListener("change", (event) => {
       const file = (event.target as HTMLInputElement)?.files?.[0];
       if (!file) {
         console.warn("No file selected.");
@@ -3439,7 +3439,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
       }
 
       const reader = new FileReader();
-      reader.onload = (e) => {
+      reader.addEventListener("load", (e) => {
         try {
           const flow = JSON.parse(e.target?.result as string);
 
@@ -3448,15 +3448,15 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
           console.error("Error parsing JSON file:", error);
           alert("Invalid JSON file. Please ensure it is a valid flow file.");
         }
-      };
+      });
 
-      reader.onerror = (err) => {
+      reader.addEventListener("error", (err) => {
         console.error("Error reading file:", err);
         alert("Failed to read file. Please try again.");
-      };
+      });
 
       reader.readAsText(file);
-    };
+    });
 
     fileInput.click();
   }
