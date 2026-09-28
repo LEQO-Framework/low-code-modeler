@@ -1417,7 +1417,7 @@ export function QasmDiracPanel(props: Props) {
     // qubit first, as usual in the adder circuit). For display and the decimal conversion it
     // is reversed into the intuitive MSB-first order, so that bitstring and decimal value are
     // consistent: |011⟩ = 3₁₀ instead of the misleading |110⟩ = 3₁₀.
-    const bitsDisplay = bits.split("").reverse().join("");
+    const bitsDisplay = bits.split("").toReversed().join("");
     const decimal = parseInt(bitsDisplay, 2);
     return {
       indices: measurementResultIndices,
