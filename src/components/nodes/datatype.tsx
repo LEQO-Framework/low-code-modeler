@@ -131,8 +131,8 @@ export const DataTypeNode = memo((node: Node) => {
     }
   };
 
-  function isComplexNumber(value) {
-    const trimmed = value.trim().toLowerCase().replace(/\s+/g, "");
+  function isComplexNumber(inputValue) {
+    const trimmed = inputValue.trim().toLowerCase().replace(/\s+/g, "");
 
     // Full complex number: real +/- imaginary
     const fullComplex = /^([+-]?\d+(\.\d+)?)([+-](\d+(\.\d+)?|)i)$/;
@@ -166,8 +166,8 @@ export const DataTypeNode = memo((node: Node) => {
     return null;
   }
 
-  function isPositiveValue(value) {
-    const trimmed = value.trim().toLowerCase();
+  function isPositiveValue(inputValue) {
+    const trimmed = inputValue.trim().toLowerCase();
 
     if (/^[+]?[0-9]*\.?[0-9]+$/.test(trimmed)) {
       return true;
