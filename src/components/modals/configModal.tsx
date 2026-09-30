@@ -7,6 +7,7 @@ interface ConfigModalProps {
   experienceLevel: string;
   compactVisualization: boolean;
   completionGuaranteed: boolean;
+  autoConnectOnNodeDrop: boolean;
   collaborationMode: boolean;
   onClose: () => void;
   onSave: (values: {
@@ -14,6 +15,7 @@ interface ConfigModalProps {
     experienceLevel: string;
     compactVisualization: boolean;
     completionGuaranteed: boolean;
+    autoConnectOnNodeDrop: boolean;
     tempCamundaEndpoint: string;
     tempNisqAnalyzerEndpoint: string;
     tempQunicornEndpoint: string;
@@ -59,6 +61,7 @@ export const ConfigModal = ({
   experienceLevel,
   compactVisualization,
   completionGuaranteed,
+  autoConnectOnNodeDrop,
   collaborationMode,
   tempCamundaEndpoint,
   tempNisqAnalyzerEndpoint,
@@ -82,6 +85,8 @@ export const ConfigModal = ({
     useState(completionGuaranteed);
   const [localCompactVisualization, setLocalCompactVisualization] =
     useState(compactVisualization);
+  const [localAutoConnectOnNodeDrop, setLocalAutoConnectOnNodeDrop] =
+    useState(autoConnectOnNodeDrop);
   const [localCollaborationMode, setLocalCollaborationMode] = useState(collaborationMode);
   const [localUserName, setLocalUserName] = useState(userName);
 
@@ -106,6 +111,7 @@ export const ConfigModal = ({
       setLocalExperienceLevel(experienceLevel);
       setLocalCompletionGuaranteed(completionGuaranteed);
       setLocalCompactVisualization(compactVisualization);
+      setLocalAutoConnectOnNodeDrop(autoConnectOnNodeDrop);
       setLocalCollaborationMode(collaborationMode);
       setLocalUserName(userName);
       setLocalOpenAIToken(tempOpenAIToken);
@@ -132,6 +138,7 @@ export const ConfigModal = ({
       tempCamundaEndpoint: localCamunda,
       compactVisualization: localCompactVisualization,
       completionGuaranteed: localCompletionGuaranteed,
+      autoConnectOnNodeDrop: localAutoConnectOnNodeDrop,
       tempNisqAnalyzerEndpoint: localNisq,
       tempQunicornEndpoint: localQunicorn,
       tempLowcodeBackendEndpoint: localLowcode,
@@ -240,6 +247,27 @@ export const ConfigModal = ({
               </tbody>
             </table>
 
+            <h3 className="labels mt-4">Automatic Connections</h3>
+            <table className="config-table">
+              <tbody>
+                <tr>
+                  <td align="right">Connect dropped nodes to edges:</td>
+                  <td align="left">
+                    <input
+                      type="checkbox"
+                      checked={localAutoConnectOnNodeDrop}
+                      onChange={(e) =>
+                        setLocalAutoConnectOnNodeDrop(e.target.checked)
+                      }
+                      className="w-4 h-4"
+                    />
+                    <span className="ml-2">
+                      {localAutoConnectOnNodeDrop ? "On" : "Off"}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
 
             <h3 className="labels mt-4">Compact Visualization</h3>
             <table className="config-table">

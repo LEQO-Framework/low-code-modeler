@@ -149,6 +149,8 @@ const selector = (state: {
   addUserTemplate: (template: Template) => void;
   setUserTemplates: (newTemplates: Template[]) => void;
   setAllDomainProfiles: (newProfiles: DomainProfile[]) => void;
+  autoConnectOnNodeDrop: boolean;
+  setAutoConnectOnNodeDrop: (enabled: boolean) => void;
   setContainsPlaceholder: (containsPlaceholder: boolean) => void;
   undo: () => void;
   redo: () => void;
@@ -183,6 +185,8 @@ const selector = (state: {
   addUserTemplate: state.addUserTemplate,
   setUserTemplates: state.setUserTemplates,
   setAllDomainProfiles: state.setAllDomainProfiles,
+  autoConnectOnNodeDrop: state.autoConnectOnNodeDrop,
+  setAutoConnectOnNodeDrop: state.setAutoConnectOnNodeDrop,
   undo: state.undo,
   redo: state.redo,
 });
@@ -294,6 +298,8 @@ function App() {
     domainProfile,
     allDomainProfiles,
     setAllDomainProfiles,
+    autoConnectOnNodeDrop,
+    setAutoConnectOnNodeDrop,
     setDomainProfile,
     addUserTemplate,
     setUserTemplates,
@@ -680,6 +686,7 @@ If none apply, return { "algorithms": [] }.
     //setAncillaModelingOn(newValues.ancillaMode);
     setExperienceLevel(newValues.experienceLevel);
     setCompletionGuaranteed(newValues.completionGuaranteed);
+    setAutoConnectOnNodeDrop(newValues.autoConnectOnNodeDrop);
     setCollaborationModeOn(newValues.collaborationMode); // passt das?? lieber onToggleCollaborationMode?
     onUserNameChange(newValues.userName);
 
@@ -2385,7 +2392,11 @@ If none apply, return { "algorithms": [] }.
         ? { ...draggedNodeFromStore, ...node }
         : undefined;
 
-      if (draggedNode && draggedNode.type !== "groupNode") {
+      if (
+        autoConnectOnNodeDrop &&
+        draggedNode &&
+        draggedNode.type !== "groupNode"
+      ) {
         const draggedCenter = getNodeCenter(draggedNode);
         const closest = currentEdges
           .filter(
@@ -2624,7 +2635,7 @@ If none apply, return { "algorithms": [] }.
         }));
       }
     },
-    [nodes, setContextMenu],
+    [nodes, setContextMenu, autoConnectOnNodeDrop],
   );
 
   const onSelectionChange = useCallback(
@@ -5086,6 +5097,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
         ancillaMode={ancillaModelingOn}
         compactVisualization={compactVisualization}
         completionGuaranteed={completionGuaranteed}
+        autoConnectOnNodeDrop={autoConnectOnNodeDrop}
         experienceLevel={experienceLevel}
         collaborationMode={collaborationModeOn}
         tempCamundaEndpoint={camundaEndpoint}
