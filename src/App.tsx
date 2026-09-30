@@ -26,7 +26,7 @@ import { nodesMap, edgesMap, ydoc, awareness, yProvider } from "@/yjs";
 import { ContextMenu, CustomPanel, Palette } from "./components";
 import Toolbar from "./components/toolbar";
 import { nodesConfig, tutorial } from "./config/site";
-import { useStore } from "./config/store";
+import { MAX_HISTORY_ENTRIES, useStore } from "./config/store";
 import { useShallow } from "zustand/react/shallow";
 import { findNodeDefinition, handleDragOver } from "./lib/utils";
 import useKeyBindings from "./hooks/useKeyBindings";
@@ -2497,8 +2497,11 @@ If none apply, return { "algorithms": [] }.
                 history: [
                   ...state.history.slice(0, splitHistoryIndex + 1),
                   splitHistoryItem,
-                ],
-                historyIndex: splitHistoryIndex + 1,
+                ].slice(-MAX_HISTORY_ENTRIES),
+                historyIndex: Math.min(
+                  splitHistoryIndex + 1,
+                  MAX_HISTORY_ENTRIES - 1,
+                ),
                 redoStack: [],
               }));
             }

@@ -34,6 +34,20 @@ type HistoryItem = {
   edges: Edge[];
 };
 
+export const MAX_HISTORY_ENTRIES = 100;
+
+const appendHistory = (
+  history: HistoryItem[],
+  historyIndex: number,
+  item: HistoryItem,
+) => {
+  const nextHistory = [
+    ...history.slice(0, historyIndex + 1),
+    item,
+  ].slice(-MAX_HISTORY_ENTRIES);
+  return { history: nextHistory, historyIndex: nextHistory.length - 1 };
+};
+
 type RFState = {
   nodes: any;
   edges: Edge[];
@@ -46,6 +60,7 @@ type RFState = {
   history: HistoryItem[];
   historyIndex: number;
   redoStack: HistoryItem[];
+  dragSnapshot: HistoryItem | null;
   typeError: string | null;
   userTemplates: Template[];
   domainProfile: string;
@@ -127,6 +142,7 @@ export const useStore = create<RFState>()(
       history: [],
       historyIndex: -1,
       redoStack: [],
+      dragSnapshot: null,
       containsPlaceholder: false,
       typeError: null,
       userTemplates: [],
@@ -325,11 +341,7 @@ export const useStore = create<RFState>()(
         set({
           nodes: [...currentNodes, node],
           edges: currentEdges,
-          history: [
-            ...get().history.slice(0, get().historyIndex + 1),
-            newHistoryItem,
-          ],
-          historyIndex: get().historyIndex + 1,
+          ...appendHistory(get().history, get().historyIndex, newHistoryItem),
           redoStack: [],
         });
         console.log("History after update:", get().history);
@@ -356,11 +368,7 @@ export const useStore = create<RFState>()(
         set({
           nodes: currentNodes,
           edges: [...currentEdges, edge],
-          history: [
-            ...get().history.slice(0, get().historyIndex + 1),
-            newHistoryItem,
-          ],
-          historyIndex: get().historyIndex + 1,
+          ...appendHistory(get().history, get().historyIndex, newHistoryItem),
           redoStack: [],
         });
         console.log("History after update:", get().history);
@@ -489,11 +497,7 @@ export const useStore = create<RFState>()(
         set({
           nodes: currentNodes,
           edges: newEdges,
-          history: [
-            ...get().history.slice(0, get().historyIndex + 1),
-            newHistoryItem,
-          ],
-          historyIndex: get().historyIndex + 1,
+          ...appendHistory(get().history, get().historyIndex, newHistoryItem),
           redoStack: [],
         });
         console.log("History after update:", get().history);
@@ -522,8 +526,23 @@ export const useStore = create<RFState>()(
       },
 
       onNodesChange: (changes: NodeChange[]) => {
-        const currentNodes = applyNodeChanges(changes, get().nodes);
+        const state = get();
+        const currentNodes = applyNodeChanges(changes, state.nodes);
         const currentEdges = get().edges;
+        const hasDraggingPosition = changes.some(
+          (change) => change.type === "position" && change.dragging,
+        );
+        const hasDragEnd = changes.some(
+          (change) => change.type === "position" && change.dragging === false,
+        );
+        const dragSnapshot =
+          state.dragSnapshot ??
+          (hasDraggingPosition
+            ? {
+                nodes: structuredClone(state.nodes),
+                edges: structuredClone(currentEdges),
+              }
+            : null);
         console.log(currentNodes);
         const newHistoryItem: HistoryItem = {
           nodes: [...get().nodes], // Copy the nodes array to avoid mutation
@@ -532,20 +551,32 @@ export const useStore = create<RFState>()(
         console.log(changes);
         // Avoid unnecessary history updates if there are no changes
         const validChanges = changes.filter((change) => {
-          if (
-            (change.type === "position" && !change.dragging) ||
-            change.type === "select"
-          ) {
-            console.log("Ignoring position change as dragging is false");
-            return false; // Ignore position change when not dragging
+          if (change.type === "position" || change.type === "select") {
+            return false; // Position history is committed once we end dragging
           }
           return true; // Keep other changes
         });
 
         if (validChanges.length === 0) {
+          if (dragSnapshot && hasDragEnd) {
+            set({
+              nodes: currentNodes,
+              edges: currentEdges,
+              ...appendHistory(
+                state.history,
+                state.historyIndex,
+                dragSnapshot,
+              ),
+              redoStack: [],
+              dragSnapshot: null,
+            });
+            return;
+          }
+
           set({
             nodes: currentNodes,
             edges: currentEdges,
+            dragSnapshot,
           });
 
           console.log("Applied non-history node changes.");
@@ -561,11 +592,7 @@ export const useStore = create<RFState>()(
             selectedNode: null,
             nodes: currentNodes,
             edges: currentEdges,
-            history: [
-              ...get().history.slice(0, get().historyIndex + 1),
-              newHistoryItem,
-            ],
-            historyIndex: get().historyIndex + 1,
+            ...appendHistory(get().history, get().historyIndex, newHistoryItem),
             redoStack: [],
           });
         } else {
@@ -573,11 +600,7 @@ export const useStore = create<RFState>()(
             selectedNode: null,
             nodes: currentNodes,
             edges: currentEdges,
-            history: [
-              ...get().history.slice(0, get().historyIndex + 1),
-              newHistoryItem,
-            ],
-            historyIndex: get().historyIndex + 1,
+            ...appendHistory(get().history, get().historyIndex, newHistoryItem),
             redoStack: [],
           });
         }
@@ -671,11 +694,7 @@ export const useStore = create<RFState>()(
         set({
           nodes: updatedNodes,
           edges: updatedEdges,
-          history: [
-            ...get().history.slice(0, get().historyIndex + 1),
-            newHistoryItem,
-          ],
-          historyIndex: get().historyIndex + 1,
+          ...appendHistory(get().history, get().historyIndex, newHistoryItem),
           redoStack: [],
         });
         console.log("History after update:", get().history);
@@ -1547,11 +1566,7 @@ export const useStore = create<RFState>()(
             return {
               nodes: updatedNodes,
               edges: [edge, ...currentEdges],
-              history: [
-                ...get().history.slice(0, get().historyIndex + 1),
-                newHistoryItem,
-              ],
-              historyIndex: get().historyIndex + 1,
+              ...appendHistory(get().history, get().historyIndex, newHistoryItem),
               redoStack: [],
             };
           });
@@ -1559,11 +1574,7 @@ export const useStore = create<RFState>()(
           set({
             nodes: currentNodes,
             edges: [...currentEdges],
-            history: [
-              ...get().history.slice(0, get().historyIndex + 1),
-              newHistoryItem,
-            ],
-            historyIndex: get().historyIndex + 1,
+            ...appendHistory(get().history, get().historyIndex, newHistoryItem),
             redoStack: [],
           });
         }
@@ -1601,11 +1612,8 @@ export const useStore = create<RFState>()(
         set({
           nodes: currentNodes,
           edges: currentEdges,
-          history: [
-            ...get().history.slice(0, get().historyIndex + 1),
-            newHistoryItem,
-          ],
-          historyIndex: get().historyIndex + 1,
+          ...appendHistory(get().history, get().historyIndex, newHistoryItem),
+          redoStack: [],
         });
         console.log("History after update:", get().history);
         console.log("Current historyIndex:", get().historyIndex);
@@ -1814,11 +1822,11 @@ export const useStore = create<RFState>()(
           return {
             nodes: updatedNodes,
             edges: edges,
-            history: [
-              ...state.history.slice(0, state.historyIndex + 1),
-              { nodes: [...updatedNodes], edges: [...edges] },
-            ],
-            historyIndex: state.historyIndex + 1,
+            ...appendHistory(state.history, state.historyIndex, {
+              nodes: [...updatedNodes],
+              edges: [...edges],
+            }),
+            redoStack: [],
           };
         });
         console.log("History after update:", get().history);
@@ -1860,11 +1868,11 @@ export const useStore = create<RFState>()(
           return {
             nodes: updatedNodes,
             edges: edges,
-            history: [
-              ...state.history.slice(0, state.historyIndex + 1),
-              { nodes: [...updatedNodes], edges: [...edges] },
-            ],
-            historyIndex: state.historyIndex + 1,
+            ...appendHistory(state.history, state.historyIndex, {
+              nodes: [...updatedNodes],
+              edges: [...edges],
+            }),
+            redoStack: [],
           };
         });
 
@@ -1915,11 +1923,11 @@ export const useStore = create<RFState>()(
           return {
             nodes: updatedNodes,
             edges: edges,
-            history: [
-              ...state.history.slice(0, state.historyIndex + 1),
-              { nodes: [...nodes], edges: [...edges] },
-            ],
-            historyIndex: state.historyIndex + 1,
+            ...appendHistory(state.history, state.historyIndex, {
+              nodes: [...nodes],
+              edges: [...edges],
+            }),
+            redoStack: [],
           };
         });
       },
@@ -1939,7 +1947,7 @@ export const useStore = create<RFState>()(
                 nodes: structuredClone(nodes),
                 edges: structuredClone(edges),
               },
-            ],
+            ].slice(-MAX_HISTORY_ENTRIES),
           });
         }
         console.log("History after undo:", get().history);
