@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { Node, Edge } from "reactflow";
 import { v4 as uuidv4 } from "uuid";
 import Modal from "./Modal";
@@ -8,32 +8,11 @@ import {
   resolvePool,
 } from "./testingSpecs";
 
-import { categories } from "../panels/categories";
-
 interface TestingModalProps {
   open: boolean;
   onClose: () => void;
   existingNodes?: Node[];
   onAddFlowToCanvas: (flow: any) => void;
-}
-
-function extractNodeLabels(content: any): Record<string, string> {
-  const labels: Record<string, string> = {};
-
-  const walk = (value: any) => {
-    if (Array.isArray(value)) {
-      value.forEach((n) => {
-        if (n?.label && n?.description) {
-          labels[n.label] = n.description;
-        }
-      });
-    } else if (typeof value === "object" && value !== null) {
-      Object.values(value).forEach(walk);
-    }
-  };
-
-  walk(content);
-  return labels;
 }
 
 // --- Pairwise Generator (Heuristic) ---
@@ -363,7 +342,6 @@ export const TestingModal = ({
     testableSpecs[0]?.id ?? "",
   );
   const [rows, setRows] = useState<Row[]>([]);
-  const [placedCount, setPlacedCount] = useState(0);
 
   const selectedSpec = testableSpecs.find((s) => s.id === selectedSpecId);
 
@@ -384,7 +362,6 @@ export const TestingModal = ({
           ),
         )
       : 0;
-    const rowHeight = (selectedSpec?.height ?? 550) + 100;
     return { x: maxX + 400, y: 80 };
   };
 
@@ -395,22 +372,15 @@ export const TestingModal = ({
     console.log("placed flow", flowObj);
   };
 
-  // CHANGED: Places flow and marks this row as generated (setting checkmark)
+
   const handleGenerateOne = (flow: GeneratedTestFlow) => {
     placeFlow(flow);
-    setPlacedCount((c) => c + 1);
-
     // Set checkmark for this specific flow
     setRows((prev) =>
       prev.map((r) => (r.id === flow.id ? { ...r, generated: true } : r)),
     );
   };
 
-  const handleGenerateSelected = () => {
-    const selected = rows.filter((r) => r.selected);
-    selected.forEach((flow, i) => placeFlow(flow));
-    setPlacedCount((c) => c + selected.length);
-  };
 
   const toggleRow = (id: string) => {
     setRows((prev) =>
