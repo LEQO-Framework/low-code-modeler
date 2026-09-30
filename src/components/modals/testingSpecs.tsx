@@ -3,6 +3,7 @@ export const EDITABLE_NODE_TYPE = "editableNode";
 export const STATE_PREPARATION_NODE_TYPE = "statePreparationNode";
 export const TEST_EDGE_TYPE: string | undefined = undefined;
 export const CLASSICAL_OPERATOR_NODE_TYPE = "classicalOperatorNode";
+export const PLUGIN_NODE_TYPE = "pluginNode";
 
 export type ValuePoolContext = Record<string, string | number | boolean>;
 export type ValuePool = string[] | ((ctx: ValuePoolContext) => string[]);
@@ -372,5 +373,491 @@ export const TESTABLE_NODE_REGISTRY: TestableNodeSpec[] = [
     ],
   },
 
+// --- Plugin Nodes ---
+  {
+    id: "quantumClustering",
+    label: "Quantum Clustering",
+    nodeType: PLUGIN_NODE_TYPE,
+    defaultData: {
+      label: "Quantum Clustering",
+      pluginName: "Quantum Clustering",
+      clusteringAlgorithm: "k-means",
+      variant: "negative_rotation",
+      outputs: [{ identifier: "clusters", type: "classical" }],
+      outputTypes: ["array"],
+      dataInputs: [
+        { parameter: "data", data_type: "array", content_type: ["text/csv"], required: true },
+      ],
+      dataOutputs: [
+        { name: "clusters", data_type: "array", content_type: ["application/json"], required: true },
+      ],
+    },
+    width: 340,
+    height: 520,
+    options: [
+      {
+        key: "variant",
+        label: "Quantum Variant",
+        values: [
+          "destructive_interference",
+          "positive_correlation",
+          "negative_rotation",
+          "state_prepartion",
+        ],
+      },
+    ],
+    inputs: [
+      {
+        key: "data",
+        label: "Input Data",
+        dataTypeKey: "array",
+        targetHandle: (id) => `classicalHandlePluginInput0${id}`,
+      },
+    ],
+  },
+  {
+    id: "quantumNeuralNetwork",
+    label: "Quantum Neural Network",
+    nodeType: PLUGIN_NODE_TYPE,
+    defaultData: {
+      label: "Quantum Neural Network",
+      pluginName: "Quantum Neural Network",
+      outputs: [{ identifier: "Predicted Labels", type: "classical" }],
+      outputTypes: ["array"],
+      dataInputs: [
+        { parameter: "trainingDataUrl", data_type: "entity/vector", content_type: ["application/json", "text/csv"], required: true },
+        { parameter: "trainingLabelsUrl", data_type: "entity/label", content_type: ["application/json", "text/csv"], required: true },
+        { parameter: "testDataUrl", data_type: "entity/vector", content_type: ["application/json", "text/csv"], required: true },
+        { parameter: "testLabelsUrl", data_type: "entity/label", content_type: ["application/json", "text/csv"], required: true },
+        { parameter: "epochs", data_type: "int", content_type: ["text/plain"], required: false },
+      ],
+      dataOutputs: [
+        { name: "pred", data_type: "entity/label", content_type: ["application/json"], required: true },
+      ],
+    },
+    width: 320,
+    height: 530,
+    options: [
+    ],
+    inputs: [
+      {
+        key: "trainingDataUrl",
+        label: "Training Data",
+        dataTypeKey: "file",
+        targetHandle: (id) => `classicalHandlePluginInput0${id}`,
+      },
+      {
+        key: "trainingLabelsUrl",
+        label: "Training Labels",
+        dataTypeKey: "file",
+        targetHandle: (id) => `classicalHandlePluginInput1${id}`,
+      },
+      {
+        key: "testDataUrl",
+        label: "Test Data",
+        dataTypeKey: "file",
+        targetHandle: (id) => `classicalHandlePluginInput2${id}`,
+      },
+      {
+        key: "testLabelsUrl",
+        label: "Test Labels",
+        dataTypeKey: "file",
+        targetHandle: (id) => `classicalHandlePluginInput3${id}`,
+      },
+      {
+        key: "epochs",
+        label: "Epochs",
+        dataTypeKey: "number",
+        targetHandle: (id) => `classicalHandlePluginInput4${id}`,
+      },
+    ],
+  },
+  {
+    id: "quantumKNearestNeighbours",
+    label: "Quantum K-Nearest Neighbours",
+    nodeType: PLUGIN_NODE_TYPE,
+    defaultData: {
+      label: "Quantum K-Nearest Neighbours",
+      pluginName: "Quantum K-Nearest Neighbours",
+      outputs: [{ identifier: "Predicted Labels", type: "classical" }],
+      outputTypes: ["array"],
+      dataInputs: [
+        { parameter: "trainingDataUrl", data_type: "entity/vector", content_type: ["application/json", "text/csv"], required: true },
+        { parameter: "trainingLabelsUrl", data_type: "entity/label", content_type: ["application/json", "text/csv"], required: true },
+        { parameter: "testDataUrl", data_type: "entity/vector", content_type: ["application/json", "text/csv"], required: true },
+        { parameter: "k", data_type: "int", content_type: ["text/plain"], required: true },
+      ],
+      dataOutputs: [
+        { name: "Predicted Labels", data_type: "entity/label", content_type: ["application/json"], required: true },
+      ],
+    },
+    width: 320,
+    height: 490,
+    options: [
+    ],
+    inputs: [
+      {
+        key: "trainingDataUrl",
+        label: "Training Data",
+        dataTypeKey: "file",
+        targetHandle: (id) => `classicalHandlePluginInput0${id}`,
+      },
+      {
+        key: "trainingLabelsUrl",
+        label: "Training Labels",
+        dataTypeKey: "file",
+        targetHandle: (id) => `classicalHandlePluginInput1${id}`,
+      },
+      {
+        key: "testDataUrl",
+        label: "Test Data",
+        dataTypeKey: "file",
+        targetHandle: (id) => `classicalHandlePluginInput2${id}`,
+      },
+      {
+        key: "k",
+        label: "K",
+        dataTypeKey: "number",
+        targetHandle: (id) => `classicalHandlePluginInput3${id}`,
+      },
+    ],
+  },
+  {
+    id: "quantumParzenWindows",
+    label: "Quantum Parzen Windows",
+    nodeType: PLUGIN_NODE_TYPE,
+    defaultData: {
+      label: "Quantum Parzen Windows",
+      pluginName: "Quantum Parzen Windows",
+      outputs: [{ identifier: "Predicted Labels", type: "classical" }],
+      outputTypes: ["array"],
+      dataInputs: [
+        { parameter: "trainingDataUrl", data_type: "entity/vector", content_type: ["application/json", "text/csv"], required: true },
+        { parameter: "trainingLabelsUrl", data_type: "entity/label", content_type: ["application/json", "text/csv"], required: true },
+        { parameter: "variant", data_type: "string", content_type: ["text/plain"], required: true },
+        { parameter: "windowSize", data_type: "int", content_type: ["text/plain"], required: true },
+        { parameter: "testDataUrl", data_type: "entity/vector", content_type: ["application/json", "text/csv"], required: true },
+        { parameter: "testLabelsUrl", data_type: "entity/label", content_type: ["application/json", "text/csv"], required: false },
+      ],
+      dataOutputs: [
+        { name: "Predicted Labels", data_type: "entity/label", content_type: ["application/json"], required: true },
+      ],
+    },
+    width: 320,
+    height: 570,
+    options: [
 
+    ],
+    inputs: [
+      {
+        key: "trainingDataUrl",
+        label: "Training Data",
+        dataTypeKey: "file",
+        targetHandle: (id) => `classicalHandlePluginInput0${id}`,
+      },
+      {
+        key: "trainingLabelsUrl",
+        label: "Training Labels",
+        dataTypeKey: "file",
+        targetHandle: (id) => `classicalHandlePluginInput1${id}`,
+      },
+      {
+        key: "variant",
+        label: "Variant",
+        dataTypeKey: "string",
+        targetHandle: (id) => `classicalHandlePluginInput2${id}`,
+      },
+      {
+        key: "windowSize",
+        label: "Window Size",
+        dataTypeKey: "number",
+        targetHandle: (id) => `classicalHandlePluginInput3${id}`,
+      },
+      {
+        key: "testDataUrl",
+        label: "Test Data",
+        dataTypeKey: "file",
+        targetHandle: (id) => `classicalHandlePluginInput4${id}`,
+      },
+      {
+        key: "testLabelsUrl",
+        label: "Test Labels",
+        dataTypeKey: "file",
+        targetHandle: (id) => `classicalHandlePluginInput5${id}`,
+      },
+    ],
+  },
+  {
+    id: "quantumKernelEstimator",
+    label: "Quantum Kernel Estimator",
+    nodeType: PLUGIN_NODE_TYPE,
+    defaultData: {
+      label: "Quantum Kernel Estimator",
+      pluginName: "Quantum Kernel Estimator",
+      outputs: [{ identifier: "Kernel Matrix", type: "classical" }],
+      outputTypes: ["array"],
+      dataInputs: [
+        { parameter: "entityPointsUrl", data_type: "entity/vector", content_type: ["application/json", "text/csv"], required: true },
+        { parameter: "featureMap", data_type: "string", content_type: ["text/plain"], required: false },
+      ],
+      dataOutputs: [
+        { name: "Kernel Matrix", data_type: "entity/matrix", content_type: ["application/json"], required: true },
+      ],
+    },
+    width: 320,
+    height: 410,
+    options: [
+      {
+        key: "featureMap",
+        label: "Feature Map",
+        values: ["ZFeatureMap", "ZZFeatureMap", "PauliFeatureMap"],
+      },
+    ],
+    inputs: [
+      {
+        key: "entityPointsUrl",
+        label: "Entity Points",
+        dataTypeKey: "file",
+        targetHandle: (id) => `classicalHandlePluginInput0${id}`,
+      },
+      {
+        key: "featureMap",
+        label: "Feature Map",
+        dataTypeKey: "string",
+        targetHandle: (id) => `classicalHandlePluginInput1${id}`,
+      },
+    ],
+  },
+  {
+    id: "variationalQuantumClassifier",
+    label: "Variational Quantum Classifier",
+    nodeType: PLUGIN_NODE_TYPE,
+    defaultData: {
+      label: "Variational Quantum Classifier",
+      pluginName: "Variational Quantum Classifier",
+      outputs: [{ identifier: "Predicted Labels", type: "classical" }],
+      outputTypes: ["array"],
+      dataInputs: [
+        { parameter: "trainingDataUrl", data_type: "entity/vector", content_type: ["application/json", "text/csv"], required: true },
+        { parameter: "trainingLabelsUrl", data_type: "entity/label", content_type: ["application/json", "text/csv"], required: true },
+        { parameter: "testDataUrl", data_type: "entity/vector", content_type: ["application/json", "text/csv"], required: true },
+      ],
+      dataOutputs: [
+        { name: "Predicted Labels", data_type: "entity/label", content_type: ["application/json"], required: true },
+      ],
+    },
+    width: 320,
+    height: 450,
+    options: [],
+    inputs: [
+      {
+        key: "trainingDataUrl",
+        label: "Training Data",
+        dataTypeKey: "file",
+        targetHandle: (id) => `classicalHandlePluginInput0${id}`,
+      },
+      {
+        key: "trainingLabelsUrl",
+        label: "Training Labels",
+        dataTypeKey: "file",
+        targetHandle: (id) => `classicalHandlePluginInput1${id}`,
+      },
+      {
+        key: "testDataUrl",
+        label: "Test Data",
+        dataTypeKey: "file",
+        targetHandle: (id) => `classicalHandlePluginInput2${id}`,
+      },
+    ],
+  },
+  {
+    id: "hybridAutoencoder",
+    label: "Hybrid Autoencoder",
+    nodeType: PLUGIN_NODE_TYPE,
+    defaultData: {
+      label: "Hybrid Autoencoder",
+      pluginName: "Hybrid Autoencoder",
+      outputs: [{ identifier: "Reduced Data", type: "classical" }],
+      outputTypes: ["array"],
+      dataInputs: [
+        { parameter: "trainingPointsUrl", data_type: "entity/vector", content_type: ["application/json", "text/csv"], required: true },
+        { parameter: "embeddingSize", data_type: "integer", content_type: ["text/plain"], required: true },
+        { parameter: "qnnName", data_type: "string", content_type: ["text/plain"], required: true },
+        { parameter: "trainingSteps", data_type: "int", content_type: ["text/plain"], required: true },
+        { parameter: "numberOfQubits ", data_type: "int", content_type: ["text/plain"], required: true },
+        { parameter: "testPointsUrl", data_type: "string", content_type: ["text/plain"], required: false },
+      ],
+      dataOutputs: [
+        { name: "Reduced Data", data_type: "entity/vector", content_type: ["application/json"], required: true },
+      ],
+    },
+    width: 320,
+    height: 570,
+    options: [
+
+    ],
+    inputs: [
+      {
+        key: "trainingPointsUrl",
+        label: "Training Points",
+        dataTypeKey: "file",
+        targetHandle: (id) => `classicalHandlePluginInput0${id}`,
+      },
+      {
+        key: "embeddingSize",
+        label: "Embedding Size",
+        dataTypeKey: "number",
+        targetHandle: (id) => `classicalHandlePluginInput1${id}`,
+      },
+      {
+        key: "qnnName",
+        label: "QNN Name",
+        dataTypeKey: "string",
+        targetHandle: (id) => `classicalHandlePluginInput2${id}`,
+      },
+      {
+        key: "trainingSteps",
+        label: "Training Steps",
+        dataTypeKey: "number",
+        targetHandle: (id) => `classicalHandlePluginInput3${id}`,
+      },
+      {
+        key: "numberOfQubits",
+        label: "Number of Qubits",
+        dataTypeKey: "number",
+        targetHandle: (id) => `classicalHandlePluginInput4${id}`,
+      },
+      {
+        key: "testPointsUrl",
+        label: "Test Points",
+        dataTypeKey: "string",
+        targetHandle: (id) => `classicalHandlePluginInput5${id}`,
+      },
+    ],
+  },
+// --- Classical Plugin Nodes ---
+{
+    id: "classicalClustering",
+    label: "Classical Clustering",
+    nodeType: PLUGIN_NODE_TYPE,
+    defaultData: {
+      label: "Classical Clustering",
+      pluginName: "Classical Clustering",
+      clusteringAlgorithm: "k-medoids",
+      initializationMethod: "random",
+      algorithm: "pam",
+      outputs: [{ identifier: "clusters", type: "classical" }],
+      outputTypes: ["array"],
+      dataInputs: [
+        { parameter: "data", data_type: "array", content_type: ["text/csv"], required: true },
+      ],
+      dataOutputs: [
+        { name: "clusters", data_type: "array", content_type: ["application/json"], required: true },
+      ],
+    },
+    width: 340,
+    height: 520,
+    options: [
+      {
+        key: "clusteringAlgorithm",
+        label: "Algorithm",
+        values: ["k-medoids", "optics", "k-means"],
+      },
+      {
+        key: "initializationMethod",
+        label: "Initialization Method",
+        values: ["random", "k-medoids++"],
+      },
+      {
+        key: "metric",
+        label: "Metric",
+        values: ["dice", "minkowski", "euclidean"],
+      },
+    ],
+    inputs: [
+      {
+        key: "data",
+        label: "Input Data",
+        dataTypeKey: "array",
+        targetHandle: (id) => `classicalHandlePluginInput0${id}`,
+      },
+    ],
+  },
+  {
+    id: "supportVectorMachine",
+    label: "Support Vector Machine",
+    nodeType: PLUGIN_NODE_TYPE,
+    defaultData: {
+      label: "Support Vector Machine",
+      pluginName: "Support Vector Machine",
+      outputs: [{ identifier: "Predicted Labels", type: "classical" }],
+      outputTypes: ["array"],
+      dataInputs: [
+        { parameter: "trainingDataUrl", data_type: "entity/vector", content_type: ["application/json", "text/csv"], required: true },
+        { parameter: "trainingLabelsUrl", data_type: "entity/label", content_type: ["application/json", "text/csv"], required: true },
+        { parameter: "testDataUrl", data_type: "entity/vector", content_type: ["application/json", "text/csv"], required: true },
+      ],
+      dataOutputs: [
+        { name: "Predicted Labels", data_type: "entity/label", content_type: ["application/json"], required: true },
+      ],
+    },
+    width: 320,
+    height: 450,
+    options: [],
+    inputs: [
+      {
+        key: "trainingDataUrl",
+        label: "Training Data",
+        dataTypeKey: "file",
+        targetHandle: (id) => `classicalHandlePluginInput0${id}`,
+      },
+      {
+        key: "trainingLabelsUrl",
+        label: "Training Labels",
+        dataTypeKey: "file",
+        targetHandle: (id) => `classicalHandlePluginInput1${id}`,
+      },
+      {
+        key: "testDataUrl",
+        label: "Test Data",
+        dataTypeKey: "file",
+        targetHandle: (id) => `classicalHandlePluginInput2${id}`,
+      },
+    ],
+  },
+  {
+    id: "neuralNetwork",
+    label: "Neural Network",
+    nodeType: PLUGIN_NODE_TYPE,
+    defaultData: {
+      label: "Neural Network",
+      pluginName: "Neural Network",
+      outputs: [{ identifier: "Model", type: "classical" }],
+      outputTypes: ["array"],
+      dataInputs: [
+        { parameter: "trainingDataUrl", data_type: "entity/vector", content_type: ["application/json", "text/csv"], required: true },
+        { parameter: "trainingLabelsUrl", data_type: "entity/label", content_type: ["application/json", "text/csv"], required: true },
+      ],
+      dataOutputs: [
+        { name: "Model", data_type: "model", content_type: ["application/json"], required: true },
+      ],
+    },
+    width: 320,
+    height: 410,
+    options: [],
+    inputs: [
+      {
+        key: "trainingDataUrl",
+        label: "Training Data",
+        dataTypeKey: "file",
+        targetHandle: (id) => `classicalHandlePluginInput0${id}`,
+      },
+      {
+        key: "trainingLabelsUrl",
+        label: "Training Labels",
+        dataTypeKey: "file",
+        targetHandle: (id) => `classicalHandlePluginInput1${id}`,
+      },
+    ],
+  },
 ];
