@@ -14,6 +14,7 @@ import {
   Search,
   BadgeCheck,
   MessageSquareIcon,
+  FlaskConical
 } from "lucide-react";
 
 import {
@@ -89,14 +90,29 @@ export default function Toolbar({
         <div className="ml-[20px] flex items-start gap-3 h-full overflow-x-auto">
           {/* Test Flow Generation */}
           {isTestingFeatureEnabled && (
-                <button
-                  className="btn btn-secondary ml-2"
-                  onClick={openTesting}
-                  title="Generate test flows for nodes with inputs"
-                >
+            <>
+              <div className="flex flex-col items-center justify-center h-full shrink-0">
+                <span className="text-[11px] font-semibold text-gray-600 mb-1">
                   Test Flows
-                </button>
-              )}
+                </span>
+
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={openTesting}
+                    title="Generate Test Flows"
+                    className="border border-gray-300 hover:bg-gray-200"
+                  >
+                    <FlaskConical className="h-4 w-4 mr-1" />
+                  </Button>
+                </div>
+              </div>
+              <div className="h-full flex items-center text-gray-400 text-xl shrink-0">
+                |
+              </div>
+            </>
+          )}
 
           {/* Start */}
           <div className="flex flex-col items-center justify-center h-full shrink-0">
