@@ -2499,6 +2499,7 @@ If none apply, return { "algorithms": [] }.
                   splitHistoryItem,
                 ],
                 historyIndex: splitHistoryIndex + 1,
+                redoStack: [],
               }));
             }
           }

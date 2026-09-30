@@ -45,6 +45,7 @@ type RFState = {
   selectedNode: Node | null;
   history: HistoryItem[];
   historyIndex: number;
+  redoStack: HistoryItem[];
   typeError: string | null;
   userTemplates: Template[];
   domainProfile: string;
@@ -125,6 +126,7 @@ export const useStore = create<RFState>()(
       selectedNode: null,
       history: [],
       historyIndex: -1,
+      redoStack: [],
       containsPlaceholder: false,
       typeError: null,
       userTemplates: [],
@@ -328,6 +330,7 @@ export const useStore = create<RFState>()(
             newHistoryItem,
           ],
           historyIndex: get().historyIndex + 1,
+          redoStack: [],
         });
         console.log("History after update:", get().history);
         console.log("Current historyIndex:", get().historyIndex);
@@ -358,6 +361,7 @@ export const useStore = create<RFState>()(
             newHistoryItem,
           ],
           historyIndex: get().historyIndex + 1,
+          redoStack: [],
         });
         console.log("History after update:", get().history);
         console.log("Current historyIndex:", get().historyIndex);
@@ -490,6 +494,7 @@ export const useStore = create<RFState>()(
             newHistoryItem,
           ],
           historyIndex: get().historyIndex + 1,
+          redoStack: [],
         });
         console.log("History after update:", get().history);
         console.log("Current historyIndex:", get().historyIndex);
@@ -561,6 +566,7 @@ export const useStore = create<RFState>()(
               newHistoryItem,
             ],
             historyIndex: get().historyIndex + 1,
+            redoStack: [],
           });
         } else {
           set({
@@ -572,6 +578,7 @@ export const useStore = create<RFState>()(
               newHistoryItem,
             ],
             historyIndex: get().historyIndex + 1,
+            redoStack: [],
           });
         }
         console.log("History after update:", get().history);
@@ -669,6 +676,7 @@ export const useStore = create<RFState>()(
             newHistoryItem,
           ],
           historyIndex: get().historyIndex + 1,
+          redoStack: [],
         });
         console.log("History after update:", get().history);
         console.log("Current historyIndex:", get().historyIndex);
@@ -1139,7 +1147,7 @@ export const useStore = create<RFState>()(
             color: color,
             hidden: ancillaMode,
           },
-          //label: label
+              redoStack: [],
         };
 
         console.log("Updating history (onConnect):");
@@ -1544,6 +1552,7 @@ export const useStore = create<RFState>()(
                 newHistoryItem,
               ],
               historyIndex: get().historyIndex + 1,
+              redoStack: [],
             };
           });
         } else {
@@ -1555,6 +1564,7 @@ export const useStore = create<RFState>()(
               newHistoryItem,
             ],
             historyIndex: get().historyIndex + 1,
+            redoStack: [],
           });
         }
         console.log("History after update:", get().history);
@@ -1914,15 +1924,22 @@ export const useStore = create<RFState>()(
         });
       },
       undo: () => {
-        const historyIndex = get().historyIndex;
-        if (historyIndex > 0) {
-          const previousHistoryItem = get().history[historyIndex - 1];
+        const { history, historyIndex, nodes, edges, redoStack } = get();
+        if (historyIndex >= 0) {
+          const previousHistoryItem = history[historyIndex];
           console.log("Performing undo:");
           console.log("Previous History Item:", previousHistoryItem);
           set({
             nodes: previousHistoryItem.nodes,
             edges: previousHistoryItem.edges,
             historyIndex: historyIndex - 1,
+            redoStack: [
+              ...redoStack,
+              {
+                nodes: structuredClone(nodes),
+                edges: structuredClone(edges),
+              },
+            ],
           });
         }
         console.log("History after undo:", get().history);
@@ -1930,15 +1947,16 @@ export const useStore = create<RFState>()(
       },
 
       redo: () => {
-        const { history, historyIndex } = get();
+        const { historyIndex, redoStack } = get();
+        const nextHistoryItem = redoStack[redoStack.length - 1];
 
-        if (historyIndex < history.length - 1) {
-          const nextHistoryItem = history[historyIndex + 1];
+        if (nextHistoryItem) {
 
           set({
             nodes: nextHistoryItem.nodes,
             edges: nextHistoryItem.edges,
             historyIndex: historyIndex + 1,
+            redoStack: redoStack.slice(0, -1),
           });
         } else {
           console.warn("Redo is not possible: no further history to redo");
