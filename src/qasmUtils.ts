@@ -65,7 +65,10 @@ function mapNode(node: Node, allNodes: any): any {
         return { id: node.id, type: "float", value: parseFloat(value) || 0 };
       } else if (node.data.dataType === "bit") {
         return { id: node.id, type: "bit", value: value === "1" ? 1 : 0 };
-      } else if (node.data.dataType === "Boolean" || node.data.dataType === "boolean") {
+      } else if (
+        node.data.dataType === "Boolean" ||
+        node.data.dataType === "boolean"
+      ) {
         return { id: node.id, type: "bool", value: value === "true" };
       } else if (node.data.dataType === "String") {
         return { id: node.id, type: "string", value: value || "" };
@@ -73,7 +76,9 @@ function mapNode(node: Node, allNodes: any): any {
         return {
           id: node.id,
           type: "array",
-          value: (Array.isArray(value) ? value : String(value).split(",")).map(Number),
+          value: (Array.isArray(value) ? value : String(value).split(",")).map(
+            Number,
+          ),
         };
       }
       break;
@@ -81,7 +86,9 @@ function mapNode(node: Node, allNodes: any): any {
       return {
         id: node.id,
         type: "measure",
-        indices: (node.data.indices || "").split(",").map((x: string) => parseInt(x, 10)),
+        indices: (node.data.indices || "")
+          .split(",")
+          .map((x: string) => parseInt(x, 10)),
       };
     case "quantumOperatorNode":
       return {
@@ -90,7 +97,11 @@ function mapNode(node: Node, allNodes: any): any {
         operator: node.data.operator || "+",
       };
     case "ancillaNode":
-      return { id: node.id, type: "ancilla", size: parseInt(node.data.size) || 1 };
+      return {
+        id: node.id,
+        type: "ancilla",
+        size: parseInt(node.data.size) || 1,
+      };
     case "qftNode":
       return { id: node.id, type: "qft", inverse: node.data.inverse || false };
     case "controlStructureNode":
@@ -107,7 +118,7 @@ function mapNode(node: Node, allNodes: any): any {
             .flatMap((n) =>
               allNodes
                 .filter((e: any) => e.source === n.id || e.target === n.id)
-                .map((e) => mapEdge(e, allNodes))
+                .map((e) => mapEdge(e, allNodes)),
             ),
         },
       };
@@ -122,18 +133,16 @@ function mapNode(node: Node, allNodes: any): any {
         thenBlock: {
           nodes: thenNodes.map((n) => mapNode(n, allNodes)),
           edges: allNodes
-            .filter(
-              (e: any) =>
-                thenNodes.some((n) => n.id === e.source || n.id === e.target)
+            .filter((e: any) =>
+              thenNodes.some((n) => n.id === e.source || n.id === e.target),
             )
             .map((e) => mapEdge(e, allNodes)),
         },
         elseBlock: {
           nodes: elseNodes.map((n) => mapNode(n, allNodes)),
           edges: allNodes
-            .filter(
-              (e: any) =>
-                elseNodes.some((n) => n.id === e.source || n.id === e.target)
+            .filter((e: any) =>
+              elseNodes.some((n) => n.id === e.source || n.id === e.target),
             )
             .map((e) => mapEdge(e, allNodes)),
         },
@@ -188,7 +197,7 @@ export async function generateOpenQASMFromFlow(
   nodes: Node[],
   edges: Edge[],
   metadata: any,
-  lowcodeBackendEndpoint: string
+  lowcodeBackendEndpoint: string,
 ): Promise<string> {
   const id = `flow-${Date.now()}`;
   const validMetadata = {
@@ -199,7 +208,9 @@ export async function generateOpenQASMFromFlow(
   };
 
   // Map nodes and edges to backend format
-  const mappedNodes = nodes.filter((x) => !x.parentNode).map((n) => mapNode(n, nodes));
+  const mappedNodes = nodes
+    .filter((x) => !x.parentNode)
+    .map((n) => mapNode(n, nodes));
   const mappedEdges = edges
     .filter((e) => !isNestedEdge(e, nodes))
     .map((e) => mapEdge(e, nodes));
@@ -217,7 +228,9 @@ export async function generateOpenQASMFromFlow(
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`Failed to generate OpenQASM: ${response.status} ${errorText}`);
+    throw new Error(
+      `Failed to generate OpenQASM: ${response.status} ${errorText}`,
+    );
   }
 
   const jsonData = await response.json();

@@ -16,9 +16,12 @@ interface BlochSphereProps {
 export function getBlochVector(
   statevector: { re: number; im: number }[],
   numQubits: number,
-  qubitIndex: number
+  qubitIndex: number,
 ): { x: number; y: number; z: number } {
-  let rho00 = 0, rho11 = 0, rho01_re = 0, rho01_im = 0;
+  let rho00 = 0,
+    rho11 = 0,
+    rho01_re = 0,
+    rho01_im = 0;
   const n = statevector.length;
   const bit = numQubits - 1 - qubitIndex;
 
@@ -28,11 +31,18 @@ export function getBlochVector(
       if ((i & mask) !== (j & mask)) continue;
       const bi = (i >> bit) & 1;
       const bj = (j >> bit) & 1;
-      const re = statevector[i].re * statevector[j].re + statevector[i].im * statevector[j].im;
-      const im = statevector[i].im * statevector[j].re - statevector[i].re * statevector[j].im;
+      const re =
+        statevector[i].re * statevector[j].re +
+        statevector[i].im * statevector[j].im;
+      const im =
+        statevector[i].im * statevector[j].re -
+        statevector[i].re * statevector[j].im;
       if (bi === 0 && bj === 0) rho00 += re;
       if (bi === 1 && bj === 1) rho11 += re;
-      if (bi === 0 && bj === 1) { rho01_re += re; rho01_im += im; }
+      if (bi === 0 && bj === 1) {
+        rho01_re += re;
+        rho01_im += im;
+      }
     }
   }
 
@@ -52,10 +62,13 @@ export function getBlochVector(
 export function getEntanglementPersistence(
   statevector: { re: number; im: number }[],
   numQubits: number,
-  qubitIndex: number
+  qubitIndex: number,
 ): number {
   const bloch = getBlochVector(statevector, numQubits, qubitIndex);
-  const r = Math.min(1, Math.sqrt(bloch.x * bloch.x + bloch.y * bloch.y + bloch.z * bloch.z));
+  const r = Math.min(
+    1,
+    Math.sqrt(bloch.x * bloch.x + bloch.y * bloch.y + bloch.z * bloch.z),
+  );
   const lambda1 = (1 + r) / 2;
   const lambda2 = (1 - r) / 2;
   const log2safe = (p: number) => (p <= 1e-12 ? 0 : Math.log2(p));
@@ -80,13 +93,15 @@ export function getEntanglementPersistence(
  */
 export function isStateFullySeparable(
   statevector: { re: number; im: number }[],
-  numQubits: number
+  numQubits: number,
 ): boolean {
   if (numQubits < 2) return true; // a single qubit is by definition not "entangled"
   const EPSILON = 1e-4; // slightly generous to absorb numerical artifacts from the simulation
   for (let q = 0; q < numQubits; q++) {
     const bloch = getBlochVector(statevector, numQubits, q);
-    const r = Math.sqrt(bloch.x * bloch.x + bloch.y * bloch.y + bloch.z * bloch.z);
+    const r = Math.sqrt(
+      bloch.x * bloch.x + bloch.y * bloch.y + bloch.z * bloch.z,
+    );
     if (r < 1 - EPSILON) return false;
   }
   return true;
@@ -110,21 +125,28 @@ export function isStateFullySeparable(
  */
 export function getMultiQubitPersistence(
   terms: { basisState: string; amplitude: { re: number; im: number } }[],
-  numQubits: number
+  numQubits: number,
 ): number | null {
   if (numQubits < 2) return null; // the single-qubit case is handled by getEntanglementPersistence
 
   const EPSILON = 1e-6;
   // numerical artifacts: ignore terms below 1% of the largest amplitude
-  const maxMag = Math.max(...terms.map(t => Math.hypot(t.amplitude.re, t.amplitude.im)));
+  const maxMag = Math.max(
+    ...terms.map((t) => Math.hypot(t.amplitude.re, t.amplitude.im)),
+  );
   const nonzero = terms.filter(
-    (t) => Math.hypot(t.amplitude.re, t.amplitude.im) > Math.max(1e-9, maxMag * 0.01)
+    (t) =>
+      Math.hypot(t.amplitude.re, t.amplitude.im) >
+      Math.max(1e-9, maxMag * 0.01),
   );
 
   const sameMagnitude = (list: typeof nonzero): boolean => {
     if (list.length === 0) return false;
     const ref = Math.hypot(list[0].amplitude.re, list[0].amplitude.im);
-    return list.every((t) => Math.abs(Math.hypot(t.amplitude.re, t.amplitude.im) - ref) < EPSILON);
+    return list.every(
+      (t) =>
+        Math.abs(Math.hypot(t.amplitude.re, t.amplitude.im) - ref) < EPSILON,
+    );
   };
 
   // GHZ-like pattern (also covers all Bell variants for n = 2)
@@ -132,7 +154,10 @@ export function getMultiQubitPersistence(
     const [a, b] = nonzero;
     let isComplement = true;
     for (let i = 0; i < numQubits; i++) {
-      if (a.basisState[i] === b.basisState[i]) { isComplement = false; break; }
+      if (a.basisState[i] === b.basisState[i]) {
+        isComplement = false;
+        break;
+      }
     }
     if (isComplement) return 1;
   }
@@ -140,7 +165,7 @@ export function getMultiQubitPersistence(
   // W state pattern
   if (nonzero.length === numQubits && sameMagnitude(nonzero)) {
     const isWPattern = nonzero.every(
-      (t) => t.basisState.split("").filter((c) => c === "1").length === 1
+      (t) => t.basisState.split("").filter((c) => c === "1").length === 1,
     );
     if (isWPattern) return numQubits - 1;
   }
@@ -148,7 +173,13 @@ export function getMultiQubitPersistence(
   return null; // no known pattern -> not computable
 }
 
-function SingleBlochSphere({ bloch, label }: { bloch: { x: number; y: number; z: number }; label: string }) {
+function SingleBlochSphere({
+  bloch,
+  label,
+}: {
+  bloch: { x: number; y: number; z: number };
+  label: string;
+}) {
   const mountRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const frameRef = useRef<number>(0);
@@ -160,19 +191,26 @@ function SingleBlochSphere({ bloch, label }: { bloch: { x: number; y: number; z:
   // Compute theta and phi
   const theta = Math.acos(Math.max(-1, Math.min(1, bloch.y)));
   const phi = Math.atan2(bloch.z, bloch.x);
-  const thetaDeg = Math.round(theta * 180 / Math.PI);
-  const phiDeg = Math.round(((phi * 180 / Math.PI) + 360) % 360);
+  const thetaDeg = Math.round((theta * 180) / Math.PI);
+  const phiDeg = Math.round(((phi * 180) / Math.PI + 360) % 360);
 
   // π representation: maps known multiples of π/4 (0°, 45°, 90°, 135°, 180°, 225°, 270°, 315°, 360°)
   const toPiStr = (deg: number): string => {
     const known: Record<number, string> = {
-      0: "0", 45: "π/4", 90: "π/2", 135: "3π/4",
-      180: "π", 225: "5π/4", 270: "3π/2", 315: "7π/4", 360: "2π"
+      0: "0",
+      45: "π/4",
+      90: "π/2",
+      135: "3π/4",
+      180: "π",
+      225: "5π/4",
+      270: "3π/2",
+      315: "7π/4",
+      360: "2π",
     };
-    return known[deg] ?? null as any;
+    return known[deg] ?? (null as any);
   };
   const thetaPi = toPiStr(thetaDeg);
-  const phiPi   = toPiStr(phiDeg);
+  const phiPi = toPiStr(phiDeg);
 
   // symbolic state formula with the angles substituted in:
   // |psi> = cos(theta/2)|0> + e^{i*phi}*sin(theta/2)|1>
@@ -180,10 +218,16 @@ function SingleBlochSphere({ bloch, label }: { bloch: { x: number; y: number; z:
   const sinHalfTheta = Math.sin(theta / 2);
   const fmt = (n: number) => {
     const rounded = Math.round(n * 1000) / 1000;
-    return (rounded >= 0 ? "" : "") + rounded.toFixed(3).replace(/\.?0+$/, "").replace(/^$/, "0");
+    return (
+      (rounded >= 0 ? "" : "") +
+      rounded
+        .toFixed(3)
+        .replace(/\.?0+$/, "")
+        .replace(/^$/, "0")
+    );
   };
   const thetaLabel = thetaPi ? `${thetaPi} (${thetaDeg}°)` : `${thetaDeg}°`;
-  const phiLabel   = phiPi   ? `${phiPi} (${phiDeg}°)`   : `${phiDeg}°`;
+  const phiLabel = phiPi ? `${phiPi} (${phiDeg}°)` : `${phiDeg}°`;
   // use π inside the formula itself whenever a known π equivalent exists (e.g. "cos(π/2)"
   // instead of "cos(180°/2)"); fall back to degrees only when the angle is not a known
   // multiple of π/4.
@@ -196,7 +240,10 @@ function SingleBlochSphere({ bloch, label }: { bloch: { x: number; y: number; z:
   // lambda_{1,2} = (1 +/- r) / 2. S = -sum(lambda_i * log2(lambda_i)), in bits (the standard
   // convention in quantum information, cf. Nielsen & Chuang). S=0 -> pure/unentangled state,
   // S=1 -> maximally mixed (e.g. one qubit of a Bell pair).
-  const r = Math.min(1, Math.sqrt(bloch.x * bloch.x + bloch.y * bloch.y + bloch.z * bloch.z));
+  const r = Math.min(
+    1,
+    Math.sqrt(bloch.x * bloch.x + bloch.y * bloch.y + bloch.z * bloch.z),
+  );
   const lambda1 = (1 + r) / 2;
   const lambda2 = (1 - r) / 2;
   const log2safe = (p: number) => (p <= 1e-12 ? 0 : Math.log2(p));
@@ -205,7 +252,8 @@ function SingleBlochSphere({ bloch, label }: { bloch: { x: number; y: number; z:
 
   useEffect(() => {
     if (!mountRef.current) return;
-    const W = 220, H = 220;
+    const W = 220,
+      H = 220;
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0xfafafa);
@@ -230,29 +278,52 @@ function SingleBlochSphere({ bloch, label }: { bloch: { x: number; y: number; z:
     // Sphere (transparent)
     const sphereGeo = new THREE.SphereGeometry(1, 48, 48);
     const sphereMat = new THREE.MeshPhongMaterial({
-      color: 0xdbeafe, transparent: true, opacity: 0.15, side: THREE.DoubleSide,
+      color: 0xdbeafe,
+      transparent: true,
+      opacity: 0.15,
+      side: THREE.DoubleSide,
     });
     pivot.add(new THREE.Mesh(sphereGeo, sphereMat));
 
     // Wireframe
     const wireGeo = new THREE.SphereGeometry(1.001, 16, 16);
     const wireMat = new THREE.MeshBasicMaterial({
-      color: 0x93c5fd, wireframe: true, transparent: true, opacity: 0.15,
+      color: 0x93c5fd,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.15,
     });
     pivot.add(new THREE.Mesh(wireGeo, wireMat));
 
     // Equator circle
     const equatorGeo = new THREE.TorusGeometry(1, 0.008, 8, 64);
-    pivot.add(new THREE.Mesh(equatorGeo, new THREE.MeshBasicMaterial({ color: 0x60a5fa })));
+    pivot.add(
+      new THREE.Mesh(
+        equatorGeo,
+        new THREE.MeshBasicMaterial({ color: 0x60a5fa }),
+      ),
+    );
 
     // Meridian circles (XZ and YZ planes)
     const meridianGeo1 = new THREE.TorusGeometry(1, 0.005, 8, 64);
-    const meridian1 = new THREE.Mesh(meridianGeo1, new THREE.MeshBasicMaterial({ color: 0x93c5fd, transparent: true, opacity: 0.4 }));
+    const meridian1 = new THREE.Mesh(
+      meridianGeo1,
+      new THREE.MeshBasicMaterial({
+        color: 0x93c5fd,
+        transparent: true,
+        opacity: 0.4,
+      }),
+    );
     meridian1.rotation.y = Math.PI / 2;
     pivot.add(meridian1);
 
     // Axes with arrows
-    const addAxis = (dir: THREE.Vector3, color: number, label: string, negLabel: string) => {
+    const addAxis = (
+      dir: THREE.Vector3,
+      color: number,
+      label: string,
+      negLabel: string,
+    ) => {
       const len = 1.35;
       const mat = new THREE.LineBasicMaterial({ color, linewidth: 2 });
       const geo = new THREE.BufferGeometry().setFromPoints([
@@ -262,13 +333,25 @@ function SingleBlochSphere({ bloch, label }: { bloch: { x: number; y: number; z:
       pivot.add(new THREE.Line(geo, mat));
 
       // Arrow head
-      const arrow = new THREE.ArrowHelper(dir.clone().normalize(), dir.clone().multiplyScalar(len - 0.25), 0.25, color, 0.15, 0.08);
+      const arrow = new THREE.ArrowHelper(
+        dir.clone().normalize(),
+        dir.clone().multiplyScalar(len - 0.25),
+        0.25,
+        color,
+        0.15,
+        0.08,
+      );
       pivot.add(arrow);
 
       // Labels
-      const makeSprite = (text: string, pos: THREE.Vector3, size: number = 0.28) => {
+      const makeSprite = (
+        text: string,
+        pos: THREE.Vector3,
+        size: number = 0.28,
+      ) => {
         const canvas = document.createElement("canvas");
-        canvas.width = 128; canvas.height = 128;
+        canvas.width = 128;
+        canvas.height = 128;
         const ctx = canvas.getContext("2d")!;
         ctx.font = "bold 52px sans-serif";
         ctx.fillStyle = `#${color.toString(16).padStart(6, "0")}`;
@@ -297,22 +380,37 @@ function SingleBlochSphere({ bloch, label }: { bloch: { x: number; y: number; z:
       len3 > 0.001 ? dir3.normalize() : new THREE.Vector3(0, 1, 0),
       new THREE.Vector3(0, 0, 0),
       Math.min(len3, 0.98),
-      0x1e40af, 0.18, 0.1
+      0x1e40af,
+      0.18,
+      0.1,
     );
     pivot.add(arrow);
     arrowRef.current = arrow;
 
     // Dot at tip
     const dotGeo = new THREE.SphereGeometry(0.06, 16, 16);
-    const dot = new THREE.Mesh(dotGeo, new THREE.MeshBasicMaterial({ color: 0x1e40af }));
-    dot.position.copy(new THREE.Vector3(bloch.x, bloch.y, bloch.z).normalize().multiplyScalar(Math.min(len3, 0.98)));
+    const dot = new THREE.Mesh(
+      dotGeo,
+      new THREE.MeshBasicMaterial({ color: 0x1e40af }),
+    );
+    dot.position.copy(
+      new THREE.Vector3(bloch.x, bloch.y, bloch.z)
+        .normalize()
+        .multiplyScalar(Math.min(len3, 0.98)),
+    );
     pivot.add(dot);
 
     // Dashed line from tip to Z-axis (projection)
-    const tipPos = new THREE.Vector3(bloch.x, bloch.y, bloch.z).normalize().multiplyScalar(Math.min(len3, 0.98));
+    const tipPos = new THREE.Vector3(bloch.x, bloch.y, bloch.z)
+      .normalize()
+      .multiplyScalar(Math.min(len3, 0.98));
     const projPos = new THREE.Vector3(0, tipPos.y, 0);
     const projGeo = new THREE.BufferGeometry().setFromPoints([tipPos, projPos]);
-    const projMat = new THREE.LineDashedMaterial({ color: 0x94a3b8, dashSize: 0.06, gapSize: 0.04 });
+    const projMat = new THREE.LineDashedMaterial({
+      color: 0x94a3b8,
+      dashSize: 0.06,
+      gapSize: 0.04,
+    });
     const projLine = new THREE.Line(projGeo, projMat);
     projLine.computeLineDistances();
     pivot.add(projLine);
@@ -329,7 +427,10 @@ function SingleBlochSphere({ bloch, label }: { bloch: { x: number; y: number; z:
 
     // Mouse drag
     const el = renderer.domElement;
-    const onDown = (e: MouseEvent) => { isDragging.current = true; lastMouse.current = { x: e.clientX, y: e.clientY }; };
+    const onDown = (e: MouseEvent) => {
+      isDragging.current = true;
+      lastMouse.current = { x: e.clientX, y: e.clientY };
+    };
     const onMove = (e: MouseEvent) => {
       if (!isDragging.current || !pivotRef.current) return;
       const dx = e.clientX - lastMouse.current.x;
@@ -342,7 +443,9 @@ function SingleBlochSphere({ bloch, label }: { bloch: { x: number; y: number; z:
         pivotRef.current.rotation.x += dy * 0.01;
       }
     };
-    const onUp = () => { isDragging.current = false; };
+    const onUp = () => {
+      isDragging.current = false;
+    };
 
     el.addEventListener("mousedown", onDown);
     window.addEventListener("mousemove", onMove);
@@ -376,48 +479,99 @@ function SingleBlochSphere({ bloch, label }: { bloch: { x: number; y: number; z:
   }, [bloch.x, bloch.y, bloch.z]);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-      <div style={{ fontSize: 11, fontWeight: 600, color: "#374151" }}>{label}</div>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 4,
+      }}
+    >
+      <div style={{ fontSize: 11, fontWeight: 600, color: "#374151" }}>
+        {label}
+      </div>
       <div
         ref={mountRef}
-        style={{ width: 220, height: 220, cursor: "grab", borderRadius: 8, overflow: "hidden", border: "1px solid #e5e7eb" }}
+        style={{
+          width: 220,
+          height: 220,
+          cursor: "grab",
+          borderRadius: 8,
+          overflow: "hidden",
+          border: "1px solid #e5e7eb",
+        }}
       />
       <div style={{ display: "flex", gap: 12, fontSize: 11, color: "#6b7280" }}>
         <span>θ = {thetaLabel}</span>
         <span>φ = {phiLabel}</span>
       </div>
-      <div style={{ fontSize: 10.5, color: "#4b5563", textAlign: "center", maxWidth: 230, fontFamily: "monospace" }}>
+      <div
+        style={{
+          fontSize: 10.5,
+          color: "#4b5563",
+          textAlign: "center",
+          maxWidth: 230,
+          fontFamily: "monospace",
+        }}
+      >
         {stateFormula}
       </div>
       <div
         style={{ fontSize: 10.5, color: "#6b7280" }}
         title="Entanglement Persistence (von Neumann entropy of this qubit's reduced density matrix, in bits). 0 = pure/unentangled, 1 = maximally entangled with the rest of the system."
       >
-        Entanglement Persistence: {entropyRounded.toFixed(3)} {entropyRounded < 0.01 ? "(pure)" : entropyRounded > 0.99 ? "(max. entangled)" : "(partially entangled)"}
+        Entanglement Persistence: {entropyRounded.toFixed(3)}{" "}
+        {entropyRounded < 0.01
+          ? "(pure)"
+          : entropyRounded > 0.99
+            ? "(max. entangled)"
+            : "(partially entangled)"}
       </div>
-      <div style={{ fontSize: 10, color: "#9ca3af" }}>Drag · Shift+Drag Z-axis</div>
+      <div style={{ fontSize: 10, color: "#9ca3af" }}>
+        Drag · Shift+Drag Z-axis
+      </div>
     </div>
   );
 }
 
-export function BlochSphere({ statevector, numQubits, qubitIndex = 0 }: BlochSphereProps) {
-  const bloch = useMemo(() =>
-    getBlochVector(statevector, numQubits, qubitIndex),
-    [statevector, numQubits, qubitIndex]
+export function BlochSphere({
+  statevector,
+  numQubits,
+  qubitIndex = 0,
+}: BlochSphereProps) {
+  const bloch = useMemo(
+    () => getBlochVector(statevector, numQubits, qubitIndex),
+    [statevector, numQubits, qubitIndex],
   );
 
   return <SingleBlochSphere bloch={bloch} label={`q${qubitIndex}`} />;
 }
 
 // Multi-qubit version showing all qubits side by side
-export function BlochSphereMulti({ statevector, numQubits }: { statevector: { re: number; im: number }[]; numQubits: number }) {
-  const blochVectors = useMemo(() =>
-    Array.from({ length: numQubits }, (_, i) => getBlochVector(statevector, numQubits, i)),
-    [statevector, numQubits]
+export function BlochSphereMulti({
+  statevector,
+  numQubits,
+}: {
+  statevector: { re: number; im: number }[];
+  numQubits: number;
+}) {
+  const blochVectors = useMemo(
+    () =>
+      Array.from({ length: numQubits }, (_, i) =>
+        getBlochVector(statevector, numQubits, i),
+      ),
+    [statevector, numQubits],
   );
 
   return (
-    <div style={{ display: "flex", flexWrap: "wrap", gap: 16, justifyContent: "center" }}>
+    <div
+      style={{
+        display: "flex",
+        flexWrap: "wrap",
+        gap: 16,
+        justifyContent: "center",
+      }}
+    >
       {blochVectors.map((bloch, i) => (
         <SingleBlochSphere key={i} bloch={bloch} label={`q${i}`} />
       ))}

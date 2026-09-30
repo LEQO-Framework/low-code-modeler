@@ -59,12 +59,15 @@ export const CustomPanel = ({
       document.body.style.cursor = "ew-resize";
       document.body.style.userSelect = "none";
 
-    const onMouseMove = (e: MouseEvent) => {
-      if (!isDragging.current) return;
-      const delta = startX.current - e.clientX; // panel is docked right, so dragging left widens it
-      const newWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, startWidth.current + delta));
-      setWidth(newWidth);
-    };
+      const onMouseMove = (e: MouseEvent) => {
+        if (!isDragging.current) return;
+        const delta = startX.current - e.clientX; // panel is docked right, so dragging left widens it
+        const newWidth = Math.min(
+          MAX_WIDTH,
+          Math.max(MIN_WIDTH, startWidth.current + delta),
+        );
+        setWidth(newWidth);
+      };
 
       const onMouseUp = () => {
         isDragging.current = false;
@@ -92,7 +95,6 @@ export const CustomPanel = ({
 
   return (
     <div style={{ display: "flex", height: "100%" }}>
-
       {/* Drag handle on the left edge for resizing the panel */}
       <div
         onMouseDown={onMouseDown}

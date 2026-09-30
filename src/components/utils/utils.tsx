@@ -66,7 +66,6 @@ export function findDuplicateOutputIdentifiersInsideNode(
   currentNode,
   identifier,
 ) {
-
   if (
     !currentNode ||
     !currentNode.data?.outputs ||

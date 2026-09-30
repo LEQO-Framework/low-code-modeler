@@ -29,7 +29,9 @@ export const dataTypeValuePools: Record<string, ValuePool> = {
   // Derived pool ensuring array length matches 'p' parameter
   "array:length=p": (ctx) => {
     const p = Math.max(1, Number(ctx.p) || 1);
-    return [Array.from({ length: p }, (_, i) => ((i + 1) * 0.1).toFixed(2)).join(",")];
+    return [
+      Array.from({ length: p }, (_, i) => ((i + 1) * 0.1).toFixed(2)).join(","),
+    ];
   },
 };
 
@@ -65,7 +67,7 @@ export interface TestableNodeSpec {
 }
 
 export const TESTABLE_NODE_REGISTRY: TestableNodeSpec[] = [
-// --- Operator Nodes ---
+  // --- Operator Nodes ---
   {
     id: "qaoa",
     label: "QAOA",
@@ -74,8 +76,16 @@ export const TESTABLE_NODE_REGISTRY: TestableNodeSpec[] = [
     width: 320,
     height: 550,
     options: [
-      { key: "problem", label: "Problem", values: ["MaxCut", "Max2SAT", "GraphColoring"] },
-      { key: "optimizer", label: "Optimizer", values: ["COBYLA", "SPSA", "NELDER_MEAD"] },
+      {
+        key: "problem",
+        label: "Problem",
+        values: ["MaxCut", "Max2SAT", "GraphColoring"],
+      },
+      {
+        key: "optimizer",
+        label: "Optimizer",
+        values: ["COBYLA", "SPSA", "NELDER_MEAD"],
+      },
       { key: "p", label: "Layers (p)", values: [1, 3] },
     ],
     inputs: [
@@ -101,7 +111,7 @@ export const TESTABLE_NODE_REGISTRY: TestableNodeSpec[] = [
     ],
   },
 
-// --- Classical Operator Nodes ---
+  // --- Classical Operator Nodes ---
   {
     id: "classicalArithmetic",
     label: "Classical Arithmetic Operator",
@@ -166,7 +176,7 @@ export const TESTABLE_NODE_REGISTRY: TestableNodeSpec[] = [
       {
         key: "input1",
         label: "Input 2",
-        dataTypeKey: "bit", 
+        dataTypeKey: "bit",
         targetHandle: (id) => `classicalHandleOperationInput1${id}`,
       },
     ],
@@ -230,14 +240,13 @@ export const TESTABLE_NODE_REGISTRY: TestableNodeSpec[] = [
       {
         key: "input0",
         label: "Input 1",
-        dataTypeKey: "array", 
+        dataTypeKey: "array",
         targetHandle: (id) => `classicalHandleOperationInput0${id}`,
       },
     ],
   },
 
-
-// --- Encoding Nodes ---
+  // --- Encoding Nodes ---
   {
     id: "basisEncoding",
     label: "Basis Encoding",
@@ -304,7 +313,7 @@ export const TESTABLE_NODE_REGISTRY: TestableNodeSpec[] = [
       {
         key: "bound",
         label: "Bound",
-        values: [0.5, -0.5], 
+        values: [0.5, -0.5],
       },
     ],
     inputs: [
@@ -373,7 +382,7 @@ export const TESTABLE_NODE_REGISTRY: TestableNodeSpec[] = [
     ],
   },
 
-// --- Plugin Nodes ---
+  // --- Plugin Nodes ---
   {
     id: "quantumClustering",
     label: "Quantum Clustering",
@@ -386,10 +395,20 @@ export const TESTABLE_NODE_REGISTRY: TestableNodeSpec[] = [
       outputs: [{ identifier: "clusters", type: "classical" }],
       outputTypes: ["array"],
       dataInputs: [
-        { parameter: "data", data_type: "array", content_type: ["text/csv"], required: true },
+        {
+          parameter: "data",
+          data_type: "array",
+          content_type: ["text/csv"],
+          required: true,
+        },
       ],
       dataOutputs: [
-        { name: "clusters", data_type: "array", content_type: ["application/json"], required: true },
+        {
+          name: "clusters",
+          data_type: "array",
+          content_type: ["application/json"],
+          required: true,
+        },
       ],
     },
     width: 340,
@@ -425,20 +444,49 @@ export const TESTABLE_NODE_REGISTRY: TestableNodeSpec[] = [
       outputs: [{ identifier: "Predicted Labels", type: "classical" }],
       outputTypes: ["array"],
       dataInputs: [
-        { parameter: "trainingDataUrl", data_type: "entity/vector", content_type: ["application/json", "text/csv"], required: true },
-        { parameter: "trainingLabelsUrl", data_type: "entity/label", content_type: ["application/json", "text/csv"], required: true },
-        { parameter: "testDataUrl", data_type: "entity/vector", content_type: ["application/json", "text/csv"], required: true },
-        { parameter: "testLabelsUrl", data_type: "entity/label", content_type: ["application/json", "text/csv"], required: true },
-        { parameter: "epochs", data_type: "int", content_type: ["text/plain"], required: false },
+        {
+          parameter: "trainingDataUrl",
+          data_type: "entity/vector",
+          content_type: ["application/json", "text/csv"],
+          required: true,
+        },
+        {
+          parameter: "trainingLabelsUrl",
+          data_type: "entity/label",
+          content_type: ["application/json", "text/csv"],
+          required: true,
+        },
+        {
+          parameter: "testDataUrl",
+          data_type: "entity/vector",
+          content_type: ["application/json", "text/csv"],
+          required: true,
+        },
+        {
+          parameter: "testLabelsUrl",
+          data_type: "entity/label",
+          content_type: ["application/json", "text/csv"],
+          required: true,
+        },
+        {
+          parameter: "epochs",
+          data_type: "int",
+          content_type: ["text/plain"],
+          required: false,
+        },
       ],
       dataOutputs: [
-        { name: "pred", data_type: "entity/label", content_type: ["application/json"], required: true },
+        {
+          name: "pred",
+          data_type: "entity/label",
+          content_type: ["application/json"],
+          required: true,
+        },
       ],
     },
     width: 320,
     height: 530,
-    options: [
-    ],
+    options: [],
     inputs: [
       {
         key: "trainingDataUrl",
@@ -482,19 +530,43 @@ export const TESTABLE_NODE_REGISTRY: TestableNodeSpec[] = [
       outputs: [{ identifier: "Predicted Labels", type: "classical" }],
       outputTypes: ["array"],
       dataInputs: [
-        { parameter: "trainingDataUrl", data_type: "entity/vector", content_type: ["application/json", "text/csv"], required: true },
-        { parameter: "trainingLabelsUrl", data_type: "entity/label", content_type: ["application/json", "text/csv"], required: true },
-        { parameter: "testDataUrl", data_type: "entity/vector", content_type: ["application/json", "text/csv"], required: true },
-        { parameter: "k", data_type: "int", content_type: ["text/plain"], required: true },
+        {
+          parameter: "trainingDataUrl",
+          data_type: "entity/vector",
+          content_type: ["application/json", "text/csv"],
+          required: true,
+        },
+        {
+          parameter: "trainingLabelsUrl",
+          data_type: "entity/label",
+          content_type: ["application/json", "text/csv"],
+          required: true,
+        },
+        {
+          parameter: "testDataUrl",
+          data_type: "entity/vector",
+          content_type: ["application/json", "text/csv"],
+          required: true,
+        },
+        {
+          parameter: "k",
+          data_type: "int",
+          content_type: ["text/plain"],
+          required: true,
+        },
       ],
       dataOutputs: [
-        { name: "Predicted Labels", data_type: "entity/label", content_type: ["application/json"], required: true },
+        {
+          name: "Predicted Labels",
+          data_type: "entity/label",
+          content_type: ["application/json"],
+          required: true,
+        },
       ],
     },
     width: 320,
     height: 490,
-    options: [
-    ],
+    options: [],
     inputs: [
       {
         key: "trainingDataUrl",
@@ -532,22 +604,55 @@ export const TESTABLE_NODE_REGISTRY: TestableNodeSpec[] = [
       outputs: [{ identifier: "Predicted Labels", type: "classical" }],
       outputTypes: ["array"],
       dataInputs: [
-        { parameter: "trainingDataUrl", data_type: "entity/vector", content_type: ["application/json", "text/csv"], required: true },
-        { parameter: "trainingLabelsUrl", data_type: "entity/label", content_type: ["application/json", "text/csv"], required: true },
-        { parameter: "variant", data_type: "string", content_type: ["text/plain"], required: true },
-        { parameter: "windowSize", data_type: "int", content_type: ["text/plain"], required: true },
-        { parameter: "testDataUrl", data_type: "entity/vector", content_type: ["application/json", "text/csv"], required: true },
-        { parameter: "testLabelsUrl", data_type: "entity/label", content_type: ["application/json", "text/csv"], required: false },
+        {
+          parameter: "trainingDataUrl",
+          data_type: "entity/vector",
+          content_type: ["application/json", "text/csv"],
+          required: true,
+        },
+        {
+          parameter: "trainingLabelsUrl",
+          data_type: "entity/label",
+          content_type: ["application/json", "text/csv"],
+          required: true,
+        },
+        {
+          parameter: "variant",
+          data_type: "string",
+          content_type: ["text/plain"],
+          required: true,
+        },
+        {
+          parameter: "windowSize",
+          data_type: "int",
+          content_type: ["text/plain"],
+          required: true,
+        },
+        {
+          parameter: "testDataUrl",
+          data_type: "entity/vector",
+          content_type: ["application/json", "text/csv"],
+          required: true,
+        },
+        {
+          parameter: "testLabelsUrl",
+          data_type: "entity/label",
+          content_type: ["application/json", "text/csv"],
+          required: false,
+        },
       ],
       dataOutputs: [
-        { name: "Predicted Labels", data_type: "entity/label", content_type: ["application/json"], required: true },
+        {
+          name: "Predicted Labels",
+          data_type: "entity/label",
+          content_type: ["application/json"],
+          required: true,
+        },
       ],
     },
     width: 320,
     height: 570,
-    options: [
-
-    ],
+    options: [],
     inputs: [
       {
         key: "trainingDataUrl",
@@ -597,11 +702,26 @@ export const TESTABLE_NODE_REGISTRY: TestableNodeSpec[] = [
       outputs: [{ identifier: "Kernel Matrix", type: "classical" }],
       outputTypes: ["array"],
       dataInputs: [
-        { parameter: "entityPointsUrl", data_type: "entity/vector", content_type: ["application/json", "text/csv"], required: true },
-        { parameter: "featureMap", data_type: "string", content_type: ["text/plain"], required: false },
+        {
+          parameter: "entityPointsUrl",
+          data_type: "entity/vector",
+          content_type: ["application/json", "text/csv"],
+          required: true,
+        },
+        {
+          parameter: "featureMap",
+          data_type: "string",
+          content_type: ["text/plain"],
+          required: false,
+        },
       ],
       dataOutputs: [
-        { name: "Kernel Matrix", data_type: "entity/matrix", content_type: ["application/json"], required: true },
+        {
+          name: "Kernel Matrix",
+          data_type: "entity/matrix",
+          content_type: ["application/json"],
+          required: true,
+        },
       ],
     },
     width: 320,
@@ -638,12 +758,32 @@ export const TESTABLE_NODE_REGISTRY: TestableNodeSpec[] = [
       outputs: [{ identifier: "Predicted Labels", type: "classical" }],
       outputTypes: ["array"],
       dataInputs: [
-        { parameter: "trainingDataUrl", data_type: "entity/vector", content_type: ["application/json", "text/csv"], required: true },
-        { parameter: "trainingLabelsUrl", data_type: "entity/label", content_type: ["application/json", "text/csv"], required: true },
-        { parameter: "testDataUrl", data_type: "entity/vector", content_type: ["application/json", "text/csv"], required: true },
+        {
+          parameter: "trainingDataUrl",
+          data_type: "entity/vector",
+          content_type: ["application/json", "text/csv"],
+          required: true,
+        },
+        {
+          parameter: "trainingLabelsUrl",
+          data_type: "entity/label",
+          content_type: ["application/json", "text/csv"],
+          required: true,
+        },
+        {
+          parameter: "testDataUrl",
+          data_type: "entity/vector",
+          content_type: ["application/json", "text/csv"],
+          required: true,
+        },
       ],
       dataOutputs: [
-        { name: "Predicted Labels", data_type: "entity/label", content_type: ["application/json"], required: true },
+        {
+          name: "Predicted Labels",
+          data_type: "entity/label",
+          content_type: ["application/json"],
+          required: true,
+        },
       ],
     },
     width: 320,
@@ -680,22 +820,55 @@ export const TESTABLE_NODE_REGISTRY: TestableNodeSpec[] = [
       outputs: [{ identifier: "Reduced Data", type: "classical" }],
       outputTypes: ["array"],
       dataInputs: [
-        { parameter: "trainingPointsUrl", data_type: "entity/vector", content_type: ["application/json", "text/csv"], required: true },
-        { parameter: "embeddingSize", data_type: "integer", content_type: ["text/plain"], required: true },
-        { parameter: "qnnName", data_type: "string", content_type: ["text/plain"], required: true },
-        { parameter: "trainingSteps", data_type: "int", content_type: ["text/plain"], required: true },
-        { parameter: "numberOfQubits ", data_type: "int", content_type: ["text/plain"], required: true },
-        { parameter: "testPointsUrl", data_type: "string", content_type: ["text/plain"], required: false },
+        {
+          parameter: "trainingPointsUrl",
+          data_type: "entity/vector",
+          content_type: ["application/json", "text/csv"],
+          required: true,
+        },
+        {
+          parameter: "embeddingSize",
+          data_type: "integer",
+          content_type: ["text/plain"],
+          required: true,
+        },
+        {
+          parameter: "qnnName",
+          data_type: "string",
+          content_type: ["text/plain"],
+          required: true,
+        },
+        {
+          parameter: "trainingSteps",
+          data_type: "int",
+          content_type: ["text/plain"],
+          required: true,
+        },
+        {
+          parameter: "numberOfQubits ",
+          data_type: "int",
+          content_type: ["text/plain"],
+          required: true,
+        },
+        {
+          parameter: "testPointsUrl",
+          data_type: "string",
+          content_type: ["text/plain"],
+          required: false,
+        },
       ],
       dataOutputs: [
-        { name: "Reduced Data", data_type: "entity/vector", content_type: ["application/json"], required: true },
+        {
+          name: "Reduced Data",
+          data_type: "entity/vector",
+          content_type: ["application/json"],
+          required: true,
+        },
       ],
     },
     width: 320,
     height: 570,
-    options: [
-
-    ],
+    options: [],
     inputs: [
       {
         key: "trainingPointsUrl",
@@ -735,8 +908,8 @@ export const TESTABLE_NODE_REGISTRY: TestableNodeSpec[] = [
       },
     ],
   },
-// --- Classical Plugin Nodes ---
-{
+  // --- Classical Plugin Nodes ---
+  {
     id: "classicalClustering",
     label: "Classical Clustering",
     nodeType: PLUGIN_NODE_TYPE,
@@ -749,10 +922,20 @@ export const TESTABLE_NODE_REGISTRY: TestableNodeSpec[] = [
       outputs: [{ identifier: "clusters", type: "classical" }],
       outputTypes: ["array"],
       dataInputs: [
-        { parameter: "data", data_type: "array", content_type: ["text/csv"], required: true },
+        {
+          parameter: "data",
+          data_type: "array",
+          content_type: ["text/csv"],
+          required: true,
+        },
       ],
       dataOutputs: [
-        { name: "clusters", data_type: "array", content_type: ["application/json"], required: true },
+        {
+          name: "clusters",
+          data_type: "array",
+          content_type: ["application/json"],
+          required: true,
+        },
       ],
     },
     width: 340,
@@ -793,12 +976,32 @@ export const TESTABLE_NODE_REGISTRY: TestableNodeSpec[] = [
       outputs: [{ identifier: "Predicted Labels", type: "classical" }],
       outputTypes: ["array"],
       dataInputs: [
-        { parameter: "trainingDataUrl", data_type: "entity/vector", content_type: ["application/json", "text/csv"], required: true },
-        { parameter: "trainingLabelsUrl", data_type: "entity/label", content_type: ["application/json", "text/csv"], required: true },
-        { parameter: "testDataUrl", data_type: "entity/vector", content_type: ["application/json", "text/csv"], required: true },
+        {
+          parameter: "trainingDataUrl",
+          data_type: "entity/vector",
+          content_type: ["application/json", "text/csv"],
+          required: true,
+        },
+        {
+          parameter: "trainingLabelsUrl",
+          data_type: "entity/label",
+          content_type: ["application/json", "text/csv"],
+          required: true,
+        },
+        {
+          parameter: "testDataUrl",
+          data_type: "entity/vector",
+          content_type: ["application/json", "text/csv"],
+          required: true,
+        },
       ],
       dataOutputs: [
-        { name: "Predicted Labels", data_type: "entity/label", content_type: ["application/json"], required: true },
+        {
+          name: "Predicted Labels",
+          data_type: "entity/label",
+          content_type: ["application/json"],
+          required: true,
+        },
       ],
     },
     width: 320,
@@ -835,11 +1038,26 @@ export const TESTABLE_NODE_REGISTRY: TestableNodeSpec[] = [
       outputs: [{ identifier: "Model", type: "classical" }],
       outputTypes: ["array"],
       dataInputs: [
-        { parameter: "trainingDataUrl", data_type: "entity/vector", content_type: ["application/json", "text/csv"], required: true },
-        { parameter: "trainingLabelsUrl", data_type: "entity/label", content_type: ["application/json", "text/csv"], required: true },
+        {
+          parameter: "trainingDataUrl",
+          data_type: "entity/vector",
+          content_type: ["application/json", "text/csv"],
+          required: true,
+        },
+        {
+          parameter: "trainingLabelsUrl",
+          data_type: "entity/label",
+          content_type: ["application/json", "text/csv"],
+          required: true,
+        },
       ],
       dataOutputs: [
-        { name: "Model", data_type: "model", content_type: ["application/json"], required: true },
+        {
+          name: "Model",
+          data_type: "model",
+          content_type: ["application/json"],
+          required: true,
+        },
       ],
     },
     width: 320,

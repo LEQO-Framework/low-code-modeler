@@ -648,7 +648,8 @@ If none apply, return { "algorithms": [] }.
   const [compactVisualization, setCompactVisualization] = useState(false);
   const [collaborationModeOn, setCollaborationModeOn] = useState(false);
   //const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
-  const isTestingFeatureEnabled = import.meta.env.VITE_ENABLE_NODE_TESTING === "true";
+  const isTestingFeatureEnabled =
+    import.meta.env.VITE_ENABLE_NODE_TESTING === "true";
   const [isTestingModalOpen, setIsTestingModalOpen] = useState(false);
   const [toast, setToast] = useState<{
     message: React.ReactNode;
@@ -4809,16 +4810,22 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
           onManageTemplates={handleManageTemplates}
           onGroupSelected={handleGroupSelected}
           generateModel={() => setIsPromptModalOpen(true)}
-          isTestingFeatureEnabled={isTestingFeatureEnabled} 
-          openTesting={() => setIsTestingModalOpen(true)}               
-          />
+          isTestingFeatureEnabled={isTestingFeatureEnabled}
+          openTesting={() => setIsTestingModalOpen(true)}
+        />
       </div>
-      {<NewDiagramModal open={isLoadJsonModalOpen} onClose={cancelLoadJson} onConfirm={confirmNewDiagram} />}
+      {
+        <NewDiagramModal
+          open={isLoadJsonModalOpen}
+          onClose={cancelLoadJson}
+          onConfirm={confirmNewDiagram}
+        />
+      }
       {
         <TestingModal
           open={isTestingModalOpen}
-          onClose={() => setIsTestingModalOpen(false)} 
-          onAddFlowToCanvas={loadFlow}      
+          onClose={() => setIsTestingModalOpen(false)}
+          onAddFlowToCanvas={loadFlow}
         />
       }
       {

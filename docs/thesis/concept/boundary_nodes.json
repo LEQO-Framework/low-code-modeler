@@ -23,9 +23,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q118759"
-        ],
+        "identifiers": ["q118759"],
         "encodingType": "Amplitude Encoding",
         "bound": 0,
         "size": "",
@@ -54,9 +52,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q843320"
-        ],
+        "identifiers": ["q843320"],
         "quantumStateName": "Bell State ϕ+",
         "size": "2",
         "outputIdentifier": "",
@@ -91,9 +87,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q296702"
-        ],
+        "identifiers": ["q296702"],
         "indices": "",
         "outputIdentifier": ""
       },

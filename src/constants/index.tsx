@@ -40,7 +40,6 @@ export const GroupNode: string = "groupNode";
 export const PluginNode: string = "pluginNode";
 export const EditableNode: string = "editableNode";
 
-
 export const NodeTypes = [
   DataTypeNode,
   GateNode,
@@ -65,8 +64,8 @@ export const NodeTypes = [
   ClassicalOperatorNode,
   GroupNode,
   PluginNode,
-  EditableNode
-]
+  EditableNode,
+];
 
 export const quantumLabel = "Quantum ";
 
@@ -88,7 +87,6 @@ export const machineLearningNodes = "Machine Learning (ML) Elements";
 
 export const templates = "Templates";
 
-
 // handle prefix ensures correctness of edges
 export const classicalHandle: string = "classicalHandle";
 export const quantumHandle: string = "quantumHandle";
@@ -104,23 +102,11 @@ export const dirtyConstructColor = "rgba(50, 93, 48, 0.24)";
 export const classicalConstructColor = "rgba(255, 165, 0, 0.2)";
 export const controlFlowConstructColor = "rgba(183, 0, 255, 0.21)";
 
-export const parameterized_one_qubit = [
-  "RX(θ)",
-  "RY(θ)",
-  "RZ(θ)",
-  "P(λ)",
-];
+export const parameterized_one_qubit = ["RX(θ)", "RY(θ)", "RZ(θ)", "P(λ)"];
 
-export const parameterized_two_qubit = [
-  "CP(λ)",
-  "CRX(θ)",
-  "CRY(θ)",
-  "CRZ(θ)",
-];
+export const parameterized_two_qubit = ["CP(λ)", "CRX(θ)", "CRY(θ)", "CRZ(θ)"];
 
-export const multi_parameterized_two_qubit = [
-  "CU(θ,φ,λ,γ)",
-];
+export const multi_parameterized_two_qubit = ["CU(θ,φ,λ,γ)"];
 
 export const non_parameterized_one_qubit = [
   "H",
@@ -134,13 +120,7 @@ export const non_parameterized_one_qubit = [
   "TDG",
 ];
 
-export const non_parameterized_two_qubit = [
-  "CNOT",
-  "SWAP",
-  "CY",
-  "CZ",
-  "CH",
-];
+export const non_parameterized_two_qubit = ["CNOT", "SWAP", "CY", "CZ", "CH"];
 
 export const multi_qubit_gates = [
   "Toffoli",
@@ -148,7 +128,7 @@ export const multi_qubit_gates = [
   "CRX(θ)",
   "CRZ(θ)",
   "CRY(θ)",
-  ...non_parameterized_two_qubit
+  ...non_parameterized_two_qubit,
 ];
 
 export const quantum_types = [
@@ -159,8 +139,8 @@ export const quantum_types = [
   OperatorNode,
   AlgorithmNode,
   SplitterNode,
-  MergerNode
-]
+  MergerNode,
+];
 
 // templates
 export const qaoa = "QAOA";
@@ -171,6 +151,5 @@ export const swap_test = "SWAP Test";
 export const quantum_k_means = "Quantum K-Means";
 export const custom_template = "Custom Template";
 
-
 // localStorage keys
-export  const TEMPLATE_STORAGE_KEY = "custom-flow-templates";
+export const TEMPLATE_STORAGE_KEY = "custom-flow-templates";

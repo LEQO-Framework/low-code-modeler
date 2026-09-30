@@ -21,10 +21,18 @@ export const SendRequestModal = ({
   sendToBackend,
 }: SendRequestModalProps) => {
   useEffect(() => {
-    if ((containsPlaceholder||containsWorkflowNodes) && (compilationTarget === "qasm" || compilationTarget === "qiskit")) {
+    if (
+      (containsPlaceholder || containsWorkflowNodes) &&
+      (compilationTarget === "qasm" || compilationTarget === "qiskit")
+    ) {
       setCompilationTarget("workflow");
     }
-  }, [containsPlaceholder, containsWorkflowNodes, compilationTarget, setCompilationTarget]);
+  }, [
+    containsPlaceholder,
+    containsWorkflowNodes,
+    compilationTarget,
+    setCompilationTarget,
+  ]);
 
   return (
     <Modal
@@ -51,13 +59,16 @@ export const SendRequestModal = ({
             onChange={(e) => setCompilationTarget(e.target.value)}
           >
             <option value="workflow">Workflow</option>
-            <option value="qasm" disabled={containsPlaceholder || containsWorkflowNodes}>
+            <option
+              value="qasm"
+              disabled={containsPlaceholder || containsWorkflowNodes}
+            >
               OpenQASM3{" "}
               {containsPlaceholder
                 ? "(not available, placeholder present)"
                 : containsWorkflowNodes
-                ? "(not available, Machine Learning, File or String node present)"
-                : ""}
+                  ? "(not available, Machine Learning, File or String node present)"
+                  : ""}
             </option>
           </select>
         </div>

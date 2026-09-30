@@ -23,9 +23,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q341955"
-        ],
+        "identifiers": ["q341955"],
         "parameter": "0"
       },
       "width": 100,
@@ -48,9 +46,7 @@
         "inputs": [
           {
             "id": "41fb75ac-a28d-49ba-8b55-2355f8e07dbf",
-            "identifiers": [
-              "q341955"
-            ]
+            "identifiers": ["q341955"]
           }
         ],
         "children": [],
@@ -58,9 +54,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q644091"
-        ],
+        "identifiers": ["q644091"],
         "parameter": "0"
       },
       "width": 100,
@@ -83,9 +77,7 @@
         "inputs": [
           {
             "id": "221d095e-cc00-4272-9a42-4df4b9520ab4",
-            "identifiers": [
-              "q644091"
-            ]
+            "identifiers": ["q644091"]
           }
         ],
         "children": [],
@@ -93,9 +85,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q130990"
-        ],
+        "identifiers": ["q130990"],
         "indices": "0",
         "outputIdentifier": "b",
         "outputs": [
@@ -132,29 +122,21 @@
         "inputs": [
           {
             "id": "5d840a65-f2aa-4e63-848c-2beb665ed89f",
-            "identifiers": [
-              "q130990"
-            ],
+            "identifiers": ["q130990"],
             "outputIdentifier": "b",
             "label": "b"
           },
           {
             "id": "7c966c66-74f5-4794-8335-491b13e31773",
-            "identifiers": [
-              "q139118"
-            ]
+            "identifiers": ["q139118"]
           }
         ],
-        "children": [
-          "7c966c66-74f5-4794-8335-491b13e31773"
-        ],
+        "children": ["7c966c66-74f5-4794-8335-491b13e31773"],
         "implementation": "",
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q520677"
-        ],
+        "identifiers": ["q520677"],
         "condition": "a==1"
       },
       "width": 1100,
@@ -177,21 +159,15 @@
         "inputs": [
           {
             "id": "36f170d4-c0f8-4abf-b48a-aafb20c6387b",
-            "identifiers": [
-              "q520677"
-            ]
+            "identifiers": ["q520677"]
           }
         ],
-        "children": [
-          "7c966c66-74f5-4794-8335-491b13e31773"
-        ],
+        "children": ["7c966c66-74f5-4794-8335-491b13e31773"],
         "implementation": "",
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q139118"
-        ],
+        "identifiers": ["q139118"],
         "parameter": "0",
         "position": {
           "x": 375,

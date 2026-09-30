@@ -116,7 +116,7 @@ export const QAOANode = memo((node: Node) => {
   const [remoteHighlightColor, setRemoteHighlightColor] = useState<
     string | null
   >(null);
-  
+
   useEffect(() => {
     const checkRemoteSelection = () => {
       let foundColor: string | null = null;

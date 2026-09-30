@@ -4,890 +4,977 @@
  */
 
 export interface paths {
-    "/compile": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Compile
-         * @description Queue a compilation request.
-         */
-        post: operations["compile_compile_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+  "/compile": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/status/{uuid}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Status
-         * @description Fetch status of a compile request.
-         */
-        get: operations["status_status__uuid__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /**
+     * Compile
+     * @description Queue a compilation request.
+     */
+    post: operations["compile_compile_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/status/{uuid}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/result/{uuid}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Result
-         * @description Fetch result of a compile request.
-         *
-         *     :raises HTTPException: (Status 404) If no compile request with uuid is found
-         */
-        get: operations["result_result__uuid__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /**
+     * Status
+     * @description Fetch status of a compile request.
+     */
+    get: operations["status_status__uuid__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/result/{uuid}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/debug/compile": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Debug Compile
-         * @description Compiles the request to an openqasm3 program in one shot.
-         */
-        post: operations["debug_compile_debug_compile_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /**
+     * Result
+     * @description Fetch result of a compile request.
+     *
+     *     :raises HTTPException: (Status 404) If no compile request with uuid is found
+     */
+    get: operations["result_result__uuid__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/debug/compile": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/debug/enrich": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Debug Enrich
-         * @description Enriches all nodes in the compile request.
-         */
-        post: operations["debug_enrich_debug_enrich_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /**
+     * Debug Compile
+     * @description Compiles the request to an openqasm3 program in one shot.
+     */
+    post: operations["debug_compile_debug_compile_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/debug/enrich": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
+    get?: never;
+    put?: never;
+    /**
+     * Debug Enrich
+     * @description Enriches all nodes in the compile request.
+     */
+    post: operations["debug_enrich_debug_enrich_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-    schemas: {
-        ArrayLiteralNode: {
-            /** Id */
-            id: string;
-            /** Label */
-            label?: string | null;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "array";
-            /**
-             * Bitsize
-             * @default 32
-             */
-            bitSize?: number;
-            /** Value */
-            values: any[];
-        };
-        EditableNode: {
-            /** Unique node ID */
-            id: string;
-
-            /** Optional label */
-            label?: string | null;
-
-            /** Node type discriminator */
-            type: "editableNode";
-
-            /** Editable properties of the node */
-            propertyValues: Record<string, any>;
-
-            /** Optional input-output mapping */
-            mapping?: string[][];
-
-            /** Input types */
-            inputTypes?: string[];
-
-            /** Output types */
-            outputTypes?: string[];
-
-            /** is Data Type */
-            isDataType?: boolean;
-        };
-
-        /** AncillaNode */
-        AncillaNode: {
-            /** Id */
-            id: string;
-            /** Label */
-            label?: string | null;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "ancilla";
-            /**
-             * Size
-             * @default 1
-             */
-            size?: number;
-        };
-        /** BitLiteralNode */
-        BitLiteralNode: {
-            /** Id */
-            id: string;
-            /** Label */
-            label?: string | null;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "bit";
-            /**
-             * Value
-             * @enum {integer}
-             */
-            value: 0 | 1;
-        };
-        /** BoolLiteralNode */
-        BoolLiteralNode: {
-            /** Id */
-            id: string;
-            /** Label */
-            label?: string | null;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "bool";
-            /** Value */
-            value: boolean;
-        };
-        /**
-         * CompileRequest
-         * @description Models a complete compile request.
-         */
-        CompileRequest: {
-            metadata: components["schemas"]["MetaData"];
-            /** Nodes */
-            nodes: (components["schemas"]["ImplementationNode"] | components["schemas"]["ControlledUGateNode"]| components["schemas"]["MCMTGateNode"] | components["schemas"]["ArrayLiteralNode"] |components["schemas"]["QAOANode"] | components["schemas"]["QFTNode"] |components["schemas"]["EditableNode"] | components["schemas"]["QubitNode"] | components["schemas"]["EncodeValueNode"] | components["schemas"]["PrepareStateNode"] | components["schemas"]["SplitterNode"] | components["schemas"]["MergerNode"] | components["schemas"]["MeasurementNode"] | components["schemas"]["GateNode"] | components["schemas"]["ParameterizedGateNode"] | components["schemas"]["BitLiteralNode"] | components["schemas"]["BoolLiteralNode"] | components["schemas"]["IntLiteralNode"] | components["schemas"]["FloatLiteralNode"] | components["schemas"]["FileLiteralNode"] | components["schemas"]["StringLiteralNode"] | components["schemas"]["AncillaNode"] | components["schemas"]["IfThenElseNode"] | components["schemas"]["RepeatNode"] | components["schemas"]["OperatorNode"] | components["schemas"]["PluginNode"])[];
-            /** Edges */
-            edges: components["schemas"]["Edge"][];
-            compilation_target: string;
-        };
-        /** Edge */
-        Edge: {
-            /** Source */
-            source: [
-                string,
-                number
-            ];
-            /** Target */
-            target: [
-                string,
-                number
-            ];
-            /** Size */
-            size?: number | null;
-            /** Identifier */
-            identifier?: string | null;
-        };
-        /** EncodeValueNode */
-        EncodeValueNode: {
-            /** Id */
-            id: string;
-            /** Label */
-            label?: string | null;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "encode";
-            /**
-             * Encoding
-             * @enum {string}
-             */
-            encoding: "amplitude" | "angle" | "basis" | "custom" | "matrix" | "schmidt";
-            /**
-             * Bounds
-             * @default 0
-             */
-            bounds?: number;
-            /**
-             * Precision
-             */
-            decimalPrecision?: number | null;
-        };
-        /** FileLiteralNode */
-        FileLiteralNode: {
-            /** Id */
-            id: string;
-            /** Label */
-            label?: string | null;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "file";
-            /**
-             * Value
-             */
-            value: string;
-        };
-        /** FloatLiteralNode */
-        FloatLiteralNode: {
-            /** Id */
-            id: string;
-            /** Label */
-            label?: string | null;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "float";
-            /**
-             * Bitsize
-             * @default 32
-             */
-            bitSize?: number;
-            /** Value */
-            value: number;
-        };
-        /** GateNode */
-        GateNode: {
-            /** Id */
-            id: string;
-            /** Label */
-            label?: string | null;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "gate";
-            /**
-             * Gate
-             * @enum {string}
-             */
-            gate:
-                | "cnot"
-                | "toffoli"
-                | "h"
-                | "t"
-                | "x"
-                | "y"
-                | "z"
-                | "sx"
-                | "s"
-                | "tdg"
-                | "sdg"
-                | "id"
-                | "cy"
-                | "cswap"
-                | "cz"
-                | "ch"
-                | "swap";
-        };
-        ControlledUGateNode: {
-            /** Id */
-            id: string;
-            /** Label */
-            label?: string | null;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "controlled-u";
-            /**
-             * Gate
-             * @enum {string}
-             */
-            controlValue: number;
-            matrix: number[][];
-        };
-        /** HTTPValidationError */
-        HTTPValidationError: {
-            /** Detail */
-            detail?: components["schemas"]["ValidationError"][];
-        };
-        /** IfThenElseNode */
-        IfThenElseNode: {
-            /** Id */
-            id: string;
-            /** Label */
-            label?: string | null;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "if-then-else";
-            /** Condition */
-            condition: string;
-            thenBlock: components["schemas"]["NestedBlock"];
-            elseBlock: components["schemas"]["NestedBlock"];
-        };
-        /**
-         * ImplementationNode
-         * @description Special node that holds just an implementation.
-         *     This is used in case the user manually enters an implementation in the frontend.
-         */
-        ImplementationNode: {
-            /** Id */
-            id: string;
-            /** Label */
-            label?: string | null;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "implementation";
-            /** Implementation */
-            implementation: string;
-        };
-        /** IntLiteralNode */
-        IntLiteralNode: {
-            /** Id */
-            id: string;
-            /** Label */
-            label?: string | null;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "int";
-            /**
-             * Bitsize
-             * @default 32
-             */
-            bitSize?: number;
-            /** Value */
-            value: number | string;
-        };
-        /** MeasurementNode */
-        MeasurementNode: {
-            /** Id */
-            id: string;
-            /** Label */
-            label?: string | null;
-            basis?: string;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "measure";
-            /** Indices */
-            indices: number[];
-        };
-        /** MCMTGateNode */
-        MCMTGateNode: {
-            /** Id */
-            id: string;
-            /** Label */
-            label?: string | null;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "mcmt-gate";
-            /**
-             * Base Gate
-             * @enum {string}
-             */
-            baseGate: "x" | "y" | "z" | "h" | "rx" | "ry" | "rz" | "s" | "sdg" | "t" | "tdg";
-            /** Number of Controls */
-            numControls: number;
-            /** Number of Targets */
-            numTargets: number;
-            /** Parameter */
-            parameter?: number | null;
-        };
-        /** MergerNode */
-        MergerNode: {
-            /** Id */
-            id: string;
-            /** Label */
-            label?: string | null;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "merger";
-            /** Numberinputs */
-            numberInputs: number;
-        };
-        QFTNode: {
-            /** Id */
-            id: string;
-            /** Label */
-            label?: string | null;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "qft";
-            /** Numberinputs */
-            size?: number | null;
-            inverse: boolean;
-        };
-        /**
-         * MetaData
-         * @description Models the metadata of a compile request.
-         */
-        MetaData: {
-            /** Version */
-            version: string;
-            /** Name */
-            name: string;
-            /** Description */
-            description: string;
-            /** Author */
-            author: string;
-            /** Optimizewidth */
-            optimizeWidth?: number | null;
-            /** Optimizedepth */
-            optimizeDepth?: number | null;
-        };
-        /** NestedBlock */
-        NestedBlock: {
-            /** Nodes */
-            nodes: (components["schemas"]["ImplementationNode"] | components["schemas"]["QubitNode"] | components["schemas"]["ControlledUGateNode"] | components["schemas"]["QAOANode"]| components["schemas"]["MCMTGateNode"] | components["schemas"]["ArrayLiteralNode"] | components["schemas"]["EncodeValueNode"] | components["schemas"]["PrepareStateNode"] | components["schemas"]["SplitterNode"] | components["schemas"]["MergerNode"] | components["schemas"]["MeasurementNode"] | components["schemas"]["GateNode"] | components["schemas"]["ParameterizedGateNode"] | components["schemas"]["BitLiteralNode"] | components["schemas"]["BoolLiteralNode"] | components["schemas"]["IntLiteralNode"] | components["schemas"]["FloatLiteralNode"] | components["schemas"]["AncillaNode"] | components["schemas"]["IfThenElseNode"] | components["schemas"]["RepeatNode"] | components["schemas"]["OperatorNode"])[];
-            /** Edges */
-            edges: components["schemas"]["Edge"][];
-        };
-        /** OperatorNode */
-        OperatorNode: {
-            /** Id */
-            id: string;
-            /** Label */
-            label?: string | null;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "operator";
-            /**
-             * Operator
-             * @enum {string}
-             */
-            operator: "+" | "-" | "*" | "/" | "**" | "|" | "&" | "~" | "^" | "<" | "<=" | ">" | ">=" | "==" | "!=" | "min" | "max";
-        };
-        /** PluginNode */
-        PluginNode: {
-            /** Id */
-            id: string;
-            /** Label */
-            label?: string | null;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "plugin";
-            /** Plugin Identifier */
-            pluginIdentifier?: string | null;
-            /** Plugin Name */
-            pluginName?: string | null;
-            /** Inputs */
-            inputs?: any[];
-            /** Outputs */
-            outputs?: any[];
-            /** Clustering Algorithm */
-            clusteringAlgorithm?: string | null;
-            variant?: string | null
-            metricEnum?: string |null;
-            methodEnum?: string |null;
-            minkowskiP?: string | null;
-            maxEpsilon?: string |null;
-            algorithmEnum?: string|null;
-            xi?: string |null;
-            initEnum?: string |null;
-        };
-        /** ParameterizedGateNode */
-        ParameterizedGateNode: {
-            /** Id */
-            id: string;
-            /** Label */
-            label?: string | null;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "gate-with-param";
-            /**
-             * Gate
-             * @enum {string}
-             */
-            gate:
-  | "rx"
-  | "ry"
-  | "rz"
-  | "p"
-  | "cp"
-  | "crx"
-  | "cry"
-  | "crz"
-  | "u1"
-  | "u2"
-  | "u3";
-            /** Parameter */
-            parameter: number;
-        };
-        /** PrepareStateNode */
-        PrepareStateNode: {
-            /** Id */
-            id: string;
-            /** Label */
-            label?: string | null;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "prepare";
-            /**
-             * Quantumstate
-             * @enum {string}
-             */
-            quantumState: "ϕ+" | "ϕ-" | "ψ+" | "ψ-" | "custom" | "ghz" | "uniform" | "w";
-            /** Size */
-            size: number;
-        };
-        /**
-         * Progress
-         * @description Models the progress of a compile request.
-         */
-        Progress: {
-            /** Percentage */
-            percentage: number;
-            /** Currentstep */
-            currentStep: string;
-        };
-        /** QubitNode */
-        QubitNode: {
-            /** Id */
-            id: string;
-            /** Label */
-            label?: string | null;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "qubit";
-            /**
-             * Size
-             * @default 1
-             */
-            size?: number;
-        };
-        /** QAOANode */
-        QAOANode: {
-            /** Id */
-            id: string;
-            /** Label */
-            label?: string | null;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "qaoa";
-            /** Layers */
-            p: number;
-            /** Problem */
-            problem: string;
-            /** Optimizer */
-            optimizer: string;
-            /** Edges string */
-            edges: string;
-            /** Gamma string */
-            gamma: string;
-            /** Beta string */
-            beta: string;
-            /** Output Identifier */
-            outputIdentifier: string;
-        };
-        /** RepeatNode */
-        RepeatNode: {
-            /** Id */
-            id: string;
-            /** Label */
-            label?: string | null;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "repeat";
-            /** Iterations */
-            iterations: number;
-            block: components["schemas"]["NestedBlock"];
-        };
-        /** SplitterNode */
-        SplitterNode: {
-            /** Id */
-            id: string;
-            /** Label */
-            label?: string | null;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "splitter";
-            /** Numberoutputs */
-            numberOutputs: number;
-        };
-        /** StringLiteralNode */
-        StringLiteralNode: {
-            /** Id */
-            id: string;
-            /** Label */
-            label?: string | null;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "string";
-            /**
-             * Value
-             */
-            value: string;
-        };
-        /**
-         * StatusBody
-         * @description Models the status of a process.
-         */
-        StatusBody: {
-            /**
-             * Uuid
-             * Format: uuid
-             */
-            uuid: string;
-            status: components["schemas"]["StatusType"];
-            /** Createdat */
-            createdAt: string | null;
-            /** Completedat */
-            completedAt: string | null;
-            progress: components["schemas"]["Progress"] | null;
-            /** Result */
-            result: string | null;
-        };
-        /**
-         * StatusType
-         * @description Enumeration of possible status values.
-         * @enum {string}
-         */
-        StatusType: "in progress" | "failed" | "completed" | "unknown";
-        /** ValidationError */
-        ValidationError: {
-            /** Location */
-            loc: (string | number)[];
-            /** Message */
-            msg: string;
-            /** Error Type */
-            type: string;
-        };
+  schemas: {
+    ArrayLiteralNode: {
+      /** Id */
+      id: string;
+      /** Label */
+      label?: string | null;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: "array";
+      /**
+       * Bitsize
+       * @default 32
+       */
+      bitSize?: number;
+      /** Value */
+      values: any[];
     };
-    responses: never;
-    parameters: never;
-    requestBodies: never;
-    headers: never;
-    pathItems: never;
+    EditableNode: {
+      /** Unique node ID */
+      id: string;
+
+      /** Optional label */
+      label?: string | null;
+
+      /** Node type discriminator */
+      type: "editableNode";
+
+      /** Editable properties of the node */
+      propertyValues: Record<string, any>;
+
+      /** Optional input-output mapping */
+      mapping?: string[][];
+
+      /** Input types */
+      inputTypes?: string[];
+
+      /** Output types */
+      outputTypes?: string[];
+
+      /** is Data Type */
+      isDataType?: boolean;
+    };
+
+    /** AncillaNode */
+    AncillaNode: {
+      /** Id */
+      id: string;
+      /** Label */
+      label?: string | null;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: "ancilla";
+      /**
+       * Size
+       * @default 1
+       */
+      size?: number;
+    };
+    /** BitLiteralNode */
+    BitLiteralNode: {
+      /** Id */
+      id: string;
+      /** Label */
+      label?: string | null;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: "bit";
+      /**
+       * Value
+       * @enum {integer}
+       */
+      value: 0 | 1;
+    };
+    /** BoolLiteralNode */
+    BoolLiteralNode: {
+      /** Id */
+      id: string;
+      /** Label */
+      label?: string | null;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: "bool";
+      /** Value */
+      value: boolean;
+    };
+    /**
+     * CompileRequest
+     * @description Models a complete compile request.
+     */
+    CompileRequest: {
+      metadata: components["schemas"]["MetaData"];
+      /** Nodes */
+      nodes: (
+        | components["schemas"]["ImplementationNode"]
+        | components["schemas"]["ControlledUGateNode"]
+        | components["schemas"]["MCMTGateNode"]
+        | components["schemas"]["ArrayLiteralNode"]
+        | components["schemas"]["QAOANode"]
+        | components["schemas"]["QFTNode"]
+        | components["schemas"]["EditableNode"]
+        | components["schemas"]["QubitNode"]
+        | components["schemas"]["EncodeValueNode"]
+        | components["schemas"]["PrepareStateNode"]
+        | components["schemas"]["SplitterNode"]
+        | components["schemas"]["MergerNode"]
+        | components["schemas"]["MeasurementNode"]
+        | components["schemas"]["GateNode"]
+        | components["schemas"]["ParameterizedGateNode"]
+        | components["schemas"]["BitLiteralNode"]
+        | components["schemas"]["BoolLiteralNode"]
+        | components["schemas"]["IntLiteralNode"]
+        | components["schemas"]["FloatLiteralNode"]
+        | components["schemas"]["FileLiteralNode"]
+        | components["schemas"]["StringLiteralNode"]
+        | components["schemas"]["AncillaNode"]
+        | components["schemas"]["IfThenElseNode"]
+        | components["schemas"]["RepeatNode"]
+        | components["schemas"]["OperatorNode"]
+        | components["schemas"]["PluginNode"]
+      )[];
+      /** Edges */
+      edges: components["schemas"]["Edge"][];
+      compilation_target: string;
+    };
+    /** Edge */
+    Edge: {
+      /** Source */
+      source: [string, number];
+      /** Target */
+      target: [string, number];
+      /** Size */
+      size?: number | null;
+      /** Identifier */
+      identifier?: string | null;
+    };
+    /** EncodeValueNode */
+    EncodeValueNode: {
+      /** Id */
+      id: string;
+      /** Label */
+      label?: string | null;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: "encode";
+      /**
+       * Encoding
+       * @enum {string}
+       */
+      encoding:
+        | "amplitude"
+        | "angle"
+        | "basis"
+        | "custom"
+        | "matrix"
+        | "schmidt";
+      /**
+       * Bounds
+       * @default 0
+       */
+      bounds?: number;
+      /**
+       * Precision
+       */
+      decimalPrecision?: number | null;
+    };
+    /** FileLiteralNode */
+    FileLiteralNode: {
+      /** Id */
+      id: string;
+      /** Label */
+      label?: string | null;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: "file";
+      /**
+       * Value
+       */
+      value: string;
+    };
+    /** FloatLiteralNode */
+    FloatLiteralNode: {
+      /** Id */
+      id: string;
+      /** Label */
+      label?: string | null;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: "float";
+      /**
+       * Bitsize
+       * @default 32
+       */
+      bitSize?: number;
+      /** Value */
+      value: number;
+    };
+    /** GateNode */
+    GateNode: {
+      /** Id */
+      id: string;
+      /** Label */
+      label?: string | null;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: "gate";
+      /**
+       * Gate
+       * @enum {string}
+       */
+      gate:
+        | "cnot"
+        | "toffoli"
+        | "h"
+        | "t"
+        | "x"
+        | "y"
+        | "z"
+        | "sx"
+        | "s"
+        | "tdg"
+        | "sdg"
+        | "id"
+        | "cy"
+        | "cswap"
+        | "cz"
+        | "ch"
+        | "swap";
+    };
+    ControlledUGateNode: {
+      /** Id */
+      id: string;
+      /** Label */
+      label?: string | null;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: "controlled-u";
+      /**
+       * Gate
+       * @enum {string}
+       */
+      controlValue: number;
+      matrix: number[][];
+    };
+    /** HTTPValidationError */
+    HTTPValidationError: {
+      /** Detail */
+      detail?: components["schemas"]["ValidationError"][];
+    };
+    /** IfThenElseNode */
+    IfThenElseNode: {
+      /** Id */
+      id: string;
+      /** Label */
+      label?: string | null;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: "if-then-else";
+      /** Condition */
+      condition: string;
+      thenBlock: components["schemas"]["NestedBlock"];
+      elseBlock: components["schemas"]["NestedBlock"];
+    };
+    /**
+     * ImplementationNode
+     * @description Special node that holds just an implementation.
+     *     This is used in case the user manually enters an implementation in the frontend.
+     */
+    ImplementationNode: {
+      /** Id */
+      id: string;
+      /** Label */
+      label?: string | null;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: "implementation";
+      /** Implementation */
+      implementation: string;
+    };
+    /** IntLiteralNode */
+    IntLiteralNode: {
+      /** Id */
+      id: string;
+      /** Label */
+      label?: string | null;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: "int";
+      /**
+       * Bitsize
+       * @default 32
+       */
+      bitSize?: number;
+      /** Value */
+      value: number | string;
+    };
+    /** MeasurementNode */
+    MeasurementNode: {
+      /** Id */
+      id: string;
+      /** Label */
+      label?: string | null;
+      basis?: string;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: "measure";
+      /** Indices */
+      indices: number[];
+    };
+    /** MCMTGateNode */
+    MCMTGateNode: {
+      /** Id */
+      id: string;
+      /** Label */
+      label?: string | null;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: "mcmt-gate";
+      /**
+       * Base Gate
+       * @enum {string}
+       */
+      baseGate:
+        | "x"
+        | "y"
+        | "z"
+        | "h"
+        | "rx"
+        | "ry"
+        | "rz"
+        | "s"
+        | "sdg"
+        | "t"
+        | "tdg";
+      /** Number of Controls */
+      numControls: number;
+      /** Number of Targets */
+      numTargets: number;
+      /** Parameter */
+      parameter?: number | null;
+    };
+    /** MergerNode */
+    MergerNode: {
+      /** Id */
+      id: string;
+      /** Label */
+      label?: string | null;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: "merger";
+      /** Numberinputs */
+      numberInputs: number;
+    };
+    QFTNode: {
+      /** Id */
+      id: string;
+      /** Label */
+      label?: string | null;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: "qft";
+      /** Numberinputs */
+      size?: number | null;
+      inverse: boolean;
+    };
+    /**
+     * MetaData
+     * @description Models the metadata of a compile request.
+     */
+    MetaData: {
+      /** Version */
+      version: string;
+      /** Name */
+      name: string;
+      /** Description */
+      description: string;
+      /** Author */
+      author: string;
+      /** Optimizewidth */
+      optimizeWidth?: number | null;
+      /** Optimizedepth */
+      optimizeDepth?: number | null;
+    };
+    /** NestedBlock */
+    NestedBlock: {
+      /** Nodes */
+      nodes: (
+        | components["schemas"]["ImplementationNode"]
+        | components["schemas"]["QubitNode"]
+        | components["schemas"]["ControlledUGateNode"]
+        | components["schemas"]["QAOANode"]
+        | components["schemas"]["MCMTGateNode"]
+        | components["schemas"]["ArrayLiteralNode"]
+        | components["schemas"]["EncodeValueNode"]
+        | components["schemas"]["PrepareStateNode"]
+        | components["schemas"]["SplitterNode"]
+        | components["schemas"]["MergerNode"]
+        | components["schemas"]["MeasurementNode"]
+        | components["schemas"]["GateNode"]
+        | components["schemas"]["ParameterizedGateNode"]
+        | components["schemas"]["BitLiteralNode"]
+        | components["schemas"]["BoolLiteralNode"]
+        | components["schemas"]["IntLiteralNode"]
+        | components["schemas"]["FloatLiteralNode"]
+        | components["schemas"]["AncillaNode"]
+        | components["schemas"]["IfThenElseNode"]
+        | components["schemas"]["RepeatNode"]
+        | components["schemas"]["OperatorNode"]
+      )[];
+      /** Edges */
+      edges: components["schemas"]["Edge"][];
+    };
+    /** OperatorNode */
+    OperatorNode: {
+      /** Id */
+      id: string;
+      /** Label */
+      label?: string | null;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: "operator";
+      /**
+       * Operator
+       * @enum {string}
+       */
+      operator:
+        | "+"
+        | "-"
+        | "*"
+        | "/"
+        | "**"
+        | "|"
+        | "&"
+        | "~"
+        | "^"
+        | "<"
+        | "<="
+        | ">"
+        | ">="
+        | "=="
+        | "!="
+        | "min"
+        | "max";
+    };
+    /** PluginNode */
+    PluginNode: {
+      /** Id */
+      id: string;
+      /** Label */
+      label?: string | null;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: "plugin";
+      /** Plugin Identifier */
+      pluginIdentifier?: string | null;
+      /** Plugin Name */
+      pluginName?: string | null;
+      /** Inputs */
+      inputs?: any[];
+      /** Outputs */
+      outputs?: any[];
+      /** Clustering Algorithm */
+      clusteringAlgorithm?: string | null;
+      variant?: string | null;
+      metricEnum?: string | null;
+      methodEnum?: string | null;
+      minkowskiP?: string | null;
+      maxEpsilon?: string | null;
+      algorithmEnum?: string | null;
+      xi?: string | null;
+      initEnum?: string | null;
+    };
+    /** ParameterizedGateNode */
+    ParameterizedGateNode: {
+      /** Id */
+      id: string;
+      /** Label */
+      label?: string | null;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: "gate-with-param";
+      /**
+       * Gate
+       * @enum {string}
+       */
+      gate:
+        | "rx"
+        | "ry"
+        | "rz"
+        | "p"
+        | "cp"
+        | "crx"
+        | "cry"
+        | "crz"
+        | "u1"
+        | "u2"
+        | "u3";
+      /** Parameter */
+      parameter: number;
+    };
+    /** PrepareStateNode */
+    PrepareStateNode: {
+      /** Id */
+      id: string;
+      /** Label */
+      label?: string | null;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: "prepare";
+      /**
+       * Quantumstate
+       * @enum {string}
+       */
+      quantumState:
+        | "ϕ+"
+        | "ϕ-"
+        | "ψ+"
+        | "ψ-"
+        | "custom"
+        | "ghz"
+        | "uniform"
+        | "w";
+      /** Size */
+      size: number;
+    };
+    /**
+     * Progress
+     * @description Models the progress of a compile request.
+     */
+    Progress: {
+      /** Percentage */
+      percentage: number;
+      /** Currentstep */
+      currentStep: string;
+    };
+    /** QubitNode */
+    QubitNode: {
+      /** Id */
+      id: string;
+      /** Label */
+      label?: string | null;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: "qubit";
+      /**
+       * Size
+       * @default 1
+       */
+      size?: number;
+    };
+    /** QAOANode */
+    QAOANode: {
+      /** Id */
+      id: string;
+      /** Label */
+      label?: string | null;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: "qaoa";
+      /** Layers */
+      p: number;
+      /** Problem */
+      problem: string;
+      /** Optimizer */
+      optimizer: string;
+      /** Edges string */
+      edges: string;
+      /** Gamma string */
+      gamma: string;
+      /** Beta string */
+      beta: string;
+      /** Output Identifier */
+      outputIdentifier: string;
+    };
+    /** RepeatNode */
+    RepeatNode: {
+      /** Id */
+      id: string;
+      /** Label */
+      label?: string | null;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: "repeat";
+      /** Iterations */
+      iterations: number;
+      block: components["schemas"]["NestedBlock"];
+    };
+    /** SplitterNode */
+    SplitterNode: {
+      /** Id */
+      id: string;
+      /** Label */
+      label?: string | null;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: "splitter";
+      /** Numberoutputs */
+      numberOutputs: number;
+    };
+    /** StringLiteralNode */
+    StringLiteralNode: {
+      /** Id */
+      id: string;
+      /** Label */
+      label?: string | null;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: "string";
+      /**
+       * Value
+       */
+      value: string;
+    };
+    /**
+     * StatusBody
+     * @description Models the status of a process.
+     */
+    StatusBody: {
+      /**
+       * Uuid
+       * Format: uuid
+       */
+      uuid: string;
+      status: components["schemas"]["StatusType"];
+      /** Createdat */
+      createdAt: string | null;
+      /** Completedat */
+      completedAt: string | null;
+      progress: components["schemas"]["Progress"] | null;
+      /** Result */
+      result: string | null;
+    };
+    /**
+     * StatusType
+     * @description Enumeration of possible status values.
+     * @enum {string}
+     */
+    StatusType: "in progress" | "failed" | "completed" | "unknown";
+    /** ValidationError */
+    ValidationError: {
+      /** Location */
+      loc: (string | number)[];
+      /** Message */
+      msg: string;
+      /** Error Type */
+      type: string;
+    };
+  };
+  responses: never;
+  parameters: never;
+  requestBodies: never;
+  headers: never;
+  pathItems: never;
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    compile_compile_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CompileRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
+  compile_compile_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    status_status__uuid__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                uuid: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["StatusBody"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CompileRequest"];
+      };
     };
-    result_result__uuid__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                uuid: string;
-            };
-            cookie?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "text/plain": string;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
+        content: {
+          "application/json": unknown;
         };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
     };
-    debug_compile_debug_compile_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CompileRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "text/plain": string;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
+  };
+  status_status__uuid__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        uuid: string;
+      };
+      cookie?: never;
     };
-    debug_enrich_debug_enrich_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CompileRequest"];
-            };
+        content: {
+          "application/json": components["schemas"]["StatusBody"];
         };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ImplementationNode"][] | string;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
         };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
     };
+  };
+  result_result__uuid__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        uuid: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "text/plain": string;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  debug_compile_debug_compile_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CompileRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "text/plain": string;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  debug_enrich_debug_enrich_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CompileRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json":
+            | components["schemas"]["ImplementationNode"][]
+            | string;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
 }

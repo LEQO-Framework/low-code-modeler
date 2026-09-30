@@ -13,7 +13,7 @@ function extractText(content: ChatContent): string {
   if (typeof content === "string") return content;
   if (Array.isArray(content)) {
     return content
-      .map((c) => (typeof c === "string" ? c : c.text ?? ""))
+      .map((c) => (typeof c === "string" ? c : (c.text ?? "")))
       .join("");
   }
   return "";
@@ -34,7 +34,7 @@ function safeJsonParse<T = any>(raw: string): T | null {
 // Deterministically converts the compact flows to circuit-lever flows
 async function convertCompactToCircuit(
   flow: any,
-  lowcodeBackendEndpoint: string
+  lowcodeBackendEndpoint: string,
 ): Promise<any> {
   console.log("Converting compact flow to circuit-level...");
 
@@ -46,87 +46,93 @@ async function convertCompactToCircuit(
     lowcodeBackendEndpoint
   );
   */
-  const openQASMCode = await startCompile(lowcodeBackendEndpoint, flow.metadata, flow.nodes, flow.edges, "qasm");
-  const response= await openQASMCode.json();
+  const openQASMCode = await startCompile(
+    lowcodeBackendEndpoint,
+    flow.metadata,
+    flow.nodes,
+    flow.edges,
+    "qasm",
+  );
+  const response = await openQASMCode.json();
   console.log("Generated OpenQASM:", openQASMCode);
 
   const uuid = response["uuid"];
-      let location = response["result"];
-      const statusUrl = `${lowcodeBackendEndpoint}/status/${uuid}`;
+  let location = response["result"];
+  const statusUrl = `${lowcodeBackendEndpoint}/status/${uuid}`;
 
-      console.log("Initial compile response:", response);
+  console.log("Initial compile response:", response);
 
-      // Polling function returns a Promise
-      const pollStatus = () => {
-        return new Promise<void>((resolve, reject) => {
-          let attempts = 0;
-          const maxAttempts = 20;
-          const delay = 10000;
+  // Polling function returns a Promise
+  const pollStatus = () => {
+    return new Promise<void>((resolve, reject) => {
+      let attempts = 0;
+      const maxAttempts = 20;
+      const delay = 10000;
 
-          const check = async () => {
-            try {
-              const statusResponse = await fetch(statusUrl, {
-                method: "GET",
-                headers: { "Content-Type": "application/json" },
-              });
+      const check = async () => {
+        try {
+          const statusResponse = await fetch(statusUrl, {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+          });
 
-              if (!statusResponse.ok) {
-                console.error("Status check failed:", statusResponse.status);
-                return reject("Status check failed");
-              }
+          if (!statusResponse.ok) {
+            console.error("Status check failed:", statusResponse.status);
+            return reject("Status check failed");
+          }
 
-              const statusData = await statusResponse.json();
-              console.log("Current status:", statusData.status);
-              //setStatus(statusData.status);
-              location = statusData["result"];
+          const statusData = await statusResponse.json();
+          console.log("Current status:", statusData.status);
+          //setStatus(statusData.status);
+          location = statusData["result"];
 
-              if (statusData.status === "completed") {
-                //showToast("Result for model " + id + " is available.", "success");
-                console.log("Operation completed successfully.");
-                return resolve();
-              }
+          if (statusData.status === "completed") {
+            //showToast("Result for model " + id + " is available.", "success");
+            console.log("Operation completed successfully.");
+            return resolve();
+          }
 
-              attempts++;
-              if (attempts < maxAttempts) {
-                setTimeout(check, delay);
-              } else {
-                console.error("Max polling attempts reached. Operation did not complete.");
-                //showToast("Max polling attempts for model " + id + " reached.", "error");
-                reject("Max polling attempts reached");
-              }
-            } catch (error) {
-              console.error("Error while polling status:", error);
-              reject(error);
-            }
-          };
-
-          check();
-        });
+          attempts++;
+          if (attempts < maxAttempts) {
+            setTimeout(check, delay);
+          } else {
+            console.error(
+              "Max polling attempts reached. Operation did not complete.",
+            );
+            //showToast("Max polling attempts for model " + id + " reached.", "error");
+            reject("Max polling attempts reached");
+          }
+        } catch (error) {
+          console.error("Error while polling status:", error);
+          reject(error);
+        }
       };
 
-      // Wait for polling to complete
-      await pollStatus();
+      check();
+    });
+  };
 
-      console.log("Fetching final result from:", location);
+  // Wait for polling to complete
+  await pollStatus();
 
-      const result = await fetch(location, {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-      });
+  console.log("Fetching final result from:", location);
 
-      // TODO: change for workflow
-      // TODO: add modals for service deployment
-      // TODO: add QRMS upload
-      const openqasmCode = await result.text();
-  
+  const result = await fetch(location, {
+    method: "GET",
+    headers: { "Content-Type": "application/json" },
+  });
+
+  // TODO: change for workflow
+  // TODO: add modals for service deployment
+  // TODO: add QRMS upload
+  const openqasmCode = await result.text();
+
   // Step 2: Convert OpenQASM back to a flow
   const circuitFlow = openQasmToFlow(openqasmCode);
   console.log("Converted circuit flow:", circuitFlow);
 
   return circuitFlow;
 }
-
-
 
 export async function sendToMistral(prompt: string, token: string) {
   const mistral = new Mistral({ apiKey: token });
@@ -278,9 +284,11 @@ export async function generateFlow(
     generationMode: "compact" | "circuit";
   },
   token: string,
-  lowcodeBackendEndpoint?: string // Add this parameter
+  lowcodeBackendEndpoint?: string, // Add this parameter
 ): Promise<any> {
-  const fetched_prompt = await fetch("/prompts/prompt_create_model_in_QLCM_Notation.txt");
+  const fetched_prompt = await fetch(
+    "/prompts/prompt_create_model_in_QLCM_Notation.txt",
+  );
   const systemPrompt = await fetched_prompt.text();
 
   const mistral = new Mistral({ apiKey: token });
@@ -319,8 +327,6 @@ export async function generateFlow(
   return null;
 }
 
-
-
 function qlcmNotationToJSON(qlcmNotation: string): string {
   if (!qlcmNotation) return "";
 
@@ -342,7 +348,6 @@ function qlcmNotationToJSON(qlcmNotation: string): string {
   //const generateId = () => `node-${Math.random().toString(36).substring(2, 9)}-${Date.now()}`;
   const generateId = () => crypto.randomUUID();
 
-
   // Step 1: Create nodes
   for (const block of blocks) {
     const nodeId = generateId();
@@ -363,7 +368,8 @@ function qlcmNotationToJSON(qlcmNotation: string): string {
         uncomputeImplementationType: "",
         uncomputeImplementation: "",
         completionGuaranteed: true,
-        compactOptions: nodeConfig.type === "statePreparationNode" ? [false] : [true, false],
+        compactOptions:
+          nodeConfig.type === "statePreparationNode" ? [false] : [true, false],
         identifiers: nodeConfig.identifiers,
         inputTypes: nodeConfig.inputTypes,
         outputTypes: nodeConfig.outputTypes,
@@ -371,7 +377,7 @@ function qlcmNotationToJSON(qlcmNotation: string): string {
       },
       width: nodeConfig.width,
       height: nodeConfig.height,
-      positionAbsolute: { x: 0, y: 0 }
+      positionAbsolute: { x: 0, y: 0 },
     };
     nodes.push(node);
   }
@@ -379,26 +385,31 @@ function qlcmNotationToJSON(qlcmNotation: string): string {
   // Step 2: Create edges
   for (const block of blocks) {
     const targetNodeId = nodeIdMap.get(block.id)!;
-    const targetNode = nodes.find(n => n.id === targetNodeId);
+    const targetNode = nodes.find((n) => n.id === targetNodeId);
     if (!targetNode) continue;
 
     for (let i = 0; i < block.inputs.length; i++) {
       const inputBlockId = block.inputs[i];
       const sourceNodeId = nodeIdMap.get(inputBlockId);
       if (!sourceNodeId) {
-        console.warn(`Input block ${inputBlockId} not found for block ${block.id}. Skipping edge.`);
+        console.warn(
+          `Input block ${inputBlockId} not found for block ${block.id}. Skipping edge.`,
+        );
         continue;
       }
 
-      const sourceNode = nodes.find(n => n.id === sourceNodeId);
+      const sourceNode = nodes.find((n) => n.id === sourceNodeId);
       if (!sourceNode) continue;
 
       // Skip invalid connections for state preparation
-      if (targetNode.data.label === "Basis Encoding" && sourceNode.type !== "dataTypeNode") {
+      if (
+        targetNode.data.label === "Basis Encoding" &&
+        sourceNode.type !== "dataTypeNode"
+      ) {
         continue;
       }
 
-      const sourceBlock = blocks.find(b => b.id === inputBlockId);
+      const sourceBlock = blocks.find((b) => b.id === inputBlockId);
       if (!sourceBlock) continue;
 
       if (!sourceBlock.outputs || sourceBlock.outputs.length === 0) {
@@ -408,7 +419,9 @@ function qlcmNotationToJSON(qlcmNotation: string): string {
       // Check if this block is in the outputs of the source block
       const isConnected = sourceBlock.outputs.includes(block.id);
       if (!isConnected) {
-        console.warn(`Block ${block.id} not found in outputs of ${sourceBlock.id}. Skipping edge.`);
+        console.warn(
+          `Block ${block.id} not found in outputs of ${sourceBlock.id}. Skipping edge.`,
+        );
         continue;
       }
 
@@ -419,7 +432,11 @@ function qlcmNotationToJSON(qlcmNotation: string): string {
       // Determine if this is a classical edge
       const isClassicalEdge = isClassicalConnection(sourceNode, targetNode);
 
-      const sourceHandle = getSourceHandle(sourceNode, isClassicalEdge, outputIndex);
+      const sourceHandle = getSourceHandle(
+        sourceNode,
+        isClassicalEdge,
+        outputIndex,
+      );
       const targetHandle = getTargetHandle(targetNode, i, isClassicalEdge);
 
       const edge = {
@@ -434,9 +451,9 @@ function qlcmNotationToJSON(qlcmNotation: string): string {
           width: 20,
           height: 20,
           color: isClassicalEdge ? "#F5A843" : "#93C5FD",
-          hidden: false
+          hidden: false,
         },
-        hidden: false
+        hidden: false,
       };
       edges.push(edge);
 
@@ -464,7 +481,7 @@ function qlcmNotationToJSON(qlcmNotation: string): string {
     author: "",
     containsPlaceholder: false,
     id: `flow-${Date.now()}`,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   };
 
   const result = {
@@ -474,8 +491,8 @@ function qlcmNotationToJSON(qlcmNotation: string): string {
     viewport: {
       x: 0,
       y: 0,
-      zoom: 1
-    }
+      zoom: 1,
+    },
   };
 
   return JSON.stringify(result, null, 2);
@@ -487,11 +504,11 @@ function isClassicalConnection(sourceNode: any, targetNode: any): boolean {
   const sourceIsClassical =
     sourceNode.type === "dataTypeNode" &&
     (sourceNode.data.dataType === "bit" ||
-     sourceNode.data.dataType === "Number" ||
-     sourceNode.data.dataType === "Boolean" ||
-     sourceNode.data.dataType === "Array" ||
-     sourceNode.data.dataType === "File" ||
-     sourceNode.data.dataType === "String");
+      sourceNode.data.dataType === "Number" ||
+      sourceNode.data.dataType === "Boolean" ||
+      sourceNode.data.dataType === "Array" ||
+      sourceNode.data.dataType === "File" ||
+      sourceNode.data.dataType === "String");
 
   // Check if target is a plugin node (like clustering)
   const targetIsPlugin = targetNode.type === "pluginNode";
@@ -502,10 +519,16 @@ function isClassicalConnection(sourceNode: any, targetNode: any): boolean {
   // Check if target is a state preparation node
   const targetIsStatePrep = targetNode.type === "statePreparationNode";
 
-  return sourceIsClassical || targetIsPlugin || sourceIsPlugin || targetIsStatePrep;
+  return (
+    sourceIsClassical || targetIsPlugin || sourceIsPlugin || targetIsStatePrep
+  );
 }
 
-function getSourceHandle(node: any, isClassical: boolean, outputIndex: number = 0): string {
+function getSourceHandle(
+  node: any,
+  isClassical: boolean,
+  outputIndex: number = 0,
+): string {
   if (isClassical) {
     if (node.type === "dataTypeNode") {
       return `classicalHandleDataTypeOutput${outputIndex}${node.id}`;
@@ -529,7 +552,11 @@ function getSourceHandle(node: any, isClassical: boolean, outputIndex: number = 
   }
 }
 
-function getTargetHandle(node: any, inputIndex: number, isClassical: boolean): string {
+function getTargetHandle(
+  node: any,
+  inputIndex: number,
+  isClassical: boolean,
+): string {
   if (isClassical) {
     if (node.type === "dataTypeNode") {
       return `classicalHandleDataTypeInput${inputIndex}${node.id}`;
@@ -555,24 +582,23 @@ function getTargetHandle(node: any, inputIndex: number, isClassical: boolean): s
   }
 }
 
-function getNodeConfig(
-  block: {
-    id: string;
-    step: string;
-    inputs: string[];
-    outputs: string[];
-    state?: string;
-    value?: string | number;
-    variant?: string;
-    inputs_classical?: string[];
-    inputs_quantum?: string[];
-    condition?: string;
-    thenBlocks?: any[];
-    elseBlocks?: any[];
-    number?: number;
-    repeat?: any[];
-  }) {
-  const identifiers = [block.id.toLowerCase().replace(/[^a-z0-9]/g, '')];
+function getNodeConfig(block: {
+  id: string;
+  step: string;
+  inputs: string[];
+  outputs: string[];
+  state?: string;
+  value?: string | number;
+  variant?: string;
+  inputs_classical?: string[];
+  inputs_quantum?: string[];
+  condition?: string;
+  thenBlocks?: any[];
+  elseBlocks?: any[];
+  number?: number;
+  repeat?: any[];
+}) {
+  const identifiers = [block.id.toLowerCase().replace(/[^a-z0-9]/g, "")];
 
   switch (block.step) {
     // --- Quantum Blocks ---
@@ -590,8 +616,8 @@ function getNodeConfig(
           numberQuantumInputs: 0,
           numberQuantumOutputs: block.outputs.length,
           numberClassicalInputs: 0,
-          numberClassicalOutputs: 0
-        }
+          numberClassicalOutputs: 0,
+        },
       };
     case "Hadamard":
       return {
@@ -607,8 +633,8 @@ function getNodeConfig(
           numberQuantumInputs: block.inputs.length,
           numberQuantumOutputs: block.outputs.length,
           numberClassicalInputs: 0,
-          numberClassicalOutputs: 0
-        }
+          numberClassicalOutputs: 0,
+        },
       };
     case "Z":
       return {
@@ -624,8 +650,8 @@ function getNodeConfig(
           numberQuantumInputs: block.inputs.length,
           numberQuantumOutputs: block.outputs.length,
           numberClassicalInputs: 0,
-          numberClassicalOutputs: 0
-        }
+          numberClassicalOutputs: 0,
+        },
       };
     case "CNOT":
       return {
@@ -641,8 +667,8 @@ function getNodeConfig(
           numberQuantumInputs: block.inputs.length,
           numberQuantumOutputs: block.outputs.length,
           numberClassicalInputs: 0,
-          numberClassicalOutputs: 0
-        }
+          numberClassicalOutputs: 0,
+        },
       };
 
     // --- Classical Data Types ---
@@ -664,8 +690,8 @@ function getNodeConfig(
           numberQuantumInputs: 0,
           numberQuantumOutputs: 0,
           numberClassicalInputs: 0,
-          numberClassicalOutputs: 1
-        }
+          numberClassicalOutputs: 1,
+        },
       };
     case "Number":
       return {
@@ -685,8 +711,8 @@ function getNodeConfig(
           numberQuantumInputs: 0,
           numberQuantumOutputs: 0,
           numberClassicalInputs: 0,
-          numberClassicalOutputs: 1
-        }
+          numberClassicalOutputs: 1,
+        },
       };
     case "Boolean":
       return {
@@ -706,8 +732,8 @@ function getNodeConfig(
           numberQuantumInputs: 0,
           numberQuantumOutputs: 0,
           numberClassicalInputs: 0,
-          numberClassicalOutputs: 1
-        }
+          numberClassicalOutputs: 1,
+        },
       };
     case "Array":
       return {
@@ -727,8 +753,8 @@ function getNodeConfig(
           numberQuantumInputs: 0,
           numberQuantumOutputs: 0,
           numberClassicalInputs: 0,
-          numberClassicalOutputs: 1
-        }
+          numberClassicalOutputs: 1,
+        },
       };
     case "String":
       return {
@@ -748,8 +774,8 @@ function getNodeConfig(
           numberQuantumInputs: 0,
           numberQuantumOutputs: 0,
           numberClassicalInputs: 0,
-          numberClassicalOutputs: 1
-        }
+          numberClassicalOutputs: 1,
+        },
       };
     case "File":
       return {
@@ -769,8 +795,8 @@ function getNodeConfig(
           numberQuantumInputs: 0,
           numberQuantumOutputs: 0,
           numberClassicalInputs: 0,
-          numberClassicalOutputs: 1
-        }
+          numberClassicalOutputs: 1,
+        },
       };
 
     // --- Operators ---
@@ -784,14 +810,19 @@ function getNodeConfig(
         width: 320,
         height: 375,
         data: {
-          operator: block.variant === "Addition" ? "+" :
-                   block.variant === "Subtraction" ? "-" :
-                   block.variant === "Division" ? "/" : "*",
+          operator:
+            block.variant === "Addition"
+              ? "+"
+              : block.variant === "Subtraction"
+                ? "-"
+                : block.variant === "Division"
+                  ? "/"
+                  : "*",
           numberQuantumInputs: block.inputs.length,
           numberQuantumOutputs: block.outputs.length,
           numberClassicalInputs: 0,
-          numberClassicalOutputs: 0
-        }
+          numberClassicalOutputs: 0,
+        },
       };
 
     // --- Encoding & Measurement ---
@@ -811,8 +842,8 @@ function getNodeConfig(
           numberQuantumInputs: 0,
           numberQuantumOutputs: 1,
           numberClassicalInputs: 1,
-          numberClassicalOutputs: 0
-        }
+          numberClassicalOutputs: 0,
+        },
       };
     case "Measurement":
       return {
@@ -828,13 +859,13 @@ function getNodeConfig(
           outputIdentifier: "",
           outputs: [
             { identifier: "", size: "", type: "classical" },
-            { identifier: "", size: "", type: "quantum" }
+            { identifier: "", size: "", type: "quantum" },
           ],
           numberQuantumInputs: 1,
           numberQuantumOutputs: 1,
           numberClassicalInputs: 0,
-          numberClassicalOutputs: 1
-        }
+          numberClassicalOutputs: 1,
+        },
       };
 
     // --- State Preparation ---
@@ -845,13 +876,19 @@ function getNodeConfig(
         BellPhiMinus: { name: "Bell State φ-", size: "2" },
         BellPsiPlus: { name: "Bell State ψ+", size: "2" },
         BellPsiMinus: { name: "Bell State ψ-", size: "2" },
-        UniformSuperposition: { name: "Uniform Superposition", size: block.value ? block.value.toString() : "" },
+        UniformSuperposition: {
+          name: "Uniform Superposition",
+          size: block.value ? block.value.toString() : "",
+        },
         GHZ: { name: "GHZ", size: block.value ? block.value.toString() : "" },
         W: { name: "W State", size: block.value ? block.value.toString() : "" },
         One: { name: "|1⟩", size: block.value ? block.value.toString() : "" },
         Plus: { name: "|+⟩", size: block.value ? block.value.toString() : "" },
         Minus: { name: "|-⟩", size: block.value ? block.value.toString() : "" },
-        Custom: { name: "Custom State", size: block.value ? block.value.toString() : "" }
+        Custom: {
+          name: "Custom State",
+          size: block.value ? block.value.toString() : "",
+        },
       };
       const mappedState = stateMapping[prepareState] || stateMapping.Custom;
       return {
@@ -866,12 +903,14 @@ function getNodeConfig(
           quantumStateName: mappedState.name,
           size: mappedState.size,
           outputIdentifier: "",
-          outputs: [{ identifier: "", size: mappedState.size, type: "quantum" }],
+          outputs: [
+            { identifier: "", size: mappedState.size, type: "quantum" },
+          ],
           numberQuantumInputs: block.inputs.length,
           numberQuantumOutputs: 1,
           numberClassicalInputs: 0,
-          numberClassicalOutputs: 0
-        }
+          numberClassicalOutputs: 0,
+        },
       };
 
     // --- Clustering Blocks ---
@@ -896,22 +935,22 @@ function getNodeConfig(
               parameter: "entityPointsUrl",
               data_type: "entity/vector",
               content_type: ["application/json", "text/csv"],
-              required: true
+              required: true,
             },
             {
               parameter: "numberOfClusters",
               data_type: "int",
               content_type: ["text/plain"],
-              required: true
-            }
+              required: true,
+            },
           ],
           dataOutputs: [
             {
               name: "Cluster Labels",
               data_type: "entity/label",
               content_type: ["application/json"],
-              required: true
-            }
+              required: true,
+            },
           ],
           inputs: [],
           children: [],
@@ -923,8 +962,8 @@ function getNodeConfig(
           numberQuantumInputs: 0,
           numberQuantumOutputs: 0,
           numberClassicalInputs: 2,
-          numberClassicalOutputs: 1
-        }
+          numberClassicalOutputs: 1,
+        },
       };
     case "ClassicalClustering":
       return {
@@ -947,34 +986,34 @@ function getNodeConfig(
               parameter: "entityPointsUrl",
               data_type: "entity/vector",
               content_type: ["application/json", "text/csv"],
-              required: true
+              required: true,
             },
             {
               parameter: "numberOfClusters",
               data_type: "int",
               content_type: ["text/plain"],
-              required: true
+              required: true,
             },
             {
               parameter: "relativeResidual",
               data_type: "float",
               content_type: ["text/plain"],
-              required: true
+              required: true,
             },
             {
               parameter: "maxIterations",
               data_type: "int",
               content_type: ["text/plain"],
-              required: true
-            }
+              required: true,
+            },
           ],
           dataOutputs: [
             {
               name: "Cluster Labels",
               data_type: "entity/label",
               content_type: ["application/json"],
-              required: true
-            }
+              required: true,
+            },
           ],
           inputs: [],
           children: [],
@@ -986,8 +1025,8 @@ function getNodeConfig(
           numberQuantumInputs: 0,
           numberQuantumOutputs: 0,
           numberClassicalInputs: 4,
-          numberClassicalOutputs: 1
-        }
+          numberClassicalOutputs: 1,
+        },
       };
 
     // --- Control Flow ---
@@ -1008,8 +1047,8 @@ function getNodeConfig(
           numberQuantumInputs: 1,
           numberQuantumOutputs: 1,
           numberClassicalInputs: 1,
-          numberClassicalOutputs: 0
-        }
+          numberClassicalOutputs: 0,
+        },
       };
     case "Repeat":
       return {
@@ -1028,8 +1067,8 @@ function getNodeConfig(
           numberQuantumInputs: 1,
           numberQuantumOutputs: 1,
           numberClassicalInputs: 1,
-          numberClassicalOutputs: 0
-        }
+          numberClassicalOutputs: 0,
+        },
       };
 
     // --- Default ---
@@ -1046,8 +1085,8 @@ function getNodeConfig(
           numberQuantumInputs: block.inputs.length,
           numberQuantumOutputs: block.outputs.length,
           numberClassicalInputs: 0,
-          numberClassicalOutputs: 0
-        }
+          numberClassicalOutputs: 0,
+        },
       };
   }
 }
@@ -1055,18 +1094,18 @@ function getNodeConfig(
 function assignPositions(nodes: any[], edges: any[]) {
   const adjacency: Record<string, string[]> = {};
   const inDegree: Record<string, number> = {};
-  nodes.forEach(node => {
+  nodes.forEach((node) => {
     adjacency[node.id] = [];
     inDegree[node.id] = 0;
   });
-  edges.forEach(edge => {
+  edges.forEach((edge) => {
     adjacency[edge.source].push(edge.target);
     inDegree[edge.target]++;
   });
 
   const depth: Record<string, number> = {};
   const queue: string[] = [];
-  nodes.forEach(node => {
+  nodes.forEach((node) => {
     if (inDegree[node.id] === 0) {
       queue.push(node.id);
       depth[node.id] = 0;
@@ -1085,7 +1124,7 @@ function assignPositions(nodes: any[], edges: any[]) {
   }
 
   const layers: Record<number, string[]> = {};
-  nodes.forEach(node => {
+  nodes.forEach((node) => {
     const d = depth[node.id];
     if (!layers[d]) layers[d] = [];
     layers[d].push(node.id);
@@ -1102,11 +1141,11 @@ function assignPositions(nodes: any[], edges: any[]) {
     const prevLayer = orderedLayers[d - 1];
 
     const barycenters: Record<string, number> = {};
-    currentLayer.forEach(nodeId => {
-      const incomingEdges = edges.filter(e => e.target === nodeId);
+    currentLayer.forEach((nodeId) => {
+      const incomingEdges = edges.filter((e) => e.target === nodeId);
       let sum = 0;
       let count = 0;
-      incomingEdges.forEach(edge => {
+      incomingEdges.forEach((edge) => {
         const sourceIndex = prevLayer.indexOf(edge.source);
         if (sourceIndex !== -1) {
           sum += sourceIndex;
@@ -1128,14 +1167,14 @@ function assignPositions(nodes: any[], edges: any[]) {
   for (const d in layers) {
     const layer = layers[d];
     let maxHeight = 0;
-    layer.forEach(nodeId => {
-      const node = nodes.find(n => n.id === nodeId)!;
+    layer.forEach((nodeId) => {
+      const node = nodes.find((n) => n.id === nodeId)!;
       if (node.height > maxHeight) maxHeight = node.height;
     });
     layerHeights[d] = maxHeight;
   }
 
-  nodes.forEach(node => {
+  nodes.forEach((node) => {
     const d = depth[node.id];
     const layer = orderedLayers[d];
     const indexInLayer = layer.indexOf(node.id);
@@ -1143,12 +1182,12 @@ function assignPositions(nodes: any[], edges: any[]) {
     let y = 0;
     for (let i = 0; i < indexInLayer; i++) {
       const prevNodeId = layer[i];
-      const prevNode = nodes.find(n => n.id === prevNodeId)!;
+      const prevNode = nodes.find((n) => n.id === prevNodeId)!;
       y += prevNode.height + baseNodeSpacing;
     }
 
     // Add additional vertical spacing for data type nodes to prevent overlap
-    const nodeData = nodes.find(n => n.id === node.id);
+    const nodeData = nodes.find((n) => n.id === node.id);
     if (nodeData && nodeData.type === "dataTypeNode") {
       y += 20; // Extra spacing for data type nodes
     }
@@ -1203,9 +1242,9 @@ function parseQLCMNotation(qlcmNotation: string): Array<{
   let depth = 0;
   let start = 0;
   for (let i = 0; i < innerContent.length; i++) {
-    if (innerContent[i] === '[') depth++;
-    if (innerContent[i] === ']') depth--;
-    if (depth === 0 && innerContent[i] === ',') {
+    if (innerContent[i] === "[") depth++;
+    if (innerContent[i] === "]") depth--;
+    if (depth === 0 && innerContent[i] === ",") {
       const blockStr = innerContent.slice(start, i).trim();
       if (blockStr) {
         const parsedBlock = parseSingleBlock(`[${blockStr}]`);
@@ -1232,7 +1271,9 @@ function parseSingleBlock(blockStr: string): any {
   const stateMatch = blockStr.match(/state:\s*"([^"]+)"/);
   const valueMatch = blockStr.match(/value:\s*"([^"]+)"|value:\s*([^\s,[\]]+)/);
   const variantMatch = blockStr.match(/variant:\s*"([^"]+)"/);
-  const inputsClassicalMatch = blockStr.match(/inputs_classical:\s*\[([^\]]*)\]/);
+  const inputsClassicalMatch = blockStr.match(
+    /inputs_classical:\s*\[([^\]]*)\]/,
+  );
   const inputsQuantumMatch = blockStr.match(/inputs_quantum:\s*\[([^\]]*)\]/);
   const conditionMatch = blockStr.match(/condition:\s*"([^"]+)"/);
   const numberMatch = blockStr.match(/number:\s*(\d+)/);
@@ -1242,16 +1283,16 @@ function parseSingleBlock(blockStr: string): any {
 
   const inputs = inputsMatch
     ? inputsMatch[1]
-      .split(',')
-      .map(s => s.trim().replace(/[[\]"]/g, ''))
-      .filter(s => s)
+        .split(",")
+        .map((s) => s.trim().replace(/[[\]"]/g, ""))
+        .filter((s) => s)
     : [];
 
   const outputs = outputsMatch
     ? outputsMatch[1]
-      .split(',')
-      .map(s => s.trim().replace(/[[\]"]/g, ''))
-      .filter(s => s)
+        .split(",")
+        .map((s) => s.trim().replace(/[[\]"]/g, ""))
+        .filter((s) => s)
     : [];
 
   const state = stateMatch ? stateMatch[1] : undefined;
@@ -1270,16 +1311,16 @@ function parseSingleBlock(blockStr: string): any {
 
   const inputs_classical = inputsClassicalMatch
     ? inputsClassicalMatch[1]
-      .split(',')
-      .map(s => s.trim().replace(/[[\]"]/g, ''))
-      .filter(s => s)
+        .split(",")
+        .map((s) => s.trim().replace(/[[\]"]/g, ""))
+        .filter((s) => s)
     : [];
 
   const inputs_quantum = inputsQuantumMatch
     ? inputsQuantumMatch[1]
-      .split(',')
-      .map(s => s.trim().replace(/[[\]"]/g, ''))
-      .filter(s => s)
+        .split(",")
+        .map((s) => s.trim().replace(/[[\]"]/g, ""))
+        .filter((s) => s)
     : [];
 
   const condition = conditionMatch ? conditionMatch[1] : undefined;
@@ -1291,7 +1332,9 @@ function parseSingleBlock(blockStr: string): any {
   let repeatBlocks: any[] = [];
 
   // Use a more robust regex to capture nested blocks
-  const thenMatch = blockStr.match(/thenBlocks:\s*\[([\s\S]*?)(?=\s*elseBlocks:\s*\[|\s*\]\s*$)/);
+  const thenMatch = blockStr.match(
+    /thenBlocks:\s*\[([\s\S]*?)(?=\s*elseBlocks:\s*\[|\s*\]\s*$)/,
+  );
   if (thenMatch) {
     try {
       const thenContent = `[${thenMatch[1].trim()}]`;
@@ -1335,11 +1378,13 @@ function parseSingleBlock(blockStr: string): any {
     number,
     thenBlocks: thenBlocks,
     elseBlocks: elseBlocks,
-    repeat: repeatBlocks
+    repeat: repeatBlocks,
   };
 }
 
-function hasCycle(blocks: Array<{ id: string; inputs: string[]; outputs: string[] }>): boolean {
+function hasCycle(
+  blocks: Array<{ id: string; inputs: string[]; outputs: string[] }>,
+): boolean {
   const visited = new Set<string>();
   const recursionStack = new Set<string>();
 
@@ -1350,7 +1395,7 @@ function hasCycle(blocks: Array<{ id: string; inputs: string[]; outputs: string[
     visited.add(blockId);
     recursionStack.add(blockId);
 
-    const block = blocks.find(b => b.id === blockId);
+    const block = blocks.find((b) => b.id === blockId);
     if (!block) return false;
 
     for (const inputId of block.inputs) {
@@ -1367,20 +1412,26 @@ function hasCycle(blocks: Array<{ id: string; inputs: string[]; outputs: string[
   return false;
 }
 
-function validateBlocks(blocks: Array<{ id: string; inputs: string[]; outputs: string[] }>): boolean {
-  const blockIds = new Set(blocks.map(b => b.id));
+function validateBlocks(
+  blocks: Array<{ id: string; inputs: string[]; outputs: string[] }>,
+): boolean {
+  const blockIds = new Set(blocks.map((b) => b.id));
 
   for (const block of blocks) {
     // Check for self-references
     if (block.inputs.includes(block.id) || block.outputs.includes(block.id)) {
-      console.error(`❌ Block ${block.id} references itself in inputs or outputs.`);
+      console.error(
+        `❌ Block ${block.id} references itself in inputs or outputs.`,
+      );
       return false;
     }
 
     // Check for invalid input references
     for (const inputId of block.inputs) {
       if (!blockIds.has(inputId)) {
-        console.error(`❌ Block ${block.id} references non-existent input: ${inputId}. Available blocks: ${Array.from(blockIds).join(", ")}`);
+        console.error(
+          `❌ Block ${block.id} references non-existent input: ${inputId}. Available blocks: ${Array.from(blockIds).join(", ")}`,
+        );
         return false;
       }
     }
@@ -1388,7 +1439,9 @@ function validateBlocks(blocks: Array<{ id: string; inputs: string[]; outputs: s
     // Check for invalid output references
     for (const outputId of block.outputs) {
       if (!blockIds.has(outputId)) {
-        console.error(`❌ Block ${block.id} references non-existent output: ${outputId}. Available blocks: ${Array.from(blockIds).join(", ")}`);
+        console.error(
+          `❌ Block ${block.id} references non-existent output: ${outputId}. Available blocks: ${Array.from(blockIds).join(", ")}`,
+        );
         return false;
       }
     }

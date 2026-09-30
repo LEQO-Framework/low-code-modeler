@@ -2,12 +2,12 @@ import { useState, useMemo } from "react";
 import { Node, Edge, MarkerType } from "reactflow";
 import { v4 as uuidv4 } from "uuid";
 import Modal from "./Modal";
-import { 
-  TESTABLE_NODE_REGISTRY, 
-  TestableNodeSpec, 
-  resolvePool, 
-  EDITABLE_NODE_TYPE, 
-  TEST_EDGE_TYPE 
+import {
+  TESTABLE_NODE_REGISTRY,
+  TestableNodeSpec,
+  resolvePool,
+  EDITABLE_NODE_TYPE,
+  TEST_EDGE_TYPE,
 } from "./testingSpecs";
 
 import { categories, CategoryEntry } from "../panels/categories";
@@ -21,11 +21,8 @@ interface TestingModalProps {
 
 function generateFlow(nodes) {
   // generate positions
-
   // generate edges
-
   // generate metadata
-
   // generate dict/json file of flow
 }
 
@@ -51,7 +48,7 @@ function extractNodeLabels(content: any): Record<string, string> {
 // --- Pairwise Generator (Heuristic) ---
 function generatePairwise<T>(pools: T[][]): T[][] {
   if (pools.length === 0) return [[]];
-  if (pools.length === 1) return pools[0].map(v => [v]);
+  if (pools.length === 1) return pools[0].map((v) => [v]);
 
   // Seed with cartesian product of first two pools to guarantee pairs
   let results: T[][] = [];
@@ -65,7 +62,7 @@ function generatePairwise<T>(pools: T[][]): T[][] {
   for (let i = 2; i < pools.length; i++) {
     const currentPool = pools[i];
     const newResults: T[][] = [];
-    
+
     results.forEach((row, rowIndex) => {
       const valueToAssign = currentPool[rowIndex % currentPool.length];
       newResults.push([...row, valueToAssign]);
@@ -74,8 +71,8 @@ function generatePairwise<T>(pools: T[][]): T[][] {
     // Expand rows if the current pool is larger than the existing result matrix
     if (currentPool.length > results.length) {
       for (let j = results.length; j < currentPool.length; j++) {
-         const fallbackRow = results[0].slice(); 
-         newResults.push([...fallbackRow, currentPool[j]]);
+        const fallbackRow = results[0].slice();
+        newResults.push([...fallbackRow, currentPool[j]]);
       }
     }
     results = newResults;
@@ -92,7 +89,6 @@ export interface GeneratedTestFlow {
   descriptionLines: string[];
 }
 
-
 function buildOutputHandleId(node: Node, index = 0): string {
   const kind = node.data?.isDataType ? "classical" : "quantum";
   return `${kind}Output${index}${node.id}`;
@@ -101,7 +97,7 @@ function buildOutputHandleId(node: Node, index = 0): string {
 function describeFlow(
   spec: TestableNodeSpec,
   optionValues: Record<string, string | number>,
-  inputValues: Record<string, string>
+  inputValues: Record<string, string>,
 ): string[] {
   const lines: string[] = [];
   spec.options.forEach((opt) => {
@@ -124,13 +120,17 @@ function describeFlow(
   return lines;
 }
 
-export function generateTestFlows(spec: TestableNodeSpec): { flows: GeneratedTestFlow[]; truncated: boolean } {
+export function generateTestFlows(spec: TestableNodeSpec): {
+  flows: GeneratedTestFlow[];
+  truncated: boolean;
+} {
   const baselineOptions: Record<string, string | number> = {};
   spec.options.forEach((opt) => (baselineOptions[opt.key] = opt.values[0]));
 
   const baselineInputs: Record<string, string> = {};
   spec.inputs.forEach((inp) => {
-    baselineInputs[inp.key] = resolvePool(inp.dataTypeKey, baselineOptions)[0] ?? "";
+    baselineInputs[inp.key] =
+      resolvePool(inp.dataTypeKey, baselineOptions)[0] ?? "";
   });
 
   const flows: GeneratedTestFlow[] = [];
@@ -139,8 +139,10 @@ export function generateTestFlows(spec: TestableNodeSpec): { flows: GeneratedTes
 
   const optionKeys = spec.options.map((o) => o.key);
   // Using Pairwise instead of Cartesian
-  let optionCombos = spec.options.length ? generatePairwise(spec.options.map((o) => o.values)) : [[]];
-  
+  let optionCombos = spec.options.length
+    ? generatePairwise(spec.options.map((o) => o.values))
+    : [[]];
+
   const MAX_OPTION_COMBOS = 60;
   if (optionCombos.length > MAX_OPTION_COMBOS) {
     optionCombos = optionCombos.slice(0, MAX_OPTION_COMBOS);
@@ -153,7 +155,8 @@ export function generateTestFlows(spec: TestableNodeSpec): { flows: GeneratedTes
 
     const inputValues: Record<string, string> = {};
     spec.inputs.forEach((inp) => {
-      inputValues[inp.key] = resolvePool(inp.dataTypeKey, optionValues)[0] ?? "";
+      inputValues[inp.key] =
+        resolvePool(inp.dataTypeKey, optionValues)[0] ?? "";
     });
 
     flows.push({
@@ -169,7 +172,7 @@ export function generateTestFlows(spec: TestableNodeSpec): { flows: GeneratedTes
   spec.inputs.forEach((inp) => {
     const pool = resolvePool(inp.dataTypeKey, baselineOptions);
     pool.forEach((value) => {
-      if (value === baselineInputs[inp.key]) return; 
+      if (value === baselineInputs[inp.key]) return;
       const inputValues = { ...baselineInputs, [inp.key]: value };
       flows.push({
         id: uuidv4(),
@@ -194,7 +197,6 @@ export interface GeneratedTestFlow {
   descriptionLines: string[];
 }
 
-
 /**
  * Builds a complete test flow JSON object matching testflow_example.json.
  * Works generically for any TestableNodeSpec registered.
@@ -202,7 +204,7 @@ export interface GeneratedTestFlow {
 function buildCanvasFlow(
   spec: TestableNodeSpec,
   flow: GeneratedTestFlow,
-  anchor: { x: number; y: number }
+  anchor: { x: number; y: number },
 ): { flowObj: any; nodes: Node[]; edges: Edge[] } {
   const mainId = uuidv4();
   const mainIdentifiers = ["q" + Math.floor(100000 + Math.random() * 900000)];
@@ -216,8 +218,10 @@ function buildCanvasFlow(
     const edgeId = uuidv4();
     const rawValue = flow.inputValues[inp.key] ?? "";
     const outputId = String.fromCharCode(97 + (i % 26)); // e.g. 'e', 'g', 'b'
-    const inputNodeIdentifiers = ["q" + Math.floor(100000 + Math.random() * 900000)];
-    
+    const inputNodeIdentifiers = [
+      "q" + Math.floor(100000 + Math.random() * 900000),
+    ];
+
     let actualDataType = inp.dataTypeKey.split(":")[0];
     let actualValue = rawValue;
 
@@ -227,8 +231,10 @@ function buildCanvasFlow(
       actualValue = parts.slice(1).join("|");
     }
 
-    const capitalizedType = actualDataType.charAt(0).toUpperCase() + actualDataType.slice(1);
-    const inputNodeLabel = actualDataType === "array" ? "Array" : capitalizedType;
+    const capitalizedType =
+      actualDataType.charAt(0).toUpperCase() + actualDataType.slice(1);
+    const inputNodeLabel =
+      actualDataType === "array" ? "Array" : capitalizedType;
 
     const targetHandle = inp.targetHandle(mainId);
     const sourceHandle = `classicalHandleDataTypeOutput0${inputId}`;
@@ -309,8 +315,10 @@ function buildCanvasFlow(
     draggable: true,
     data: {
       label: spec.defaultData?.label || spec.label,
-      description: spec.defaultData?.description || "State preparation / encoding node",
-      icon: spec.defaultData?.icon || `PaletteIcon_${spec.id.toUpperCase()}.png`,
+      description:
+        spec.defaultData?.description || "State preparation / encoding node",
+      icon:
+        spec.defaultData?.icon || `PaletteIcon_${spec.id.toUpperCase()}.png`,
       children: [],
       implementation: "",
       implementationType: "",
@@ -351,19 +359,26 @@ function buildCanvasFlow(
   return { flowObj, nodes: allNodes, edges };
 }
 
-
-
 type Row = GeneratedTestFlow & { selected: boolean };
 
-export const TestingModal = ({ open, onClose, existingNodes = [], onAddFlowToCanvas }: TestingModalProps) => {
-  const testableSpecs = TESTABLE_NODE_REGISTRY.filter((s) => s.inputs.length > 0);
+export const TestingModal = ({
+  open,
+  onClose,
+  existingNodes = [],
+  onAddFlowToCanvas,
+}: TestingModalProps) => {
+  const testableSpecs = TESTABLE_NODE_REGISTRY.filter(
+    (s) => s.inputs.length > 0,
+  );
 
   // Dynamically extract node labels from existing canvas nodes
   const dynamicNodeLabels = useMemo(() => {
     return extractNodeLabels(categories);
   }, [categories]);
 
-  const [selectedSpecId, setSelectedSpecId] = useState(testableSpecs[0]?.id ?? "");
+  const [selectedSpecId, setSelectedSpecId] = useState(
+    testableSpecs[0]?.id ?? "",
+  );
   const [rows, setRows] = useState<Row[]>([]);
   const [truncated, setTruncated] = useState(false);
   const [placedCount, setPlacedCount] = useState(0);
@@ -376,11 +391,16 @@ export const TestingModal = ({ open, onClose, existingNodes = [], onAddFlowToCan
     setRows(flows.map((f, index) => ({ ...f, selected: index === 0 })));
   };
 
-
   const anchorFor = (offsetIndex: number) => {
     const fallbackWidth = 320;
     const maxX = existingNodes.length
-      ? Math.max(...existingNodes.map((n) => n.position.x + (typeof n.width === "number" ? n.width : fallbackWidth)))
+      ? Math.max(
+          ...existingNodes.map(
+            (n) =>
+              n.position.x +
+              (typeof n.width === "number" ? n.width : fallbackWidth),
+          ),
+        )
       : 0;
     const rowHeight = (selectedSpec?.height ?? 550) + 100;
     return { x: maxX + 400, y: 80 + offsetIndex * rowHeight };
@@ -389,7 +409,13 @@ export const TestingModal = ({ open, onClose, existingNodes = [], onAddFlowToCan
   const getAnchor = () => {
     const fallbackWidth = 320;
     const maxX = existingNodes.length
-      ? Math.max(...existingNodes.map((n) => n.position.x + (typeof n.width === "number" ? n.width : fallbackWidth)))
+      ? Math.max(
+          ...existingNodes.map(
+            (n) =>
+              n.position.x +
+              (typeof n.width === "number" ? n.width : fallbackWidth),
+          ),
+        )
       : 0;
     const rowHeight = (selectedSpec?.height ?? 550) + 100;
     return { x: maxX + 400, y: 80 };
@@ -399,17 +425,17 @@ export const TestingModal = ({ open, onClose, existingNodes = [], onAddFlowToCan
     if (!selectedSpec) return;
     const { flowObj } = buildCanvasFlow(selectedSpec, flow, getAnchor());
     onAddFlowToCanvas(flowObj);
-    console.log("placed flow", flowObj)
+    console.log("placed flow", flowObj);
   };
 
   // CHANGED: Places flow and marks this row as generated (setting checkmark)
   const handleGenerateOne = (flow: GeneratedTestFlow) => {
     placeFlow(flow, placedCount);
     setPlacedCount((c) => c + 1);
-    
+
     // Set checkmark for this specific flow
     setRows((prev) =>
-      prev.map((r) => (r.id === flow.id ? { ...r, generated: true } : r))
+      prev.map((r) => (r.id === flow.id ? { ...r, generated: true } : r)),
     );
   };
 
@@ -420,7 +446,9 @@ export const TestingModal = ({ open, onClose, existingNodes = [], onAddFlowToCan
   };
 
   const toggleRow = (id: string) => {
-    setRows((prev) => prev.map((r) => (r.id === id ? { ...r, selected: !r.selected } : r)));
+    setRows((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, selected: !r.selected } : r)),
+    );
   };
 
   const toggleAll = (value: boolean) => {
@@ -428,7 +456,9 @@ export const TestingModal = ({ open, onClose, existingNodes = [], onAddFlowToCan
   };
 
   const selectedCount = rows.filter((r) => r.selected).length;
-  const optionCount = rows.filter((r) => r.category === "option coverage").length;
+  const optionCount = rows.filter(
+    (r) => r.category === "option coverage",
+  ).length;
   const inputCount = rows.filter((r) => r.category === "input coverage").length;
 
   return (
@@ -459,7 +489,9 @@ export const TestingModal = ({ open, onClose, existingNodes = [], onAddFlowToCan
                     setRows([]);
                   }}
                 >
-                  {testableSpecs.length === 0 && <option value="">No testable nodes registered</option>}
+                  {testableSpecs.length === 0 && (
+                    <option value="">No testable nodes registered</option>
+                  )}
                   {testableSpecs.map((s) => (
                     <option key={s.id} value={s.id}>
                       {s.label}
@@ -472,7 +504,11 @@ export const TestingModal = ({ open, onClose, existingNodes = [], onAddFlowToCan
         </table>
 
         <div className="mt-3">
-          <button className="btn btn-primary" onClick={handleGenerate} disabled={!selectedSpec}>
+          <button
+            className="btn btn-primary"
+            onClick={handleGenerate}
+            disabled={!selectedSpec}
+          >
             Generate Test Cases
           </button>
         </div>
@@ -518,13 +554,24 @@ export const TestingModal = ({ open, onClose, existingNodes = [], onAddFlowToCan
                   {rows.map((row) => (
                     <tr key={row.id} className="align-top">
                       <td className="p-2 border text-center">
-                        <input type="checkbox" checked={row.selected} onChange={() => toggleRow(row.id)} />
+                        <input
+                          type="checkbox"
+                          checked={row.selected}
+                          onChange={() => toggleRow(row.id)}
+                        />
                       </td>
-                      <td className="p-2 border text-sm font-medium whitespace-nowrap">{row.name}</td>
-                      <td className="p-2 border text-xs whitespace-pre-line">{row.descriptionLines.join("\n")}</td>
+                      <td className="p-2 border text-sm font-medium whitespace-nowrap">
+                        {row.name}
+                      </td>
+                      <td className="p-2 border text-xs whitespace-pre-line">
+                        {row.descriptionLines.join("\n")}
+                      </td>
                       {/*<td className="p-2 border text-xs text-gray-500">{row.category}</td>*/}
                       <td className="p-2 border text-center">
-                        <button className="btn btn-secondary text-xs" onClick={() => handleGenerateOne(row)}>
+                        <button
+                          className="btn btn-secondary text-xs"
+                          onClick={() => handleGenerateOne(row)}
+                        >
                           Generate on Canvas
                         </button>
                       </td>

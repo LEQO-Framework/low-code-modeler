@@ -22,9 +22,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q740463"
-        ]
+        "identifiers": ["q740463"]
       },
       "width": 100,
       "height": 100,
@@ -47,9 +45,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q982716"
-        ]
+        "identifiers": ["q982716"]
       },
       "width": 100,
       "height": 100,
@@ -71,18 +67,14 @@
         "inputs": [
           {
             "id": "newNode2",
-            "identifiers": [
-              "q740463"
-            ]
+            "identifiers": ["q740463"]
           }
         ],
         "implementation": "OPENQASM 3.0;\ninclude \"stdgates.inc\";\n@leqo.input 0\nqubit[1] q;\nh q[0];\n@leqo.output 0\nlet output = q;",
         "implementationType": "openqasm3",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q930584"
-        ]
+        "identifiers": ["q930584"]
       },
       "width": 100,
       "height": 100,
@@ -104,25 +96,18 @@
         "inputs": [
           {
             "id": "newNode3",
-            "identifiers": [
-              "q982716"
-            ]
+            "identifiers": ["q982716"]
           },
           {
             "id": "newNode4",
-            "identifiers": [
-              "q930584"
-            ]
+            "identifiers": ["q930584"]
           }
         ],
         "implementation": "OPENQASM 3.0;\ninclude \"stdgates.inc\";\n@leqo.input 0\nqubit[1] q0;\n@leqo.input 0\nqubit[1] q1;\ncx q0, q1;\n@leqo.output 0\nlet output0 = q0;\n@leqo.output 1\nlet output1 = q1;",
         "implementationType": "openqasm3",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q181688",
-          "q690551"
-        ]
+        "identifiers": ["q181688", "q690551"]
       },
       "width": 100,
       "height": 100,
@@ -144,19 +129,14 @@
         "inputs": [
           {
             "id": "newNode5",
-            "identifiers": [
-              "q181688",
-              "q690551"
-            ]
+            "identifiers": ["q181688", "q690551"]
           }
         ],
         "implementation": "",
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q954787"
-        ],
+        "identifiers": ["q954787"],
         "indices": "0",
         "outputIdentifier": ""
       },
@@ -180,19 +160,14 @@
         "inputs": [
           {
             "id": "newNode5",
-            "identifiers": [
-              "q181688",
-              "q690551"
-            ]
+            "identifiers": ["q181688", "q690551"]
           }
         ],
         "implementation": "",
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q937908"
-        ],
+        "identifiers": ["q937908"],
         "indices": "1",
         "outputIdentifier": ""
       },

@@ -54,11 +54,13 @@ export const IfElseNode = memo((node: Node) => {
   console.log("classicalHandles", classicalHandles);
 
   const [quantumOutputHandles, setQuantumOutputHandles] = useState([0]);
-  const [_quantumOutputHandlesElse, setQuantumOutputHandlesElse] = useState([0]);
-  const [classicalOutputHandles, setClassicalOutputHandles] = useState([0]);
-  const [_classicalOutputHandlesElse, setClassicalOutputHandlesElse] = useState([
+  const [_quantumOutputHandlesElse, setQuantumOutputHandlesElse] = useState([
     0,
   ]);
+  const [classicalOutputHandles, setClassicalOutputHandles] = useState([0]);
+  const [_classicalOutputHandlesElse, setClassicalOutputHandlesElse] = useState(
+    [0],
+  );
   const [collapsed, setColllapsed] = useState(false);
 
   const collapseParent = () => {

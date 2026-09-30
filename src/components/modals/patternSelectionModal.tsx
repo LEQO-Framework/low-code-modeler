@@ -8,7 +8,7 @@ interface PatternSelectionModalProps {
     patternId: string,
     patternName: string,
     selectedImplementationId?: string,
-    solutionId?: string
+    solutionId?: string,
   ) => void;
 }
 
@@ -18,28 +18,38 @@ export const PatternSelectionModal = ({
   onConfirm,
 }: PatternSelectionModalProps) => {
   const [patterns, setPatterns] = useState<any[]>([]);
-  const [selectedPatternId, setSelectedPatternId] = useState<string | null>(null);
-  const [selectedPatternName, setSelectedPatternName] = useState<string | null>(null);
-  const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({});
+  const [selectedPatternId, setSelectedPatternId] = useState<string | null>(
+    null,
+  );
+  const [selectedPatternName, setSelectedPatternName] = useState<string | null>(
+    null,
+  );
+  const [collapsedCategories, setCollapsedCategories] = useState<
+    Record<string, boolean>
+  >({});
   const [loading, setLoading] = useState(false);
 
   const [implementations, setImplementations] = useState<any[]>([]);
-  const [selectedImplementationId, setSelectedImplementationId] = useState<string | null>(null);
-  const [selectedSolutionId, setSelectedSolutionId] = useState<string | null>(null);
+  const [selectedImplementationId, setSelectedImplementationId] = useState<
+    string | null
+  >(null);
+  const [selectedSolutionId, setSelectedSolutionId] = useState<string | null>(
+    null,
+  );
   const [loadingImpl, setLoadingImpl] = useState(false);
 
   const qcAtlasEndpoint = "http://localhost:6626";
 
   // ---------- CATEGORY CONFIG ----------
   const manualCategoryMap: Record<string, string> = {
-    "Initialization": "dataencodings",
+    Initialization: "dataencodings",
     "Quantum Phase Estimation (QPE)": "programflow",
     "Warm Start": "warmstart",
     "Biased Initial State": "warmstart",
     "Pre-Trained Feature Extractor": "warmstart",
     "Variational Parameter Transfer": "warmstart",
     "Chained Optimization": "warmstart",
-    "Grover": "programflow",
+    Grover: "programflow",
   };
 
   const getCategoryFromPattern = (pattern: any) => {
@@ -71,7 +81,9 @@ export const PatternSelectionModal = ({
     if (!open) return;
 
     setLoading(true);
-    fetch("http://localhost:1977/patternatlas/patternLanguages/af7780d5-1f97-4536-8da7-4194b093ab1d/patterns")
+    fetch(
+      "http://localhost:1977/patternatlas/patternLanguages/af7780d5-1f97-4536-8da7-4194b093ab1d/patterns",
+    )
       .then((res) => res.json())
       .then((data) => {
         setPatterns(data._embedded?.patternModels || []);
@@ -93,7 +105,9 @@ export const PatternSelectionModal = ({
       let page = 0;
       let last = false;
       while (!last) {
-        const res = await fetch(`${qcAtlasEndpoint}/atlas/implementations?page=${page}&size=20`);
+        const res = await fetch(
+          `${qcAtlasEndpoint}/atlas/implementations?page=${page}&size=20`,
+        );
         const data = await res.json();
         allImpl = allImpl.concat(data.content);
         last = data.last;
@@ -108,16 +122,15 @@ export const PatternSelectionModal = ({
 
         // Check implementation packages
         const pkgRes = await fetch(
-          `${qcAtlasEndpoint}/atlas/algorithms/${impl.implementedAlgorithmId}/implementations/${impl.id}/implementation-packages/`
+          `${qcAtlasEndpoint}/atlas/algorithms/${impl.implementedAlgorithmId}/implementations/${impl.id}/implementation-packages/`,
         );
         const pkgData = await pkgRes.json();
         if (pkgData.content?.length > 0) {
           // Filter packages that contain "code" in their type or name
-          const codePackages = pkgData.content.filter(
-            (pkg: any) =>
-              pkg.name?.toLowerCase().includes("code")
+          const codePackages = pkgData.content.filter((pkg: any) =>
+            pkg.name?.toLowerCase().includes("code"),
           );
-          console.log(codePackages)
+          console.log(codePackages);
 
           if (codePackages.length > 0) {
             // Store all matching package ids
@@ -128,11 +141,11 @@ export const PatternSelectionModal = ({
       }
 
       setImplementations(implWithLowCode);
-      console.log(implWithLowCode.length>0)
-      if(implWithLowCode.length>0){
-        console.log(implWithLowCode)
+      console.log(implWithLowCode.length > 0);
+      if (implWithLowCode.length > 0) {
+        console.log(implWithLowCode);
         setSelectedImplementationId(implWithLowCode[0].solutionIds[0]);
-        console.log(selectedImplementationId)
+        console.log(selectedImplementationId);
       }
     } catch (err) {
       console.error("Error fetching implementations:", err);
@@ -142,23 +155,29 @@ export const PatternSelectionModal = ({
   };
 
   // ---------- GROUP & SORT ----------
-  const groupedPatterns = patterns.reduce((acc: Record<string, any[]>, pattern) => {
-    const category = getCategoryFromPattern(pattern);
-    if (!acc[category]) acc[category] = [];
-    acc[category].push(pattern);
-    return acc;
-  }, {});
+  const groupedPatterns = patterns.reduce(
+    (acc: Record<string, any[]>, pattern) => {
+      const category = getCategoryFromPattern(pattern);
+      if (!acc[category]) acc[category] = [];
+      acc[category].push(pattern);
+      return acc;
+    },
+    {},
+  );
 
   Object.keys(groupedPatterns).forEach((category) => {
     groupedPatterns[category].sort((a, b) => a.name.localeCompare(b.name));
   });
 
   const sortedCategories = Object.keys(groupedPatterns).sort((a, b) =>
-    formatCategoryName(a).localeCompare(formatCategoryName(b))
+    formatCategoryName(a).localeCompare(formatCategoryName(b)),
   );
 
   const toggleCategory = (category: string) => {
-    setCollapsedCategories((prev) => ({ ...prev, [category]: !prev[category] }));
+    setCollapsedCategories((prev) => ({
+      ...prev,
+      [category]: !prev[category],
+    }));
   };
 
   // ---------- RENDER ----------
@@ -175,7 +194,12 @@ export const PatternSelectionModal = ({
             onClick={() =>
               selectedPatternId &&
               selectedPatternName &&
-              onConfirm(selectedPatternId, selectedPatternName, selectedImplementationId || undefined, selectedSolutionId || undefined)
+              onConfirm(
+                selectedPatternId,
+                selectedPatternName,
+                selectedImplementationId || undefined,
+                selectedSolutionId || undefined,
+              )
             }
           >
             Select Pattern
@@ -187,10 +211,14 @@ export const PatternSelectionModal = ({
       }
     >
       <div className="space-y-4">
-        <p>Select the pattern to which the current solution should be uploaded.</p>
+        <p>
+          Select the pattern to which the current solution should be uploaded.
+        </p>
 
         {loading && <p>Loading patterns...</p>}
-        {!loading && patterns.length === 0 && <p className="text-gray-500">No patterns available.</p>}
+        {!loading && patterns.length === 0 && (
+          <p className="text-gray-500">No patterns available.</p>
+        )}
 
         <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
           {sortedCategories.map((category) => (
@@ -234,7 +262,11 @@ export const PatternSelectionModal = ({
                           }}
                         />
                         {pattern.iconUrl && (
-                          <img src={pattern.iconUrl} alt={pattern.name} className="w-8 h-8 object-contain" />
+                          <img
+                            src={pattern.iconUrl}
+                            alt={pattern.name}
+                            className="w-8 h-8 object-contain"
+                          />
                         )}
                         <span className="font-medium">{pattern.name}</span>
                       </div>
@@ -250,7 +282,8 @@ export const PatternSelectionModal = ({
         {selectedPatternId && implementations.length > 0 && (
           <div className="mt-4 p-3 border rounded bg-yellow-50">
             <p className="font-semibold text-yellow-800 mb-2">
-              ⚠️ This pattern already has low-code implementations. Select one to overwrite or leave empty to add new:
+              ⚠️ This pattern already has low-code implementations. Select one
+              to overwrite or leave empty to add new:
             </p>
 
             <div className="space-y-2 max-h-40 overflow-y-auto">
@@ -260,8 +293,8 @@ export const PatternSelectionModal = ({
                   className="flex items-center space-x-2 cursor-pointer hover:bg-yellow-100 rounded p-1"
                   onClick={() => {
                     setSelectedImplementationId(impl.id);
-                    console.log(impl.id)
-                      console.log(impl.solutionIds)
+                    console.log(impl.id);
+                    console.log(impl.solutionIds);
                     setSelectedSolutionId(impl.solutionIds[0]);
                   }}
                 >
@@ -270,8 +303,8 @@ export const PatternSelectionModal = ({
                     checked={selectedImplementationId === impl.id}
                     onChange={() => {
                       setSelectedImplementationId(impl.id);
-                      console.log(impl.id)
-                      console.log(impl.solutionIds)
+                      console.log(impl.id);
+                      console.log(impl.solutionIds);
                       setSelectedSolutionId(impl.solutionId[0]);
                     }}
                   />

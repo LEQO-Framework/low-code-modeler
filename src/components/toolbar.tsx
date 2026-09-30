@@ -14,7 +14,7 @@ import {
   Search,
   BadgeCheck,
   MessageSquareIcon,
-  FlaskConical
+  FlaskConical,
 } from "lucide-react";
 
 import {
@@ -72,14 +72,11 @@ export default function Toolbar({
   return (
     <div className="bg-gray-100 border-b border-gray-300 px-4 h-[70px] overflow-hidden">
       <div className="flex items-center h-full">
-
         {/* Qonstruct */}
         <div className="flex items-center gap-2 shrink-0">
           <img src="Logo2.png" alt="Qonstruct" className="h-8 w-16" />
 
-          <span className="text-lg font-semibold text-gray-800">
-            Qonstruct
-          </span>
+          <span className="text-lg font-semibold text-gray-800">Qonstruct</span>
         </div>
 
         <div className="h-full flex items-center text-gray-400 text-xl shrink-0 ml-[20px]">
@@ -348,7 +345,6 @@ export default function Toolbar({
             </div>
           </div>
 
-
           {/* Separator */}
           <div className="h-full flex items-center text-gray-400 text-xl shrink-0">
             |
@@ -370,7 +366,6 @@ export default function Toolbar({
               <HelpCircle className="h-4 w-4 mr-1" />
             </Button>
           </div>
-
         </div>
       </div>
     </div>

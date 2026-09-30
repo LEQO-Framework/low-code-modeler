@@ -276,10 +276,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   const decrementNodeDataField = useCallback(
     (field: string, min_value: number) => {
       const node = getNode(id);
-      const nextValue = Math.max(
-        min_value,
-        Number(node.data[field] || 0) - 1,
-      );
+      const nextValue = Math.max(min_value, Number(node.data[field] || 0) - 1);
       const isInput = field.includes("Inputs");
       const portType = field.includes("Quantum") ? "quantum" : "classical";
       const handlePrefix = isInput
@@ -321,9 +318,9 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
                   ...(isInput
                     ? {
                         inputs: (n.data.inputs || []).filter(
-                                (input: any) =>
-                                  input.targetHandle !== removedHandle &&
-                                  !removedEdgeIds.has(input.edgeId),
+                          (input: any) =>
+                            input.targetHandle !== removedHandle &&
+                            !removedEdgeIds.has(input.edgeId),
                         ),
                       }
                     : {

@@ -22,9 +22,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q726721"
-        ],
+        "identifiers": ["q726721"],
         "dataType": "float",
         "value": "5.5",
         "outputIdentifier": "a"
@@ -50,18 +48,14 @@
           {
             "id": "newNode0",
             "outputIdentifier": "a",
-            "identifiers": [
-              "q726721"
-            ]
+            "identifiers": ["q726721"]
           }
         ],
         "implementation": "OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[4];\nx q[0];\nx q[2];\nx q[3];\n",
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q773834"
-        ],
+        "identifiers": ["q773834"],
         "encodingType": "Basis Encoding",
         "bound": 0,
         "size": 4,

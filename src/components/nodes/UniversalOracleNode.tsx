@@ -141,9 +141,7 @@ export const UniversalOracleNode = memo((node: Node) => {
     const hasOutOfBounds =
       maxAllowedIndex !== undefined &&
       numericValues.some(
-        (idx) =>
-          parseInt(idx, 10) < 0 ||
-          parseInt(idx, 10) > maxAllowedIndex,
+        (idx) => parseInt(idx, 10) < 0 || parseInt(idx, 10) > maxAllowedIndex,
       );
 
     // Check for duplicate marked states
@@ -209,8 +207,7 @@ export const UniversalOracleNode = memo((node: Node) => {
       .filter((value) => /^\d+$/.test(value))
       .some(
         (value) =>
-          parseInt(value, 10) < 0 ||
-          parseInt(value, 10) > maxAllowedIndex,
+          parseInt(value, 10) < 0 || parseInt(value, 10) > maxAllowedIndex,
       );
   })();
 
@@ -332,10 +329,7 @@ export const UniversalOracleNode = memo((node: Node) => {
                 )}
                 value={node.data.targetStates || targetStates}
                 onChange={(e) => {
-                  const val = e.target.value.replace(
-                    /[^a-zA-Z0-9,\s]/g,
-                    "",
-                  );
+                  const val = e.target.value.replace(/[^a-zA-Z0-9,\s]/g, "");
 
                   setTargetStates(val);
                   updateNodeValue(node.id, "targetStates", val);

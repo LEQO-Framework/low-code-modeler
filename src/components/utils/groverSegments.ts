@@ -60,7 +60,7 @@ function matchFullLayer(
   gates: SegmentableGate[],
   i: number,
   name: string,
-  qubits: number[]
+  qubits: number[],
 ): number {
   const width = qubits.length;
   if (i + width > gates.length) return -1;
@@ -100,7 +100,7 @@ function matchMCZ(gates: SegmentableGate[], i: number): number {
 function matchDiffusor(
   gates: SegmentableGate[],
   i: number,
-  qubits: number[]
+  qubits: number[],
 ): number {
   let j = matchFullLayer(gates, i, "h", qubits);
   if (j < 0) return -1;
@@ -119,12 +119,14 @@ function matchDiffusor(
  */
 export function detectGroverSegments(
   gates: SegmentableGate[],
-  qubits?: number[]
+  qubits?: number[],
 ): GroverSegment[] | null {
   if (gates.length === 0) return null;
 
   // Qubits touched by this run, ascending.
-  const used = qubits ?? [...new Set(gates.flatMap((g) => g.qubits))].sort((a, b) => a - b);
+  const used =
+    qubits ??
+    [...new Set(gates.flatMap((g) => g.qubits))].sort((a, b) => a - b);
   if (used.length < 2) return null;
 
   const segments: GroverSegment[] = [];
@@ -144,7 +146,12 @@ export function detectGroverSegments(
     if (afterDiffusor > 0) {
       // A diffusion operator without a preceding oracle would be malformed.
       if (segments[segments.length - 1].kind !== "oracle") return null;
-      segments.push({ start: i, end: afterDiffusor - 1, kind: "diffusor", iteration });
+      segments.push({
+        start: i,
+        end: afterDiffusor - 1,
+        kind: "diffusor",
+        iteration,
+      });
       i = afterDiffusor;
       continue;
     }
@@ -153,7 +160,10 @@ export function detectGroverSegments(
     // everything up to it is the oracle.
     let next = -1;
     for (let d = i + 1; d < gates.length; d++) {
-      if (matchDiffusor(gates, d, used) > 0) { next = d; break; }
+      if (matchDiffusor(gates, d, used) > 0) {
+        next = d;
+        break;
+      }
     }
     if (next < 0) return null; // trailing gates without a closing diffusion operator
 
@@ -168,9 +178,12 @@ export function detectGroverSegments(
 /** Human-readable label shown above the corresponding intermediate steps. */
 export function groverComponentLabel(segment: GroverSegment): string {
   switch (segment.kind) {
-    case "superposition": return "Superposition";
-    case "oracle":        return `Oracle (iteration ${segment.iteration})`;
-    case "diffusor":      return `Diffusion operator (iteration ${segment.iteration})`;
+    case "superposition":
+      return "Superposition";
+    case "oracle":
+      return `Oracle (iteration ${segment.iteration})`;
+    case "diffusor":
+      return `Diffusion operator (iteration ${segment.iteration})`;
   }
 }
 
@@ -194,7 +207,10 @@ export interface GroverAnalysis {
  * Grover template and builds a per-gate-index lookup of component labels.
  */
 export function analyzeGrover(gates: SegmentableGate[]): GroverAnalysis {
-  const lookup: (string | undefined)[] = Array.from({ length: gates.length }, () => undefined);
+  const lookup: (string | undefined)[] = Array.from(
+    { length: gates.length },
+    () => undefined,
+  );
   let iterations = 0;
   let groverQubits: number[] = [];
   let oracleRange: { start: number; end: number } | null = null;
@@ -216,12 +232,17 @@ export function analyzeGrover(gates: SegmentableGate[]): GroverAnalysis {
         }
         iterations = Math.max(
           iterations,
-          segments.filter((s) => s.kind === "diffusor").length
+          segments.filter((s) => s.kind === "diffusor").length,
         );
-        groverQubits = [...new Set(run.flatMap((g) => g.qubits))].sort((a, b) => a - b);
+        groverQubits = [...new Set(run.flatMap((g) => g.qubits))].sort(
+          (a, b) => a - b,
+        );
         const firstOracle = segments.find((s) => s.kind === "oracle");
         if (firstOracle) {
-          oracleRange = { start: i + firstOracle.start, end: i + firstOracle.end };
+          oracleRange = {
+            start: i + firstOracle.start,
+            end: i + firstOracle.end,
+          };
         }
       }
     }

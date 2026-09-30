@@ -23,9 +23,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q309760"
-        ],
+        "identifiers": ["q309760"],
         "dataType": "bit",
         "value": "",
         "outputIdentifier": ""
@@ -53,9 +51,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q138853"
-        ],
+        "identifiers": ["q138853"],
         "dataType": "angle",
         "value": "",
         "outputIdentifier": ""
@@ -83,9 +79,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q332941"
-        ],
+        "identifiers": ["q332941"],
         "dataType": "boolean",
         "value": "",
         "outputIdentifier": ""
@@ -113,9 +107,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q703454"
-        ],
+        "identifiers": ["q703454"],
         "dataType": "complex",
         "value": "",
         "outputIdentifier": ""
@@ -143,9 +135,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q831830"
-        ],
+        "identifiers": ["q831830"],
         "dataType": "duration",
         "value": "",
         "outputIdentifier": ""
@@ -173,9 +163,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q948244"
-        ],
+        "identifiers": ["q948244"],
         "dataType": "int",
         "value": "",
         "outputIdentifier": ""
@@ -203,9 +191,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q302804"
-        ],
+        "identifiers": ["q302804"],
         "dataType": "float",
         "value": "",
         "outputIdentifier": ""
@@ -233,9 +219,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q284347"
-        ],
+        "identifiers": ["q284347"],
         "dataType": "Array",
         "value": "",
         "outputIdentifier": ""

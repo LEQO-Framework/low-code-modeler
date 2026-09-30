@@ -6,14 +6,23 @@ interface PromptFlowModalProps {
   open: boolean;
   onClose: () => void;
   stepTest: number;
-  showToast: (message: React.ReactNode, type: "success" | "error" | "info") => void;
+  showToast: (
+    message: React.ReactNode,
+    type: "success" | "error" | "info",
+  ) => void;
   mistralToken: string;
   loadFlow: (flow: any) => void;
   lowcodeBackendEndpoint: string;
   jobId?: string;
   missingValues?: any[];
-  onMissingValuesSubmitted: (jobId: string, values: Array<{ id: string; value: any; type: string }>) => Promise<void>;
-  onSubmitPrompt: (prompt: string, generationMode: "compact" | "circuit") => Promise<any>;
+  onMissingValuesSubmitted: (
+    jobId: string,
+    values: Array<{ id: string; value: any; type: string }>,
+  ) => Promise<void>;
+  onSubmitPrompt: (
+    prompt: string,
+    generationMode: "compact" | "circuit",
+  ) => Promise<any>;
 }
 
 export default function PromptFlowModal({
@@ -29,22 +38,29 @@ export default function PromptFlowModal({
   const [_step, setStep] = useState(1);
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
-  const [generationMode, setGenerationMode] = useState<"compact" | "circuit">("compact");
-  
+  const [generationMode, setGenerationMode] = useState<"compact" | "circuit">(
+    "compact",
+  );
+
   const [inputValues, setInputValues] = useState<Record<string, any>>({});
-  const [toast, setToast] = useState<{ message: React.ReactNode; type: "success" | "error" | "info" } | null>(null);
+  const [toast, setToast] = useState<{
+    message: React.ReactNode;
+    type: "success" | "error" | "info";
+  } | null>(null);
   const [inputErrors, setInputErrors] = useState<Record<string, string>>({});
 
   // Validation helper for size inputs
   const validateSizeInput = (
     value: string,
-    isBellState: boolean = false
+    isBellState: boolean = false,
   ): { isValid: boolean; message: string } => {
     if (!value) return { isValid: false, message: "Please enter a value." };
     const num = Number(value);
     if (isNaN(num)) return { isValid: false, message: "Must be a number." };
-    if (!Number.isInteger(num)) return { isValid: false, message: "Must be an integer." };
-    if (isBellState && num !== 2) return { isValid: false, message: "Bell states must have size 2." };
+    if (!Number.isInteger(num))
+      return { isValid: false, message: "Must be an integer." };
+    if (isBellState && num !== 2)
+      return { isValid: false, message: "Bell states must have size 2." };
     if (num < 1) return { isValid: false, message: "Must be at least 1." }; // Allow 1 for uniform superpositions
     return { isValid: true, message: "" };
   };
@@ -53,7 +69,8 @@ export default function PromptFlowModal({
   // validated the same way as the uniform-superposition size field: a positive integer of 1 or more.
   const isClusterCountInput = (input: any): boolean => {
     if (input.type !== "number") return false;
-    const text = `${input.question ?? ""} ${input.label ?? ""} ${input.name ?? ""}`.toLowerCase();
+    const text =
+      `${input.question ?? ""} ${input.label ?? ""} ${input.name ?? ""}`.toLowerCase();
     return text.includes("cluster");
   };
 
@@ -82,7 +99,9 @@ export default function PromptFlowModal({
     const poll = async () => {
       while (Date.now() < deadline) {
         await new Promise((resolve) => setTimeout(resolve, intervalMs));
-        const response = await fetch(`http://localhost:3000/job/${jobIdToWatch}`);
+        const response = await fetch(
+          `http://localhost:3000/job/${jobIdToWatch}`,
+        );
         if (!response.ok) return;
 
         const job = await response.json();
@@ -95,11 +114,16 @@ export default function PromptFlowModal({
           showToast(reason, "error");
           return;
         }
-        if (["completed", "failed", "User input required"].includes(job?.status)) return;
+        if (
+          ["completed", "failed", "User input required"].includes(job?.status)
+        )
+          return;
       }
     };
 
-    poll().catch((err) => console.error("Error while watching generation job:", err));
+    poll().catch((err) =>
+      console.error("Error while watching generation job:", err),
+    );
   };
 
   const handleSubmitPrompt = async () => {
@@ -121,15 +145,17 @@ export default function PromptFlowModal({
     if (!jobId) return;
     setLoading(true);
     try {
-      const missingValuesArray = Object.entries(inputValues).map(([compoundKey, value]) => {
-        const [id, type] = compoundKey.split("-");
-        return {
-          id,
-          value,
-          type: type || "string",
-        };
-      });
-      
+      const missingValuesArray = Object.entries(inputValues).map(
+        ([compoundKey, value]) => {
+          const [id, type] = compoundKey.split("-");
+          return {
+            id,
+            value,
+            type: type || "string",
+          };
+        },
+      );
+
       await onMissingValuesSubmitted(jobId, missingValuesArray);
       onClose();
     } catch (err: any) {
@@ -158,7 +184,7 @@ export default function PromptFlowModal({
   }, [open]);
 
   const bitOptions = ["0", "1"];
-  
+
   const statePreparationOptions = [
     "BellPhiPlus",
     "BellPhiMinus",
@@ -186,7 +212,11 @@ export default function PromptFlowModal({
   return (
     <>
       {toast && (
-        <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
       )}
 
       {open && stepTest === 1 && !missingValues.length && (
@@ -224,7 +254,9 @@ export default function PromptFlowModal({
                 <select
                   className="ml-2 border rounded p-1"
                   value={generationMode}
-                  onChange={(e) => setGenerationMode(e.target.value as "compact" | "circuit")}
+                  onChange={(e) =>
+                    setGenerationMode(e.target.value as "compact" | "circuit")
+                  }
                 >
                   <option value="compact">Compact</option>
                   <option value="circuit">Circuit-Level</option>
@@ -246,7 +278,9 @@ export default function PromptFlowModal({
               <button
                 className="btn btn-primary"
                 onClick={handleSubmitMissingValues}
-                disabled={loading || Object.values(inputErrors).some((error) => error)}
+                disabled={
+                  loading || Object.values(inputErrors).some((error) => error)
+                }
               >
                 {loading ? "Submitting..." : "Generate Model"}
               </button>
@@ -254,15 +288,20 @@ export default function PromptFlowModal({
                 Cancel
               </button>
             </div>
-          }        >
+          }
+        >
           <div className="space-y-4">
             <p className="text-gray-600">
-              The following values are required to generate your model. Please provide them below.
+              The following values are required to generate your model. Please
+              provide them below.
             </p>
             {missingValues.map((input) => {
               const itemKey = `${input.id}-${input.type}`;
 
-              if (input.type === "size" && (input.isBellState || isCurrentlyBellSelected(input.id))) {
+              if (
+                input.type === "size" &&
+                (input.isBellState || isCurrentlyBellSelected(input.id))
+              ) {
                 return null;
               }
 
@@ -271,16 +310,23 @@ export default function PromptFlowModal({
                   <label className="block font-medium">
                     {input.question || input.label} ({input.type})
                   </label>
-                  
+
                   {input.type === "bit" && (
                     <select
                       className="w-full border p-2 rounded"
                       value={inputValues[itemKey] || ""}
-                      onChange={(e) => setInputValues({ ...inputValues, [itemKey]: e.target.value })}
+                      onChange={(e) =>
+                        setInputValues({
+                          ...inputValues,
+                          [itemKey]: e.target.value,
+                        })
+                      }
                     >
                       <option value="">Select a bit value</option>
                       {bitOptions.map((opt) => (
-                        <option key={opt} value={opt}>{opt}</option>
+                        <option key={opt} value={opt}>
+                          {opt}
+                        </option>
                       ))}
                     </select>
                   )}
@@ -289,17 +335,25 @@ export default function PromptFlowModal({
                     <select
                       className="w-full border p-2 rounded"
                       value={inputValues[itemKey] || ""}
-                      onChange={(e) => setInputValues({ ...inputValues, [itemKey]: e.target.value })}
+                      onChange={(e) =>
+                        setInputValues({
+                          ...inputValues,
+                          [itemKey]: e.target.value,
+                        })
+                      }
                     >
                       <option value="">Select a state</option>
                       {input.isBellState
                         ? onlyBellOptions.map((opt) => (
-                            <option key={opt} value={opt}>{opt}</option>
+                            <option key={opt} value={opt}>
+                              {opt}
+                            </option>
                           ))
                         : statePreparationOptions.map((opt) => (
-                            <option key={opt} value={opt}>{opt}</option>
-                          ))
-                      }
+                            <option key={opt} value={opt}>
+                              {opt}
+                            </option>
+                          ))}
                     </select>
                   )}
 
@@ -307,7 +361,12 @@ export default function PromptFlowModal({
                     <select
                       className="w-full border p-2 rounded"
                       value={inputValues[itemKey] || ""}
-                      onChange={(e) => setInputValues({ ...inputValues, [itemKey]: e.target.value })}
+                      onChange={(e) =>
+                        setInputValues({
+                          ...inputValues,
+                          [itemKey]: e.target.value,
+                        })
+                      }
                     >
                       <option value="">Select a value</option>
                       <option value="true">True</option>
@@ -319,7 +378,12 @@ export default function PromptFlowModal({
                     <select
                       className="w-full border p-2 rounded"
                       value={inputValues[itemKey] || ""}
-                      onChange={(e) => setInputValues({ ...inputValues, [itemKey]: e.target.value })}
+                      onChange={(e) =>
+                        setInputValues({
+                          ...inputValues,
+                          [itemKey]: e.target.value,
+                        })
+                      }
                     >
                       <option value="">Select a behaviour</option>
                       <option value="balanced">Balanced</option>
@@ -331,7 +395,12 @@ export default function PromptFlowModal({
                     <select
                       className="w-full border p-2 rounded"
                       value={inputValues[itemKey] || ""}
-                      onChange={(e) => setInputValues({ ...inputValues, [itemKey]: e.target.value })}
+                      onChange={(e) =>
+                        setInputValues({
+                          ...inputValues,
+                          [itemKey]: e.target.value,
+                        })
+                      }
                     >
                       <option value="">Select a constant value</option>
                       <option value="0">0</option>
@@ -343,7 +412,12 @@ export default function PromptFlowModal({
                     <select
                       className="w-full border p-2 rounded"
                       value={inputValues[itemKey] || ""}
-                      onChange={(e) => setInputValues({ ...inputValues, [itemKey]: e.target.value })}
+                      onChange={(e) =>
+                        setInputValues({
+                          ...inputValues,
+                          [itemKey]: e.target.value,
+                        })
+                      }
                     >
                       <option value="">Select a problem type</option>
                       <option value="MaxCut">MaxCut</option>
@@ -361,18 +435,28 @@ export default function PromptFlowModal({
                       className="w-full border p-2 rounded"
                       placeholder="Enter the rotation angle (e.g. 90 or 1.5708)"
                       value={inputValues[itemKey] || ""}
-                      onChange={(e) => setInputValues({ ...inputValues, [itemKey]: e.target.value })}
+                      onChange={(e) =>
+                        setInputValues({
+                          ...inputValues,
+                          [itemKey]: e.target.value,
+                        })
+                      }
                     />
                   )}
 
-                  {(input.type === "size" || input.type === "numQubits" || input.type === "repeatCount" || input.type === "balancedMask") && (
+                  {(input.type === "size" ||
+                    input.type === "numQubits" ||
+                    input.type === "repeatCount" ||
+                    input.type === "balancedMask") && (
                     <div className="space-y-1">
                       <input
                         type="number"
                         min={1} // Allow 1 as the minimum
                         step={1}
                         className={`w-full border p-2 rounded ${
-                          inputErrors[itemKey] ? "border-red-500 bg-red-50" : "border-gray-300"
+                          inputErrors[itemKey]
+                            ? "border-red-500 bg-red-50"
+                            : "border-gray-300"
                         }`}
                         placeholder={
                           input.type === "repeatCount"
@@ -386,29 +470,54 @@ export default function PromptFlowModal({
                           const value = e.target.value;
                           setInputValues({ ...inputValues, [itemKey]: value });
                           // Pass the isBellState flag from the input block
-                          const isBellState = input.type === "size" && (input.isBellState || isCurrentlyBellSelected(input.id));
-                          const { isValid, message } = validateSizeInput(value, isBellState);
-                          setInputErrors({ ...inputErrors, [itemKey]: isValid ? "" : message });
+                          const isBellState =
+                            input.type === "size" &&
+                            (input.isBellState ||
+                              isCurrentlyBellSelected(input.id));
+                          const { isValid, message } = validateSizeInput(
+                            value,
+                            isBellState,
+                          );
+                          setInputErrors({
+                            ...inputErrors,
+                            [itemKey]: isValid ? "" : message,
+                          });
                         }}
                         onBlur={(e) => {
-                          const isBellState = input.type === "size" && (input.isBellState || isCurrentlyBellSelected(input.id));
-                          const { isValid, message } = validateSizeInput(e.target.value, isBellState);
-                          setInputErrors({ ...inputErrors, [itemKey]: isValid ? "" : message });
+                          const isBellState =
+                            input.type === "size" &&
+                            (input.isBellState ||
+                              isCurrentlyBellSelected(input.id));
+                          const { isValid, message } = validateSizeInput(
+                            e.target.value,
+                            isBellState,
+                          );
+                          setInputErrors({
+                            ...inputErrors,
+                            [itemKey]: isValid ? "" : message,
+                          });
                         }}
                       />
                       {inputErrors[itemKey] && (
-                        <p className="text-red-500 text-sm mt-1">{inputErrors[itemKey]}</p>
+                        <p className="text-red-500 text-sm mt-1">
+                          {inputErrors[itemKey]}
+                        </p>
                       )}
                     </div>
                   )}
 
-                  {(input.type === "number" && !isClusterCountInput(input)) && (
+                  {input.type === "number" && !isClusterCountInput(input) && (
                     <input
                       type="number"
                       className="w-full border p-2 rounded"
                       placeholder={`Enter ${input.type}`}
                       value={inputValues[itemKey] || ""}
-                      onChange={(e) => setInputValues({ ...inputValues, [itemKey]: e.target.value })}
+                      onChange={(e) =>
+                        setInputValues({
+                          ...inputValues,
+                          [itemKey]: e.target.value,
+                        })
+                      }
                     />
                   )}
 
@@ -419,23 +528,39 @@ export default function PromptFlowModal({
                         min={1}
                         step={1}
                         className={`w-full border p-2 rounded ${
-                          inputErrors[itemKey] ? "border-red-500 bg-red-50" : "border-gray-300"
+                          inputErrors[itemKey]
+                            ? "border-red-500 bg-red-50"
+                            : "border-gray-300"
                         }`}
                         placeholder="Enter number of clusters (e.g. 1, 2, 3)"
                         value={inputValues[itemKey] || ""}
                         onChange={(e) => {
                           const value = e.target.value;
                           setInputValues({ ...inputValues, [itemKey]: value });
-                          const { isValid, message } = validateSizeInput(value, false);
-                          setInputErrors({ ...inputErrors, [itemKey]: isValid ? "" : message });
+                          const { isValid, message } = validateSizeInput(
+                            value,
+                            false,
+                          );
+                          setInputErrors({
+                            ...inputErrors,
+                            [itemKey]: isValid ? "" : message,
+                          });
                         }}
                         onBlur={(e) => {
-                          const { isValid, message } = validateSizeInput(e.target.value, false);
-                          setInputErrors({ ...inputErrors, [itemKey]: isValid ? "" : message });
+                          const { isValid, message } = validateSizeInput(
+                            e.target.value,
+                            false,
+                          );
+                          setInputErrors({
+                            ...inputErrors,
+                            [itemKey]: isValid ? "" : message,
+                          });
                         }}
                       />
                       {inputErrors[itemKey] && (
-                        <p className="text-red-500 text-sm mt-1">{inputErrors[itemKey]}</p>
+                        <p className="text-red-500 text-sm mt-1">
+                          {inputErrors[itemKey]}
+                        </p>
                       )}
                     </div>
                   )}
@@ -446,21 +571,33 @@ export default function PromptFlowModal({
                       className="w-full border p-2 rounded"
                       placeholder={`Enter ${input.type}`}
                       value={inputValues[itemKey] || ""}
-                      onChange={(e) => setInputValues({ ...inputValues, [itemKey]: e.target.value })}
+                      onChange={(e) =>
+                        setInputValues({
+                          ...inputValues,
+                          [itemKey]: e.target.value,
+                        })
+                      }
                     />
                   )}
 
-                  {(input.type === "string") && (
+                  {input.type === "string" && (
                     <input
                       type="text"
                       className="w-full border p-2 rounded"
                       placeholder={`Enter ${input.type}`}
                       value={inputValues[itemKey] || ""}
-                      onChange={(e) => setInputValues({ ...inputValues, [itemKey]: e.target.value })}
+                      onChange={(e) =>
+                        setInputValues({
+                          ...inputValues,
+                          [itemKey]: e.target.value,
+                        })
+                      }
                     />
                   )}
 
-                  {(input.type === "array" || input.type === "targetStates" || input.type === "condition") && (
+                  {(input.type === "array" ||
+                    input.type === "targetStates" ||
+                    input.type === "condition") && (
                     <input
                       type="text"
                       className="w-full border p-2 rounded"
@@ -468,11 +605,16 @@ export default function PromptFlowModal({
                         input.type === "array"
                           ? "e.g. 1,3.4,6,2,4.5"
                           : input.type === "targetStates"
-                          ? "e.g. 0,3,5,9 (comma-separated)"
-                          : "e.g. bit_0 == 1"
+                            ? "e.g. 0,3,5,9 (comma-separated)"
+                            : "e.g. bit_0 == 1"
                       }
                       value={inputValues[itemKey] || ""}
-                      onChange={(e) => setInputValues({ ...inputValues, [itemKey]: e.target.value })}
+                      onChange={(e) =>
+                        setInputValues({
+                          ...inputValues,
+                          [itemKey]: e.target.value,
+                        })
+                      }
                     />
                   )}
                 </div>

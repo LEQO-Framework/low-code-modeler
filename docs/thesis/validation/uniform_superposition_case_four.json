@@ -23,9 +23,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q108885"
-        ],
+        "identifiers": ["q108885"],
         "quantumStateName": "Uniform Superposition",
         "size": 2,
         "outputIdentifier": "a",
@@ -56,9 +54,7 @@
         "inputs": [
           {
             "id": "57b2d313-a762-42f7-8660-76ae18bf84cf",
-            "identifiers": [
-              "q108885"
-            ],
+            "identifiers": ["q108885"],
             "outputIdentifier": "a"
           }
         ],
@@ -67,9 +63,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q439903"
-        ],
+        "identifiers": ["q439903"],
         "indices": "0,1",
         "outputIdentifier": "",
         "parameterType": "degree"

@@ -98,7 +98,7 @@ export const GateNode = memo((node: Node) => {
   useEffect(() => {
     const checkRemoteSelection = () => {
       let foundColor: string | null = null;
-      
+
       // Loop through all active client states in the room
       awareness.getStates().forEach((state: any) => {
         // Check if a peer has selected this specific node ID

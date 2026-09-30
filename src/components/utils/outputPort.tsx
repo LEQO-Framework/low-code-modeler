@@ -332,9 +332,7 @@ export default function OutputPort({
             value={
               node.data.quantumStateName?.includes("Bell State")
                 ? "2"
-                : outputSize ||
-                  node.data.outputs?.[index]?.size ||
-                  ""
+                : outputSize || node.data.outputs?.[index]?.size || ""
             }
             readOnly={node.data.quantumStateName?.includes("Bell State")}
             onChange={(e) => {

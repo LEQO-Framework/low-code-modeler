@@ -23,9 +23,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q750883"
-        ],
+        "identifiers": ["q750883"],
         "quantumStateName": "Uniform Superposition",
         "size": 3,
         "outputIdentifier": "a",
@@ -57,9 +55,7 @@
         "inputs": [
           {
             "id": "ee6baf75-6fb4-435f-9d33-dcd823fbd242",
-            "identifiers": [
-              "q750883"
-            ]
+            "identifiers": ["q750883"]
           }
         ],
         "children": [],
@@ -67,11 +63,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q982149",
-          "q368030",
-          "q735863"
-        ],
+        "identifiers": ["q982149", "q368030", "q735863"],
         "parameterType": "degree",
         "numberOutputs": "3"
       },
@@ -95,11 +87,7 @@
         "inputs": [
           {
             "id": "a0dbc753-2398-4486-9a59-2cfa67efaace",
-            "identifiers": [
-              "q982149",
-              "q368030",
-              "q735863"
-            ]
+            "identifiers": ["q982149", "q368030", "q735863"]
           }
         ],
         "children": [],
@@ -107,10 +95,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q883813",
-          "q646461"
-        ],
+        "identifiers": ["q883813", "q646461"],
         "parameter": "0"
       },
       "width": 100,
@@ -133,10 +118,7 @@
         "inputs": [
           {
             "id": "c7c37d40-eaa2-4c1c-a671-87d39fbac5b2",
-            "identifiers": [
-              "q883813",
-              "q646461"
-            ]
+            "identifiers": ["q883813", "q646461"]
           }
         ],
         "children": [],
@@ -144,9 +126,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q412279"
-        ],
+        "identifiers": ["q412279"],
         "parameter": "0"
       },
       "width": 100,
@@ -169,16 +149,11 @@
         "inputs": [
           {
             "id": "0b64e78b-6d6e-475d-8c90-43fe8847eb08",
-            "identifiers": [
-              "q412279"
-            ]
+            "identifiers": ["q412279"]
           },
           {
             "id": "c7c37d40-eaa2-4c1c-a671-87d39fbac5b2",
-            "identifiers": [
-              "q883813",
-              "q646461"
-            ]
+            "identifiers": ["q883813", "q646461"]
           }
         ],
         "children": [],
@@ -186,10 +161,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q874886",
-          "q341926"
-        ],
+        "identifiers": ["q874886", "q341926"],
         "parameter": "0"
       },
       "width": 100,
@@ -212,17 +184,11 @@
         "inputs": [
           {
             "id": "fd56a043-0b55-4072-8b50-8ebcce3d34e4",
-            "identifiers": [
-              "q874886"
-            ]
+            "identifiers": ["q874886"]
           },
           {
             "id": "a0dbc753-2398-4486-9a59-2cfa67efaace",
-            "identifiers": [
-              "q982149",
-              "q368030",
-              "q735863"
-            ]
+            "identifiers": ["q982149", "q368030", "q735863"]
           }
         ],
         "children": [],
@@ -230,10 +196,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q889859",
-          "q874520"
-        ],
+        "identifiers": ["q889859", "q874520"],
         "parameter": "0"
       },
       "width": 100,
@@ -256,16 +219,11 @@
         "inputs": [
           {
             "id": "188df1ed-c428-4b70-9bf5-0704eb0d22b9",
-            "identifiers": [
-              "q116308"
-            ]
+            "identifiers": ["q116308"]
           },
           {
             "id": "32e17b97-c21a-44f7-a6e6-58ac6ca0b274",
-            "identifiers": [
-              "q889859",
-              "q874520"
-            ]
+            "identifiers": ["q889859", "q874520"]
           }
         ],
         "children": [],
@@ -273,10 +231,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q517242",
-          "q370097"
-        ],
+        "identifiers": ["q517242", "q370097"],
         "parameter": "0"
       },
       "width": 100,
@@ -299,10 +254,7 @@
         "inputs": [
           {
             "id": "32e17b97-c21a-44f7-a6e6-58ac6ca0b274",
-            "identifiers": [
-              "q889859",
-              "q874520"
-            ]
+            "identifiers": ["q889859", "q874520"]
           }
         ],
         "children": [],
@@ -310,9 +262,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q116308"
-        ],
+        "identifiers": ["q116308"],
         "parameter": "0"
       },
       "width": 100,
@@ -335,35 +285,23 @@
         "inputs": [
           {
             "id": "fd56a043-0b55-4072-8b50-8ebcce3d34e4",
-            "identifiers": [
-              "q874886",
-              "q341926"
-            ]
+            "identifiers": ["q874886", "q341926"]
           },
           {
             "id": "5eb07602-1aee-4bfd-afae-61b712fe9d3a",
-            "identifiers": [
-              "q517242",
-              "q370097"
-            ]
+            "identifiers": ["q517242", "q370097"]
           },
           {
             "id": "cc3f943f-ac72-44d3-a026-62dad7ecb755",
-            "identifiers": [
-              "q686902"
-            ]
+            "identifiers": ["q686902"]
           },
           {
             "id": "31ec607b-1801-464e-8e9a-3c1752a128d6",
-            "identifiers": [
-              "q308327"
-            ]
+            "identifiers": ["q308327"]
           },
           {
             "id": "d1574390-0fb8-4eec-a832-00c31c8dee5b",
-            "identifiers": [
-              "q616798"
-            ]
+            "identifiers": ["q616798"]
           }
         ],
         "children": [],
@@ -371,9 +309,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q439586"
-        ],
+        "identifiers": ["q439586"],
         "numberInputs": "3"
       },
       "width": 170,
@@ -396,10 +332,7 @@
         "inputs": [
           {
             "id": "5eb07602-1aee-4bfd-afae-61b712fe9d3a",
-            "identifiers": [
-              "q517242",
-              "q370097"
-            ]
+            "identifiers": ["q517242", "q370097"]
           }
         ],
         "children": [],
@@ -407,9 +340,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q686902"
-        ],
+        "identifiers": ["q686902"],
         "parameter": "0"
       },
       "width": 100,
@@ -432,10 +363,7 @@
         "inputs": [
           {
             "id": "5eb07602-1aee-4bfd-afae-61b712fe9d3a",
-            "identifiers": [
-              "q517242",
-              "q370097"
-            ]
+            "identifiers": ["q517242", "q370097"]
           }
         ],
         "children": [],
@@ -443,9 +371,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q308327"
-        ],
+        "identifiers": ["q308327"],
         "parameter": "0"
       },
       "width": 100,
@@ -468,10 +394,7 @@
         "inputs": [
           {
             "id": "fd56a043-0b55-4072-8b50-8ebcce3d34e4",
-            "identifiers": [
-              "q874886",
-              "q341926"
-            ]
+            "identifiers": ["q874886", "q341926"]
           }
         ],
         "children": [],
@@ -479,9 +402,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q616798"
-        ],
+        "identifiers": ["q616798"],
         "parameter": "0"
       },
       "width": 100,

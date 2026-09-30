@@ -23,8 +23,7 @@ export default function AncillaEdge({
     <>
       <BaseEdge
         style={{
-          stroke:  "#86EFAC",
-          
+          stroke: "#86EFAC",
         }}
         markerEnd={markerEnd}
         path={d}

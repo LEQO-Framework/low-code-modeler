@@ -23,9 +23,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q765126"
-        ],
+        "identifiers": ["q765126"],
         "outputIdentifier": "a",
         "outputs": [
           {
@@ -59,9 +57,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q525358"
-        ],
+        "identifiers": ["q525358"],
         "quantumStateName": "Uniform Superposition",
         "size": 6,
         "outputIdentifier": "b",
@@ -93,9 +89,7 @@
         "inputs": [
           {
             "id": "8f06afc8-a45f-4876-b8c6-52d56083110e",
-            "identifiers": [
-              "q765126"
-            ],
+            "identifiers": ["q765126"],
             "outputIdentifier": "a"
           }
         ],
@@ -126,9 +120,7 @@
         "inputs": [
           {
             "id": "455d9c48-3484-4bb9-9aef-3ad3f46594f0",
-            "identifiers": [
-              "q525358"
-            ],
+            "identifiers": ["q525358"],
             "outputIdentifier": "b"
           },
           {
@@ -141,9 +133,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q828930"
-        ],
+        "identifiers": ["q828930"],
         "numberInputs": "1",
         "numberOutputs": "1",
         "outputIdentifier": "c",
@@ -175,9 +165,7 @@
         "inputs": [
           {
             "id": "9d85c731-f06d-4996-a013-960907187d83",
-            "identifiers": [
-              "q828930"
-            ],
+            "identifiers": ["q828930"],
             "outputIdentifier": "c",
             "label": "c"
           }
@@ -187,9 +175,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q571931"
-        ],
+        "identifiers": ["q571931"],
         "numberInputs": "1",
         "numberOutputs": "1",
         "outputIdentifier": "d",
@@ -221,9 +207,7 @@
         "inputs": [
           {
             "id": "38128770-0f4e-4c03-b20d-db4887ff0265",
-            "identifiers": [
-              "q571931"
-            ],
+            "identifiers": ["q571931"],
             "outputIdentifier": "d"
           }
         ],
@@ -232,9 +216,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q436569"
-        ],
+        "identifiers": ["q436569"],
         "indices": null,
         "outputIdentifier": ""
       },

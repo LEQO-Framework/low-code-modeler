@@ -23,9 +23,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q750883"
-        ],
+        "identifiers": ["q750883"],
         "quantumStateName": "GHZ",
         "size": 7,
         "outputIdentifier": "a",

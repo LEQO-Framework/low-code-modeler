@@ -44,7 +44,11 @@ export const MCMTGateNode = memo((node: Node<MCMTGateNodeData>) => {
   const headerHeight = 52;
   const formHeight = hasParameter ? 130 : 60;
   const handlesHeight = totalHandles * 44;
-  const dynamicHeight = headerHeight + formHeight + Math.max(numControls, numTargets, 3) * handlesHeight + 50;
+  const dynamicHeight =
+    headerHeight +
+    formHeight +
+    Math.max(numControls, numTargets, 3) * handlesHeight +
+    50;
 
   useEffect(() => {
     updateNodeInternals(id);
@@ -70,9 +74,14 @@ export const MCMTGateNode = memo((node: Node<MCMTGateNodeData>) => {
     if (field === "baseGate") {
       finalValue = value.replace(/\(θ\)/g, "").toLowerCase();
 
-      const willHaveParam = ["rx(θ)", "ry(θ)", "rz(θ)", "rx", "ry", "rz"].includes(
-        value.toLowerCase()
-      );
+      const willHaveParam = [
+        "rx(θ)",
+        "ry(θ)",
+        "rz(θ)",
+        "rx",
+        "ry",
+        "rz",
+      ].includes(value.toLowerCase());
 
       if (!willHaveParam) {
         updateNodeValue(id, "parameter", 0);
@@ -83,14 +92,11 @@ export const MCMTGateNode = memo((node: Node<MCMTGateNodeData>) => {
   };
 
   return (
-    <div
-      className="grand-parent"
-      style={{ width: 320, height: dynamicHeight }}
-    >
+    <div className="grand-parent" style={{ width: 320, height: dynamicHeight }}>
       <div
         className={cn(
           "w-[320px] bg-white border border-solid border-gray-700 shadow-md relative flex flex-col",
-          selected && "border-blue-500"
+          selected && "border-blue-500",
         )}
         style={{ height: `${dynamicHeight}px` }}
       >
@@ -106,7 +112,10 @@ export const MCMTGateNode = memo((node: Node<MCMTGateNodeData>) => {
               className="w-[40px] h-[40px] object-contain flex-shrink-0"
             />
             <div className="h-full w-[1px] bg-black mx-2" />
-            <span className="font-semibold leading-none" style={{ paddingLeft: "65px" }}>
+            <span
+              className="font-semibold leading-none"
+              style={{ paddingLeft: "65px" }}
+            >
               {data.label || "MCMT Gate"}
             </span>
           </div>
@@ -160,12 +169,11 @@ export const MCMTGateNode = memo((node: Node<MCMTGateNodeData>) => {
                 placeholder="e.g. 2"
               />
 
-              {data.numControls &&
-                !isPositiveInt(String(data.numControls)) && (
-                  <p className="text-red-500 text-[10px] mt-1">
-                    Must be a number &gt; 0
-                  </p>
-                )}
+              {data.numControls && !isPositiveInt(String(data.numControls)) && (
+                <p className="text-red-500 text-[10px] mt-1">
+                  Must be a number &gt; 0
+                </p>
+              )}
             </div>
 
             {/* Targets */}
@@ -192,12 +200,11 @@ export const MCMTGateNode = memo((node: Node<MCMTGateNodeData>) => {
                 placeholder="e.g. 1"
               />
 
-              {data.numTargets &&
-                !isPositiveInt(String(data.numTargets)) && (
-                  <p className="text-red-500 text-[10px] mt-1">
-                    Must be a number &gt; 0
-                  </p>
-                )}
+              {data.numTargets && !isPositiveInt(String(data.numTargets)) && (
+                <p className="text-red-500 text-[10px] mt-1">
+                  Must be a number &gt; 0
+                </p>
+              )}
             </div>
           </div>
 
@@ -215,7 +222,7 @@ export const MCMTGateNode = memo((node: Node<MCMTGateNodeData>) => {
                 onChange={(e) =>
                   handleChange(
                     "parameter",
-                    e.target.value === "" ? "" : parseFloat(e.target.value)
+                    e.target.value === "" ? "" : parseFloat(e.target.value),
                   )
                 }
               />
@@ -249,7 +256,7 @@ export const MCMTGateNode = memo((node: Node<MCMTGateNodeData>) => {
                     position={Position.Left}
                     className={cn(
                       "z-10 !border-black -left-[6px] !rounded-none",
-                      handleColor
+                      handleColor,
                     )}
                     style={{ width: 12, height: 12 }}
                   />
@@ -281,7 +288,7 @@ export const MCMTGateNode = memo((node: Node<MCMTGateNodeData>) => {
                     position={Position.Right}
                     className={cn(
                       "z-10 !border-black -right-[6px] !rounded-none",
-                      handleColor
+                      handleColor,
                     )}
                     style={{ width: 12, height: 12 }}
                   />

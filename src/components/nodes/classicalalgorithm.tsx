@@ -30,13 +30,8 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
   const numberInputs = data.numberClassicalInputs || 0;
   const numberOutputs = data.numberClassicalOutputs || 0;
 
-  const {
-    edges,
-    nodes,
-    updateNodeValue,
-    setSelectedNode,
-    ancillaMode,
-  } = useStore(selector, shallow);
+  const { edges, nodes, updateNodeValue, setSelectedNode, ancillaMode } =
+    useStore(selector, shallow);
 
   const updateNodeInternals = useUpdateNodeInternals();
 
@@ -136,9 +131,7 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
       for (const [key] of duplicates.entries()) {
         if (
           Array.isArray(key) &&
-          key.some(
-            (item: any) => item.identifier === outputIdentifier,
-          )
+          key.some((item: any) => item.identifier === outputIdentifier)
         ) {
           isDuplicate = true;
           break;
@@ -156,7 +149,6 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
       const startsWithDigit = /^\d/.test(outputIdentifier);
 
       newErrors[index] = startsWithDigit || isDuplicate;
-
     });
 
     setOutputIdentifierErrors(newErrors);
@@ -179,18 +171,16 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
 
   const id = node.id;
 
-  const [_remoteHighlightColor, setRemoteHighlightColor] =
-    useState<string | null>(null);
+  const [_remoteHighlightColor, setRemoteHighlightColor] = useState<
+    string | null
+  >(null);
 
   useEffect(() => {
     const checkRemoteSelection = () => {
       let foundColor: string | null = null;
 
       awareness.getStates().forEach((state: any) => {
-        if (
-          state.cursor &&
-          state.cursor.mySelectedNodeId === id
-        ) {
+        if (state.cursor && state.cursor.mySelectedNodeId === id) {
           foundColor = state.cursor.color;
         }
       });
@@ -347,9 +337,7 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
                 outputs={outputs}
                 setOutputs={setOutputs}
                 edges={edges}
-                outputIdentifierError={
-                  outputIdentifierErrors[index]
-                }
+                outputIdentifierError={outputIdentifierErrors[index]}
                 updateNodeValue={updateNodeValue}
                 setOutputIdentifierError={(error) =>
                   setOutputIdentifierErrors((prev) => ({

@@ -21,15 +21,11 @@
           {
             "id": "8d276439-c973-4dbb-847b-babb1a98f1dc",
             "outputIdentifier": "a",
-            "identifiers": [
-              "q426408"
-            ]
+            "identifiers": ["q426408"]
           },
           {
             "id": "8d276439-c973-4dbb-847b-babb1a98f1dc",
-            "identifiers": [
-              "q426408"
-            ]
+            "identifiers": ["q426408"]
           }
         ],
         "children": [],
@@ -37,9 +33,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q798370"
-        ],
+        "identifiers": ["q798370"],
         "encodingType": "Basis Encoding",
         "bound": 0,
         "size": "",
@@ -73,15 +67,11 @@
           {
             "id": "455c4e24-a662-4392-90dd-1609fe5325ef",
             "outputIdentifier": "b",
-            "identifiers": [
-              "q192682"
-            ]
+            "identifiers": ["q192682"]
           },
           {
             "id": "455c4e24-a662-4392-90dd-1609fe5325ef",
-            "identifiers": [
-              "q192682"
-            ]
+            "identifiers": ["q192682"]
           }
         ],
         "children": [],
@@ -89,9 +79,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q429294"
-        ],
+        "identifiers": ["q429294"],
         "encodingType": "Basis Encoding",
         "bound": 0,
         "size": "",
@@ -125,15 +113,11 @@
           {
             "id": "73700b91-1a99-40a1-bcb5-238976341134",
             "outputIdentifier": "c",
-            "identifiers": [
-              "q949469"
-            ]
+            "identifiers": ["q949469"]
           },
           {
             "id": "73700b91-1a99-40a1-bcb5-238976341134",
-            "identifiers": [
-              "q949469"
-            ]
+            "identifiers": ["q949469"]
           }
         ],
         "children": [],
@@ -141,9 +125,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q985142"
-        ],
+        "identifiers": ["q985142"],
         "encodingType": "Basis Encoding",
         "bound": 0,
         "size": "",
@@ -179,9 +161,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q426408"
-        ],
+        "identifiers": ["q426408"],
         "dataType": "int",
         "value": "4",
         "outputIdentifier": "a",
@@ -216,9 +196,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q192682"
-        ],
+        "identifiers": ["q192682"],
         "dataType": "int",
         "value": "0",
         "outputIdentifier": "b",
@@ -253,9 +231,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q949469"
-        ],
+        "identifiers": ["q949469"],
         "dataType": "int",
         "value": "1",
         "outputIdentifier": "c",
@@ -287,16 +263,12 @@
         "inputs": [
           {
             "id": "314b49cc-4021-4325-a307-79722841abed",
-            "identifiers": [
-              "q798370"
-            ],
+            "identifiers": ["q798370"],
             "outputIdentifier": "d"
           },
           {
             "id": "929182c6-5b85-478f-8f1e-e03243d991f6",
-            "identifiers": [
-              "q429294"
-            ],
+            "identifiers": ["q429294"],
             "outputIdentifier": "e"
           }
         ],
@@ -305,9 +277,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q688762"
-        ],
+        "identifiers": ["q688762"],
         "operator": "+",
         "outputIdentifier": "g",
         "outputs": [
@@ -337,16 +307,12 @@
         "inputs": [
           {
             "id": "fcfb5eca-a8eb-4791-b1d5-5aade435065f",
-            "identifiers": [
-              "q688762"
-            ],
+            "identifiers": ["q688762"],
             "outputIdentifier": "g"
           },
           {
             "id": "40c2da33-8367-41d4-a4e2-f06fe46e5735",
-            "identifiers": [
-              "q985142"
-            ],
+            "identifiers": ["q985142"],
             "outputIdentifier": "f"
           }
         ],
@@ -355,9 +321,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q817406"
-        ],
+        "identifiers": ["q817406"],
         "operator": "<",
         "outputIdentifier": "h",
         "outputs": [

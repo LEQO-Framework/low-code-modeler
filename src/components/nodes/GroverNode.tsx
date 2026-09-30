@@ -33,9 +33,7 @@ export const GroverNode = memo((node: Node) => {
       : "",
   );
 
-  const [targetStates, setTargetStates] = useState(
-    data.targetStates || "",
-  );
+  const [targetStates, setTargetStates] = useState(data.targetStates || "");
 
   const [iterationsStr, setIterationsStr] = useState(
     data.numIterations !== undefined &&
@@ -177,10 +175,7 @@ export const GroverNode = memo((node: Node) => {
     const hasOutOfBoundsState = states.some((state) => {
       const parsedState = parseInt(state, 10);
 
-      return (
-        !isNaN(parsedState) &&
-        parsedState > maxIndex
-      );
+      return !isNaN(parsedState) && parsedState > maxIndex;
     });
 
     setTargetStateOutOfBoundsError(hasOutOfBoundsState);
@@ -333,10 +328,7 @@ export const GroverNode = memo((node: Node) => {
                 className="w-full p-1 mt-1 text-sm text-center text-black border-2 border-blue-200 rounded-full outline-none focus:border-blue-400 transition-colors"
                 value={targetStates}
                 onChange={(e) => {
-                  const val = e.target.value.replace(
-                    /[^a-zA-Z0-9,\s]/g,
-                    "",
-                  );
+                  const val = e.target.value.replace(/[^a-zA-Z0-9,\s]/g, "");
 
                   setTargetStates(val);
                   handleChange("targetStates", val);

@@ -21,15 +21,11 @@
           {
             "id": "8d276439-c973-4dbb-847b-babb1a98f1dc",
             "outputIdentifier": "a",
-            "identifiers": [
-              "q426408"
-            ]
+            "identifiers": ["q426408"]
           },
           {
             "id": "8d276439-c973-4dbb-847b-babb1a98f1dc",
-            "identifiers": [
-              "q426408"
-            ]
+            "identifiers": ["q426408"]
           }
         ],
         "children": [],
@@ -37,9 +33,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q798370"
-        ],
+        "identifiers": ["q798370"],
         "encodingType": "Basis Encoding",
         "bound": 0,
         "size": 2,
@@ -73,15 +67,11 @@
           {
             "id": "455c4e24-a662-4392-90dd-1609fe5325ef",
             "outputIdentifier": "b",
-            "identifiers": [
-              "q192682"
-            ]
+            "identifiers": ["q192682"]
           },
           {
             "id": "455c4e24-a662-4392-90dd-1609fe5325ef",
-            "identifiers": [
-              "q192682"
-            ]
+            "identifiers": ["q192682"]
           }
         ],
         "children": [],
@@ -89,9 +79,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q429294"
-        ],
+        "identifiers": ["q429294"],
         "encodingType": "Basis Encoding",
         "bound": 0,
         "size": 1,
@@ -127,9 +115,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q426408"
-        ],
+        "identifiers": ["q426408"],
         "dataType": "int",
         "value": "2",
         "outputIdentifier": "a",
@@ -165,9 +151,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q192682"
-        ],
+        "identifiers": ["q192682"],
         "dataType": "int",
         "value": "1",
         "outputIdentifier": "b",
@@ -200,16 +184,12 @@
         "inputs": [
           {
             "id": "314b49cc-4021-4325-a307-79722841abed",
-            "identifiers": [
-              "q798370"
-            ],
+            "identifiers": ["q798370"],
             "outputIdentifier": "c"
           },
           {
             "id": "929182c6-5b85-478f-8f1e-e03243d991f6",
-            "identifiers": [
-              "q429294"
-            ],
+            "identifiers": ["q429294"],
             "outputIdentifier": "d"
           }
         ],
@@ -218,9 +198,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q405059"
-        ],
+        "identifiers": ["q405059"],
         "operator": "&",
         "outputIdentifier": "e",
         "outputs": [

@@ -23,9 +23,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q230852"
-        ],
+        "identifiers": ["q230852"],
         "dataType": "Array",
         "value": "[pi/4,pi/2]",
         "outputIdentifier": "a",
@@ -59,15 +57,11 @@
           {
             "id": "c1dcbbfb-b33e-4f37-bdd1-bf57d4020b7a",
             "outputIdentifier": "a",
-            "identifiers": [
-              "q230852"
-            ]
+            "identifiers": ["q230852"]
           },
           {
             "id": "c1dcbbfb-b33e-4f37-bdd1-bf57d4020b7a",
-            "identifiers": [
-              "q230852"
-            ]
+            "identifiers": ["q230852"]
           }
         ],
         "children": [],
@@ -75,9 +69,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q246919"
-        ],
+        "identifiers": ["q246919"],
         "encodingType": "Amplitude Encoding",
         "bound": "0.5",
         "size": "",
@@ -110,9 +102,7 @@
         "inputs": [
           {
             "id": "505608e0-0b17-4ca4-a5ef-7549145a444e",
-            "identifiers": [
-              "q246919"
-            ],
+            "identifiers": ["q246919"],
             "outputIdentifier": "b"
           }
         ],
@@ -121,9 +111,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q766316"
-        ],
+        "identifiers": ["q766316"],
         "operator": "min"
       },
       "width": 320,

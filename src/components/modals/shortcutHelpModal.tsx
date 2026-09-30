@@ -10,7 +10,10 @@ const renderKeyTokens = (combo: string) => {
   const tokens = combo.split(KEY_SPLIT_REGEX);
 
   return tokens.map((token, index) => (
-    <span key={`${combo}-${token}-${index}`} className="inline-flex items-center">
+    <span
+      key={`${combo}-${token}-${index}`}
+      className="inline-flex items-center"
+    >
       <kbd className="rounded border border-gray-300 bg-white px-2 py-0.5 text-xs font-semibold text-gray-700 shadow-sm">
         {token}
       </kbd>

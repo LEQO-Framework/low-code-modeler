@@ -1,15 +1,17 @@
-import { ancillaConstructColor } from '@/constants';
-import { Handle, Position } from 'reactflow';
-import React from 'react';
-import { cn } from '@/lib/utils';
+import { ancillaConstructColor } from "@/constants";
+import { Handle, Position } from "reactflow";
+import React from "react";
+import { cn } from "@/lib/utils";
 
 export default function UncomputePort({ node, edges, index }) {
   const handleId = `ancillaHandle${node.type}Uncompute${index}${node.id}`;
-  const isConnected = edges.some(edge => edge.sourceHandle === handleId);
+  const isConnected = edges.some((edge) => edge.sourceHandle === handleId);
 
   const handleClassName = cn(
     `z-20 circle-port-out absolute`,
-    isConnected ? "!bg-green-100 !border-black" : "!bg-gray-200 !border-dashed !border-black"
+    isConnected
+      ? "!bg-green-100 !border-black"
+      : "!bg-gray-200 !border-dashed !border-black",
   );
 
   return (
@@ -17,7 +19,7 @@ export default function UncomputePort({ node, edges, index }) {
       <div
         className="relative p-2"
         style={{
-          width: '180px',
+          width: "180px",
         }}
       >
         <div
@@ -26,7 +28,12 @@ export default function UncomputePort({ node, edges, index }) {
             backgroundColor: ancillaConstructColor,
           }}
         />
-        <div className="w-full text-left text-sm text-black relative z-10" style={{ paddingLeft: '15px' }}>Uncompute</div>
+        <div
+          className="w-full text-left text-sm text-black relative z-10"
+          style={{ paddingLeft: "15px" }}
+        >
+          Uncompute
+        </div>
 
         <Handle
           type="source"
@@ -36,9 +43,9 @@ export default function UncomputePort({ node, edges, index }) {
           isValidConnection={() => true}
           isConnectable={true}
           style={{
-            top: '50%',
-            right: '0px',
-            transform: 'translateY(-50%) rotate(45deg)'
+            top: "50%",
+            right: "0px",
+            transform: "translateY(-50%) rotate(45deg)",
           }}
           isConnectableEnd={false}
         />

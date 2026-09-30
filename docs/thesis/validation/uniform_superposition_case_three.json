@@ -23,9 +23,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q408732"
-        ],
+        "identifiers": ["q408732"],
         "parameterType": "degree",
         "outputIdentifier": "a",
         "outputs": [
@@ -56,9 +54,7 @@
         "inputs": [
           {
             "id": "3814a8fa-44b2-408d-ab06-1422f79ce0d7",
-            "identifiers": [
-              "q408732"
-            ],
+            "identifiers": ["q408732"],
             "outputIdentifier": "a"
           }
         ],
@@ -67,9 +63,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q713351"
-        ],
+        "identifiers": ["q713351"],
         "parameter": "0"
       },
       "width": 100,
@@ -92,9 +86,7 @@
         "inputs": [
           {
             "id": "e995ef62-c294-4c8f-8cb4-6de29f30b813",
-            "identifiers": [
-              "q713351"
-            ]
+            "identifiers": ["q713351"]
           }
         ],
         "children": [],
@@ -102,9 +94,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q377235"
-        ],
+        "identifiers": ["q377235"],
         "indices": "0,1",
         "outputIdentifier": "",
         "parameterType": "degree"

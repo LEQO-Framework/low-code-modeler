@@ -18,7 +18,7 @@ services:
     image: stiliala/collaboration-backend:latest
     ports:
       - "1234:1234"
-  
+
   server:
     image: ghcr.io/qunicorn/qunicorn-core:main
     environment:
@@ -52,7 +52,6 @@ services:
     ports:
       - "6379"
 
-  
   keycloak_postgres:
     image: postgres:15
     environment:
@@ -64,7 +63,7 @@ services:
     restart: always
     volumes:
       - /keycloak_pgdata:/var/lib/postgresql/data
-    ports: 
+    ports:
       - "5439:5432"
 
   keycloak:
@@ -110,8 +109,7 @@ services:
     ports:
       - "5432:5432"
 
-
-  ## Low-Code 
+  ## Low-Code
   leqo-backend:
     image: ghcr.io/leqo-framework/leqo-backend:main
     environment:
@@ -166,7 +164,7 @@ services:
   api:
     image: stiliala/worker:latest
     env_file:
-    - .env
+      - .env
     ports:
       - 3000:3000
     environment:
@@ -188,7 +186,7 @@ services:
   worker:
     image: stiliala/worker:latest
     env_file:
-    - .env
+      - .env
     environment:
       DATABASE_URL: postgresql://app:app@postgres:5432/app
       REDIS_URL: redis://redis:6379

@@ -10,7 +10,10 @@ export type JobResponse = {
 /**
  * Create a generation job
  */
-export async function createGenerationJob(prompt: string, generationMode: string): Promise<{ jobId: string }> {
+export async function createGenerationJob(
+  prompt: string,
+  generationMode: string,
+): Promise<{ jobId: string }> {
   const res = await fetch("http://localhost:3000/generate", {
     method: "POST",
     headers: {
@@ -45,7 +48,7 @@ export async function getJob(jobId: string): Promise<JobResponse> {
 export function waitForJob(
   jobId: string,
   onUpdate?: (job: JobResponse) => void,
-  intervalMs = 1000
+  intervalMs = 1000,
 ): Promise<JobResponse> {
   return new Promise((resolve, reject) => {
     const interval = setInterval(async () => {
@@ -71,8 +74,11 @@ export function waitForJob(
   });
 }
 
-export async function generate(prompt: string, generationMode: string, _onUpdate?: (job: JobResponse) => void) {
+export async function generate(
+  prompt: string,
+  generationMode: string,
+  _onUpdate?: (job: JobResponse) => void,
+) {
   const { jobId } = await createGenerationJob(prompt, generationMode);
   return jobId;
 }
-

@@ -16,32 +16,48 @@ let groupCounter = 1;
 export function groupSelectedNodes(nodes: Node[], _edges: Edge[]): Node[] {
   // All selected nodes, including existing groups so that supergroups can be formed,
   // restricted to top level: nodes whose parent is also selected are left out.
-  const selected = nodes.filter(
-    (n) => n.selected === true && !n.data?.locked
-  );
+  const selected = nodes.filter((n) => n.selected === true && !n.data?.locked);
 
   if (selected.length < 2) return nodes;
 
   // keep only top-level nodes, i.e. those whose parentNode is not selected as well
   const selectedIds = new Set(selected.map((n) => n.id));
   const topLevel = selected.filter(
-    (n) => !n.parentNode || !selectedIds.has(n.parentNode)
+    (n) => !n.parentNode || !selectedIds.has(n.parentNode),
   );
 
   if (topLevel.length < 2) return nodes;
 
   // bounding box over the absolute positions
-  const minX = Math.min(...topLevel.map((n) => n.positionAbsolute?.x ?? n.position.x)) - 30;
-  const minY = Math.min(...topLevel.map((n) => n.positionAbsolute?.y ?? n.position.y)) - 50;
-  const maxX = Math.max(...topLevel.map((n) => (n.positionAbsolute?.x ?? n.position.x) + ((n.style?.width as number) ?? n.width ?? 150))) + 30;
-  const maxY = Math.max(...topLevel.map((n) => (n.positionAbsolute?.y ?? n.position.y) + ((n.style?.height as number) ?? n.height ?? 100))) + 30;
+  const minX =
+    Math.min(...topLevel.map((n) => n.positionAbsolute?.x ?? n.position.x)) -
+    30;
+  const minY =
+    Math.min(...topLevel.map((n) => n.positionAbsolute?.y ?? n.position.y)) -
+    50;
+  const maxX =
+    Math.max(
+      ...topLevel.map(
+        (n) =>
+          (n.positionAbsolute?.x ?? n.position.x) +
+          ((n.style?.width as number) ?? n.width ?? 150),
+      ),
+    ) + 30;
+  const maxY =
+    Math.max(
+      ...topLevel.map(
+        (n) =>
+          (n.positionAbsolute?.y ?? n.position.y) +
+          ((n.style?.height as number) ?? n.height ?? 100),
+      ),
+    ) + 30;
 
-  const groupWidth  = maxX - minX;
+  const groupWidth = maxX - minX;
   const groupHeight = maxY - minY;
 
   const groupId = uuid();
-  const color   = GROUP_COLORS[colorIndex % GROUP_COLORS.length];
-  const label   = `Group ${groupCounter}`;
+  const color = GROUP_COLORS[colorIndex % GROUP_COLORS.length];
+  const label = `Group ${groupCounter}`;
   colorIndex++;
   groupCounter++;
 
@@ -97,14 +113,20 @@ export function ungroupNodes(groupId: string, nodes: Node[]): Node[] {
     .filter((n) => n.id !== groupId)
     .map((n) => {
       if (n.parentNode === groupId) {
-        const absX = (groupNode.positionAbsolute?.x ?? groupNode.position.x) + n.position.x;
-        const absY = (groupNode.positionAbsolute?.y ?? groupNode.position.y) + n.position.y;
+        const absX =
+          (groupNode.positionAbsolute?.x ?? groupNode.position.x) +
+          n.position.x;
+        const absY =
+          (groupNode.positionAbsolute?.y ?? groupNode.position.y) +
+          n.position.y;
 
         if (parentOfGroup) {
           // promote the child nodes to the parent group
-          const parentNode = nodes.find(p => p.id === parentOfGroup);
-          const pgx = parentNode?.positionAbsolute?.x ?? parentNode?.position.x ?? 0;
-          const pgy = parentNode?.positionAbsolute?.y ?? parentNode?.position.y ?? 0;
+          const parentNode = nodes.find((p) => p.id === parentOfGroup);
+          const pgx =
+            parentNode?.positionAbsolute?.x ?? parentNode?.position.x ?? 0;
+          const pgy =
+            parentNode?.positionAbsolute?.y ?? parentNode?.position.y ?? 0;
           return {
             ...n,
             parentNode: parentOfGroup,
@@ -147,7 +169,7 @@ export function ungroupNodes(groupId: string, nodes: Node[]): Node[] {
  */
 export function handleNodeDropOnGroup(
   draggedNode: Node,
-  nodes: Node[]
+  nodes: Node[],
 ): Node[] {
   // group nodes themselves are ignored
   if (draggedNode.type === "groupNode") return nodes;
@@ -155,7 +177,7 @@ export function handleNodeDropOnGroup(
   // absolute position of the dragged node
   const dragX = draggedNode.positionAbsolute?.x ?? draggedNode.position.x;
   const dragY = draggedNode.positionAbsolute?.y ?? draggedNode.position.y;
-  const dragW = draggedNode.width  ?? 100;
+  const dragW = draggedNode.width ?? 100;
   const dragH = draggedNode.height ?? 100;
 
   // center point of the dragged node
@@ -170,7 +192,7 @@ export function handleNodeDropOnGroup(
 
     const gx = n.positionAbsolute?.x ?? n.position.x;
     const gy = n.positionAbsolute?.y ?? n.position.y;
-    const gw = (n.style?.width  as number) ?? n.width  ?? 300;
+    const gw = (n.style?.width as number) ?? n.width ?? 300;
     const gh = (n.style?.height as number) ?? n.height ?? 200;
 
     return cx >= gx && cx <= gx + gw && cy >= gy && cy <= gy + gh;
@@ -188,7 +210,7 @@ export function handleNodeDropOnGroup(
       return {
         ...n,
         parentNode: targetGroup.id,
-        extent: undefined,          // deliberately no extent: parent
+        extent: undefined, // deliberately no extent: parent
         position: {
           x: Math.max(0, dragX - gx),
           y: Math.max(40, dragY - gy),
@@ -205,8 +227,10 @@ export function handleNodeDropOnGroup(
     if (parentGroup) {
       const gx = parentGroup.positionAbsolute?.x ?? parentGroup.position.x;
       const gy = parentGroup.positionAbsolute?.y ?? parentGroup.position.y;
-      const gw = (parentGroup.style?.width  as number) ?? parentGroup.width  ?? 300;
-      const gh = (parentGroup.style?.height as number) ?? parentGroup.height ?? 200;
+      const gw =
+        (parentGroup.style?.width as number) ?? parentGroup.width ?? 300;
+      const gh =
+        (parentGroup.style?.height as number) ?? parentGroup.height ?? 200;
       // still inside: nothing to do
       if (cx >= gx && cx <= gx + gw && cy >= gy && cy <= gy + gh) return nodes;
       // outside: detach from the group and use the absolute position

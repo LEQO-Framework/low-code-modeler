@@ -22,9 +22,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q381410"
-        ],
+        "identifiers": ["q381410"],
         "dataType": "int",
         "value": "5",
         "outputIdentifier": "a"
@@ -50,18 +48,14 @@
           {
             "id": "newNode2",
             "outputIdentifier": "a",
-            "identifiers": [
-              "q381410"
-            ]
+            "identifiers": ["q381410"]
           }
         ],
         "implementation": "OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[3];\nx q[0];\nx q[2];",
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q838802"
-        ],
+        "identifiers": ["q838802"],
         "encodingType": "Basis Encoding",
         "bound": 0,
         "size": 3,
@@ -87,18 +81,14 @@
         "inputs": [
           {
             "id": "newNode3",
-            "identifiers": [
-              "q838802"
-            ]
+            "identifiers": ["q838802"]
           }
         ],
         "implementation": "OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[3];\ncreg c[3];\nmeasure q[0] -> c[2];\nmeasure q[1] -> c[2];\nmeasure q[2] -> c[2];\n",
         "implementationType": "openqasm2",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q520528"
-        ],
+        "identifiers": ["q520528"],
         "indices": "",
         "outputIdentifier": ""
       },

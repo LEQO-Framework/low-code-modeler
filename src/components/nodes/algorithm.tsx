@@ -91,8 +91,7 @@ export const AlgorithmNode = memo((node: Node) => {
   const getInputValue = (type: "quantum" | "classical", index: number) =>
     inputs.find(
       (input: any) =>
-        input.targetHandle ===
-        `${type}HandleOperationInput${index}${node.id}`,
+        input.targetHandle === `${type}HandleOperationInput${index}${node.id}`,
     );
 
   useEffect(() => {
@@ -190,8 +189,7 @@ export const AlgorithmNode = memo((node: Node) => {
       const outputIdentifier = output?.identifier?.trim();
       console.log("Outputidentifier", outputIdentifier);
       const size = String(output?.size ?? "").trim();
-      newSizeErrors[index] =
-        size !== "" && !isPositiveIntegerSize(size);
+      newSizeErrors[index] = size !== "" && !isPositiveIntegerSize(size);
       if (!outputIdentifier) return;
       const duplicates = findDuplicateOutputIdentifier(
         nodes,
@@ -280,7 +278,6 @@ export const AlgorithmNode = memo((node: Node) => {
             `quantumHandle${node.type}Output${numberQuantumOutputs + index}${node.id}`,
         ),
     );
-    
 
     if (edgesToKeep.length !== edges.length) {
       console.log("remove edges");
@@ -364,21 +361,21 @@ export const AlgorithmNode = memo((node: Node) => {
           )}
 
           <div
-              className="relative w-full flex items-center"
-              style={{ height: "52px" }}
-            >
-              {node.data.implementation && (
-                <img
-                  src="/implementation-icon.png"
-                  alt="Custom Icon"
-                  className="absolute -top-4 -right-4 z-50 w-8 h-8 object-contain"
-                />
-              )}
+            className="relative w-full flex items-center"
+            style={{ height: "52px" }}
+          >
+            {node.data.implementation && (
+              <img
+                src="/implementation-icon.png"
+                alt="Custom Icon"
+                className="absolute -top-4 -right-4 z-50 w-8 h-8 object-contain"
+              />
+            )}
 
-              <div
-                className="w-full bg-blue-300 py-1 px-2 flex items-center"
-                style={{ height: "inherit" }}
-              >
+            <div
+              className="w-full bg-blue-300 py-1 px-2 flex items-center"
+              style={{ height: "inherit" }}
+            >
               <img
                 src="algorithmIcon.png"
                 alt="icon"
@@ -558,72 +555,68 @@ export const AlgorithmNode = memo((node: Node) => {
           </div>
 
           <div className="custom-node-port-out">
-            {getOutputSlots("classical").map(
-              ({ index: dataIndex }, index) => (
-                <OutputPort
-                  key={`classical-output-port-${index}`}
-                  node={node}
-                  index={dataIndex}
-                  handleIndex={index}
-                  type={"classical"}
-                  nodes={nodes}
-                  outputs={outputs}
-                  setOutputs={setOutputs}
-                  edges={edges}
-                  sizeError={sizeErrors[dataIndex]}
-                  outputIdentifierError={outputIdentifierErrors[dataIndex]}
-                  updateNodeValue={updateNodeValue}
-                  setOutputIdentifierError={(error) =>
-                    setOutputIdentifierErrors((prev) => ({
-                      ...prev,
-                      [dataIndex]: error,
-                    }))
-                  }
-                  setSizeError={(error) =>
-                    setSizeErrors((prev) => ({
-                      ...prev,
-                      [dataIndex]: error,
-                    }))
-                  }
-                  setSelectedNode={setSelectedNode}
-                  active={true}
-                />
-              ),
-            )}
+            {getOutputSlots("classical").map(({ index: dataIndex }, index) => (
+              <OutputPort
+                key={`classical-output-port-${index}`}
+                node={node}
+                index={dataIndex}
+                handleIndex={index}
+                type={"classical"}
+                nodes={nodes}
+                outputs={outputs}
+                setOutputs={setOutputs}
+                edges={edges}
+                sizeError={sizeErrors[dataIndex]}
+                outputIdentifierError={outputIdentifierErrors[dataIndex]}
+                updateNodeValue={updateNodeValue}
+                setOutputIdentifierError={(error) =>
+                  setOutputIdentifierErrors((prev) => ({
+                    ...prev,
+                    [dataIndex]: error,
+                  }))
+                }
+                setSizeError={(error) =>
+                  setSizeErrors((prev) => ({
+                    ...prev,
+                    [dataIndex]: error,
+                  }))
+                }
+                setSelectedNode={setSelectedNode}
+                active={true}
+              />
+            ))}
             {/*           </div>
           <div className="custom-node-port-out"> */}
-            {getOutputSlots("quantum").map(
-              ({ index: dataIndex }, index) => (
-                <OutputPort
-                  key={`quantum-output-port-${index}`}
-                  node={node}
-                  index={dataIndex}
-                  handleIndex={index}
-                  type={"quantum"}
-                  nodes={nodes}
-                  outputs={outputs}
-                  setOutputs={setOutputs}
-                  edges={edges}
-                  outputIdentifierError={outputIdentifierErrors[dataIndex]}
-                  updateNodeValue={updateNodeValue}
-                  setOutputIdentifierError={(error) =>
-                    setOutputIdentifierErrors((prev) => ({
-                      ...prev,
-                      [dataIndex]: error,
-                    }))
-                  }
-                  sizeError={sizeErrors[dataIndex]}
-                  setSizeError={(error) =>
-                    setSizeErrors((prev) => ({
-                      ...prev,
-                      [dataIndex]: error,
-                    }))
-                  }
-                  setSelectedNode={setSelectedNode}
-                  active={true}
-                />
-              ),
-            )}
+            {getOutputSlots("quantum").map(({ index: dataIndex }, index) => (
+              <OutputPort
+                key={`quantum-output-port-${index}`}
+                node={node}
+                index={dataIndex}
+                handleIndex={index}
+                type={"quantum"}
+                nodes={nodes}
+                outputs={outputs}
+                setOutputs={setOutputs}
+                edges={edges}
+                outputIdentifierError={outputIdentifierErrors[dataIndex]}
+                updateNodeValue={updateNodeValue}
+                setOutputIdentifierError={(error) =>
+                  setOutputIdentifierErrors((prev) => ({
+                    ...prev,
+                    [dataIndex]: error,
+                  }))
+                }
+                sizeError={sizeErrors[dataIndex]}
+                setSizeError={(error) =>
+                  setSizeErrors((prev) => ({
+                    ...prev,
+                    [dataIndex]: error,
+                  }))
+                }
+                setSelectedNode={setSelectedNode}
+                active={true}
+              />
+            ))}
           </div>
 
           {ancillaMode && (
