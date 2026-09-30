@@ -5,7 +5,6 @@ import { useStore } from "@/config/store";
 import { AddNodePanel } from "./panels";
 
 type PanelProps = {
-  ancillaMode: any;
   onAddNode?: (
     def: any,
     customPosition?: { x: number; y: number },
@@ -17,13 +16,13 @@ const selector = (state: { selectedNode: Node | null }) => ({
   selectedNode: state.selectedNode,
 });
 
-export const Palette = ({ ancillaMode, onAddNode }: PanelProps) => {
+export const Palette = ({ onAddNode }: PanelProps) => {
   const { selectedNode } = useStore(selector, shallow);
   const CurrentPanel = getPanel(selectedNode?.type || "");
 
   return (
     <div className="bg-gray-100 border-gray-200 ">
-      <CurrentPanel ancillaMode={ancillaMode} onAddNode={onAddNode} />
+      <CurrentPanel onAddNode={onAddNode} />
     </div>
   );
 };

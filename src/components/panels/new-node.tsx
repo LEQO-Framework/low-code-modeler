@@ -6,7 +6,6 @@ import * as consts from "../../constants";
 import { DomainProfile } from "../modals/domainProfileModal";
 
 const selector = (state: {
-  ancillaMode: boolean;
   compact: boolean;
   experienceLevel: string;
   completionGuaranteed: boolean;
@@ -14,7 +13,6 @@ const selector = (state: {
   domainProfile: string;
   allDomainProfiles: DomainProfile[];
 }) => ({
-  ancillaMode: state.ancillaMode,
   experienceLevel: state.experienceLevel,
   compact: state.compact,
   completionGuaranteed: state.completionGuaranteed,
@@ -45,7 +43,6 @@ const operatorIcons: Record<string, string> = {
 };
 
 interface AddNodePanelProps {
-  ancillaMode?: any;
   onAddNode?: (def: any, customPosition?: { x: number; y: number }, pluginData?: any) => void;
 }
 
@@ -53,7 +50,7 @@ export const AddNodePanel = ({ onAddNode }: AddNodePanelProps) => {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [activeSubcategories, setActiveSubcategories] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const { ancillaMode, completionGuaranteed, compact, experienceLevel, userTemplates, domainProfile, allDomainProfiles } = useStore(
+  const { completionGuaranteed, compact, experienceLevel, userTemplates, domainProfile, allDomainProfiles } = useStore(
     selector,
     shallow
   );
@@ -700,9 +697,7 @@ export const AddNodePanel = ({ onAddNode }: AddNodePanelProps) => {
         const labels = [node.label, ...(node.aliases ?? [])].map((l) =>
           l.toLowerCase()
         );
-        const allowedInMode = !(!ancillaMode && node.type === "ancillaNode");
-
-        if (!allowedInMode) continue;
+        if (node.type === "ancillaNode") continue;
         if (completionGuaranteed && !node.completionGuaranteed) continue;
         if (!node.compactOptions.includes(compact)) continue;
 
@@ -726,7 +721,7 @@ const filterNodeGroup = (nodeGroup: any): Node[] => {
   if (Array.isArray(nodeGroup)) {
     return nodeGroup.filter(
       (node: Node) =>
-        (ancillaMode || node.type !== "ancillaNode") &&
+        node.type !== "ancillaNode" &&
         (completionGuaranteed ? node.completionGuaranteed : true) &&
         node.compactOptions?.includes(compact)
     );
@@ -750,7 +745,7 @@ const filterNodeGroup = (nodeGroup: any): Node[] => {
   const renderNodes = (nodeGroup: any): React.ReactNode => {
     if (Array.isArray(nodeGroup)) {
       const visibleNodes = nodeGroup
-        .filter((node: Node) => !(!ancillaMode && node.type === "ancillaNode"))
+        .filter((node: Node) => node.type !== "ancillaNode")
         .filter((node: Node) =>
           completionGuaranteed ? node.completionGuaranteed : true
         )
@@ -777,7 +772,7 @@ const filterNodeGroup = (nodeGroup: any): Node[] => {
                       : Array.isArray(node.icon)
                         ? node.type === consts.GateNode || node.type === consts.QubitNode
                           ? node.icon[experienceLevel === "explorer" ? 1 : 0]
-                          : node.icon[ancillaMode ? 1 : 0]
+                          : node.icon[0]
                         : node.icon
                   }
                   alt={typeof node.label === "string" ? node.label : ""}
@@ -879,7 +874,7 @@ const filterNodeGroup = (nodeGroup: any): Node[] => {
                       Array.isArray(node.icon)
                         ? node.type === consts.GateNode
                           ? node.icon[experienceLevel === "explorer" ? 1 : 0]
-                          : node.icon[ancillaMode ? 1 : 0] // Use ancillaMode for others
+                          : node.icon[0]
                         : node.icon
                     }
                     alt={typeof node.label === "string" ? node.label : ""}
