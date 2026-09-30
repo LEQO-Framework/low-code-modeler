@@ -187,6 +187,94 @@ const selector = (state: {
   redo: state.redo,
 });
 
+type HandleCandidate = {
+  id: string;
+  domain: "classical" | "quantum" | "unknown";
+  index: number;
+};
+
+const getHandleDomain = (handleId: string): HandleCandidate["domain"] => {
+  if (handleId.includes("classical")) return "classical";
+  if (
+    handleId.includes("quantum") ||
+    handleId.includes("sideQuantum")
+  ) {
+    return "quantum";
+  }
+  return "unknown";
+};
+
+const getHandleIndexForNode = (handleId: string, nodeId: string) => {
+  const handleWithoutNodeId = handleId.replace(nodeId, "");
+  const matches = handleWithoutNodeId.match(/\d+/g);
+  return matches ? Number(matches[matches.length - 1]) : 0;
+};
+
+const getRenderedHandles = (
+  nodeId: string,
+  node: Node,
+  direction: "source" | "target",
+): HandleCandidate[] => {
+  const nodeElement = Array.from(
+    document.querySelectorAll<HTMLElement>(".react-flow__node"),
+  ).find((element) => element.dataset.id === nodeId);
+
+  if (!nodeElement) return [];
+
+  return Array.from(
+    nodeElement.querySelectorAll<HTMLElement>(
+      `.react-flow__handle.${direction}[data-handleid]`,
+    ),
+  )
+    .map((handle) => {
+      const id = handle.dataset.handleid;
+      if (!id) return null;
+
+      return {
+        id,
+        domain: getHandleDomain(id),
+        index: getHandleIndexForNode(id, node.id),
+      };
+    })
+    .filter((handle): handle is HandleCandidate => handle !== null);
+};
+
+const distanceToSegment = (
+  point: { x: number; y: number },
+  start: { x: number; y: number },
+  end: { x: number; y: number },
+) => {
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  const lengthSquared = dx * dx + dy * dy;
+  const projection =
+    lengthSquared === 0
+      ? 0
+      : Math.max(
+          0,
+          Math.min(
+            1,
+            ((point.x - start.x) * dx + (point.y - start.y) * dy) /
+              lengthSquared,
+          ),
+        );
+  const closest = {
+    x: start.x + projection * dx,
+    y: start.y + projection * dy,
+  };
+
+  return Math.hypot(point.x - closest.x, point.y - closest.y);
+};
+
+const getNodeCenter = (node: Node) => {
+  const x = node.positionAbsolute?.x ?? node.position.x;
+  const y = node.positionAbsolute?.y ?? node.position.y;
+  return {
+    x: x + (node.width ?? 0) / 2,
+    y: y + (node.height ?? 0) / 2,
+  };
+};
+
 function App() {
   const reactFlowWrapper = React.useRef<any>(null);
   const [reactFlowInstance, setReactFlowInstance] = React.useState<any>(null);
@@ -2285,6 +2373,136 @@ If none apply, return { "algorithms": [] }.
       setHelperLines(null);
       if (node.type === "group") {
         return;
+      }
+
+      const currentNodes: Node[] = useStore.getState().nodes;
+      const currentEdges: Edge[] = useStore.getState().edges;
+      const nodesById = new Map<string, Node>(
+        currentNodes.map((current) => [current.id, current]),
+      );
+      const draggedNodeFromStore = nodesById.get(node.id);
+      const draggedNode = draggedNodeFromStore
+        ? { ...draggedNodeFromStore, ...node }
+        : undefined;
+
+      if (draggedNode && draggedNode.type !== "groupNode") {
+        const draggedCenter = getNodeCenter(draggedNode);
+        const closest = currentEdges
+          .filter(
+            (edge) =>
+              edge.source !== draggedNode.id && edge.target !== draggedNode.id,
+          )
+          .map((edge) => {
+            const source = nodesById.get(edge.source);
+            const target = nodesById.get(edge.target);
+            if (!source || !target) return null;
+
+            return {
+              edge,
+              distance: distanceToSegment(
+                draggedCenter,
+                getNodeCenter(source),
+                getNodeCenter(target),
+              ),
+            };
+          })
+          .filter(
+            (candidate): candidate is { edge: Edge; distance: number } =>
+              candidate !== null,
+          )
+          .reduce<{ edge: Edge; distance: number } | undefined>(
+            (best, candidate) =>
+              !best || candidate.distance < best.distance ? candidate : best,
+            undefined,
+          );
+        const tolerance = Math.max(
+          (draggedNode.width ?? 0) / 2,
+          (draggedNode.height ?? 0) / 2,
+          32,
+        );
+
+        if (closest && closest.distance <= tolerance) {
+          const edge = closest.edge;
+          const source = nodesById.get(edge.source);
+          const target = nodesById.get(edge.target);
+          if (source && target) {
+            const sourceOutputIndex = getHandleIndexForNode(
+              edge.sourceHandle ?? "",
+              source.id,
+            );
+            const targetInputIndex = getHandleIndexForNode(
+              edge.targetHandle ?? "",
+              target.id,
+            );
+            const sourceType = (
+              source.data.outputTypes?.[sourceOutputIndex] ?? "any"
+            ).toLowerCase();
+            const targetType = (
+              target.data.inputTypes?.[targetInputIndex] ?? "any"
+            ).toLowerCase();
+            const inputHandles = getRenderedHandles(
+              draggedNode.id,
+              draggedNode,
+              "target",
+            );
+            const outputHandles = getRenderedHandles(
+              draggedNode.id,
+              draggedNode,
+              "source",
+            );
+            const connectedHandles = new Set(
+              currentEdges
+                .filter((current) => current.target === draggedNode.id)
+                .map((current) => current.targetHandle),
+            );
+            const matchingInput = inputHandles.find(
+              (handle) =>
+                !connectedHandles.has(handle.id) &&
+                handle.domain === getHandleDomain(edge.sourceHandle ?? "") &&
+                ((draggedNode.data.inputTypes?.[handle.index] ?? "any") ===
+                  "any" ||
+                  sourceType === "any" ||
+                  draggedNode.data.inputTypes?.[handle.index]?.toLowerCase() ===
+                    sourceType),
+            );
+            const matchingOutput = outputHandles.find(
+              (handle) =>
+                handle.domain === getHandleDomain(edge.targetHandle ?? "") &&
+                (targetType === "any" ||
+                  draggedNode.data.outputTypes?.[handle.index] === "any" ||
+                  draggedNode.data.outputTypes?.[handle.index]?.toLowerCase() ===
+                    targetType),
+            );
+
+            if (matchingInput && matchingOutput) {
+              const splitHistoryIndex = useStore.getState().historyIndex;
+              const splitHistoryItem = {
+                nodes: structuredClone(currentNodes),
+                edges: structuredClone(currentEdges),
+              };
+              onEdgesChange([{ id: edge.id, type: "remove" }]);
+              onConnect({
+                source: edge.source,
+                sourceHandle: edge.sourceHandle,
+                target: draggedNode.id,
+                targetHandle: matchingInput.id,
+              });
+              onConnect({
+                source: draggedNode.id,
+                sourceHandle: matchingOutput.id,
+                target: edge.target,
+                targetHandle: edge.targetHandle,
+              });
+              useStore.setState((state) => ({
+                history: [
+                  ...state.history.slice(0, splitHistoryIndex + 1),
+                  splitHistoryItem,
+                ],
+                historyIndex: splitHistoryIndex + 1,
+              }));
+            }
+          }
+        }
       }
 
       // drag-to-group for groupNode
