@@ -353,8 +353,6 @@ export const StatePreparationNode = memo((node: Node) => {
       : data.label === "Encode Value"
         ? 450
         : 350;
-  const dynamicHeight = baseHeight;
-
   const [remoteHighlightColor, setRemoteHighlightColor] = useState<
     string | null
   >(null);

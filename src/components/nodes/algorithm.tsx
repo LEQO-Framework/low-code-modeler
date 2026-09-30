@@ -13,7 +13,6 @@ import {
   hasCanonicalCustomOutputs,
   normalizeCustomOutputs,
 } from "../utils/customOutputs";
-import { cn } from "@/lib/utils";
 import { classicalConstructColor, quantumConstructColor } from "@/constants";
 import {
   findDuplicateOutputIdentifier,
@@ -45,8 +44,6 @@ export const AlgorithmNode = memo((node: Node) => {
   const numberQuantumOutputs = data.numberQuantumOutputs || 0;
   const numberClassicalInputs = data.numberClassicalInputs || 0;
   const numberClassicalOutputs = data.numberClassicalOutputs || 0;
-
-  const outputHandleCount = numberQuantumOutputs + numberClassicalOutputs;
 
   const { edges, nodes, updateNodeValue, setSelectedNode, setNewEdges } =
     useStore(selector, shallow);

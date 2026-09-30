@@ -1,5 +1,4 @@
 import { useStore } from "@/config/store";
-import { cn } from "@/lib/utils";
 import React, { memo, useEffect, useState } from "react";
 import {
   Edge,
@@ -107,9 +106,6 @@ export const OperationNode = memo((node: Node) => {
       setStartsWithDigitError(false);
     }
   }, [nodes, node.data.outputIdentifier, node.id]);
-
-  const baseHeight = 650;
-  const dynamicHeight = baseHeight;
 
   const iconMap = {
     "Quantum Arithmetic Operator": "arithmeticIcon.png",
