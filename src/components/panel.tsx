@@ -9,13 +9,25 @@ import { shallow } from "zustand/shallow";
 import { useStore } from "@/config/store";
 import { TextPanel, MetadataPanel } from "./panels";
 import { QasmDiracPanel } from "./QasmDiracPanel";
-import { analyzeComponents, type DiracComponent } from "@/lib/componentAnalyzer";
+import {
+  analyzeComponents,
+  type DiracComponent,
+} from "@/lib/componentAnalyzer";
 import { qasmToNodes } from "@/lib/qasmToNodes";
 import { nodesToQasm } from "@/lib/nodesToQasm";
 import JSZip from "jszip";
-import { getEntanglementPersistence, isStateFullySeparable, getMultiQubitPersistence } from "./BlochSphere";
+import {
+  getEntanglementPersistence,
+  isStateFullySeparable,
+  getMultiQubitPersistence,
+} from "./BlochSphere";
 
-const selector = (state: { selectedNode: Node | null; nodes: Node[]; edges: Edge[]; updateNodeValue: (nodeId: string, field: string, value: any) => void }) => ({
+const selector = (state: {
+  selectedNode: Node | null;
+  nodes: Node[];
+  edges: Edge[];
+  updateNodeValue: (nodeId: string, field: string, value: any) => void;
+}) => ({
   selectedNode: state.selectedNode,
   nodes: state.nodes,
   edges: state.edges,
@@ -49,9 +61,11 @@ export const CustomPanel = ({
   onGetModel,
   qasmEditorMode = false,
 }: CustomPanelProps) => {
-  const { selectedNode, nodes, edges, updateNodeValue } = useStore(selector, shallow);
+  const { selectedNode, nodes, edges } = useStore(selector, shallow);
   const { setNodes, setEdges } = useReactFlow();
-  const [activeTab, setActiveTab] = useState<"properties" | "math" | "qasm">("properties");
+  const [activeTab, setActiveTab] = useState<"properties" | "math" | "qasm">(
+    "properties",
+  );
   const [components, setComponents] = useState<DiracComponent[]>([]);
   const [analyzing, setAnalyzing] = useState(false);
   const [hasAnalyzedOnce, setHasAnalyzedOnce] = useState(false);
@@ -63,7 +77,7 @@ export const CustomPanel = ({
   // Wenn Math Mode ausgeschaltet → zurück zu Properties (außer QASM Editor ist aktiv)
   useEffect(() => {
     if (!mathMode && activeTab === "math") setActiveTab("properties");
-    onWidthChange?.((mathMode || qasmEditorMode) ? 480 : 350);
+    onWidthChange?.(mathMode || qasmEditorMode ? 480 : 350);
   }, [mathMode, qasmEditorMode]);
 
   // QASM Editor mit Backend-QASM synchronisieren (hat Priorität)
@@ -121,33 +135,53 @@ export const CustomPanel = ({
   }, [nodes, edges, backendUrl, metadata, compilationTarget, onSendToBackend]);
 
   // Beim Wechsel zum Math Mode Tab → automatisch Backend-Call auslösen
-  const handleTabSwitch = useCallback((tab: "properties" | "math") => {
-    setActiveTab(tab);
-    if (tab === "math" && mathMode && !hasAnalyzedOnce) {
-      if (qasmCode.trim().length > 0) {
-        // QASM vorhanden → direkt analysieren
-        setHasAnalyzedOnce(true);
-        setAnalyzing(true);
-        setComponents([]);
-        analyzeComponents(nodes, edges, backendUrl, metadata, compilationTarget)
-          .then(setComponents)
-          .finally(() => setAnalyzing(false));
-      } else if (onSendToBackend) {
-        // Kein QASM → Backend-Call auslösen und warten
-        setWaitingForQasm(true);
-        setAnalyzing(true);
-        onSendToBackend();
+  const handleTabSwitch = useCallback(
+    (tab: "properties" | "math") => {
+      setActiveTab(tab);
+      if (tab === "math" && mathMode && !hasAnalyzedOnce) {
+        if (qasmCode.trim().length > 0) {
+          // QASM vorhanden → direkt analysieren
+          setHasAnalyzedOnce(true);
+          setAnalyzing(true);
+          setComponents([]);
+          analyzeComponents(
+            nodes,
+            edges,
+            backendUrl,
+            metadata,
+            compilationTarget,
+          )
+            .then(setComponents)
+            .finally(() => setAnalyzing(false));
+        } else if (onSendToBackend) {
+          // Kein QASM → Backend-Call auslösen und warten
+          setWaitingForQasm(true);
+          setAnalyzing(true);
+          onSendToBackend();
+        }
       }
-    }
-  }, [mathMode, hasAnalyzedOnce, qasmCode, nodes, edges, backendUrl, metadata, compilationTarget, onSendToBackend]);
+    },
+    [
+      mathMode,
+      hasAnalyzedOnce,
+      qasmCode,
+      nodes,
+      edges,
+      backendUrl,
+      metadata,
+      compilationTarget,
+      onSendToBackend,
+    ],
+  );
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
+  function handleChange(
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) {
     onUpdateMetadata(e);
   }
 
   return (
     <div className="currentPanel-container bg-gray-100 h-full border-gray-200 border text-black flex flex-col">
-
       {/* Tab-Leiste */}
       {(mathMode || qasmEditorMode) && (
         <div className="flex border-b border-gray-300 bg-white flex-shrink-0">
@@ -194,7 +228,10 @@ export const CustomPanel = ({
           {selectedNode ? (
             <TextPanel />
           ) : (
-            <MetadataPanel metadata={metadata} onUpdateMetadata={handleChange} />
+            <MetadataPanel
+              metadata={metadata}
+              onUpdateMetadata={handleChange}
+            />
           )}
         </div>
       )}
@@ -221,7 +258,8 @@ export const CustomPanel = ({
                   setQasmApplyError(null);
                   setQasmApplySuccess(false);
                   try {
-                    const { nodes: newNodes, edges: newEdges } = qasmToNodes(qasmEditorCode);
+                    const { nodes: newNodes, edges: newEdges } =
+                      qasmToNodes(qasmEditorCode);
                     if (newNodes.length === 0) {
                       setQasmApplyError("No nodes could be parsed from QASM.");
                       return;
@@ -237,7 +275,9 @@ export const CustomPanel = ({
                     setTimeout(() => onSendToBackend?.(), 0);
                     setTimeout(() => setQasmApplySuccess(false), 2000);
                   } catch (e) {
-                    setQasmApplyError(e instanceof Error ? e.message : "Parse error");
+                    setQasmApplyError(
+                      e instanceof Error ? e.message : "Parse error",
+                    );
                   }
                 }}
                 disabled={!qasmEditorCode.trim()}
@@ -261,7 +301,10 @@ export const CustomPanel = ({
           <div className="flex-1 overflow-hidden mx-2 mb-2 rounded border border-gray-200 relative">
             <textarea
               value={qasmEditorCode}
-              onChange={(e) => { setQasmEditorCode(e.target.value); setQasmApplyError(null); }}
+              onChange={(e) => {
+                setQasmEditorCode(e.target.value);
+                setQasmApplyError(null);
+              }}
               spellCheck={false}
               className="w-full h-full resize-none p-3 font-mono text-xs leading-relaxed bg-transparent text-black-100 outline-none"
               placeholder="// QASM code will appear here after backend call&#10;// You can also write QASM directly&#10;OPENQASM 2.0;&#10;qreg q[2];&#10;h q[0];&#10;cx q[0],q[1];"
@@ -274,7 +317,6 @@ export const CustomPanel = ({
       {/* Math Mode Tab */}
       {activeTab === "math" && mathMode && (
         <div className="flex-1 overflow-hidden flex flex-col">
-
           {/* Toolbar: Refresh + Export all */}
           <div className="flex-shrink-0 flex justify-between items-center px-2 pt-2 gap-2">
             <button
@@ -313,12 +355,16 @@ export const CustomPanel = ({
             ) : qasmCode.trim().length > 0 ? (
               <div className="flex flex-col items-center justify-center h-full gap-2 text-gray-400">
                 <span className="text-2xl">⟩</span>
-                <p className="text-sm text-center">Press "Refresh" to calculate the Dirac notation.</p>
+                <p className="text-sm text-center">
+                  Press "Refresh" to calculate the Dirac notation.
+                </p>
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center h-full gap-2 text-gray-400">
                 <span className="text-2xl">⟩</span>
-                <p className="text-sm text-center">No QASM output available yet.</p>
+                <p className="text-sm text-center">
+                  No QASM output available yet.
+                </p>
                 <p className="text-xs text-center text-gray-300">
                   Send the model to the backend to view the Dirac notation.
                 </p>
@@ -338,7 +384,6 @@ export const CustomPanel = ({
 function ComponentsView({
   components,
   onGetCircuitSvg,
-  nodes,
   onGetModel,
 }: {
   components: DiracComponent[];
@@ -358,8 +403,8 @@ function ComponentsView({
         const label = component.groupLabel
           ? component.groupLabel
           : components.length === 1
-          ? "Dirac Notation"
-          : `Circuit ${idx + 1}`;
+            ? "Dirac Notation"
+            : `Circuit ${idx + 1}`;
         return (
           <ComponentSection
             key={idx}
@@ -405,7 +450,7 @@ function ComponentSection({
   qasmEditorMode?: boolean;
 }) {
   const [expanded, setExpanded] = useState(true);
-  const { setNodes, getNodes } = useReactFlow();
+  const { setNodes } = useReactFlow();
 
   // Gibt nur das SVG der Nodes dieses Circuits/dieser Gruppe zurück
   const circuitNodeIds = new Set(nodeIds ?? nodes.map((n) => n.id));
@@ -418,7 +463,7 @@ function ComponentSection({
             nds.map((n) => {
               if (n.id === groupId || n.parentNode === groupId) return n;
               return { ...n, hidden: true };
-            })
+            }),
           );
         } else {
           // Circuit-Fall (kein groupId): alle Nodes außer den Circuit-Nodes ausblenden
@@ -426,7 +471,7 @@ function ComponentSection({
             nds.map((n) => {
               if (circuitNodeIds.has(n.id)) return n;
               return { ...n, hidden: true };
-            })
+            }),
           );
         }
         // Kurz warten damit React den neuen State rendert
@@ -435,9 +480,7 @@ function ComponentSection({
           return await onGetCircuitSvg();
         } finally {
           // Alle Nodes wieder einblenden
-          setNodes((nds: Node[]) =>
-            nds.map((n) => ({ ...n, hidden: false }))
-          );
+          setNodes((nds: Node[]) => nds.map((n) => ({ ...n, hidden: false })));
         }
       }
     : undefined;
@@ -449,20 +492,32 @@ function ComponentSection({
         ...n,
         selected: idSet.has(n.id),
         className: idSet.has(n.id)
-          ? (n.className ? n.className + " !ring-4 !ring-blue-500 !ring-offset-2 !shadow-lg !shadow-blue-400/60" : "!ring-4 !ring-blue-500 !ring-offset-2 !shadow-lg !shadow-blue-400/60")
-          : n.className?.replace("!ring-4 !ring-blue-500 !ring-offset-2 !shadow-lg !shadow-blue-400/60", "").trim(),
-      }))
+          ? n.className
+            ? n.className +
+              " !ring-4 !ring-blue-500 !ring-offset-2 !shadow-lg !shadow-blue-400/60"
+            : "!ring-4 !ring-blue-500 !ring-offset-2 !shadow-lg !shadow-blue-400/60"
+          : n.className
+              ?.replace(
+                "!ring-4 !ring-blue-500 !ring-offset-2 !shadow-lg !shadow-blue-400/60",
+                "",
+              )
+              .trim(),
+      })),
     );
     setTimeout(() => {
       let firstEl: HTMLElement | null = null;
       for (const nodeId of nodeIds) {
-        const el = document.querySelector(`[data-id="${nodeId}"]`) as HTMLElement | null;
+        const el = document.querySelector(
+          `[data-id="${nodeId}"]`,
+        ) as HTMLElement | null;
         if (!el) continue;
         if (!firstEl) firstEl = el;
-        el.style.transition = "box-shadow 0.15s ease-in-out, outline 0.15s ease-in-out";
+        el.style.transition =
+          "box-shadow 0.15s ease-in-out, outline 0.15s ease-in-out";
         el.style.outline = "3px solid #3b82f6";
         el.style.outlineOffset = "3px";
-        el.style.boxShadow = "0 0 0 6px rgba(59,130,246,0.35), 0 0 20px rgba(59,130,246,0.25)";
+        el.style.boxShadow =
+          "0 0 0 6px rgba(59,130,246,0.35), 0 0 20px rgba(59,130,246,0.25)";
         el.style.zIndex = "999";
       }
       // Nur zum ersten (frühesten) hervorgehobenen Node scrollen, damit die Ansicht nicht
@@ -470,7 +525,9 @@ function ComponentSection({
       firstEl?.scrollIntoView({ behavior: "smooth", block: "center" });
       setTimeout(() => {
         for (const nodeId of nodeIds) {
-          const el = document.querySelector(`[data-id="${nodeId}"]`) as HTMLElement | null;
+          const el = document.querySelector(
+            `[data-id="${nodeId}"]`,
+          ) as HTMLElement | null;
           if (!el) continue;
           el.style.outline = "";
           el.style.outlineOffset = "";
@@ -484,14 +541,25 @@ function ComponentSection({
         nds.map((n) => ({
           ...n,
           selected: false,
-          className: n.className?.replace("!ring-4 !ring-blue-500 !ring-offset-2 !shadow-lg !shadow-blue-400/60", "").trim(),
-        }))
+          className: n.className
+            ?.replace(
+              "!ring-4 !ring-blue-500 !ring-offset-2 !shadow-lg !shadow-blue-400/60",
+              "",
+            )
+            .trim(),
+        })),
       );
     }, 1500);
   };
 
   return (
-    <div style={{ border: `1.5px solid ${color}55`, borderRadius: "8px", overflow: "hidden" }}>
+    <div
+      style={{
+        border: `1.5px solid ${color}55`,
+        borderRadius: "8px",
+        overflow: "hidden",
+      }}
+    >
       <button
         onClick={() => setExpanded((v) => !v)}
         style={{
@@ -508,8 +576,9 @@ function ComponentSection({
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-
-          <span style={{ fontSize: "13px", fontWeight: 600, color }}>{label}</span>
+          <span style={{ fontSize: "13px", fontWeight: 600, color }}>
+            {label}
+          </span>
           <span style={{ fontSize: "11px", color: `${color}99` }}>
             ({nodeCount} Node{nodeCount !== 1 ? "s" : ""})
           </span>
@@ -532,7 +601,9 @@ function ComponentSection({
               onStepClick={handleStepClick}
             />
           ) : (
-            <div className="text-xs text-gray-400 px-2 py-1">No QASM available.</div>
+            <div className="text-xs text-gray-400 px-2 py-1">
+              No QASM available.
+            </div>
           )}
         </div>
       )}
@@ -578,9 +649,13 @@ function ExportAllButton({
         if (component.groupId) {
           setNodes((nds: Node[]) =>
             nds.map((n) => {
-              if (n.id === component.groupId || n.parentNode === component.groupId) return n;
+              if (
+                n.id === component.groupId ||
+                n.parentNode === component.groupId
+              )
+                return n;
               return { ...n, hidden: true };
-            })
+            }),
           );
           await new Promise((r) => setTimeout(r, 150));
           try {
@@ -589,7 +664,9 @@ function ExportAllButton({
           } catch {
             // PNG-Export fehlgeschlagen – ohne Bild weiterfahren
           } finally {
-            setNodes((nds: Node[]) => nds.map((n) => ({ ...n, hidden: false })));
+            setNodes((nds: Node[]) =>
+              nds.map((n) => ({ ...n, hidden: false })),
+            );
             await new Promise((r) => setTimeout(r, 50));
           }
         } else {
@@ -600,22 +677,28 @@ function ExportAllButton({
               nds.map((n) => {
                 if (circuitIds.has(n.id)) return n;
                 return { ...n, hidden: true };
-              })
+              }),
             );
             await new Promise((r) => setTimeout(r, 150));
           }
           try {
             const svg = await onGetCircuitSvg();
             pngBase64 = await svgToPngBase64(svg);
-          } catch { /* ignore */ } finally {
-            setNodes((nds: Node[]) => nds.map((n) => ({ ...n, hidden: false })));
+          } catch {
+            /* ignore */
+          } finally {
+            setNodes((nds: Node[]) =>
+              nds.map((n) => ({ ...n, hidden: false })),
+            );
             await new Promise((r) => setTimeout(r, 50));
           }
         }
 
         // LaTeX generieren
         if (component.qasm) {
-          const { qasmToDirac, qasmToDiracSteps, normalizeQasm } = await import("./utils/qasmToDirac");
+          const { qasmToDirac, qasmToDiracSteps, normalizeQasm } = await import(
+            "./utils/qasmToDirac"
+          );
           const result = qasmToDirac(component.qasm);
           const stepsResult = qasmToDiracSteps(component.qasm);
 
@@ -625,7 +708,7 @@ function ExportAllButton({
             result.numQubits,
             result.terms,
             stepsResult,
-            pngBase64
+            pngBase64,
           );
 
           zip.file(`${safeName}/main.tex`, texContent);
@@ -669,11 +752,12 @@ function buildLatexForComponent(
   numQubits: number,
   terms: any[],
   stepsResult: any,
-  pngBase64?: string
+  pngBase64?: string,
 ): string {
   const termLines = terms
     .map((t: any) => {
-      const p = Math.round((t.amplitude.re ** 2 + t.amplitude.im ** 2) * 10000) / 100;
+      const p =
+        Math.round((t.amplitude.re ** 2 + t.amplitude.im ** 2) * 10000) / 100;
       return `    \\hline\n    $|${t.basisState}\\rangle$ & $${p}\\%$ \\\\`;
     })
     .join("\n");
@@ -682,42 +766,55 @@ function buildLatexForComponent(
     ? `\\section*{Quantum Circuit}\n\\begin{figure}[h]\n  \\centering\n  \\includegraphics[width=0.9\\textwidth]{circuit}\n  \\caption{${label}}\n\\end{figure}\n\n`
     : "";
 
-  const stepsSection = stepsResult?.steps?.length > 0
-    ? `\\section*{Mathematical Intermediate Steps}\n\\begin{align}\n  |\\psi_0\\rangle &= ${stepsResult.initial.latex} \\\\[6pt]\n${stepsResult.steps.map((s: any, i: number) => `  &\\xrightarrow{${s.gateLabelLatex}} \\\\[2pt]\n  |\\psi_{${i + 1}}\\rangle &= ${s.latex}`).join(' \\\\[6pt]\n')}\n\\end{align}\n\n`
-    : "";
+  const stepsSection =
+    stepsResult?.steps?.length > 0
+      ? `\\section*{Mathematical Intermediate Steps}\n\\begin{align}\n  |\\psi_0\\rangle &= ${stepsResult.initial.latex} \\\\[6pt]\n${stepsResult.steps.map((s: any, i: number) => `  &\\xrightarrow{${s.gateLabelLatex}} \\\\[2pt]\n  |\\psi_{${i + 1}}\\rangle &= ${s.latex}`).join(" \\\\[6pt]\n")}\n\\end{align}\n\n`
+      : "";
 
   // pgfplots Histogram
-  const histogramSection = terms.length > 0
-    ? (() => {
-        const coords = terms.map((t: any) => {
-          const p = Math.round((t.amplitude.re ** 2 + t.amplitude.im ** 2) * 10000) / 100;
-          return { label: `|${t.basisState}\\rangle`, value: p };
-        });
-        const coordStr = coords.map((c: any, i: number) => `(${i}, ${c.value})`).join(' ');
-        const tickLabels = coords.map((c: any) => `$${c.label}$`).join(', ');
-        const xMax = coords.length - 0.5;
-        return `\\section*{Measurement Probabilities}\n\\begin{figure}[h]\n  \\centering\n  \\begin{tikzpicture}\n    \\begin{axis}[\n      ybar, bar width=0.5cm, width=0.85\\textwidth, height=6cm,\n      ymin=0, ymax=100, xmin=-0.5, xmax=${xMax},\n      xtick={${coords.map((_: any, i: number) => i).join(', ')}},\n      xticklabels={${tickLabels}},\n      ylabel={Probability (\\%)}, ymajorgrids=true, grid style=dashed,\n      nodes near coords, nodes near coords align={vertical},\n    ]\n      \\addplot[fill=blue!60, draw=blue!80] coordinates {${coordStr}};\n    \\end{axis}\n  \\end{tikzpicture}\n  \\caption{Measurement Probabilities of Basis States}\n\\end{figure}\n\n`;
-      })()
-    : "";
+  const histogramSection =
+    terms.length > 0
+      ? (() => {
+          const coords = terms.map((t: any) => {
+            const p =
+              Math.round((t.amplitude.re ** 2 + t.amplitude.im ** 2) * 10000) /
+              100;
+            return { label: `|${t.basisState}\\rangle`, value: p };
+          });
+          const coordStr = coords
+            .map((c: any, i: number) => `(${i}, ${c.value})`)
+            .join(" ");
+          const tickLabels = coords.map((c: any) => `$${c.label}$`).join(", ");
+          const xMax = coords.length - 0.5;
+          return `\\section*{Measurement Probabilities}\n\\begin{figure}[h]\n  \\centering\n  \\begin{tikzpicture}\n    \\begin{axis}[\n      ybar, bar width=0.5cm, width=0.85\\textwidth, height=6cm,\n      ymin=0, ymax=100, xmin=-0.5, xmax=${xMax},\n      xtick={${coords.map((_: any, i: number) => i).join(", ")}},\n      xticklabels={${tickLabels}},\n      ylabel={Probability (\\%)}, ymajorgrids=true, grid style=dashed,\n      nodes near coords, nodes near coords align={vertical},\n    ]\n      \\addplot[fill=blue!60, draw=blue!80] coordinates {${coordStr}};\n    \\end{axis}\n  \\end{tikzpicture}\n  \\caption{Measurement Probabilities of Basis States}\n\\end{figure}\n\n`;
+        })()
+      : "";
 
-  const tableSection = terms.length > 0
-    ? `\\section*{Measurement Probabilities (Table)}\n\\begin{table}[h]\n  \\centering\n  \\begin{tabular}{|c|c|}\n    \\hline\n    \\textbf{Basis State} & \\textbf{Probability} \\\\\n${termLines}\n    \\hline\n  \\end{tabular}\n\\end{table}\n\n`
-    : "";
+  const tableSection =
+    terms.length > 0
+      ? `\\section*{Measurement Probabilities (Table)}\n\\begin{table}[h]\n  \\centering\n  \\begin{tabular}{|c|c|}\n    \\hline\n    \\textbf{Basis State} & \\textbf{Probability} \\\\\n${termLines}\n    \\hline\n  \\end{tabular}\n\\end{table}\n\n`
+      : "";
 
   // Statevector einmal rekonstruieren, für Separabilitäts- und Persistence-Berechnung genutzt.
-  const statevectorArrForProperties = Array.from({ length: 1 << numQubits }, (_, i) => {
-    const term = terms.find((t: any) => parseInt(t.basisState, 2) === i);
-    return term ? term.amplitude : { re: 0, im: 0 };
-  });
+  const statevectorArrForProperties = Array.from(
+    { length: 1 << numQubits },
+    (_, i) => {
+      const term = terms.find((t: any) => parseInt(t.basisState, 2) === i);
+      return term ? term.amplitude : { re: 0, im: 0 };
+    },
+  );
 
   // Exakte Separabilitätsprüfung (keine Heuristik): vollständig separabel, wenn JEDES Qubit
   // einen reinen reduzierten Zustand hat (Bloch-Vektor-Länge 1 für jede Qubit-Bipartition).
-  const isEntangledComponent = numQubits >= 2 && !isStateFullySeparable(statevectorArrForProperties, numQubits);
-  const persistenceComponent: number | null = numQubits === 1
-    ? getEntanglementPersistence(statevectorArrForProperties, numQubits, 0)
-    : isEntangledComponent
-    ? getMultiQubitPersistence(terms, numQubits)
-    : 0;
+  const isEntangledComponent =
+    numQubits >= 2 &&
+    !isStateFullySeparable(statevectorArrForProperties, numQubits);
+  const persistenceComponent: number | null =
+    numQubits === 1
+      ? getEntanglementPersistence(statevectorArrForProperties, numQubits, 0)
+      : isEntangledComponent
+        ? getMultiQubitPersistence(terms, numQubits)
+        : 0;
 
   const entanglementSection = `\\section*{Entanglement Properties}
 
@@ -740,41 +837,86 @@ others, even if the qubits are physically separated.
       : ""
   }.
 
-${persistenceComponent !== null
-  ? numQubits === 1
-    ? `\\textbf{Entanglement Persistence:} $S = ${persistenceComponent.toFixed(3)}$ (von Neumann entropy of the qubit's reduced density matrix, in bits). $S = 0$ corresponds to a pure, unentangled state; $S = 1$ corresponds to a maximally mixed/entangled qubit.\n\n`
-    : `\\textbf{Entanglement Persistence:} $P = ${persistenceComponent.toFixed(3)}$ (persistency of entanglement: the minimum number of local qubit measurements required until the remaining state is guaranteed to be fully separable).\n\n`
-  : numQubits >= 2
-  ? `\\textbf{Entanglement Persistence:} not computable -- this state does not match any of the recognized standard patterns (GHZ-like states, Bell-state variants, W-states).\n\n`
-  : ""}`;
+${
+  persistenceComponent !== null
+    ? numQubits === 1
+      ? `\\textbf{Entanglement Persistence:} $S = ${persistenceComponent.toFixed(3)}$ (von Neumann entropy of the qubit's reduced density matrix, in bits). $S = 0$ corresponds to a pure, unentangled state; $S = 1$ corresponds to a maximally mixed/entangled qubit.\n\n`
+      : `\\textbf{Entanglement Persistence:} $P = ${persistenceComponent.toFixed(3)}$ (persistency of entanglement: the minimum number of local qubit measurements required until the remaining state is guaranteed to be fully separable).\n\n`
+    : numQubits >= 2
+      ? `\\textbf{Entanglement Persistence:} not computable -- this state does not match any of the recognized standard patterns (GHZ-like states, Bell-state variants, W-states).\n\n`
+      : ""
+}`;
 
   // Gate-Erklärungen
-  const GATE_INFO: Record<string, { desc: string; matrix: string; effect: string }> = {
-    H: { desc: "The Hadamard gate creates an equal superposition.", matrix: "\\frac{1}{\\sqrt{2}}\\begin{pmatrix}1&1\\\\1&-1\\end{pmatrix}", effect: "$H|0\\rangle=|+\\rangle,\\;H|1\\rangle=|-\\rangle$" },
-    X: { desc: "The Pauli-X gate is the quantum NOT gate.", matrix: "\\begin{pmatrix}0&1\\\\1&0\\end{pmatrix}", effect: "$X|0\\rangle=|1\\rangle,\\;X|1\\rangle=|0\\rangle$" },
-    Y: { desc: "The Pauli-Y gate rotates around the Y-axis.", matrix: "\\begin{pmatrix}0&-i\\\\i&0\\end{pmatrix}", effect: "$Y|0\\rangle=i|1\\rangle,\\;Y|1\\rangle=-i|0\\rangle$" },
-    Z: { desc: "The Pauli-Z gate applies a phase flip.", matrix: "\\begin{pmatrix}1&0\\\\0&-1\\end{pmatrix}", effect: "$Z|0\\rangle=|0\\rangle,\\;Z|1\\rangle=-|1\\rangle$" },
-    S: { desc: "The S gate applies a $\\pi/2$ phase rotation.", matrix: "\\begin{pmatrix}1&0\\\\0&i\\end{pmatrix}", effect: "$S|1\\rangle=i|1\\rangle$" },
-    T: { desc: "The T gate applies a $\\pi/4$ phase rotation.", matrix: "\\begin{pmatrix}1&0\\\\0&e^{i\\pi/4}\\end{pmatrix}", effect: "$T|1\\rangle=e^{i\\pi/4}|1\\rangle$" },
-    CNOT: { desc: "The CNOT gate flips the target qubit if control is $|1\\rangle$.", matrix: "\\begin{pmatrix}1&0&0&0\\\\0&1&0&0\\\\0&0&0&1\\\\0&0&1&0\\end{pmatrix}", effect: "$\\text{CNOT}|10\\rangle=|11\\rangle,\\;\\text{CNOT}|11\\rangle=|10\\rangle$" },
-    SWAP: { desc: "The SWAP gate exchanges the states of two qubits.", matrix: "\\begin{pmatrix}1&0&0&0\\\\0&0&1&0\\\\0&1&0&0\\\\0&0&0&1\\end{pmatrix}", effect: "$\\text{SWAP}|01\\rangle=|10\\rangle$" },
+  const GATE_INFO: Record<
+    string,
+    { desc: string; matrix: string; effect: string }
+  > = {
+    H: {
+      desc: "The Hadamard gate creates an equal superposition.",
+      matrix: "\\frac{1}{\\sqrt{2}}\\begin{pmatrix}1&1\\\\1&-1\\end{pmatrix}",
+      effect: "$H|0\\rangle=|+\\rangle,\\;H|1\\rangle=|-\\rangle$",
+    },
+    X: {
+      desc: "The Pauli-X gate is the quantum NOT gate.",
+      matrix: "\\begin{pmatrix}0&1\\\\1&0\\end{pmatrix}",
+      effect: "$X|0\\rangle=|1\\rangle,\\;X|1\\rangle=|0\\rangle$",
+    },
+    Y: {
+      desc: "The Pauli-Y gate rotates around the Y-axis.",
+      matrix: "\\begin{pmatrix}0&-i\\\\i&0\\end{pmatrix}",
+      effect: "$Y|0\\rangle=i|1\\rangle,\\;Y|1\\rangle=-i|0\\rangle$",
+    },
+    Z: {
+      desc: "The Pauli-Z gate applies a phase flip.",
+      matrix: "\\begin{pmatrix}1&0\\\\0&-1\\end{pmatrix}",
+      effect: "$Z|0\\rangle=|0\\rangle,\\;Z|1\\rangle=-|1\\rangle$",
+    },
+    S: {
+      desc: "The S gate applies a $\\pi/2$ phase rotation.",
+      matrix: "\\begin{pmatrix}1&0\\\\0&i\\end{pmatrix}",
+      effect: "$S|1\\rangle=i|1\\rangle$",
+    },
+    T: {
+      desc: "The T gate applies a $\\pi/4$ phase rotation.",
+      matrix: "\\begin{pmatrix}1&0\\\\0&e^{i\\pi/4}\\end{pmatrix}",
+      effect: "$T|1\\rangle=e^{i\\pi/4}|1\\rangle$",
+    },
+    CNOT: {
+      desc: "The CNOT gate flips the target qubit if control is $|1\\rangle$.",
+      matrix:
+        "\\begin{pmatrix}1&0&0&0\\\\0&1&0&0\\\\0&0&0&1\\\\0&0&1&0\\end{pmatrix}",
+      effect:
+        "$\\text{CNOT}|10\\rangle=|11\\rangle,\\;\\text{CNOT}|11\\rangle=|10\\rangle$",
+    },
+    SWAP: {
+      desc: "The SWAP gate exchanges the states of two qubits.",
+      matrix:
+        "\\begin{pmatrix}1&0&0&0\\\\0&0&1&0\\\\0&1&0&0\\\\0&0&0&1\\end{pmatrix}",
+      effect: "$\\text{SWAP}|01\\rangle=|10\\rangle$",
+    },
   };
 
   const usedGates = new Set<string>();
   if (stepsResult?.steps) {
     for (const s of stepsResult.steps) {
       for (const key of Object.keys(GATE_INFO)) {
-        if ((s.gateLabel ?? s.gateLabelLatex ?? "").includes(key)) usedGates.add(key);
+        if ((s.gateLabel ?? s.gateLabelLatex ?? "").includes(key))
+          usedGates.add(key);
       }
     }
   }
 
-  const gateSection = usedGates.size > 0
-    ? `\\section*{Gate Reference}\n\n` + [...usedGates].map(g => {
-        const info = GATE_INFO[g];
-        return `\\subsection*{${g} Gate}\n${info.desc}\n\\begin{equation}\n  ${g} = ${info.matrix}\n\\end{equation}\n\\textbf{Effect:} ${info.effect}\n`;
-      }).join("\n")
-    : "";
+  const gateSection =
+    usedGates.size > 0
+      ? `\\section*{Gate Reference}\n\n` +
+        [...usedGates]
+          .map((g) => {
+            const info = GATE_INFO[g];
+            return `\\subsection*{${g} Gate}\n${info.desc}\n\\begin{equation}\n  ${g} = ${info.matrix}\n\\end{equation}\n\\textbf{Effect:} ${info.effect}\n`;
+          })
+          .join("\n")
+      : "";
 
   return `\\documentclass{article}
 \\usepackage[utf8]{inputenc}
@@ -815,8 +957,8 @@ async function svgToPngBase64(svgInput: string, scale = 2): Promise<string> {
     const img = new Image();
     img.onload = () => {
       const canvas = document.createElement("canvas");
-      canvas.width  = (img.naturalWidth  || 1200) * scale;
-      canvas.height = (img.naturalHeight || 800)  * scale;
+      canvas.width = (img.naturalWidth || 1200) * scale;
+      canvas.height = (img.naturalHeight || 800) * scale;
       const ctx = canvas.getContext("2d")!;
       ctx.fillStyle = "#ffffff";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -825,9 +967,10 @@ async function svgToPngBase64(svgInput: string, scale = 2): Promise<string> {
       if (!svgInput.startsWith("data:")) URL.revokeObjectURL(objectUrl);
       resolve(canvas.toDataURL("image/png").split(",")[1]);
     };
-    img.onerror = (e) => { if (!svgInput.startsWith("data:")) URL.revokeObjectURL(objectUrl); reject(e); };
+    img.onerror = (e) => {
+      if (!svgInput.startsWith("data:")) URL.revokeObjectURL(objectUrl);
+      reject(e);
+    };
     img.src = objectUrl;
   });
 }
-
-const getPanel = (type: string) => TextPanel;

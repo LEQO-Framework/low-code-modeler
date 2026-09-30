@@ -12,16 +12,38 @@ const selector = (state: any) => ({
   nodes: state.nodes,
   edges: state.edges,
   setSelectedNode: state.setSelectedNode,
-  setContainsPlaceholder: state.setContainsPlaceholder
+  setContainsPlaceholder: state.setContainsPlaceholder,
 });
 
 export const GroverNode = memo((node: Node) => {
   const { id, data, selected } = node;
-  const { updateNodeValue, nodes, edges, setSelectedNode, setContainsPlaceholder } = useStore(selector, shallow);
+  const {
+    updateNodeValue,
+    nodes,
+    edges,
+    setSelectedNode,
+    setContainsPlaceholder,
+  } = useStore(selector, shallow);
 
-  const [numQubitsStr, setNumQubitsStr] = useState(String(data.numQubits)|| 3);
-  const [targetStates, setTargetStates] = useState(data.targetStates || "");
-  const [iterationsStr, setIterationsStr] = useState(data.numIterations ? String(data.numIterations) : "");
+  const [numQubitsStr, setNumQubitsStr] = useState(
+    data.numQubits !== undefined &&
+      data.numQubits !== null &&
+      data.numQubits !== ""
+      ? String(data.numQubits)
+      : "",
+  );
+
+  const [targetStates, setTargetStates] = useState(
+    data.targetStates || "",
+  );
+
+  const [iterationsStr, setIterationsStr] = useState(
+    data.numIterations !== undefined &&
+      data.numIterations !== null &&
+      data.numIterations !== ""
+      ? String(data.numIterations)
+      : "",
+  );
 
   const [outputs, setOutputs] = useState(data.outputs || []);
   const [outputIdentifierError, setOutputIdentifierError] = useState(false);
@@ -33,65 +55,67 @@ export const GroverNode = memo((node: Node) => {
   const [hasExplorerUser, setHasExplorerUser] = useState(false);
 
   const [missingQubitsError, setMissingQubitsError] = useState(false);
-  const [missingTargetStatesError, setMissingTargetStatesError] = useState(false);
+  const [missingTargetStatesError, setMissingTargetStatesError] =
+    useState(false);
+  const [targetStateOutOfBoundsError, setTargetStateOutOfBoundsError] =
+    useState(false);
+
   useEffect(() => {
-    setMissingQubitsError(numQubitsStr.trim() === "");
+    setMissingQubitsError(String(numQubitsStr).trim() === "");
     setMissingTargetStatesError(targetStates.trim() === "");
   }, [numQubitsStr, targetStates]);
 
-  const [remoteHighlightColor, setRemoteHighlightColor] = useState<string | null>(null);
-  const [selectingUserName, setSelectingUserName] = useState<string | null>(null); // technically not needed, could extend functionality to also show user name next to highlighted node
+  const [remoteHighlightColor, setRemoteHighlightColor] = useState<
+    string | null
+  >(null);
 
   useEffect(() => {
-  if (data.numQubits !== undefined && data.numQubits !== null) {
-    setNumQubitsStr(String(data.numQubits));
-  }
+    if (data.numQubits !== undefined && data.numQubits !== null) {
+      setNumQubitsStr(String(data.numQubits));
+    }
 
-  if (data.targetStates !== undefined && data.targetStates !== null) {
-      const hasLetters = /[a-zA-Z]/.test(targetStates);
-  setContainsPlaceholder(hasLetters);
-    setTargetStates(data.targetStates);
-  }
+    if (data.targetStates !== undefined && data.targetStates !== null) {
+      const hasLetters = /[a-zA-Z]/.test(data.targetStates);
+      setContainsPlaceholder(hasLetters);
+      setTargetStates(data.targetStates);
+    }
 
-  if (data.numIterations !== undefined && data.numIterations !== null) {
-    setIterationsStr(String(data.numIterations));
-  } else {
-    setIterationsStr("");
-  }
-}, [data.numQubits, data.targetStates, data.numIterations]);
+    if (
+      data.numIterations !== undefined &&
+      data.numIterations !== null &&
+      data.numIterations !== ""
+    ) {
+      setIterationsStr(String(data.numIterations));
+    } else {
+      setIterationsStr("");
+    }
+  }, [
+    data.numQubits,
+    data.targetStates,
+    data.numIterations,
+    setContainsPlaceholder,
+  ]);
+
   useEffect(() => {
     const checkRemoteSelection = () => {
       let foundColor: string | null = null;
-      let foundName: string | null = null;
 
-      // Loop through all active client states in the room
-      awareness.getStates().forEach((state: any, clientId: number) => {
-        // Skip your own client ID so you don't highlight it with your own color
-        // if (clientId === awareness.clientID) return;
-
-        // Check if a peer has selected this specific node ID
+      awareness.getStates().forEach((state: any) => {
         if (state.cursor && state.cursor.mySelectedNodeId === id) {
           foundColor = state.cursor.color;
-          foundName = state.cursor.name;
         }
       });
 
       setRemoteHighlightColor(foundColor);
-      setSelectingUserName(foundName);
-      console.log("COLOR", foundColor, foundName);
     };
 
-    // Run once immediately on mount
     checkRemoteSelection();
-
-    // 3. Listen to remote awareness updates
     awareness.on("change", checkRemoteSelection);
 
-    // Clean up listener when the node unmounts
     return () => {
       awareness.off("change", checkRemoteSelection);
     };
-  }, [id]); // Re-run if node ID changes
+  }, [id]);
 
   // Monitor awareness states for active users and their selected roles
   useEffect(() => {
@@ -126,30 +150,69 @@ export const GroverNode = memo((node: Node) => {
     setSelectedNode(node);
   };
 
+  const parsedNumQubits = parseInt(numQubitsStr, 10);
+
+  const maxIndex =
+    !isNaN(parsedNumQubits) && parsedNumQubits > 0
+      ? (1 << parsedNumQubits) - 1
+      : 0;
+
+  useEffect(() => {
+    if (targetStates.trim() === "") {
+      setTargetStateOutOfBoundsError(false);
+      return;
+    }
+
+    // Do not validate bounds while placeholders/letters are being used.
+    if (/[a-zA-Z]/.test(targetStates)) {
+      setTargetStateOutOfBoundsError(false);
+      return;
+    }
+
+    const states = targetStates
+      .split(",")
+      .map((state) => state.trim())
+      .filter((state) => state !== "");
+
+    const hasOutOfBoundsState = states.some((state) => {
+      const parsedState = parseInt(state, 10);
+
+      return (
+        !isNaN(parsedState) &&
+        parsedState > maxIndex
+      );
+    });
+
+    setTargetStateOutOfBoundsError(hasOutOfBoundsState);
+  }, [targetStates, maxIndex]);
+
   return (
-    <div
-      className="grand-parent"
-      style={{ width: 320, height: 420 }}
-    >
+    <div className="grand-parent" style={{ width: 320, height: 420 }}>
       <div className="grand-parent">
         <div
           className={cn(
             "w-[320px] bg-white border border-solid border-gray-700 shadow-md relative",
             selected && "border-blue-500",
-            mixedView && "border-purple-400"
+            mixedView && "border-purple-400",
           )}
           style={{
-            borderColor: remoteHighlightColor ? remoteHighlightColor : (selected ? "#3B82F6" : "#374151"),
+            borderColor: remoteHighlightColor
+              ? remoteHighlightColor
+              : selected
+                ? "#3B82F6"
+                : "#374151",
             boxShadow: remoteHighlightColor
-              ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}` // Glowing aura ring
+              ? `0 0 0 3px ${remoteHighlightColor}40, 0 0 12px ${remoteHighlightColor}`
               : undefined,
-            height: `420px`
-          }}>
+            height: `420px`,
+          }}
+        >
           {missingQubitsError && (
             <div className="absolute top-2 right-[-40px] group z-20">
               <AlertCircle className="text-red-600 w-5 h-5" />
+
               <div className="absolute top-5 left-[30px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
-                Number of qubits is required.
+                Number of elements is required.
               </div>
             </div>
           )}
@@ -157,6 +220,7 @@ export const GroverNode = memo((node: Node) => {
           {missingTargetStatesError && (
             <div className="absolute top-2 right-[-40px] group z-20">
               <AlertCircle className="text-red-600 w-5 h-5" />
+
               <div
                 className="absolute left-[30px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap"
                 style={{
@@ -168,15 +232,41 @@ export const GroverNode = memo((node: Node) => {
             </div>
           )}
 
+          {targetStateOutOfBoundsError && (
+            <div className="absolute top-2 right-[-40px] group z-20">
+              <AlertCircle className="text-red-600 w-5 h-5" />
+
+              <div
+                className="absolute left-[30px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[180px] whitespace-nowrap"
+                style={{
+                  top: missingQubitsError
+                    ? missingTargetStatesError
+                      ? "95px"
+                      : "50px"
+                    : missingTargetStatesError
+                      ? "80px"
+                      : "35px",
+                }}
+              >
+                Marked state is outside the maximum index.
+              </div>
+            </div>
+          )}
+
           {/* HEADER */}
-          <div className="w-full flex items-center" style={{ height: '52px' }}>
-            <div className="w-full bg-blue-300 py-1 px-2 flex items-center" style={{ height: 'inherit' }}>
+          <div className="w-full flex items-center" style={{ height: "52px" }}>
+            <div
+              className="w-full bg-blue-300 py-1 px-2 flex items-center"
+              style={{ height: "inherit" }}
+            >
               <img
                 src="groverIcon.png"
                 alt="Grover icon"
                 className="w-[40px] h-[40px] object-contain flex-shrink-0"
               />
+
               <div className="h-full w-[1px] bg-black mx-2" />
+
               <div className="flex flex-col justify-center pl-2 leading-tight select-none w-full">
                 {mixedView ? (
                   <span className="font-semibold text-xs text-blue-900 block">
@@ -197,27 +287,29 @@ export const GroverNode = memo((node: Node) => {
 
           {/* CONFIGURATION BODY */}
           <div className="px-4 py-1 mt-3">
-
             {/* QUBITS / ELEMENTS FIELD */}
             <div>
               <label className="text-xs font-semibold text-gray-700">
-                {mixedView ? (
-                  "Number of Qubits / Number of Elements:"
-                ) : !hasPioneerUser && hasExplorerUser ? (
-                  "Number of Elements:"
-                ) : (
-                  "Number of Qubits:"
-                )}
+                {mixedView
+                  ? "Number of Qubits / Number of Elements:"
+                  : !hasPioneerUser && hasExplorerUser
+                    ? "Number of Elements:"
+                    : "Number of Qubits:"}
               </label>
+
               <input
                 type="text"
+                placeholder="e.g. 3"
                 inputMode="numeric"
                 className="w-full p-1 mt-1 text-sm text-center text-black border-2 border-blue-200 rounded-full outline-none focus:border-blue-400 transition-colors"
                 value={numQubitsStr}
                 onChange={(e) => {
                   const val = e.target.value.replace(/[^0-9]/g, "");
+
                   setNumQubitsStr(val);
+
                   const parsed = parseInt(val, 10);
+
                   if (!isNaN(parsed)) {
                     handleChange("numQubits", parsed);
                   }
@@ -228,43 +320,56 @@ export const GroverNode = memo((node: Node) => {
             {/* TARGET STATES / ELEMENTS TO SEARCH FIELD */}
             <div className="mt-2">
               <label className="text-xs font-semibold text-gray-700">
-                {mixedView ? (
-                  "Marked States / Element(s) to Search:"
-                ) : !hasPioneerUser && hasExplorerUser ? (
-                  "Element(s) to Search:"
-                ) : (
-                  "Marked States (Comma-separated indices):"
-                )}
+                {mixedView
+                  ? "Marked States / Element(s) to Search:"
+                  : !hasPioneerUser && hasExplorerUser
+                    ? "Element(s) to Search:"
+                    : "Marked States (Comma-separated indices):"}
               </label>
+
               <input
                 type="text"
                 placeholder="e.g. 0, 3, 7"
                 className="w-full p-1 mt-1 text-sm text-center text-black border-2 border-blue-200 rounded-full outline-none focus:border-blue-400 transition-colors"
                 value={targetStates}
                 onChange={(e) => {
-                  const val = e.target.value.replace(/[^a-zA-Z0-9,\s]/g, "");
+                  const val = e.target.value.replace(
+                    /[^a-zA-Z0-9,\s]/g,
+                    "",
+                  );
+
                   setTargetStates(val);
                   handleChange("targetStates", val);
+
                   const hasLetters = /[a-zA-Z]/.test(val);
                   setContainsPlaceholder(hasLetters);
                 }}
               />
+
               <p className="text-[10px] text-gray-500 mt-1 text-center">
-                Max index: {(1 << (parseInt(numQubitsStr, 10) || 1)) - 1}
+                Max index: {maxIndex}
               </p>
             </div>
 
             <div className="mt-2">
-              <label className="text-xs font-semibold text-gray-700">Iterations (Oracle + Diffusion):</label>
+              <label className="text-xs font-semibold text-gray-700">
+                Iterations (Oracle + Diffusion):
+              </label>
+
               <input
                 type="text"
                 placeholder="Auto"
-                className="w-full p-1 mt-1 text-sm text-center text-black border-2 border-blue-200 rounded-full outline-none focus:border-blue-400 transition-colors"
+                className="w-full p-1 mt-1 text-sm text-center text-black border-2 border-dashed border-blue-200 rounded-full outline-none focus:border-blue-400 transition-colors"
                 value={iterationsStr}
                 onChange={(e) => {
                   const val = e.target.value.replace(/[^0-9]/g, "");
+
                   setIterationsStr(val);
-                  handleChange("numIterations", val === "" ? "" : parseInt(val, 10));
+
+                  handleChange(
+                    "numIterations",
+                    val === "" ? "" : parseInt(val, 10),
+                  );
                 }}
               />
             </div>

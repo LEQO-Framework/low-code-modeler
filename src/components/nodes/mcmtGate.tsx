@@ -3,7 +3,6 @@ import { Handle, Position, Node, useUpdateNodeInternals } from "reactflow";
 import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
 import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
 import { quantumConstructColor } from "@/constants";
 
 export type MCMTGateNodeData = {

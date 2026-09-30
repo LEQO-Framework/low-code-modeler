@@ -9,7 +9,6 @@ export default function ConnectionLine({
   fromY,
   toX,
   toY,
-  connectionStatus,
 }: ConnectionLineComponentProps) {
   const [d] = getSimpleBezierPath({
     sourceX: fromX,
@@ -17,12 +16,6 @@ export default function ConnectionLine({
     targetX: toX,
     targetY: toY,
   });
-
-  console.log("this one")
-
-  let color = "black";
-  //if (connectionStatus === "valid") color = "#55dd99";
-  //if (connectionStatus === "invalid") color = "#ff6060";
 
   return <path fill="none" stroke={"black"} strokeWidth={1.5} d={d} />;
 }

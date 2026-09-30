@@ -499,7 +499,7 @@ export async function loadTopology(deploymentModelUrl) {
     tags = await fetch(deploymentModelUrl.replace("?csar", "tags")).then(
       (res) => res.json()
     );
-  } catch (e) {
+  } catch {
     throw new Error(
       "An unexpected error occurred during loading the deployments models topology."
     );

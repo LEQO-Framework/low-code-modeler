@@ -1,12 +1,8 @@
 /**
- * diracFormatter.ts
- *
- * Platzierung: src/components/lib/diracFormatter.ts
- *
- * Bridge zwischen QasmDiracPanel und der Kernlogik in utils/qasmToDirac.ts.
- * Exportiert genau das, was QasmDiracPanel.tsx erwartet:
- *   - Typ  Complex
- *   - Funktion statevectorToDirac(sv, numQubits) → string (Unicode)
+ * Bridge between QasmDiracPanel and the core logic in utils/qasmToDirac.ts.
+ * Exports exactly what QasmDiracPanel.tsx expects:
+ *   - the Complex type
+ *   - statevectorToDirac(sv, numQubits) -> string (Unicode)
  */
 
 export type { Complex } from "../components/utils/qasmToDirac";
@@ -14,14 +10,14 @@ import { statevectorToDirac as _statevectorToDirac } from "../components/utils/q
 import type { Complex } from "../components/utils/qasmToDirac";
 
 /**
- * Wandelt einen Statevector in einen lesbaren Dirac-Notation-String um.
+ * Converts a statevector into a readable Dirac notation string.
  *
- * @param statevector  Array von Complex-Amplituden, Länge muss 2^numQubits sein.
- * @param numQubits    Anzahl der Qubits.
- * @returns            Unicode-String, z. B. "1/√2 |00⟩ + 1/√2 |11⟩"
+ * @param statevector  array of complex amplitudes; its length must be 2^numQubits
+ * @param numQubits    number of qubits
+ * @returns            Unicode string, e.g. "1/√2 |00⟩ + 1/√2 |11⟩"
  *
  * @example
- * // Bell-Zustand Φ+
+ * // Bell state Φ+
  * const sv: Complex[] = [
  *   { re: 1/Math.sqrt(2), im: 0 },  // |00⟩
  *   { re: 0, im: 0 },               // |01⟩
