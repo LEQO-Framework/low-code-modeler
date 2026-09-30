@@ -2,6 +2,7 @@ export const QAOA_NODE_TYPE = "qaoaNode";
 export const EDITABLE_NODE_TYPE = "editableNode";
 export const STATE_PREPARATION_NODE_TYPE = "statePreparationNode";
 export const TEST_EDGE_TYPE: string | undefined = undefined;
+export const CLASSICAL_OPERATOR_NODE_TYPE = "classicalOperatorNode";
 
 export type ValuePoolContext = Record<string, string | number | boolean>;
 export type ValuePool = string[] | ((ctx: ValuePoolContext) => string[]);
@@ -63,6 +64,7 @@ export interface TestableNodeSpec {
 }
 
 export const TESTABLE_NODE_REGISTRY: TestableNodeSpec[] = [
+// --- Operator Nodes ---
   {
     id: "qaoa",
     label: "QAOA",
@@ -97,6 +99,143 @@ export const TESTABLE_NODE_REGISTRY: TestableNodeSpec[] = [
       },
     ],
   },
+
+// --- Classical Operator Nodes ---
+  {
+    id: "classicalArithmetic",
+    label: "Classical Arithmetic Operator",
+    nodeType: CLASSICAL_OPERATOR_NODE_TYPE,
+    defaultData: {
+      label: "Classical Arithmetic Operator",
+      operator: "+",
+      outputs: [{ identifier: "a", type: "classical" }],
+      outputTypes: ["any"],
+    },
+    width: 320,
+    height: 400,
+    options: [
+      {
+        key: "operator",
+        label: "Operator",
+        values: ["+", "-", "/", "*", "**"],
+      },
+    ],
+    inputs: [
+      {
+        key: "input0",
+        label: "Input 1",
+        dataTypeKey: "any",
+        targetHandle: (id) => `classicalHandleOperationInput0${id}`,
+      },
+      {
+        key: "input1",
+        label: "Input 2",
+        dataTypeKey: "any",
+        targetHandle: (id) => `classicalHandleOperationInput1${id}`,
+      },
+    ],
+  },
+
+  {
+    id: "classicalBitwise",
+    label: "Classical Bitwise Operator",
+    nodeType: CLASSICAL_OPERATOR_NODE_TYPE,
+    defaultData: {
+      label: "Classical Bitwise Operator",
+      operator: "|",
+      outputs: [{ identifier: "a", type: "classical" }],
+      outputTypes: ["bit"],
+    },
+    width: 320,
+    height: 400,
+    options: [
+      {
+        key: "operator",
+        label: "Operator",
+        values: ["|", "&", "~", "^"],
+      },
+    ],
+    inputs: [
+      {
+        key: "input0",
+        label: "Input 1",
+        dataTypeKey: "bit",
+        targetHandle: (id) => `classicalHandleOperationInput0${id}`,
+      },
+      {
+        key: "input1",
+        label: "Input 2",
+        dataTypeKey: "bit", 
+        targetHandle: (id) => `classicalHandleOperationInput1${id}`,
+      },
+    ],
+  },
+
+  {
+    id: "classicalComparison",
+    label: "Classical Comparison Operator",
+    nodeType: CLASSICAL_OPERATOR_NODE_TYPE,
+    defaultData: {
+      label: "Classical Comparison Operator",
+      operator: "<",
+      outputs: [{ identifier: "a", type: "classical" }],
+      outputTypes: ["boolean"],
+    },
+    width: 320,
+    height: 400,
+    options: [
+      {
+        key: "operator",
+        label: "Operator",
+        values: ["<", ">", "<=", ">=", "==", "!="],
+      },
+    ],
+    inputs: [
+      {
+        key: "input0",
+        label: "Input 1",
+        dataTypeKey: "any",
+        targetHandle: (id) => `classicalHandleOperationInput0${id}`,
+      },
+      {
+        key: "input1",
+        label: "Input 2",
+        dataTypeKey: "any",
+        targetHandle: (id) => `classicalHandleOperationInput1${id}`,
+      },
+    ],
+  },
+
+  {
+    id: "classicalMinMax",
+    label: "Classical Min & Max Operator",
+    nodeType: CLASSICAL_OPERATOR_NODE_TYPE,
+    defaultData: {
+      label: "Classical Min & Max Operator",
+      operator: "min",
+      outputs: [{ identifier: "a", type: "classical" }],
+      outputTypes: ["number"],
+    },
+    width: 320,
+    height: 400,
+    options: [
+      {
+        key: "operator",
+        label: "Operator",
+        values: ["min", "max"],
+      },
+    ],
+    inputs: [
+      {
+        key: "input0",
+        label: "Input 1",
+        dataTypeKey: "array", 
+        targetHandle: (id) => `classicalHandleOperationInput0${id}`,
+      },
+    ],
+  },
+
+
 // --- Encoding Nodes ---
   {
     id: "basisEncoding",
@@ -232,4 +371,6 @@ export const TESTABLE_NODE_REGISTRY: TestableNodeSpec[] = [
       },
     ],
   },
+
+
 ];
