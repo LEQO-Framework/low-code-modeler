@@ -4809,9 +4809,6 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
           onManageTemplates={handleManageTemplates}
           onGroupSelected={handleGroupSelected}
           generateModel={() => setIsPromptModalOpen(true)}
-          onLoadQasm={function (qasm: string): void {
-            throw new Error("Function not implemented.");
-          } } 
           isTestingFeatureEnabled={isTestingFeatureEnabled} 
           openTesting={() => setIsTestingModalOpen(true)}               
           />
