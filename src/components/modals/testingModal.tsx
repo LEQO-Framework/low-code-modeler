@@ -1,29 +1,20 @@
 import { useState, useMemo } from "react";
-import { Node, Edge, MarkerType } from "reactflow";
+import { Node, Edge } from "reactflow";
 import { v4 as uuidv4 } from "uuid";
 import Modal from "./Modal";
 import {
   TESTABLE_NODE_REGISTRY,
   TestableNodeSpec,
   resolvePool,
-  EDITABLE_NODE_TYPE,
-  TEST_EDGE_TYPE,
 } from "./testingSpecs";
 
-import { categories, CategoryEntry } from "../panels/categories";
+import { categories } from "../panels/categories";
 
 interface TestingModalProps {
   open: boolean;
   onClose: () => void;
   existingNodes?: Node[];
   onAddFlowToCanvas: (flow: any) => void;
-}
-
-function generateFlow(nodes) {
-  // generate positions
-  // generate edges
-  // generate metadata
-  // generate dict/json file of flow
 }
 
 function extractNodeLabels(content: any): Record<string, string> {
@@ -89,10 +80,6 @@ export interface GeneratedTestFlow {
   descriptionLines: string[];
 }
 
-function buildOutputHandleId(node: Node, index = 0): string {
-  const kind = node.data?.isDataType ? "classical" : "quantum";
-  return `${kind}Output${index}${node.id}`;
-}
 
 function describeFlow(
   spec: TestableNodeSpec,
@@ -371,16 +358,11 @@ export const TestingModal = ({
     (s) => s.inputs.length > 0,
   );
 
-  // Dynamically extract node labels from existing canvas nodes
-  const dynamicNodeLabels = useMemo(() => {
-    return extractNodeLabels(categories);
-  }, [categories]);
 
   const [selectedSpecId, setSelectedSpecId] = useState(
     testableSpecs[0]?.id ?? "",
   );
   const [rows, setRows] = useState<Row[]>([]);
-  const [truncated, setTruncated] = useState(false);
   const [placedCount, setPlacedCount] = useState(0);
 
   const selectedSpec = testableSpecs.find((s) => s.id === selectedSpecId);
@@ -389,21 +371,6 @@ export const TestingModal = ({
     if (!selectedSpec) return;
     const { flows } = generateTestFlows(selectedSpec);
     setRows(flows.map((f, index) => ({ ...f, selected: index === 0 })));
-  };
-
-  const anchorFor = (offsetIndex: number) => {
-    const fallbackWidth = 320;
-    const maxX = existingNodes.length
-      ? Math.max(
-          ...existingNodes.map(
-            (n) =>
-              n.position.x +
-              (typeof n.width === "number" ? n.width : fallbackWidth),
-          ),
-        )
-      : 0;
-    const rowHeight = (selectedSpec?.height ?? 550) + 100;
-    return { x: maxX + 400, y: 80 + offsetIndex * rowHeight };
   };
 
   const getAnchor = () => {
@@ -421,7 +388,7 @@ export const TestingModal = ({
     return { x: maxX + 400, y: 80 };
   };
 
-  const placeFlow = (flow: GeneratedTestFlow, offsetIndex: number) => {
+  const placeFlow = (flow: GeneratedTestFlow) => {
     if (!selectedSpec) return;
     const { flowObj } = buildCanvasFlow(selectedSpec, flow, getAnchor());
     onAddFlowToCanvas(flowObj);
@@ -430,7 +397,7 @@ export const TestingModal = ({
 
   // CHANGED: Places flow and marks this row as generated (setting checkmark)
   const handleGenerateOne = (flow: GeneratedTestFlow) => {
-    placeFlow(flow, placedCount);
+    placeFlow(flow);
     setPlacedCount((c) => c + 1);
 
     // Set checkmark for this specific flow
@@ -441,7 +408,7 @@ export const TestingModal = ({
 
   const handleGenerateSelected = () => {
     const selected = rows.filter((r) => r.selected);
-    selected.forEach((flow, i) => placeFlow(flow, placedCount + i));
+    selected.forEach((flow, i) => placeFlow(flow));
     setPlacedCount((c) => c + selected.length);
   };
 
@@ -456,10 +423,6 @@ export const TestingModal = ({
   };
 
   const selectedCount = rows.filter((r) => r.selected).length;
-  const optionCount = rows.filter(
-    (r) => r.category === "option coverage",
-  ).length;
-  const inputCount = rows.filter((r) => r.category === "input coverage").length;
 
   return (
     <Modal
