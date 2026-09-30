@@ -6,7 +6,7 @@ import {
   TESTABLE_NODE_REGISTRY, 
   TestableNodeSpec, 
   resolvePool, 
-  ARRAY_DATATYPE_NODE_TYPE, 
+  EDITABLE_NODE_TYPE, 
   TEST_EDGE_TYPE 
 } from "./testingSpecs";
 
@@ -16,9 +16,18 @@ interface TestingModalProps {
   open: boolean;
   onClose: () => void;
   existingNodes?: Node[];
-  onAddFlowToCanvas: (nodes: Node[], edges: Edge[]) => void;
+  onAddFlowToCanvas: (flow: any) => void;
 }
 
+function generateFlow(nodes) {
+  // generate positions
+
+  // generate edges
+
+  // generate metadata
+
+  // generate dict/json file of flow
+}
 
 function extractNodeLabels(content: any): Record<string, string> {
   const labels: Record<string, string> = {};
@@ -83,9 +92,6 @@ export interface GeneratedTestFlow {
   descriptionLines: string[];
 }
 
-function slugify(text: string): string {
-  return text.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
-}
 
 function buildOutputHandleId(node: Node, index = 0): string {
   const kind = node.data?.isDataType ? "classical" : "quantum";
@@ -103,8 +109,17 @@ function describeFlow(
   });
   spec.inputs.forEach((inp) => {
     const label = inp.labelFor ? inp.labelFor(optionValues) : inp.label;
-    const typeName = inp.dataTypeKey.split(":")[0];
-    lines.push(`${label} (${typeName}): ${inputValues[inp.key]}`);
+    const rawVal = inputValues[inp.key] ?? "";
+    let displayType = inp.dataTypeKey.split(":")[0];
+    let displayVal = rawVal;
+
+    if (rawVal.startsWith("type:")) {
+      const parts = rawVal.split("|");
+      displayType = parts[0].replace("type:", "");
+      displayVal = parts.slice(1).join("|");
+    }
+
+    lines.push(`${label} (${displayType}): ${displayVal}`);
   });
   return lines;
 }
@@ -170,61 +185,170 @@ export function generateTestFlows(spec: TestableNodeSpec): { flows: GeneratedTes
   return { flows, truncated };
 }
 
+export interface GeneratedTestFlow {
+  id: string;
+  name: string;
+  category: "option coverage" | "input coverage";
+  optionValues: Record<string, string | number>;
+  inputValues: Record<string, string>;
+  descriptionLines: string[];
+}
+
+
+/**
+ * Builds a complete test flow JSON object matching testflow_example.json.
+ * Works generically for any TestableNodeSpec registered.
+ */
 function buildCanvasFlow(
   spec: TestableNodeSpec,
   flow: GeneratedTestFlow,
   anchor: { x: number; y: number }
-): { nodes: Node[]; edges: Edge[] } {
-  const slug = slugify(flow.name);
+): { flowObj: any; nodes: Node[]; edges: Edge[] } {
   const mainId = uuidv4();
-
-  const mainNode: Node = {
-    id: mainId,
-    type: spec.nodeType,
-    position: { x: anchor.x, y: anchor.y },
-    data: {
-      ...spec.defaultData,
-      ...flow.optionValues,
-      outputIdentifier: `${slug}_out_${mainId.slice(0, 6)}`,
-    },
-  };
+  const mainIdentifiers = ["q" + Math.floor(100000 + Math.random() * 900000)];
 
   const inputNodes: Node[] = [];
   const edges: Edge[] = [];
+  const mainNodeInputs: any[] = [];
 
   spec.inputs.forEach((inp, i) => {
     const inputId = uuidv4();
-    const raw = flow.inputValues[inp.key] ?? "";
-    const arrayValue = raw === "" ? [] : raw.split(",").map((v) => v.trim());
-    const label = inp.labelFor ? inp.labelFor(flow.optionValues) : inp.label;
+    const edgeId = uuidv4();
+    const rawValue = flow.inputValues[inp.key] ?? "";
+    const outputId = String.fromCharCode(97 + (i % 26)); // e.g. 'e', 'g', 'b'
+    const inputNodeIdentifiers = ["q" + Math.floor(100000 + Math.random() * 900000)];
+    
+    let actualDataType = inp.dataTypeKey.split(":")[0];
+    let actualValue = rawValue;
 
+    if (rawValue.startsWith("type:")) {
+      const parts = rawValue.split("|");
+      actualDataType = parts[0].replace("type:", "");
+      actualValue = parts.slice(1).join("|");
+    }
+
+    const capitalizedType = actualDataType.charAt(0).toUpperCase() + actualDataType.slice(1);
+    const inputNodeLabel = actualDataType === "array" ? "Array" : capitalizedType;
+
+    const targetHandle = inp.targetHandle(mainId);
+    const sourceHandle = `classicalHandleDataTypeOutput0${inputId}`;
+
+    // 1. Create Input Node (dataTypeNode)
     const inputNode: Node = {
       id: inputId,
-      type: ARRAY_DATATYPE_NODE_TYPE,
-      position: { x: anchor.x - 260, y: anchor.y + i * 140 },
+      type: "dataTypeNode",
+      position: { x: anchor.x - 550, y: anchor.y + i * 330 },
+      selectable: true,
+      draggable: true,
       data: {
-        isDataType: true,
-        dataType: "array",
-        label,
-        value: arrayValue,
-        outputIdentifier: `${slug}_${inp.key}_${inputId.slice(0, 6)}`,
-        outputs: [],
+        label: inputNodeLabel,
+        dataType: actualDataType,
+        value: actualValue,
+        outputIdentifier: outputId,
+        inputs: [],
+        outputs: [
+          {
+            identifier: outputId,
+            size: "",
+            type: "classical",
+          },
+        ],
+        children: [],
+        implementation: "",
+        implementationType: "",
+        uncomputeImplementationType: "",
+        uncomputeImplementation: "",
+        completionGuaranteed: true,
+        compactOptions: [true, false],
+        description: `${capitalizedType} input value`,
+        icon: `PaletteIcon_${capitalizedType}.png`,
+        identifiers: inputNodeIdentifiers,
+        inputTypes: [],
+        outputTypes: [actualDataType],
       },
+      width: 450,
+      height: 270,
     };
     inputNodes.push(inputNode);
 
+    // 2. Create Edge
     edges.push({
-      id: uuidv4(),
+      id: edgeId,
       source: inputId,
-      sourceHandle: buildOutputHandleId(inputNode, 0),
+      sourceHandle: sourceHandle,
       target: mainId,
-      targetHandle: inp.targetHandle(mainId),
-      type: TEST_EDGE_TYPE,
-      markerEnd: { type: MarkerType.ArrowClosed },
+      targetHandle: targetHandle,
+      type: "classicalEdge",
+      markerEnd: {
+        type: "arrowclosed" as any,
+        width: 20,
+        height: 20,
+        color: "#F5A843",
+      },
+    });
+
+    // 3. Register input mapping for the main node's data.inputs array
+    mainNodeInputs.push({
+      id: inputId,
+      edgeId: edgeId,
+      outputIdentifier: outputId,
+      identifiers: inputNodeIdentifiers,
+      targetHandle: targetHandle,
     });
   });
 
-  return { nodes: [mainNode, ...inputNodes], edges };
+  // Map "qaoaNode" internal type to "qaoa" schema type if necessary
+  const targetNodeType = spec.nodeType === "qaoaNode" ? "qaoa" : spec.nodeType;
+
+  // 4. Create Main Operator Node
+  const mainNode: Node = {
+    id: mainId,
+    type: targetNodeType,
+    position: { x: anchor.x, y: anchor.y },
+    selectable: true,
+    draggable: true,
+    data: {
+      label: spec.defaultData?.label || spec.label,
+      description: spec.defaultData?.description || "State preparation / encoding node",
+      icon: spec.defaultData?.icon || `PaletteIcon_${spec.id.toUpperCase()}.png`,
+      children: [],
+      implementation: "",
+      implementationType: "",
+      uncomputeImplementationType: "",
+      uncomputeImplementation: "",
+      completionGuaranteed: true,
+      compactOptions: [false],
+      identifiers: mainIdentifiers,
+      inputTypes: spec.inputs.map(() => "array"),
+      outputTypes: spec.defaultData?.outputTypes || { "0": "quantum register" },
+      outputs: spec.defaultData?.outputs || [],
+      ...spec.defaultData,
+      ...flow.optionValues,
+      inputs: mainNodeInputs,
+    },
+    width: spec.width || 320,
+    height: spec.height || 550,
+  };
+
+  const allNodes = [...inputNodes, mainNode];
+
+  // 5. Construct full Flow JSON Object
+  const flowObj = {
+    metadata: {
+      version: "1.0.0",
+      name: flow.name,
+      description: flow.descriptionLines.join("\n"),
+      author: "",
+      containsPlaceholder: false,
+      id: `flow-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+    },
+    nodes: allNodes,
+    edges: edges,
+    viewport: { x: 0, y: 0, zoom: 1 },
+  };
+
+  return { flowObj, nodes: allNodes, edges };
 }
 
 
@@ -248,9 +372,8 @@ export const TestingModal = ({ open, onClose, existingNodes = [], onAddFlowToCan
 
   const handleGenerate = () => {
     if (!selectedSpec) return;
-    const { flows, truncated } = generateTestFlows(selectedSpec);
-    setRows(flows.map((f) => ({ ...f, selected: true })));
-    setTruncated(truncated);
+    const { flows } = generateTestFlows(selectedSpec);
+    setRows(flows.map((f, index) => ({ ...f, selected: index === 0 })));
   };
 
 
@@ -263,15 +386,31 @@ export const TestingModal = ({ open, onClose, existingNodes = [], onAddFlowToCan
     return { x: maxX + 400, y: 80 + offsetIndex * rowHeight };
   };
 
-  const placeFlow = (flow: GeneratedTestFlow, offsetIndex: number) => {
-    if (!selectedSpec) return;
-    const { nodes, edges } = buildCanvasFlow(selectedSpec, flow, anchorFor(offsetIndex));
-    onAddFlowToCanvas(nodes, edges);
+  const getAnchor = () => {
+    const fallbackWidth = 320;
+    const maxX = existingNodes.length
+      ? Math.max(...existingNodes.map((n) => n.position.x + (typeof n.width === "number" ? n.width : fallbackWidth)))
+      : 0;
+    const rowHeight = (selectedSpec?.height ?? 550) + 100;
+    return { x: maxX + 400, y: 80 };
   };
 
+  const placeFlow = (flow: GeneratedTestFlow, offsetIndex: number) => {
+    if (!selectedSpec) return;
+    const { flowObj } = buildCanvasFlow(selectedSpec, flow, getAnchor());
+    onAddFlowToCanvas(flowObj);
+    console.log("placed flow", flowObj)
+  };
+
+  // CHANGED: Places flow and marks this row as generated (setting checkmark)
   const handleGenerateOne = (flow: GeneratedTestFlow) => {
     placeFlow(flow, placedCount);
     setPlacedCount((c) => c + 1);
+    
+    // Set checkmark for this specific flow
+    setRows((prev) =>
+      prev.map((r) => (r.id === flow.id ? { ...r, generated: true } : r))
+    );
   };
 
   const handleGenerateSelected = () => {
@@ -332,13 +471,20 @@ export const TestingModal = ({ open, onClose, existingNodes = [], onAddFlowToCan
           </tbody>
         </table>
 
+        <div className="mt-3">
+          <button className="btn btn-primary" onClick={handleGenerate} disabled={!selectedSpec}>
+            Generate Test Cases
+          </button>
+        </div>
+
         {rows.length > 0 && (
           <div className="mt-4">
             <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
               <div className="text-sm text-gray-600">
                 {rows.length} test flows generated
               </div>
-              {/*<div className="flex items-center gap-2">
+              {/*
+              <div className="flex items-center gap-2">
                 <button className="text-xs underline text-blue-600" onClick={() => toggleAll(true)}>
                   Select all
                 </button>
