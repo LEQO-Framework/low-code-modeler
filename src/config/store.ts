@@ -61,6 +61,8 @@ type RFState = {
   historyIndex: number;
   redoStack: HistoryItem[];
   dragSnapshot: HistoryItem | null;
+  pendingNodeInitializationId: string | null;
+  isReplayingHistory: boolean;
   typeError: string | null;
   userTemplates: Template[];
   domainProfile: string;
@@ -143,6 +145,8 @@ export const useStore = create<RFState>()(
       historyIndex: -1,
       redoStack: [],
       dragSnapshot: null,
+      pendingNodeInitializationId: null,
+      isReplayingHistory: false,
       containsPlaceholder: false,
       typeError: null,
       userTemplates: [],
@@ -173,6 +177,9 @@ export const useStore = create<RFState>()(
       setSelectedNode: (node: Node | null) => {
         set({
           selectedNode: node,
+          pendingNodeInitializationId: node?.id
+            ? null
+            : get().pendingNodeInitializationId,
         });
         console.log("rerender");
         if (node === null) {
@@ -343,6 +350,7 @@ export const useStore = create<RFState>()(
           edges: currentEdges,
           ...appendHistory(get().history, get().historyIndex, newHistoryItem),
           redoStack: [],
+          pendingNodeInitializationId: node.id,
         });
         console.log("History after update:", get().history);
         console.log("Current historyIndex:", get().historyIndex);
@@ -1647,6 +1655,9 @@ export const useStore = create<RFState>()(
 
         set((state) => {
           const { nodes, edges } = state;
+          const shouldRecordHistory =
+            !state.isReplayingHistory &&
+            state.pendingNodeInitializationId !== nodeId;
           let updatedNodes = [...nodes];
           let sourceIdentifier = 0;
           console.log(sourceIdentifier);
@@ -1822,11 +1833,13 @@ export const useStore = create<RFState>()(
           return {
             nodes: updatedNodes,
             edges: edges,
-            ...appendHistory(state.history, state.historyIndex, {
-              nodes: [...updatedNodes],
-              edges: [...edges],
-            }),
-            redoStack: [],
+            ...(shouldRecordHistory
+              ? appendHistory(state.history, state.historyIndex, {
+                  nodes: [...updatedNodes],
+                  edges: [...edges],
+                })
+              : { history: state.history, historyIndex: state.historyIndex }),
+            redoStack: shouldRecordHistory ? [] : state.redoStack,
           };
         });
         console.log("History after update:", get().history);
@@ -1941,6 +1954,7 @@ export const useStore = create<RFState>()(
             nodes: previousHistoryItem.nodes,
             edges: previousHistoryItem.edges,
             historyIndex: historyIndex - 1,
+            isReplayingHistory: true,
             redoStack: [
               ...redoStack,
               {
@@ -1949,6 +1963,7 @@ export const useStore = create<RFState>()(
               },
             ].slice(-MAX_HISTORY_ENTRIES),
           });
+          setTimeout(() => set({ isReplayingHistory: false }), 0);
         }
         console.log("History after undo:", get().history);
         console.log("Current historyIndex after undo:", get().historyIndex);
@@ -1965,7 +1980,9 @@ export const useStore = create<RFState>()(
             edges: nextHistoryItem.edges,
             historyIndex: historyIndex + 1,
             redoStack: redoStack.slice(0, -1),
+            isReplayingHistory: true,
           });
+          setTimeout(() => set({ isReplayingHistory: false }), 0);
         } else {
           console.warn("Redo is not possible: no further history to redo");
         }

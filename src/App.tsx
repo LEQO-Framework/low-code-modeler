@@ -2848,7 +2848,28 @@ If none apply, return { "algorithms": [] }.
       console.log("CREATED NODE", newNode);
 
       // Update local Zustand Store
+      const creationHistoryIndex = useStore.getState().historyIndex;
+      const creationHistoryItem = {
+        nodes: structuredClone(useStore.getState().nodes),
+        edges: structuredClone(useStore.getState().edges),
+      };
       setNodes(newNode);
+      setTimeout(() => {
+        useStore.setState((state) => {
+          if (!state.nodes.some((current) => current.id === newNode.id)) {
+            return state;
+          }
+          const history = [
+            ...state.history.slice(0, creationHistoryIndex + 1),
+            creationHistoryItem,
+          ].slice(-MAX_HISTORY_ENTRIES);
+          return {
+            history,
+            historyIndex: history.length - 1,
+            redoStack: [],
+          };
+        });
+      }, 0);
 
       // Update Yjs Collaborative Store
 
