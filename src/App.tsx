@@ -98,6 +98,10 @@ import PromptFlowModal from "./components/modals/promptFlowModal";
 import ShortcutHelpModal from "./components/modals/shortcutHelpModal";
 import { openQasmToFlow } from "./qasmConverter";
 import {
+  EdgeHighlightMarkers,
+  EdgeHighlightProvider,
+} from "./components/edges/edgeHighlightContext";
+import {
   amplitude_encoding,
   angle_encoding,
   basis_encoding,
@@ -199,10 +203,7 @@ type HandleCandidate = {
 
 const getHandleDomain = (handleId: string): HandleCandidate["domain"] => {
   if (handleId.includes("classical")) return "classical";
-  if (
-    handleId.includes("quantum") ||
-    handleId.includes("sideQuantum")
-  ) {
+  if (handleId.includes("quantum") || handleId.includes("sideQuantum")) {
     return "quantum";
   }
   return "unknown";
@@ -268,29 +269,27 @@ const getClosestRenderedEdgePoint = (
 
   const matrix = path.getScreenCTM();
   if (!matrix) return null;
-  
+
   const pointOnScreen = reactFlowInstance.flowToScreenPosition(point);
   const totalLength = path.getTotalLength();
 
   let searchStart = 0;
   let searchEnd = 1;
-  let closest:     
-    | {
-        distance: number;
-        point: { x: number; y: number };
-        progress: number;
-      }
-    | null = null;
+  let closest: {
+    distance: number;
+    point: { x: number; y: number };
+    progress: number;
+  } | null = null;
 
   const amountOfSteps = 4;
   const amountOfPointsLookedAt = 20;
   for (let step = 0; step < amountOfSteps; step += 1) {
-    const interval = (searchEnd - searchStart)/amountOfPointsLookedAt;
+    const interval = (searchEnd - searchStart) / amountOfPointsLookedAt;
 
     for (let index = 0; index <= amountOfPointsLookedAt; index += 1) {
-      const progress = searchStart + interval*index;
+      const progress = searchStart + interval * index;
       const pathPoint = path.getPointAtLength(totalLength * progress);
-      
+
       const screenPoint = new DOMPoint(
         pathPoint.x,
         pathPoint.y,
@@ -314,15 +313,9 @@ const getClosestRenderedEdgePoint = (
     }
 
     if (closest) {
-      searchStart = Math.max(
-        0,
-        closest.progress - interval,
-      );
-      searchEnd = Math.min(
-        1,
-        closest.progress + interval,
-      );
-    }    
+      searchStart = Math.max(0, closest.progress - interval);
+      searchEnd = Math.min(1, closest.progress + interval);
+    }
   }
 
   if (!closest) {
@@ -771,18 +764,20 @@ If none apply, return { "algorithms": [] }.
   );
 
   useEffect(() => {
-    document.querySelectorAll<SVGGElement>(".react-flow__edge").forEach((edge) => {
-      const isHighlighted =
-        edge.dataset.testid === `rf__edge-${highlightedEdgeId}`;
-      edge.classList.toggle(
-        "split-highlighted",
-        isHighlighted && splitPreview?.canSplit === true,
-      );
-      edge.classList.toggle(
-        "split-highlighted-invalid",
-        isHighlighted && splitPreview?.canSplit === false,
-      );
-    });
+    document
+      .querySelectorAll<SVGGElement>(".react-flow__edge")
+      .forEach((edge) => {
+        const isHighlighted =
+          edge.dataset.testid === `rf__edge-${highlightedEdgeId}`;
+        edge.classList.toggle(
+          "split-highlighted",
+          isHighlighted && splitPreview?.canSplit === true,
+        );
+        edge.classList.toggle(
+          "split-highlighted-invalid",
+          isHighlighted && splitPreview?.canSplit === false,
+        );
+      });
   }, [highlightedEdgeId, splitPreview?.canSplit, edges]);
   const [deploymentId, setDeploymentId] = useState(null);
 
@@ -2572,8 +2567,9 @@ If none apply, return { "algorithms": [] }.
                 handle.domain === getHandleDomain(edge.targetHandle ?? "") &&
                 (targetType === "any" ||
                   draggedNode.data.outputTypes?.[handle.index] === "any" ||
-                  draggedNode.data.outputTypes?.[handle.index]?.toLowerCase() ===
-                    targetType),
+                  draggedNode.data.outputTypes?.[
+                    handle.index
+                  ]?.toLowerCase() === targetType),
             );
 
             if (matchingInput && matchingOutput) {
@@ -4251,9 +4247,11 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
   const onNodeDrag = React.useCallback(
     (event: React.MouseEvent, node: Node, nodes: Node[]) => {
       if (autoConnectOnNodeDrop && node.type !== "groupNode") {
-        const currentNodes: Node[] = reactFlowInstance.getNodes().map((current) =>
-          current.id === node.id ? { ...current, ...node } : current,
-        );
+        const currentNodes: Node[] = reactFlowInstance
+          .getNodes()
+          .map((current) =>
+            current.id === node.id ? { ...current, ...node } : current,
+          );
         const currentEdges: Edge[] = reactFlowInstance.getEdges();
         const nodesById = new Map<string, Node>(
           currentNodes.map((current) => [current.id, current]),
@@ -4265,7 +4263,8 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
           const closest = currentEdges
             .filter(
               (edge) =>
-                edge.source !== draggedNode.id && edge.target !== draggedNode.id,
+                edge.source !== draggedNode.id &&
+                edge.target !== draggedNode.id,
             )
             .map((edge) => {
               const source = nodesById.get(edge.source);
@@ -4285,10 +4284,11 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
                 distance: renderedPoint.distance / reactFlowInstance.getZoom(),
               };
             })
-            .filter((candidate): candidate is NonNullable<typeof candidate> =>
-              candidate !== null,
+            .filter(
+              (candidate): candidate is NonNullable<typeof candidate> =>
+                candidate !== null,
             )
-            .reduce<typeof closest[number] | undefined>(
+            .reduce<(typeof closest)[number] | undefined>(
               (best, candidate) =>
                 !best || candidate.distance < best.distance ? candidate : best,
               undefined,
@@ -4489,7 +4489,13 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
         setContextMenu((prev) => ({ ...prev, visible: false }));
       }
     },
-    [reactFlowInstance, helperLines, nodes, setContextMenu, autoConnectOnNodeDrop],
+    [
+      reactFlowInstance,
+      helperLines,
+      nodes,
+      setContextMenu,
+      autoConnectOnNodeDrop,
+    ],
   );
 
   const onPaneClick = useCallback(() => {
@@ -5539,349 +5545,355 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
           className="relative h-[calc(100vh_-_60px)] flex-grow"
           ref={reactFlowWrapper}
         >
-          <ReactFlow
-            ref={ref}
-            nodes={collaborationModeOn ? nodesI : nodes}
-            edges={collaborationModeOn ? edgesI : edges}
-            // Selection
-            selectionOnDrag={lassoMode} // ← Lasso nur wenn aktiv
-            panOnDrag={!lassoMode} // ← Panning deaktivieren wenn Lasso aktiv
-            selectionMode={SelectionMode.Partial} // ← Nodes die teilweise im Lasso sind auch
-            deleteKeyCode={["Backspace", "Delete"]}
-            multiSelectionKeyCode="Shift"
-            selectionKeyCode="Shift"
-            onSelectionEnd={onSelectionEnd}
-            onSelectionChange={onSelectionChange}
-            // Node events
-            onNodesChange={
-              collaborationModeOn ? onNodesChangeSync : onNodesChange
-            } // TODO: onNodesChange if no collab mode
-            onNodeContextMenu={onNodeContextMenu}
-            onNodeClick={(event: React.MouseEvent, node: Node) => {
-              handleClick(event, node);
-            }}
-            onNodeDrag={onNodeDrag}
-            onNodeDragStop={onNodeDragStop}
-            onNodesDelete={onNodesDelete} // TODO: weglassen oder onNodesDeleteSync erstellen?
-            // Edge events
-            onEdgeContextMenu={onEdgeContextMenu}
-            onEdgesChange={onEdgesChange} // TODO: onEdgesChangeSync for collab mode (deletion of edge)
-            onEdgesDelete={onEdgesDelete} // TODO: weglassen oder onEdgesDeleteSync erstellen?
-            onConnect={collaborationModeOn ? onConnectSync : onConnect} // TODO: onConnect if no collab mode
-            onConnectEnd={onConnectEnd}
-            // Canvas
-            onPaneClick={onPaneClick}
-            onDrop={onDrop}
-            onDragOver={onDragOver}
-            onMouseMove={handleMouseMove}
-            onClick={onClick}
-            fitView
-            fitViewOptions={{ maxZoom: 1 }}
-            onInit={setReactFlowInstance}
-            snapToGrid={true}
-            nodeTypes={nodesConfig.nodeTypes}
-            edgeTypes={nodesConfig.edgesTypes}
+          <EdgeHighlightProvider
+            highlightedEdgeId={highlightedEdgeId}
+            canSplit={splitPreview?.canSplit ?? null}
           >
-            {helperLines && (
-              <>
-                {helperLines.x !== null && (
-                  <div
-                    style={{
-                      position: "absolute",
-                      left: helperLines.x,
-                      top: 0,
-                      height: "100%",
-                      width: "1px",
-                      background: "red",
-                      pointerEvents: "none",
-                    }}
-                  />
-                )}
-                {helperLines.y !== null && (
-                  <div
-                    style={{
-                      position: "absolute",
-                      top: helperLines.y, //(ref.current?.scrollTop || 0),
-                      left: 0,
-                      width: "100%",
-                      height: "1px",
-                      background: "red",
-                      pointerEvents: "none",
-                    }}
-                  />
-                )}
-              </>
-            )}
-
-            {/* Controls */}
-            <Controls />
-
-            {/* Lasso Button – separat positioniert über den Controls */}
-            <div
-              className="lasso-button"
-              style={{
-                position: "absolute",
-                bottom: "130px", // anbinden an Controls nicht möglich, daher Position separat festlegen
-                left: "14px",
-                zIndex: 10,
+            <ReactFlow
+              ref={ref}
+              nodes={collaborationModeOn ? nodesI : nodes}
+              edges={collaborationModeOn ? edgesI : edges}
+              // Selection
+              selectionOnDrag={lassoMode} // ← Lasso nur wenn aktiv
+              panOnDrag={!lassoMode} // ← Panning deaktivieren wenn Lasso aktiv
+              selectionMode={SelectionMode.Partial} // ← Nodes die teilweise im Lasso sind auch
+              deleteKeyCode={["Backspace", "Delete"]}
+              multiSelectionKeyCode="Shift"
+              selectionKeyCode="Shift"
+              onSelectionEnd={onSelectionEnd}
+              onSelectionChange={onSelectionChange}
+              // Node events
+              onNodesChange={
+                collaborationModeOn ? onNodesChangeSync : onNodesChange
+              } // TODO: onNodesChange if no collab mode
+              onNodeContextMenu={onNodeContextMenu}
+              onNodeClick={(event: React.MouseEvent, node: Node) => {
+                handleClick(event, node);
               }}
-              onMouseEnter={(e) => {
-                const tooltip = e.currentTarget.querySelector(
-                  ".lasso-tooltip",
-                ) as HTMLElement;
-                if (tooltip) tooltip.style.opacity = "1";
-              }}
-              onMouseLeave={(e) => {
-                const tooltip = e.currentTarget.querySelector(
-                  ".lasso-tooltip",
-                ) as HTMLElement;
-                if (tooltip) tooltip.style.opacity = "0";
-              }}
+              onNodeDrag={onNodeDrag}
+              onNodeDragStop={onNodeDragStop}
+              onNodesDelete={onNodesDelete} // TODO: weglassen oder onNodesDeleteSync erstellen?
+              // Edge events
+              onEdgeContextMenu={onEdgeContextMenu}
+              onEdgesChange={onEdgesChange} // TODO: onEdgesChangeSync for collab mode (deletion of edge)
+              onEdgesDelete={onEdgesDelete} // TODO: weglassen oder onEdgesDeleteSync erstellen?
+              onConnect={collaborationModeOn ? onConnectSync : onConnect} // TODO: onConnect if no collab mode
+              onConnectEnd={onConnectEnd}
+              // Canvas
+              onPaneClick={onPaneClick}
+              onDrop={onDrop}
+              onDragOver={onDragOver}
+              onMouseMove={handleMouseMove}
+              onClick={onClick}
+              fitView
+              fitViewOptions={{ maxZoom: 1 }}
+              onInit={setReactFlowInstance}
+              snapToGrid={true}
+              nodeTypes={nodesConfig.nodeTypes}
+              edgeTypes={nodesConfig.edgesTypes}
             >
-              <button
-                onClick={() => setLassoMode((v) => !v)}
-                style={{
-                  width: "28px",
-                  height: "24px",
-                  background: lassoMode ? "#6366f1" : "white",
-                  border: "1px solid #e2e8f0",
-                  borderRadius: "4px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer",
-                  fontSize: "14px",
-                  boxShadow: "0 1px 4px rgba(0,0,0,0.15)",
-                  color: lassoMode ? "white" : "#374151",
-                }}
-              >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 14 14"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                >
-                  <ellipse
-                    cx="7"
-                    cy="6"
-                    rx="5"
-                    ry="4"
-                    strokeDasharray="3 1.5"
-                  />
-                  <line x1="11" y1="9" x2="13" y2="13" />
-                </svg>
-              </button>
-              <span
-                style={{
-                  position: "absolute",
-                  left: "30px",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  background: "#1f2937",
-                  color: "white",
-                  fontSize: "11px",
-                  padding: "2px 8px",
-                  borderRadius: "4px",
-                  whiteSpace: "nowrap",
-                  pointerEvents: "none",
-                  opacity: 0,
-                  transition: "opacity 0.15s",
-                }}
-              >
-                {lassoMode ? "Cancel grouping" : "Group selection"}
-              </span>
-            </div>
-
-            <ShortcutHelpModal />
-            {Object.entries(cursors).length > 1 &&
-              collaborationModeOn &&
-              Object.entries(cursors).map(([clientId, cursor]) => {
-                // TODO: only if collaborationMode false
-                const displayName =
-                  Number(clientId) === myClientId ? "Me" : cursor.name;
-                return (
-                  <div
-                    key={clientId}
-                    style={{
-                      position: "absolute",
-                      left: cursor.x,
-                      top: cursor.y,
-                      pointerEvents: "none",
-                      transform: "translate(-50%, -50%)",
-                      zIndex: 999,
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                    }}
-                  >
+              <EdgeHighlightMarkers />
+              {helperLines && (
+                <>
+                  {helperLines.x !== null && (
                     <div
                       style={{
-                        marginBottom: 4,
-                        fontSize: 12,
-                        color: "#fff",
-                        backgroundColor: cursor.color,
-                        padding: "1px 4px",
-                        borderRadius: 4,
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {displayName}
-                    </div>
-                    <div
-                      style={{
-                        width: 10,
-                        height: 10,
-                        borderRadius: "50%",
-                        backgroundColor: cursor.color,
-                        transition: "left 0.05s linear, top 0.05s linear",
+                        position: "absolute",
+                        left: helperLines.x,
+                        top: 0,
+                        height: "100%",
+                        width: "1px",
+                        background: "red",
+                        pointerEvents: "none",
                       }}
                     />
-                  </div>
-                );
-              })}
-            {toast && (
-              <Toast
-                message={toast.message}
-                type={toast.type}
-                onClose={() => setToast(null)}
-                rightOffset={isPanelOpen ? panelWidth + 16 : 24}
-              />
-            )}
+                  )}
+                  {helperLines.y !== null && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: helperLines.y, //(ref.current?.scrollTop || 0),
+                        left: 0,
+                        width: "100%",
+                        height: "1px",
+                        background: "red",
+                        pointerEvents: "none",
+                      }}
+                    />
+                  )}
+                </>
+              )}
 
-            {isPatternModalOpen && (
-              <PatternSelectionModal
-                onClose={() => setIsPatternModalOpen(false)}
-                onConfirm={(
-                  patternId,
-                  patternName,
-                  overwriteImplementationId,
-                  solutionId,
-                ) => {
-                  setIsPatternModalOpen(false);
-                  registerAndUploadToGitHub(
+              {/* Controls */}
+              <Controls />
+
+              {/* Lasso Button – separat positioniert über den Controls */}
+              <div
+                className="lasso-button"
+                style={{
+                  position: "absolute",
+                  bottom: "130px", // anbinden an Controls nicht möglich, daher Position separat festlegen
+                  left: "14px",
+                  zIndex: 10,
+                }}
+                onMouseEnter={(e) => {
+                  const tooltip = e.currentTarget.querySelector(
+                    ".lasso-tooltip",
+                  ) as HTMLElement;
+                  if (tooltip) tooltip.style.opacity = "1";
+                }}
+                onMouseLeave={(e) => {
+                  const tooltip = e.currentTarget.querySelector(
+                    ".lasso-tooltip",
+                  ) as HTMLElement;
+                  if (tooltip) tooltip.style.opacity = "0";
+                }}
+              >
+                <button
+                  onClick={() => setLassoMode((v) => !v)}
+                  style={{
+                    width: "28px",
+                    height: "24px",
+                    background: lassoMode ? "#6366f1" : "white",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "4px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                    fontSize: "14px",
+                    boxShadow: "0 1px 4px rgba(0,0,0,0.15)",
+                    color: lassoMode ? "white" : "#374151",
+                  }}
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 14 14"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                  >
+                    <ellipse
+                      cx="7"
+                      cy="6"
+                      rx="5"
+                      ry="4"
+                      strokeDasharray="3 1.5"
+                    />
+                    <line x1="11" y1="9" x2="13" y2="13" />
+                  </svg>
+                </button>
+                <span
+                  style={{
+                    position: "absolute",
+                    left: "30px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    background: "#1f2937",
+                    color: "white",
+                    fontSize: "11px",
+                    padding: "2px 8px",
+                    borderRadius: "4px",
+                    whiteSpace: "nowrap",
+                    pointerEvents: "none",
+                    opacity: 0,
+                    transition: "opacity 0.15s",
+                  }}
+                >
+                  {lassoMode ? "Cancel grouping" : "Group selection"}
+                </span>
+              </div>
+
+              <ShortcutHelpModal />
+              {Object.entries(cursors).length > 1 &&
+                collaborationModeOn &&
+                Object.entries(cursors).map(([clientId, cursor]) => {
+                  // TODO: only if collaborationMode false
+                  const displayName =
+                    Number(clientId) === myClientId ? "Me" : cursor.name;
+                  return (
+                    <div
+                      key={clientId}
+                      style={{
+                        position: "absolute",
+                        left: cursor.x,
+                        top: cursor.y,
+                        pointerEvents: "none",
+                        transform: "translate(-50%, -50%)",
+                        zIndex: 999,
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                      }}
+                    >
+                      <div
+                        style={{
+                          marginBottom: 4,
+                          fontSize: 12,
+                          color: "#fff",
+                          backgroundColor: cursor.color,
+                          padding: "1px 4px",
+                          borderRadius: 4,
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {displayName}
+                      </div>
+                      <div
+                        style={{
+                          width: 10,
+                          height: 10,
+                          borderRadius: "50%",
+                          backgroundColor: cursor.color,
+                          transition: "left 0.05s linear, top 0.05s linear",
+                        }}
+                      />
+                    </div>
+                  );
+                })}
+              {toast && (
+                <Toast
+                  message={toast.message}
+                  type={toast.type}
+                  onClose={() => setToast(null)}
+                  rightOffset={isPanelOpen ? panelWidth + 16 : 24}
+                />
+              )}
+
+              {isPatternModalOpen && (
+                <PatternSelectionModal
+                  onClose={() => setIsPatternModalOpen(false)}
+                  onConfirm={(
                     patternId,
                     patternName,
                     overwriteImplementationId,
                     solutionId,
+                  ) => {
+                    setIsPatternModalOpen(false);
+                    registerAndUploadToGitHub(
+                      patternId,
+                      patternName,
+                      overwriteImplementationId,
+                      solutionId,
+                    );
+                  }}
+                  open={isPatternModalOpen}
+                />
+              )}
+
+              {isPatternImplementationOpen && (
+                <PatternImplementationSelectionModal
+                  onClose={() => setIsPatternImplementationOpen(false)}
+                  onConfirm={(patternId, patternName, json) => {
+                    setIsPatternImplementationOpen(false);
+                    loadFlow(json);
+                  }}
+                  open={isPatternImplementationOpen}
+                />
+              )}
+
+              {collaborationModeOn && (
+                <UserCountPanel provider={yProvider} roomName="demo" />
+              )}
+              {collaborationModeOn && (
+                <VersioningPanel
+                  history={versioningHistory}
+                  experienceLevel={experienceLevel}
+                  myClientID={myClientId}
+                />
+              )}
+
+              <ExperienceModePanel
+                expanded={expanded}
+                onToggleExpanded={() => setExpanded(!expanded)}
+                ancillaModelingOn={ancillaModelingOn}
+                onToggleAncilla={onToggleAncilla}
+                experienceLevel={experienceLevel}
+                onExperienceLevelChange={onExperienceLevelChange}
+                //onExperienceLevelChange={(event) => { setExperienceLevel(event); setExperienceLevelOn(event); }}
+                compactVisualization={compactVisualization}
+                onCompactVisualizationChange={() => {
+                  setCompactVisualization(!compact);
+                  setCompact(!compact);
+                }}
+                completionGuaranteed={completionGuaranteed}
+                onCompletionGuaranteedChange={setCompletionGuaranteed}
+                domainProfile={domainProfile}
+                onDomainProfileChange={(event) => {
+                  setDomainProfile(event);
+                }}
+                domainProfileNames={allDomainProfiles.map((p) => p.name)}
+                mathMode={mathMode}
+                onToggleMathMode={() => setMathMode((v) => !v)}
+                qasmEditorMode={qasmEditorMode}
+                onToggleQasmEditorMode={() => setQasmEditorMode((v) => !v)}
+                collaborationMode={collaborationModeOn}
+                onCollaborationModeChange={onToggleCollaborationMode}
+                userName={userName}
+                onUserNameChange={onUserNameChange}
+              />
+
+              <MiniMap
+                nodeClassName={(node) => {
+                  let isDataType = node.data.isDataType;
+
+                  if (
+                    node.type === "dataTypeNode" ||
+                    node.type === "classicalAlgorithmNode" ||
+                    node.type === ClassicalOperatorNode ||
+                    isDataType
+                  )
+                    return "minimap-node-circle";
+                  if (node.type === "rounded") return "minimap-node-rounded";
+                  return "minimap-node-default";
+                }}
+                nodeColor={(node) => {
+                  switch (node.type) {
+                    case "editableNode":
+                      return node.data.isDataType
+                        ? classicalConstructColor
+                        : quantumConstructColor;
+                    case "dataTypeNode":
+                    case "classicalAlgorithmNode":
+                    case ClassicalOperatorNode:
+                    case "rounded":
+                      return classicalConstructColor;
+                    case "ancillaNode":
+                      return ancillaConstructColor;
+                    case "ifElseNode":
+                    case "controlStructureNode":
+                      return controlFlowConstructColor;
+                    default:
+                      return quantumConstructColor;
+                  }
+                }}
+                nodeComponent={({ className, x, y, width, height, color }) => {
+                  const borderRadius = className.includes("circle")
+                    ? 100
+                    : className.includes("rounded")
+                      ? 15
+                      : 0;
+
+                  return (
+                    <rect
+                      x={x}
+                      y={y}
+                      width={width}
+                      height={height}
+                      rx={borderRadius}
+                      ry={borderRadius}
+                      fill={color}
+                      stroke="#333"
+                    />
                   );
                 }}
-                open={isPatternModalOpen}
+                zoomable={true}
+                pannable={true}
               />
-            )}
-
-            {isPatternImplementationOpen && (
-              <PatternImplementationSelectionModal
-                onClose={() => setIsPatternImplementationOpen(false)}
-                onConfirm={(patternId, patternName, json) => {
-                  setIsPatternImplementationOpen(false);
-                  loadFlow(json);
-                }}
-                open={isPatternImplementationOpen}
-              />
-            )}
-
-            {collaborationModeOn && (
-              <UserCountPanel provider={yProvider} roomName="demo" />
-            )}
-            {collaborationModeOn && (
-              <VersioningPanel
-                history={versioningHistory}
-                experienceLevel={experienceLevel}
-                myClientID={myClientId}
-              />
-            )}
-
-            <ExperienceModePanel
-              expanded={expanded}
-              onToggleExpanded={() => setExpanded(!expanded)}
-              ancillaModelingOn={ancillaModelingOn}
-              onToggleAncilla={onToggleAncilla}
-              experienceLevel={experienceLevel}
-              onExperienceLevelChange={onExperienceLevelChange}
-              //onExperienceLevelChange={(event) => { setExperienceLevel(event); setExperienceLevelOn(event); }}
-              compactVisualization={compactVisualization}
-              onCompactVisualizationChange={() => {
-                setCompactVisualization(!compact);
-                setCompact(!compact);
-              }}
-              completionGuaranteed={completionGuaranteed}
-              onCompletionGuaranteedChange={setCompletionGuaranteed}
-              domainProfile={domainProfile}
-              onDomainProfileChange={(event) => {
-                setDomainProfile(event);
-              }}
-              domainProfileNames={allDomainProfiles.map((p) => p.name)}
-              mathMode={mathMode}
-              onToggleMathMode={() => setMathMode((v) => !v)}
-              qasmEditorMode={qasmEditorMode}
-              onToggleQasmEditorMode={() => setQasmEditorMode((v) => !v)}
-              collaborationMode={collaborationModeOn}
-              onCollaborationModeChange={onToggleCollaborationMode}
-              userName={userName}
-              onUserNameChange={onUserNameChange}
-            />
-
-            <MiniMap
-              nodeClassName={(node) => {
-                let isDataType = node.data.isDataType;
-
-                if (
-                  node.type === "dataTypeNode" ||
-                  node.type === "classicalAlgorithmNode" ||
-                  node.type === ClassicalOperatorNode ||
-                  isDataType
-                )
-                  return "minimap-node-circle";
-                if (node.type === "rounded") return "minimap-node-rounded";
-                return "minimap-node-default";
-              }}
-              nodeColor={(node) => {
-                switch (node.type) {
-                  case "editableNode":
-                    return node.data.isDataType
-                      ? classicalConstructColor
-                      : quantumConstructColor;
-                  case "dataTypeNode":
-                  case "classicalAlgorithmNode":
-                  case ClassicalOperatorNode:
-                  case "rounded":
-                    return classicalConstructColor;
-                  case "ancillaNode":
-                    return ancillaConstructColor;
-                  case "ifElseNode":
-                  case "controlStructureNode":
-                    return controlFlowConstructColor;
-                  default:
-                    return quantumConstructColor;
-                }
-              }}
-              nodeComponent={({ className, x, y, width, height, color }) => {
-                const borderRadius = className.includes("circle")
-                  ? 100
-                  : className.includes("rounded")
-                    ? 15
-                    : 0;
-
-                return (
-                  <rect
-                    x={x}
-                    y={y}
-                    width={width}
-                    height={height}
-                    rx={borderRadius}
-                    ry={borderRadius}
-                    fill={color}
-                    stroke="#333"
-                  />
-                );
-              }}
-              zoomable={true}
-              pannable={true}
-            />
-            <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
-          </ReactFlow>
+              <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
+            </ReactFlow>
+          </EdgeHighlightProvider>
           {splitPreview && reactFlowInstance && (
             <svg
               className="pointer-events-none absolute inset-0 z-[4] h-full w-full"
@@ -5917,7 +5929,9 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
                       strokeWidth="4"
                       strokeLinejoin="round"
                     >
-                      {splitPreview.canSplit ? "Drop to split" : splitPreview.reason}
+                      {splitPreview.canSplit
+                        ? "Drop to split"
+                        : splitPreview.reason}
                     </text>
                   </>
                 );
