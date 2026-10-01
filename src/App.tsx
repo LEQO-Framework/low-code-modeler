@@ -5851,7 +5851,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
                 const source = toCanvasPoint(splitPreview.source);
                 const target = toCanvasPoint(splitPreview.target);
                 const splitPoint = toCanvasPoint(splitPreview.splitPoint);
-                const color = splitPreview.canSplit ? "#22c55e" : "#ef4444";
+                const color = splitPreview.canSplit ? "#009035" : "#ff0000";
 
                 return (
                   <>
@@ -5896,7 +5896,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
                     <text
                       x={splitPoint.x + 14}
                       y={splitPoint.y - 12}
-                      fill={splitPreview.canSplit ? "#15803d" : "#b91c1c"}
+                      fill={splitPreview.canSplit ? "#009035" : "#ff0000"}
                       fontSize="12"
                       fontWeight="600"
                       paintOrder="stroke"
