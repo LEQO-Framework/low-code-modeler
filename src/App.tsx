@@ -243,59 +243,6 @@ const getRenderedHandles = (
     .filter((handle): handle is HandleCandidate => handle !== null);
 };
 
-const distanceToSegment = (
-  point: { x: number; y: number },
-  start: { x: number; y: number },
-  end: { x: number; y: number },
-) => {
-  const dx = end.x - start.x;
-  const dy = end.y - start.y;
-  const lengthSquared = dx * dx + dy * dy;
-  const projection =
-    lengthSquared === 0
-      ? 0
-      : Math.max(
-          0,
-          Math.min(
-            1,
-            ((point.x - start.x) * dx + (point.y - start.y) * dy) /
-              lengthSquared,
-          ),
-        );
-  const closest = {
-    x: start.x + projection * dx,
-    y: start.y + projection * dy,
-  };
-
-  return Math.hypot(point.x - closest.x, point.y - closest.y);
-};
-
-const closestPointOnSegment = (
-  point: { x: number; y: number },
-  start: { x: number; y: number },
-  end: { x: number; y: number },
-) => {
-  const dx = end.x - start.x;
-  const dy = end.y - start.y;
-  const lengthSquared = dx * dx + dy * dy;
-  const projection =
-    lengthSquared === 0
-      ? 0
-      : Math.max(
-          0,
-          Math.min(
-            1,
-            ((point.x - start.x) * dx + (point.y - start.y) * dy) /
-              lengthSquared,
-          ),
-        );
-
-  return {
-    x: start.x + projection * dx,
-    y: start.y + projection * dy,
-  };
-};
-
 const getNodeCenter = (node: Node) => {
   const x = node.positionAbsolute?.x ?? node.position.x;
   const y = node.positionAbsolute?.y ?? node.position.y;
@@ -303,6 +250,89 @@ const getNodeCenter = (node: Node) => {
     x: x + (node.width ?? 0) / 2,
     y: y + (node.height ?? 0) / 2,
   };
+};
+
+const getClosestRenderedEdgePoint = (
+  edgeId: string,
+  point: { x: number; y: number },
+  reactFlowInstance: any,
+) => {
+  const edgeElement = Array.from(
+    document.querySelectorAll<SVGGElement>(".react-flow__edge"),
+  ).find((element) => element.dataset.testid === `rf__edge-${edgeId}`);
+  const path = edgeElement?.querySelector<SVGPathElement>(
+    ".react-flow__edge-path",
+  );
+
+  if (!path || !reactFlowInstance) return null;
+
+  const matrix = path.getScreenCTM();
+  if (!matrix) return null;
+  
+  const pointOnScreen = reactFlowInstance.flowToScreenPosition(point);
+  const totalLength = path.getTotalLength();
+
+  let searchStart = 0;
+  let searchEnd = 1;
+  let closest:     
+    | {
+        distance: number;
+        point: { x: number; y: number };
+        progress: number;
+      }
+    | null = null;
+
+  const amountOfSteps = 4;
+  const amountOfPointsLookedAt = 20;
+  for (let step = 0; step < amountOfSteps; step += 1) {
+    const interval = (searchEnd - searchStart)/amountOfPointsLookedAt;
+
+    for (let index = 0; index <= amountOfPointsLookedAt; index += 1) {
+      const progress = searchStart + interval*index;
+      const pathPoint = path.getPointAtLength(totalLength * progress);
+      
+      const screenPoint = new DOMPoint(
+        pathPoint.x,
+        pathPoint.y,
+      ).matrixTransform(matrix);
+
+      const distance = Math.hypot(
+        pointOnScreen.x - screenPoint.x,
+        pointOnScreen.y - screenPoint.y,
+      );
+
+      if (!closest || distance < closest.distance) {
+        closest = {
+          distance,
+          progress,
+          point: reactFlowInstance.screenToFlowPosition({
+            x: screenPoint.x,
+            y: screenPoint.y,
+          }),
+        };
+      }
+    }
+
+    if (closest) {
+      searchStart = Math.max(
+        0,
+        closest.progress - interval,
+      );
+      searchEnd = Math.min(
+        1,
+        closest.progress + interval,
+      );
+    }    
+  }
+
+  if (!closest) {
+    return null;
+  } else {
+    return {
+      distance: closest.distance,
+      point: closest.point,
+    };
+  }
 };
 
 function App() {
@@ -732,12 +762,28 @@ If none apply, return { "algorithms": [] }.
   const [helperLines, setHelperLines] = useState(null);
   const [splitPreview, setSplitPreview] = useState<{
     edgeId: string;
-    source: { x: number; y: number };
-    target: { x: number; y: number };
     splitPoint: { x: number; y: number };
     canSplit: boolean;
     reason: string;
   } | null>(null);
+  const [highlightedEdgeId, setHighlightedEdgeId] = useState<string | null>(
+    null,
+  );
+
+  useEffect(() => {
+    document.querySelectorAll<SVGGElement>(".react-flow__edge").forEach((edge) => {
+      const isHighlighted =
+        edge.dataset.testid === `rf__edge-${highlightedEdgeId}`;
+      edge.classList.toggle(
+        "split-highlighted",
+        isHighlighted && splitPreview?.canSplit === true,
+      );
+      edge.classList.toggle(
+        "split-highlighted-invalid",
+        isHighlighted && splitPreview?.canSplit === false,
+      );
+    });
+  }, [highlightedEdgeId, splitPreview?.canSplit, edges]);
   const [deploymentId, setDeploymentId] = useState(null);
 
   const [expanded, setExpanded] = useState(false);
@@ -2413,6 +2459,7 @@ If none apply, return { "algorithms": [] }.
     (evt, node) => {
       setHelperLines(null);
       setSplitPreview(null);
+      setHighlightedEdgeId(null);
       if (node.type === "group") {
         return;
       }
@@ -2443,13 +2490,16 @@ If none apply, return { "algorithms": [] }.
             const target = nodesById.get(edge.target);
             if (!source || !target) return null;
 
+            const renderedPoint = getClosestRenderedEdgePoint(
+              edge.id,
+              draggedCenter,
+              reactFlowInstance,
+            );
+            if (!renderedPoint) return null;
+
             return {
               edge,
-              distance: distanceToSegment(
-                draggedCenter,
-                getNodeCenter(source),
-                getNodeCenter(target),
-              ),
+              distance: renderedPoint.distance / reactFlowInstance.getZoom(),
             };
           })
           .filter(
@@ -4222,23 +4272,17 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
               const target = nodesById.get(edge.target);
               if (!source || !target) return null;
 
-              const sourceCenter = getNodeCenter(source);
-              const targetCenter = getNodeCenter(target);
-              const splitPoint = closestPointOnSegment(
+              const renderedPoint = getClosestRenderedEdgePoint(
+                edge.id,
                 draggedCenter,
-                sourceCenter,
-                targetCenter,
+                reactFlowInstance,
               );
+              if (!renderedPoint) return null;
 
               return {
                 edge,
-                source: sourceCenter,
-                target: targetCenter,
-                splitPoint,
-                distance: Math.hypot(
-                  draggedCenter.x - splitPoint.x,
-                  draggedCenter.y - splitPoint.y,
-                ),
+                splitPoint: renderedPoint.point,
+                distance: renderedPoint.distance / reactFlowInstance.getZoom(),
               };
             })
             .filter((candidate): candidate is NonNullable<typeof candidate> =>
@@ -4291,6 +4335,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
 
           if (!closest || closest.distance > tolerance) {
             setSplitPreview(null);
+            setHighlightedEdgeId(null);
           } else {
             const reasons: string[] = [];
 
@@ -4302,16 +4347,16 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
             }
             setSplitPreview({
               edgeId: closest.edge.id,
-              source: closest.source,
-              target: closest.target,
               splitPoint: closest.splitPoint,
               canSplit: reasons.length === 0,
               reason: reasons.join("; "),
             });
+            setHighlightedEdgeId(closest.edge.id);
           }
         }
       } else {
         setSplitPreview(null);
+        setHighlightedEdgeId(null);
       }
 
       console.log(reactFlowInstance.getNodes());
@@ -5848,43 +5893,11 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
                   x: point.x * viewport.zoom + viewport.x,
                   y: point.y * viewport.zoom + viewport.y,
                 });
-                const source = toCanvasPoint(splitPreview.source);
-                const target = toCanvasPoint(splitPreview.target);
                 const splitPoint = toCanvasPoint(splitPreview.splitPoint);
                 const color = splitPreview.canSplit ? "#009035" : "#ff0000";
 
                 return (
                   <>
-                    <line
-                      x1={source.x}
-                      y1={source.y}
-                      x2={target.x}
-                      y2={target.y}
-                      stroke={color}
-                      strokeWidth={8}
-                      strokeLinecap="round"
-                      opacity={0.32}
-                    />
-                    <line
-                      x1={source.x}
-                      y1={source.y}
-                      x2={splitPoint.x}
-                      y2={splitPoint.y}
-                      stroke={color}
-                      strokeWidth={3}
-                      strokeDasharray="8 5"
-                      strokeLinecap="round"
-                    />
-                    <line
-                      x1={splitPoint.x}
-                      y1={splitPoint.y}
-                      x2={target.x}
-                      y2={target.y}
-                      stroke={color}
-                      strokeWidth={3}
-                      strokeDasharray="8 5"
-                      strokeLinecap="round"
-                    />
                     <circle
                       cx={splitPoint.x}
                       cy={splitPoint.y}
