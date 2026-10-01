@@ -270,6 +270,32 @@ const distanceToSegment = (
   return Math.hypot(point.x - closest.x, point.y - closest.y);
 };
 
+const closestPointOnSegment = (
+  point: { x: number; y: number },
+  start: { x: number; y: number },
+  end: { x: number; y: number },
+) => {
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  const lengthSquared = dx * dx + dy * dy;
+  const projection =
+    lengthSquared === 0
+      ? 0
+      : Math.max(
+          0,
+          Math.min(
+            1,
+            ((point.x - start.x) * dx + (point.y - start.y) * dy) /
+              lengthSquared,
+          ),
+        );
+
+  return {
+    x: start.x + projection * dx,
+    y: start.y + projection * dy,
+  };
+};
+
 const getNodeCenter = (node: Node) => {
   const x = node.positionAbsolute?.x ?? node.position.x;
   const y = node.positionAbsolute?.y ?? node.position.y;
@@ -704,6 +730,14 @@ If none apply, return { "algorithms": [] }.
     setIsLoadJsonModalOpen(false);
   };
   const [helperLines, setHelperLines] = useState(null);
+  const [splitPreview, setSplitPreview] = useState<{
+    edgeId: string;
+    source: { x: number; y: number };
+    target: { x: number; y: number };
+    splitPoint: { x: number; y: number };
+    canSplit: boolean;
+    reason: string;
+  } | null>(null);
   const [deploymentId, setDeploymentId] = useState(null);
 
   const [expanded, setExpanded] = useState(false);
@@ -2378,6 +2412,7 @@ If none apply, return { "algorithms": [] }.
      */
     (evt, node) => {
       setHelperLines(null);
+      setSplitPreview(null);
       if (node.type === "group") {
         return;
       }
@@ -2466,6 +2501,11 @@ If none apply, return { "algorithms": [] }.
                 .filter((current) => current.target === draggedNode.id)
                 .map((current) => current.targetHandle),
             );
+            const connectedOutputHandles = new Set(
+              currentEdges
+                .filter((current) => current.source === draggedNode.id)
+                .map((current) => current.sourceHandle),
+            );
             const matchingInput = inputHandles.find(
               (handle) =>
                 !connectedHandles.has(handle.id) &&
@@ -2478,6 +2518,7 @@ If none apply, return { "algorithms": [] }.
             );
             const matchingOutput = outputHandles.find(
               (handle) =>
+                !connectedOutputHandles.has(handle.id) &&
                 handle.domain === getHandleDomain(edge.targetHandle ?? "") &&
                 (targetType === "any" ||
                   draggedNode.data.outputTypes?.[handle.index] === "any" ||
@@ -4159,6 +4200,120 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
 
   const onNodeDrag = React.useCallback(
     (event: React.MouseEvent, node: Node, nodes: Node[]) => {
+      if (autoConnectOnNodeDrop && node.type !== "groupNode") {
+        const currentNodes: Node[] = reactFlowInstance.getNodes().map((current) =>
+          current.id === node.id ? { ...current, ...node } : current,
+        );
+        const currentEdges: Edge[] = reactFlowInstance.getEdges();
+        const nodesById = new Map<string, Node>(
+          currentNodes.map((current) => [current.id, current]),
+        );
+        const draggedNode = nodesById.get(node.id);
+
+        if (draggedNode) {
+          const draggedCenter = getNodeCenter(draggedNode);
+          const closest = currentEdges
+            .filter(
+              (edge) =>
+                edge.source !== draggedNode.id && edge.target !== draggedNode.id,
+            )
+            .map((edge) => {
+              const source = nodesById.get(edge.source);
+              const target = nodesById.get(edge.target);
+              if (!source || !target) return null;
+
+              const sourceCenter = getNodeCenter(source);
+              const targetCenter = getNodeCenter(target);
+              const splitPoint = closestPointOnSegment(
+                draggedCenter,
+                sourceCenter,
+                targetCenter,
+              );
+
+              return {
+                edge,
+                source: sourceCenter,
+                target: targetCenter,
+                splitPoint,
+                distance: Math.hypot(
+                  draggedCenter.x - splitPoint.x,
+                  draggedCenter.y - splitPoint.y,
+                ),
+              };
+            })
+            .filter((candidate): candidate is NonNullable<typeof candidate> =>
+              candidate !== null,
+            )
+            .reduce<typeof closest[number] | undefined>(
+              (best, candidate) =>
+                !best || candidate.distance < best.distance ? candidate : best,
+              undefined,
+            );
+          const tolerance = Math.max(
+            (draggedNode.width ?? 0) / 2,
+            (draggedNode.height ?? 0) / 2,
+            32,
+          );
+          const closestEdge = closest?.edge;
+          const sourceAndTargetDomain = getHandleDomain(
+            closestEdge?.sourceHandle ?? "",
+          );
+          const connectedInputHandles = new Set(
+            currentEdges
+              .filter((edge) => edge.target === draggedNode.id)
+              .map((edge) => edge.targetHandle),
+          );
+          const connectedOutputHandles = new Set(
+            currentEdges
+              .filter((edge) => edge.source === draggedNode.id)
+              .map((edge) => edge.sourceHandle),
+          );
+          const inputHandles = getRenderedHandles(
+            draggedNode.id,
+            draggedNode,
+            "target",
+          );
+          const outputHandles = getRenderedHandles(
+            draggedNode.id,
+            draggedNode,
+            "source",
+          );
+          const hasOpenInput = inputHandles.some(
+            (handle) =>
+              !connectedInputHandles.has(handle.id) &&
+              handle.domain === sourceAndTargetDomain,
+          );
+          const hasOpenOutput = outputHandles.some(
+            (handle) =>
+              !connectedOutputHandles.has(handle.id) &&
+              handle.domain === sourceAndTargetDomain,
+          );
+
+          if (!closest || closest.distance > tolerance) {
+            setSplitPreview(null);
+          } else {
+            const reasons: string[] = [];
+
+            if (!hasOpenInput) {
+              reasons.push(`No open ${sourceAndTargetDomain} Input`);
+            }
+            if (!hasOpenOutput) {
+              reasons.push(`No open ${sourceAndTargetDomain} Output`);
+            }
+            setSplitPreview({
+              edgeId: closest.edge.id,
+              source: closest.source,
+              target: closest.target,
+              splitPoint: closest.splitPoint,
+              canSplit: reasons.length === 0,
+              reason: reasons.join("; "),
+            });
+          }
+        }
+      } else {
+        setSplitPreview(null);
+      }
+
       console.log(reactFlowInstance.getNodes());
       const currentNodes = reactFlowInstance.getNodes();
       console.log(node.position.x);
@@ -4289,7 +4444,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
         setContextMenu((prev) => ({ ...prev, visible: false }));
       }
     },
-    [reactFlowInstance, helperLines, nodes, setContextMenu],
+    [reactFlowInstance, helperLines, nodes, setContextMenu, autoConnectOnNodeDrop],
   );
 
   const onPaneClick = useCallback(() => {
@@ -5336,7 +5491,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
         </div>
 
         <div
-          className="h-[calc(100vh_-_60px)] flex-grow"
+          className="relative h-[calc(100vh_-_60px)] flex-grow"
           ref={reactFlowWrapper}
         >
           <ReactFlow
@@ -5682,6 +5837,80 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
             />
             <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
           </ReactFlow>
+          {splitPreview && reactFlowInstance && (
+            <svg
+              className="pointer-events-none absolute inset-0 z-[4] h-full w-full"
+              aria-hidden="true"
+            >
+              {(() => {
+                const viewport = reactFlowInstance.getViewport();
+                const toCanvasPoint = (point: { x: number; y: number }) => ({
+                  x: point.x * viewport.zoom + viewport.x,
+                  y: point.y * viewport.zoom + viewport.y,
+                });
+                const source = toCanvasPoint(splitPreview.source);
+                const target = toCanvasPoint(splitPreview.target);
+                const splitPoint = toCanvasPoint(splitPreview.splitPoint);
+                const color = splitPreview.canSplit ? "#22c55e" : "#ef4444";
+
+                return (
+                  <>
+                    <line
+                      x1={source.x}
+                      y1={source.y}
+                      x2={target.x}
+                      y2={target.y}
+                      stroke={color}
+                      strokeWidth={8}
+                      strokeLinecap="round"
+                      opacity={0.32}
+                    />
+                    <line
+                      x1={source.x}
+                      y1={source.y}
+                      x2={splitPoint.x}
+                      y2={splitPoint.y}
+                      stroke={color}
+                      strokeWidth={3}
+                      strokeDasharray="8 5"
+                      strokeLinecap="round"
+                    />
+                    <line
+                      x1={splitPoint.x}
+                      y1={splitPoint.y}
+                      x2={target.x}
+                      y2={target.y}
+                      stroke={color}
+                      strokeWidth={3}
+                      strokeDasharray="8 5"
+                      strokeLinecap="round"
+                    />
+                    <circle
+                      cx={splitPoint.x}
+                      cy={splitPoint.y}
+                      r={splitPreview.canSplit ? 9 : 7}
+                      fill="white"
+                      stroke={color}
+                      strokeWidth={3}
+                    />
+                    <text
+                      x={splitPoint.x + 14}
+                      y={splitPoint.y - 12}
+                      fill={splitPreview.canSplit ? "#15803d" : "#b91c1c"}
+                      fontSize="12"
+                      fontWeight="600"
+                      paintOrder="stroke"
+                      stroke="white"
+                      strokeWidth="4"
+                      strokeLinejoin="round"
+                    >
+                      {splitPreview.canSplit ? "Drop to split" : splitPreview.reason}
+                    </text>
+                  </>
+                );
+              })()}
+            </svg>
+          )}
           {contextMenu.visible && contextMenu.componentId && (
             <ContextMenu
               id={contextMenu.componentId}
