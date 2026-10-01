@@ -273,22 +273,22 @@ const getClosestRenderedEdgePoint = (
   const pointOnScreen = reactFlowInstance.flowToScreenPosition(point);
   const totalLength = path.getTotalLength();
 
-  let searchStart = 0;
-  let searchEnd = 1;
+  let searchStartProgress = 0;
+  let searchEndProgress = 1;
   let closest: {
     distance: number;
-    point: { x: number; y: number };
+    screenPoint: { x: number; y: number };
     progress: number;
   } | null = null;
 
-  const amountOfSteps = 4;
-  const amountOfPointsLookedAt = 20;
-  for (let step = 0; step < amountOfSteps; step += 1) {
-    const interval = (searchEnd - searchStart) / amountOfPointsLookedAt;
+  const refinementSteps = 5;
+  const samplesPerStep = 10;
+  for (let step = 0; step < refinementSteps; step += 1) {
+    const progressStep = (searchEndProgress - searchStartProgress) / samplesPerStep;
 
-    for (let index = 0; index <= amountOfPointsLookedAt; index += 1) {
-      const progress = searchStart + interval * index;
-      const pathPoint = path.getPointAtLength(totalLength * progress);
+    for (let index = 0; index <= samplesPerStep; index += 1) {
+      const pathProgress = searchStartProgress + progressStep * index;
+      const pathPoint = path.getPointAtLength(totalLength * pathProgress);
 
       const screenPoint = new DOMPoint(
         pathPoint.x,
@@ -303,18 +303,18 @@ const getClosestRenderedEdgePoint = (
       if (!closest || distance < closest.distance) {
         closest = {
           distance,
-          progress,
-          point: reactFlowInstance.screenToFlowPosition({
+          progress: pathProgress,
+          screenPoint: {
             x: screenPoint.x,
             y: screenPoint.y,
-          }),
+          },
         };
       }
     }
 
     if (closest) {
-      searchStart = Math.max(0, closest.progress - interval);
-      searchEnd = Math.min(1, closest.progress + interval);
+      searchStartProgress = Math.max(0, closest.progress - progressStep);
+      searchEndProgress = Math.min(1, closest.progress + progressStep);
     }
   }
 
@@ -323,7 +323,9 @@ const getClosestRenderedEdgePoint = (
   } else {
     return {
       distance: closest.distance,
-      point: closest.point,
+      point: reactFlowInstance.screenToFlowPosition(
+        closest.screenPoint,
+      ),
     };
   }
 };
