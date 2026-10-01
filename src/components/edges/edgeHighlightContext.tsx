@@ -46,9 +46,9 @@ export function EdgeHighlightMarkers() {
       <defs>
         <marker
           id="low-code-modeler-arrow-highlighted"
-          markerWidth="20"
-          markerHeight="20"
-          refX="10"
+          markerWidth="50"
+          markerHeight="50"
+          refX="9"
           refY="5"
           viewBox="0 0 10 10"
           markerUnits="userSpaceOnUse"
@@ -58,9 +58,9 @@ export function EdgeHighlightMarkers() {
         </marker>
         <marker
           id="low-code-modeler-arrow-highlighted-invalid"
-          markerWidth="20"
-          markerHeight="20"
-          refX="10"
+          markerWidth="50"
+          markerHeight="50"
+          refX="9"
           refY="5"
           viewBox="0 0 10 10"
           markerUnits="userSpaceOnUse"
