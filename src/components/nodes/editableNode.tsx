@@ -11,14 +11,13 @@ const selector = (state: any) => ({
   selectedNode: state.selectedNode,
   nodes: state.nodes,
   edges: state.edges,
-  ancillaMode: state.ancillaMode,
   updateNodeValue: state.updateNodeValue,
   setSelectedNode: state.setSelectedNode,
 });
 
 export const EditableNode = memo((node: Node) => {
   const { data, selected } = node;
-  const { nodes, edges, updateNodeValue, setSelectedNode, ancillaMode } =
+  const { nodes, edges, updateNodeValue, setSelectedNode } =
     useStore(selector, shallow);
 
   const updateNodeInternals = useUpdateNodeInternals();
@@ -32,7 +31,7 @@ export const EditableNode = memo((node: Node) => {
   useEffect(() => {
     updateNodeInternals(node.id);
     setSelectedNode(node);
-  }, [ancillaMode]);
+  }, []);
 
   // --------------------- VALIDATION ---------------------
   const validateSingleConstraint = (

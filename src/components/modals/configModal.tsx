@@ -3,14 +3,12 @@ import Modal from "./Modal";
 
 interface ConfigModalProps {
   open: boolean;
-  ancillaMode: boolean;
   experienceLevel: string;
   compactVisualization: boolean;
   completionGuaranteed: boolean;
   collaborationMode: boolean;
   onClose: () => void;
   onSave: (values: {
-    ancillaMode: boolean;
     experienceLevel: string;
     compactVisualization: boolean;
     completionGuaranteed: boolean;
@@ -55,7 +53,6 @@ export const ConfigModal = ({
   onSave,
   activeTab,
   setActiveTab,
-  ancillaMode,
   experienceLevel,
   compactVisualization,
   completionGuaranteed,
@@ -76,7 +73,6 @@ export const ConfigModal = ({
   tempMistralToken
 }: ConfigModalProps) => {
   // Local state copies
-  const [localAncillaMode, setLocalAncillaMode] = useState(ancillaMode);
   const [localExperienceLevel, setLocalExperienceLevel] = useState(experienceLevel);
   const [localCompletionGuaranteed, setLocalCompletionGuaranteed] =
     useState(completionGuaranteed);
@@ -102,7 +98,6 @@ export const ConfigModal = ({
   // Reset local state when modal opens
   useEffect(() => {
     if (open) {
-      setLocalAncillaMode(ancillaMode);
       setLocalExperienceLevel(experienceLevel);
       setLocalCompletionGuaranteed(completionGuaranteed);
       setLocalCompactVisualization(compactVisualization);
@@ -127,7 +122,6 @@ export const ConfigModal = ({
   const handleSave = () => {
     console.log("userName", localUserName)
     onSave({
-      ancillaMode: localAncillaMode,
       experienceLevel: localExperienceLevel,
       tempCamundaEndpoint: localCamunda,
       compactVisualization: localCompactVisualization,
@@ -190,24 +184,6 @@ export const ConfigModal = ({
 
         {activeTab === "editor" && (
           <div>
-            <h3 className="labels">Ancilla Mode</h3>
-            <table className="config-table">
-              <tbody>
-                <tr>
-                  <td align="right">Ancilla Mode:</td>
-                  <td align="left">
-                    <input
-                      type="checkbox"
-                      checked={localAncillaMode}
-                      onChange={(e) => setLocalAncillaMode(e.target.checked)}
-                      className="w-4 h-4"
-                    />
-                    <span className="ml-2">{localAncillaMode ? "On" : "Off"}</span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-
             <h3 className="labels mt-4">Collaboration Mode</h3>
             <table className="config-table">
               <tbody>
