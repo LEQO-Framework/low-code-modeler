@@ -377,8 +377,15 @@ function App() {
       pendingNodeInitializationId &&
       nodes.some((node) => node.id === pendingNodeInitializationId)
     ) {
-      completeNodeInitialization(pendingNodeInitializationId);
+      const initializationId = pendingNodeInitializationId;
+      const frame = requestAnimationFrame(() => {
+        completeNodeInitialization(initializationId);
+      });
+
+      return () => cancelAnimationFrame(frame);
     }
+
+    return undefined;
   }, [
     nodes,
     pendingNodeInitializationId,
