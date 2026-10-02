@@ -11,14 +11,7 @@ import {
 import { shallow } from "zustand/shallow";
 import OutputPort from "../utils/outputPort";
 import { isPositiveIntegerSize } from "../utils/outputPort";
-import UncomputePort from "../utils/uncomputePort";
-import AncillaPort from "../utils/ancillaPort";
-import {
-  ancillaConstructColor,
-  dirtyConstructColor,
-  dirtyAncillaHandle,
-  classicalConstructColor,
-} from "@/constants";
+import { classicalConstructColor } from "@/constants";
 import { AlertCircle } from "lucide-react";
 import { findDuplicateOutputIdentifiers } from "../utils/utils";
 import { awareness } from "@/yjs";
@@ -27,7 +20,6 @@ const selector = (state: {
   selectedNode: Node | null;
   edges: Edge[];
   nodes: Node[];
-  ancillaMode: boolean;
   compact: boolean;
   completionGuaranteed: boolean;
   updateNodeValue: (nodeId: string, field: string, nodeVal: any) => void;
@@ -39,7 +31,6 @@ const selector = (state: {
   selectedNode: state.selectedNode,
   edges: state.edges,
   nodes: state.nodes,
-  ancillaMode: state.ancillaMode,
   completionGuaranteed: state.completionGuaranteed,
   compact: state.compact,
   setNodes: state.setNodes,
@@ -114,7 +105,6 @@ export const StatePreparationNode = memo((node: Node) => {
     setTypeError,
     edges,
     nodes,
-    ancillaMode,
     compact,
     experienceLevel,
   } = useStore(selector, shallow);
@@ -198,19 +188,7 @@ export const StatePreparationNode = memo((node: Node) => {
 
     updateNodeInternals(node.id);
     setMounted(true);
-  }, [ancillaMode]);
-
-  const isAncillaConnected = edges.some(
-    (edge) =>
-      edge.target === node.id &&
-      edge.targetHandle === `ancillaHandleOperationInput2${node.id}`,
-  );
-
-  const isDirtyAncillaConnected = edges.some(
-    (edge) =>
-      edge.target === node.id &&
-      edge.targetHandle === `${dirtyAncillaHandle}OperationInput3${node.id}`,
-  );
+  }, []);
 
   /*
    * Size validation.
@@ -364,7 +342,7 @@ export const StatePreparationNode = memo((node: Node) => {
 
   useEffect(() => {
     updateNodeInternals(node.id);
-  }, [node.data.encodingType, ancillaMode]);
+  }, [node.data.encodingType]);
 
   const { data, selected } = node;
   const id = node.id;
@@ -375,8 +353,6 @@ export const StatePreparationNode = memo((node: Node) => {
       : data.label === "Encode Value"
         ? 450
         : 350;
-  const dynamicHeight = baseHeight;
-
   const [remoteHighlightColor, setRemoteHighlightColor] = useState<
     string | null
   >(null);
@@ -432,12 +408,8 @@ export const StatePreparationNode = memo((node: Node) => {
               "Matrix Encoding",
               "Schmidt Decomposition",
             ].includes(data.label)
-              ? !ancillaMode
-                ? `${baseHeight}px`
-                : `${Math.max(dynamicHeight - 70, 200)}px`
-              : !ancillaMode
-                ? "370px"
-                : `${dynamicHeight}px`,
+              ? `${baseHeight}px`
+              : "370px",
             borderColor: remoteHighlightColor
               ? remoteHighlightColor
               : selected
@@ -766,87 +738,6 @@ export const StatePreparationNode = memo((node: Node) => {
                   </div>
                 </div>
               )}
-
-              {ancillaMode && (
-                <div>
-                  <div
-                    className="relative p-2 mb-1"
-                    style={{
-                      width: "120px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "flex-start",
-                    }}
-                  >
-                    <div
-                      className="absolute inset-0 custom-shape-mirrored"
-                      style={{
-                        backgroundColor: ancillaConstructColor,
-                      }}
-                    />
-                    <Handle
-                      type="target"
-                      id={`ancillaHandleOperationInput2${node.id}`}
-                      position={Position.Left}
-                      className={cn(
-                        "z-10 ancilla-port-in w-4 transform rotate-45 -left-[8px]",
-                        isAncillaConnected
-                          ? "!bg-green-100 !border-solid !border-black"
-                          : "!bg-gray-200 !border-dashed !border-black",
-                      )}
-                      style={{
-                        zIndex: 1,
-                        top: "50% !important",
-                        transform: "translateY(-50%) rotate(45deg)",
-                      }}
-                    />
-                    <span
-                      className="text-black text-sm text-center w-full"
-                      style={{ zIndex: 1 }}
-                    >
-                      Ancilla
-                    </span>
-                  </div>
-                  <div
-                    className="relative p-2"
-                    style={{
-                      width: "120px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "flex-start",
-                    }}
-                  >
-                    <div
-                      className="absolute inset-0 custom-shape-mirrored"
-                      style={{
-                        backgroundColor: dirtyConstructColor,
-                      }}
-                    />
-                    <Handle
-                      type="target"
-                      id={`${dirtyAncillaHandle}OperationInput3${node.id}`}
-                      position={Position.Left}
-                      className={cn(
-                        "z-10 ancilla-port-in w-4 transform rotate-45 -left-[8px]",
-                        isDirtyAncillaConnected
-                          ? "!bg-green-100 !border-solid !border-black"
-                          : "!bg-gray-200 !border-dashed !border-black",
-                      )}
-                      style={{
-                        zIndex: 1,
-                        top: "50% !important",
-                        transform: "translateY(-50%) rotate(45deg)",
-                      }}
-                    />
-                    <span
-                      className="text-black text-sm text-center w-full"
-                      style={{ zIndex: 1 }}
-                    >
-                      Dirty Ancilla
-                    </span>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
 
@@ -903,14 +794,6 @@ export const StatePreparationNode = memo((node: Node) => {
               )}
             </>
           </div>
-
-          {ancillaMode && (
-            <div>
-              <AncillaPort node={node} edges={edges} dirty={false} index={1} />
-              <AncillaPort node={node} edges={edges} dirty={true} index={2} />
-              <UncomputePort node={node} edges={edges} index={3} />
-            </div>
-          )}
         </div>
       </div>
     </div>
