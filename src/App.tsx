@@ -125,6 +125,7 @@ import {
 const selector = (state: {
   nodes: Node[];
   edges: Edge[];
+  pendingNodeInitializationId: string | null;
   ancillaMode: boolean;
   experienceLevel: string;
   compact: boolean;
@@ -142,6 +143,7 @@ const selector = (state: {
   setTypeError: (message: string | null) => void;
   setSelectedNode: (node: Node | null) => void;
   updateNodeValue: (nodeId: string, field: string, nodeVal: string) => void;
+  completeNodeInitialization: (nodeId: string) => void;
   updateParent: (nodeId: string, parentId: string, position: any) => void;
   updateChildren: (nodeId: string, children: any) => void;
   setNodes: (node: Node) => void;
@@ -161,6 +163,7 @@ const selector = (state: {
 }) => ({
   nodes: state.nodes,
   edges: state.edges,
+  pendingNodeInitializationId: state.pendingNodeInitializationId,
   experienceLevel: state.experienceLevel,
   compact: state.compact,
   completionGuaranteed: state.completionGuaranteed,
@@ -177,6 +180,7 @@ const selector = (state: {
   setTypeError: state.setTypeError,
   setSelectedNode: state.setSelectedNode,
   updateNodeValue: state.updateNodeValue,
+  completeNodeInitialization: state.completeNodeInitialization,
   updateParent: state.updateParent,
   updateChildren: state.updateChildren,
   setNodes: state.setNodes,
@@ -336,6 +340,7 @@ function App() {
   const {
     nodes,
     edges,
+    pendingNodeInitializationId,
     experienceLevel,
     compact,
     completionGuaranteed,
@@ -362,9 +367,23 @@ function App() {
     setSelectedNode,
     setNodes,
     updateNodeValue,
+    completeNodeInitialization,
     updateParent,
     updateChildren,
   } = useStore(useShallow(selector));
+
+  useEffect(() => {
+    if (
+      pendingNodeInitializationId &&
+      nodes.some((node) => node.id === pendingNodeInitializationId)
+    ) {
+      completeNodeInitialization(pendingNodeInitializationId);
+    }
+  }, [
+    nodes,
+    pendingNodeInitializationId,
+    completeNodeInitialization,
+  ]);
 
   // TODO: don't use if no collab mode
 
@@ -2948,28 +2967,7 @@ If none apply, return { "algorithms": [] }.
       console.log("CREATED NODE", newNode);
 
       // Update local Zustand Store
-      const creationHistoryIndex = useStore.getState().historyIndex;
-      const creationHistoryItem = {
-        nodes: structuredClone(useStore.getState().nodes),
-        edges: structuredClone(useStore.getState().edges),
-      };
       setNodes(newNode);
-      setTimeout(() => {
-        useStore.setState((state) => {
-          if (!state.nodes.some((current) => current.id === newNode.id)) {
-            return state;
-          }
-          const history = [
-            ...state.history.slice(0, creationHistoryIndex + 1),
-            creationHistoryItem,
-          ].slice(-MAX_HISTORY_ENTRIES);
-          return {
-            history,
-            historyIndex: history.length - 1,
-            redoStack: [],
-          };
-        });
-      }, 0);
 
       // Update Yjs Collaborative Store
 
