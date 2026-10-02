@@ -288,7 +288,8 @@ const getClosestRenderedEdgePoint = (
   const refinementSteps = 5;
   const samplesPerStep = 10;
   for (let step = 0; step < refinementSteps; step += 1) {
-    const progressStep = (searchEndProgress - searchStartProgress) / samplesPerStep;
+    const progressStep =
+      (searchEndProgress - searchStartProgress) / samplesPerStep;
 
     for (let index = 0; index <= samplesPerStep; index += 1) {
       const pathProgress = searchStartProgress + progressStep * index;
@@ -327,9 +328,7 @@ const getClosestRenderedEdgePoint = (
   } else {
     return {
       distance: closest.distance,
-      point: reactFlowInstance.screenToFlowPosition(
-        closest.screenPoint,
-      ),
+      point: reactFlowInstance.screenToFlowPosition(closest.screenPoint),
     };
   }
 };
@@ -386,11 +385,7 @@ function App() {
     }
 
     return undefined;
-  }, [
-    nodes,
-    pendingNodeInitializationId,
-    completeNodeInitialization,
-  ]);
+  }, [nodes, pendingNodeInitializationId, completeNodeInitialization]);
 
   // TODO: don't use if no collab mode
 
@@ -820,6 +815,7 @@ If none apply, return { "algorithms": [] }.
   }));
 
   const ref = useRef(null);
+  const snapTargetRef = useRef<Node | null>(null);
   const hasLoadedFromUrl = useRef(false);
   const lastSelectedNodes = useRef<Node[]>([]);
   const copiedSelectionRef = useRef<{ nodes: Node[]; edges: Edge[] } | null>(
@@ -2487,8 +2483,8 @@ If none apply, return { "algorithms": [] }.
         return;
       }
 
-      const currentNodes: Node[] = useStore.getState().nodes;
-      const currentEdges: Edge[] = useStore.getState().edges;
+      let currentNodes: Node[] = useStore.getState().nodes;
+      let currentEdges: Edge[] = useStore.getState().edges;
       const nodesById = new Map<string, Node>(
         currentNodes.map((current) => [current.id, current]),
       );
@@ -2630,10 +2626,111 @@ If none apply, return { "algorithms": [] }.
                 ),
                 redoStack: [],
               }));
+              currentNodes = useStore.getState().nodes;
+              currentEdges = useStore.getState().edges;
             }
           }
         }
       }
+
+      if (
+        autoConnectOnNodeDrop &&
+        draggedNode &&
+        draggedNode.type !== "groupNode"
+      ) {
+        const targetNode =
+          snapTargetRef.current && nodesById.get(snapTargetRef.current.id);
+        const draggedNodeWidth = draggedNode.width;
+
+        if (
+          targetNode &&
+          targetNode.id !== draggedNode.id &&
+          draggedNodeWidth !== undefined &&
+          draggedNodeWidth > 0
+        ) {
+          const draggedCenter = getNodeCenter(draggedNode);
+          const targetCenter = getNodeCenter(targetNode);
+          const distance = Math.hypot(
+            draggedCenter.x - targetCenter.x,
+            draggedCenter.y - targetCenter.y,
+          );
+
+          if (distance <= 3 * draggedNodeWidth) {
+            const draggedIsLeft =
+              (draggedNode.positionAbsolute?.x ?? draggedNode.position.x) <=
+              (targetNode.positionAbsolute?.x ?? targetNode.position.x);
+            const sourceNode = draggedIsLeft ? draggedNode : targetNode;
+            const target = draggedIsLeft ? targetNode : draggedNode;
+            const outputHandles = getRenderedHandles(
+              sourceNode.id,
+              sourceNode,
+              "source",
+            );
+            const inputHandles = getRenderedHandles(
+              target.id,
+              target,
+              "target",
+            );
+            const connectedOutputs = new Set(
+              currentEdges
+                .filter((edge) => edge.source === sourceNode.id)
+                .map((edge) => edge.sourceHandle),
+            );
+            const connectedInputs = new Set(
+              currentEdges
+                .filter((edge) => edge.target === target.id)
+                .map((edge) => edge.targetHandle),
+            );
+            const matchingPair = outputHandles
+              .map((output) => ({
+                output,
+                input: inputHandles.find(
+                  (input) =>
+                    !connectedInputs.has(input.id) &&
+                    input.domain === output.domain &&
+                    ((target.data.inputTypes?.[input.index] ?? "any") ===
+                      "any" ||
+                      (sourceNode.data.outputTypes?.[output.index] ?? "any") ===
+                        "any" ||
+                      sourceNode.data.outputTypes?.[
+                        output.index
+                      ]?.toLowerCase() ===
+                        target.data.inputTypes?.[input.index]?.toLowerCase()),
+                ),
+              }))
+              .find(
+                ({ output, input }) =>
+                  !connectedOutputs.has(output.id) && input !== undefined,
+              );
+
+            if (matchingPair) {
+              const splitHistoryIndex = useStore.getState().historyIndex;
+              const splitHistoryItem = {
+                nodes: structuredClone(currentNodes),
+                edges: structuredClone(currentEdges),
+              };
+              onConnect({
+                source: sourceNode.id,
+                sourceHandle: matchingPair.output.id,
+                target: target.id,
+                targetHandle: matchingPair.input.id,
+              });
+              useStore.setState((state) => ({
+                history: [
+                  ...state.history.slice(0, splitHistoryIndex + 1),
+                  splitHistoryItem,
+                ].slice(-MAX_HISTORY_ENTRIES),
+                historyIndex: Math.min(
+                  splitHistoryIndex + 1,
+                  MAX_HISTORY_ENTRIES - 1,
+                ),
+                redoStack: [],
+              }));
+            }
+          }
+        }
+      }
+      snapTargetRef.current = null;
 
       // drag-to-group for groupNode
       if (node.type !== "groupNode") {
@@ -4421,6 +4518,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
         if (
           Math.abs(node.position.y - otherNode.position.y) === snapThreshold
         ) {
+          snapTargetRef.current = otherNode;
           console.log("horizontalLine");
           const screen = reactFlowInstance.flowToScreenPosition({
             x: node.position.x,
