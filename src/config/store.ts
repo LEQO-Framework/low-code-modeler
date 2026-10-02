@@ -63,7 +63,8 @@ type RFState = {
   dragSnapshot: HistoryItem | null;
   pendingNodeInitializationId: string | null;
   isReplayingHistory: boolean;
-  autoConnectOnNodeDrop: boolean;
+  autoConnectOnEdgeDrop: boolean;
+  autoConnectOnSameLine: boolean;
   typeError: string | null;
   userTemplates: Template[];
   domainProfile: string;
@@ -82,7 +83,8 @@ type RFState = {
   addUserTemplate: (template: Template) => void;
   setUserTemplates: (newTemplates: Template[]) => void;
   setAllDomainProfiles: (newProfiles: DomainProfile[]) => void;
-  setAutoConnectOnNodeDrop: (enabled: boolean) => void;
+  setAutoConnectOnEdgeDrop: (enabled: boolean) => void;
+  setAutoConnectOnSameLine: (enabled: boolean) => void;
   onNodesChange: OnNodesChange;
   onEdgesChange: OnEdgesChange;
   onConnect: OnConnect;
@@ -151,7 +153,8 @@ export const useStore = create<RFState>()(
       dragSnapshot: null,
       pendingNodeInitializationId: null,
       isReplayingHistory: false,
-      autoConnectOnNodeDrop: true,
+      autoConnectOnEdgeDrop: true,
+      autoConnectOnSameLine: true,
       containsPlaceholder: false,
       typeError: null,
       userTemplates: [],
@@ -543,8 +546,12 @@ export const useStore = create<RFState>()(
         console.log("after setting templates", get().userTemplates);
       },
 
-      setAutoConnectOnNodeDrop: (enabled: boolean) => {
-        set({ autoConnectOnNodeDrop: enabled });
+      setAutoConnectOnEdgeDrop: (enabled: boolean) => {
+        set({ autoConnectOnEdgeDrop: enabled });
+      },
+
+      setAutoConnectOnSameLine: (enabled: boolean) => {
+        set({ autoConnectOnSameLine: enabled });
       },
 
       onNodesChange: (changes: NodeChange[]) => {
@@ -2052,7 +2059,8 @@ export const useStore = create<RFState>()(
       partialize: (state) => ({
         userTemplates: state.userTemplates,
         allDomainProfiles: state.allDomainProfiles,
-        autoConnectOnNodeDrop: state.autoConnectOnNodeDrop,
+        autoConnectOnEdgeDrop: state.autoConnectOnEdgeDrop,
+        autoConnectOnSameLine: state.autoConnectOnSameLine,
       }),
     },
   ),

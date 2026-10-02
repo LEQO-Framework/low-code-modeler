@@ -7,7 +7,8 @@ interface ConfigModalProps {
   experienceLevel: string;
   compactVisualization: boolean;
   completionGuaranteed: boolean;
-  autoConnectOnNodeDrop: boolean;
+  autoConnectOnEdgeDrop: boolean;
+  autoConnectOnSameLine: boolean;
   collaborationMode: boolean;
   onClose: () => void;
   onSave: (values: {
@@ -15,7 +16,8 @@ interface ConfigModalProps {
     experienceLevel: string;
     compactVisualization: boolean;
     completionGuaranteed: boolean;
-    autoConnectOnNodeDrop: boolean;
+    autoConnectOnEdgeDrop: boolean;
+    autoConnectOnSameLine: boolean;
     tempCamundaEndpoint: string;
     tempNisqAnalyzerEndpoint: string;
     tempQunicornEndpoint: string;
@@ -61,7 +63,8 @@ export const ConfigModal = ({
   experienceLevel,
   compactVisualization,
   completionGuaranteed,
-  autoConnectOnNodeDrop,
+  autoConnectOnEdgeDrop,
+  autoConnectOnSameLine,
   collaborationMode,
   tempCamundaEndpoint,
   tempNisqAnalyzerEndpoint,
@@ -85,8 +88,10 @@ export const ConfigModal = ({
     useState(completionGuaranteed);
   const [localCompactVisualization, setLocalCompactVisualization] =
     useState(compactVisualization);
-  const [localAutoConnectOnNodeDrop, setLocalAutoConnectOnNodeDrop] =
-    useState(autoConnectOnNodeDrop);
+  const [localAutoConnectOnEdgeDrop, setLocalAutoConnectOnEdgeDrop] =
+    useState(autoConnectOnEdgeDrop);
+  const [localAutoConnectOnSameLine, setLocalAutoConnectOnSameLine] =
+    useState(autoConnectOnSameLine);
   const [localCollaborationMode, setLocalCollaborationMode] = useState(collaborationMode);
   const [localUserName, setLocalUserName] = useState(userName);
 
@@ -111,7 +116,8 @@ export const ConfigModal = ({
       setLocalExperienceLevel(experienceLevel);
       setLocalCompletionGuaranteed(completionGuaranteed);
       setLocalCompactVisualization(compactVisualization);
-      setLocalAutoConnectOnNodeDrop(autoConnectOnNodeDrop);
+      setLocalAutoConnectOnEdgeDrop(autoConnectOnEdgeDrop);
+      setLocalAutoConnectOnSameLine(autoConnectOnSameLine);
       setLocalCollaborationMode(collaborationMode);
       setLocalUserName(userName);
       setLocalOpenAIToken(tempOpenAIToken);
@@ -138,7 +144,8 @@ export const ConfigModal = ({
       tempCamundaEndpoint: localCamunda,
       compactVisualization: localCompactVisualization,
       completionGuaranteed: localCompletionGuaranteed,
-      autoConnectOnNodeDrop: localAutoConnectOnNodeDrop,
+      autoConnectOnEdgeDrop: localAutoConnectOnEdgeDrop,
+      autoConnectOnSameLine: localAutoConnectOnSameLine,
       tempNisqAnalyzerEndpoint: localNisq,
       tempQunicornEndpoint: localQunicorn,
       tempLowcodeBackendEndpoint: localLowcode,
@@ -255,14 +262,30 @@ export const ConfigModal = ({
                   <td align="left">
                     <input
                       type="checkbox"
-                      checked={localAutoConnectOnNodeDrop}
+                      checked={localAutoConnectOnEdgeDrop}
                       onChange={(e) =>
-                        setLocalAutoConnectOnNodeDrop(e.target.checked)
+                        setLocalAutoConnectOnEdgeDrop(e.target.checked)
                       }
                       className="w-4 h-4"
                     />
                     <span className="ml-2">
-                      {localAutoConnectOnNodeDrop ? "On" : "Off"}
+                      {localAutoConnectOnEdgeDrop ? "On" : "Off"}
+                    </span>
+                  </td>
+                </tr>
+                <tr>
+                  <td align="right">Connect nodes on the same line:</td>
+                  <td align="left">
+                    <input
+                      type="checkbox"
+                      checked={localAutoConnectOnSameLine}
+                      onChange={(e) =>
+                        setLocalAutoConnectOnSameLine(e.target.checked)
+                      }
+                      className="w-4 h-4"
+                    />
+                    <span className="ml-2">
+                      {localAutoConnectOnSameLine ? "On" : "Off"}
                     </span>
                   </td>
                 </tr>

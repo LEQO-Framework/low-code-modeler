@@ -155,8 +155,10 @@ const selector = (state: {
   addUserTemplate: (template: Template) => void;
   setUserTemplates: (newTemplates: Template[]) => void;
   setAllDomainProfiles: (newProfiles: DomainProfile[]) => void;
-  autoConnectOnNodeDrop: boolean;
-  setAutoConnectOnNodeDrop: (enabled: boolean) => void;
+  autoConnectOnEdgeDrop: boolean;
+  setAutoConnectOnEdgeDrop: (enabled: boolean) => void;
+  autoConnectOnSameLine: boolean;
+  setAutoConnectOnSameLine: (enabled: boolean) => void;
   setContainsPlaceholder: (containsPlaceholder: boolean) => void;
   undo: () => void;
   redo: () => void;
@@ -193,8 +195,10 @@ const selector = (state: {
   addUserTemplate: state.addUserTemplate,
   setUserTemplates: state.setUserTemplates,
   setAllDomainProfiles: state.setAllDomainProfiles,
-  autoConnectOnNodeDrop: state.autoConnectOnNodeDrop,
-  setAutoConnectOnNodeDrop: state.setAutoConnectOnNodeDrop,
+  autoConnectOnEdgeDrop: state.autoConnectOnEdgeDrop,
+  setAutoConnectOnEdgeDrop: state.setAutoConnectOnEdgeDrop,
+  autoConnectOnSameLine: state.autoConnectOnSameLine,
+  setAutoConnectOnSameLine: state.setAutoConnectOnSameLine,
   undo: state.undo,
   redo: state.redo,
 });
@@ -353,8 +357,10 @@ function App() {
     domainProfile,
     allDomainProfiles,
     setAllDomainProfiles,
-    autoConnectOnNodeDrop,
-    setAutoConnectOnNodeDrop,
+    autoConnectOnEdgeDrop,
+    setAutoConnectOnEdgeDrop,
+    autoConnectOnSameLine,
+    setAutoConnectOnSameLine,
     setDomainProfile,
     addUserTemplate,
     setUserTemplates,
@@ -758,7 +764,8 @@ If none apply, return { "algorithms": [] }.
     //setAncillaModelingOn(newValues.ancillaMode);
     setExperienceLevel(newValues.experienceLevel);
     setCompletionGuaranteed(newValues.completionGuaranteed);
-    setAutoConnectOnNodeDrop(newValues.autoConnectOnNodeDrop);
+    setAutoConnectOnEdgeDrop(newValues.autoConnectOnEdgeDrop);
+    setAutoConnectOnSameLine(newValues.autoConnectOnSameLine);
     setCollaborationModeOn(newValues.collaborationMode); // passt das?? lieber onToggleCollaborationMode?
     onUserNameChange(newValues.userName);
 
@@ -2494,7 +2501,7 @@ If none apply, return { "algorithms": [] }.
         : undefined;
 
       if (
-        autoConnectOnNodeDrop &&
+        autoConnectOnEdgeDrop &&
         draggedNode &&
         draggedNode.type !== "groupNode"
       ) {
@@ -2634,7 +2641,7 @@ If none apply, return { "algorithms": [] }.
       }
 
       if (
-        autoConnectOnNodeDrop &&
+        autoConnectOnSameLine &&
         draggedNode &&
         draggedNode.type !== "groupNode"
       ) {
@@ -2847,7 +2854,7 @@ If none apply, return { "algorithms": [] }.
         }));
       }
     },
-    [nodes, setContextMenu, autoConnectOnNodeDrop],
+    [nodes, setContextMenu, autoConnectOnEdgeDrop],
   );
 
   const onSelectionChange = useCallback(
@@ -4350,7 +4357,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
 
   const onNodeDrag = React.useCallback(
     (event: React.MouseEvent, node: Node, nodes: Node[]) => {
-      if (autoConnectOnNodeDrop && node.type !== "groupNode") {
+      if (autoConnectOnEdgeDrop && node.type !== "groupNode") {
         const currentNodes: Node[] = reactFlowInstance
           .getNodes()
           .map((current) =>
@@ -4599,7 +4606,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
       helperLines,
       nodes,
       setContextMenu,
-      autoConnectOnNodeDrop,
+      autoConnectOnEdgeDrop,
     ],
   );
 
@@ -5408,7 +5415,8 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
         ancillaMode={ancillaModelingOn}
         compactVisualization={compactVisualization}
         completionGuaranteed={completionGuaranteed}
-        autoConnectOnNodeDrop={autoConnectOnNodeDrop}
+        autoConnectOnEdgeDrop={autoConnectOnEdgeDrop}
+        autoConnectOnSameLine={autoConnectOnSameLine}
         experienceLevel={experienceLevel}
         collaborationMode={collaborationModeOn}
         tempCamundaEndpoint={camundaEndpoint}
