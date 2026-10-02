@@ -89,6 +89,7 @@ type RFState = {
   onConnectEnd: OnConnectEnd;
   updateNodeLabel: (nodeId: string, nodeVal: string) => void;
   updateNodeValue: (nodeId: string, identifier, nodeVal: any) => void;
+  updateNodeValues: (nodeId: string, values: Record<string, any>) => void;
   setSelectedNode: (node: Node | null) => void;
   updateParent: (nodeId: string, parentId: string, position: any) => void;
   updateChildren: (nodeId: string, childIds: string[]) => void;
@@ -1871,6 +1872,32 @@ export const useStore = create<RFState>()(
         console.log("Current historyIndex:", get().historyIndex);
 
         console.log("History updated successfully.");
+      },
+      updateNodeValues: (nodeId: string, values: Record<string, any>) => {
+        set((state) => {
+          const { nodes, edges } = state;
+          const shouldRecordHistory =
+            !state.isReplayingHistory &&
+            state.pendingNodeInitializationId !== nodeId;
+          const newHistoryItem: HistoryItem = {
+            nodes: structuredClone(nodes),
+            edges: structuredClone(edges),
+          };
+          const updatedNodes = nodes.map((node) =>
+            node.id === nodeId
+              ? { ...node, data: { ...node.data, ...values } }
+              : node,
+          );
+
+          return {
+            nodes: updatedNodes,
+            edges,
+            ...(shouldRecordHistory
+              ? appendHistory(state.history, state.historyIndex, newHistoryItem)
+              : { history: state.history, historyIndex: state.historyIndex }),
+            redoStack: shouldRecordHistory ? [] : state.redoStack,
+          };
+        });
       },
       updateParent: (nodeId: string, parentId: string, position: any) => {
         console.log("Updating parent value for:", nodeId);
