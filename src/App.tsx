@@ -2756,9 +2756,7 @@ If none apply, return { "algorithms": [] }.
           }
         }
       }
-
-      snapTargetRef.current = null;
-
+      
       // drag-to-group for groupNode
       if (node.type !== "groupNode") {
         try {
