@@ -2627,136 +2627,139 @@ If none apply, return { "algorithms": [] }.
         draggedNode.type !== "groupNode"
       ) {
         const draggedNodeWidth = draggedNode.width;
+        if (draggedNodeWidth !== undefined && draggedNodeWidth > 0) {
+          const maxDistanceBetweenConnectedNodes = 3 * draggedNodeWidth;
+          const leftNode = currentNodes
+            .filter(
+              (candidate) =>
+                candidate.position.y === draggedNode.position.y &&
+                candidate.position.x < draggedNode.position.x &&
+                draggedNode.position.x -
+                  (candidate.position.x + candidate.width) <=
+                  maxDistanceBetweenConnectedNodes &&
+                candidate.id !== draggedNode.id,
+            )
+            .sort((a, b) => b.position.x - a.position.x)[0];
+          const rightNode = currentNodes
+            .filter(
+              (candidate) =>
+                candidate.position.y === draggedNode.position.y &&
+                candidate.position.x > draggedNode.position.x &&
+                candidate.position.x -
+                  (draggedNode.position.x + draggedNode.width) <=
+                  maxDistanceBetweenConnectedNodes &&
+                candidate.id !== draggedNode.id,
+            )
+            .sort((a, b) => a.position.x - b.position.x)[0];
 
-        const maxDistanceBetweenConnectedNodes = 3 * draggedNodeWidth;
-        const leftNode = currentNodes
-          .filter(
-            (candidate) =>
-              candidate.position.y === draggedNode.position.y &&
-              candidate.position.x < draggedNode.position.x &&
-              draggedNode.position.x -
-                (candidate.position.x + candidate.width) <=
-                maxDistanceBetweenConnectedNodes &&
-              candidate.id !== draggedNode.id,
-          )
-          .sort((a, b) => b.position.x - a.position.x)[0];
-        const rightNode = currentNodes
-          .filter(
-            (candidate) =>
-              candidate.position.y === draggedNode.position.y &&
-              candidate.position.x > draggedNode.position.x &&
-              candidate.position.x -
-                (draggedNode.position.x + draggedNode.width) <=
-                maxDistanceBetweenConnectedNodes &&
-              candidate.id !== draggedNode.id,
-          )
-          .sort((a, b) => a.position.x - b.position.x)[0];
-
-        if (
-          (leftNode || rightNode) &&
-          draggedNodeWidth !== undefined &&
-          draggedNodeWidth > 0
-        ) {
-          const findMatchingHandlePair = (
-            sourceNode: typeof draggedNode,
-            targetNode: typeof draggedNode,
-          ) => {
-            const outputHandles = getRenderedHandles(
-              sourceNode.id,
-              sourceNode,
-              "source",
-            );
-            const inputHandles = getRenderedHandles(
-              targetNode.id,
-              targetNode,
-              "target",
-            );
-            const connectedOutputs = new Set(
-              currentEdges
-                .filter((edge) => edge.source === sourceNode.id)
-                .map((edge) => edge.sourceHandle),
-            );
-            const connectedInputs = new Set(
-              currentEdges
-                .filter((edge) => edge.target === targetNode.id)
-                .map((edge) => edge.targetHandle),
-            );
-            return outputHandles
-              .map((output) => ({
-                output,
-                input: inputHandles.find(
-                  (input) =>
-                    !connectedInputs.has(input.id) &&
-                    input.domain === output.domain &&
-                    ((targetNode.data.inputTypes?.[input.index] ?? "any") ===
-                      "any" ||
-                      (sourceNode.data.outputTypes?.[output.index] ?? "any") ===
-                        "any" ||
-                      sourceNode.data.outputTypes?.[
-                        output.index
-                      ]?.toLowerCase() ===
-                        targetNode.data.inputTypes?.[
-                          input.index
-                        ]?.toLowerCase()),
-                ),
-              }))
-              .find(
-                ({ output, input }) =>
-                  !connectedOutputs.has(output.id) && input !== undefined,
+          if (leftNode || rightNode) {
+            const findMatchingHandlePair = (
+              sourceNode: Node,
+              targetNode: Node,
+            ) => {
+              const outputHandles = getRenderedHandles(
+                sourceNode.id,
+                sourceNode,
+                "source",
               );
-          };
-          const connections = [];
-
-          if (leftNode) {
-            const matchingPair = findMatchingHandlePair(leftNode, draggedNode);
-
-            if (matchingPair) {
-              connections.push({
-                source: leftNode.id,
-                sourceHandle: matchingPair.output.id,
-                target: draggedNode.id,
-                targetHandle: matchingPair.input.id,
-              });
-            }
-          }
-
-          if (rightNode) {
-            const matchingPair = findMatchingHandlePair(draggedNode, rightNode);
-
-            if (matchingPair) {
-              connections.push({
-                source: draggedNode.id,
-                sourceHandle: matchingPair.output.id,
-                target: rightNode.id,
-                targetHandle: matchingPair.input.id,
-              });
-            }
-          }
-
-          if (connections.length > 0) {
-            const splitHistoryIndex = useStore.getState().historyIndex;
-            const splitHistoryItem = {
-              nodes: structuredClone(currentNodes),
-              edges: structuredClone(currentEdges),
+              const inputHandles = getRenderedHandles(
+                targetNode.id,
+                targetNode,
+                "target",
+              );
+              const connectedOutputs = new Set(
+                currentEdges
+                  .filter((edge) => edge.source === sourceNode.id)
+                  .map((edge) => edge.sourceHandle),
+              );
+              const connectedInputs = new Set(
+                currentEdges
+                  .filter((edge) => edge.target === targetNode.id)
+                  .map((edge) => edge.targetHandle),
+              );
+              return outputHandles
+                .map((output) => ({
+                  output,
+                  input: inputHandles.find(
+                    (input) =>
+                      !connectedInputs.has(input.id) &&
+                      input.domain === output.domain &&
+                      ((targetNode.data.inputTypes?.[input.index] ?? "any") ===
+                        "any" ||
+                        (sourceNode.data.outputTypes?.[output.index] ??
+                          "any") === "any" ||
+                        sourceNode.data.outputTypes?.[
+                          output.index
+                        ]?.toLowerCase() ===
+                          targetNode.data.inputTypes?.[
+                            input.index
+                          ]?.toLowerCase()),
+                  ),
+                }))
+                .find(
+                  ({ output, input }) =>
+                    !connectedOutputs.has(output.id) && input !== undefined,
+                );
             };
-            for (const connection of connections) {
-              onConnect(connection);
+            const connections = [];
+
+            if (leftNode) {
+              const matchingPair = findMatchingHandlePair(
+                leftNode,
+                draggedNode,
+              );
+
+              if (matchingPair) {
+                connections.push({
+                  source: leftNode.id,
+                  sourceHandle: matchingPair.output.id,
+                  target: draggedNode.id,
+                  targetHandle: matchingPair.input.id,
+                });
+              }
             }
-            useStore.setState((state) => ({
-              history: [
-                ...state.history.slice(0, splitHistoryIndex + 1),
-                splitHistoryItem,
-              ].slice(-MAX_HISTORY_ENTRIES),
-              historyIndex: Math.min(
-                splitHistoryIndex + 1,
-                MAX_HISTORY_ENTRIES - 1,
-              ),
-              redoStack: [],
-            }));
+
+            if (rightNode) {
+              const matchingPair = findMatchingHandlePair(
+                draggedNode,
+                rightNode,
+              );
+
+              if (matchingPair) {
+                connections.push({
+                  source: draggedNode.id,
+                  sourceHandle: matchingPair.output.id,
+                  target: rightNode.id,
+                  targetHandle: matchingPair.input.id,
+                });
+              }
+            }
+
+            if (connections.length > 0) {
+              const splitHistoryIndex = useStore.getState().historyIndex;
+              const splitHistoryItem = {
+                nodes: structuredClone(currentNodes),
+                edges: structuredClone(currentEdges),
+              };
+              for (const connection of connections) {
+                onConnect(connection);
+              }
+              useStore.setState((state) => ({
+                history: [
+                  ...state.history.slice(0, splitHistoryIndex + 1),
+                  splitHistoryItem,
+                ].slice(-MAX_HISTORY_ENTRIES),
+                historyIndex: Math.min(
+                  splitHistoryIndex + 1,
+                  MAX_HISTORY_ENTRIES - 1,
+                ),
+                redoStack: [],
+              }));
+            }
           }
         }
       }
-      
+
       // drag-to-group for groupNode
       if (node.type !== "groupNode") {
         try {
