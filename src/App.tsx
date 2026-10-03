@@ -121,6 +121,7 @@ import {
   quantum_clustering,
   quantum_fourier_transform,
 } from "./constants/exampleModels";
+import { or } from "three/src/nodes/math/OperatorNode";
 
 const selector = (state: {
   nodes: Node[];
@@ -2626,37 +2627,49 @@ If none apply, return { "algorithms": [] }.
         draggedNode &&
         draggedNode.type !== "groupNode"
       ) {
-        const targetNode =
-          snapTargetRef.current && nodesById.get(snapTargetRef.current.id);
         const draggedNodeWidth = draggedNode.width;
 
+        const maxDistanceBetweenConnectedNodes = 3 * draggedNodeWidth;
+        const leftNode = currentNodes
+          .filter(
+            (candidate) =>
+              candidate.position.y === draggedNode.position.y &&
+              candidate.position.x < draggedNode.position.x &&
+              draggedNode.position.x -
+                (candidate.position.x + candidate.width) <=
+                maxDistanceBetweenConnectedNodes &&
+              candidate.id !== draggedNode.id,
+          )
+          .sort((a, b) => b.position.x - a.position.x)[0];
+        const rightNode = currentNodes
+          .filter(
+            (candidate) =>
+              candidate.position.y === draggedNode.position.y &&
+              candidate.position.x > draggedNode.position.x &&
+              candidate.position.x -
+                (draggedNode.position.x + draggedNode.width) <=
+                maxDistanceBetweenConnectedNodes &&
+              candidate.id !== draggedNode.id,
+          )
+          .sort((a, b) => a.position.x - b.position.x)[0];
+
         if (
-          targetNode &&
-          targetNode.id !== draggedNode.id &&
+          (leftNode || rightNode) &&
           draggedNodeWidth !== undefined &&
           draggedNodeWidth > 0
         ) {
-          const draggedCenter = getNodeCenter(draggedNode);
-          const targetCenter = getNodeCenter(targetNode);
-          const distance = Math.hypot(
-            draggedCenter.x - targetCenter.x,
-            draggedCenter.y - targetCenter.y,
-          );
-
-          if (distance <= 3 * draggedNodeWidth) {
-            const draggedIsLeft =
-              (draggedNode.positionAbsolute?.x ?? draggedNode.position.x) <=
-              (targetNode.positionAbsolute?.x ?? targetNode.position.x);
-            const sourceNode = draggedIsLeft ? draggedNode : targetNode;
-            const target = draggedIsLeft ? targetNode : draggedNode;
+          const findMatchingHandlePair = (
+            sourceNode: typeof draggedNode,
+            targetNode: typeof draggedNode,
+          ) => {
             const outputHandles = getRenderedHandles(
               sourceNode.id,
               sourceNode,
               "source",
             );
             const inputHandles = getRenderedHandles(
-              target.id,
-              target,
+              targetNode.id,
+              targetNode,
               "target",
             );
             const connectedOutputs = new Set(
@@ -2666,58 +2679,85 @@ If none apply, return { "algorithms": [] }.
             );
             const connectedInputs = new Set(
               currentEdges
-                .filter((edge) => edge.target === target.id)
+                .filter((edge) => edge.target === targetNode.id)
                 .map((edge) => edge.targetHandle),
             );
-            const matchingPair = outputHandles
+            return outputHandles
               .map((output) => ({
                 output,
                 input: inputHandles.find(
                   (input) =>
                     !connectedInputs.has(input.id) &&
                     input.domain === output.domain &&
-                    ((target.data.inputTypes?.[input.index] ?? "any") ===
+                    ((targetNode.data.inputTypes?.[input.index] ?? "any") ===
                       "any" ||
                       (sourceNode.data.outputTypes?.[output.index] ?? "any") ===
                         "any" ||
                       sourceNode.data.outputTypes?.[
                         output.index
                       ]?.toLowerCase() ===
-                        target.data.inputTypes?.[input.index]?.toLowerCase()),
+                        targetNode.data.inputTypes?.[
+                          input.index
+                        ]?.toLowerCase()),
                 ),
               }))
               .find(
                 ({ output, input }) =>
                   !connectedOutputs.has(output.id) && input !== undefined,
               );
+          };
+          const connections = [];
+
+          if (leftNode) {
+            const matchingPair = findMatchingHandlePair(leftNode, draggedNode);
 
             if (matchingPair) {
-              const splitHistoryIndex = useStore.getState().historyIndex;
-              const splitHistoryItem = {
-                nodes: structuredClone(currentNodes),
-                edges: structuredClone(currentEdges),
-              };
-              onConnect({
-                source: sourceNode.id,
+              connections.push({
+                source: leftNode.id,
                 sourceHandle: matchingPair.output.id,
-                target: target.id,
+                target: draggedNode.id,
                 targetHandle: matchingPair.input.id,
               });
-              useStore.setState((state) => ({
-                history: [
-                  ...state.history.slice(0, splitHistoryIndex + 1),
-                  splitHistoryItem,
-                ].slice(-MAX_HISTORY_ENTRIES),
-                historyIndex: Math.min(
-                  splitHistoryIndex + 1,
-                  MAX_HISTORY_ENTRIES - 1,
-                ),
-                redoStack: [],
-              }));
             }
+          }
+
+          if (rightNode) {
+            const matchingPair = findMatchingHandlePair(draggedNode, rightNode);
+
+            if (matchingPair) {
+              connections.push({
+                source: draggedNode.id,
+                sourceHandle: matchingPair.output.id,
+                target: rightNode.id,
+                targetHandle: matchingPair.input.id,
+              });
+            }
+          }
+
+          if (connections.length > 0) {
+            const splitHistoryIndex = useStore.getState().historyIndex;
+            const splitHistoryItem = {
+              nodes: structuredClone(currentNodes),
+              edges: structuredClone(currentEdges),
+            };
+            for (const connection of connections) {
+              onConnect(connection);
+            }
+            useStore.setState((state) => ({
+              history: [
+                ...state.history.slice(0, splitHistoryIndex + 1),
+                splitHistoryItem,
+              ].slice(-MAX_HISTORY_ENTRIES),
+              historyIndex: Math.min(
+                splitHistoryIndex + 1,
+                MAX_HISTORY_ENTRIES - 1,
+              ),
+              redoStack: [],
+            }));
           }
         }
       }
+
       snapTargetRef.current = null;
 
       // drag-to-group for groupNode
