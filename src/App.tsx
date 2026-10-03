@@ -2499,7 +2499,7 @@ If none apply, return { "algorithms": [] }.
       );
   };
 
-    /**
+  /**
    * Creates a history snapshot and returns a function to commit it.
    *
    * @param historyNodes Nodes to include in the history snapshot.
@@ -2523,6 +2523,13 @@ If none apply, return { "algorithms": [] }.
       }));
   };
 
+  /**
+   * Attempts to insert the dragged node into the closest compatible edge.
+   *
+   * @param draggedNode The node being dragged.
+   * @param currentNodes Current nodes in the flow.
+   * @param currentEdges Current edges in the flow.
+   */
   const tryAutoConnectToEdge = (
     draggedNode: Node,
     currentNodes: Node[],
@@ -2654,6 +2661,13 @@ If none apply, return { "algorithms": [] }.
     commitHistory();
   };
 
+  /**
+   * Attempts to connect the dragged node to compatible nodes on the same line within the allowed distance.
+   *
+   * @param draggedNode The node being dragged.
+   * @param currentNodes Current nodes in the flow.
+   * @param currentEdges Current edges in the flow.
+   */
   const tryAutoConnectOnSameLine = (
     draggedNode: Node,
     currentNodes: Node[],
@@ -2719,12 +2733,19 @@ If none apply, return { "algorithms": [] }.
     }
 
     if (connections.length === 0) return;
-    
+
     const commitHistory = prepareHistory(currentNodes, currentEdges);
     for (const connection of connections) onConnect(connection);
     commitHistory();
   };
 
+  /**
+   * Runs the enabled automatic connection strategies for the dragged node.
+   *
+   * @param draggedNode The node being dragged.
+   * @param currentNodes Current nodes in the flow.
+   * @param currentEdges Current edges in the flow.
+   */
   const automaticConnections = (
     draggedNode: Node | undefined,
     currentNodes: Node[],
