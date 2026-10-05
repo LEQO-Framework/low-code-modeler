@@ -7,6 +7,7 @@ import {
   TestableNodeSpec,
   resolvePool,
 } from "./testingSpecs";
+import JSZip from "jszip";
 
 interface TestingModalProps {
   open: boolean;
@@ -380,6 +381,80 @@ export const TestingModal = ({
       prev.map((r) => (r.id === flow.id ? { ...r, generated: true } : r)),
     );
   };
+  const _handleDownloadSelected = async () => {
+    if (!selectedSpec) return;
+
+    const selectedFlows = rows.filter((row) => row.selected);
+
+    if (selectedFlows.length === 0) return;
+
+    const zip = new JSZip();
+
+    selectedFlows.forEach((flow) => {
+      const { flowObj } = buildCanvasFlow(
+        selectedSpec,
+        flow,
+        { x: 0, y: 0 }
+      );
+
+      const filename = `${flow.name
+        .replace(/\s+/g, "-")
+        .toLowerCase()}.json`;
+
+      zip.file(filename, JSON.stringify(flowObj, null, 2));
+    });
+
+    const zipBlob = await zip.generateAsync({
+      type: "blob",
+    });
+
+    const url = URL.createObjectURL(zipBlob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = `${selectedSpec.id}-test-flows.zip`;
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    URL.revokeObjectURL(url);
+  };
+  const handleDownloadAll = async () => {
+    if (!selectedSpec || rows.length === 0) return;
+
+    const zip = new JSZip();
+
+    rows.forEach((flow) => {
+      const { flowObj } = buildCanvasFlow(
+        selectedSpec,
+        flow,
+        { x: 0, y: 0 }
+      );
+
+      const filename = `${flow.name
+        .replace(/\s+/g, "-")
+        .toLowerCase()}.json`;
+
+      zip.file(filename, JSON.stringify(flowObj, null, 2));
+    });
+
+    const zipBlob = await zip.generateAsync({
+      type: "blob",
+    });
+
+    const url = URL.createObjectURL(zipBlob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = `${selectedSpec.id}-all-test-flows.zip`;
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    URL.revokeObjectURL(url);
+  };
 
 
   const toggleRow = (id: string) => {
@@ -444,6 +519,13 @@ export const TestingModal = ({
           >
             Generate Test Cases
           </button>
+          <button
+  className="btn btn-primary"
+  onClick={handleDownloadAll}
+  disabled={rows.length === 0}
+>
+  Download All Flows ({rows.length})
+</button>
         </div>
 
         {rows.length > 0 && (
