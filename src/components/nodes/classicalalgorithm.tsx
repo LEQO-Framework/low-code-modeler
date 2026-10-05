@@ -19,7 +19,6 @@ import { awareness } from "@/yjs";
 const selector = (state: any) => ({
   nodes: state.nodes,
   edges: state.edges,
-  ancillaMode: state.ancillaMode,
   updateNodeValue: state.updateNodeValue,
   setSelectedNode: state.setSelectedNode,
 });
@@ -30,8 +29,10 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
   const numberInputs = data.numberClassicalInputs || 0;
   const numberOutputs = data.numberClassicalOutputs || 0;
 
-  const { edges, nodes, updateNodeValue, setSelectedNode, ancillaMode } =
-    useStore(selector, shallow);
+  const { edges, nodes, updateNodeValue, setSelectedNode } = useStore(
+    selector,
+    shallow,
+  );
 
   const updateNodeInternals = useUpdateNodeInternals();
 
@@ -84,7 +85,7 @@ export const ClassicalAlgorithmNode = memo((node: Node) => {
     setSelectedNode(node);
 
     console.log("update classical algorithm handles");
-  }, [ancillaMode]);
+  }, []);
 
   const getInputType = (inputIndex: number) => {
     const handleId = `classicalHandleOperationInput${inputIndex}${node.id}`;

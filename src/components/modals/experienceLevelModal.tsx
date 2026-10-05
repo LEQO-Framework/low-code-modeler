@@ -3,8 +3,6 @@ import { Panel } from "reactflow";
 interface ExperienceModePanelProps {
   expanded: boolean;
   onToggleExpanded: () => void;
-  ancillaModelingOn: boolean;
-  onToggleAncilla: () => void;
   experienceLevel: string;
   onExperienceLevelChange: (level: string) => void;
   compactVisualization: boolean;

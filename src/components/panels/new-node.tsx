@@ -11,7 +11,6 @@ import * as consts from "../../constants";
 import { DomainProfile } from "../modals/domainProfileModal";
 
 const selector = (state: {
-  ancillaMode: boolean;
   compact: boolean;
   experienceLevel: string;
   completionGuaranteed: boolean;
@@ -19,7 +18,6 @@ const selector = (state: {
   domainProfile: string;
   allDomainProfiles: DomainProfile[];
 }) => ({
-  ancillaMode: state.ancillaMode,
   experienceLevel: state.experienceLevel,
   compact: state.compact,
   completionGuaranteed: state.completionGuaranteed,
@@ -49,12 +47,7 @@ const operatorIcons: Record<string, string> = {
 };
 
 interface AddNodePanelProps {
-  ancillaMode?: any;
-  onAddNode?: (
-    def: any,
-    customPosition?: { x: number; y: number },
-    pluginData?: any,
-  ) => void;
+  onAddNode?: (def: any, customPosition?: { x: number; y: number }, pluginData?: any) => void;
 }
 
 export const AddNodePanel = ({ onAddNode }: AddNodePanelProps) => {
@@ -778,7 +771,7 @@ export const AddNodePanel = ({ onAddNode }: AddNodePanelProps) => {
   const renderNodes = (nodeGroup: any): React.ReactNode => {
     if (Array.isArray(nodeGroup)) {
       const visibleNodes = nodeGroup
-        .filter((node: Node) => !(!ancillaMode && node.type === "ancillaNode"))
+        .filter((node: Node) => node.type !== "ancillaNode")
         .filter((node: Node) =>
           completionGuaranteed ? node.completionGuaranteed : true,
         )
@@ -805,7 +798,7 @@ export const AddNodePanel = ({ onAddNode }: AddNodePanelProps) => {
                         ? node.type === consts.GateNode ||
                           node.type === consts.QubitNode
                           ? node.icon[experienceLevel === "explorer" ? 1 : 0]
-                          : node.icon[ancillaMode ? 1 : 0]
+                          : node.icon[0]
                         : node.icon
                   }
                   alt={typeof node.label === "string" ? node.label : ""}
@@ -913,7 +906,7 @@ export const AddNodePanel = ({ onAddNode }: AddNodePanelProps) => {
                       Array.isArray(node.icon)
                         ? node.type === consts.GateNode
                           ? node.icon[experienceLevel === "explorer" ? 1 : 0]
-                          : node.icon[ancillaMode ? 1 : 0] // Use ancillaMode for others
+                          : node.icon[0]
                         : node.icon
                     }
                     alt={typeof node.label === "string" ? node.label : ""}

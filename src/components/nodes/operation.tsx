@@ -1,11 +1,8 @@
 import { useStore } from "@/config/store";
-import { cn } from "@/lib/utils";
 import React, { memo, useEffect, useState } from "react";
 import { Edge, Handle, Node, Position } from "reactflow";
 import { shallow } from "zustand/shallow";
 import OutputPort from "../utils/outputPort";
-import UncomputePort from "../utils/uncomputePort";
-import AncillaPort from "../utils/ancillaPort";
 import * as consts from "@/constants";
 import { findDuplicateOutputIdentifiers } from "../utils/utils";
 import { AlertCircle } from "lucide-react";
@@ -15,7 +12,6 @@ const selector = (state: {
   selectedNode: Node | null;
   edges: Edge[];
   nodes: Node[];
-  ancillaMode: boolean;
   completionGuaranteed: boolean;
   updateNodeValue: (nodeId: string, field: string, nodeVal: any) => void;
   setNodes: (node: Node) => void;
@@ -24,7 +20,6 @@ const selector = (state: {
   selectedNode: state.selectedNode,
   edges: state.edges,
   nodes: state.nodes,
-  ancillaMode: state.ancillaMode,
   completionGuaranteed: state.completionGuaranteed,
   setNodes: state.setNodes,
   updateNodeValue: state.updateNodeValue,
@@ -38,7 +33,6 @@ export const OperationNode = memo((node: Node) => {
     nodes,
     updateNodeValue,
     setSelectedNode,
-    ancillaMode,
     completionGuaranteed,
   } = useStore(selector, shallow);
 
@@ -48,19 +42,6 @@ export const OperationNode = memo((node: Node) => {
   const [operation, _setOperation] = useState("+");
   const [sizeError, setSizeError] = useState(false);
   const [startsWithDigitError, setStartsWithDigitError] = useState(false);
-
-  const isAncillaConnected = edges.some(
-    (edge) =>
-      edge.target === node.id &&
-      edge.targetHandle === `ancillaHandleOperationInput2${node.id}`,
-  );
-
-  const isDirtyAncillaConnected = edges.some(
-    (edge) =>
-      edge.target === node.id &&
-      edge.targetHandle ===
-        `${consts.dirtyAncillaHandle}OperationInput3${node.id}`,
-  );
 
   const handleYChange = (e, field) => {
     const value = e.target.value;
@@ -119,10 +100,7 @@ export const OperationNode = memo((node: Node) => {
     } else {
       setStartsWithDigitError(false);
     }
-  }, [nodes, node.data.outputIdentifier, node.id, ancillaMode]);
-
-  const baseHeight = 650;
-  const dynamicHeight = baseHeight;
+  }, [nodes, node.data.outputIdentifier, node.id]);
 
   const iconMap = {
     "Quantum Arithmetic Operator": "arithmeticIcon.png",
@@ -204,7 +182,7 @@ export const OperationNode = memo((node: Node) => {
       <div
         className={"w-[320px] bg-white border border-solid shadow-md"}
         style={{
-          height: !ancillaMode ? "375px" : `${dynamicHeight}px`,
+          height: "375px",
           borderColor: remoteHighlightColor
             ? remoteHighlightColor
             : selected
@@ -352,89 +330,6 @@ export const OperationNode = memo((node: Node) => {
                 </div>
               </div>
             )}
-            {ancillaMode && (
-              <div>
-                <div
-                  className="relative p-2 mb-1"
-                  style={{
-                    width: "120px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "flex-start",
-                  }}
-                >
-                  <div
-                    className="absolute inset-0 custom-shape-mirrored"
-                    style={{
-                      backgroundColor: consts.ancillaConstructColor,
-                    }}
-                  />
-
-                  <Handle
-                    type="target"
-                    id={`ancillaHandleOperationInput2${node.id}`}
-                    position={Position.Left}
-                    className={cn(
-                      "z-10 ancilla-port-in w-4 transform rotate-45 -left-[8px]",
-                      isAncillaConnected
-                        ? "!bg-green-100 !border-solid !border-black"
-                        : "!bg-gray-200 !border-dashed !border-black",
-                    )}
-                    style={{
-                      zIndex: 1,
-                      top: "50% !important",
-                      transform: "translateY(-50%) rotate(45deg)",
-                    }}
-                  />
-                  <span
-                    className="text-black text-sm text-center w-full"
-                    style={{ zIndex: 1 }}
-                  >
-                    Ancilla
-                  </span>
-                </div>
-                <div
-                  className="relative p-2"
-                  style={{
-                    width: "120px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "flex-start",
-                  }}
-                >
-                  <div
-                    className="absolute inset-0 custom-shape-mirrored"
-                    style={{
-                      backgroundColor: consts.dirtyConstructColor,
-                    }}
-                  />
-                  <Handle
-                    type="target"
-                    id={`${consts.dirtyAncillaHandle}OperationInput3${node.id}`}
-                    position={Position.Left}
-                    className={cn(
-                      "z-10 ancilla-port-in w-4 transform rotate-45 -left-[8px]",
-                      isDirtyAncillaConnected
-                        ? "!bg-green-100 !border-solid !border-black"
-                        : "!bg-gray-200 !border-dashed !border-black",
-                    )}
-                    style={{
-                      zIndex: 1,
-                      top: "50% !important",
-                      transform: "translateY(-50%) rotate(45deg)",
-                    }}
-                  />
-
-                  <span
-                    className="text-black text-sm text-center w-full"
-                    style={{ zIndex: 1 }}
-                  >
-                    {" "}
-                    Dirty Ancilla
-                  </span>
-                </div>
-              </div>
-            )}
           </div>
         </div>
 
@@ -486,13 +381,6 @@ export const OperationNode = memo((node: Node) => {
             </>
           )}
         </div>
-        {ancillaMode && (
-          <div>
-            <AncillaPort node={node} edges={edges} dirty={false} index={1} />
-            <AncillaPort node={node} edges={edges} dirty={true} index={2} />
-            <UncomputePort node={node} edges={edges} index={3} />
-          </div>
-        )}
       </div>
     </div>
   );

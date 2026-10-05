@@ -122,7 +122,6 @@ import {
 const selector = (state: {
   nodes: Node[];
   edges: Edge[];
-  ancillaMode: boolean;
   experienceLevel: string;
   compact: boolean;
   completionGuaranteed: boolean;
@@ -143,7 +142,6 @@ const selector = (state: {
   updateChildren: (nodeId: string, children: any) => void;
   setNodes: (node: Node) => void;
   setEdges: (edge: Edge) => void;
-  setAncillaMode: (ancillaMode: boolean) => void;
   setCompact: (compact: boolean) => void;
   setCompletionGuaranteed: (completionGuaranteed: boolean) => void;
   setExperienceLevel: (experienceLevel: string) => void;
@@ -176,7 +174,6 @@ const selector = (state: {
   updateChildren: state.updateChildren,
   setNodes: state.setNodes,
   setEdges: state.setEdges,
-  setAncillaMode: state.setAncillaMode,
   setCompact: state.setCompact,
   setCompletionGuaranteed: state.setCompletionGuaranteed,
   setContainsPlaceholder: state.setContainsPlaceholder,
@@ -213,7 +210,6 @@ function App() {
     setTypeError,
     setCompact,
     setExperienceLevel,
-    setAncillaMode,
     setCompletionGuaranteed,
     setSelectedNode,
     setNodes,
@@ -589,8 +585,6 @@ If none apply, return { "algorithms": [] }.
 
     setCompact(newValues.compactVisualization);
     setCompactVisualization(newValues.compactVisualization);
-    //setAncillaMode(newValues.ancillaMode);
-    //setAncillaModelingOn(newValues.ancillaMode);
     setExperienceLevel(newValues.experienceLevel);
     setCompletionGuaranteed(newValues.completionGuaranteed);
     setCollaborationModeOn(newValues.collaborationMode); // passt das?? lieber onToggleCollaborationMode?
@@ -643,7 +637,6 @@ If none apply, return { "algorithms": [] }.
   const [isQunicornOpen, setIsQunicornOpen] = useState(false);
   const [isPromptModalOpen, setIsPromptModalOpen] = useState(false);
   const [stateTest, setStateTest] = useState(1);
-  const [ancillaModelingOn, setAncillaModelingOn] = useState(false);
   const [, setExperienceLevelOn] = useState("explorer");
   const [compactVisualization, setCompactVisualization] = useState(false);
   const [collaborationModeOn, setCollaborationModeOn] = useState(false);
@@ -1318,12 +1311,6 @@ If none apply, return { "algorithms": [] }.
 
   const startTour2 = () => {
     setRunTour(true);
-    setAncillaMode(false);
-    setAncillaModelingOn(false);
-    //updateNodeInternals since ancilla mode changes number of handles
-    nodes.forEach((node) => {
-      updateNodeInternals(node.id);
-    });
     console.log("load tutorial");
     overwriteFlow(tutorial);
     console.log("load toturial");
@@ -2081,12 +2068,6 @@ If none apply, return { "algorithms": [] }.
 
   const startTour = () => {
     setRunTour(true);
-    setAncillaMode(false);
-    setAncillaModelingOn(false);
-    //updateNodeInternals since ancilla mode changes number of handles
-    nodes.forEach((node) => {
-      updateNodeInternals(node.id);
-    });
     console.log("load tutorial");
     console.log("load toturial");
   };
@@ -4087,8 +4068,6 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     setStateTest(1);
   };
 
-  const onToggleAncilla = () => {};
-
   const onToggleCollaborationMode = useCallback(() => {
     const nextMode = !collaborationModeOn;
     setCollaborationModeOn(nextMode);
@@ -4861,7 +4840,6 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
         onSave={handleSave}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        ancillaMode={ancillaModelingOn}
         compactVisualization={compactVisualization}
         completionGuaranteed={completionGuaranteed}
         experienceLevel={experienceLevel}
@@ -5083,7 +5061,6 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
           >
             {isPaletteOpen && (
               <Palette
-                ancillaMode={ancillaModelingOn}
                 onAddNode={addNodeToCanvas}
               />
             )}
@@ -5362,8 +5339,6 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
             <ExperienceModePanel
               expanded={expanded}
               onToggleExpanded={() => setExpanded(!expanded)}
-              ancillaModelingOn={ancillaModelingOn}
-              onToggleAncilla={onToggleAncilla}
               experienceLevel={experienceLevel}
               onExperienceLevelChange={onExperienceLevelChange}
               //onExperienceLevelChange={(event) => { setExperienceLevel(event); setExperienceLevelOn(event); }}

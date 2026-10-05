@@ -17,7 +17,6 @@ const selector = (state: {
   selectedNode: Node | null;
   edges: Edge[];
   nodes: Node[];
-  ancillaMode: boolean;
   updateNodeValue: (nodeId: string, field: string, nodeVal: any) => void;
   setNodes: (node: Node) => void;
   setSelectedNode: (node: Node) => void;
@@ -25,7 +24,6 @@ const selector = (state: {
   selectedNode: state.selectedNode,
   edges: state.edges,
   nodes: state.nodes,
-  ancillaMode: state.ancillaMode,
   setNodes: state.setNodes,
   updateNodeValue: state.updateNodeValue,
   setSelectedNode: state.setSelectedNode,

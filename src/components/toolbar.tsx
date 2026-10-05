@@ -121,7 +121,7 @@ export default function Toolbar({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={onRestore}
+                onClick={onLoadJson}
                 title="Open New Diagram"
                 className="border border-gray-300 hover:bg-gray-200"
               >
@@ -142,14 +142,14 @@ export default function Toolbar({
                 </DropdownMenuTrigger>
 
                 <DropdownMenuContent>
-                  <DropdownMenuItem onClick={uploadDiagram}>
+                  <DropdownMenuItem onClick={onRestore}>
                     <FolderOpen className="h-4 w-4 mr-2" />
                     Open Diagram
                   </DropdownMenuItem>
 
-                  <DropdownMenuItem onClick={onLoadJson}>
+                  <DropdownMenuItem onClick={openPatternSolution}>
                     <FileJson className="h-4 w-4 mr-2" />
-                    Open JSON
+                    Open Pattern Solution
                   </DropdownMenuItem>
 
                   <DropdownMenuItem onClick={openOpenQASM}>
@@ -204,12 +204,12 @@ export default function Toolbar({
                 </DropdownMenuTrigger>
 
                 <DropdownMenuContent>
-                  <DropdownMenuItem onClick={uploadPatternSolution}>
+                  <DropdownMenuItem onClick={uploadDiagram}>
                     <UploadCloud className="h-4 w-4 mr-2" />
                     Upload File
                   </DropdownMenuItem>
 
-                  <DropdownMenuItem onClick={openPatternSolution}>
+                  <DropdownMenuItem onClick={uploadPatternSolution}>
                     <FolderOpen className="h-4 w-4 mr-2" />
                     Upload Pattern Solution
                   </DropdownMenuItem>

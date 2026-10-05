@@ -37,7 +37,6 @@ type HistoryItem = {
 type RFState = {
   nodes: any;
   edges: Edge[];
-  ancillaMode: boolean;
   experienceLevel: string;
   compact: boolean;
   completionGuaranteed: boolean;
@@ -53,7 +52,6 @@ type RFState = {
   setTypeError: (message: string | null) => void;
   setNodes: (node: Node) => void;
   setEdges: (edge: Edge) => void;
-  setAncillaMode: (ancillaMode: boolean) => void;
   setCompletionGuaranteed: (completionGuaranteed: boolean) => void;
   setContainsPlaceholder: (containsPlaceholder: boolean) => void;
   setCompact: (compact: boolean) => void;
@@ -118,7 +116,6 @@ export const useStore = create<RFState>()(
     (set, get) => ({
       nodes: nodesConfig.initialNodes,
       edges: nodesConfig.initialEdges,
-      ancillaMode: false,
       compact: false,
       completionGuaranteed: true,
       experienceLevel: "explorer",
@@ -361,21 +358,6 @@ export const useStore = create<RFState>()(
         });
         console.log("History after update:", get().history);
         console.log("Current historyIndex:", get().historyIndex);
-      },
-      setAncillaMode: (ancillaMode: boolean) => {
-        const currentEdges = get().edges.map((edge) => {
-          // If edge.sourceHandle contains "ancillaHandle", hide it when ancillaMode is true
-          if (edge.sourceHandle?.includes("ancillaHandle")) {
-            return { ...edge, hidden: !ancillaMode };
-          }
-          // Otherwise, ensure edge is not hidden
-          return { ...edge, hidden: false };
-        });
-
-        set({
-          ancillaMode,
-          edges: currentEdges,
-        });
       },
       setExperienceLevel: (experienceLevel: string) => {
         set({
@@ -827,7 +809,6 @@ export const useStore = create<RFState>()(
         };
 
         const currentNodes = get().nodes;
-        const ancillaMode = get().ancillaMode;
         console.log(connection);
         const currentEdges = get().edges;
         const newHistoryItem: HistoryItem = {
@@ -1137,7 +1118,6 @@ export const useStore = create<RFState>()(
             width: 20,
             height: 20,
             color: color,
-            hidden: ancillaMode,
           },
           //label: label
         };
