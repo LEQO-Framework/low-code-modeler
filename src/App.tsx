@@ -19,6 +19,7 @@ import ReactFlow, {
   MarkerType,
   applyNodeChanges,
   NodeChange,
+  XYPosition,
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { v4 as uuidv4 } from "uuid";
@@ -336,6 +337,7 @@ const getClosestRenderedEdgePoint = (
 
 function App() {
   const reactFlowWrapper = React.useRef<any>(null);
+  const nodeDragStartPositions = React.useRef(new Map<string, XYPosition>());
   const [reactFlowInstance, setReactFlowInstance] = React.useState<any>(null);
   const {
     nodes,
@@ -2780,6 +2782,13 @@ If none apply, return { "algorithms": [] }.
     }
   };
 
+  const onNodeDragStart = useCallback(
+    (_event: React.MouseEvent, node: Node) => {
+      nodeDragStartPositions.current.set(node.id, { ...node.position });
+    },
+    [],
+  );
+
   const onNodeDragStop = useCallback(
     /**
      * 
@@ -2802,6 +2811,14 @@ If none apply, return { "algorithms": [] }.
         return;
       }
 
+      const startPosition = nodeDragStartPositions.current.get(node.id);
+      nodeDragStartPositions.current.delete(node.id);
+
+      const hasMoved =
+        startPosition !== undefined &&
+        (startPosition.x !== node.position.x ||
+          startPosition.y !== node.position.y);
+
       const currentNodes: Node[] = useStore.getState().nodes;
       const currentEdges: Edge[] = useStore.getState().edges;
       const nodesById = new Map<string, Node>(
@@ -2812,7 +2829,9 @@ If none apply, return { "algorithms": [] }.
         ? { ...draggedNodeFromStore, ...node }
         : undefined;
 
-      automaticConnections(draggedNode, currentNodes, currentEdges);
+      if (hasMoved) {
+        automaticConnections(draggedNode, currentNodes, currentEdges);
+      }
 
       // drag-to-group for groupNode
       if (node.type !== "groupNode") {
@@ -5756,6 +5775,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
               onNodeClick={(event: React.MouseEvent, node: Node) => {
                 handleClick(event, node);
               }}
+              onNodeDragStart={onNodeDragStart}
               onNodeDrag={onNodeDrag}
               onNodeDragStop={onNodeDragStop}
               onNodesDelete={onNodesDelete} // TODO: weglassen oder onNodesDeleteSync erstellen?
