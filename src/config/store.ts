@@ -2021,12 +2021,10 @@ export const useStore = create<RFState>()(
       },
       undo: () => {
         const { history, historyIndex, nodes, edges, redoStack } = get();
-        if (historyIndex < 0) {
+        if (historyIndex <= 0 || !history[historyIndex]) {
           return;
         }
         const previousHistoryItem = history[historyIndex - 1];
-        console.log("Performing undo:");
-        console.log("Previous History Item:", previousHistoryItem);
         set({
           nodes: previousHistoryItem.nodes,
           edges: previousHistoryItem.edges,
@@ -2059,8 +2057,6 @@ export const useStore = create<RFState>()(
         } else {
           console.warn("Redo is not possible: no further history to redo");
         }
-
-        console.log("Updated state after redo:", get());
       },
     }),
     {
