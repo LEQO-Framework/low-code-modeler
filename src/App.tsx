@@ -6100,9 +6100,10 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
                     </text>
 
                     <text
-                      x={splitPoint.x + 14}
-                      y={splitPoint.y - 12}
-                      fill={splitPreview.canSplit ? "#009035" : "#ff0000"}
+                      x={splitPoint.x}
+                      y={splitPoint.y - 16}
+                      textAnchor="middle"
+                      fill={color}
                       fontSize="12"
                       fontWeight="600"
                       paintOrder="stroke"
