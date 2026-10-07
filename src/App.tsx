@@ -781,7 +781,7 @@ If none apply, return { "algorithms": [] }.
     edgeId: string;
     splitPoint: { x: number; y: number };
     canSplit: boolean;
-    reason: string;
+    reasons: string[];
   } | null>(null);
   const [highlightedEdgeId, setHighlightedEdgeId] = useState<string | null>(
     null,
@@ -4511,19 +4511,19 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
             setSplitPreview(null);
             setHighlightedEdgeId(null);
           } else {
-            const reasons: string[] = [];
+            const splitReasons: string[] = [];
 
             if (!hasOpenInput) {
-              reasons.push(`No open ${sourceAndTargetDomain} Input`);
+              splitReasons.push(`No open ${sourceAndTargetDomain} Input`);
             }
             if (!hasOpenOutput) {
-              reasons.push(`No open ${sourceAndTargetDomain} Output`);
+              splitReasons.push(`No open ${sourceAndTargetDomain} Output`);
             }
             setSplitPreview({
               edgeId: closest.edge.id,
               splitPoint: closest.splitPoint,
-              canSplit: reasons.length === 0,
-              reason: reasons.join("; "),
+              canSplit: splitReasons.length === 0,
+              reasons: splitReasons,
             });
             setHighlightedEdgeId(closest.edge.id);
           }
@@ -6072,6 +6072,9 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
                   y: point.y * viewport.zoom + viewport.y,
                 });
                 const splitPoint = toCanvasPoint(splitPreview.splitPoint);
+                const splitReasons = splitPreview.reasons;
+                const lineHeight = 16;
+                const reasonOffset = splitPreview.canSplit ? 0 : lineHeight * (splitReasons.length - 1);
                 const color = splitPreview.canSplit ? "#009035" : "#ff0000";
 
                 return (
@@ -6101,7 +6104,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
 
                     <text
                       x={splitPoint.x}
-                      y={splitPoint.y - 16}
+                      y={splitPoint.y - lineHeight - reasonOffset}
                       textAnchor="middle"
                       fill={color}
                       fontSize="12"
@@ -6113,7 +6116,15 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
                     >
                       {splitPreview.canSplit
                         ? "Drop to split"
-                        : splitPreview.reason}
+                        : splitReasons.map((reason, index) => (
+                            <tspan
+                              key={reason}
+                              x={splitPoint.x}
+                              dy={index === 0 ? 0 : lineHeight}
+                            >
+                              {reason}
+                            </tspan>
+                          ))}
                     </text>
                   </>
                 );
