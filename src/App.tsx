@@ -6079,11 +6079,26 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
                     <circle
                       cx={splitPoint.x}
                       cy={splitPoint.y}
-                      r={splitPreview.canSplit ? 9 : 7}
+                      r={9}
                       fill="white"
                       stroke={color}
                       strokeWidth={3}
                     />
+
+                    <text
+                      x={splitPoint.x}
+                      y={splitPoint.y + (splitPreview.canSplit ? 6 : 5)}
+                      textAnchor="middle"
+                      fill={color}
+                      fontSize={splitPreview.canSplit ? "14" : "12"}
+                      fontWeight="900"
+                      paintOrder="stroke"
+                      stroke="white"
+                      strokeWidth="2"
+                    >
+                      {splitPreview.canSplit ? "✓" : "✕"}
+                    </text>
+
                     <text
                       x={splitPoint.x + 14}
                       y={splitPoint.y - 12}
