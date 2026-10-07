@@ -373,21 +373,39 @@ function App() {
     updateChildren,
   } = useStore(useShallow(selector));
 
+  /**
+   * Waits until React Flow has measured the newly added node before
+   * running the enabled automatic connection strategies.
+   */
   useEffect(() => {
     if (
-      pendingNodeInitializationId &&
-      nodes.some((node) => node.id === pendingNodeInitializationId)
+      !pendingNodeInitializationId ||
+      !nodes.some((node) => node.id === pendingNodeInitializationId)
     ) {
-      const initializationId = pendingNodeInitializationId;
-      const frame = requestAnimationFrame(() => {
-        completeNodeInitialization(initializationId);
-      });
-
-      return () => cancelAnimationFrame(frame);
+      return undefined;
     }
 
-    return undefined;
-  }, [nodes, pendingNodeInitializationId, completeNodeInitialization]);
+    const initializationId = pendingNodeInitializationId;
+
+    const frame = requestAnimationFrame(() => {
+      const initializedNode = nodes.find(
+        (node) => node.id === initializationId,
+      );
+
+      if (
+        !initializedNode ||
+        initializedNode.width == null ||
+        initializedNode.height == null
+      ) {
+        return;
+      }
+
+      automaticConnections(initializedNode, nodes, edges);
+      completeNodeInitialization(initializationId);
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [nodes, edges, pendingNodeInitializationId, completeNodeInitialization]);
 
   // TODO: don't use if no collab mode
 
@@ -6074,7 +6092,9 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
                 const splitPoint = toCanvasPoint(splitPreview.splitPoint);
                 const splitReasons = splitPreview.reasons;
                 const lineHeight = 16;
-                const reasonOffset = splitPreview.canSplit ? 0 : lineHeight * (splitReasons.length - 1);
+                const reasonOffset = splitPreview.canSplit
+                  ? 0
+                  : lineHeight * (splitReasons.length - 1);
                 const color = splitPreview.canSplit ? "#009035" : "#ff0000";
 
                 return (
