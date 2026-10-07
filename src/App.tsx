@@ -27,7 +27,7 @@ import { nodesMap, edgesMap, ydoc, awareness, yProvider } from "@/yjs";
 import { ContextMenu, CustomPanel, Palette } from "./components";
 import Toolbar from "./components/toolbar";
 import { nodesConfig, tutorial } from "./config/site";
-import { MAX_HISTORY_ENTRIES, useStore } from "./config/store";
+import { appendHistory, useStore } from "./config/store";
 import { useShallow } from "zustand/react/shallow";
 import { findNodeDefinition, handleDragOver } from "./lib/utils";
 import useKeyBindings from "./hooks/useKeyBindings";
@@ -2527,18 +2527,13 @@ If none apply, return { "algorithms": [] }.
    * @returns A function that commits the snapshot to the history.
    */
   const prepareHistory = (historyNodes: Node[], historyEdges: Edge[]) => {
-    const historyIndex = useStore.getState().historyIndex;
     const historyItem = {
       nodes: structuredClone(historyNodes),
       edges: structuredClone(historyEdges),
     };
     return () =>
       useStore.setState((state) => ({
-        history: [
-          ...state.history.slice(0, historyIndex + 1),
-          historyItem,
-        ].slice(-MAX_HISTORY_ENTRIES),
-        historyIndex: Math.min(historyIndex + 1, MAX_HISTORY_ENTRIES - 1),
+        ...appendHistory(state.history, state.historyIndex, historyItem),
         redoStack: [],
       }));
   };
