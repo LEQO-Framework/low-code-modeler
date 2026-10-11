@@ -931,6 +931,8 @@ const getPropertyExplanations = (
   return filterPropertyExplanationGroup(explanations, experienceLevel);
 };
 
+
+
 /**
  * Returns the input/output explanation for the currently selected node.
  *
@@ -1279,7 +1281,24 @@ export const TextPanel = () => {
     Object.keys(propertyExplanations.optional ?? {}).length > 0;
 
   const inputOutputExplanations = getInputOutputExplanations(selectedNode);
+  function updateField(field: string, value: any) {
+    if (!selectedNode) return;
+    selectedNode.data[field] = value;
+    updateNodeValue(selectedNode.id, field, value);
+  }
 
+  const [idCopied, setIdCopied] = useState(false);
+
+  const copyNodeId = async () => {
+    if (!selectedNode) return;
+    try {
+      await navigator.clipboard.writeText(selectedNode.id);
+      setIdCopied(true);
+      setTimeout(() => setIdCopied(false), 1500);
+    } catch {
+      // Clipboard access can be denied; the id stays selectable.
+    }
+  };
   /**
    * When a different node is selected, always
    * start on the Information tab.
@@ -1559,6 +1578,31 @@ export const TextPanel = () => {
             {/* Information Tab */}
             {activeTab === "information" && (
               <div role="tabpanel" className="p-2">
+                <label
+                    className="block text-sm font-medium text-start text-gray-700"
+                    htmlFor="nodeId"
+                  >
+                    Node ID
+                  </label>
+                  <div className="mt-1 flex gap-2 items-center">
+                    <input
+                      id="nodeId"
+                      type="text"
+                      readOnly
+                      value={selectedNode.id}
+                      onFocus={(e) => e.target.select()}
+                      className="border border-gray-300 rounded-md p-2 bg-gray-50 text-gray-700 font-mono text-xs w-full min-w-0"
+                    />
+                    <button
+                      type="button"
+                      onClick={copyNodeId}
+                      className="text-xs text-blue-600 underline whitespace-nowrap"
+                    >
+                      {idCopied ? "Copied" : "Copy"}
+                    </button>
+                  </div>
+            
+
                 <div className="mt-3">
                   <label className="block text-sm font-medium text-start text-gray-700">
                     Explanation
