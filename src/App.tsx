@@ -98,6 +98,9 @@ import PromptFlowModal from "./components/modals/promptFlowModal";
 import ShortcutHelpModal from "./components/modals/shortcutHelpModal";
 import { openQasmToFlow } from "./qasmConverter";
 import { TestingModal } from "./components/modals/testingModal";
+import { validateModelStructure } from "./lib/modelValidation";
+import { validateFileContents } from "./lib/fileValidation";
+import { UNARY_OPERATORS } from "./lib/nodeSpecs";
 import {
   amplitude_encoding,
   angle_encoding,
@@ -1397,16 +1400,29 @@ If none apply, return { "algorithms": [] }.
         "CRY(θ)",
         "CRZ(θ)",
         "CU(θ,φ,λ,γ)",
+        "CU",
       ];
       const threeQubitGates = ["Toffoli", "CSWAP"];
       const minMaxOperators = ["Min", "Max"];
+      const isOperatorNode =
+        node.type === "quantumOperatorNode" ||
+        node.type === "classicalOperatorNode";
+
+      if (
+        isOperatorNode &&
+        UNARY_OPERATORS.includes(operator) &&
+        inputCount !== 1
+      ) {
+        errors.push({
+          nodeId: node.id,
+          nodeType: node.type,
+          description: `Node "${node.id}" with label "${label}" and operator "${operator}" requires exactly 1 input, but got ${inputCount}.`,
+        });
+      }
 
       if (
         twoQubitGates.includes(label) ||
-        ((node.type === "quantumOperatorNode" ||
-          node.type === "classicalOperatorNode") &&
-          !minMaxOperators.includes(operator) &&
-          operator !== "INVERT")
+        (isOperatorNode && !UNARY_OPERATORS.includes(operator))
       ) {
         if (inputCount !== 2) {
           errors.push({
@@ -1513,14 +1529,8 @@ If none apply, return { "algorithms": [] }.
           }
         }
 
+        // The size of Prepare State is checked by validateModelStructure.
         if (node.data.label === "Prepare State") {
-          if (!node.data.size) {
-            errors.push({
-              nodeId: node.id,
-              nodeType: node.type,
-              description: `Node "${node.id}" has no quantum register size specified.`,
-            });
-          }
           if (
             node.data.quantumStateName === "Custom State" &&
             !node.data.implementation
@@ -1708,8 +1718,13 @@ If none apply, return { "algorithms": [] }.
         }
       }
 
-      if (node.data?.label === "QFT" || node.type === "qftNode") {
-        const qubitCount = parseInt(node.data?.numberOutputs || "3");
+      if (
+        node.data?.label === "QFT" ||
+        node.type === "qftNode" ||
+        node.type === "inverseQftNode"
+      ) {
+        // the QFT nodes default to a single qubit (see nodes/qft.tsx)
+        const qubitCount = parseInt(node.data?.numberOutputs || "1");
 
         for (let i = 0; i < qubitCount; i++) {
           const handleId = `quantumHandleQFTInput${i}${node.id}`;
@@ -1728,7 +1743,7 @@ If none apply, return { "algorithms": [] }.
         }
 
         for (let i = 0; i < qubitCount; i++) {
-          const handleId = `qftOut${i}${node.id}`;
+          const handleId = `quantumHandleQFTOutput${i}${node.id}`;
 
           const isUsed = flow.edges?.some((e) => e.sourceHandle === handleId);
 
@@ -1744,7 +1759,7 @@ If none apply, return { "algorithms": [] }.
 
       // Universal Oracle Validation
       if (
-        node.type === "oracleNode" ||
+        node.type === "universal-oracle" ||
         node.data?.label === "Universal Oracle"
       ) {
         const connectedInput = connectedSources.length > 0;
@@ -1906,9 +1921,14 @@ If none apply, return { "algorithms": [] }.
           });
         }
 
-        const iterations = Number(node.data?.iterations);
+        const rawIterations = node.data?.numIterations ?? node.data?.iterations;
+        const iterations = Number(rawIterations);
 
-        if (iterations !== undefined && iterations <= 0) {
+        if (
+          rawIterations !== undefined &&
+          rawIterations !== "" &&
+          !(iterations > 0)
+        ) {
           errors.push({
             nodeId: node.id,
             nodeType: node.type,
@@ -2032,6 +2052,11 @@ If none apply, return { "algorithms": [] }.
       });
     }
 
+    // Schema-based checks for data, parameters and flow (lib/modelValidation.ts)
+    const structural = validateModelStructure(flow);
+    errors.push(...structural.errors);
+    warnings.push(...structural.warnings);
+
     return { warnings, errors };
   }
 
@@ -2060,6 +2085,15 @@ If none apply, return { "algorithms": [] }.
 
     setValidationResult(result);
     setIsValidationOpen(true);
+
+    // File contents have to be downloaded: add their results when available.
+    validateFileContents(flow).then((files) => {
+      if (files.errors.length === 0 && files.warnings.length === 0) return;
+      setValidationResult({
+        errors: [...result.errors, ...files.errors],
+        warnings: [...result.warnings, ...files.warnings],
+      });
+    });
   };
 
   const startTour3 = () => {
@@ -4805,6 +4839,8 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
           open={isTestingModalOpen}
           onClose={() => setIsTestingModalOpen(false)}
           onAddFlowToCanvas={loadFlow}
+          validateModel={validateFlow}
+          backendEndpoint={lowcodeBackendEndpoint}
         />
       }
       {
@@ -5059,11 +5095,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
           <div
             className={`transition-all duration-300 ${isPaletteOpen ? "w-[300px] lg:w-[350px]" : "w-0 overflow-hidden"}`}
           >
-            {isPaletteOpen && (
-              <Palette
-                onAddNode={addNodeToCanvas}
-              />
-            )}
+            {isPaletteOpen && <Palette onAddNode={addNodeToCanvas} />}
           </div>
 
           {/* Button zum Einklappen  */}
