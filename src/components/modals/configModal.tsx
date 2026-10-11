@@ -6,12 +6,16 @@ interface ConfigModalProps {
   experienceLevel: string;
   compactVisualization: boolean;
   completionGuaranteed: boolean;
+  autoConnectOnEdgeDrop: boolean;
+  autoConnectOnSameLine: boolean;
   collaborationMode: boolean;
   onClose: () => void;
   onSave: (values: {
     experienceLevel: string;
     compactVisualization: boolean;
     completionGuaranteed: boolean;
+    autoConnectOnEdgeDrop: boolean;
+    autoConnectOnSameLine: boolean;
     tempCamundaEndpoint: string;
     tempNisqAnalyzerEndpoint: string;
     tempQunicornEndpoint: string;
@@ -56,6 +60,8 @@ export const ConfigModal = ({
   experienceLevel,
   compactVisualization,
   completionGuaranteed,
+  autoConnectOnEdgeDrop,
+  autoConnectOnSameLine,
   collaborationMode,
   tempCamundaEndpoint,
   tempNisqAnalyzerEndpoint,
@@ -78,8 +84,11 @@ export const ConfigModal = ({
     useState(completionGuaranteed);
   const [localCompactVisualization, setLocalCompactVisualization] =
     useState(compactVisualization);
-  const [localCollaborationMode, setLocalCollaborationMode] =
-    useState(collaborationMode);
+  const [localAutoConnectOnEdgeDrop, setLocalAutoConnectOnEdgeDrop] =
+    useState(autoConnectOnEdgeDrop);
+  const [localAutoConnectOnSameLine, setLocalAutoConnectOnSameLine] =
+    useState(autoConnectOnSameLine);
+  const [localCollaborationMode, setLocalCollaborationMode] = useState(collaborationMode);
   const [localUserName, setLocalUserName] = useState(userName);
 
   const [localNisq, setLocalNisq] = useState(tempNisqAnalyzerEndpoint);
@@ -106,6 +115,8 @@ export const ConfigModal = ({
       setLocalExperienceLevel(experienceLevel);
       setLocalCompletionGuaranteed(completionGuaranteed);
       setLocalCompactVisualization(compactVisualization);
+      setLocalAutoConnectOnEdgeDrop(autoConnectOnEdgeDrop);
+      setLocalAutoConnectOnSameLine(autoConnectOnSameLine);
       setLocalCollaborationMode(collaborationMode);
       setLocalUserName(userName);
       setLocalOpenAIToken(tempOpenAIToken);
@@ -131,6 +142,8 @@ export const ConfigModal = ({
       tempCamundaEndpoint: localCamunda,
       compactVisualization: localCompactVisualization,
       completionGuaranteed: localCompletionGuaranteed,
+      autoConnectOnEdgeDrop: localAutoConnectOnEdgeDrop,
+      autoConnectOnSameLine: localAutoConnectOnSameLine,
       tempNisqAnalyzerEndpoint: localNisq,
       tempQunicornEndpoint: localQunicorn,
       tempLowcodeBackendEndpoint: localLowcode,
@@ -221,6 +234,44 @@ export const ConfigModal = ({
                       onChange={(e) => setLocalUserName(e.target.value)}
                       disabled={!localCollaborationMode}
                     />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            <h3 className="labels mt-4">Automatic Connections</h3>
+            <table className="config-table">
+              <tbody>
+                <tr>
+                  <td align="right">Connect dropped nodes to edges:</td>
+                  <td align="left">
+                    <input
+                      type="checkbox"
+                      checked={localAutoConnectOnEdgeDrop}
+                      onChange={(e) =>
+                        setLocalAutoConnectOnEdgeDrop(e.target.checked)
+                      }
+                      className="w-4 h-4"
+                    />
+                    <span className="ml-2">
+                      {localAutoConnectOnEdgeDrop ? "On" : "Off"}
+                    </span>
+                  </td>
+                </tr>
+                <tr>
+                  <td align="right">Connect nodes on the same line:</td>
+                  <td align="left">
+                    <input
+                      type="checkbox"
+                      checked={localAutoConnectOnSameLine}
+                      onChange={(e) =>
+                        setLocalAutoConnectOnSameLine(e.target.checked)
+                      }
+                      className="w-4 h-4"
+                    />
+                    <span className="ml-2">
+                      {localAutoConnectOnSameLine ? "On" : "Off"}
+                    </span>
                   </td>
                 </tr>
               </tbody>
