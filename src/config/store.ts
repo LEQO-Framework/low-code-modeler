@@ -189,7 +189,7 @@ export const useStore = create<RFState>()(
       pendingNodeInitializationId: null,
       isReplayingHistory: false,
       autoConnectOnEdgeDrop: true,
-      autoConnectOnSameLine: true,
+      autoConnectOnSameLine: false,
       containsPlaceholder: false,
       typeError: null,
       userTemplates: [],
