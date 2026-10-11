@@ -550,14 +550,20 @@ h1 {
 .react-flow__connection-path {
   stroke: #0caa67 !important;
 }
-#react-flow__arrowclosed polyline {
-  fill: #0caa67 !important;
-  stroke: #0caa67 !important;
-}
 .react-flow__edge-path {
   cursor: pointer;
   stroke-width: 2px !important;
   stroke: #0caa67;
+}
+.react-flow__edge.split-highlighted .react-flow__edge-path {
+  stroke: #0caa67 !important;
+  stroke-width: 7px !important;
+  filter: drop-shadow(0 0 3px #0a613a);
+}
+.react-flow__edge.split-highlighted-invalid .react-flow__edge-path {
+  stroke: #e64427 !important;
+  stroke-width: 7px !important;
+  filter: drop-shadow(0 0 3px #6b1e10);
 }
 .circle-port.react-flow__handle-connecting:hover,
 .port-add.react-flow__handle-connecting:hover {

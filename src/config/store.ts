@@ -34,6 +34,38 @@ type HistoryItem = {
   edges: Edge[];
 };
 
+export const MAX_HISTORY_ENTRIES = 100;
+
+/**
+ * Adds a new state to the undo history.
+ * Detects unchanged states based on the relevant node and edge data
+ * and updates the existing history entry instead of adding a duplicate.
+ */
+export const appendHistory = (
+  history: HistoryItem[],
+  historyIndex: number,
+  item: HistoryItem,
+) => {
+  const previousItem = history[historyIndex];
+  if (
+    previousItem &&
+    JSON.stringify(getMeaningfulHistoryData(previousItem)) ===
+      JSON.stringify(getMeaningfulHistoryData(item))
+  ) {
+    const nextHistory = [...history];
+    [...history][historyIndex] = item;
+
+    return {
+      history: nextHistory,
+      historyIndex,
+    };
+  }
+  const nextHistory = [...history.slice(0, historyIndex + 1), item].slice(
+    -MAX_HISTORY_ENTRIES,
+  );
+  return { history: nextHistory, historyIndex: nextHistory.length - 1 };
+};
+
 type RFState = {
   nodes: any;
   edges: Edge[];
@@ -44,6 +76,12 @@ type RFState = {
   selectedNode: Node | null;
   history: HistoryItem[];
   historyIndex: number;
+  redoStack: HistoryItem[];
+  dragSnapshot: HistoryItem | null;
+  pendingNodeInitializationId: string | null;
+  isReplayingHistory: boolean;
+  autoConnectOnEdgeDrop: boolean;
+  autoConnectOnSameLine: boolean;
   typeError: string | null;
   userTemplates: Template[];
   domainProfile: string;
@@ -51,6 +89,7 @@ type RFState = {
   setDomainProfile: (domainProfile: string) => void;
   setTypeError: (message: string | null) => void;
   setNodes: (node: Node) => void;
+  completeNodeInitialization: (nodeId: string) => void;
   setEdges: (edge: Edge) => void;
   setCompletionGuaranteed: (completionGuaranteed: boolean) => void;
   setContainsPlaceholder: (containsPlaceholder: boolean) => void;
@@ -60,12 +99,15 @@ type RFState = {
   addUserTemplate: (template: Template) => void;
   setUserTemplates: (newTemplates: Template[]) => void;
   setAllDomainProfiles: (newProfiles: DomainProfile[]) => void;
+  setAutoConnectOnEdgeDrop: (enabled: boolean) => void;
+  setAutoConnectOnSameLine: (enabled: boolean) => void;
   onNodesChange: OnNodesChange;
   onEdgesChange: OnEdgesChange;
   onConnect: OnConnect;
   onConnectEnd: OnConnectEnd;
   updateNodeLabel: (nodeId: string, nodeVal: string) => void;
   updateNodeValue: (nodeId: string, identifier, nodeVal: any) => void;
+  updateNodeValues: (nodeId: string, values: Record<string, any>) => void;
   setSelectedNode: (node: Node | null) => void;
   updateParent: (nodeId: string, parentId: string, position: any) => void;
   updateChildren: (nodeId: string, childIds: string[]) => void;
@@ -110,6 +152,26 @@ const resolveHandleOwnerId = (
   return owner ? owner.id : fallbackNodeId;
 };
 
+function getMeaningfulHistoryData(item) {
+  if (!item) return null;
+  return {
+    nodes: item.nodes.map((node) => ({
+      id: node.id,
+      position: {
+        x: node.position.x,
+        y: node.position.y,
+      },
+    })),
+
+    edges: item.edges.map((edge) => ({
+      source: edge.source,
+      sourceHandle: edge.sourceHandle,
+      target: edge.target,
+      targetHandle: edge.targetHandle,
+    })),
+  };
+}
+
 // Zustand store with undo/redo logic
 export const useStore = create<RFState>()(
   persist(
@@ -122,6 +184,12 @@ export const useStore = create<RFState>()(
       selectedNode: null,
       history: [],
       historyIndex: -1,
+      redoStack: [],
+      dragSnapshot: null,
+      pendingNodeInitializationId: null,
+      isReplayingHistory: false,
+      autoConnectOnEdgeDrop: true,
+      autoConnectOnSameLine: false,
       containsPlaceholder: false,
       typeError: null,
       userTemplates: [],
@@ -172,14 +240,10 @@ export const useStore = create<RFState>()(
         const currentNodes = get().nodes;
         const currentEdges = get().edges;
         const newHistoryItem: HistoryItem = {
-          nodes: [...currentNodes], // Copy the nodes array to avoid mutation
-          edges: [...currentEdges], // Copy the edges array to avoid mutation
+          nodes: structuredClone(currentNodes),
+          edges: structuredClone(currentEdges),
         };
 
-        console.log("Updating history (setNodes):");
-        console.log("Current Nodes:", currentNodes);
-        console.log("Current Edges:", currentEdges);
-        console.log("New History Item:", newHistoryItem);
         const uniqueIdentifier = `q${Math.floor(100000 + Math.random() * 900000)}`;
         node.data.identifiers = [uniqueIdentifier];
         console.log(node);
@@ -320,27 +384,33 @@ export const useStore = create<RFState>()(
         set({
           nodes: [...currentNodes, node],
           edges: currentEdges,
-          history: [
-            ...get().history.slice(0, get().historyIndex + 1),
-            newHistoryItem,
-          ],
-          historyIndex: get().historyIndex + 1,
+          ...appendHistory(get().history, get().historyIndex, newHistoryItem),
+          redoStack: [],
+          pendingNodeInitializationId: node.id,
         });
         console.log("History after update:", get().history);
         console.log("Current historyIndex:", get().historyIndex);
         console.log(node);
       },
 
+      completeNodeInitialization: (nodeId: string) => {
+        set((state) =>
+          state.pendingNodeInitializationId === nodeId
+            ? { pendingNodeInitializationId: null }
+            : state,
+        );
+      },
+
       setEdges: (edge: Edge) => {
         const currentNodes = get().nodes;
         const currentEdges = get().edges;
+        const newHistoryItem: HistoryItem = {
+          nodes: structuredClone(currentNodes),
+          edges: structuredClone(currentEdges),
+        };
         for (let edge of currentEdges) {
           edge.type = "quantumEdge";
         }
-        const newHistoryItem: HistoryItem = {
-          nodes: [...currentNodes], // Copy the nodes array to avoid mutation
-          edges: [...currentEdges], // Copy the edges array to avoid mutation
-        };
 
         console.log("Updating history (setEdges):");
         console.log("Current Nodes:", currentNodes);
@@ -350,11 +420,8 @@ export const useStore = create<RFState>()(
         set({
           nodes: currentNodes,
           edges: [...currentEdges, edge],
-          history: [
-            ...get().history.slice(0, get().historyIndex + 1),
-            newHistoryItem,
-          ],
-          historyIndex: get().historyIndex + 1,
+          ...appendHistory(get().history, get().historyIndex, newHistoryItem),
+          redoStack: [],
         });
         console.log("History after update:", get().history);
         console.log("Current historyIndex:", get().historyIndex);
@@ -455,8 +522,8 @@ export const useStore = create<RFState>()(
         const currentNodes = get().nodes;
         const currentEdges = get().edges;
         const newHistoryItem: HistoryItem = {
-          nodes: [...currentNodes], // Copy the nodes array to avoid mutation
-          edges: newEdges, // Copy the edges array to avoid mutation
+          nodes: structuredClone(currentNodes),
+          edges: structuredClone(currentEdges),
         };
 
         console.log("Updating history (setEdges):");
@@ -467,11 +534,8 @@ export const useStore = create<RFState>()(
         set({
           nodes: currentNodes,
           edges: newEdges,
-          history: [
-            ...get().history.slice(0, get().historyIndex + 1),
-            newHistoryItem,
-          ],
-          historyIndex: get().historyIndex + 1,
+          ...appendHistory(get().history, get().historyIndex, newHistoryItem),
+          redoStack: [],
         });
         console.log("History after update:", get().history);
         console.log("Current historyIndex:", get().historyIndex);
@@ -498,9 +562,40 @@ export const useStore = create<RFState>()(
         console.log("after setting templates", get().userTemplates);
       },
 
+      setAutoConnectOnEdgeDrop: (enabled: boolean) => {
+        set({ autoConnectOnEdgeDrop: enabled });
+      },
+
+      setAutoConnectOnSameLine: (enabled: boolean) => {
+        set({ autoConnectOnSameLine: enabled });
+      },
+
       onNodesChange: (changes: NodeChange[]) => {
-        const currentNodes = applyNodeChanges(changes, get().nodes);
+        const state = get();
+        const currentNodes = applyNodeChanges(changes, state.nodes);
         const currentEdges = get().edges;
+        if (state.isReplayingHistory) {
+          set({
+            nodes: currentNodes,
+            edges: currentEdges,
+            dragSnapshot: null,
+          });
+          return;
+        }
+        const hasDraggingPosition = changes.some(
+          (change) => change.type === "position" && change.dragging,
+        );
+        const hasDragEnd = changes.some(
+          (change) => change.type === "position" && change.dragging === false,
+        );
+        const dragSnapshot =
+          state.dragSnapshot ??
+          (hasDraggingPosition
+            ? {
+                nodes: structuredClone(state.nodes),
+                edges: structuredClone(currentEdges),
+              }
+            : null);
         console.log(currentNodes);
         const newHistoryItem: HistoryItem = {
           nodes: [...get().nodes], // Copy the nodes array to avoid mutation
@@ -509,20 +604,28 @@ export const useStore = create<RFState>()(
         console.log(changes);
         // Avoid unnecessary history updates if there are no changes
         const validChanges = changes.filter((change) => {
-          if (
-            (change.type === "position" && !change.dragging) ||
-            change.type === "select"
-          ) {
-            console.log("Ignoring position change as dragging is false");
-            return false; // Ignore position change when not dragging
+          if (change.type === "position" || change.type === "select") {
+            return false; // Position history is committed once we end dragging
           }
           return true; // Keep other changes
         });
 
         if (validChanges.length === 0) {
+          if (dragSnapshot && hasDragEnd) {
+            set({
+              nodes: currentNodes,
+              edges: currentEdges,
+              ...appendHistory(state.history, state.historyIndex, dragSnapshot),
+              redoStack: [],
+              dragSnapshot: null,
+            });
+            return;
+          }
+
           set({
             nodes: currentNodes,
             edges: currentEdges,
+            dragSnapshot,
           });
 
           console.log("Applied non-history node changes.");
@@ -538,22 +641,16 @@ export const useStore = create<RFState>()(
             selectedNode: null,
             nodes: currentNodes,
             edges: currentEdges,
-            history: [
-              ...get().history.slice(0, get().historyIndex + 1),
-              newHistoryItem,
-            ],
-            historyIndex: get().historyIndex + 1,
+            ...appendHistory(get().history, get().historyIndex, newHistoryItem),
+            redoStack: [],
           });
         } else {
           set({
             selectedNode: null,
             nodes: currentNodes,
             edges: currentEdges,
-            history: [
-              ...get().history.slice(0, get().historyIndex + 1),
-              newHistoryItem,
-            ],
-            historyIndex: get().historyIndex + 1,
+            ...appendHistory(get().history, get().historyIndex, newHistoryItem),
+            redoStack: [],
           });
         }
         console.log("History after update:", get().history);
@@ -561,8 +658,9 @@ export const useStore = create<RFState>()(
       },
 
       onEdgesChange: (changes: EdgeChange[]) => {
-        const currentNodes = get().nodes;
-        const currentEdges = get().edges;
+        const state = get();
+        const currentNodes = state.nodes;
+        const currentEdges = state.edges;
 
         let updatedNodes = [...currentNodes];
         changes.forEach((change) => {
@@ -632,9 +730,16 @@ export const useStore = create<RFState>()(
         });
 
         const updatedEdges = applyEdgeChanges(changes, get().edges);
+        if (state.isReplayingHistory) {
+          set({
+            nodes: updatedNodes,
+            edges: updatedEdges,
+          });
+          return;
+        }
         const newHistoryItem: HistoryItem = {
-          nodes: updatedNodes, // Copy the nodes array to avoid mutation
-          edges: updatedEdges, // Copy the edges array to avoid mutation
+          nodes: structuredClone(currentNodes),
+          edges: structuredClone(currentEdges),
         };
 
         console.log(changes);
@@ -646,11 +751,8 @@ export const useStore = create<RFState>()(
         set({
           nodes: updatedNodes,
           edges: updatedEdges,
-          history: [
-            ...get().history.slice(0, get().historyIndex + 1),
-            newHistoryItem,
-          ],
-          historyIndex: get().historyIndex + 1,
+          ...appendHistory(get().history, get().historyIndex, newHistoryItem),
+          redoStack: [],
         });
         console.log("History after update:", get().history);
         console.log("Current historyIndex:", get().historyIndex);
@@ -812,8 +914,8 @@ export const useStore = create<RFState>()(
         console.log(connection);
         const currentEdges = get().edges;
         const newHistoryItem: HistoryItem = {
-          nodes: [...currentNodes], // Copy the nodes array to avoid mutation
-          edges: [...get().edges], // Copy the edges array to avoid mutation
+          nodes: structuredClone(currentNodes),
+          edges: structuredClone(get().edges),
         };
         console.log(currentNodes);
         let type = "classicalEdge";
@@ -1119,7 +1221,7 @@ export const useStore = create<RFState>()(
             height: 20,
             color: color,
           },
-          //label: label
+          redoStack: [],
         };
 
         console.log("Updating history (onConnect):");
@@ -1519,22 +1621,20 @@ export const useStore = create<RFState>()(
             return {
               nodes: updatedNodes,
               edges: [edge, ...currentEdges],
-              history: [
-                ...get().history.slice(0, get().historyIndex + 1),
+              ...appendHistory(
+                get().history,
+                get().historyIndex,
                 newHistoryItem,
-              ],
-              historyIndex: get().historyIndex + 1,
+              ),
+              redoStack: [],
             };
           });
         } else {
           set({
             nodes: currentNodes,
             edges: [...currentEdges],
-            history: [
-              ...get().history.slice(0, get().historyIndex + 1),
-              newHistoryItem,
-            ],
-            historyIndex: get().historyIndex + 1,
+            ...appendHistory(get().history, get().historyIndex, newHistoryItem),
+            redoStack: [],
           });
         }
         console.log("History after update:", get().history);
@@ -1549,6 +1649,12 @@ export const useStore = create<RFState>()(
       },
       updateNodeLabel: (nodeId: string, nodeVal: string) => {
         console.log("label");
+        const previousNodes = get().nodes;
+        const currentEdges = get().edges;
+        const newHistoryItem: HistoryItem = {
+          nodes: structuredClone(previousNodes),
+          edges: structuredClone(currentEdges),
+        };
         const currentNodes = get().nodes.map((node) => {
           if (node.id === nodeId) {
             node.data = { ...node.data, label: nodeVal };
@@ -1557,25 +1663,11 @@ export const useStore = create<RFState>()(
           return node;
         });
 
-        const currentEdges = get().edges;
-        const newHistoryItem: HistoryItem = {
-          nodes: [...get().nodes], // Copy the nodes array to avoid mutation
-          edges: [...currentEdges], // Copy the edges array to avoid mutation
-        };
-
-        console.log("Updating history (updateNodeLabel):");
-        console.log("Current Nodes:", get().nodes);
-        console.log("Current Edges:", currentEdges);
-        console.log("New History Item:", newHistoryItem);
-
         set({
           nodes: currentNodes,
           edges: currentEdges,
-          history: [
-            ...get().history.slice(0, get().historyIndex + 1),
-            newHistoryItem,
-          ],
-          historyIndex: get().historyIndex + 1,
+          ...appendHistory(get().history, get().historyIndex, newHistoryItem),
+          redoStack: [],
         });
         console.log("History after update:", get().history);
         console.log("Current historyIndex:", get().historyIndex);
@@ -1609,6 +1701,13 @@ export const useStore = create<RFState>()(
 
         set((state) => {
           const { nodes, edges } = state;
+          const newHistoryItem: HistoryItem = {
+            nodes: structuredClone(nodes),
+            edges: structuredClone(edges),
+          };
+          const shouldRecordHistory =
+            !state.isReplayingHistory &&
+            state.pendingNodeInitializationId !== nodeId;
           let updatedNodes = [...nodes];
           let sourceIdentifier = 0;
           console.log(sourceIdentifier);
@@ -1784,11 +1883,10 @@ export const useStore = create<RFState>()(
           return {
             nodes: updatedNodes,
             edges: edges,
-            history: [
-              ...state.history.slice(0, state.historyIndex + 1),
-              { nodes: [...updatedNodes], edges: [...edges] },
-            ],
-            historyIndex: state.historyIndex + 1,
+            ...(shouldRecordHistory
+              ? appendHistory(state.history, state.historyIndex, newHistoryItem)
+              : {}),
+            redoStack: shouldRecordHistory ? [] : state.redoStack,
           };
         });
         console.log("History after update:", get().history);
@@ -1796,12 +1894,42 @@ export const useStore = create<RFState>()(
 
         console.log("History updated successfully.");
       },
+      updateNodeValues: (nodeId: string, values: Record<string, any>) => {
+        set((state) => {
+          const { nodes, edges } = state;
+          const shouldRecordHistory =
+            !state.isReplayingHistory &&
+            state.pendingNodeInitializationId !== nodeId;
+          const newHistoryItem: HistoryItem = {
+            nodes: structuredClone(nodes),
+            edges: structuredClone(edges),
+          };
+          const updatedNodes = nodes.map((node) =>
+            node.id === nodeId
+              ? { ...node, data: { ...node.data, ...values } }
+              : node,
+          );
+
+          return {
+            nodes: updatedNodes,
+            edges,
+            ...(shouldRecordHistory
+              ? appendHistory(state.history, state.historyIndex, newHistoryItem)
+              : {}),
+            redoStack: shouldRecordHistory ? [] : state.redoStack,
+          };
+        });
+      },
       updateParent: (nodeId: string, parentId: string, position: any) => {
         console.log("Updating parent value for:", nodeId);
         console.log("Identifier:", parentId);
 
         set((state) => {
           const { nodes, edges } = state;
+          const newHistoryItem: HistoryItem = {
+            nodes: structuredClone(nodes),
+            edges: structuredClone(edges),
+          };
           let updatedNodes = [...nodes];
           let sourceIdentifier = 0;
           console.log(sourceIdentifier);
@@ -1830,11 +1958,8 @@ export const useStore = create<RFState>()(
           return {
             nodes: updatedNodes,
             edges: edges,
-            history: [
-              ...state.history.slice(0, state.historyIndex + 1),
-              { nodes: [...updatedNodes], edges: [...edges] },
-            ],
-            historyIndex: state.historyIndex + 1,
+            ...appendHistory(state.history, state.historyIndex, newHistoryItem),
+            redoStack: [],
           };
         });
 
@@ -1845,6 +1970,10 @@ export const useStore = create<RFState>()(
 
         set((state) => {
           const { nodes, edges } = state;
+          const newHistoryItem: HistoryItem = {
+            nodes: structuredClone(nodes),
+            edges: structuredClone(edges),
+          };
           let updatedNodes = [...nodes];
 
           // Update the node's own properties
@@ -1885,46 +2014,49 @@ export const useStore = create<RFState>()(
           return {
             nodes: updatedNodes,
             edges: edges,
-            history: [
-              ...state.history.slice(0, state.historyIndex + 1),
-              { nodes: [...nodes], edges: [...edges] },
-            ],
-            historyIndex: state.historyIndex + 1,
+            ...appendHistory(state.history, state.historyIndex, newHistoryItem),
+            redoStack: [],
           };
         });
       },
       undo: () => {
-        const historyIndex = get().historyIndex;
-        if (historyIndex > 0) {
-          const previousHistoryItem = get().history[historyIndex - 1];
-          console.log("Performing undo:");
-          console.log("Previous History Item:", previousHistoryItem);
-          set({
-            nodes: previousHistoryItem.nodes,
-            edges: previousHistoryItem.edges,
-            historyIndex: historyIndex - 1,
-          });
+        const { history, historyIndex, nodes, edges, redoStack } = get();
+        if (historyIndex <= 0 || !history[historyIndex]) {
+          return;
         }
-        console.log("History after undo:", get().history);
-        console.log("Current historyIndex after undo:", get().historyIndex);
+        const previousHistoryItem = history[historyIndex - 1];
+        set({
+          nodes: previousHistoryItem.nodes,
+          edges: previousHistoryItem.edges,
+          historyIndex: historyIndex - 1,
+          isReplayingHistory: true,
+          redoStack: [
+            ...redoStack,
+            {
+              nodes: structuredClone(nodes),
+              edges: structuredClone(edges),
+            },
+          ].slice(-MAX_HISTORY_ENTRIES),
+        });
+        setTimeout(() => set({ isReplayingHistory: false }), 0);
       },
 
       redo: () => {
-        const { history, historyIndex } = get();
+        const { historyIndex, redoStack } = get();
+        const nextHistoryItem = redoStack[redoStack.length - 1];
 
-        if (historyIndex < history.length - 1) {
-          const nextHistoryItem = history[historyIndex + 1];
-
+        if (nextHistoryItem) {
           set({
             nodes: nextHistoryItem.nodes,
             edges: nextHistoryItem.edges,
             historyIndex: historyIndex + 1,
+            redoStack: redoStack.slice(0, -1),
+            isReplayingHistory: true,
           });
+          setTimeout(() => set({ isReplayingHistory: false }), 0);
         } else {
           console.warn("Redo is not possible: no further history to redo");
         }
-
-        console.log("Updated state after redo:", get());
       },
     }),
     {
@@ -1933,6 +2065,8 @@ export const useStore = create<RFState>()(
       partialize: (state) => ({
         userTemplates: state.userTemplates,
         allDomainProfiles: state.allDomainProfiles,
+        autoConnectOnEdgeDrop: state.autoConnectOnEdgeDrop,
+        autoConnectOnSameLine: state.autoConnectOnSameLine,
       }),
     },
   ),

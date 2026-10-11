@@ -1,8 +1,10 @@
 import { BaseEdge, EdgeProps, getSmoothStepPath } from "@xyflow/react";
 import React from "react";
 import { EdgeLabelRenderer } from "reactflow";
+import { useEdgeMarkerEnd } from "./edgeHighlightContext";
 
 export default function QuantumEdge({
+  id,
   sourceX,
   sourceY,
   targetX,
@@ -11,6 +13,7 @@ export default function QuantumEdge({
   targetPosition,
   markerEnd,
 }: EdgeProps) {
+  const highlightedMarkerEnd = useEdgeMarkerEnd(id, markerEnd);
   const [d, labelX, labelY] = getSmoothStepPath({
     sourceX,
     sourceY,
@@ -34,7 +37,7 @@ export default function QuantumEdge({
         style={{
           stroke: "#93C5FD",
         }}
-        markerEnd={markerEnd}
+        markerEnd={highlightedMarkerEnd}
         path={d}
       />
     </>

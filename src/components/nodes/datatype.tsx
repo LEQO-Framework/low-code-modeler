@@ -12,6 +12,7 @@ const selector = (state: {
   nodes: Node[];
   edges: Edge[];
   updateNodeValue: (nodeId: string, field: string, nodeVal: string) => void;
+  updateNodeValues: (nodeId: string, values: Record<string, any>) => void;
   setSelectedNode: (node: Node | null) => void;
   setContainsPlaceholder: (containsPlaceholder) => void;
 }) => ({
@@ -19,6 +20,7 @@ const selector = (state: {
   nodes: state.nodes,
   edges: state.edges,
   updateNodeValue: state.updateNodeValue,
+  updateNodeValues: state.updateNodeValues,
   setSelectedNode: state.setSelectedNode,
   setContainsPlaceholder: state.setContainsPlaceholder,
 });
@@ -35,6 +37,7 @@ export const DataTypeNode = memo((node: Node) => {
     nodes,
     edges,
     updateNodeValue,
+    updateNodeValues,
     setSelectedNode,
     setContainsPlaceholder,
   } = useStore(selector, shallow);
@@ -48,8 +51,9 @@ export const DataTypeNode = memo((node: Node) => {
 
     setValue(newValue);
     node.data["value"] = newValue;
-    updateNodeValue(node.id, "value", newValue);
-
+    if (data.label !== "duration") {
+      updateNodeValue(node.id, "value", newValue);
+    }
     setValueError("");
 
     const containsLetters = (val) => /[a-zA-Z]/.test(val);
@@ -80,6 +84,9 @@ export const DataTypeNode = memo((node: Node) => {
     setContainsPlaceholder(hasAnyPlaceholder);
 
     if (containsLetters(newValue)) {
+      if (data.label === "duration") {
+        updateNodeValues(node.id, { value: newValue });
+      }
       return;
     }
 
@@ -118,9 +125,13 @@ export const DataTypeNode = memo((node: Node) => {
     if (data.label === "duration") {
       if (!isPositiveValue(newValue)) {
         setValueError("Value must be a positive number");
+        updateNodeValues(node.id, { value: newValue });
         return;
       }
-      updateNodeValue(node.id, "durationUnit", durationUnit);
+      updateNodeValues(node.id, {
+        value: newValue,
+        durationUnit,
+      });
     }
 
     if (data.dataType === "angle") {
