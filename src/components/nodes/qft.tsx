@@ -28,10 +28,7 @@ const selector = (state: {
 
 export const QFTNode = memo((node: Node) => {
   const { id, data, selected } = node;
-  const { edges, updateNodeValue, setNewEdges } = useStore(
-    selector,
-    shallow,
-  );
+  const { edges, updateNodeValue, setNewEdges } = useStore(selector, shallow);
   const [edgesGraph, setEdgesGraph] = useState(edges);
 
   const numberInputs = data.numberOutputs || 1;
@@ -172,11 +169,11 @@ export const QFTNode = memo((node: Node) => {
   const [remoteHighlightColor, setRemoteHighlightColor] = useState<
     string | null
   >(null);
-  
+
   useEffect(() => {
     const checkRemoteSelection = () => {
       let foundColor: string | null = null;
-      
+
       // Loop through all active client states in the room
       awareness.getStates().forEach((state: any) => {
         // Check if a peer has selected this specific node ID

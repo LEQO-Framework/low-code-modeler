@@ -23,9 +23,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q302368"
-        ],
+        "identifiers": ["q302368"],
         "dataType": "int",
         "value": "",
         "outputIdentifier": "a",
@@ -59,9 +57,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q205552"
-        ],
+        "identifiers": ["q205552"],
         "dataType": "int",
         "value": "5.5",
         "outputIdentifier": "a",

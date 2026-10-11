@@ -1,5 +1,13 @@
 import { useState, useEffect } from "react";
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+} from "recharts";
 import { AlertTriangle } from "lucide-react";
 import Modal from "./Modal";
 
@@ -10,7 +18,12 @@ interface QunicornModalProps {
   simulatorWarning: boolean;
   onClose: () => void;
   onStep1Deploy: () => void;
-  onStep2CreateJob: (jobData: { device: string; provider: string; numShots: number; accessToken: string }) => void;
+  onStep2CreateJob: (jobData: {
+    device: string;
+    provider: string;
+    numShots: number;
+    accessToken: string;
+  }) => void;
   onStep3Execute: () => void;
   selectedDevice: string;
   setSelectedDevice: (device: string) => void;
@@ -46,31 +59,43 @@ export const QunicornModal = ({
   progress,
   chartData,
 }: QunicornModalProps) => {
-
   //console.log(simulatorWarning)
   //console.log(selectedDevice.trim().toLowerCase() === "aer_simulator")
-  const [warningExecution, setWarningExecution] = useState(simulatorWarning && selectedDevice.trim().toLowerCase() === "aer_simulator");
+  const [warningExecution, setWarningExecution] = useState(
+    simulatorWarning && selectedDevice.trim().toLowerCase() === "aer_simulator",
+  );
   //console.log(warningExecution)
   //console.log(selectedDevice.trim().toLowerCase() === "aer_simulator")
 
   const handleCreateJob = () => {
-    if (!selectedDevice.trim() || !["IBM", "AWS", "RIGETTI", "QMWARE"].includes(provider)) return;
-    onStep2CreateJob({ device: selectedDevice, provider, numShots, accessToken });
+    if (
+      !selectedDevice.trim() ||
+      !["IBM", "AWS", "RIGETTI", "QMWARE"].includes(provider)
+    )
+      return;
+    onStep2CreateJob({
+      device: selectedDevice,
+      provider,
+      numShots,
+      accessToken,
+    });
   };
 
   useEffect(() => {
-  // Trigger warning if both conditions are true
-  setWarningExecution(simulatorWarning && selectedDevice.trim().toLowerCase() === "aer_simulator");
-}, [simulatorWarning, selectedDevice]);
+    // Trigger warning if both conditions are true
+    setWarningExecution(
+      simulatorWarning &&
+        selectedDevice.trim().toLowerCase() === "aer_simulator",
+    );
+  }, [simulatorWarning, selectedDevice]);
 
   // Custom Ticks for histogram
-  const maxRegister = chartData?.length > 0 
-    ? Math.max(...chartData.map(d => d.register)) 
-    : 0;
+  const maxRegister =
+    chartData?.length > 0 ? Math.max(...chartData.map((d) => d.register)) : 0;
   const numQubits = maxRegister.toString(2).length;
 
   const formatXAxis = (tickItem: number) => {
-    const bin = tickItem.toString(2).padStart(numQubits, '0');
+    const bin = tickItem.toString(2).padStart(numQubits, "0");
     return `${tickItem} (${bin})`;
   };
 
@@ -83,26 +108,34 @@ export const QunicornModal = ({
         <div className="flex justify-end space-x-2">
           {step === 1 && (
             <>
-              <button className="btn btn-primary" onClick={onStep1Deploy}>Deploy</button>
-              <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
+              <button className="btn btn-primary" onClick={onStep1Deploy}>
+                Deploy
+              </button>
+              <button className="btn btn-secondary" onClick={onClose}>
+                Cancel
+              </button>
             </>
           )}
 
           {step === 2 && (
             <>
               <button
-                className={`btn ${warningExecution
+                className={`btn ${
+                  warningExecution
                     ? "btn-disabled opacity-60 cursor-not-allowed"
-                    : selectedDevice.trim() && ["IBM", "AWS", "RIGETTI", "QMWARE"].includes(provider)
+                    : selectedDevice.trim() &&
+                        ["IBM", "AWS", "RIGETTI", "QMWARE"].includes(provider)
                       ? "btn-primary"
                       : "btn-secondary"
-                  }`}
+                }`}
                 onClick={!warningExecution ? handleCreateJob : undefined}
                 disabled={warningExecution}
               >
                 Create
               </button>
-              <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
+              <button className="btn btn-secondary" onClick={onClose}>
+                Cancel
+              </button>
             </>
           )}
 
@@ -113,7 +146,11 @@ export const QunicornModal = ({
                   className={`btn ${warningExecution ? "btn-disabled opacity-60" : "btn-primary"}`}
                   onClick={!warningExecution ? onStep3Execute : undefined}
                   disabled={warningExecution}
-                  title={warningExecution ? "Execution disabled for aer_simulator" : ""}
+                  title={
+                    warningExecution
+                      ? "Execution disabled for aer_simulator"
+                      : ""
+                  }
                 >
                   Execute
                 </button>
@@ -124,18 +161,24 @@ export const QunicornModal = ({
                   onClick={
                     !warningExecution
                       ? () => {
-                        handleCreateJob();
-                        onStep3Execute();
-                      }
+                          handleCreateJob();
+                          onStep3Execute();
+                        }
                       : undefined
                   }
                   disabled={warningExecution}
-                  title={warningExecution ? "Execution disabled for aer_simulator" : ""}
+                  title={
+                    warningExecution
+                      ? "Execution disabled for aer_simulator"
+                      : ""
+                  }
                 >
                   Rerun
                 </button>
               )}
-              <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
+              <button className="btn btn-secondary" onClick={onClose}>
+                Cancel
+              </button>
             </>
           )}
         </div>
@@ -145,15 +188,17 @@ export const QunicornModal = ({
         {step === 1 && (
           <p>
             In the first step, the QASM of the model is deployed to Qunicorn.
-            Qunicorn serves as a unification layer for execution across IBM, AWS, and other quantum cloud providers.
+            Qunicorn serves as a unification layer for execution across IBM,
+            AWS, and other quantum cloud providers.
           </p>
         )}
 
         {step === 2 && (
           <div className="space-y-4">
             <p>
-              In the next step, a job is created which can be executed on a quantum device.
-              Specify your quantum device, provider, number of shots, and access token.
+              In the next step, a job is created which can be executed on a
+              quantum device. Specify your quantum device, provider, number of
+              shots, and access token.
             </p>
 
             <div>
@@ -172,7 +217,8 @@ export const QunicornModal = ({
               </div>
               {warningExecution && (
                 <p className="text-yellow-600 text-sm mt-1">
-                  ⚠️ Execution on <code>aer_simulator</code> is only possible till 29 qubits. Please specify another device.
+                  ⚠️ Execution on <code>aer_simulator</code> is only possible
+                  till 29 qubits. Please specify another device.
                 </p>
               )}
             </div>
@@ -222,7 +268,9 @@ export const QunicornModal = ({
               <p className="text-red-600 font-semibold">{errorMessage}</p>
             ) : (
               <p>
-                The job is executed on <strong>{selectedDevice || "unknown device"}</strong> with <strong>{numShots || "N/A"}</strong> shots.
+                The job is executed on{" "}
+                <strong>{selectedDevice || "unknown device"}</strong> with{" "}
+                <strong>{numShots || "N/A"}</strong> shots.
               </p>
             )}
 
@@ -230,10 +278,24 @@ export const QunicornModal = ({
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="register" tickFormatter={formatXAxis} label={{ value: "Register", position: "insideBottom", offset: -3 }} />
+                  <XAxis
+                    dataKey="register"
+                    tickFormatter={formatXAxis}
+                    label={{
+                      value: "Register",
+                      position: "insideBottom",
+                      offset: -3,
+                    }}
+                  />
                   <YAxis
                     domain={[0, 100]}
-                    label={{ value: "Probabilities", angle: -90, dx: 0, dy: 30, position: "insideLeft" }}
+                    label={{
+                      value: "Probabilities",
+                      angle: -90,
+                      dx: 0,
+                      dy: 30,
+                      position: "insideLeft",
+                    }}
                   />
                   <Tooltip />
                   <Bar dataKey="value" fill="#8884d8" />
@@ -243,7 +305,11 @@ export const QunicornModal = ({
 
             {progress !== 100 && (
               <div style={{ marginTop: "20px" }}>
-                <progress value={progress || 0} max={100} style={{ width: "100%" }} />
+                <progress
+                  value={progress || 0}
+                  max={100}
+                  style={{ width: "100%" }}
+                />
                 <p>{progress || 0}%</p>
               </div>
             )}

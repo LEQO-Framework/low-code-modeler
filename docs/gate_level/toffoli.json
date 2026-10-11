@@ -22,9 +22,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q373666"
-        ]
+        "identifiers": ["q373666"]
       },
       "width": 150,
       "height": 120,
@@ -48,9 +46,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q230722"
-        ]
+        "identifiers": ["q230722"]
       },
       "width": 150,
       "height": 120,
@@ -72,30 +68,22 @@
         "inputs": [
           {
             "id": "newNode4",
-            "identifiers": [
-              "q373666"
-            ]
+            "identifiers": ["q373666"]
           },
           {
             "id": "newNode10",
-            "identifiers": [
-              "q230722"
-            ]
+            "identifiers": ["q230722"]
           },
           {
             "id": "newNode12",
-            "identifiers": [
-              "q427056"
-            ]
+            "identifiers": ["q427056"]
           }
         ],
         "implementation": "OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[3];\nccx q[0], q[1], q[2]",
         "implementationType": "openqasm2",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q470150"
-        ]
+        "identifiers": ["q470150"]
       },
       "width": 150,
       "height": 120,
@@ -119,9 +107,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q427056"
-        ]
+        "identifiers": ["q427056"]
       },
       "width": 150,
       "height": 120,

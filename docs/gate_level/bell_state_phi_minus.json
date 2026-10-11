@@ -22,9 +22,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q422079"
-        ]
+        "identifiers": ["q422079"]
       },
       "width": 150,
       "height": 120,
@@ -47,9 +45,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q828146"
-        ]
+        "identifiers": ["q828146"]
       },
       "width": 150,
       "height": 120,
@@ -71,18 +67,14 @@
         "inputs": [
           {
             "id": "newNode1",
-            "identifiers": [
-              "q422079"
-            ]
+            "identifiers": ["q422079"]
           }
         ],
         "implementation": "OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[1];\nh q[0];",
         "implementationType": "openqasm2",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q740532"
-        ]
+        "identifiers": ["q740532"]
       },
       "width": 150,
       "height": 120,
@@ -104,25 +96,18 @@
         "inputs": [
           {
             "id": "newNode3",
-            "identifiers": [
-              "q740532"
-            ]
+            "identifiers": ["q740532"]
           },
           {
             "id": "newNode2",
-            "identifiers": [
-              "q828146"
-            ]
+            "identifiers": ["q828146"]
           }
         ],
         "implementation": "OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[2];\ncx q[0], q[1]",
         "implementationType": "openqasm2",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q944855",
-          "q861251"
-        ]
+        "identifiers": ["q944855", "q861251"]
       },
       "width": 150,
       "height": 120,
@@ -143,19 +128,14 @@
         "inputs": [
           {
             "id": "newNode5",
-            "identifiers": [
-              "q944855",
-              "q861251"
-            ]
+            "identifiers": ["q944855", "q861251"]
           }
         ],
         "implementation": "OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[1];\nz q[0];",
         "implementationType": "openqasm2",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q641347"
-        ]
+        "identifiers": ["q641347"]
       },
       "width": 150,
       "height": 120,

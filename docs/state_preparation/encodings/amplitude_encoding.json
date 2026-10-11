@@ -22,9 +22,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q460668"
-        ],
+        "identifiers": ["q460668"],
         "dataType": "Array",
         "value": "[0.5,0.3,0.1,0.1]",
         "outputIdentifier": "a"
@@ -50,18 +48,14 @@
           {
             "id": "newNode0",
             "outputIdentifier": "a",
-            "identifiers": [
-              "q460668"
-            ]
+            "identifiers": ["q460668"]
           }
         ],
         "implementation": "",
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q918576"
-        ],
+        "identifiers": ["q918576"],
         "encodingType": "Amplitude Encoding",
         "bound": "0",
         "size": "",

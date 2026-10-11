@@ -64,8 +64,8 @@ export const shortcuts: ShortcutCategory[] = [
       {
         id: "enter",
         keys: "Enter",
-        description: "Add top search result to canvas"
-      }
+        description: "Add top search result to canvas",
+      },
     ],
   },
   {

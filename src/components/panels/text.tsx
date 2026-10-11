@@ -87,8 +87,7 @@ const NODE_EXPLANATIONS: Record<string, string> = {
   [MergerNode]:
     "Merges quantum registers into a single register according to a OpenQASM definition. Right click on the node to add more inputs.",
 
-  [OperatorNode]:
-    "Applies one or more quantum gates to the selected qubits.",
+  [OperatorNode]: "Applies one or more quantum gates to the selected qubits.",
 
   [ClassicalOutputOperationNode]:
     "Performs an operation on classical measurement results before passing them to the next node.",
@@ -102,22 +101,18 @@ const NODE_EXPLANATIONS: Record<string, string> = {
   [ClassicalOperatorNode]:
     "Performs classical operations on the input and returns classical output.",
 
-  [PluginNode]:
-    "Executes functionality provided by the plugin.",
+  [PluginNode]: "Executes functionality provided by the plugin.",
 
   [EditableNode]:
     "A customizable node that can be configured to perform user-defined operations.",
 };
 
 const GATE_EXPLANATIONS: Record<string, string> = {
-  [parameterized_one_qubit[0]]:
-    "X-axis rotation by an angle (rad or deg).",
+  [parameterized_one_qubit[0]]: "X-axis rotation by an angle (rad or deg).",
 
-  [parameterized_one_qubit[1]]:
-    "Y-axis rotation by an angle (rad or deg).",
+  [parameterized_one_qubit[1]]: "Y-axis rotation by an angle (rad or deg).",
 
-  [parameterized_one_qubit[2]]:
-    "Z-axis rotation by an angle (rad or deg).",
+  [parameterized_one_qubit[2]]: "Z-axis rotation by an angle (rad or deg).",
 
   [parameterized_one_qubit[3]]:
     "Applies a phase shift of an angle (rad or deg) to the |1⟩ state.",
@@ -140,17 +135,13 @@ const GATE_EXPLANATIONS: Record<string, string> = {
   [non_parameterized_one_qubit[0]]:
     "Creates superposition by applying a Hadamard transform.",
 
-  [non_parameterized_one_qubit[1]]:
-    "Applies a π/4 phase shift.",
+  [non_parameterized_one_qubit[1]]: "Applies a π/4 phase shift.",
 
-  [non_parameterized_one_qubit[2]]:
-    "Flips |0⟩ and |1⟩ states.",
+  [non_parameterized_one_qubit[2]]: "Flips |0⟩ and |1⟩ states.",
 
-  [non_parameterized_one_qubit[3]]:
-    "Applies a π rotation around the Y-axis.",
+  [non_parameterized_one_qubit[3]]: "Applies a π rotation around the Y-axis.",
 
-  [non_parameterized_one_qubit[4]]:
-    "Applies a π phase flip to the |1⟩ state.",
+  [non_parameterized_one_qubit[4]]: "Applies a π phase flip to the |1⟩ state.",
 
   [non_parameterized_one_qubit[5]]:
     "Applies a π/2 phase shift to the |1⟩ state.",
@@ -167,8 +158,7 @@ const GATE_EXPLANATIONS: Record<string, string> = {
   [non_parameterized_two_qubit[0]]:
     "If control qubit is in state |1⟩, flips |0⟩ and |1⟩ states of the target qubit.",
 
-  [non_parameterized_two_qubit[1]]:
-    "Swaps the states of two qubits.",
+  [non_parameterized_two_qubit[1]]: "Swaps the states of two qubits.",
 
   [non_parameterized_two_qubit[2]]:
     "If control qubit is in state |1⟩, applies a π rotation around the Y-axis to the target qubit.",
@@ -185,8 +175,7 @@ const GATE_EXPLANATIONS: Record<string, string> = {
   [multi_qubit_gates[1]]:
     "If control qubit is in state |1⟩, swaps the states of the two target qubits.",
 
-  [qubitLabel]:
-    "Represents an individual qubit in the circuit.",
+  [qubitLabel]: "Represents an individual qubit in the circuit.",
 };
 
 const DATA_TYPE_EXPLANATIONS: Record<string, string> = {
@@ -212,10 +201,8 @@ const STATE_PREPERATION_EXPLANATIONS: Record<string, string> = {
   ["Amplitude Encoding"]:
     "Encodes an array of numerical values into the amplitudes of a quantum state. It can represent many values using relatively few qubits, but preparing the state can require a deeper quantum circuit.",
 
-  ["Matrix Encoding"]:
-    "Encodes a non-unitary matrix into a unitary matrix.",
-  ["Schmidt Decomposition"]:
-    "Computes the Schmidt coefficients.",
+  ["Matrix Encoding"]: "Encodes a non-unitary matrix into a unitary matrix.",
+  ["Schmidt Decomposition"]: "Computes the Schmidt coefficients.",
 
   ["Prepare State"]:
     "Initializes the quantum register in a predefined quantum state, such as a basis state, Bell state, GHZ state or W state. Specify size if the state is not a Bell state.",
@@ -226,10 +213,7 @@ interface NodeInputOutputExplanation {
   output?: string;
 }
 
-const INPUT_OUTPUT_EXPLANATIONS: Record<
-  string,
-  NodeInputOutputExplanation
-> = {
+const INPUT_OUTPUT_EXPLANATIONS: Record<string, NodeInputOutputExplanation> = {
   ["Basis Encoding"]: {
     input:
       "A classical numeric value or classical data that can be represented as binary.",
@@ -244,31 +228,25 @@ const INPUT_OUTPUT_EXPLANATIONS: Record<
   },
 
   ["Amplitude Encoding"]: {
-    input:
-      "An array of numerical values to be encoded as quantum amplitudes.",
-    output:
-      "A quantum state whose amplitudes represent the input values.",
+    input: "An array of numerical values to be encoded as quantum amplitudes.",
+    output: "A quantum state whose amplitudes represent the input values.",
   },
 
   ["Custom Encoding"]: {
     input:
       "Classical data provided to the user-defined encoding implementation.",
-    output:
-      "A quantum state produced by the custom encoding implementation.",
+    output: "A quantum state produced by the custom encoding implementation.",
   },
 
   ["Matrix Encoding"]: {
     input:
       "A classical matrix describing the operation or transformation to encode.",
-    output:
-      "A quantum representation of the encoded operation.",
+    output: "A quantum representation of the encoded operation.",
   },
 
   ["Prepare State"]: {
-    input:
-      "A selected predefined quantum state and, when required, its size.",
-    output:
-      "A quantum register initialized in the selected state.",
+    input: "A selected predefined quantum state and, when required, its size.",
+    output: "A quantum register initialized in the selected state.",
   },
 
   ["Measurement"]: {
@@ -279,8 +257,7 @@ const INPUT_OUTPUT_EXPLANATIONS: Record<
 
   ["Quantum Arithmetic Operator"]: {
     input: "Two quantum states.",
-    output:
-      "The result of applying the selected arithmetic operation.",
+    output: "The result of applying the selected arithmetic operation.",
   },
 
   ["Quantum Comparison Operator"]: {
@@ -291,19 +268,16 @@ const INPUT_OUTPUT_EXPLANATIONS: Record<
 
   ["Quantum Min/Max Operator"]: {
     input: "A collection of comparable values.",
-    output:
-      "The minimum or maximum value according to the selected operation.",
+    output: "The minimum or maximum value according to the selected operation.",
   },
 
   ["Quantum Bitwise Operator"]: {
     input: "Two quantum states.",
-    output:
-      "The result of applying the selected bitwise operation.",
+    output: "The result of applying the selected bitwise operation.",
   },
 
   ["Control Structure"]: {
-    input:
-      "Workflow data and the configured control condition.",
+    input: "Workflow data and the configured control condition.",
     output:
       "Control flow that determines whether or how the associated workflow section executes.",
   },
@@ -316,14 +290,12 @@ const INPUT_OUTPUT_EXPLANATIONS: Record<
   ["Quantum Clustering"]: {
     input:
       "Entity points data, the desired number of clusters, and optionally the convergence tolerance and maximum number of iterations.",
-    output:
-      "The entity points grouped into the specified number of clusters.",
+    output: "The entity points grouped into the specified number of clusters.",
   },
   ["Classical Clustering"]: {
     input:
       "Entity points data, the desired number of clusters, the relative residual tolerance, and the maximum number of iterations.",
-    output:
-      "The entity points grouped into the specified number of clusters.",
+    output: "The entity points grouped into the specified number of clusters.",
   },
 
   ["QAOA Ansatz"]: {
@@ -334,8 +306,7 @@ const INPUT_OUTPUT_EXPLANATIONS: Record<
   },
 
   ["Grover Oracle"]: {
-    input:
-      "A quantum register on which the oracle acts (optional).",
+    input: "A quantum register on which the oracle acts (optional).",
     output:
       "The quantum register with the marked elements flipped, either in state or in phase.",
   },
@@ -343,17 +314,12 @@ const INPUT_OUTPUT_EXPLANATIONS: Record<
 
 type ExperienceLevel = "explorer" | "pioneer";
 
-const EXPERIENCE_LEVEL_ORDER: Record<
-  ExperienceLevel,
-  number
-> = {
+const EXPERIENCE_LEVEL_ORDER: Record<ExperienceLevel, number> = {
   explorer: 0,
   pioneer: 1,
 };
 
-const normalizeExperienceLevel = (
-  level: unknown,
-): ExperienceLevel => {
+const normalizeExperienceLevel = (level: unknown): ExperienceLevel => {
   const normalized = String(level ?? "")
     .trim()
     .toLowerCase();
@@ -379,10 +345,7 @@ interface PropertyExplanationGroup {
   optional?: Record<string, PropertyDescription>;
 }
 
-const PROPERTIES_EXPLANATIONS: Record<
-  string,
-  PropertyExplanationGroup
-> = {
+const PROPERTIES_EXPLANATIONS: Record<string, PropertyExplanationGroup> = {
   ["Basis Encoding"]: {
     optional: {
       decimalPrecision: {
@@ -473,40 +436,37 @@ const PROPERTIES_EXPLANATIONS: Record<
   ["RX(θ)"]: {
     required: {
       "Parameter ϕ": {
-        description:
-          "Specifies the rotation angle applied around the X-axis.",
+        description: "Specifies the rotation angle applied around the X-axis.",
       },
       "Parameter Type": {
         description:
           "Specifies whether the parameter is interpreted in degrees or radians. The selected conversion is applied once when the parameter type is switched.",
       },
-    }
+    },
   },
 
   ["RY(θ)"]: {
     required: {
       "Parameter ϕ": {
-        description:
-          "Specifies the rotation angle applied around the Y-axis.",
+        description: "Specifies the rotation angle applied around the Y-axis.",
       },
       "Parameter Type": {
         description:
           "Specifies whether the parameter is interpreted in degrees or radians. The selected conversion is applied once when the parameter type is switched.",
       },
-    }
+    },
   },
 
   ["RZ(θ)"]: {
     required: {
       "Parameter ϕ": {
-        description:
-          "Specifies the rotation angle applied around the Z-axis.",
+        description: "Specifies the rotation angle applied around the Z-axis.",
       },
       "Parameter Type": {
         description:
           "Specifies whether the parameter is interpreted in degrees or radians. The selected conversion is applied once when the parameter type is switched.",
       },
-    }
+    },
   },
 
   ["CRX(θ)"]: {
@@ -519,7 +479,7 @@ const PROPERTIES_EXPLANATIONS: Record<
         description:
           "Specifies whether the parameter is interpreted in degrees or radians. The selected conversion is applied once when the parameter type is switched.",
       },
-    }
+    },
   },
 
   ["CRY(θ)"]: {
@@ -532,7 +492,7 @@ const PROPERTIES_EXPLANATIONS: Record<
         description:
           "Specifies whether the parameter is interpreted in degrees or radians. The selected conversion is applied once when the parameter type is switched.",
       },
-    }
+    },
   },
 
   ["CRZ(θ)"]: {
@@ -545,7 +505,7 @@ const PROPERTIES_EXPLANATIONS: Record<
         description:
           "Specifies whether the parameter is interpreted in degrees or radians. The selected conversion is applied once when the parameter type is switched.",
       },
-    }
+    },
   },
   ["Custom Classical Operator"]: {
     required: {
@@ -643,8 +603,7 @@ const PROPERTIES_EXPLANATIONS: Record<
       },
 
       matrix: {
-        description:
-          "Defines the matrix used by the U-gate.",
+        description: "Defines the matrix used by the U-gate.",
       },
     },
 
@@ -703,8 +662,7 @@ const PROPERTIES_EXPLANATIONS: Record<
   ["String"]: {
     required: {
       value: {
-        description:
-          "Specifies the text value stored by the data.",
+        description: "Specifies the text value stored by the data.",
       },
     },
   },
@@ -721,8 +679,7 @@ const PROPERTIES_EXPLANATIONS: Record<
   ["Number"]: {
     required: {
       value: {
-        description:
-          "Specifies the numeric value stored by the data.",
+        description: "Specifies the numeric value stored by the data.",
       },
     },
   },
@@ -764,7 +721,7 @@ const PROPERTIES_EXPLANATIONS: Record<
         description:
           "Defines the condition used to select between the true and false branches.",
       },
-    }
+    },
   },
 
   ["Repeat"]: {
@@ -773,7 +730,7 @@ const PROPERTIES_EXPLANATIONS: Record<
         description:
           "Defines the condition used to determine whether the controlled process section should execute.",
       },
-    }
+    },
   },
 
   ["Quantum Clustering"]: {
@@ -816,8 +773,7 @@ const PROPERTIES_EXPLANATIONS: Record<
           "Specifies the number of input qubits used by the Deutsch-Jozsa algorithm.",
       },
       behaviorType: {
-        description:
-          "Specifies whether the function is constant or balanced.",
+        description: "Specifies whether the function is constant or balanced.",
       },
       balancedMask: {
         description:
@@ -923,14 +879,11 @@ const isPropertyExplanationVisible = (
     return true;
   }
 
-  const currentLevel =
-    normalizeExperienceLevel(experienceLevel);
+  const currentLevel = normalizeExperienceLevel(experienceLevel);
 
   return (
     EXPERIENCE_LEVEL_ORDER[currentLevel] >=
-    EXPERIENCE_LEVEL_ORDER[
-    property.minExperienceLevel
-    ]
+    EXPERIENCE_LEVEL_ORDER[property.minExperienceLevel]
   );
 };
 
@@ -938,19 +891,10 @@ const filterPropertyExplanationGroup = (
   group: PropertyExplanationGroup,
   experienceLevel: unknown,
 ): PropertyExplanationGroup => {
-  const filterEntries = (
-    entries: Record<
-      string,
-      PropertyDescription
-    > = {},
-  ) =>
+  const filterEntries = (entries: Record<string, PropertyDescription> = {}) =>
     Object.fromEntries(
-      Object.entries(entries).filter(
-        ([, property]) =>
-          isPropertyExplanationVisible(
-            property,
-            experienceLevel,
-          ),
+      Object.entries(entries).filter(([, property]) =>
+        isPropertyExplanationVisible(property, experienceLevel),
       ),
     );
 
@@ -970,36 +914,24 @@ const getPropertyExplanations = (
 
   const label = selectedNode.data?.label;
 
-  let explanations: PropertyExplanationGroup =
-    {};
+  let explanations: PropertyExplanationGroup = {};
 
-  if (
-    label === "Encode Value" &&
-    selectedNode.data?.encodingType
-  ) {
+  if (label === "Encode Value" && selectedNode.data?.encodingType) {
     explanations =
-      PROPERTIES_EXPLANATIONS[
-      selectedNode.data.encodingType
-      ] ?? {};
-  } else if (
-    label &&
-    PROPERTIES_EXPLANATIONS[label]
-  ) {
-    explanations =
-      PROPERTIES_EXPLANATIONS[label];
+      PROPERTIES_EXPLANATIONS[selectedNode.data.encodingType] ?? {};
+  } else if (label && PROPERTIES_EXPLANATIONS[label]) {
+    explanations = PROPERTIES_EXPLANATIONS[label];
   } else if (
     selectedNode.type === EditableNode &&
     PROPERTIES_EXPLANATIONS[EditableNode]
   ) {
-    explanations =
-      PROPERTIES_EXPLANATIONS[EditableNode];
+    explanations = PROPERTIES_EXPLANATIONS[EditableNode];
   }
 
-  return filterPropertyExplanationGroup(
-    explanations,
-    experienceLevel,
-  );
+  return filterPropertyExplanationGroup(explanations, experienceLevel);
 };
+
+
 
 /**
  * Returns the input/output explanation for the currently selected node.
@@ -1022,8 +954,7 @@ const getInputOutputExplanations = (
   // Quantum register / qubit array nodes: output only.
   if (selectedNode.type === QubitNode) {
     return {
-      output:
-        "A quantum register containing the specified number of qubits.",
+      output: "A quantum register containing the specified number of qubits.",
     };
   }
 
@@ -1033,7 +964,7 @@ const getInputOutputExplanations = (
       output: "The classical value defined for this data type.",
     };
   }
-   if (selectedNode.type === SplitterNode) {
+  if (selectedNode.type === SplitterNode) {
     return {
       input: "A quantum register of length n",
       output: "n individual qubits",
@@ -1061,63 +992,53 @@ const getInputOutputExplanations = (
 
   if (selectedNode.type === GroverDiffuserNode) {
     return {
-      input: "A quantum register where the elements that need to be found are marked.",
-      output: "A quantum register where the probability of the marked elements is amplified and others reduced.",
+      input:
+        "A quantum register where the elements that need to be found are marked.",
+      output:
+        "A quantum register where the probability of the marked elements is amplified and others reduced.",
     };
   }
 
   // Gate nodes: quantum state in, quantum state out. Multi-control /
   // multi-qubit gates additionally require same-sized inputs.
-  if ((selectedNode.type === GateNode) || (selectedNode.type === QFTNode) || (selectedNode.type === InverseQFTNode)) {
-    if (
-      label &&
-      multi_qubit_gates.includes(label)
-    ) {
+  if (
+    selectedNode.type === GateNode ||
+    selectedNode.type === QFTNode ||
+    selectedNode.type === InverseQFTNode
+  ) {
+    if (label && multi_qubit_gates.includes(label)) {
       return {
         input:
           "Quantum states for the control and target qubits. All inputs must be of the same size.",
-        output:
-          "The quantum state after the gate has been applied.",
+        output: "The quantum state after the gate has been applied.",
       };
     }
 
     return {
       input: "A quantum state.",
-      output:
-        "The quantum state after the gate has been applied.",
+      output: "The quantum state after the gate has been applied.",
     };
   }
 
-   if (selectedNode.type === MCMTGateNode) {
+  if (selectedNode.type === MCMTGateNode) {
     return {
-        input:
-          "Quantum states for the control and target qubits. All inputs must be of the same size.",
-        output:
-          "The quantum state after the gate has been applied.",
-      };
+      input:
+        "Quantum states for the control and target qubits. All inputs must be of the same size.",
+      output: "The quantum state after the gate has been applied.",
+    };
   }
 
-  if (
-    label &&
-    INPUT_OUTPUT_EXPLANATIONS[label]
-  ) {
+  if (label && INPUT_OUTPUT_EXPLANATIONS[label]) {
     return INPUT_OUTPUT_EXPLANATIONS[label];
   }
 
   return {};
 };
 
-const formatPropertyName = (
-  property: string,
-): string => {
+const formatPropertyName = (property: string): string => {
   return property
-    .replace(
-      /([a-z0-9])([A-Z])/g,
-      "$1 $2",
-    )
-    .replace(/^./, (char) =>
-      char.toUpperCase(),
-    );
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/^./, (char) => char.toUpperCase());
 };
 
 interface PropertyInputOutputProps {
@@ -1125,9 +1046,10 @@ interface PropertyInputOutputProps {
   output?: string;
 }
 
-const PropertyInputOutput: React.FC<
-  PropertyInputOutputProps
-> = ({ input, output }) => {
+const PropertyInputOutput: React.FC<PropertyInputOutputProps> = ({
+  input,
+  output,
+}) => {
   if (!input && !output) {
     return null;
   }
@@ -1136,25 +1058,17 @@ const PropertyInputOutput: React.FC<
     <div className="mt-4 space-y-4">
       {input && (
         <div>
-          <div className="font-semibold text-sm text-gray-700">
-            Input
-          </div>
+          <div className="font-semibold text-sm text-gray-700">Input</div>
 
-          <div className="text-sm text-gray-600 mt-1">
-            {input}
-          </div>
+          <div className="text-sm text-gray-600 mt-1">{input}</div>
         </div>
       )}
 
       {output && (
         <div>
-          <div className="font-semibold text-sm text-gray-700">
-            Output
-          </div>
+          <div className="font-semibold text-sm text-gray-700">Output</div>
 
-          <div className="text-sm text-gray-600 mt-1">
-            {output}
-          </div>
+          <div className="text-sm text-gray-600 mt-1">{output}</div>
         </div>
       )}
     </div>
@@ -1165,21 +1079,14 @@ interface PropertyExplanationsProps {
   properties: PropertyExplanationGroup;
 }
 
-const PropertyExplanations: React.FC<
-  PropertyExplanationsProps
-> = ({ properties }) => {
-  const requiredEntries = Object.entries(
-    properties.required ?? {},
-  );
+const PropertyExplanations: React.FC<PropertyExplanationsProps> = ({
+  properties,
+}) => {
+  const requiredEntries = Object.entries(properties.required ?? {});
 
-  const optionalEntries = Object.entries(
-    properties.optional ?? {},
-  );
+  const optionalEntries = Object.entries(properties.optional ?? {});
 
-  if (
-    requiredEntries.length === 0 &&
-    optionalEntries.length === 0
-  ) {
+  if (requiredEntries.length === 0 && optionalEntries.length === 0) {
     return null;
   }
 
@@ -1192,61 +1099,47 @@ const PropertyExplanations: React.FC<
           </div>
 
           <div className="mt-3 space-y-4">
-            {requiredEntries.map(
-              ([property, details]) => (
-                <div key={property}>
-                  <div className="font-semibold text-sm text-gray-700">
-                    {formatPropertyName(
-                      property,
-                    )}
+            {requiredEntries.map(([property, details]) => (
+              <div key={property}>
+                <div className="font-semibold text-sm text-gray-700">
+                  {formatPropertyName(property)}
 
-                    <span className="font-normal text-xs text-gray-500 ml-1">
-                      (Required)
-                    </span>
-                  </div>
-
-                  <div className="text-sm text-gray-600 mt-1">
-                    {details.description}
-                  </div>
+                  <span className="font-normal text-xs text-gray-500 ml-1">
+                    (Required)
+                  </span>
                 </div>
-              ),
-            )}
+
+                <div className="text-sm text-gray-600 mt-1">
+                  {details.description}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}
 
       {optionalEntries.length > 0 && (
-        <div
-          className={
-            requiredEntries.length > 0
-              ? "mt-6"
-              : ""
-          }
-        >
+        <div className={requiredEntries.length > 0 ? "mt-6" : ""}>
           <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">
             Optional
           </div>
 
           <div className="mt-3 space-y-4">
-            {optionalEntries.map(
-              ([property, details]) => (
-                <div key={property}>
-                  <div className="font-semibold text-sm text-gray-700">
-                    {formatPropertyName(
-                      property,
-                    )}
+            {optionalEntries.map(([property, details]) => (
+              <div key={property}>
+                <div className="font-semibold text-sm text-gray-700">
+                  {formatPropertyName(property)}
 
-                    <span className="font-normal text-xs text-gray-500 ml-1">
-                      (Optional)
-                    </span>
-                  </div>
-
-                  <div className="text-sm text-gray-600 mt-1">
-                    {details.description}
-                  </div>
+                  <span className="font-normal text-xs text-gray-500 ml-1">
+                    (Optional)
+                  </span>
                 </div>
-              ),
-            )}
+
+                <div className="text-sm text-gray-600 mt-1">
+                  {details.description}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -1254,25 +1147,17 @@ const PropertyExplanations: React.FC<
   );
 };
 
-const getNodeMappings = (
-  selectedNode: Node | null,
-): string[] => {
+const getNodeMappings = (selectedNode: Node | null): string[] => {
   if (!selectedNode?.data?.mapping) {
     return [];
   }
 
-  const mapping =
-    selectedNode.data.mapping;
+  const mapping = selectedNode.data.mapping;
 
   if (Array.isArray(mapping)) {
     return mapping
       .flat(Infinity)
-      .filter(
-        (
-          value: unknown,
-        ): value is string =>
-          typeof value === "string",
-      );
+      .filter((value: unknown): value is string => typeof value === "string");
   }
 
   return [];
@@ -1281,38 +1166,25 @@ const getNodeMappings = (
 const getEditableNodeImplementationType = (
   selectedNode: Node | null,
 ): "quantum" | "classical" | null => {
-  if (
-    !selectedNode ||
-    selectedNode.type !== EditableNode
-  ) {
+  if (!selectedNode || selectedNode.type !== EditableNode) {
     return null;
   }
 
-  const mappings = getNodeMappings(
-    selectedNode,
-  ).map((mapping) =>
+  const mappings = getNodeMappings(selectedNode).map((mapping) =>
     mapping.trim().toLowerCase(),
   );
 
-  const hasCustomQuantumOperator =
-    mappings.some(
-      (mapping) =>
-        mapping ===
-        "custom quantum operator" ||
-        mapping.includes(
-          "custom quantum operator",
-        ),
-    );
+  const hasCustomQuantumOperator = mappings.some(
+    (mapping) =>
+      mapping === "custom quantum operator" ||
+      mapping.includes("custom quantum operator"),
+  );
 
-  const hasCustomClassicalOperator =
-    mappings.some(
-      (mapping) =>
-        mapping ===
-        "custom classical operator" ||
-        mapping.includes(
-          "custom classical operator",
-        ),
-    );
+  const hasCustomClassicalOperator = mappings.some(
+    (mapping) =>
+      mapping === "custom classical operator" ||
+      mapping.includes("custom classical operator"),
+  );
 
   if (hasCustomQuantumOperator) {
     return "quantum";
@@ -1325,90 +1197,68 @@ const getEditableNodeImplementationType = (
   return null;
 };
 
-const getNodeExplanation = (
-  selectedNode: Node | null,
-) => {
+const getNodeExplanation = (selectedNode: Node | null) => {
   if (!selectedNode) {
     return "";
   }
 
   if (selectedNode.type === GateNode) {
     return (
-      GATE_EXPLANATIONS[
-      selectedNode.data.label
-      ] ??
+      GATE_EXPLANATIONS[selectedNode.data.label] ??
       "Error: No explanation available for gate node: " +
-      selectedNode.data.label
+        selectedNode.data.label
     );
   }
 
   if (selectedNode.type === DataTypeNode) {
     return (
-      DATA_TYPE_EXPLANATIONS[
-      selectedNode.data.label
-      ] ??
+      DATA_TYPE_EXPLANATIONS[selectedNode.data.label] ??
       "Error: No explanation available for data type node: " +
-      selectedNode.data.label
+        selectedNode.data.label
     );
   }
 
-  if (
-    selectedNode.type ===
-    StatePreparationNode
-  ) {
+  if (selectedNode.type === StatePreparationNode) {
     return (
-      STATE_PREPERATION_EXPLANATIONS[
-      selectedNode.data.label
-      ] ??
+      STATE_PREPERATION_EXPLANATIONS[selectedNode.data.label] ??
       "Error: No explanation available for state preparation node: " +
-      selectedNode.data.label
+        selectedNode.data.label
     );
   }
 
   if (selectedNode.type === EditableNode) {
     return (
-      selectedNode.data.explanation ??
-      NODE_EXPLANATIONS[EditableNode] ??
-      ""
+      selectedNode.data.explanation ?? NODE_EXPLANATIONS[EditableNode] ?? ""
     );
   }
 
   return (
     NODE_EXPLANATIONS[selectedNode.type] ??
-    "Error: No explanation available for node type: " +
-    selectedNode.type
+    "Error: No explanation available for node type: " + selectedNode.type
   );
 };
 
 const selector = (state: {
   selectedNode: Node | null;
   completionGuaranteed: boolean;
-  updateNodeLabel: (
-    nodeId: string,
-    nodeVal: string,
-  ) => void;
+  updateNodeLabel: (nodeId: string, nodeVal: string) => void;
   updateNodeValue: (
     nodeId: string,
     identifier: string,
     nodeVal: string,
   ) => void;
-  setSelectedNode: (
-    node: Node | null,
-  ) => void;
+  setSelectedNode: (node: Node | null) => void;
   experienceLevel: unknown;
 }) => ({
   selectedNode: state.selectedNode,
-  completionGuaranteed:
-    state.completionGuaranteed,
+  completionGuaranteed: state.completionGuaranteed,
   updateNodeLabel: state.updateNodeLabel,
   updateNodeValue: state.updateNodeValue,
   setSelectedNode: state.setSelectedNode,
   experienceLevel: state.experienceLevel,
 });
 
-type PanelTab =
-  | "information"
-  | "properties";
+type PanelTab = "information" | "properties";
 
 export const TextPanel = () => {
   const {
@@ -1419,28 +1269,31 @@ export const TextPanel = () => {
     experienceLevel,
   } = useStore(selector, shallow);
 
-  const [activeTab, setActiveTab] =
-    useState<PanelTab>("information");
+  const [activeTab, setActiveTab] = useState<PanelTab>("information");
 
-  const propertyExplanations =
-    getPropertyExplanations(
-      selectedNode,
-      experienceLevel,
-    );
+  const propertyExplanations = getPropertyExplanations(
+    selectedNode,
+    experienceLevel,
+  );
 
   const hasPropertyExplanations =
-    Object.keys(
-      propertyExplanations.required ?? {},
-    ).length > 0 ||
-    Object.keys(
-      propertyExplanations.optional ?? {},
-    ).length > 0;
+    Object.keys(propertyExplanations.required ?? {}).length > 0 ||
+    Object.keys(propertyExplanations.optional ?? {}).length > 0;
 
-  const inputOutputExplanations =
-    getInputOutputExplanations(
-      selectedNode,
-    );
+  const inputOutputExplanations = getInputOutputExplanations(selectedNode);
 
+  const [idCopied, setIdCopied] = useState(false);
+
+  const copyNodeId = async () => {
+    if (!selectedNode) return;
+    try {
+      await navigator.clipboard.writeText(selectedNode.id);
+      setIdCopied(true);
+      setTimeout(() => setIdCopied(false), 1500);
+    } catch {
+      // Clipboard access can be denied; the id stays selectable.
+    }
+  };
   /**
    * When a different node is selected, always
    * start on the Information tab.
@@ -1468,32 +1321,18 @@ export const TextPanel = () => {
     if (
       selectedNode &&
       !selectedNode.data.parameterType &&
-      (parameterized_one_qubit.includes(
-        selectedNode.data.label,
-      ) ||
-        parameterized_two_qubit.includes(
-          selectedNode.data.label,
-        ))
+      (parameterized_one_qubit.includes(selectedNode.data.label) ||
+        parameterized_two_qubit.includes(selectedNode.data.label))
     ) {
-      handleNumberChange(
-        "parameterType",
-        "degree",
-      );
+      handleNumberChange("parameterType", "degree");
     }
   }, [selectedNode]);
 
-  const [_fileName, setFileName] =
-    useState("");
+  const [_fileName, setFileName] = useState("");
 
-  const [
-    _uncomputeFileName,
-    setUncomputeFileName,
-  ] = useState("");
+  const [_uncomputeFileName, setUncomputeFileName] = useState("");
 
-  const [
-    implementationContent,
-    setImplementationContent,
-  ] = useState("");
+  const [implementationContent, setImplementationContent] = useState("");
 
   const validFields = [
     "gamma",
@@ -1532,34 +1371,18 @@ export const TextPanel = () => {
   const normalizeDegrees = (deg: number) => {
     const normalized = deg % 360;
 
-    return normalized < 0
-      ? normalized + 360
-      : normalized;
+    return normalized < 0 ? normalized + 360 : normalized;
   };
 
-  const degToRad = (
-    deg: string | number,
-  ) =>
-    (normalizeDegrees(
-      parseFloat(String(deg)),
-    ) *
-      Math.PI) /
-    180;
+  const degToRad = (deg: string | number) =>
+    (normalizeDegrees(parseFloat(String(deg))) * Math.PI) / 180;
 
-  const radToDeg = (
-    rad: string | number,
-  ) =>
-    normalizeDegrees(
-      (parseFloat(String(rad)) * 180) /
-      Math.PI,
-    );
+  const radToDeg = (rad: string | number) =>
+    normalizeDegrees((parseFloat(String(rad)) * 180) / Math.PI);
 
   const safeEval = (expr: string) => {
     try {
-      const sanitized = expr.replace(
-        /π|pi/gi,
-        `${Math.PI}`,
-      );
+      const sanitized = expr.replace(/π|pi/gi, `${Math.PI}`);
 
       return sanitized;
     } catch {
@@ -1567,27 +1390,18 @@ export const TextPanel = () => {
     }
   };
 
-  const handleParameterChange = (
-    value: string,
-  ) => {
+  const handleParameterChange = (value: string) => {
     const evaluated = safeEval(value);
 
     if (!isNaN(Number(evaluated))) {
       const storedValue =
-        selectedNode?.data.parameterType ===
-          "degree"
+        selectedNode?.data.parameterType === "degree"
           ? degToRad(value)
           : radToDeg(value);
 
-      handleNumberChange(
-        "parameter",
-        "" + storedValue,
-      );
+      handleNumberChange("parameter", "" + storedValue);
     } else {
-      handleNumberChange(
-        "parameter",
-        String(evaluated),
-      );
+      handleNumberChange("parameter", String(evaluated));
     }
   };
 
@@ -1600,28 +1414,18 @@ export const TextPanel = () => {
     validMinValue = 2;
   } else if (
     selectedNode?.type === "ifElseNode" ||
-    selectedNode?.type ===
-    "controlStructureNode" ||
+    selectedNode?.type === "controlStructureNode" ||
     selectedNode?.type === "mcmt-gate"
   ) {
     validMinValue = 1;
   }
 
-  function handleNumberChange(
-    field: string,
-    value: string,
-  ) {
+  function handleNumberChange(field: string, value: string) {
     if (selectedNode) {
       if (field === "parameterType") {
-        updateNodeValue(
-          selectedNode.id,
-          field,
-          value,
-        );
+        updateNodeValue(selectedNode.id, field, value);
 
-        handleParameterChange(
-          selectedNode.data.parameter,
-        );
+        handleParameterChange(selectedNode.data.parameter);
       }
 
       if (field === "implementation") {
@@ -1631,32 +1435,16 @@ export const TextPanel = () => {
       if (validFields.includes(field)) {
         selectedNode.data[field] = value;
 
-        updateNodeValue(
-          selectedNode.id,
-          field,
-          value,
-        );
+        updateNodeValue(selectedNode.id, field, value);
       } else if (!isNaN(Number(value))) {
-        if (
-          Number(value) < validMinValue
-        ) {
-          selectedNode.data[field] =
-            Number(validMinValue);
+        if (Number(value) < validMinValue) {
+          selectedNode.data[field] = Number(validMinValue);
 
-          updateNodeValue(
-            selectedNode.id,
-            field,
-            String(validMinValue),
-          );
+          updateNodeValue(selectedNode.id, field, String(validMinValue));
         } else {
-          selectedNode.data[field] =
-            Number(value);
+          selectedNode.data[field] = Number(value);
 
-          updateNodeValue(
-            selectedNode.id,
-            field,
-            value,
-          );
+          updateNodeValue(selectedNode.id, field, value);
         }
       }
     }
@@ -1666,73 +1454,39 @@ export const TextPanel = () => {
     event: React.ChangeEvent<HTMLInputElement>,
     field: string,
   ) {
-    if (
-      event.target.files &&
-      selectedNode
-    ) {
-      const file =
-        event.target.files[0];
+    if (event.target.files && selectedNode) {
+      const file = event.target.files[0];
 
       const reader = new FileReader();
 
       reader.onload = function (e) {
-        const fileContent =
-          e.target?.result as string;
+        const fileContent = e.target?.result as string;
 
-        if (
-          field ===
-          "uncomputeImplementation"
-        ) {
-          selectedNode.data.uncomputeImplementation =
-            fileContent;
+        if (field === "uncomputeImplementation") {
+          selectedNode.data.uncomputeImplementation = fileContent;
 
-          updateNodeValue(
-            selectedNode.id,
-            field,
-            fileContent,
-          );
+          updateNodeValue(selectedNode.id, field, fileContent);
 
-          updateNodeValue(
-            selectedNode.id,
-            "uncomputeFileName",
-            file.name,
-          );
+          updateNodeValue(selectedNode.id, "uncomputeFileName", file.name);
 
-          setUncomputeFileName(
-            file.name,
-          );
+          setUncomputeFileName(file.name);
         } else {
-          selectedNode.data.implementation =
-            fileContent;
+          selectedNode.data.implementation = fileContent;
 
-          updateNodeValue(
-            selectedNode.id,
-            "implementation",
-            fileContent,
-          );
+          updateNodeValue(selectedNode.id, "implementation", fileContent);
 
-          updateNodeValue(
-            selectedNode.id,
-            "fileName",
-            file.name,
-          );
+          updateNodeValue(selectedNode.id, "fileName", file.name);
 
           setFileName(file.name);
 
-          if (
-            selectedNode.type ===
-            EditableNode
-          ) {
+          if (selectedNode.type === EditableNode) {
             updateNodeValue(
               selectedNode.id,
               "implementationFileName",
               file.name,
             );
 
-            const extension = file.name
-              .split(".")
-              .pop()
-              ?.toLowerCase();
+            const extension = file.name.split(".").pop()?.toLowerCase();
 
             if (extension === "qasm") {
               updateNodeValue(
@@ -1740,9 +1494,7 @@ export const TextPanel = () => {
                 "implementationLanguage",
                 "qasm",
               );
-            } else if (
-              extension === "py"
-            ) {
+            } else if (extension === "py") {
               updateNodeValue(
                 selectedNode.id,
                 "implementationLanguage",
@@ -1758,9 +1510,7 @@ export const TextPanel = () => {
   }
 
   const editableImplementationType =
-    getEditableNodeImplementationType(
-      selectedNode,
-    );
+    getEditableNodeImplementationType(selectedNode);
 
   return (
     <>
@@ -1774,9 +1524,7 @@ export const TextPanel = () => {
             <ArrowLeft />
           </button>
 
-          <h2 className="flex-grow text-center">
-            Properties Panel
-          </h2>
+          <h2 className="flex-grow text-center">Properties Panel</h2>
         </div>
 
         <hr />
@@ -1793,20 +1541,13 @@ export const TextPanel = () => {
                 <button
                   type="button"
                   role="tab"
-                  aria-selected={
-                    activeTab ===
-                    "information"
-                  }
-                  onClick={() =>
-                    setActiveTab(
-                      "information",
-                    )
-                  }
-                  className={`flex-1 px-3 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab ===
-                    "information"
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700"
-                    }`}
+                  aria-selected={activeTab === "information"}
+                  onClick={() => setActiveTab("information")}
+                  className={`flex-1 px-3 py-2 text-sm font-medium border-b-2 transition-colors ${
+                    activeTab === "information"
+                      ? "border-blue-500 text-blue-600"
+                      : "border-transparent text-gray-500 hover:text-gray-700"
+                  }`}
                 >
                   Information
                 </button>
@@ -1815,20 +1556,13 @@ export const TextPanel = () => {
                   <button
                     type="button"
                     role="tab"
-                    aria-selected={
-                      activeTab ===
-                      "properties"
-                    }
-                    onClick={() =>
-                      setActiveTab(
-                        "properties",
-                      )
-                    }
-                    className={`flex-1 px-3 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab ===
-                      "properties"
-                      ? "border-blue-500 text-blue-600"
-                      : "border-transparent text-gray-500 hover:text-gray-700"
-                      }`}
+                    aria-selected={activeTab === "properties"}
+                    onClick={() => setActiveTab("properties")}
+                    className={`flex-1 px-3 py-2 text-sm font-medium border-b-2 transition-colors ${
+                      activeTab === "properties"
+                        ? "border-blue-500 text-blue-600"
+                        : "border-transparent text-gray-500 hover:text-gray-700"
+                    }`}
                   >
                     Properties
                   </button>
@@ -1837,924 +1571,651 @@ export const TextPanel = () => {
             </div>
 
             {/* Information Tab */}
-            {activeTab ===
-              "information" && (
-                <div
-                  role="tabpanel"
-                  className="p-2"
-                >
-                  <div className="mt-3">
-                    <label className="block text-sm font-medium text-start text-gray-700">
-                      Explanation
-                    </label>
-
-                    {selectedNode.type ===
-                      EditableNode ? (
-                      <textarea
-                        id="nodeExplanation"
-                        name="nodeExplanation"
-                        value={
-                          selectedNode.data
-                            .explanation ??
-                          NODE_EXPLANATIONS[
-                          EditableNode
-                          ] ??
-                          ""
-                        }
-                        onChange={(e) =>
-                          handleNumberChange(
-                            "explanation",
-                            e.target.value,
-                          )
-                        }
-                        className="mt-1 border border-gray-300 rounded-md sm:text-sm p-2 bg-white text-gray-700 w-full min-h-28 resize-y focus:outline-none focus:ring-2 focus:ring-blue-400"
-                        placeholder="Enter an explanation for this custom node..."
-                      />
-                    ) : (
-                      <div className="mt-1 min-h-28 border border-gray-300 rounded-md sm:text-sm p-2 bg-gray-50 text-gray-700">
-                        {getNodeExplanation(
-                          selectedNode,
-                        )}
-                      </div>
-                    )}
+            {activeTab === "information" && (
+              <div role="tabpanel" className="p-2">
+                <label
+                    className="block text-sm font-medium text-start text-gray-700"
+                    htmlFor="nodeId"
+                  >
+                    Node ID
+                  </label>
+                  <div className="mt-1 flex gap-2 items-center">
+                    <input
+                      id="nodeId"
+                      type="text"
+                      readOnly
+                      value={selectedNode.id}
+                      onFocus={(e) => e.target.select()}
+                      className="border border-gray-300 rounded-md p-2 bg-gray-50 text-gray-700 font-mono text-xs w-full min-w-0"
+                    />
+                    <button
+                      type="button"
+                      onClick={copyNodeId}
+                      className="text-xs text-blue-600 underline whitespace-nowrap"
+                    >
+                      {idCopied ? "Copied" : "Copy"}
+                    </button>
                   </div>
+            
 
-                  <PropertyInputOutput
-                    input={
-                      inputOutputExplanations.input
-                    }
-                    output={
-                      inputOutputExplanations.output
-                    }
-                  />
+                <div className="mt-3">
+                  <label className="block text-sm font-medium text-start text-gray-700">
+                    Explanation
+                  </label>
+
+                  {selectedNode.type === EditableNode ? (
+                    <textarea
+                      id="nodeExplanation"
+                      name="nodeExplanation"
+                      value={
+                        selectedNode.data.explanation ??
+                        NODE_EXPLANATIONS[EditableNode] ??
+                        ""
+                      }
+                      onChange={(e) =>
+                        handleNumberChange("explanation", e.target.value)
+                      }
+                      className="mt-1 border border-gray-300 rounded-md sm:text-sm p-2 bg-white text-gray-700 w-full min-h-28 resize-y focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      placeholder="Enter an explanation for this custom node..."
+                    />
+                  ) : (
+                    <div className="mt-1 min-h-28 border border-gray-300 rounded-md sm:text-sm p-2 bg-gray-50 text-gray-700">
+                      {getNodeExplanation(selectedNode)}
+                    </div>
+                  )}
                 </div>
-              )}
+
+                <PropertyInputOutput
+                  input={inputOutputExplanations.input}
+                  output={inputOutputExplanations.output}
+                />
+              </div>
+            )}
 
             {/* Properties Tab */}
-            {hasPropertyExplanations &&
-              activeTab ===
-              "properties" && (
-                <div
-                  role="tabpanel"
-                  className="p-2"
-                >
-                  <PropertyExplanations
-                    properties={
-                      propertyExplanations
-                    }
-                  />
-                </div>
-              )}
+            {hasPropertyExplanations && activeTab === "properties" && (
+              <div role="tabpanel" className="p-2">
+                <PropertyExplanations properties={propertyExplanations} />
+              </div>
+            )}
           </>
         )}
 
-        {selectedNode?.type ===
-          EditableNode &&
-          editableImplementationType && (
-            <EditableNodeImplementationFields
-              selectedNode={
-                selectedNode
-              }
-              implementationType={
-                editableImplementationType
-              }
-              handleNumberChange={
-                handleNumberChange
-              }
-              handleFileUpload={
-                handleFileUpload
-              }
-            />
-          )}
+        {selectedNode?.type === EditableNode && editableImplementationType && (
+          <EditableNodeImplementationFields
+            selectedNode={selectedNode}
+            implementationType={editableImplementationType}
+            handleNumberChange={handleNumberChange}
+            handleFileUpload={handleFileUpload}
+          />
+        )}
 
-        {selectedNode?.type ===
-          "positionNode" && (
-            <div className="p-2 mt-3">
-              <label
-                className="block text-sm font-medium text-start text-gray-700"
-                htmlFor="value"
-              >
-                Value
-              </label>
+        {selectedNode?.type === "positionNode" && (
+          <div className="p-2 mt-3">
+            <label
+              className="block text-sm font-medium text-start text-gray-700"
+              htmlFor="value"
+            >
+              Value
+            </label>
 
-              <div className="mt-1">
-                <input
-                  type="text"
-                  id="value"
-                  name="value"
-                  value={
-                    selectedNode.data.value ||
-                    ""
-                  }
-                  onChange={(e) =>
-                    handleNumberChange(
-                      "value",
-                      e.target.value,
-                    )
-                  }
-                  className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                  placeholder="Enter a number"
-                />
-              </div>
+            <div className="mt-1">
+              <input
+                type="text"
+                id="value"
+                name="value"
+                value={selectedNode.data.value || ""}
+                onChange={(e) => handleNumberChange("value", e.target.value)}
+                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
+                placeholder="Enter a number"
+              />
             </div>
-          )}
+          </div>
+        )}
 
-        {selectedNode?.data.label ===
-          "Encode Value" && (
-            <div className="p-2 mt-3">
-              <label
-                className="block text-sm font-medium text-start text-gray-700 mt-2"
-                htmlFor="encodingType"
+        {selectedNode?.data.label === "Encode Value" && (
+          <div className="p-2 mt-3">
+            <label
+              className="block text-sm font-medium text-start text-gray-700 mt-2"
+              htmlFor="encodingType"
+            >
+              Encoding Type
+            </label>
+
+            <div className="mt-1">
+              <select
+                id="encodingType"
+                name="encodingType"
+                value={selectedNode.data.encodingType || "Amplitude Encoding"}
+                onChange={(e) =>
+                  handleNumberChange("encodingType", e.target.value)
+                }
+                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
               >
-                Encoding Type
-              </label>
+                {!completionGuaranteed && (
+                  <option value="Amplitude Encoding">Amplitude Encoding</option>
+                )}
 
-              <div className="mt-1">
-                <select
-                  id="encodingType"
-                  name="encodingType"
-                  value={
-                    selectedNode.data
-                      .encodingType ||
-                    "Amplitude Encoding"
-                  }
-                  onChange={(e) =>
-                    handleNumberChange(
-                      "encodingType",
-                      e.target.value,
-                    )
-                  }
-                  className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
+                <option value="Angle Encoding">Angle Encoding</option>
+
+                <option value="Basis Encoding">Basis Encoding</option>
+
+                <option value="Custom Encoding">Custom Encoding</option>
+
+                {!completionGuaranteed && (
+                  <option value="Matrix Encoding">Matrix Encoding</option>
+                )}
+
+                {!completionGuaranteed && (
+                  <option value="Schmidt Decomposition">
+                    Schmidt Decomposition
+                  </option>
+                )}
+              </select>
+            </div>
+
+            {selectedNode.data.encodingType !== "Basis Encoding" &&
+              selectedNode.data.encodingType !== "Angle Encoding" && (
+                <>
+                  <label
+                    className="block text-sm font-medium text-start text-gray-700 mt-2"
+                    htmlFor="bound"
+                  >
+                    Bound
+                  </label>
+
+                  <div className="mt-1">
+                    <input
+                      type="text"
+                      id="bound"
+                      name="bound"
+                      value={selectedNode.data.bound || ""}
+                      onChange={(e) =>
+                        handleNumberChange("bound", e.target.value)
+                      }
+                      className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
+                      placeholder="Enter bound"
+                    />
+                  </div>
+                </>
+              )}
+          </div>
+        )}
+
+        {(selectedNode?.type === OperatorNode ||
+          selectedNode?.type === ClassicalOperatorNode) && (
+          <div className="p-2 mt-3">
+            {selectedNode.data.label.includes("Arithmetic Operator") && (
+              <>
+                <label
+                  className="block text-sm font-medium text-start text-gray-700 mt-2"
+                  htmlFor="arithmeticOperator"
                 >
-                  {!completionGuaranteed && (
-                    <option value="Amplitude Encoding">
-                      Amplitude Encoding
-                    </option>
-                  )}
+                  Arithmetic Operator
+                </label>
 
-                  <option value="Angle Encoding">
-                    Angle Encoding
-                  </option>
-
-                  <option value="Basis Encoding">
-                    Basis Encoding
-                  </option>
-
-                  <option value="Custom Encoding">
-                    Custom Encoding
-                  </option>
-
-                  {!completionGuaranteed && (
-                    <option value="Matrix Encoding">
-                      Matrix Encoding
-                    </option>
-                  )}
-
-                  {!completionGuaranteed && (
-                    <option value="Schmidt Decomposition">
-                      Schmidt Decomposition
-                    </option>
-                  )}
-                </select>
-              </div>
-
-              {selectedNode.data
-                .encodingType !==
-                "Basis Encoding" &&
-                selectedNode.data
-                  .encodingType !==
-                "Angle Encoding" && (
-                  <>
-                    <label
-                      className="block text-sm font-medium text-start text-gray-700 mt-2"
-                      htmlFor="bound"
-                    >
-                      Bound
-                    </label>
-
-                    <div className="mt-1">
-                      <input
-                        type="text"
-                        id="bound"
-                        name="bound"
-                        value={
-                          selectedNode.data
-                            .bound || ""
-                        }
-                        onChange={(e) =>
-                          handleNumberChange(
-                            "bound",
-                            e.target.value,
-                          )
-                        }
-                        className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                        placeholder="Enter bound"
-                      />
-                    </div>
-                  </>
-                )}
-            </div>
-          )}
-
-        {(selectedNode?.type ===
-          OperatorNode ||
-          selectedNode?.type ===
-          ClassicalOperatorNode) && (
-            <div className="p-2 mt-3">
-              {selectedNode.data.label.includes(
-                "Arithmetic Operator",
-              ) && (
-                  <>
-                    <label
-                      className="block text-sm font-medium text-start text-gray-700 mt-2"
-                      htmlFor="arithmeticOperator"
-                    >
-                      Arithmetic Operator
-                    </label>
-
-                    <div className="mt-1">
-                      <select
-                        id="arithmeticOperator"
-                        name="arithmeticOperator"
-                        value={
-                          selectedNode.data
-                            .operator || "+"
-                        }
-                        onChange={(e) =>
-                          handleNumberChange(
-                            "operator",
-                            e.target.value,
-                          )
-                        }
-                        className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                      >
-                        <option value="+">
-                          +
-                        </option>
-
-                        {!completionGuaranteed && (
-                          <option value="-">
-                            -
-                          </option>
-                        )}
-
-                        {!completionGuaranteed && (
-                          <option value="/">
-                            /
-                          </option>
-                        )}
-
-                        {!completionGuaranteed && (
-                          <option value="*">
-                            *
-                          </option>
-                        )}
-
-                        {!completionGuaranteed && (
-                          <option value="**">
-                            **
-                          </option>
-                        )}
-                      </select>
-                    </div>
-                  </>
-                )}
-
-              {selectedNode.data.label.includes(
-                comparisonOperatorLabel,
-              ) && (
-                  <>
-                    <label
-                      className="block text-sm font-medium text-start text-gray-700 mt-2"
-                      htmlFor="comparisonOperator"
-                    >
-                      Comparison Operator
-                    </label>
-
-                    <div className="mt-1">
-                      <select
-                        id="comparisonOperator"
-                        name="comparisonOperator"
-                        value={
-                          selectedNode.data
-                            .operator || "≤"
-                        }
-                        onChange={(e) =>
-                          handleNumberChange(
-                            "operator",
-                            e.target.value,
-                          )
-                        }
-                        className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                      >
-                        <option value="<=">
-                          ≤
-                        </option>
-
-                        <option value="<">
-                          &lt;
-                        </option>
-
-                        <option value="=">
-                          =
-                        </option>
-
-                        <option value="!=">
-                          ≠
-                        </option>
-
-                        <option value=">">
-                          &gt;
-                        </option>
-
-                        <option value=">=">
-                          ≥
-                        </option>
-                      </select>
-                    </div>
-                  </>
-                )}
-
-              {selectedNode.data.label.includes(
-                minMaxOperatorLabel,
-              ) && (
-                  <>
-                    <label
-                      className="block text-sm font-medium text-start text-gray-700 mt-2"
-                      htmlFor="minMaxOperator"
-                    >
-                      Min/Max Operator
-                    </label>
-
-                    <div className="mt-1">
-                      <select
-                        id="minMaxOperator"
-                        name="minMaxOperator"
-                        value={
-                          selectedNode.data
-                            .operator || "min"
-                        }
-                        onChange={(e) =>
-                          handleNumberChange(
-                            "operator",
-                            e.target.value,
-                          )
-                        }
-                        className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                      >
-                        <option value="min">
-                          Min
-                        </option>
-
-                        <option value="max">
-                          Max
-                        </option>
-                      </select>
-                    </div>
-                  </>
-                )}
-
-              {selectedNode.data.label.includes(
-                bitwiseOperatorLabel,
-              ) && (
-                  <>
-                    <label
-                      className="block text-sm font-medium text-start text-gray-700 mt-2"
-                      htmlFor="minMaxOperator"
-                    >
-                      Bitwise Operator
-                    </label>
-
-                    <div className="mt-1">
-                      <select
-                        id="minMaxOperator"
-                        name="minMaxOperator"
-                        value={
-                          selectedNode.data
-                            .operator || "min"
-                        }
-                        onChange={(e) =>
-                          handleNumberChange(
-                            "operator",
-                            e.target.value,
-                          )
-                        }
-                        className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                      >
-                        <option value="|">
-                          OR
-                        </option>
-
-                        <option value="&">
-                          AND
-                        </option>
-
-                        <option value="~">
-                          INVERT
-                        </option>
-
-                        <option value="^">
-                          XOR
-                        </option>
-                      </select>
-                    </div>
-                  </>
-                )}
-
-              {selectedNode?.type ===
-                OperatorNode && (
-                  <ImplementationFields
-                    selectedNode={
-                      selectedNode
+                <div className="mt-1">
+                  <select
+                    id="arithmeticOperator"
+                    name="arithmeticOperator"
+                    value={selectedNode.data.operator || "+"}
+                    onChange={(e) =>
+                      handleNumberChange("operator", e.target.value)
                     }
-                    handleNumberChange={
-                      handleNumberChange
+                    className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
+                  >
+                    <option value="+">+</option>
+
+                    {!completionGuaranteed && <option value="-">-</option>}
+
+                    {!completionGuaranteed && <option value="/">/</option>}
+
+                    {!completionGuaranteed && <option value="*">*</option>}
+
+                    {!completionGuaranteed && <option value="**">**</option>}
+                  </select>
+                </div>
+              </>
+            )}
+
+            {selectedNode.data.label.includes(comparisonOperatorLabel) && (
+              <>
+                <label
+                  className="block text-sm font-medium text-start text-gray-700 mt-2"
+                  htmlFor="comparisonOperator"
+                >
+                  Comparison Operator
+                </label>
+
+                <div className="mt-1">
+                  <select
+                    id="comparisonOperator"
+                    name="comparisonOperator"
+                    value={selectedNode.data.operator || "≤"}
+                    onChange={(e) =>
+                      handleNumberChange("operator", e.target.value)
                     }
-                    handleFileUpload={
-                      handleFileUpload
+                    className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
+                  >
+                    <option value="<=">≤</option>
+
+                    <option value="<">&lt;</option>
+
+                    <option value="=">=</option>
+
+                    <option value="!=">≠</option>
+
+                    <option value=">">&gt;</option>
+
+                    <option value=">=">≥</option>
+                  </select>
+                </div>
+              </>
+            )}
+
+            {selectedNode.data.label.includes(minMaxOperatorLabel) && (
+              <>
+                <label
+                  className="block text-sm font-medium text-start text-gray-700 mt-2"
+                  htmlFor="minMaxOperator"
+                >
+                  Min/Max Operator
+                </label>
+
+                <div className="mt-1">
+                  <select
+                    id="minMaxOperator"
+                    name="minMaxOperator"
+                    value={selectedNode.data.operator || "min"}
+                    onChange={(e) =>
+                      handleNumberChange("operator", e.target.value)
                     }
-                    implementationContent={
-                      implementationContent
+                    className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
+                  >
+                    <option value="min">Min</option>
+
+                    <option value="max">Max</option>
+                  </select>
+                </div>
+              </>
+            )}
+
+            {selectedNode.data.label.includes(bitwiseOperatorLabel) && (
+              <>
+                <label
+                  className="block text-sm font-medium text-start text-gray-700 mt-2"
+                  htmlFor="minMaxOperator"
+                >
+                  Bitwise Operator
+                </label>
+
+                <div className="mt-1">
+                  <select
+                    id="minMaxOperator"
+                    name="minMaxOperator"
+                    value={selectedNode.data.operator || "min"}
+                    onChange={(e) =>
+                      handleNumberChange("operator", e.target.value)
                     }
-                    type=""
+                    className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
+                  >
+                    <option value="|">OR</option>
+
+                    <option value="&">AND</option>
+
+                    <option value="~">INVERT</option>
+
+                    <option value="^">XOR</option>
+                  </select>
+                </div>
+              </>
+            )}
+
+            {selectedNode?.type === OperatorNode && (
+              <ImplementationFields
+                selectedNode={selectedNode}
+                handleNumberChange={handleNumberChange}
+                handleFileUpload={handleFileUpload}
+                implementationContent={implementationContent}
+                type=""
+              />
+            )}
+          </div>
+        )}
+
+        {selectedNode?.type === "measurementNode" && (
+          <div className="p-2 mt-3">
+            {selectedNode.data.hasRegisterInput && (
+              <>
+                <label
+                  className="block text-sm font-medium text-start text-gray-700"
+                  htmlFor="registerName"
+                >
+                  Register Name
+                </label>
+
+                <div className="mt-1">
+                  <input
+                    type="text"
+                    id="registerName"
+                    name="registerName"
+                    value={selectedNode.data.registerName || ""}
+                    onChange={(e) =>
+                      handleNumberChange("registerName", e.target.value)
+                    }
+                    className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
+                    placeholder="Enter register name"
                   />
-                )}
-            </div>
-          )}
+                </div>
+              </>
+            )}
 
-        {selectedNode?.type ===
-          "measurementNode" && (
-            <div className="p-2 mt-3">
-              {selectedNode.data
-                .hasRegisterInput && (
-                  <>
-                    <label
-                      className="block text-sm font-medium text-start text-gray-700"
-                      htmlFor="registerName"
-                    >
-                      Register Name
-                    </label>
+            <label
+              className="block text-sm font-medium text-start text-gray-700 mt-2"
+              htmlFor="basis"
+            >
+              Basis
+            </label>
 
-                    <div className="mt-1">
-                      <input
-                        type="text"
-                        id="registerName"
-                        name="registerName"
-                        value={
-                          selectedNode.data
-                            .registerName || ""
-                        }
-                        onChange={(e) =>
-                          handleNumberChange(
-                            "registerName",
-                            e.target.value,
-                          )
-                        }
-                        className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                        placeholder="Enter register name"
-                      />
-                    </div>
-                  </>
-                )}
+            <div className="mt-1">
+              <input
+                type="text"
+                id="basis"
+                name="basis"
+                value={selectedNode.data.basis || ""}
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase();
 
-              <label
-                className="block text-sm font-medium text-start text-gray-700 mt-2"
-                htmlFor="basis"
-              >
-                Basis
-              </label>
-
-              <div className="mt-1">
-                <input
-                  type="text"
-                  id="basis"
-                  name="basis"
-                  value={
-                    selectedNode.data
-                      .basis || ""
+                  if (/^[XYZ]*$/.test(value)) {
+                    handleNumberChange("basis", value);
                   }
-                  onChange={(e) => {
-                    const value =
-                      e.target.value.toUpperCase();
+                }}
+                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
+                placeholder="e.g. XYZ"
+              />
+            </div>
 
-                    if (
-                      /^[XYZ]*$/.test(
-                        value,
-                      )
-                    ) {
-                      handleNumberChange(
-                        "basis",
-                        value,
-                      );
+            {selectedNode.data.basis &&
+              !/^[XYZ]+$/.test(selectedNode.data.basis.toUpperCase()) && (
+                <p className="text-red-500 text-xs mt-1">
+                  Basis may only contain X, Y, or Z.
+                </p>
+              )}
+
+            <ImplementationFields
+              selectedNode={selectedNode}
+              handleNumberChange={handleNumberChange}
+              handleFileUpload={handleFileUpload}
+              implementationContent={implementationContent}
+              type=""
+            />
+          </div>
+        )}
+
+        {selectedNode?.type === "gateNode" && (
+          <>
+            {(parameterized_one_qubit.includes(selectedNode.data.label) ||
+              parameterized_two_qubit.includes(selectedNode.data.label)) && (
+              <div className="p-2 mt-3">
+                <label
+                  className="block text-sm font-medium text-start text-gray-700"
+                  htmlFor="parameter"
+                >
+                  Parameter
+                </label>
+
+                <div className="mt-1">
+                  <input
+                    type="number"
+                    id="parameter"
+                    name="parameter"
+                    value={
+                      selectedNode.data.parameterType === "degree"
+                        ? selectedNode.data.parameter
+                        : selectedNode.data.parameter || ""
                     }
-                  }}
-                  className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                  placeholder="e.g. XYZ"
-                />
+                    onChange={(e) =>
+                      handleNumberChange("parameter", e.target.value)
+                    }
+                    className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
+                    placeholder="Enter parameter"
+                  />
+                </div>
+
+                <label
+                  className="block text-sm font-medium text-start text-gray-700 mt-4"
+                  htmlFor="parameterType"
+                >
+                  Parameter Type
+                </label>
+
+                <div className="mt-1">
+                  <select
+                    id="parameterType"
+                    name="parameterType"
+                    value={selectedNode.data.parameterType || ""}
+                    onChange={(e) =>
+                      handleNumberChange("parameterType", e.target.value)
+                    }
+                    className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
+                  >
+                    <option value="degree">Degree</option>
+
+                    <option value="radian">Radian</option>
+                  </select>
+                </div>
               </div>
+            )}
 
-              {selectedNode.data.basis &&
-                !/^[XYZ]+$/.test(
-                  selectedNode.data.basis.toUpperCase(),
-                ) && (
-                  <p className="text-red-500 text-xs mt-1">
-                    Basis may only contain X,
-                    Y, or Z.
-                  </p>
-                )}
+            {selectedNode.data.label === "CU" && (
+              <div className="p-2 mt-3">
+                <label
+                  className="block text-sm font-medium text-start text-gray-700"
+                  htmlFor="controlValue"
+                >
+                  Control Value
+                </label>
 
-              <ImplementationFields
-                selectedNode={selectedNode}
-                handleNumberChange={
-                  handleNumberChange
-                }
-                handleFileUpload={
-                  handleFileUpload
-                }
-                implementationContent={
-                  implementationContent
-                }
-                type=""
-              />
-            </div>
-          )}
+                <div className="mt-1">
+                  <select
+                    id="controlValue"
+                    name="controlValue"
+                    value={selectedNode.data.controlValue || ""}
+                    onChange={(e) =>
+                      handleNumberChange("controlValue", e.target.value)
+                    }
+                    className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
+                  >
+                    <option value="0">0</option>
 
-        {selectedNode?.type ===
-          "gateNode" && (
-            <>
-              {(parameterized_one_qubit.includes(
-                selectedNode.data.label,
-              ) ||
-                parameterized_two_qubit.includes(
-                  selectedNode.data.label,
-                )) && (
-                  <div className="p-2 mt-3">
-                    <label
-                      className="block text-sm font-medium text-start text-gray-700"
-                      htmlFor="parameter"
-                    >
-                      Parameter
-                    </label>
+                    <option value="1">1</option>
+                  </select>
+                </div>
 
-                    <div className="mt-1">
-                      <input
-                        type="number"
-                        id="parameter"
-                        name="parameter"
-                        value={
-                          selectedNode.data
-                            .parameterType ===
-                            "degree"
-                            ? selectedNode.data
-                              .parameter
-                            : selectedNode.data
-                              .parameter ||
-                            ""
-                        }
-                        onChange={(e) =>
-                          handleNumberChange(
-                            "parameter",
-                            e.target.value,
-                          )
-                        }
-                        className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                        placeholder="Enter parameter"
-                      />
-                    </div>
+                <label
+                  className="block text-sm font-medium text-start text-gray-700 mt-4"
+                  htmlFor="matrix"
+                >
+                  Matrix
+                </label>
 
-                    <label
-                      className="block text-sm font-medium text-start text-gray-700 mt-4"
-                      htmlFor="parameterType"
-                    >
-                      Parameter Type
-                    </label>
-
-                    <div className="mt-1">
-                      <select
-                        id="parameterType"
-                        name="parameterType"
-                        value={
-                          selectedNode.data
-                            .parameterType ||
-                          ""
-                        }
-                        onChange={(e) =>
-                          handleNumberChange(
-                            "parameterType",
-                            e.target.value,
-                          )
-                        }
-                        className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                      >
-                        <option value="degree">
-                          Degree
-                        </option>
-
-                        <option value="radian">
-                          Radian
-                        </option>
-                      </select>
-                    </div>
-                  </div>
-                )}
-
-              {selectedNode.data.label ===
-                "CU" && (
-                  <div className="p-2 mt-3">
-                    <label
-                      className="block text-sm font-medium text-start text-gray-700"
-                      htmlFor="controlValue"
-                    >
-                      Control Value
-                    </label>
-
-                    <div className="mt-1">
-                      <select
-                        id="controlValue"
-                        name="controlValue"
-                        value={
-                          selectedNode.data
-                            .controlValue ||
-                          ""
-                        }
-                        onChange={(e) =>
-                          handleNumberChange(
-                            "controlValue",
-                            e.target.value,
-                          )
-                        }
-                        className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                      >
-                        <option value="0">
-                          0
-                        </option>
-
-                        <option value="1">
-                          1
-                        </option>
-                      </select>
-                    </div>
-
-                    <label
-                      className="block text-sm font-medium text-start text-gray-700 mt-4"
-                      htmlFor="matrix"
-                    >
-                      Matrix
-                    </label>
-
-                    <div className="mt-1">
-                      <input
-                        id="matrix"
-                        name="matrix"
-                        value={
-                          selectedNode.data
-                            .matrix || ""
-                        }
-                        onChange={(e) =>
-                          handleNumberChange(
-                            "matrix",
-                            e.target.value,
-                          )
-                        }
-                        className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                      />
-                    </div>
-                  </div>
-                )}
-
-              {multi_parameterized_two_qubit.includes(
-                selectedNode.data.label,
-              ) && (
-                  <div className="p-2 mt-3">
-                    <label className="block text-sm font-medium text-start text-gray-700 mb-2">
-                      Parameters
-                    </label>
-
-                    {[
-                      {
-                        key: "theta",
-                        label: "θ",
-                      },
-                      {
-                        key: "phi",
-                        label: "φ",
-                      },
-                      {
-                        key: "lambda",
-                        label: "λ",
-                      },
-                      {
-                        key: "gamma",
-                        label: "γ",
-                      },
-                    ].map(
-                      ({
-                        key,
-                        label,
-                      }) => (
-                        <div
-                          key={key}
-                          className="mb-3"
-                        >
-                          <label
-                            className="block text-xs font-medium text-gray-600"
-                            htmlFor={`param-${key}`}
-                          >
-                            {label}
-                          </label>
-
-                          <input
-                            type="text"
-                            id={`param-${key}`}
-                            name={`param-${key}`}
-                            value={
-                              selectedNode.data
-                                .parameterType ===
-                                "degree"
-                                ? radToDeg(
-                                  selectedNode
-                                    .data[
-                                  key
-                                  ] || 0,
-                                )
-                                : selectedNode
-                                  .data[
-                                key
-                                ] || ""
-                            }
-                            onChange={(e) =>
-                              handleNumberChange(
-                                key,
-                                e.target.value,
-                              )
-                            }
-                            className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                            placeholder={`Enter ${label}`}
-                          />
-                        </div>
-                      ),
-                    )}
-
-                    <label
-                      className="block text-sm font-medium text-start text-gray-700 mt-4"
-                      htmlFor="parameterType"
-                    >
-                      Parameter Type
-                    </label>
-
-                    <div className="mt-1">
-                      <select
-                        id="parameterType"
-                        name="parameterType"
-                        value={
-                          selectedNode.data
-                            .parameterType ||
-                          ""
-                        }
-                        onChange={(e) =>
-                          handleNumberChange(
-                            "parameterType",
-                            e.target.value,
-                          )
-                        }
-                        className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                      >
-                        <option value="degree">
-                          Degree
-                        </option>
-
-                        <option value="radian">
-                          Radian
-                        </option>
-                      </select>
-                    </div>
-                  </div>
-                )}
-            </>
-          )}
-
-        {(selectedNode?.type ===
-          AlgorithmNode ||
-          selectedNode?.type ===
-          ClassicalAlgorithmNode) && (
-            <div className="p-2 mt-3">
-              <ImplementationFields
-                selectedNode={selectedNode}
-                handleNumberChange={
-                  handleNumberChange
-                }
-                handleFileUpload={
-                  handleFileUpload
-                }
-                implementationContent={
-                  implementationContent
-                }
-                type=""
-              />
-            </div>
-          )}
-
-        {selectedNode?.type ===
-          "splitterNode" && (
-            <div className="p-2 mt-3">
-              <ImplementationFields
-                selectedNode={selectedNode}
-                handleNumberChange={
-                  handleNumberChange
-                }
-                handleFileUpload={
-                  handleFileUpload
-                }
-                implementationContent={
-                  implementationContent
-                }
-                type=""
-              />
-            </div>
-          )}
-
-        {selectedNode?.type ===
-          "mergerNode" && (
-            <div className="p-2 mt-3">
-              <ImplementationFields
-                selectedNode={selectedNode}
-                handleNumberChange={
-                  handleNumberChange
-                }
-                handleFileUpload={
-                  handleFileUpload
-                }
-                implementationContent={
-                  implementationContent
-                }
-                type=""
-              />
-            </div>
-          )}
-
-        {selectedNode?.type ===
-          ControlStructureNode && (
-            <div className="p-2 mt-3">
-              <label
-                className="block text-sm font-medium text-start text-gray-700"
-                htmlFor="condition"
-              >
-                Condition
-              </label>
-
-              <div className="mt-1">
-                <input
-                  type="text"
-                  id="condition"
-                  name="condition"
-                  value={
-                    selectedNode.data
-                      .condition || ""
-                  }
-                  onChange={(e) =>
-                    handleNumberChange(
-                      "condition",
-                      e.target.value,
-                    )
-                  }
-                  className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                  placeholder="Enter condition"
-                />
+                <div className="mt-1">
+                  <input
+                    id="matrix"
+                    name="matrix"
+                    value={selectedNode.data.matrix || ""}
+                    onChange={(e) =>
+                      handleNumberChange("matrix", e.target.value)
+                    }
+                    className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
+                  />
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-        {selectedNode?.type ===
-          IfElseNode && (
-            <div className="p-2 mt-3">
-              <label
-                className="block text-sm font-medium text-start text-gray-700"
-                htmlFor="condition"
-              >
-                Condition
-              </label>
+            {multi_parameterized_two_qubit.includes(
+              selectedNode.data.label,
+            ) && (
+              <div className="p-2 mt-3">
+                <label className="block text-sm font-medium text-start text-gray-700 mb-2">
+                  Parameters
+                </label>
 
-              <div className="mt-1">
-                <input
-                  type="text"
-                  id="condition"
-                  name="condition"
-                  value={
-                    selectedNode.data
-                      .condition || ""
-                  }
-                  onChange={(e) =>
-                    handleNumberChange(
-                      "condition",
-                      e.target.value,
-                    )
-                  }
-                  className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-                  placeholder="Enter condition"
-                />
+                {[
+                  {
+                    key: "theta",
+                    label: "θ",
+                  },
+                  {
+                    key: "phi",
+                    label: "φ",
+                  },
+                  {
+                    key: "lambda",
+                    label: "λ",
+                  },
+                  {
+                    key: "gamma",
+                    label: "γ",
+                  },
+                ].map(({ key, label }) => (
+                  <div key={key} className="mb-3">
+                    <label
+                      className="block text-xs font-medium text-gray-600"
+                      htmlFor={`param-${key}`}
+                    >
+                      {label}
+                    </label>
+
+                    <input
+                      type="text"
+                      id={`param-${key}`}
+                      name={`param-${key}`}
+                      value={
+                        selectedNode.data.parameterType === "degree"
+                          ? radToDeg(selectedNode.data[key] || 0)
+                          : selectedNode.data[key] || ""
+                      }
+                      onChange={(e) => handleNumberChange(key, e.target.value)}
+                      className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
+                      placeholder={`Enter ${label}`}
+                    />
+                  </div>
+                ))}
+
+                <label
+                  className="block text-sm font-medium text-start text-gray-700 mt-4"
+                  htmlFor="parameterType"
+                >
+                  Parameter Type
+                </label>
+
+                <div className="mt-1">
+                  <select
+                    id="parameterType"
+                    name="parameterType"
+                    value={selectedNode.data.parameterType || ""}
+                    onChange={(e) =>
+                      handleNumberChange("parameterType", e.target.value)
+                    }
+                    className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
+                  >
+                    <option value="degree">Degree</option>
+
+                    <option value="radian">Radian</option>
+                  </select>
+                </div>
               </div>
+            )}
+          </>
+        )}
+
+        {(selectedNode?.type === AlgorithmNode ||
+          selectedNode?.type === ClassicalAlgorithmNode) && (
+          <div className="p-2 mt-3">
+            <ImplementationFields
+              selectedNode={selectedNode}
+              handleNumberChange={handleNumberChange}
+              handleFileUpload={handleFileUpload}
+              implementationContent={implementationContent}
+              type=""
+            />
+          </div>
+        )}
+
+        {selectedNode?.type === "splitterNode" && (
+          <div className="p-2 mt-3">
+            <ImplementationFields
+              selectedNode={selectedNode}
+              handleNumberChange={handleNumberChange}
+              handleFileUpload={handleFileUpload}
+              implementationContent={implementationContent}
+              type=""
+            />
+          </div>
+        )}
+
+        {selectedNode?.type === "mergerNode" && (
+          <div className="p-2 mt-3">
+            <ImplementationFields
+              selectedNode={selectedNode}
+              handleNumberChange={handleNumberChange}
+              handleFileUpload={handleFileUpload}
+              implementationContent={implementationContent}
+              type=""
+            />
+          </div>
+        )}
+
+        {selectedNode?.type === ControlStructureNode && (
+          <div className="p-2 mt-3">
+            <label
+              className="block text-sm font-medium text-start text-gray-700"
+              htmlFor="condition"
+            >
+              Condition
+            </label>
+
+            <div className="mt-1">
+              <input
+                type="text"
+                id="condition"
+                name="condition"
+                value={selectedNode.data.condition || ""}
+                onChange={(e) =>
+                  handleNumberChange("condition", e.target.value)
+                }
+                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
+                placeholder="Enter condition"
+              />
             </div>
-          )}
+          </div>
+        )}
+
+        {selectedNode?.type === IfElseNode && (
+          <div className="p-2 mt-3">
+            <label
+              className="block text-sm font-medium text-start text-gray-700"
+              htmlFor="condition"
+            >
+              Condition
+            </label>
+
+            <div className="mt-1">
+              <input
+                type="text"
+                id="condition"
+                name="condition"
+                value={selectedNode.data.condition || ""}
+                onChange={(e) =>
+                  handleNumberChange("condition", e.target.value)
+                }
+                className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
+                placeholder="Enter condition"
+              />
+            </div>
+          </div>
+        )}
       </aside>
     </>
   );
@@ -2762,13 +2223,8 @@ export const TextPanel = () => {
 
 interface EditableNodeImplementationFieldsProps {
   selectedNode: Node;
-  implementationType:
-  | "quantum"
-  | "classical";
-  handleNumberChange: (
-    field: string,
-    value: string,
-  ) => void;
+  implementationType: "quantum" | "classical";
+  handleNumberChange: (field: string, value: string) => void;
   handleFileUpload: (
     event: React.ChangeEvent<HTMLInputElement>,
     field: string,
@@ -2783,111 +2239,87 @@ const EditableNodeImplementationFields: React.FC<
   handleNumberChange,
   handleFileUpload,
 }) => {
-    const isQuantum =
-      implementationType === "quantum";
+  const isQuantum = implementationType === "quantum";
 
-    const implementation =
-      selectedNode.data.implementation ||
-      "";
+  const implementation = selectedNode.data.implementation || "";
 
-    const fileName =
-      selectedNode.data
-        .implementationFileName ||
-      selectedNode.data.fileName ||
-      "";
+  const fileName =
+    selectedNode.data.implementationFileName ||
+    selectedNode.data.fileName ||
+    "";
 
-    const language =
-      selectedNode.data
-        .implementationLanguage || "";
+  const language = selectedNode.data.implementationLanguage || "";
 
-    return (
-      <div className="p-2 mt-3 border border-gray-200 rounded-md bg-gray-50">
-        <label className="block text-sm font-medium text-start text-gray-700">
-          Custom Implementation
-        </label>
+  return (
+    <div className="p-2 mt-3 border border-gray-200 rounded-md bg-gray-50">
+      <label className="block text-sm font-medium text-start text-gray-700">
+        Custom Implementation
+      </label>
 
-        <p className="text-xs text-gray-500 mt-1 mb-3">
-          {isQuantum
-            ? "Custom Quantum Operator: upload a QASM or Python implementation."
-            : "Custom Classical Operator: upload a Python implementation."}
-        </p>
+      <p className="text-xs text-gray-500 mt-1 mb-3">
+        {isQuantum
+          ? "Custom Quantum Operator: upload a QASM or Python implementation."
+          : "Custom Classical Operator: upload a Python implementation."}
+      </p>
 
-        <label
-          className="block text-sm font-medium text-start text-gray-700"
-          htmlFor="editableNodeImplementationFile"
-        >
-          Upload Implementation
-        </label>
+      <label
+        className="block text-sm font-medium text-start text-gray-700"
+        htmlFor="editableNodeImplementationFile"
+      >
+        Upload Implementation
+      </label>
 
-        <div className="mt-1">
-          <input
-            type="file"
-            id="editableNodeImplementationFile"
-            name="editableNodeImplementationFile"
-            accept={
-              isQuantum
-                ? ".qasm,.py,text/x-python,application/x-python"
-                : ".py,text/x-python,application/x-python"
-            }
-            onChange={(e) =>
-              handleFileUpload(
-                e,
-                "implementation",
-              )
-            }
-            className="border block w-full border-gray-300 rounded-md sm:text-sm p-2 bg-white"
-          />
-        </div>
-
-        {fileName && (
-          <div className="mt-1 text-xs text-gray-500">
-            File: {fileName}
-          </div>
-        )}
-
-        {language && (
-          <div className="mt-1 text-xs text-gray-500">
-            Language:{" "}
-            {language === "qasm"
-              ? "QASM"
-              : "Python"}
-          </div>
-        )}
-
-        <label
-          className="block text-sm font-medium text-start text-gray-700 mt-3"
-          htmlFor="editableNodeImplementation"
-        >
-          Implementation
-        </label>
-
-        <textarea
-          id="editableNodeImplementation"
-          name="editableNodeImplementation"
-          value={implementation}
-          onChange={(e) =>
-            handleNumberChange(
-              "implementation",
-              e.target.value,
-            )
-          }
-          className="border block w-full border-gray-300 rounded-md sm:text-sm p-2 h-48 overflow-auto bg-white font-mono text-xs"
-          placeholder={
+      <div className="mt-1">
+        <input
+          type="file"
+          id="editableNodeImplementationFile"
+          name="editableNodeImplementationFile"
+          accept={
             isQuantum
-              ? "Upload a .qasm or .py file, or enter the implementation manually..."
-              : "Upload a .py file, or enter the Python implementation manually..."
+              ? ".qasm,.py,text/x-python,application/x-python"
+              : ".py,text/x-python,application/x-python"
           }
+          onChange={(e) => handleFileUpload(e, "implementation")}
+          className="border block w-full border-gray-300 rounded-md sm:text-sm p-2 bg-white"
         />
       </div>
-    );
-  };
+
+      {fileName && (
+        <div className="mt-1 text-xs text-gray-500">File: {fileName}</div>
+      )}
+
+      {language && (
+        <div className="mt-1 text-xs text-gray-500">
+          Language: {language === "qasm" ? "QASM" : "Python"}
+        </div>
+      )}
+
+      <label
+        className="block text-sm font-medium text-start text-gray-700 mt-3"
+        htmlFor="editableNodeImplementation"
+      >
+        Implementation
+      </label>
+
+      <textarea
+        id="editableNodeImplementation"
+        name="editableNodeImplementation"
+        value={implementation}
+        onChange={(e) => handleNumberChange("implementation", e.target.value)}
+        className="border block w-full border-gray-300 rounded-md sm:text-sm p-2 h-48 overflow-auto bg-white font-mono text-xs"
+        placeholder={
+          isQuantum
+            ? "Upload a .qasm or .py file, or enter the implementation manually..."
+            : "Upload a .py file, or enter the Python implementation manually..."
+        }
+      />
+    </div>
+  );
+};
 
 interface ImplementationFieldsProps {
   selectedNode: any;
-  handleNumberChange: (
-    field: string,
-    value: string,
-  ) => void;
+  handleNumberChange: (field: string, value: string) => void;
   handleFileUpload: (
     event: React.ChangeEvent<HTMLInputElement>,
     field: string,
@@ -2896,96 +2328,69 @@ interface ImplementationFieldsProps {
   type?: "" | "uncompute";
 }
 
-export const ImplementationFields: React.FC<
-  ImplementationFieldsProps
-> = ({
+export const ImplementationFields: React.FC<ImplementationFieldsProps> = ({
   selectedNode,
   handleNumberChange,
   handleFileUpload,
   implementationContent,
   type = "",
 }) => {
-    const isUncompute =
-      type === "uncompute";
+  const isUncompute = type === "uncompute";
 
-    const prefix = isUncompute
-      ? "uncompute"
-      : "";
-    const isClassical = selectedNode.type.includes("classical");
+  const prefix = isUncompute ? "uncompute" : "";
+  const isClassical = selectedNode.type.includes("classical");
 
-    const implementationKey = `${prefix}${isUncompute
-      ? "Implementation"
-      : "implementation"
-      }`;
+  const implementationKey = `${prefix}${
+    isUncompute ? "Implementation" : "implementation"
+  }`;
 
-    const fileNameKey = `${prefix}${isUncompute
-      ? "FileName"
-      : "fileName"
-      }`;
+  const fileNameKey = `${prefix}${isUncompute ? "FileName" : "fileName"}`;
 
-    return (
-      <>
-        <label
-          className="block text-sm font-medium text-start text-gray-700 mt-2"
-          htmlFor={`${prefix}FileUpload`}
-        >
-          {isUncompute
-            ? "Upload Uncompute Implementation File"
-            : isClassical ? "Upload Python File"
-          : "Upload QASM File or Python File"}
-        </label>
+  return (
+    <>
+      <label
+        className="block text-sm font-medium text-start text-gray-700 mt-2"
+        htmlFor={`${prefix}FileUpload`}
+      >
+        {isUncompute
+          ? "Upload Uncompute Implementation File"
+          : isClassical
+            ? "Upload Python File"
+            : "Upload QASM File or Python File"}
+      </label>
 
-        <div className="mt-1">
-          <input
-            type="file"
-            accept={isClassical? ".py" : ".qasm,.py" }
-            id={`${prefix}FileUpload`}
-            name={`${prefix}FileUpload`}
-            onChange={(e) =>
-              handleFileUpload(
-                e,
-                implementationKey,
-              )
-            }
-            className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
-          />
-        </div>
-
-        <span className="text-sm text-gray-500">
-          {
-            selectedNode.data[
-            fileNameKey
-            ]
-          }
-        </span>
-
-        <label
-          className="block text-sm font-medium text-start text-gray-700 mt-2"
-          htmlFor={`${implementationKey}Content`}
-        >
-          {isUncompute
-            ? "Uncompute Implementation Content"
-            : "Implementation Content"}
-        </label>
-
-        <textarea
-          id={`${implementationKey}Content`}
-          name={`${implementationKey}Content`}
-          value={
-            selectedNode.data[
-            implementationKey
-            ] ||
-            implementationContent
-          }
-          onChange={(e) =>
-            handleNumberChange(
-              implementationKey,
-              e.target.value,
-            )
-          }
-          className="border block w-full border-gray-300 rounded-md sm:text-sm p-2 h-32 overflow-auto"
-          placeholder="File content will appear here or enter manually"
+      <div className="mt-1">
+        <input
+          type="file"
+          accept={isClassical ? ".py" : ".qasm,.py"}
+          id={`${prefix}FileUpload`}
+          name={`${prefix}FileUpload`}
+          onChange={(e) => handleFileUpload(e, implementationKey)}
+          className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
         />
-      </>
-    );
-  };
+      </div>
+
+      <span className="text-sm text-gray-500">
+        {selectedNode.data[fileNameKey]}
+      </span>
+
+      <label
+        className="block text-sm font-medium text-start text-gray-700 mt-2"
+        htmlFor={`${implementationKey}Content`}
+      >
+        {isUncompute
+          ? "Uncompute Implementation Content"
+          : "Implementation Content"}
+      </label>
+
+      <textarea
+        id={`${implementationKey}Content`}
+        name={`${implementationKey}Content`}
+        value={selectedNode.data[implementationKey] || implementationContent}
+        onChange={(e) => handleNumberChange(implementationKey, e.target.value)}
+        className="border block w-full border-gray-300 rounded-md sm:text-sm p-2 h-32 overflow-auto"
+        placeholder="File content will appear here or enter manually"
+      />
+    </>
+  );
+};

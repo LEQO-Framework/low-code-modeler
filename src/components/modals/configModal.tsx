@@ -76,7 +76,7 @@ export const ConfigModal = ({
   tempGithubBranch,
   tempGithubToken,
   userName,
-  tempMistralToken
+  tempMistralToken,
 }: ConfigModalProps) => {
   // Local state copies
   const [localExperienceLevel, setLocalExperienceLevel] = useState(experienceLevel);
@@ -97,8 +97,12 @@ export const ConfigModal = ({
   const [localLowcode, setLocalLowcode] = useState(tempLowcodeBackendEndpoint);
   const [localOpenAIToken, setLocalOpenAIToken] = useState(tempOpenAIToken);
   const [localMistralToken, setLocalMistralToken] = useState(tempMistralToken);
-  const [localPatternUI, setLocalPatternUI] = useState(tempPatternAtlasUiEndpoint);
-  const [localPatternAPI, setLocalPatternAPI] = useState(tempPatternAtlasApiEndpoint);
+  const [localPatternUI, setLocalPatternUI] = useState(
+    tempPatternAtlasUiEndpoint,
+  );
+  const [localPatternAPI, setLocalPatternAPI] = useState(
+    tempPatternAtlasApiEndpoint,
+  );
   const [localQcAtlas, setLocalQcAtlas] = useState(tempQcAtlasEndpoint);
   const [localGitOwner, setLocalGitOwner] = useState(tempGithubRepositoryOwner);
   const [localGitRepo, setLocalGitRepo] = useState(tempGithubRepositoryName);
@@ -132,7 +136,7 @@ export const ConfigModal = ({
   }, [open]);
 
   const handleSave = () => {
-    console.log("userName", localUserName)
+    console.log("userName", localUserName);
     onSave({
       experienceLevel: localExperienceLevel,
       tempCamundaEndpoint: localCamunda,
@@ -153,7 +157,7 @@ export const ConfigModal = ({
       tempGithubToken: localGitToken,
       collaborationMode: localCollaborationMode,
       userName: localUserName,
-      tempMistralToken: localMistralToken
+      tempMistralToken: localMistralToken,
     });
     onClose();
   };
@@ -176,24 +180,27 @@ export const ConfigModal = ({
     >
       <div className="max-h-[70vh] overflow-y-auto pr-2">
         <div className="flex border-b mb-4">
-          {["editor", "github", "lowCodeEndpoints", "patternEndpoints"].map((tab) => (
-            <button
-              key={tab}
-              className={`px-4 py-2 ${activeTab === tab
-                  ? "border-b-2 border-blue-500 font-semibold"
-                  : "text-gray-600"
+          {["editor", "github", "lowCodeEndpoints", "patternEndpoints"].map(
+            (tab) => (
+              <button
+                key={tab}
+                className={`px-4 py-2 ${
+                  activeTab === tab
+                    ? "border-b-2 border-blue-500 font-semibold"
+                    : "text-gray-600"
                 }`}
-              onClick={() => setActiveTab(tab)}
-            >
-              {tab === "editor"
-                ? "Editor"
-                : tab === "github"
-                  ? "GitHub"
-                  : tab === "lowCodeEndpoints"
-                    ? "Low-Code Endpoints"
-                    : "Pattern Endpoints"}
-            </button>
-          ))}
+                onClick={() => setActiveTab(tab)}
+              >
+                {tab === "editor"
+                  ? "Editor"
+                  : tab === "github"
+                    ? "GitHub"
+                    : tab === "lowCodeEndpoints"
+                      ? "Low-Code Endpoints"
+                      : "Pattern Endpoints"}
+              </button>
+            ),
+          )}
         </div>
 
         {activeTab === "editor" && (
@@ -204,10 +211,12 @@ export const ConfigModal = ({
                 <tr>
                   <td align="right">Collaboration Mode:</td>
                   <td align="left">
-                     <input
+                    <input
                       type="checkbox"
                       checked={localCollaborationMode}
-                      onChange={(e) => setLocalCollaborationMode(e.target.checked)}
+                      onChange={(e) =>
+                        setLocalCollaborationMode(e.target.checked)
+                      }
                       className="w-4 h-4"
                     />
                     <span className="ml-2">
@@ -277,7 +286,9 @@ export const ConfigModal = ({
                     <input
                       type="checkbox"
                       checked={localCompactVisualization}
-                      onChange={(e) => setLocalCompactVisualization(e.target.checked)}
+                      onChange={(e) =>
+                        setLocalCompactVisualization(e.target.checked)
+                      }
                       className="w-4 h-4"
                     />
                     <span className="ml-2">
@@ -297,7 +308,9 @@ export const ConfigModal = ({
                     <input
                       type="checkbox"
                       checked={localCompletionGuaranteed}
-                      onChange={(e) => setLocalCompletionGuaranteed(e.target.checked)}
+                      onChange={(e) =>
+                        setLocalCompletionGuaranteed(e.target.checked)
+                      }
                       className="w-4 h-4"
                     />
                     <span className="ml-2">
@@ -307,7 +320,6 @@ export const ConfigModal = ({
                 </tr>
               </tbody>
             </table>
-
 
             <h3 className="labels mt-4">Experience Level</h3>
             <table className="config-table">
@@ -409,7 +421,9 @@ export const ConfigModal = ({
                       className="qwm-input"
                       type="password"
                       value={localOpenAIToken}
-                      onChange={(event) => setLocalOpenAIToken(event.target.value)}
+                      onChange={(event) =>
+                        setLocalOpenAIToken(event.target.value)
+                      }
                     />
                   </td>
                 </tr>
@@ -425,15 +439,15 @@ export const ConfigModal = ({
                       className="qwm-input"
                       type="password"
                       value={localMistralToken}
-                      onChange={(event) => setLocalMistralToken(event.target.value)}
+                      onChange={(event) =>
+                        setLocalMistralToken(event.target.value)
+                      }
                     />
                   </td>
                 </tr>
               </tbody>
             </table>
-
           </div>
-
         )}
 
         {activeTab === "patternEndpoints" && (

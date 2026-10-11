@@ -11,21 +11,21 @@ export interface IPortData {
 export enum NodeType {
   nodeCustom = "nodeCustom",
   nodeRecipe = "nodeRecipe",
-  default = "default"
+  default = "default",
 }
 
 export enum CreateDataFieldPort {
   inputs = "inputs",
-  outputs = "outputs"
+  outputs = "outputs",
 }
 
 export enum EdgeType {
-  buttonedge = "buttonedge"
+  buttonedge = "buttonedge",
 }
 
 export enum RecipeCreaterPort {
   recipeOut = "recipe-create-out",
-  recipeIn = "recipe-create-in"
+  recipeIn = "recipe-create-in",
 }
 //Есть уже 3 interface для наслед. в либе
 export interface INodeCustom {
@@ -62,5 +62,5 @@ export interface IcreateDynamicPort {
 export enum PipeType {
   input = "input",
   output = "output",
-  pipe = "pipe"
+  pipe = "pipe",
 }

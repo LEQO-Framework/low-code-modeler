@@ -9,7 +9,13 @@ interface ToastProps {
   rightOffset?: number;
 }
 
-export const Toast = ({ message, type, onClose, duration = 5000, rightOffset = 24 }: ToastProps) => {
+export const Toast = ({
+  message,
+  type,
+  onClose,
+  duration = 5000,
+  rightOffset = 24,
+}: ToastProps) => {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
@@ -44,7 +50,10 @@ export const Toast = ({ message, type, onClose, duration = 5000, rightOffset = 2
     >
       <div className="flex justify-between items-center">
         <span>{message}</span>
-        <button onClick={onClose} className="ml-4 text-white hover:text-gray-200">
+        <button
+          onClick={onClose}
+          className="ml-4 text-white hover:text-gray-200"
+        >
           <X size={18} />
         </button>
       </div>

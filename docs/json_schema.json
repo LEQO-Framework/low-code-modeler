@@ -1,1579 +1,1441 @@
 {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": "https://example.com/quantum-flow-model.schema.json",
-    "title": "Quantum Flow Model",
-    "type": "object",
-    "required": [
-        "metadata",
-        "nodes",
-        "edges",
-        "viewport"
-    ],
-    "properties": {
-        "metadata": {
-            "$ref": "#/$defs/metadata"
-        },
-        "nodes": {
-            "type": "array",
-            "items": {
-                "$ref": "#/$defs/node"
-            }
-        },
-        "edges": {
-            "type": "array",
-            "items": {
-                "$ref": "#/$defs/edge"
-            }
-        },
-        "viewport": {
-            "$ref": "#/$defs/viewport"
-        }
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/quantum-flow-model.schema.json",
+  "title": "Quantum Flow Model",
+  "type": "object",
+  "required": ["metadata", "nodes", "edges", "viewport"],
+  "properties": {
+    "metadata": {
+      "$ref": "#/$defs/metadata"
     },
-    "$defs": {
-        "metadata": {
-            "type": "object",
-            "required": [
-                "version",
-                "name",
-                "description",
-                "author",
-                "containsPlaceholder",
-                "id",
-                "timestamp"
-            ],
-            "properties": {
-                "version": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "author": {
-                    "type": "string"
-                },
-                "optimizeWidth": {
-                    "type": "boolean"
-                },
-                "optimizeDepth": {
-                    "type": "boolean"
-                },
-                "width": {
-                    "type": "integer",
-                    "minimum": 1
-                },
-                "depth": {
-                    "type": "integer",
-                    "minimum": 1
-                },
-                "containsPlaceholder": {
-                    "type": "boolean"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "timestamp": {
-                    "type": "string",
-                    "format": "date-time"
-                }
-            },
-            "allOf": [
-                {
-                    "if": {
-                        "properties": {
-                            "optimizeWidth": {
-                                "const": true
-                            }
-                        },
-                        "required": [
-                            "optimizeWidth"
-                        ]
-                    },
-                    "then": {
-                        "required": [
-                            "width"
-                        ]
-                    }
-                },
-                {
-                    "if": {
-                        "properties": {
-                            "optimizeDepth": {
-                                "const": true
-                            }
-                        },
-                        "required": [
-                            "optimizeDepth"
-                        ]
-                    },
-                    "then": {
-                        "required": [
-                            "depth"
-                        ]
-                    }
-                }
-            ]
-        },
-        "coordinate": {
-            "type": "object",
-            "required": [
-                "x",
-                "y"
-            ],
-            "properties": {
-                "x": {
-                    "type": "number"
-                },
-                "y": {
-                    "type": "number"
-                }
-            }
-        },
-        "inputConnection": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "string"
-                },
-                "edgeId": {
-                    "type": "string"
-                },
-                "outputIdentifier": {
-                    "type": "string"
-                },
-                "targetHandle": {
-                    "type": "string"
-                },
-                "identifiers": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                }
-            }
-        },
-        "markerEnd": {
-            "type": "object",
-            "required": [
-                "type",
-                "width",
-                "height",
-                "hidden"
-            ],
-            "properties": {
-                "type": {
-                    "type": "string"
-                },
-                "width": {
-                    "type": "number"
-                },
-                "height": {
-                    "type": "number"
-                },
-                "color": {
-                    "type": "string"
-                },
-                "hidden": {
-                    "type": "boolean"
-                }
-            }
-        },
-        "baseNode": {
-            "type": "object",
-            "required": [
-                "id",
-                "type",
-                "position",
-                "data",
-                "width",
-                "height"
-            ],
-            "properties": {
-                "id": {
-                    "type": "string"
-                },
-                "type": {
-                    "type": "string"
-                },
-                "position": {
-                    "$ref": "#/$defs/coordinate"
-                },
-                "positionAbsolute": {
-                    "$ref": "#/$defs/coordinate"
-                },
-                "width": {
-                    "type": "number"
-                },
-                "height": {
-                    "type": "number"
-                },
-                "dragging": {
-                    "type": "boolean"
-                }
-            }
-        },
-        "baseNodeData": {
-            "type": "object",
-            "required": [
-                "label",
-                "inputs",
-                "outputs",
-                "children",
-                "implementation",
-                "implementationType",
-                "completionGuaranteed",
-                "compactOptions",
-                "description",
-                "identifiers",
-                "inputTypes",
-                "outputTypes"
-            ],
-            "properties": {
-                "label": {
-                    "type": "string"
-                },
-                "inputs": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/$defs/inputConnection"
-                    }
-                },
-                "outputs": {
-                    "type": "array"
-                },
-                "children": {
-                    "type": "array"
-                },
-                "implementation": {
-                    "type": "string"
-                },
-                "implementationType": {
-                    "type": "string"
-                },
-                "uncomputeImplementationType": {
-                    "type": "string"
-                },
-                "uncomputeImplementation": {
-                    "type": "string"
-                },
-                "completionGuaranteed": {
-                    "type": "boolean"
-                },
-                "compactOptions": {
-                    "type": "array",
-                    "items": {
-                        "type": "boolean"
-                    }
-                },
-                "description": {
-                    "type": "string"
-                },
-                "icon": {
-                    "oneOf": [
-                        {
-                            "type": "string"
-                        },
-                        {
-                            "type": "array",
-                            "items": {
-                                "type": "string"
-                            }
-                        }
-                    ]
-                },
-                "identifiers": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "inputTypes": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "outputTypes": {
-                    "oneOf": [
-                        {
-                            "type": "array",
-                            "items": {
-                                "type": "string"
-                            }
-                        },
-                        {
-                            "type": "object"
-                        }
-                    ]
-                }
-            }
-        },
-        "statePreparationData": {
-            "allOf": [
-                {
-                    "$ref": "#/$defs/baseNodeData"
-                },
-                {
-                    "type": "object",
-                    "properties": {
-                        "encodingType": {
-                            "type": "string",
-                            "enum": [
-                                "Basis Encoding",
-                                "Custom Encoding",
-                                "Angle Encoding",
-                                "Amplitude Encoding"
-                            ]
-                        },
-                        "bound": {
-                            "type": "string"
-                        },
-                        "size": {
-                            "type": "string"
-                        },
-                        "outputIdentifier": {
-                            "type": "string"
-                        },
-                        "decimalPrecision": {
-                            "type": "string"
-                        },
-                        "quantumStateName": {
-                            "type": "string",
-                            "enum": [
-                                "Bell State φ+",
-                                "Bell State φ-",
-                                "Bell State ψ+",
-                                "Bell State ψ-",
-                                "Custom State",
-                                "GHZ",
-                                "Uniform Superposition",
-                                "W-State"
-                            ]
-                        }
-                    },
-                    "allOf": [
-                        {
-                            "if": {
-                                "properties": {
-                                    "quantumStateName": {
-                                        "enum": [
-                                            "Bell State φ+",
-                                            "Bell State φ-",
-                                            "Bell State ψ+",
-                                            "Bell State ψ-"
-                                        ]
-                                    }
-                                },
-                                "required": [
-                                    "quantumStateName"
-                                ]
-                            },
-                            "then": {
-                                "properties": {
-                                    "size": {
-                                        "const": "2"
-                                    }
-                                },
-                                "required": [
-                                    "size"
-                                ]
-                            }
-                        }
-                    ]
-                }
-            ]
-        },
-        "measurementData": {
-            "allOf": [
-                {
-                    "$ref": "#/$defs/baseNodeData"
-                },
-                {
-                    "type": "object",
-                    "required": [
-                        "indices"
-                    ],
-                    "properties": {
-                        "indices": {
-                            "type": "string",
-                            "pattern": "^[0-9]+(,[0-9]+)*$"
-                        },
-                        "outputIdentifier": {
-                            "type": "string"
-                        }
-                    }
-                }
-            ]
-        },
-        "qubitData": {
-            "allOf": [
-                {
-                    "$ref": "#/$defs/baseNodeData"
-                },
-                {
-                    "type": "object",
-                    "required": [
-                        "size"
-                    ],
-                    "properties": {
-                        "size": {
-                            "type": "integer",
-                            "minimum": 1
-                        },
-                        "outputIdentifier": {
-                            "type": "string"
-                        }
-                    }
-                }
-            ]
-        },
-        "dataTypeData": {
-            "allOf": [
-                {
-                    "$ref": "#/$defs/baseNodeData"
-                },
-                {
-                    "type": "object",
-                    "required": [
-                        "dataType",
-                        "value"
-                    ],
-                    "properties": {
-                        "dataType": {
-                            "type": "string",
-                            "enum": [
-                                "bit",
-                                "boolean",
-                                "Number",
-                                "String",
-                                "Array",
-                                "File",
-                                "Qubit"
-                            ]
-                        },
-                        "value": {
-                            "type": "string"
-                        },
-                        "outputIdentifier": {
-                            "type": "string"
-                        }
-                    },
-                    "allOf": [
-                        {
-                            "if": {
-                                "properties": {
-                                    "dataType": {
-                                        "const": "bit"
-                                    }
-                                }
-                            },
-                            "then": {
-                                "properties": {
-                                    "value": {
-                                        "pattern": "^[01]$"
-                                    }
-                                }
-                            }
-                        },
-                        {
-                            "if": {
-                                "properties": {
-                                    "dataType": {
-                                        "const": "boolean"
-                                    }
-                                }
-                            },
-                            "then": {
-                                "properties": {
-                                    "value": {
-                                        "pattern": "^(true|false)$"
-                                    }
-                                }
-                            }
-                        },
-                        {
-                            "if": {
-                                "properties": {
-                                    "dataType": {
-                                        "const": "Number"
-                                    }
-                                }
-                            },
-                            "then": {
-                                "properties": {
-                                    "value": {
-                                        "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$|^-?\\d+(\\.\\d+)?$"
-                                    }
-                                }
-                            }
-                        },
-                        {
-                            "if": {
-                                "properties": {
-                                    "dataType": {
-                                        "const": "Array"
-                                    }
-                                }
-                            },
-                            "then": {
-                                "properties": {
-                                    "value": {
-                                        "pattern": "^.*$"
-                                    }
-                                }
-                            }
-                        }
-                    ]
-                }
-            ]
-        },
-        "statePreparationNode": {
-            "allOf": [
-                {
-                    "$ref": "#/$defs/baseNode"
-                },
-                {
-                    "properties": {
-                        "type": {
-                            "const": "statePreparationNode"
-                        },
-                        "data": {
-                            "$ref": "#/$defs/statePreparationData"
-                        }
-                    }
-                }
-            ]
-        },
-        "measurementNode": {
-            "allOf": [
-                {
-                    "$ref": "#/$defs/baseNode"
-                },
-                {
-                    "properties": {
-                        "type": {
-                            "const": "measurementNode"
-                        },
-                        "data": {
-                            "$ref": "#/$defs/measurementData"
-                        }
-                    }
-                }
-            ]
-        },
-        "dataTypeNode": {
-            "allOf": [
-                {
-                    "$ref": "#/$defs/baseNode"
-                },
-                {
-                    "properties": {
-                        "type": {
-                            "const": "dataTypeNode"
-                        },
-                        "data": {
-                            "$ref": "#/$defs/dataTypeData"
-                        }
-                    }
-                }
-            ]
-        },
-        "gateNodeData": {
-            "allOf": [
-                {
-                    "$ref": "#/$defs/baseNodeData"
-                },
-                {
-                    "type": "object",
-                    "required": [
-                        "label",
-                        "inputs",
-                        "outputs"
-                    ],
-                    "properties": {
-                        "label": {
-                            "type": "string",
-                            "enum": [
-                                "Qubit Circuit",
-                                "X",
-                                "Y",
-                                "Z",
-                                "H",
-                                "S",
-                                "SDG",
-                                "T",
-                                "TDG",
-                                "RX(θ)",
-                                "RY(θ)",
-                                "RZ(θ)",
-                                "CNOT",
-                                "CY",
-                                "CZ",
-                                "SWAP",
-                                "CH",
-                                "CRX(θ)",
-                                "CRY(θ)",
-                                "CRZ(θ)",
-                                "CU",
-                                "Toffoli",
-                                "CSWAP"
-                            ]
-                        },
-                        "inputs": {
-                            "type": "array"
-                        },
-                        "outputs": {
-                            "type": "array"
-                        },
-                        "parameter": {
-                            "type": [
-                                "string",
-                                "number"
-                            ]
-                        }
-                    }
-                },
-                {
-                    "if": {
-                        "properties": {
-                            "label": {
-                                "const": "Qubit Circuit"
-                            }
-                        }
-                    },
-                    "then": {
-                        "properties": {
-                            "inputs": {
-                                "maxItems": 0
-                            },
-                            "outputs": {
-                                "minItems": 1,
-                                "maxItems": 1
-                            }
-                        }
-                    }
-                },
-                {
-                    "if": {
-                        "properties": {
-                            "label": {
-                                "enum": [
-                                    "X",
-                                    "Y",
-                                    "Z",
-                                    "H",
-                                    "S",
-                                    "SDG",
-                                    "T",
-                                    "TDG"
-                                ]
-                            }
-                        }
-                    },
-                    "then": {
-                        "properties": {
-                            "inputs": {
-                                "minItems": 1,
-                                "maxItems": 1
-                            },
-                            "outputs": {
-                                "minItems": 1,
-                                "maxItems": 1
-                            }
-                        }
-                    }
-                },
-                {
-                    "if": {
-                        "properties": {
-                            "label": {
-                                "enum": [
-                                    "RX(θ)",
-                                    "RY(θ)",
-                                    "RZ(θ)"
-                                ]
-                            }
-                        }
-                    },
-                    "then": {
-                        "required": [
-                            "parameter"
-                        ],
-                        "properties": {
-                            "inputs": {
-                                "minItems": 1,
-                                "maxItems": 1
-                            },
-                            "outputs": {
-                                "minItems": 1,
-                                "maxItems": 1
-                            }
-                        }
-                    }
-                },
-                {
-                    "if": {
-                        "properties": {
-                            "label": {
-                                "enum": [
-                                    "CNOT",
-                                    "CY",
-                                    "CZ",
-                                    "SWAP",
-                                    "CH"
-                                ]
-                            }
-                        }
-                    },
-                    "then": {
-                        "properties": {
-                            "inputs": {
-                                "minItems": 2,
-                                "maxItems": 2
-                            },
-                            "outputs": {
-                                "minItems": 2,
-                                "maxItems": 2
-                            }
-                        }
-                    }
-                },
-                {
-                    "if": {
-                        "properties": {
-                            "label": {
-                                "enum": [
-                                    "CRX(θ)",
-                                    "CRY(θ)",
-                                    "CRZ(θ)"
-                                ]
-                            }
-                        }
-                    },
-                    "then": {
-                        "required": [
-                            "parameter"
-                        ],
-                        "properties": {
-                            "inputs": {
-                                "minItems": 2,
-                                "maxItems": 2
-                            },
-                            "outputs": {
-                                "minItems": 2,
-                                "maxItems": 2
-                            }
-                        }
-                    }
-                },
-                {
-                    "if": {
-                        "properties": {
-                            "label": {
-                                "const": "CU"
-                            }
-                        }
-                    },
-                    "then": {
-                        "required": [
-                            "parameter"
-                        ],
-                        "properties": {
-                            "inputs": {
-                                "minItems": 2,
-                                "maxItems": 2
-                            },
-                            "outputs": {
-                                "minItems": 2,
-                                "maxItems": 2
-                            }
-                        }
-                    }
-                },
-                {
-                    "if": {
-                        "properties": {
-                            "label": {
-                                "enum": [
-                                    "Toffoli",
-                                    "CSWAP"
-                                ]
-                            }
-                        }
-                    },
-                    "then": {
-                        "properties": {
-                            "inputs": {
-                                "minItems": 3,
-                                "maxItems": 3
-                            },
-                            "outputs": {
-                                "minItems": 3,
-                                "maxItems": 3
-                            }
-                        }
-                    }
-                }
-            ]
-        },
-        "mcmtGateData": {
-            "allOf": [
-                {
-                    "$ref": "#/$defs/baseNodeData"
-                },
-                {
-                    "type": "object",
-                    "required": [
-                        "label",
-                        "numControls",
-                        "numTargets",
-                        "inputs",
-                        "outputs"
-                    ],
-                    "properties": {
-                        "label": {
-                            "const": "MCMT Gate"
-                        },
-                        "numControls": {
-                            "type": "string",
-                            "pattern": "^[1-9][0-9]*$"
-                        },
-                        "numTargets": {
-                            "type": "string",
-                            "pattern": "^[1-9][0-9]*$"
-                        },
-                        "inputs": {
-                            "type": "array"
-                        },
-                        "outputs": {
-                            "type": "array"
-                        }
-                    }
-                }
-            ]
-        },
-        "splitterNodeData": {
-            "allOf": [
-                {
-                    "$ref": "#/$defs/baseNodeData"
-                },
-                {
-                    "type": "object",
-                    "required": [
-                        "numberOutputs"
-                    ],
-                    "properties": {
-                        "numberOutputs": {
-                            "type": "string",
-                            "pattern": "^[2-9][0-9]*$"
-                        },
-                        "inputTypes": {
-                            "type": "array",
-                            "minItems": 1,
-                            "maxItems": 1,
-                            "items": {
-                                "const": "quantum register"
-                            }
-                        },
-                        "outputTypes": {
-                            "type": "array",
-                            "minItems": 2,
-                            "items": {
-                                "const": "qubit"
-                            }
-                        }
-                    }
-                }
-            ]
-        },
-        "mergerNodeData": {
-            "allOf": [
-                {
-                    "$ref": "#/$defs/baseNodeData"
-                },
-                {
-                    "type": "object",
-                    "required": [
-                        "numberInputs"
-                    ],
-                    "properties": {
-                        "numberInputs": {
-                            "type": "string",
-                            "pattern": "^[2-9][0-9]*$"
-                        },
-                        "inputTypes": {
-                            "type": "array",
-                            "minItems": 2,
-                            "items": {
-                                "const": "qubit"
-                            }
-                        },
-                        "outputTypes": {
-                            "type": "array",
-                            "minItems": 1,
-                            "maxItems": 1,
-                            "items": {
-                                "const": "quantum register"
-                            }
-                        }
-                    }
-                }
-            ]
-        },
-        "quantumTransformNodeData": {
-            "allOf": [
-                {
-                    "$ref": "#/$defs/baseNodeData"
-                },
-                {
-                    "type": "object",
-                    "required": [
-                        "label",
-                        "identifiers",
-                        "inverse"
-                    ],
-                    "properties": {
-                        "inverse": {
-                            "type": "boolean"
-                        },
-                        "inputTypes": {
-                            "type": "array",
-                            "items": {
-                                "const": "quantum register"
-                            },
-                            "minItems": 1,
-                            "maxItems": 1
-                        },
-                        "outputTypes": {
-                            "type": "array",
-                            "items": {
-                                "const": "quantum register"
-                            },
-                            "minItems": 1,
-                            "maxItems": 1
-                        }
-                    }
-                }
-            ]
-        }
+    "nodes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/node"
+      }
     },
-    "qftNodeData": {
-        "allOf": [
-            {
-                "$ref": "#/$defs/quantumTransformNodeData"
-            },
-            {
-                "if": {
-                    "properties": {
-                        "label": {
-                            "const": "QFT"
-                        }
-                    }
-                },
-                "then": {
-                    "properties": {
-                        "inverse": {
-                            "const": false
-                        }
-                    }
-                }
-            }
-        ]
-    },
-    "inverseQftNodeData": {
-        "allOf": [
-            {
-                "$ref": "#/$defs/quantumTransformNodeData"
-            },
-            {
-                "if": {
-                    "properties": {
-                        "label": {
-                            "const": "Inverse QFT"
-                        }
-                    }
-                },
-                "then": {
-                    "properties": {
-                        "inverse": {
-                            "const": true
-                        }
-                    }
-                }
-            }
-        ]
-    },
-    "quantumAlgorithmNodeData": {
-        "allOf": [
-            {
-                "$ref": "#/$defs/baseNodeData"
-            },
-            {
-                "type": "object",
-                "properties": {
-                    "inputTypes": {
-                        "type": "array",
-                        "items": {
-                            "const": "quantum register"
-                        }
-                    },
-                    "outputTypes": {
-                        "type": "array",
-                        "items": {
-                            "const": "quantum register"
-                        },
-                        "minItems": 1,
-                        "maxItems": 1
-                    }
-                }
-            }
-        ]
-    },
-    "deutschJozsaNodeData": {
-        "allOf": [
-            {
-                "$ref": "#/$defs/quantumAlgorithmNodeData"
-            },
-            {
-                "if": {
-                    "properties": {
-                        "label": {
-                            "const": "Deutsch-Jozsa"
-                        }
-                    }
-                },
-                "then": {
-                    "properties": {
-                        "inputTypes": {
-                            "maxItems": 0
-                        },
-                        "outputTypes": {
-                            "minItems": 1,
-                            "maxItems": 1
-                        }
-                    }
-                }
-            }
-        ]
-    },
-    "groverOracleNodeData": {
-        "allOf": [
-            {
-                "$ref": "#/$defs/quantumAlgorithmNodeData"
-            },
-            {
-                "type": "object",
-                "required": [
-                    "targetStates"
-                ],
-                "properties": {
-                    "targetStates": {
-                        "type": "string",
-                        "pattern": "^[^,]+(,[^,]+)*$"
-                    }
-                }
-            }
-        ]
-    },
-    "groverDiffuserNodeData": {
-        "allOf": [
-            {
-                "$ref": "#/$defs/baseNodeData"
-            },
-            {
-                "properties": {
-                    "inputTypes": {
-                        "type": "array",
-                        "items": {
-                            "const": "quantum register"
-                        },
-                        "minItems": 1,
-                        "maxItems": 1
-                    },
-                    "outputTypes": {
-                        "type": "array",
-                        "items": {
-                            "const": "quantum register"
-                        },
-                        "minItems": 1,
-                        "maxItems": 1
-                    }
-                }
-            }
-        ]
-    },
-    "groverNodeData": {
-        "allOf": [
-            {
-                "$ref": "#/$defs/baseNodeData"
-            },
-            {
-                "type": "object",
-                "properties": {
-                    "inputTypes": {
-                        "type": "array",
-                        "items": {
-                            "const": "quantum register"
-                        },
-                        "minItems": 1,
-                        "maxItems": 1
-                    },
-                    "outputTypes": {
-                        "type": "array",
-                        "items": {
-                            "const": "quantum register"
-                        },
-                        "minItems": 1,
-                        "maxItems": 1
-                    },
-                    "iterations": {
-                        "type": "integer",
-                        "minimum": 1
-                    },
-                    "targetStates": {
-                        "type": "string",
-                        "pattern": "^[^,]+(,[^,]+)*$"
-                    }
-                }
-            }
-        ]
-    },
-    "quantumOperatorNodeData": {
-        "allOf": [
-            {
-                "$ref": "#/$defs/baseNodeData"
-            },
-            {
-                "type": "object",
-                "required": [
-                    "operator"
-                ],
-                "properties": {
-                    "operator": {
-                        "type": "string"
-                    }
-                }
-            }
-        ]
-    },
-    "quantumArithmeticOperatorNodeData": {
-        "allOf": [
-            {
-                "$ref": "#/$defs/quantumOperatorNodeData"
-            },
-            {
-                "properties": {
-                    "operator": {
-                        "enum": [
-                            "+",
-                            "-",
-                            "*",
-                            "/"
-                        ]
-                    },
-                    "inputTypes": {
-                        "type": "array",
-                        "items": {
-                            "const": "quantum register"
-                        },
-                        "minItems": 2,
-                        "maxItems": 2
-                    },
-                    "outputTypes": {
-                        "type": "array",
-                        "items": {
-                            "const": "quantum register"
-                        },
-                        "minItems": 1,
-                        "maxItems": 1
-                    }
-                }
-            }
-        ]
-    },
-    "quantumBitwiseOperatorNodeData": {
-        "allOf": [
-            {
-                "$ref": "#/$defs/quantumOperatorNodeData"
-            },
-            {
-                "properties": {
-                    "operator": {
-                        "enum": [
-                            "&",
-                            "|",
-                            "^",
-                            "~"
-                        ]
-                    },
-                    "inputTypes": {
-                        "oneOf": [
-                            {
-                                "type": "array",
-                                "items": {
-                                    "const": "quantum register"
-                                },
-                                "minItems": 1,
-                                "maxItems": 1
-                            },
-                            {
-                                "type": "array",
-                                "items": {
-                                    "const": "quantum register"
-                                },
-                                "minItems": 2,
-                                "maxItems": 2
-                            }
-                        ]
-                    },
-                    "outputTypes": {
-                        "type": "array",
-                        "items": {
-                            "const": "quantum register"
-                        },
-                        "minItems": 1,
-                        "maxItems": 1
-                    }
-                }
-            }
-        ]
-    },
-    "customQuantumOperatorData": {
-        "allOf": [
-            {
-                "$ref": "#/$defs/baseNodeData"
-            },
-            {
-                "type": "object",
-                "required": [
-                    "numberQuantumInputs",
-                    "numberQuantumOutputs"
-                ],
-                "properties": {
-                    "numberQuantumInputs": {
-                        "type": "integer",
-                        "minimum": 0
-                    },
-                    "numberQuantumOutputs": {
-                        "type": "integer",
-                        "minimum": 0
-                    },
-                    "numberClassicalInputs": {
-                        "type": "integer",
-                        "minimum": 0
-                    },
-                    "numberClassicalOutputs": {
-                        "type": "integer",
-                        "minimum": 0
-                    },
-                    "inputTypes": {
-                        "type": "array",
-                        "items": {
-                            "enum": [
-                                "quantum register",
-                                "bit",
-                                "boolean",
-                                "number",
-                                "string",
-                                "array",
-                                "any"
-                            ]
-                        }
-                    },
-                    "outputTypes": {
-                        "type": "array",
-                        "items": {
-                            "enum": [
-                                "quantum register",
-                                "bit",
-                                "boolean",
-                                "number",
-                                "string",
-                                "array",
-                                "any"
-                            ]
-                        }
-                    }
-                }
-            }
-        ]
-    },
-    "customClassicalOperatorData": {
-        "allOf": [
-            {
-                "$ref": "#/$defs/baseNodeData"
-            },
-            {
-                "type": "object",
-                "required": [
-                    "numberClassicalInputs",
-                    "numberClassicalOutputs"
-                ],
-                "properties": {
-                    "numberClassicalInputs": {
-                        "type": "integer",
-                        "minimum": 0
-                    },
-                    "numberClassicalOutputs": {
-                        "type": "integer",
-                        "minimum": 0
-                    },
-                    "inputTypes": {
-                        "type": "array",
-                        "items": {
-                            "not": {
-                                "const": "quantum register"
-                            }
-                        }
-                    },
-                    "outputTypes": {
-                        "type": "array",
-                        "items": {
-                            "not": {
-                                "const": "quantum register"
-                            }
-                        }
-                    }
-                }
-            }
-        ]
-    },
-    "pluginNodeData": {
-        "allOf": [
-            {
-                "$ref": "#/$defs/baseNodeData"
-            },
-            {
-                "type": "object",
-                "required": [
-                    "pluginName",
-                    "dataInputs",
-                    "dataOutputs"
-                ],
-                "properties": {
-                    "pluginName": {
-                        "type": "string"
-                    },
-                    "dataInputs": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "required": [
-                                "parameter",
-                                "data_type",
-                                "required"
-                            ],
-                            "properties": {
-                                "parameter": {
-                                    "type": "string"
-                                },
-                                "data_type": {
-                                    "type": "string"
-                                },
-                                "content_type": {
-                                    "type": "array",
-                                    "items": {
-                                        "type": "string"
-                                    }
-                                },
-                                "required": {
-                                    "type": "boolean"
-                                }
-                            }
-                        }
-                    },
-                    "dataOutputs": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "required": [
-                                "name",
-                                "data_type"
-                            ],
-                            "properties": {
-                                "name": {
-                                    "type": "string"
-                                },
-                                "data_type": {
-                                    "type": "string"
-                                },
-                                "content_type": {
-                                    "type": "array",
-                                    "items": {
-                                        "type": "string"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        ]
-    },
-    "qaoaNode": {
-        "allOf": [
-            {
-                "$ref": "#/$defs/baseNodeData"
-            },
-            {
-                "type": "object",
-                "required": [
-                    "problem",
-                    "gamma",
-                    "beta"
-                ],
-                "properties": {
-                    "inputTypes": {
-                        "type": "array",
-                        "items": {
-                            "const": "quantum register"
-                        },
-                        "maxItems": 1
-                    },
-                    "outputTypes": {
-                        "type": "array",
-                        "items": {
-                            "const": "quantum register"
-                        },
-                        "minItems": 1,
-                        "maxItems": 1
-                    },
-                    "problem": {
-                        "type": "string",
-                        "enum": [
-                            "MaxCut",
-                            "Max-2-SAT",
-                            "Graph Coloring"
-                        ]
-                    },
-                    "gamma": {
-                        "type": "string"
-                    },
-                    "beta": {
-                        "type": "string"
-                    }
-                }
-            }
-        ]
-    },
-    "node": {
-        "oneOf": [
-            {
-                "$ref": "#/$defs/statePreparationNode"
-            },
-            {
-                "$ref": "#/$defs/measurementNode"
-            },
-            {
-                "$ref": "#/$defs/dataTypeNode"
-            },
-            {
-                "$ref": "#/$defs/gateNode"
-            },
-            {
-                "$ref": "#/$defs/mcmtGateData"
-            },
-            {
-                "$ref": "#/$defs/splitterNodeData"
-            },
-            {
-                "$ref": "#/$defs/mergerNodeData"
-            },
-            {
-                "$ref": "#/$defs/qftNodeData"
-            },
-            {
-                "$ref": "#/$defs/inverseQftNodeData"
-            },
-            {
-                "$ref": "#/$defs/quantumAlgorithmNodeData"
-            },
-            {
-                "$ref": "#/$defs/deutschJozsaNodeData"
-            },
-            {
-                "$ref": "#/$defs/groverDiffuserNodeData"
-            },
-            {
-                "$ref": "#/$defs/groverOracleNodeData"
-            },
-            {
-                "$ref": "#/$defs/groverNodeData"
-            },
-            {
-                "$ref": "#/$defs/quantumArithmeticOperatorNodeData"
-            },
-            {
-                "$ref": "#/$defs/quantumBitwiseOperatorNodeData"
-            },
-            {
-                "$ref": "#/$defs/quantumAlgorithmNodeData"
-            },
-            {
-                "$ref": "#/$defs/qaoaNode"
-            },
-            {
-                "$ref": "#/$defs/pluginNodeData"
-            }
-        ]
-    },
-    "edge": {
-        "type": "object",
-        "required": [
-            "source",
-            "target",
-            "type",
-            "id",
-            "markerEnd"
-        ],
-        "properties": {
-            "source": {
-                "type": "string"
-            },
-            "sourceHandle": {
-                "type": "string"
-            },
-            "target": {
-                "type": "string"
-            },
-            "targetHandle": {
-                "type": "string"
-            },
-            "type": {
-                "type": "string",
-                "enum": [
-                    "quantumEdge",
-                    "classicalEdge"
-                ]
-            },
-            "id": {
-                "type": "string"
-            },
-            "markerEnd": {
-                "$ref": "#/$defs/markerEnd"
-            }
-        }
+    "edges": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/edge"
+      }
     },
     "viewport": {
-        "type": "object",
-        "required": [
-            "x",
-            "y",
-            "zoom"
-        ],
-        "properties": {
-            "x": {
-                "type": "number"
-            },
-            "y": {
-                "type": "number"
-            },
-            "zoom": {
-                "type": "number",
-                "exclusiveMinimum": 0
-            }
-        }
+      "$ref": "#/$defs/viewport"
     }
+  },
+  "$defs": {
+    "metadata": {
+      "type": "object",
+      "required": [
+        "version",
+        "name",
+        "description",
+        "author",
+        "containsPlaceholder",
+        "id",
+        "timestamp"
+      ],
+      "properties": {
+        "version": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "author": {
+          "type": "string"
+        },
+        "optimizeWidth": {
+          "type": "boolean"
+        },
+        "optimizeDepth": {
+          "type": "boolean"
+        },
+        "width": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "depth": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "containsPlaceholder": {
+          "type": "boolean"
+        },
+        "id": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "optimizeWidth": {
+                "const": true
+              }
+            },
+            "required": ["optimizeWidth"]
+          },
+          "then": {
+            "required": ["width"]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "optimizeDepth": {
+                "const": true
+              }
+            },
+            "required": ["optimizeDepth"]
+          },
+          "then": {
+            "required": ["depth"]
+          }
+        }
+      ]
+    },
+    "coordinate": {
+      "type": "object",
+      "required": ["x", "y"],
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      }
+    },
+    "inputConnection": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "edgeId": {
+          "type": "string"
+        },
+        "outputIdentifier": {
+          "type": "string"
+        },
+        "targetHandle": {
+          "type": "string"
+        },
+        "identifiers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "markerEnd": {
+      "type": "object",
+      "required": ["type", "width", "height", "hidden"],
+      "properties": {
+        "type": {
+          "type": "string"
+        },
+        "width": {
+          "type": "number"
+        },
+        "height": {
+          "type": "number"
+        },
+        "color": {
+          "type": "string"
+        },
+        "hidden": {
+          "type": "boolean"
+        }
+      }
+    },
+    "baseNode": {
+      "type": "object",
+      "required": ["id", "type", "position", "data", "width", "height"],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "position": {
+          "$ref": "#/$defs/coordinate"
+        },
+        "positionAbsolute": {
+          "$ref": "#/$defs/coordinate"
+        },
+        "width": {
+          "type": "number"
+        },
+        "height": {
+          "type": "number"
+        },
+        "dragging": {
+          "type": "boolean"
+        }
+      }
+    },
+    "baseNodeData": {
+      "type": "object",
+      "required": [
+        "label",
+        "inputs",
+        "outputs",
+        "children",
+        "implementation",
+        "implementationType",
+        "completionGuaranteed",
+        "compactOptions",
+        "description",
+        "identifiers",
+        "inputTypes",
+        "outputTypes"
+      ],
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "inputs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/inputConnection"
+          }
+        },
+        "outputs": {
+          "type": "array"
+        },
+        "children": {
+          "type": "array"
+        },
+        "implementation": {
+          "type": "string"
+        },
+        "implementationType": {
+          "type": "string"
+        },
+        "uncomputeImplementationType": {
+          "type": "string"
+        },
+        "uncomputeImplementation": {
+          "type": "string"
+        },
+        "completionGuaranteed": {
+          "type": "boolean"
+        },
+        "compactOptions": {
+          "type": "array",
+          "items": {
+            "type": "boolean"
+          }
+        },
+        "description": {
+          "type": "string"
+        },
+        "icon": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "identifiers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "inputTypes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "outputTypes": {
+          "oneOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            {
+              "type": "object"
+            }
+          ]
+        }
+      }
+    },
+    "statePreparationData": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/baseNodeData"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "encodingType": {
+              "type": "string",
+              "enum": [
+                "Basis Encoding",
+                "Custom Encoding",
+                "Angle Encoding",
+                "Amplitude Encoding"
+              ]
+            },
+            "bound": {
+              "type": "string"
+            },
+            "size": {
+              "type": "string"
+            },
+            "outputIdentifier": {
+              "type": "string"
+            },
+            "decimalPrecision": {
+              "type": "string"
+            },
+            "quantumStateName": {
+              "type": "string",
+              "enum": [
+                "Bell State φ+",
+                "Bell State φ-",
+                "Bell State ψ+",
+                "Bell State ψ-",
+                "Custom State",
+                "GHZ",
+                "Uniform Superposition",
+                "W-State"
+              ]
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "quantumStateName": {
+                    "enum": [
+                      "Bell State φ+",
+                      "Bell State φ-",
+                      "Bell State ψ+",
+                      "Bell State ψ-"
+                    ]
+                  }
+                },
+                "required": ["quantumStateName"]
+              },
+              "then": {
+                "properties": {
+                  "size": {
+                    "const": "2"
+                  }
+                },
+                "required": ["size"]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "measurementData": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/baseNodeData"
+        },
+        {
+          "type": "object",
+          "required": ["indices"],
+          "properties": {
+            "indices": {
+              "type": "string",
+              "pattern": "^[0-9]+(,[0-9]+)*$"
+            },
+            "outputIdentifier": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "qubitData": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/baseNodeData"
+        },
+        {
+          "type": "object",
+          "required": ["size"],
+          "properties": {
+            "size": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "outputIdentifier": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "dataTypeData": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/baseNodeData"
+        },
+        {
+          "type": "object",
+          "required": ["dataType", "value"],
+          "properties": {
+            "dataType": {
+              "type": "string",
+              "enum": [
+                "bit",
+                "boolean",
+                "Number",
+                "String",
+                "Array",
+                "File",
+                "Qubit"
+              ]
+            },
+            "value": {
+              "type": "string"
+            },
+            "outputIdentifier": {
+              "type": "string"
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "dataType": {
+                    "const": "bit"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "value": {
+                    "pattern": "^[01]$"
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "dataType": {
+                    "const": "boolean"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "value": {
+                    "pattern": "^(true|false)$"
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "dataType": {
+                    "const": "Number"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "value": {
+                    "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$|^-?\\d+(\\.\\d+)?$"
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "dataType": {
+                    "const": "Array"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "value": {
+                    "pattern": "^.*$"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "statePreparationNode": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/baseNode"
+        },
+        {
+          "properties": {
+            "type": {
+              "const": "statePreparationNode"
+            },
+            "data": {
+              "$ref": "#/$defs/statePreparationData"
+            }
+          }
+        }
+      ]
+    },
+    "measurementNode": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/baseNode"
+        },
+        {
+          "properties": {
+            "type": {
+              "const": "measurementNode"
+            },
+            "data": {
+              "$ref": "#/$defs/measurementData"
+            }
+          }
+        }
+      ]
+    },
+    "dataTypeNode": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/baseNode"
+        },
+        {
+          "properties": {
+            "type": {
+              "const": "dataTypeNode"
+            },
+            "data": {
+              "$ref": "#/$defs/dataTypeData"
+            }
+          }
+        }
+      ]
+    },
+    "gateNodeData": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/baseNodeData"
+        },
+        {
+          "type": "object",
+          "required": ["label", "inputs", "outputs"],
+          "properties": {
+            "label": {
+              "type": "string",
+              "enum": [
+                "Qubit Circuit",
+                "X",
+                "Y",
+                "Z",
+                "H",
+                "S",
+                "SDG",
+                "T",
+                "TDG",
+                "RX(θ)",
+                "RY(θ)",
+                "RZ(θ)",
+                "CNOT",
+                "CY",
+                "CZ",
+                "SWAP",
+                "CH",
+                "CRX(θ)",
+                "CRY(θ)",
+                "CRZ(θ)",
+                "CU",
+                "Toffoli",
+                "CSWAP"
+              ]
+            },
+            "inputs": {
+              "type": "array"
+            },
+            "outputs": {
+              "type": "array"
+            },
+            "parameter": {
+              "type": ["string", "number"]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "label": {
+                "const": "Qubit Circuit"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "inputs": {
+                "maxItems": 0
+              },
+              "outputs": {
+                "minItems": 1,
+                "maxItems": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "label": {
+                "enum": ["X", "Y", "Z", "H", "S", "SDG", "T", "TDG"]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "inputs": {
+                "minItems": 1,
+                "maxItems": 1
+              },
+              "outputs": {
+                "minItems": 1,
+                "maxItems": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "label": {
+                "enum": ["RX(θ)", "RY(θ)", "RZ(θ)"]
+              }
+            }
+          },
+          "then": {
+            "required": ["parameter"],
+            "properties": {
+              "inputs": {
+                "minItems": 1,
+                "maxItems": 1
+              },
+              "outputs": {
+                "minItems": 1,
+                "maxItems": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "label": {
+                "enum": ["CNOT", "CY", "CZ", "SWAP", "CH"]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "inputs": {
+                "minItems": 2,
+                "maxItems": 2
+              },
+              "outputs": {
+                "minItems": 2,
+                "maxItems": 2
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "label": {
+                "enum": ["CRX(θ)", "CRY(θ)", "CRZ(θ)"]
+              }
+            }
+          },
+          "then": {
+            "required": ["parameter"],
+            "properties": {
+              "inputs": {
+                "minItems": 2,
+                "maxItems": 2
+              },
+              "outputs": {
+                "minItems": 2,
+                "maxItems": 2
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "label": {
+                "const": "CU"
+              }
+            }
+          },
+          "then": {
+            "required": ["parameter"],
+            "properties": {
+              "inputs": {
+                "minItems": 2,
+                "maxItems": 2
+              },
+              "outputs": {
+                "minItems": 2,
+                "maxItems": 2
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "label": {
+                "enum": ["Toffoli", "CSWAP"]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "inputs": {
+                "minItems": 3,
+                "maxItems": 3
+              },
+              "outputs": {
+                "minItems": 3,
+                "maxItems": 3
+              }
+            }
+          }
+        }
+      ]
+    },
+    "mcmtGateData": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/baseNodeData"
+        },
+        {
+          "type": "object",
+          "required": [
+            "label",
+            "numControls",
+            "numTargets",
+            "inputs",
+            "outputs"
+          ],
+          "properties": {
+            "label": {
+              "const": "MCMT Gate"
+            },
+            "numControls": {
+              "type": "string",
+              "pattern": "^[1-9][0-9]*$"
+            },
+            "numTargets": {
+              "type": "string",
+              "pattern": "^[1-9][0-9]*$"
+            },
+            "inputs": {
+              "type": "array"
+            },
+            "outputs": {
+              "type": "array"
+            }
+          }
+        }
+      ]
+    },
+    "splitterNodeData": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/baseNodeData"
+        },
+        {
+          "type": "object",
+          "required": ["numberOutputs"],
+          "properties": {
+            "numberOutputs": {
+              "type": "string",
+              "pattern": "^[2-9][0-9]*$"
+            },
+            "inputTypes": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 1,
+              "items": {
+                "const": "quantum register"
+              }
+            },
+            "outputTypes": {
+              "type": "array",
+              "minItems": 2,
+              "items": {
+                "const": "qubit"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "mergerNodeData": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/baseNodeData"
+        },
+        {
+          "type": "object",
+          "required": ["numberInputs"],
+          "properties": {
+            "numberInputs": {
+              "type": "string",
+              "pattern": "^[2-9][0-9]*$"
+            },
+            "inputTypes": {
+              "type": "array",
+              "minItems": 2,
+              "items": {
+                "const": "qubit"
+              }
+            },
+            "outputTypes": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 1,
+              "items": {
+                "const": "quantum register"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "quantumTransformNodeData": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/baseNodeData"
+        },
+        {
+          "type": "object",
+          "required": ["label", "identifiers", "inverse"],
+          "properties": {
+            "inverse": {
+              "type": "boolean"
+            },
+            "inputTypes": {
+              "type": "array",
+              "items": {
+                "const": "quantum register"
+              },
+              "minItems": 1,
+              "maxItems": 1
+            },
+            "outputTypes": {
+              "type": "array",
+              "items": {
+                "const": "quantum register"
+              },
+              "minItems": 1,
+              "maxItems": 1
+            }
+          }
+        }
+      ]
+    }
+  },
+  "qftNodeData": {
+    "allOf": [
+      {
+        "$ref": "#/$defs/quantumTransformNodeData"
+      },
+      {
+        "if": {
+          "properties": {
+            "label": {
+              "const": "QFT"
+            }
+          }
+        },
+        "then": {
+          "properties": {
+            "inverse": {
+              "const": false
+            }
+          }
+        }
+      }
+    ]
+  },
+  "inverseQftNodeData": {
+    "allOf": [
+      {
+        "$ref": "#/$defs/quantumTransformNodeData"
+      },
+      {
+        "if": {
+          "properties": {
+            "label": {
+              "const": "Inverse QFT"
+            }
+          }
+        },
+        "then": {
+          "properties": {
+            "inverse": {
+              "const": true
+            }
+          }
+        }
+      }
+    ]
+  },
+  "quantumAlgorithmNodeData": {
+    "allOf": [
+      {
+        "$ref": "#/$defs/baseNodeData"
+      },
+      {
+        "type": "object",
+        "properties": {
+          "inputTypes": {
+            "type": "array",
+            "items": {
+              "const": "quantum register"
+            }
+          },
+          "outputTypes": {
+            "type": "array",
+            "items": {
+              "const": "quantum register"
+            },
+            "minItems": 1,
+            "maxItems": 1
+          }
+        }
+      }
+    ]
+  },
+  "deutschJozsaNodeData": {
+    "allOf": [
+      {
+        "$ref": "#/$defs/quantumAlgorithmNodeData"
+      },
+      {
+        "if": {
+          "properties": {
+            "label": {
+              "const": "Deutsch-Jozsa"
+            }
+          }
+        },
+        "then": {
+          "properties": {
+            "inputTypes": {
+              "maxItems": 0
+            },
+            "outputTypes": {
+              "minItems": 1,
+              "maxItems": 1
+            }
+          }
+        }
+      }
+    ]
+  },
+  "groverOracleNodeData": {
+    "allOf": [
+      {
+        "$ref": "#/$defs/quantumAlgorithmNodeData"
+      },
+      {
+        "type": "object",
+        "required": ["targetStates"],
+        "properties": {
+          "targetStates": {
+            "type": "string",
+            "pattern": "^[^,]+(,[^,]+)*$"
+          }
+        }
+      }
+    ]
+  },
+  "groverDiffuserNodeData": {
+    "allOf": [
+      {
+        "$ref": "#/$defs/baseNodeData"
+      },
+      {
+        "properties": {
+          "inputTypes": {
+            "type": "array",
+            "items": {
+              "const": "quantum register"
+            },
+            "minItems": 1,
+            "maxItems": 1
+          },
+          "outputTypes": {
+            "type": "array",
+            "items": {
+              "const": "quantum register"
+            },
+            "minItems": 1,
+            "maxItems": 1
+          }
+        }
+      }
+    ]
+  },
+  "groverNodeData": {
+    "allOf": [
+      {
+        "$ref": "#/$defs/baseNodeData"
+      },
+      {
+        "type": "object",
+        "properties": {
+          "inputTypes": {
+            "type": "array",
+            "items": {
+              "const": "quantum register"
+            },
+            "minItems": 1,
+            "maxItems": 1
+          },
+          "outputTypes": {
+            "type": "array",
+            "items": {
+              "const": "quantum register"
+            },
+            "minItems": 1,
+            "maxItems": 1
+          },
+          "iterations": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "targetStates": {
+            "type": "string",
+            "pattern": "^[^,]+(,[^,]+)*$"
+          }
+        }
+      }
+    ]
+  },
+  "quantumOperatorNodeData": {
+    "allOf": [
+      {
+        "$ref": "#/$defs/baseNodeData"
+      },
+      {
+        "type": "object",
+        "required": ["operator"],
+        "properties": {
+          "operator": {
+            "type": "string"
+          }
+        }
+      }
+    ]
+  },
+  "quantumArithmeticOperatorNodeData": {
+    "allOf": [
+      {
+        "$ref": "#/$defs/quantumOperatorNodeData"
+      },
+      {
+        "properties": {
+          "operator": {
+            "enum": ["+", "-", "*", "/"]
+          },
+          "inputTypes": {
+            "type": "array",
+            "items": {
+              "const": "quantum register"
+            },
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "outputTypes": {
+            "type": "array",
+            "items": {
+              "const": "quantum register"
+            },
+            "minItems": 1,
+            "maxItems": 1
+          }
+        }
+      }
+    ]
+  },
+  "quantumBitwiseOperatorNodeData": {
+    "allOf": [
+      {
+        "$ref": "#/$defs/quantumOperatorNodeData"
+      },
+      {
+        "properties": {
+          "operator": {
+            "enum": ["&", "|", "^", "~"]
+          },
+          "inputTypes": {
+            "oneOf": [
+              {
+                "type": "array",
+                "items": {
+                  "const": "quantum register"
+                },
+                "minItems": 1,
+                "maxItems": 1
+              },
+              {
+                "type": "array",
+                "items": {
+                  "const": "quantum register"
+                },
+                "minItems": 2,
+                "maxItems": 2
+              }
+            ]
+          },
+          "outputTypes": {
+            "type": "array",
+            "items": {
+              "const": "quantum register"
+            },
+            "minItems": 1,
+            "maxItems": 1
+          }
+        }
+      }
+    ]
+  },
+  "customQuantumOperatorData": {
+    "allOf": [
+      {
+        "$ref": "#/$defs/baseNodeData"
+      },
+      {
+        "type": "object",
+        "required": ["numberQuantumInputs", "numberQuantumOutputs"],
+        "properties": {
+          "numberQuantumInputs": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "numberQuantumOutputs": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "numberClassicalInputs": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "numberClassicalOutputs": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "inputTypes": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "quantum register",
+                "bit",
+                "boolean",
+                "number",
+                "string",
+                "array",
+                "any"
+              ]
+            }
+          },
+          "outputTypes": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "quantum register",
+                "bit",
+                "boolean",
+                "number",
+                "string",
+                "array",
+                "any"
+              ]
+            }
+          }
+        }
+      }
+    ]
+  },
+  "customClassicalOperatorData": {
+    "allOf": [
+      {
+        "$ref": "#/$defs/baseNodeData"
+      },
+      {
+        "type": "object",
+        "required": ["numberClassicalInputs", "numberClassicalOutputs"],
+        "properties": {
+          "numberClassicalInputs": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "numberClassicalOutputs": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "inputTypes": {
+            "type": "array",
+            "items": {
+              "not": {
+                "const": "quantum register"
+              }
+            }
+          },
+          "outputTypes": {
+            "type": "array",
+            "items": {
+              "not": {
+                "const": "quantum register"
+              }
+            }
+          }
+        }
+      }
+    ]
+  },
+  "pluginNodeData": {
+    "allOf": [
+      {
+        "$ref": "#/$defs/baseNodeData"
+      },
+      {
+        "type": "object",
+        "required": ["pluginName", "dataInputs", "dataOutputs"],
+        "properties": {
+          "pluginName": {
+            "type": "string"
+          },
+          "dataInputs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["parameter", "data_type", "required"],
+              "properties": {
+                "parameter": {
+                  "type": "string"
+                },
+                "data_type": {
+                  "type": "string"
+                },
+                "content_type": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "required": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "dataOutputs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["name", "data_type"],
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "data_type": {
+                  "type": "string"
+                },
+                "content_type": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    ]
+  },
+  "qaoaNode": {
+    "allOf": [
+      {
+        "$ref": "#/$defs/baseNodeData"
+      },
+      {
+        "type": "object",
+        "required": ["problem", "gamma", "beta"],
+        "properties": {
+          "inputTypes": {
+            "type": "array",
+            "items": {
+              "const": "quantum register"
+            },
+            "maxItems": 1
+          },
+          "outputTypes": {
+            "type": "array",
+            "items": {
+              "const": "quantum register"
+            },
+            "minItems": 1,
+            "maxItems": 1
+          },
+          "problem": {
+            "type": "string",
+            "enum": ["MaxCut", "Max-2-SAT", "Graph Coloring"]
+          },
+          "gamma": {
+            "type": "string"
+          },
+          "beta": {
+            "type": "string"
+          }
+        }
+      }
+    ]
+  },
+  "node": {
+    "oneOf": [
+      {
+        "$ref": "#/$defs/statePreparationNode"
+      },
+      {
+        "$ref": "#/$defs/measurementNode"
+      },
+      {
+        "$ref": "#/$defs/dataTypeNode"
+      },
+      {
+        "$ref": "#/$defs/gateNode"
+      },
+      {
+        "$ref": "#/$defs/mcmtGateData"
+      },
+      {
+        "$ref": "#/$defs/splitterNodeData"
+      },
+      {
+        "$ref": "#/$defs/mergerNodeData"
+      },
+      {
+        "$ref": "#/$defs/qftNodeData"
+      },
+      {
+        "$ref": "#/$defs/inverseQftNodeData"
+      },
+      {
+        "$ref": "#/$defs/quantumAlgorithmNodeData"
+      },
+      {
+        "$ref": "#/$defs/deutschJozsaNodeData"
+      },
+      {
+        "$ref": "#/$defs/groverDiffuserNodeData"
+      },
+      {
+        "$ref": "#/$defs/groverOracleNodeData"
+      },
+      {
+        "$ref": "#/$defs/groverNodeData"
+      },
+      {
+        "$ref": "#/$defs/quantumArithmeticOperatorNodeData"
+      },
+      {
+        "$ref": "#/$defs/quantumBitwiseOperatorNodeData"
+      },
+      {
+        "$ref": "#/$defs/quantumAlgorithmNodeData"
+      },
+      {
+        "$ref": "#/$defs/qaoaNode"
+      },
+      {
+        "$ref": "#/$defs/pluginNodeData"
+      }
+    ]
+  },
+  "edge": {
+    "type": "object",
+    "required": ["source", "target", "type", "id", "markerEnd"],
+    "properties": {
+      "source": {
+        "type": "string"
+      },
+      "sourceHandle": {
+        "type": "string"
+      },
+      "target": {
+        "type": "string"
+      },
+      "targetHandle": {
+        "type": "string"
+      },
+      "type": {
+        "type": "string",
+        "enum": ["quantumEdge", "classicalEdge"]
+      },
+      "id": {
+        "type": "string"
+      },
+      "markerEnd": {
+        "$ref": "#/$defs/markerEnd"
+      }
+    }
+  },
+  "viewport": {
+    "type": "object",
+    "required": ["x", "y", "zoom"],
+    "properties": {
+      "x": {
+        "type": "number"
+      },
+      "y": {
+        "type": "number"
+      },
+      "zoom": {
+        "type": "number",
+        "exclusiveMinimum": 0
+      }
+    }
+  }
 }

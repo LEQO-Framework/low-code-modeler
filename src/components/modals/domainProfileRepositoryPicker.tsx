@@ -51,7 +51,8 @@ export function DomainProfileRepositoryPicker({
     setError(null);
 
     try {
-      const normalizedRepositoryUrl = normalizeRepositoryBaseUrl(trimmedRepositoryUrl);
+      const normalizedRepositoryUrl =
+        normalizeRepositoryBaseUrl(trimmedRepositoryUrl);
       const entries = await fetchProfileIndex(normalizedRepositoryUrl);
       setRepositoryUrl(normalizedRepositoryUrl);
       setDomains(entries);
@@ -59,7 +60,11 @@ export function DomainProfileRepositoryPicker({
       const first = entries[0];
       if (first) {
         setDirectory(first.directory);
-        setVersion(first.latest || [...first.versions].sort(compareVersionsDescending)[0] || "");
+        setVersion(
+          first.latest ||
+            [...first.versions].sort(compareVersionsDescending)[0] ||
+            "",
+        );
       } else {
         setDirectory("");
         setVersion("");
@@ -75,7 +80,9 @@ export function DomainProfileRepositoryPicker({
   };
 
   const selected = domains.find((entry) => entry.directory === directory);
-  const versions = selected ? [...selected.versions].sort(compareVersionsDescending) : [];
+  const versions = selected
+    ? [...selected.versions].sort(compareVersionsDescending)
+    : [];
 
   const load = async () => {
     const trimmedRepositoryUrl = repositoryUrl.trim();
@@ -108,7 +115,9 @@ export function DomainProfileRepositoryPicker({
             LOAD DOMAIN PROFILE
           </div>
 
-          <label className="mb-1 block text-xs text-slate-500">Repository URL</label>
+          <label className="mb-1 block text-xs text-slate-500">
+            Repository URL
+          </label>
           <input
             className="mb-2 w-full rounded border border-slate-300 px-2 py-1 text-sm"
             value={repositoryUrl}
@@ -135,13 +144,17 @@ export function DomainProfileRepositoryPicker({
 
           {domains.length > 0 && (
             <>
-              <label className="mb-1 block text-xs text-slate-500">Domain</label>
+              <label className="mb-1 block text-xs text-slate-500">
+                Domain
+              </label>
               <select
                 className="mb-2 w-full rounded border border-slate-300 px-2 py-1 text-sm"
                 value={directory}
                 disabled={busy || domains.length === 0}
                 onChange={(event) => {
-                  const next = domains.find((entry) => entry.directory === event.target.value);
+                  const next = domains.find(
+                    (entry) => entry.directory === event.target.value,
+                  );
                   setDirectory(event.target.value);
                   setVersion(next?.latest ?? "");
                 }}
@@ -153,7 +166,9 @@ export function DomainProfileRepositoryPicker({
                 ))}
               </select>
 
-              <label className="mb-1 block text-xs text-slate-500">Revision</label>
+              <label className="mb-1 block text-xs text-slate-500">
+                Revision
+              </label>
               <select
                 className="mb-3 w-full rounded border border-slate-300 px-2 py-1 text-sm"
                 value={version}

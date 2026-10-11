@@ -7,7 +7,7 @@ interface PatternSelectionModalProps {
   onConfirm: (
     patternId: string,
     patternName: string,
-    solutionJson: any
+    solutionJson: any,
   ) => void;
 }
 
@@ -17,7 +17,9 @@ export const PatternImplementationSelectionModal = ({
   onConfirm,
 }: PatternSelectionModalProps) => {
   const [patterns, setPatterns] = useState<any[]>([]);
-  const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({});
+  const [collapsedCategories, setCollapsedCategories] = useState<
+    Record<string, boolean>
+  >({});
   const [loading, setLoading] = useState(false);
 
   const [selectedPattern, setSelectedPattern] = useState<any>(null);
@@ -27,14 +29,14 @@ export const PatternImplementationSelectionModal = ({
 
   // ---------- CATEGORY CONFIG ----------
   const manualCategoryMap: Record<string, string> = {
-    "Initialization": "dataencodings",
+    Initialization: "dataencodings",
     "Quantum Phase Estimation (QPE)": "programflow",
     "Warm Start": "warmstart",
     "Biased Initial State": "warmstart",
     "Pre-Trained Feature Extractor": "warmstart",
     "Variational Parameter Transfer": "warmstart",
     "Chained Optimization": "warmstart",
-    "Grover": "programflow",
+    Grover: "programflow",
   };
 
   const getCategoryFromPattern = (pattern: any) => {
@@ -71,7 +73,7 @@ export const PatternImplementationSelectionModal = ({
       try {
         // Fetch patterns
         const patternRes = await fetch(
-          "http://localhost:1977/patternatlas/patternLanguages/af7780d5-1f97-4536-8da7-4194b093ab1d/patterns"
+          "http://localhost:1977/patternatlas/patternLanguages/af7780d5-1f97-4536-8da7-4194b093ab1d/patterns",
         );
         const patternData = await patternRes.json();
         const allPatterns = patternData._embedded?.patternModels || [];
@@ -83,7 +85,7 @@ export const PatternImplementationSelectionModal = ({
 
         while (!last) {
           const res = await fetch(
-            `${qcAtlasEndpoint}/atlas/implementations?page=${page}&size=20`
+            `${qcAtlasEndpoint}/atlas/implementations?page=${page}&size=20`,
           );
           const data = await res.json();
           allImpl = allImpl.concat(data.content);
@@ -95,12 +97,12 @@ export const PatternImplementationSelectionModal = ({
 
         for (const impl of allImpl) {
           const pkgRes = await fetch(
-            `${qcAtlasEndpoint}/atlas/algorithms/${impl.implementedAlgorithmId}/implementations/${impl.id}/implementation-packages/`
+            `${qcAtlasEndpoint}/atlas/algorithms/${impl.implementedAlgorithmId}/implementations/${impl.id}/implementation-packages/`,
           );
           const pkgData = await pkgRes.json();
 
           const codePackages = pkgData.content?.filter((pkg: any) =>
-            pkg.name?.toLowerCase().includes("code")
+            pkg.name?.toLowerCase().includes("code"),
           );
 
           if (!codePackages?.length) continue;
@@ -143,21 +145,24 @@ export const PatternImplementationSelectionModal = ({
   }, [open]);
 
   // ---------- GROUP & SORT ----------
-  const groupedPatterns = patterns.reduce((acc: Record<string, any[]>, pattern) => {
-    const category = getCategoryFromPattern(pattern);
-    if (!acc[category]) acc[category] = [];
-    acc[category].push(pattern);
-    return acc;
-  }, {});
+  const groupedPatterns = patterns.reduce(
+    (acc: Record<string, any[]>, pattern) => {
+      const category = getCategoryFromPattern(pattern);
+      if (!acc[category]) acc[category] = [];
+      acc[category].push(pattern);
+      return acc;
+    },
+    {},
+  );
 
   Object.keys(groupedPatterns).forEach((category) => {
     groupedPatterns[category].sort((a, b) =>
-      a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
+      a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
     );
   });
 
   const sortedCategories = Object.keys(groupedPatterns).sort((a, b) =>
-    formatCategoryName(a).localeCompare(formatCategoryName(b))
+    formatCategoryName(a).localeCompare(formatCategoryName(b)),
   );
 
   const toggleCategory = (category: string) => {
@@ -175,7 +180,7 @@ export const PatternImplementationSelectionModal = ({
       selectedSolution;
 
     const res = await fetch(
-      `${qcAtlasEndpoint}/atlas/algorithms/${implementedAlgorithmId}/implementations/${implementationId}/implementation-packages/${solutionId}/file/content`
+      `${qcAtlasEndpoint}/atlas/algorithms/${implementedAlgorithmId}/implementations/${implementationId}/implementation-packages/${solutionId}/file/content`,
     );
 
     const json = await res.json();
@@ -190,29 +195,28 @@ export const PatternImplementationSelectionModal = ({
       open={open}
       onClose={onClose}
       footer={
-  <div className="flex justify-end space-x-2">
-    <button
-      onClick={handleConfirm}
-      disabled={!selectedSolution}
-      className={`px-4 py-2 rounded text-white transition
+        <div className="flex justify-end space-x-2">
+          <button
+            onClick={handleConfirm}
+            disabled={!selectedSolution}
+            className={`px-4 py-2 rounded text-white transition
         ${
           selectedSolution
             ? "bg-blue-600 hover:bg-blue-700"
             : "bg-gray-400 cursor-not-allowed"
         }`}
-    >
-      Open Solution
-    </button>
+          >
+            Open Solution
+          </button>
 
-    <button
-      className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 transition"
-      onClick={onClose}
-    >
-      Cancel
-    </button>
-  </div>
-}
-
+          <button
+            className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 transition"
+            onClick={onClose}
+          >
+            Cancel
+          </button>
+        </div>
+      }
     >
       <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
         {loading && <p>Loading patterns...</p>}
@@ -258,9 +262,7 @@ export const PatternImplementationSelectionModal = ({
                             className="w-8 h-8 object-contain"
                           />
                         )}
-                        <span className="font-medium">
-                          {pattern.name}
-                        </span>
+                        <span className="font-medium">{pattern.name}</span>
                       </div>
 
                       {/* Solutions */}
@@ -278,9 +280,7 @@ export const PatternImplementationSelectionModal = ({
                                   selectedSolution?.solutionId ===
                                   solution.solutionId
                                 }
-                                onChange={() =>
-                                  setSelectedSolution(solution)
-                                }
+                                onChange={() => setSelectedSolution(solution)}
                               />
                               <span>{solution.name}</span>
                             </div>

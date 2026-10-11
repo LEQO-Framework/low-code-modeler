@@ -23,9 +23,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q523614"
-        ],
+        "identifiers": ["q523614"],
         "operator": "min"
       },
       "width": 320,
@@ -51,9 +49,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q609245"
-        ],
+        "identifiers": ["q609245"],
         "operator": "min"
       },
       "width": 320,
@@ -79,9 +75,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q645486"
-        ],
+        "identifiers": ["q645486"],
         "operator": "<"
       },
       "width": 320,
@@ -107,9 +101,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q200383"
-        ],
+        "identifiers": ["q200383"],
         "operator": "min"
       },
       "width": 320,

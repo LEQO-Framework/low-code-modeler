@@ -22,9 +22,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q481825"
-        ]
+        "identifiers": ["q481825"]
       },
       "width": 150,
       "height": 120,
@@ -45,18 +43,14 @@
         "inputs": [
           {
             "id": "newNode0",
-            "identifiers": [
-              "q481825"
-            ]
+            "identifiers": ["q481825"]
           }
         ],
         "implementation": "OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[1];\ncreg c[1];\nmeasure q[0] -> c[0];",
         "implementationType": "openqasm2",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q176992"
-        ],
+        "identifiers": ["q176992"],
         "indices": "",
         "outputIdentifier": ""
       },

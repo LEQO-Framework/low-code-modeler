@@ -20,40 +20,28 @@
         "inputs": [
           {
             "id": "newNode1",
-            "identifiers": [
-              "q484388"
-            ]
+            "identifiers": ["q484388"]
           },
           {
             "id": "newNode2",
-            "identifiers": [
-              "q882126"
-            ]
+            "identifiers": ["q882126"]
           },
           {
             "id": "newNode4",
-            "identifiers": [
-              "q855496"
-            ]
+            "identifiers": ["q855496"]
           },
           {
             "id": "newNode5",
-            "identifiers": [
-              "q224216"
-            ],
+            "identifiers": ["q224216"],
             "outputIdentifier": "a"
           },
           {
             "id": "newNode8",
-            "identifiers": [
-              "q902305"
-            ]
+            "identifiers": ["q902305"]
           },
           {
             "id": "newNode9",
-            "identifiers": [
-              "q421396"
-            ],
+            "identifiers": ["q421396"],
             "outputIdentifier": "b"
           }
         ],
@@ -61,9 +49,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q369492"
-        ],
+        "identifiers": ["q369492"],
         "condition": "a == b"
       },
       "width": 1100,
@@ -86,18 +72,14 @@
         "inputs": [
           {
             "id": "newNode0",
-            "identifiers": [
-              "q369492"
-            ]
+            "identifiers": ["q369492"]
           }
         ],
         "implementation": "OPENQASM 3.0;\ninclude \"stdgates.inc\";\n@leqo.input 0\nqubit[1] q;\nh q[0];\n@leqo.output 0\nlet output = q;",
         "implementationType": "openqasm3",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q484388"
-        ],
+        "identifiers": ["q484388"],
         "position": {
           "x": 465,
           "y": 165
@@ -127,9 +109,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q855496"
-        ]
+        "identifiers": ["q855496"]
       },
       "width": 100,
       "height": 100,
@@ -150,9 +130,7 @@
         "inputs": [
           {
             "id": "newNode7",
-            "identifiers": [
-              "q849013"
-            ],
+            "identifiers": ["q849013"],
             "outputIdentifier": "a"
           }
         ],
@@ -160,9 +138,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q224216"
-        ],
+        "identifiers": ["q224216"],
         "indices": "",
         "outputIdentifier": "a"
       },
@@ -188,9 +164,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q343984"
-        ]
+        "identifiers": ["q343984"]
       },
       "width": 100,
       "height": 100,
@@ -212,18 +186,14 @@
         "inputs": [
           {
             "id": "newNode6",
-            "identifiers": [
-              "q343984"
-            ]
+            "identifiers": ["q343984"]
           }
         ],
         "implementation": "OPENQASM 3.0;\ninclude \"stdgates.inc\";\n@leqo.input 0\nqubit[1] q;\nh q[0];\n@leqo.output 0\nlet output = q;",
         "implementationType": "openqasm3",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q849013"
-        ]
+        "identifiers": ["q849013"]
       },
       "width": 100,
       "height": 100,
@@ -245,18 +215,14 @@
         "inputs": [
           {
             "id": "newNode0",
-            "identifiers": [
-              "q369492"
-            ]
+            "identifiers": ["q369492"]
           }
         ],
         "implementation": "OPENQASM 3.0;\ninclude \"stdgates.inc\";\n@leqo.input 0\nqubit[1] q;\nx q[0];\n@leqo.output 0\nlet output = q;",
         "implementationType": "openqasm3",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q902305"
-        ],
+        "identifiers": ["q902305"],
         "position": {
           "x": 510,
           "y": 630
@@ -286,9 +252,7 @@
         "implementationType": "",
         "uncomputeImplementationType": "",
         "uncomputeImplementation": "",
-        "identifiers": [
-          "q421396"
-        ],
+        "identifiers": ["q421396"],
         "dataType": "bit",
         "value": "",
         "outputIdentifier": "b"

@@ -262,12 +262,19 @@ export const StatePreparationNode = memo((node: Node) => {
     const sourceNode = nodes.find((n) => n.id === edge.source);
     if (!sourceNode) return;
 
+    const rawIndex = sourceNode.data.outputs?.findIndex(
+      (o: any) =>
+        o.id === edge.sourceHandle || o.identifier === edge.sourceHandle,
+    );
+
     const outputIndex =
-      sourceNode.data.outputs?.findIndex((o) => o.id === edge.sourceHandle) ??
-      0;
+      rawIndex !== undefined && rawIndex !== -1 ? rawIndex : 0;
 
     const sourceType =
       sourceNode.data.outputTypes?.[outputIndex]?.toLowerCase();
+    console.log("SOURCE TYPE", sourceType);
+    console.log("SOURCE NODE", sourceNode);
+    console.log("output Index", outputIndex);
 
     if (sourceType !== "array") {
       useStore.getState().onEdgesChange([{ id: edge.id, type: "remove" }]);

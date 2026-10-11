@@ -19,7 +19,6 @@ const GATE_LABELS: Record<string, string> = {
 
 const generateId = () => crypto.randomUUID();
 
-
 function createQubitNode(id: string, x: number, y: number, q: string) {
   return {
     id,
@@ -48,7 +47,7 @@ function createGateNode(
   x: number,
   y: number,
   identifiers: string[],
-  inputs: any[]
+  inputs: any[],
 ) {
   return {
     id,
@@ -76,7 +75,7 @@ function createMergerNode(
   x: number,
   y: number,
   identifiers: string[],
-  inputs: any[]
+  inputs: any[],
 ) {
   return {
     id,
@@ -103,7 +102,7 @@ function makeEdge(
   source: string,
   target: string,
   sHandle: string,
-  tHandle: string
+  tHandle: string,
 ) {
   return {
     id: generateId(),
@@ -121,7 +120,6 @@ function makeEdge(
     },
   };
 }
-
 
 export function openQasmToFlow(qasm: string): FlowJson {
   qasm = qasm.replace(/\r\n/g, "\n").replace(/\uFEFF/g, "");
@@ -154,8 +152,8 @@ export function openQasmToFlow(qasm: string): FlowJson {
   }
 
   // 2. ALIAS MAP
-  //    let alias = reg[{0}] 
-  //    let alias = reg[{2,3}] 
+  //    let alias = reg[{0}]
+  //    let alias = reg[{2,3}]
   //    let alias = otherAlias, copy
   const aliasMap: Record<string, number[]> = {};
 
@@ -165,17 +163,16 @@ export function openQasmToFlow(qasm: string): FlowJson {
   while ((m = directAliasRe.exec(qasm))) {
     const aliasName = m[1];
     const srcName = m[2];
-    const idxs = m[3].split(",").map(s => Number(s.trim()));
+    const idxs = m[3].split(",").map((s) => Number(s.trim()));
     if (srcName === reg) {
       aliasMap[aliasName] = idxs;
     } else if (aliasMap[srcName]) {
-      aliasMap[aliasName] = idxs.map(i => aliasMap[srcName][i]);
+      aliasMap[aliasName] = idxs.map((i) => aliasMap[srcName][i]);
     }
   }
 
   // alias-of-alias without indexing:  let out = encoded;
-  const indirectAliasRe =
-    /let\s+([a-zA-Z0-9_.]+)\s*=\s*([a-zA-Z0-9_.]+)\s*;/g;
+  const indirectAliasRe = /let\s+([a-zA-Z0-9_.]+)\s*=\s*([a-zA-Z0-9_.]+)\s*;/g;
   while ((m = indirectAliasRe.exec(qasm))) {
     const [, dst, src] = m;
     if (!aliasMap[dst] && aliasMap[src]) aliasMap[dst] = [...aliasMap[src]];
@@ -188,7 +185,6 @@ export function openQasmToFlow(qasm: string): FlowJson {
     return undefined;
   }
 
-
   // 4. SOURCE HANDLE for a qubit wire leaving a node
   //
   //    sourceHandle format:
@@ -197,13 +193,12 @@ export function openQasmToFlow(qasm: string): FlowJson {
   //
   //    outIdx = the position slot in the node that this qubit uses
   function sourceHandle(nodeId: string, outIdx: number): string {
-    const node = nodes.find(nd => nd.id === nodeId);
+    const node = nodes.find((nd) => nd.id === nodeId);
     if (node?.type === "mergerNode") {
       return `quantumHandleMergerOutput${outIdx}${nodeId}`;
     }
     return `quantumHandleGateOutput${outIdx}${nodeId}`;
   }
-
 
   // 5. APPLY A GATE
   //    operands: ordered list of [aliasName, localIdx]
@@ -220,7 +215,7 @@ export function openQasmToFlow(qasm: string): FlowJson {
     }
 
     const gateId = generateId();
-    const d = Math.max(...qIdxs.map(q => depth[q])) + 1;
+    const d = Math.max(...qIdxs.map((q) => depth[q])) + 1;
     const x = d * 300 - 180;
     const y = ((Math.min(...qIdxs) + Math.max(...qIdxs)) / 2) * 180 - 90;
 
@@ -258,12 +253,11 @@ export function openQasmToFlow(qasm: string): FlowJson {
         GATE_LABELS[gate] || gate.toUpperCase(),
         x,
         y,
-        qIdxs.map(q => qLabel(q)),
-        inputs
-      )
+        qIdxs.map((q) => qLabel(q)),
+        inputs,
+      ),
     );
   }
-
 
   // 6. PARSE GATE LINES (handle multi-line operands)
   const noComments = qasm
@@ -285,7 +279,6 @@ export function openQasmToFlow(qasm: string): FlowJson {
     if (operands.length > 0) applyGate(gate, operands);
   }
 
-
   // 7. PARSE MEASUREMENTS
   //
   //  Pattern:
@@ -305,7 +298,7 @@ export function openQasmToFlow(qasm: string): FlowJson {
     const aliasName = m[3];
     const localIdxs = m[4]
       .split(",")
-      .map(s => s.trim())
+      .map((s) => s.trim())
       .map(Number);
 
     // Resolve to absolute qubit indices
@@ -317,8 +310,7 @@ export function openQasmToFlow(qasm: string): FlowJson {
     if (absIdxs.length === 0) continue;
 
     const maxDepth = Math.max(...depth);
-    const midY =
-      ((Math.min(...absIdxs) + Math.max(...absIdxs)) / 2) * 180 - 90;
+    const midY = ((Math.min(...absIdxs) + Math.max(...absIdxs)) / 2) * 180 - 90;
 
     const mergerId = generateId();
     const mergerX = (maxDepth + 2) * 300 - 180;
@@ -350,9 +342,15 @@ export function openQasmToFlow(qasm: string): FlowJson {
     });
 
     // Merger identifiers = all measured qubits
-    const mergerIdentifiers = absIdxs.map(q => qLabel(q));
+    const mergerIdentifiers = absIdxs.map((q) => qLabel(q));
     nodes.push(
-      createMergerNode(mergerId, mergerX, mergerY, mergerIdentifiers, mergerInputs)
+      createMergerNode(
+        mergerId,
+        mergerX,
+        mergerY,
+        mergerIdentifiers,
+        mergerInputs,
+      ),
     );
 
     // Edge from merger to measurement

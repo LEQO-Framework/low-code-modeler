@@ -77,14 +77,17 @@ export async function createArtifactTemplate(name, artifactTypeQName) {
     namespace: QUANTME_NAMESPACE_PUSH + "/artifacttemplates",
     type: artifactTypeQName,
   };
-  const response = await fetch(`http://localhost:8093/winery/artifacttemplates`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "text/plain",
+  const response = await fetch(
+    `http://localhost:8093/winery/artifacttemplates`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "text/plain",
+      },
+      body: JSON.stringify(artifactTemplate),
     },
-    body: JSON.stringify(artifactTemplate),
-  });
+  );
   return response.text();
 }
 
@@ -99,7 +102,7 @@ export async function addFileToArtifactTemplate(artifactTemplateAddress, file) {
       headers: {
         Accept: "*/*",
       },
-    }
+    },
   );
   return response.json();
 }
@@ -107,7 +110,7 @@ export async function addFileToArtifactTemplate(artifactTemplateAddress, file) {
 export async function createArtifactTemplateWithFile(name, artifactType, file) {
   const artifactTemplateAddress = await createArtifactTemplate(
     name,
-    artifactType
+    artifactType,
   );
   await addFileToArtifactTemplate(artifactTemplateAddress, file);
   return artifactTemplateAddress;
@@ -119,14 +122,17 @@ export async function createServiceTemplate(name, namespace) {
     localname: name,
     namespace: namespace,
   };
-  const response = await fetch("http://localhost:8093/winery" + "/servicetemplates", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "text/plain",
+  const response = await fetch(
+    "http://localhost:8093/winery" + "/servicetemplates",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "text/plain",
+      },
+      body: JSON.stringify(serviceTemplate),
     },
-    body: JSON.stringify(serviceTemplate),
-  });
+  );
   return response.text();
 }
 
@@ -134,16 +140,16 @@ export async function deleteArtifactTemplate(artifactTemplateName) {
   // /artifacttemplates/http%253A%252F%252Fquantil.org%252Fquantme%252Fpush%252Fartifacttemplates/ArtifactTemplate-Activity_01b3qkz/
   const response = await fetch(
     `http://localhost:8093/winery/artifacttemplates/${encodeURIComponent(
-      encodeURIComponent(QUANTME_NAMESPACE_PUSH + "/")
+      encodeURIComponent(QUANTME_NAMESPACE_PUSH + "/"),
     )}artifacttemplates/${encodeURIComponent(
-      encodeURIComponent(artifactTemplateName)
+      encodeURIComponent(artifactTemplateName),
     )}`,
     {
       method: "DELETE",
       headers: {
         Accept: "application/json",
       },
-    }
+    },
   );
   return response.status === 204;
 }
@@ -151,14 +157,14 @@ export async function deleteArtifactTemplate(artifactTemplateName) {
 export async function serviceTemplateExists(serviceTemplateName) {
   const response = await fetch(
     `http://localhost:8093/winery/servicetemplates/${encodeURIComponent(
-      encodeURIComponent(QUANTME_NAMESPACE_PUSH)
+      encodeURIComponent(QUANTME_NAMESPACE_PUSH),
     )}/${encodeURIComponent(encodeURIComponent(serviceTemplateName))}`,
     {
       method: "GET",
       headers: {
         Accept: "application/json",
       },
-    }
+    },
   );
   return response.status === 200;
 }
@@ -171,7 +177,7 @@ export async function deleteTagByID(serviceTemplateAddress, tagID) {
       headers: {
         Accept: "application/json",
       },
-    }
+    },
   );
   return response.status === 204;
 }
@@ -184,7 +190,7 @@ export async function getTags(serviceTemplateAddress) {
       headers: {
         Accept: "application/json",
       },
-    }
+    },
   );
   return response.json();
 }
@@ -206,7 +212,7 @@ export async function addNodeWithArtifactToServiceTemplateByName(
   artifactName,
   artifactTypeQName,
   requirementTypes,
-  kvProperties
+  kvProperties,
 ) {
   const serviceTemplateAddress =
     encodeURIComponent(encodeURIComponent(QUANTME_NAMESPACE_PUSH)) +
@@ -221,7 +227,7 @@ export async function addNodeWithArtifactToServiceTemplateByName(
     artifactName,
     artifactTypeQName,
     requirementTypes,
-    kvProperties
+    kvProperties,
   );
   return serviceTemplateAddress;
 }
@@ -229,7 +235,7 @@ export async function addNodeWithArtifactToServiceTemplateByName(
 export async function addNodeToServiceTemplate(
   serviceTemplateAddress,
   nodeTypeQName,
-  name
+  name,
 ) {
   const nodeTemplate = {
     documentation: [],
@@ -277,7 +283,7 @@ export async function addNodeToServiceTemplate(
         Accept: "*/*",
       },
       body: JSON.stringify(nodeTemplate),
-    }
+    },
   );
   return response.status === 204;
 }
@@ -290,7 +296,7 @@ export async function addNodeWithArtifactToServiceTemplate(
   artifactName,
   artifactTypeQName,
   requirementTypes,
-  kvProperties
+  kvProperties,
 ) {
   const nodeTemplate = {
     documentation: [],
@@ -344,7 +350,7 @@ export async function addNodeWithArtifactToServiceTemplate(
         Accept: "*/*",
       },
       body: JSON.stringify(nodeTemplate),
-    }
+    },
   );
   return response.status === 204;
 }
@@ -357,7 +363,7 @@ export async function getServiceTemplateXML(serviceTemplateAddress) {
       headers: {
         Accept: "application/xml",
       },
-    }
+    },
   );
   return response.json();
 }
@@ -379,7 +385,7 @@ export async function insertTopNodeTag(serviceTemplateAddress, nodeTypeQName) {
         Accept: "*/*",
       },
       body: JSON.stringify(tag),
-    }
+    },
   );
   return response.text();
 }
@@ -392,11 +398,11 @@ export async function createServiceTemplateWithNodeAndArtifact(
   artifactName,
   artifactTypeQName,
   requirementTypes,
-  kvProperties
+  kvProperties,
 ) {
   const serviceTemplateAddress = await createServiceTemplate(
     name,
-    "http://quantil.org/quantme/push"
+    "http://quantil.org/quantme/push",
   );
   await addNodeWithArtifactToServiceTemplate(
     serviceTemplateAddress,
@@ -406,7 +412,7 @@ export async function createServiceTemplateWithNodeAndArtifact(
     artifactName,
     artifactTypeQName,
     requirementTypes,
-    kvProperties
+    kvProperties,
   );
   return serviceTemplateAddress;
 }
@@ -419,7 +425,7 @@ export async function getArtifactTemplateInfo(artifactTemplateAddress) {
       headers: {
         Accept: "application/json",
       },
-    }
+    },
   );
   return response.json();
 }
@@ -481,7 +487,7 @@ export async function loadTopology(deploymentModelUrl) {
   if (deploymentModelUrl.startsWith("{{ wineryEndpoint }}")) {
     deploymentModelUrl = deploymentModelUrl.replace(
       "{{ wineryEndpoint }}",
-      "http://localhost:8093/winery"
+      "http://localhost:8093/winery",
     );
   }
   let topology;
@@ -494,14 +500,14 @@ export async function loadTopology(deploymentModelUrl) {
         headers: {
           Accept: "application/json",
         },
-      }
+      },
     ).then((res) => res.json());
     tags = await fetch(deploymentModelUrl.replace("?csar", "tags")).then(
-      (res) => res.json()
+      (res) => res.json(),
     );
   } catch {
     throw new Error(
-      "An unexpected error occurred during loading the deployments models topology."
+      "An unexpected error occurred during loading the deployments models topology.",
     );
   }
   let topNode;
@@ -509,7 +515,7 @@ export async function loadTopology(deploymentModelUrl) {
   if (topNodeTag) {
     const topNodeId = topNodeTag.value;
     topNode = topology.nodeTemplates.find(
-      (nodeTemplate) => nodeTemplate.id === topNodeId
+      (nodeTemplate) => nodeTemplate.id === topNodeId,
     );
     if (!topNode) {
       throw new Error(`Top level node "${topNodeId}" not found.`);
@@ -519,7 +525,7 @@ export async function loadTopology(deploymentModelUrl) {
       topology.nodeTemplates.map((nodeTemplate) => [
         nodeTemplate.id,
         nodeTemplate,
-      ])
+      ]),
     );
     for (let relationship of topology.relationshipTemplates) {
       if (relationship.name === "HostedOn") {
@@ -555,7 +561,7 @@ export async function createDeploymentModel(
   artifactTemplateNamespace,
   artifactType,
   fileName,
-  serviceTemplateURL
+  serviceTemplateURL,
 ) {
   // create a new ArtifactTemplate and upload the agent file (the agent currently also contains the program and we deploy them together)
   let artifactName = await createNewArtifactTemplate(
@@ -564,7 +570,7 @@ export async function createDeploymentModel(
     artifactTemplateNamespace,
     artifactType,
     programBlobs,
-    fileName
+    fileName,
   );
 
   // create new ServiceTemplate for the hybrid program by adding a new version of the predefined template
@@ -582,7 +588,7 @@ export async function createDeploymentModel(
   let getTemplateXmlResultJson = await getTemplateXmlResult.text();
   getTemplateXmlResultJson = getTemplateXmlResultJson.replace(
     ':QiskitRuntimeAgentContainer_DA"',
-    ":" + artifactName + '"'
+    ":" + artifactName + '"',
   );
   await fetch(serviceTemplateURL, {
     method: "PUT",
@@ -593,7 +599,7 @@ export async function createDeploymentModel(
   // replace concrete Winery endpoint with abstract placeholder to enable QAA transfer into another environment
   let deploymentModelUrl = serviceTemplateURL.replace(
     wineryEndpoint,
-    "{{ wineryEndpoint }}"
+    "{{ wineryEndpoint }}",
   );
   deploymentModelUrl += "?csar";
   return { deploymentModelUrl: deploymentModelUrl };
@@ -622,12 +628,12 @@ export async function updateNodeType(name, namespace) {
       "/nodetypes/" +
       encodeURIComponent(encodeURIComponent(namespace)) +
       "/" +
-      name
+      name,
   );
   console.log(nodetype);
   const response = await fetch(
     `http://localhost:8093/winery/nodetypes/${encodeURIComponent(
-      encodeURIComponent(namespace)
+      encodeURIComponent(namespace),
     )}/${name}`,
     {
       method: "PUT",
@@ -636,7 +642,7 @@ export async function updateNodeType(name, namespace) {
         Accept: "text/plain",
       },
       body: nodetype,
-    }
+    },
   );
   return response.text();
 }
@@ -644,19 +650,19 @@ export async function updateNodeType(name, namespace) {
 export async function updateServiceTemplate(name, namespace) {
   const topologyTemplate = topologyTemplateDefinition.replaceAll(
     "NodetypeToReplace",
-    name
+    name,
   );
   console.log(
     "http://localhost:8093/winery" +
       "/servicetemplates/" +
       encodeURIComponent(encodeURIComponent(namespace)) +
       "/" +
-      name
+      name,
   );
   console.log(topologyTemplate);
   const response = await fetch(
     `http://localhost:8093/winery/servicetemplates/${encodeURIComponent(
-      encodeURIComponent(namespace)
+      encodeURIComponent(namespace),
     )}/${name}`,
     {
       method: "PUT",
@@ -665,7 +671,7 @@ export async function updateServiceTemplate(name, namespace) {
         Accept: "text/plain",
       },
       body: topologyTemplate,
-    }
+    },
   );
   return response.text();
 }
@@ -682,7 +688,7 @@ export async function uploadCSARToContainer(
   opentoscaEndpoint,
   csarName,
   url,
-  wineryEndpoint
+  wineryEndpoint,
 ) {
   if (opentoscaEndpoint === undefined) {
     console.error("OpenTOSCA endpoint is undefined. Unable to upload CSARs...");
@@ -695,11 +701,14 @@ export async function uploadCSARToContainer(
     }
     console.log(
       "Checking if CSAR at following URL is already uploaded to the OpenTOSCA Container: ",
-      url
+      url,
     );
 
     // check if CSAR is already uploaded
-    let getCSARResult:any = await getBuildPlanForCSAR(opentoscaEndpoint, csarName);
+    let getCSARResult: any = await getBuildPlanForCSAR(
+      opentoscaEndpoint,
+      csarName,
+    );
 
     if (!getCSARResult.success) {
       console.log("CSAR is not yet uploaded. Uploading...");
@@ -717,7 +726,7 @@ export async function uploadCSARToContainer(
         headers: { "Content-Type": "application/json" },
       });
       console.log(
-        "CSAR sent to OpenTOSCA Container. Waiting for build plan..."
+        "CSAR sent to OpenTOSCA Container. Waiting for build plan...",
       );
 
       // check successful upload and retrieve corresponding url
@@ -797,7 +806,7 @@ async function getBuildPlanUrl(csarUrl) {
   ) {
     console.error(
       "Unable to find service template in CSAR at URL: %s",
-      csarUrl
+      csarUrl,
     );
     return { success: false };
   }
@@ -828,25 +837,25 @@ export async function createServiceInstance(
   csar,
   camundaEngineEndpoint,
   qprovEndpoint,
-  inputParams
+  inputParams,
 ) {
-  const result:any = { success: false };
+  const result: any = { success: false };
 
   const inputParameters = csar.inputParameters;
   console.log("Required input parameters: ", inputParameters);
   if (csar.type === "pull") {
     // get special parameters that are required to bind services using external tasks / the pulling pattern
     const camundaTopicParam = inputParameters.find(
-      (param) => param.name === "camundaTopic"
+      (param) => param.name === "camundaTopic",
     );
     const camundaEndpointParam = inputParameters.find(
-      (param) => param.name === "camundaEndpoint"
+      (param) => param.name === "camundaEndpoint",
     );
 
     // abort if parameters are not available
     if (camundaTopicParam === undefined || camundaEndpointParam === undefined) {
       console.error(
-        "Unable to pass topic to poll to service instance creation. Service binding will fail!"
+        "Unable to pass topic to poll to service instance creation. Service binding will fail!",
       );
       return result;
     }
@@ -861,12 +870,12 @@ export async function createServiceInstance(
 
   // add QProv endpoint for provenance data storage
   const qprovEndpointParam = inputParameters.find(
-    (param) => param.name === "QProvEndpoint"
+    (param) => param.name === "QProvEndpoint",
   );
   if (qprovEndpointParam !== undefined) {
     console.info(
       "ServiceTemplate requires QProv Endpoint as input: ",
-      qprovEndpoint
+      qprovEndpoint,
     );
     qprovEndpointParam.value = qprovEndpoint;
   }
@@ -887,7 +896,7 @@ export async function createServiceInstance(
       method: "POST",
       body: JSON.stringify(inputParameters),
       headers: { "Content-Type": "application/json", Accept: "text/plain" },
-    }
+    },
   );
   console.log("Received instance creation response");
   console.log(instanceCreationResponse);
@@ -900,7 +909,7 @@ export async function createServiceInstance(
   console.log("Getting service template instance");
   // get service template instance to poll for completness
   let buildPlanResponse = await fetch(
-    csar.buildPlanUrl + "/instances/" + instanceCreationResponseJson
+    csar.buildPlanUrl + "/instances/" + instanceCreationResponseJson,
   );
   console.log("Received service template instance");
   let buildPlanResponseJson = await buildPlanResponse.json();
@@ -917,7 +926,7 @@ export async function createServiceInstance(
     console.log("Retry fetching build plan");
 
     buildPlanResponse = await fetch(
-      csar.buildPlanUrl + "/instances/" + instanceCreationResponseJson
+      csar.buildPlanUrl + "/instances/" + instanceCreationResponseJson,
     );
     buildPlanResponseJson = await buildPlanResponse.json();
   }
@@ -927,7 +936,7 @@ export async function createServiceInstance(
       "Unable to fetch build plans for " +
         csar.buildPlanUrl +
         "/instances/" +
-        instanceCreationResponseJson
+        instanceCreationResponseJson,
     );
     result.success = false;
     return result;
@@ -986,13 +995,13 @@ export async function createNewArtifactTemplate(
   namespace,
   type,
   blob,
-  fileName
+  fileName,
 ) {
   console.log("Creating new ArtifactTemplate of type: ", type);
 
   // retrieve the currently available ArtifactTemplates
   const getArtifactsResult = await fetch(
-    wineryEndpoint + "/artifacttemplates/"
+    wineryEndpoint + "/artifacttemplates/",
   );
   const getArtifactsResultJson = await getArtifactsResult.json();
 
@@ -1002,7 +1011,7 @@ export async function createNewArtifactTemplate(
   let artifactTemplateLocalName = localNamePrefix;
   if (
     getArtifactsResultJson.some(
-      (e) => e.id === artifactTemplateLocalName && e.namespace === namespace
+      (e) => e.id === artifactTemplateLocalName && e.namespace === namespace,
     )
   ) {
     let nameOccupied = true;
@@ -1010,7 +1019,8 @@ export async function createNewArtifactTemplate(
     while (nameOccupied) {
       if (
         !getArtifactsResultJson.some(
-          (e) => e.id === artifactTemplateLocalName && e.namespace === namespace
+          (e) =>
+            e.id === artifactTemplateLocalName && e.namespace === namespace,
         )
       ) {
         nameOccupied = false;
@@ -1021,7 +1031,7 @@ export async function createNewArtifactTemplate(
   }
   console.log(
     "Creating ArtifactTemplate with name: ",
-    artifactTemplateLocalName
+    artifactTemplateLocalName,
   );
 
   // create ArtifactTemplate
@@ -1038,7 +1048,7 @@ export async function createNewArtifactTemplate(
         "Content-Type": "application/json",
         Accept: "application/json",
       },
-    }
+    },
   );
   const artifactCreationResponseText = await artifactCreationResponse.text();
 
@@ -1068,12 +1078,12 @@ export async function createNewArtifactTemplate(
 export async function createNewServiceTemplateVersion(
   wineryEndpoint,
   serviceTemplateId,
-  serviceTemplateNamespace
+  serviceTemplateNamespace,
 ) {
   console.log(
     "Creating new version of Service Template with ID %s and namespace %s",
     serviceTemplateId,
-    serviceTemplateNamespace
+    serviceTemplateNamespace,
   );
 
   // retrieve the currently available ServiceTemplates
@@ -1084,11 +1094,11 @@ export async function createNewServiceTemplateVersion(
   if (
     !getTemplatesResultJson.some(
       (e) =>
-        e.id === serviceTemplateId && e.namespace === serviceTemplateNamespace
+        e.id === serviceTemplateId && e.namespace === serviceTemplateNamespace,
     )
   ) {
     console.log(
-      "Required base ServiceTemplate for deploying Qiskit Runtime programs not available in Winery!"
+      "Required base ServiceTemplate for deploying Qiskit Runtime programs not available in Winery!",
     );
     return {
       error:
@@ -1104,7 +1114,7 @@ export async function createNewServiceTemplateVersion(
       !getTemplatesResultJson.some(
         (e) =>
           e.id === serviceTemplateId + "_" + version + "-w1-wip1" &&
-          e.namespace === serviceTemplateNamespace
+          e.namespace === serviceTemplateNamespace,
       )
     ) {
       nameOccupied = false;

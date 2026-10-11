@@ -24,13 +24,14 @@ import { computeOrderedComponents } from "./componentAnalyzer";
  */
 function isQubitSourceNode(node: Node): boolean {
   if (node.type === "qubitNode") return true;
-  if (node.type === "gateNode" && node.data?.label === "Qubit Circuit") return true;
+  if (node.type === "gateNode" && node.data?.label === "Qubit Circuit")
+    return true;
   return false;
 }
 
 export function computeQubitIndices(
   nodes: Node[],
-  edges: Edge[]
+  edges: Edge[],
 ): Map<string, number> {
   const indices = new Map<string, number>();
   const orderedComponents = computeOrderedComponents(nodes, edges);
@@ -62,7 +63,7 @@ export function computeQubitIndices(
 export function getQubitIndexLabel(
   nodeId: string,
   nodes: Node[],
-  edges: Edge[]
+  edges: Edge[],
 ): string | null {
   const node = nodes.find((n) => n.id === nodeId);
   if (!node || !isQubitSourceNode(node)) return null;

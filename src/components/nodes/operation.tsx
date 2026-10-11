@@ -1,11 +1,6 @@
 import { useStore } from "@/config/store";
 import React, { memo, useEffect, useState } from "react";
-import {
-  Edge,
-  Handle,
-  Node,
-  Position,
-} from "reactflow";
+import { Edge, Handle, Node, Position } from "reactflow";
 import { shallow } from "zustand/shallow";
 import OutputPort from "../utils/outputPort";
 import * as consts from "@/constants";

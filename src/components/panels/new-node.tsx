@@ -1,5 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { categories as staticCategories, Node, Template, CategoryEntry } from "./categories";
+import {
+  categories as staticCategories,
+  Node,
+  Template,
+  CategoryEntry,
+} from "./categories";
 import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
 import * as consts from "../../constants";
@@ -32,7 +37,6 @@ const categoryIcons: Record<string, string> = {
   [consts.machineLearningNodes]: "MLElements.svg",
 
   [consts.templates]: "Templates.png",
-
 };
 
 const operatorIcons: Record<string, string> = {
@@ -48,24 +52,38 @@ interface AddNodePanelProps {
 
 export const AddNodePanel = ({ onAddNode }: AddNodePanelProps) => {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
-  const [activeSubcategories, setActiveSubcategories] = useState<Set<string>>(new Set());
-  const [searchQuery, setSearchQuery] = useState<string>("");
-  const { completionGuaranteed, compact, experienceLevel, userTemplates, domainProfile, allDomainProfiles } = useStore(
-    selector,
-    shallow
+  const [activeSubcategories, setActiveSubcategories] = useState<Set<string>>(
+    new Set(),
   );
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const {
+    ancillaMode,
+    completionGuaranteed,
+    compact,
+    experienceLevel,
+    userTemplates,
+    domainProfile,
+    allDomainProfiles,
+  } = useStore(selector, shallow);
 
   const isControlledGate = (label: string) =>
-    ["CNOT", "CZ", "CY", "CH", "SWAP", "CU", "CP(λ)", "CRX(θ)", "CRY(θ)", "CRZ(θ)"]
-      .includes(label);
+    [
+      "CNOT",
+      "CZ",
+      "CY",
+      "CH",
+      "SWAP",
+      "CU",
+      "CP(λ)",
+      "CRX(θ)",
+      "CRY(θ)",
+      "CRZ(θ)",
+    ].includes(label);
   const multiControlledGate = (label: string) =>
-    ["Toffoli", "CSWAP"]
-      .includes(label);
-
+    ["Toffoli", "CSWAP"].includes(label);
 
   // select correct categories (based on domainProfile)
   const categories = useMemo(() => {
-
     const domainProfileNames = allDomainProfiles.map((p) => p.name);
     const index = domainProfileNames.indexOf(domainProfile);
     let baseCategories: Record<string, CategoryEntry>;
@@ -77,7 +95,7 @@ export const AddNodePanel = ({ onAddNode }: AddNodePanelProps) => {
     // no user templates: only return standard templates (baseCategories)
     if (userTemplates.length === 0) return baseCategories;
 
-    // else: deep copy of staticCategories + user templates as Subcategory 
+    // else: deep copy of staticCategories + user templates as Subcategory
     return {
       ...baseCategories,
       [consts.templates]: {
@@ -85,8 +103,8 @@ export const AddNodePanel = ({ onAddNode }: AddNodePanelProps) => {
         content: {
           "Standard Templates": baseCategories[consts.templates]?.content,
           "User Templates": userTemplates,
-        }
-      }
+        },
+      },
     };
   }, [userTemplates, domainProfile, allDomainProfiles]);
 
@@ -111,504 +129,504 @@ export const AddNodePanel = ({ onAddNode }: AddNodePanelProps) => {
   // Define mock inputs/outputs for ML plugins (until Plugin Runner metadata is available)
   const getMockPluginMetadata = (node: any, pluginName: string) => {
     switch (pluginName) {
-      case 'Classical Clustering':
+      case "Classical Clustering":
         return {
           dataInputs: [
             {
-              parameter: 'entityPointsUrl',
-              data_type: 'entity/vector',
-              content_type: ['application/json', 'text/csv'],
+              parameter: "entityPointsUrl",
+              data_type: "entity/vector",
+              content_type: ["application/json", "text/csv"],
               required: true,
             },
             {
-              parameter: 'numberOfClusters',
-              data_type: 'int',
-              content_type: ['text/plain'],
+              parameter: "numberOfClusters",
+              data_type: "int",
+              content_type: ["text/plain"],
               required: true,
             },
             {
-              parameter: 'relativeResidual',
-              data_type: 'float',
-              content_type: ['text/plain'],
+              parameter: "relativeResidual",
+              data_type: "float",
+              content_type: ["text/plain"],
               required: true,
             },
             {
-              parameter: 'maxIterations',
-              data_type: 'int',
-              content_type: ['text/plain'],
+              parameter: "maxIterations",
+              data_type: "int",
+              content_type: ["text/plain"],
               required: true,
             },
           ],
           dataOutputs: [
             {
-              name: 'Cluster Labels',
-              data_type: 'entity/label',
-              content_type: ['application/json'],
+              name: "Cluster Labels",
+              data_type: "entity/label",
+              content_type: ["application/json"],
               required: true,
             },
             {
-              name: 'Visualization',
-              data_type: 'plot',
-              content_type: ['text/html'],
+              name: "Visualization",
+              data_type: "plot",
+              content_type: ["text/html"],
               required: false,
             },
           ],
         };
-      case 'Quantum Clustering':
+      case "Quantum Clustering":
         return {
           dataInputs: [
             {
-              parameter: 'entityPointsUrl',
-              data_type: 'entity/vector',
-              content_type: ['application/json', 'text/csv'],
+              parameter: "entityPointsUrl",
+              data_type: "entity/vector",
+              content_type: ["application/json", "text/csv"],
               required: true,
             },
             {
-              parameter: 'numberOfClusters',
-              data_type: 'int',
-              content_type: ['text/plain'],
+              parameter: "numberOfClusters",
+              data_type: "int",
+              content_type: ["text/plain"],
               required: true,
             },
             {
-              parameter: 'tolerance',
-              data_type: 'float',
-              content_type: ['text/plain'],
+              parameter: "tolerance",
+              data_type: "float",
+              content_type: ["text/plain"],
               required: false,
             },
             {
-              parameter: 'maxIterations',
-              data_type: 'int',
-              content_type: ['text/plain'],
+              parameter: "maxIterations",
+              data_type: "int",
+              content_type: ["text/plain"],
               required: false,
             },
           ],
           dataOutputs: [
             {
-              name: 'Cluster Labels',
-              data_type: 'entity/label',
-              content_type: ['application/json'],
+              name: "Cluster Labels",
+              data_type: "entity/label",
+              content_type: ["application/json"],
               required: true,
             },
             {
-              name: 'Visualization',
-              data_type: 'plot',
-              content_type: ['text/html'],
+              name: "Visualization",
+              data_type: "plot",
+              content_type: ["text/html"],
               required: false,
             },
           ],
         };
 
-      case 'Quantum K-Nearest Neighbours':
+      case "Quantum K-Nearest Neighbours":
         return {
           dataInputs: [
             {
-              parameter: 'trainingDataUrl',
-              data_type: 'entity/vector',
-              content_type: ['application/json', 'text/csv'],
+              parameter: "trainingDataUrl",
+              data_type: "entity/vector",
+              content_type: ["application/json", "text/csv"],
               required: true,
             },
             {
-              parameter: 'trainingLabelsUrl',
-              data_type: 'entity/label',
-              content_type: ['application/json', 'text/csv'],
+              parameter: "trainingLabelsUrl",
+              data_type: "entity/label",
+              content_type: ["application/json", "text/csv"],
               required: true,
             },
             {
-              parameter: 'testDataUrl',
-              data_type: 'entity/vector',
-              content_type: ['application/json', 'text/csv'],
+              parameter: "testDataUrl",
+              data_type: "entity/vector",
+              content_type: ["application/json", "text/csv"],
               required: true,
             },
             {
-              parameter: 'k',
-              data_type: 'int',
-              content_type: ['text/plain'],
+              parameter: "k",
+              data_type: "int",
+              content_type: ["text/plain"],
               required: true,
             },
           ],
           dataOutputs: [
             {
-              name: 'Predicted Labels',
-              data_type: 'entity/label',
-              content_type: ['application/json'],
+              name: "Predicted Labels",
+              data_type: "entity/label",
+              content_type: ["application/json"],
               required: true,
             },
           ],
         };
 
-      case 'Optics':
+      case "Optics":
         return {
           dataInputs: [
             {
-              parameter: 'entityPointsUrl',
-              data_type: 'entity/vector',
-              content_type: ['application/json', 'text/csv'],
+              parameter: "entityPointsUrl",
+              data_type: "entity/vector",
+              content_type: ["application/json", "text/csv"],
               required: true,
             },
             {
-              parameter: 'method',
-              data_type: 'string',
-              content_type: ['text/plain'],
+              parameter: "method",
+              data_type: "string",
+              content_type: ["text/plain"],
               required: true,
             },
             {
-              parameter: 'minClusterSize',
-              data_type: 'int',
-              content_type: ['text/plain'],
+              parameter: "minClusterSize",
+              data_type: "int",
+              content_type: ["text/plain"],
               required: true,
             },
             {
-              parameter: 'minkowskiPValue',
-              data_type: 'int',
-              content_type: ['text/plain'],
+              parameter: "minkowskiPValue",
+              data_type: "int",
+              content_type: ["text/plain"],
               required: true,
             },
             {
-              parameter: 'metric',
-              data_type: 'string',
-              content_type: ['text/plain'],
+              parameter: "metric",
+              data_type: "string",
+              content_type: ["text/plain"],
               required: true,
             },
             {
-              parameter: 'leafSize',
-              data_type: 'int',
-              content_type: ['text/plain'],
+              parameter: "leafSize",
+              data_type: "int",
+              content_type: ["text/plain"],
               required: true,
             },
             {
-              parameter: 'algorithm',
-              data_type: 'string',
-              content_type: ['text/plain'],
+              parameter: "algorithm",
+              data_type: "string",
+              content_type: ["text/plain"],
               required: true,
             },
             {
-              parameter: 'epsilon',
-              data_type: 'float',
-              content_type: ['text/plain'],
+              parameter: "epsilon",
+              data_type: "float",
+              content_type: ["text/plain"],
               required: false,
             },
             {
-              parameter: 'minSteepness',
-              data_type: 'int',
-              content_type: ['text/plain'],
+              parameter: "minSteepness",
+              data_type: "int",
+              content_type: ["text/plain"],
               required: true,
             },
             {
-              parameter: 'minSamples',
-              data_type: 'int',
-              content_type: ['text/plain'],
+              parameter: "minSamples",
+              data_type: "int",
+              content_type: ["text/plain"],
               required: true,
             },
             {
-              parameter: 'maxDistance',
-              data_type: 'float',
-              content_type: ['text/plain'],
-              required: false,
-            },
-          ],
-          dataOutputs: [
-            {
-              name: 'Cluster Labels',
-              data_type: 'entity/label',
-              content_type: ['application/json'],
-              required: true,
-            },
-          ],
-        };
-
-      case 'Quantum Neural Network':
-        return {
-          dataInputs: [
-            {
-              parameter: 'trainingDataUrl',
-              data_type: 'entity/vector',
-              content_type: ['application/json', 'text/csv'],
-              required: true,
-            },
-            {
-              parameter: 'trainingLabelsUrl',
-              data_type: 'entity/label',
-              content_type: ['application/json', 'text/csv'],
-              required: true,
-            },
-            {
-              parameter: 'testDataUrl',
-              data_type: 'entity/vector',
-              content_type: ['application/json', 'text/csv'],
-              required: true,
-            },
-            {
-              parameter: 'testDataUrl',
-              data_type: 'entity/label',
-              content_type: ['application/json', 'text/csv'],
-              required: true,
-            },
-            {
-              parameter: 'epochs',
-              data_type: 'int',
-              content_type: ['text/plain'],
+              parameter: "maxDistance",
+              data_type: "float",
+              content_type: ["text/plain"],
               required: false,
             },
           ],
           dataOutputs: [
             {
-              name: 'Predicted Labels',
-              data_type: 'entity/label',
-              content_type: ['application/json'],
+              name: "Cluster Labels",
+              data_type: "entity/label",
+              content_type: ["application/json"],
               required: true,
             },
           ],
         };
 
-      case 'Quantum Convolutional Neural Network':
+      case "Quantum Neural Network":
         return {
           dataInputs: [
             {
-              parameter: 'trainingDataUrl',
-              data_type: 'entity/vector',
-              content_type: ['application/json', 'text/csv'],
+              parameter: "trainingDataUrl",
+              data_type: "entity/vector",
+              content_type: ["application/json", "text/csv"],
               required: true,
             },
             {
-              parameter: 'trainingLabelsUrl',
-              data_type: 'entity/label',
-              content_type: ['application/json', 'text/csv'],
+              parameter: "trainingLabelsUrl",
+              data_type: "entity/label",
+              content_type: ["application/json", "text/csv"],
               required: true,
             },
             {
-              parameter: 'testDataUrl',
-              data_type: 'entity/vector',
-              content_type: ['application/json', 'text/csv'],
+              parameter: "testDataUrl",
+              data_type: "entity/vector",
+              content_type: ["application/json", "text/csv"],
               required: true,
             },
             {
-              parameter: 'epochs',
-              data_type: 'int',
-              content_type: ['text/plain'],
+              parameter: "testDataUrl",
+              data_type: "entity/label",
+              content_type: ["application/json", "text/csv"],
+              required: true,
+            },
+            {
+              parameter: "epochs",
+              data_type: "int",
+              content_type: ["text/plain"],
               required: false,
             },
           ],
           dataOutputs: [
             {
-              name: 'Predicted Labels',
-              data_type: 'entity/label',
-              content_type: ['application/json'],
+              name: "Predicted Labels",
+              data_type: "entity/label",
+              content_type: ["application/json"],
               required: true,
             },
           ],
         };
 
-      case 'Quantum Parzen Windows':
+      case "Quantum Convolutional Neural Network":
         return {
           dataInputs: [
             {
-              parameter: 'trainingDataUrl',
-              data_type: 'entity/vector',
-              content_type: ['application/json', 'text/csv'],
+              parameter: "trainingDataUrl",
+              data_type: "entity/vector",
+              content_type: ["application/json", "text/csv"],
               required: true,
             },
             {
-              parameter: 'trainingLabelsUrl',
-              data_type: 'entity/label',
-              content_type: ['application/json', 'text/csv'],
+              parameter: "trainingLabelsUrl",
+              data_type: "entity/label",
+              content_type: ["application/json", "text/csv"],
               required: true,
             },
             {
-              parameter: 'variant',
-              data_type: 'string',
-              content_type: ['text/plain'],
+              parameter: "testDataUrl",
+              data_type: "entity/vector",
+              content_type: ["application/json", "text/csv"],
               required: true,
             },
             {
-              parameter: 'windowSize',
-              data_type: 'int',
-              content_type: ['text/plain'],
-              required: true,
-            },
-            {
-              parameter: 'testDataUrl',
-              data_type: 'entity/vector',
-              content_type: ['application/json', 'text/csv'],
-              required: true,
-            },
-            {
-              parameter: 'testLabelsUrl',
-              data_type: 'entity/label',
-              content_type: ['application/json', 'text/csv'],
+              parameter: "epochs",
+              data_type: "int",
+              content_type: ["text/plain"],
               required: false,
             },
           ],
           dataOutputs: [
             {
-              name: 'Predicted Labels',
-              data_type: 'entity/label',
-              content_type: ['application/json'],
+              name: "Predicted Labels",
+              data_type: "entity/label",
+              content_type: ["application/json"],
               required: true,
             },
           ],
         };
 
-      case 'Variational Quantum Classifier':
+      case "Quantum Parzen Windows":
         return {
           dataInputs: [
             {
-              parameter: 'trainingDataUrl',
-              data_type: 'entity/vector',
-              content_type: ['application/json', 'text/csv'],
+              parameter: "trainingDataUrl",
+              data_type: "entity/vector",
+              content_type: ["application/json", "text/csv"],
               required: true,
             },
             {
-              parameter: 'trainingLabelsUrl',
-              data_type: 'entity/label',
-              content_type: ['application/json', 'text/csv'],
+              parameter: "trainingLabelsUrl",
+              data_type: "entity/label",
+              content_type: ["application/json", "text/csv"],
               required: true,
             },
             {
-              parameter: 'testDataUrl',
-              data_type: 'entity/vector',
-              content_type: ['application/json', 'text/csv'],
-              required: true,
-            },
-          ],
-          dataOutputs: [
-            {
-              name: 'Predicted Labels',
-              data_type: 'entity/label',
-              content_type: ['application/json'],
-              required: true,
-            },
-          ],
-        };
-
-      case 'Support Vector Machine':
-        return {
-          dataInputs: [
-            {
-              parameter: 'trainingDataUrl',
-              data_type: 'entity/vector',
-              content_type: ['application/json', 'text/csv'],
+              parameter: "variant",
+              data_type: "string",
+              content_type: ["text/plain"],
               required: true,
             },
             {
-              parameter: 'trainingLabelsUrl',
-              data_type: 'entity/label',
-              content_type: ['application/json', 'text/csv'],
+              parameter: "windowSize",
+              data_type: "int",
+              content_type: ["text/plain"],
               required: true,
             },
             {
-              parameter: 'testDataUrl',
-              data_type: 'entity/vector',
-              content_type: ['application/json', 'text/csv'],
-              required: true,
-            },
-          ],
-          dataOutputs: [
-            {
-              name: 'Predicted Labels',
-              data_type: 'entity/label',
-              content_type: ['application/json'],
-              required: true,
-            },
-          ],
-        };
-
-      case 'Neural Network':
-        return {
-          dataInputs: [
-            {
-              parameter: 'trainingDataUrl',
-              data_type: 'entity/vector',
-              content_type: ['application/json', 'text/csv'],
+              parameter: "testDataUrl",
+              data_type: "entity/vector",
+              content_type: ["application/json", "text/csv"],
               required: true,
             },
             {
-              parameter: 'trainingLabelsUrl',
-              data_type: 'entity/label',
-              content_type: ['application/json', 'text/csv'],
-              required: true,
-            },
-          ],
-          dataOutputs: [
-            {
-              name: 'Model',
-              data_type: 'model',
-              content_type: ['application/json'],
-              required: true,
-            },
-          ],
-        };
-
-      case 'Hybrid Autoencoder':
-        return {
-          dataInputs: [
-            {
-              parameter: 'trainingPointsUrl',
-              data_type: 'entity/vector',
-              content_type: ['application/json', 'text/csv'],
-              required: true,
-            },
-            {
-              parameter: 'embeddingSize',
-              data_type: 'integer',
-              content_type: ['text/plain'],
-              required: true,
-            },
-            {
-              parameter: 'qnnName',
-              data_type: 'string',
-              content_type: ['text/plain'],
-              required: true,
-            },
-            {
-              parameter: 'trainingSteps',
-              data_type: 'int',
-              content_type: ['text/plain'],
-              required: true,
-            },
-            {
-              parameter: 'numberOfQubits ',
-              data_type: 'int',
-              content_type: ['text/plain'],
-              required: true,
-            },
-            {
-              parameter: 'testPointsUrl',
-              data_type: 'string',
-              content_type: ['text/plain'],
+              parameter: "testLabelsUrl",
+              data_type: "entity/label",
+              content_type: ["application/json", "text/csv"],
               required: false,
             },
           ],
           dataOutputs: [
             {
-              name: 'Reduced Data',
-              data_type: 'entity/vector',
-              content_type: ['application/json'],
+              name: "Predicted Labels",
+              data_type: "entity/label",
+              content_type: ["application/json"],
               required: true,
             },
           ],
         };
 
-      case 'Quantum Kernel Estimator':
+      case "Variational Quantum Classifier":
         return {
           dataInputs: [
             {
-              parameter: 'entityPointsUrl',
-              data_type: 'entity/vector',
-              content_type: ['application/json', 'text/csv'],
+              parameter: "trainingDataUrl",
+              data_type: "entity/vector",
+              content_type: ["application/json", "text/csv"],
               required: true,
             },
             {
-              parameter: 'featureMap',
-              data_type: 'string',
-              content_type: ['text/plain'],
+              parameter: "trainingLabelsUrl",
+              data_type: "entity/label",
+              content_type: ["application/json", "text/csv"],
+              required: true,
+            },
+            {
+              parameter: "testDataUrl",
+              data_type: "entity/vector",
+              content_type: ["application/json", "text/csv"],
+              required: true,
+            },
+          ],
+          dataOutputs: [
+            {
+              name: "Predicted Labels",
+              data_type: "entity/label",
+              content_type: ["application/json"],
+              required: true,
+            },
+          ],
+        };
+
+      case "Support Vector Machine":
+        return {
+          dataInputs: [
+            {
+              parameter: "trainingDataUrl",
+              data_type: "entity/vector",
+              content_type: ["application/json", "text/csv"],
+              required: true,
+            },
+            {
+              parameter: "trainingLabelsUrl",
+              data_type: "entity/label",
+              content_type: ["application/json", "text/csv"],
+              required: true,
+            },
+            {
+              parameter: "testDataUrl",
+              data_type: "entity/vector",
+              content_type: ["application/json", "text/csv"],
+              required: true,
+            },
+          ],
+          dataOutputs: [
+            {
+              name: "Predicted Labels",
+              data_type: "entity/label",
+              content_type: ["application/json"],
+              required: true,
+            },
+          ],
+        };
+
+      case "Neural Network":
+        return {
+          dataInputs: [
+            {
+              parameter: "trainingDataUrl",
+              data_type: "entity/vector",
+              content_type: ["application/json", "text/csv"],
+              required: true,
+            },
+            {
+              parameter: "trainingLabelsUrl",
+              data_type: "entity/label",
+              content_type: ["application/json", "text/csv"],
+              required: true,
+            },
+          ],
+          dataOutputs: [
+            {
+              name: "Model",
+              data_type: "model",
+              content_type: ["application/json"],
+              required: true,
+            },
+          ],
+        };
+
+      case "Hybrid Autoencoder":
+        return {
+          dataInputs: [
+            {
+              parameter: "trainingPointsUrl",
+              data_type: "entity/vector",
+              content_type: ["application/json", "text/csv"],
+              required: true,
+            },
+            {
+              parameter: "embeddingSize",
+              data_type: "integer",
+              content_type: ["text/plain"],
+              required: true,
+            },
+            {
+              parameter: "qnnName",
+              data_type: "string",
+              content_type: ["text/plain"],
+              required: true,
+            },
+            {
+              parameter: "trainingSteps",
+              data_type: "int",
+              content_type: ["text/plain"],
+              required: true,
+            },
+            {
+              parameter: "numberOfQubits ",
+              data_type: "int",
+              content_type: ["text/plain"],
+              required: true,
+            },
+            {
+              parameter: "testPointsUrl",
+              data_type: "string",
+              content_type: ["text/plain"],
               required: false,
             },
           ],
           dataOutputs: [
             {
-              name: 'Kernel Matrix',
-              data_type: 'entity/matrix',
-              content_type: ['application/json'],
+              name: "Reduced Data",
+              data_type: "entity/vector",
+              content_type: ["application/json"],
+              required: true,
+            },
+          ],
+        };
+
+      case "Quantum Kernel Estimator":
+        return {
+          dataInputs: [
+            {
+              parameter: "entityPointsUrl",
+              data_type: "entity/vector",
+              content_type: ["application/json", "text/csv"],
+              required: true,
+            },
+            {
+              parameter: "featureMap",
+              data_type: "string",
+              content_type: ["text/plain"],
+              required: false,
+            },
+          ],
+          dataOutputs: [
+            {
+              name: "Kernel Matrix",
+              data_type: "entity/matrix",
+              content_type: ["application/json"],
               required: true,
             },
           ],
@@ -634,20 +652,26 @@ export const AddNodePanel = ({ onAddNode }: AddNodePanelProps) => {
         mockDataOutputs: mockMetadata.dataOutputs,
         ...node.pluginData,
       };
-      event.dataTransfer.setData("application/reactflow/pluginData", JSON.stringify(pluginData));
+      event.dataTransfer.setData(
+        "application/reactflow/pluginData",
+        JSON.stringify(pluginData),
+      );
     }
 
     event.dataTransfer.effectAllowed = "move";
     // if node is a custom user template: also pass flow data
     if (node.flowData) {
-      event.dataTransfer.setData("application/reactflow/templateFlowData", JSON.stringify(node.flowData));
+      event.dataTransfer.setData(
+        "application/reactflow/templateFlowData",
+        JSON.stringify(node.flowData),
+      );
     }
     console.log("drag start", node);
   };
 
   const toggleCategory = (category: string) => {
     setActiveCategory((prevCategory) =>
-      prevCategory === category ? null : category
+      prevCategory === category ? null : category,
     );
   };
 
@@ -688,71 +712,72 @@ export const AddNodePanel = ({ onAddNode }: AddNodePanelProps) => {
   });
   const filteredNodes = searchQuery
     ? (() => {
-      const query = searchQuery.toLowerCase();
+        const query = searchQuery.toLowerCase();
 
-      const prefixMatches: Node[] = [];
-      const partialMatches: Node[] = [];
+        const prefixMatches: Node[] = [];
+        const partialMatches: Node[] = [];
 
-      for (const node of allNodes) {
-        const labels = [node.label, ...(node.aliases ?? [])].map((l) =>
-          l.toLowerCase()
-        );
-        if (node.type === "ancillaNode") continue;
-        if (completionGuaranteed && !node.completionGuaranteed) continue;
-        if (!node.compactOptions.includes(compact)) continue;
+        for (const node of allNodes) {
+          const labels = [node.label, ...(node.aliases ?? [])].map((l) =>
+            l.toLowerCase(),
+          );
+          const allowedInMode = !(!ancillaMode && node.type === "ancillaNode");
 
-        const startsWithMatch = labels.some((l) => l.startsWith(query));
-        const includesMatch =
-          !startsWithMatch && labels.some((l) => l.includes(query));
+          if (!allowedInMode) continue;
+          if (completionGuaranteed && !node.completionGuaranteed) continue;
+          if (!node.compactOptions.includes(compact)) continue;
 
-        if (startsWithMatch) prefixMatches.push(node);
-        else if (includesMatch) partialMatches.push(node);
-      }
+          const startsWithMatch = labels.some((l) => l.startsWith(query));
+          const includesMatch =
+            !startsWithMatch && labels.some((l) => l.includes(query));
 
-      return [...prefixMatches, ...partialMatches];
-    })()
+          if (startsWithMatch) prefixMatches.push(node);
+          else if (includesMatch) partialMatches.push(node);
+        }
+
+        return [...prefixMatches, ...partialMatches];
+      })()
     : [];
 
-const filterNodeGroup = (nodeGroup: any): Node[] => {
-  if (!nodeGroup) {
-    return [];
-  }
+  const filterNodeGroup = (nodeGroup: any): Node[] => {
+    if (!nodeGroup) {
+      return [];
+    }
 
-  if (Array.isArray(nodeGroup)) {
-    return nodeGroup.filter(
-      (node: Node) =>
-        node.type !== "ancillaNode" &&
-        (completionGuaranteed ? node.completionGuaranteed : true) &&
-        node.compactOptions?.includes(compact)
+    if (Array.isArray(nodeGroup)) {
+      return nodeGroup.filter(
+        (node: Node) =>
+          (ancillaMode || node.type !== "ancillaNode") &&
+          (completionGuaranteed ? node.completionGuaranteed : true) &&
+          node.compactOptions?.includes(compact),
+      );
+    }
+
+    if (typeof nodeGroup !== "object") {
+      return [];
+    }
+
+    return Object.values(nodeGroup).flatMap((group: any) =>
+      filterNodeGroup(group),
     );
-  }
-
-  if (typeof nodeGroup !== "object") {
-    return [];
-  }
-
-  return Object.values(nodeGroup).flatMap((group: any) =>
-    filterNodeGroup(group)
-  );
-};
-//   useEffect(() => {
-//   console.log(
-//     "All node labels:",
-//     allNodes.map((node) => node.label)
-//   );
-// }, [allNodes]);
+  };
+  //   useEffect(() => {
+  //   console.log(
+  //     "All node labels:",
+  //     allNodes.map((node) => node.label)
+  //   );
+  // }, [allNodes]);
 
   const renderNodes = (nodeGroup: any): React.ReactNode => {
     if (Array.isArray(nodeGroup)) {
       const visibleNodes = nodeGroup
         .filter((node: Node) => node.type !== "ancillaNode")
         .filter((node: Node) =>
-          completionGuaranteed ? node.completionGuaranteed : true
+          completionGuaranteed ? node.completionGuaranteed : true,
         )
         .filter((node: Node) => node.compactOptions.includes(compact));
 
       if (visibleNodes.length === 0) return null;
-      
 
       return (
         <div className="space-y-2 mt-2">
@@ -770,29 +795,33 @@ const filterNodeGroup = (nodeGroup: any): Node[] => {
                     experienceLevel === "explorer" && operatorIcons[node.label]
                       ? operatorIcons[node.label]
                       : Array.isArray(node.icon)
-                        ? node.type === consts.GateNode || node.type === consts.QubitNode
+                        ? node.type === consts.GateNode ||
+                          node.type === consts.QubitNode
                           ? node.icon[experienceLevel === "explorer" ? 1 : 0]
                           : node.icon[0]
                         : node.icon
                   }
                   alt={typeof node.label === "string" ? node.label : ""}
-                  className={`object-contain ${node.type === consts.GateNode && isControlledGate(node.label)
-                    ? "w-[180px] h-[200px]"
-                    : node.type === consts.GateNode && multiControlledGate(node.label)
-                      ? "w-[190px] h-[270px]"
-                      : node.type === consts.GateNode
-                        ? "w-[120px] h-[140px]"
-                        : node.type === consts.SplitterNode || node.type === consts.MergerNode
-                          ? "w-[190px] h-[190px]"
-                          : node.type === consts.templates
-                            ? "w-[120px] h-[120px]"
-                            : "w-70 h-70"
-                    }`}
+                  className={`object-contain ${
+                    node.type === consts.GateNode &&
+                    isControlledGate(node.label)
+                      ? "w-[180px] h-[200px]"
+                      : node.type === consts.GateNode &&
+                          multiControlledGate(node.label)
+                        ? "w-[190px] h-[270px]"
+                        : node.type === consts.GateNode
+                          ? "w-[120px] h-[140px]"
+                          : node.type === consts.SplitterNode ||
+                              node.type === consts.MergerNode
+                            ? "w-[190px] h-[190px]"
+                            : node.type === consts.templates
+                              ? "w-[120px] h-[120px]"
+                              : "w-70 h-70"
+                  }`}
                 />
               ) : (
                 <span className="font-semibold">{node.label}</span>
               )}
-
             </div>
           ))}
         </div>
@@ -800,7 +829,7 @@ const filterNodeGroup = (nodeGroup: any): Node[] => {
     }
 
     const entries = Object.entries(nodeGroup).filter(
-      ([, subGroup]) => filterNodeGroup(subGroup).length > 0
+      ([, subGroup]) => filterNodeGroup(subGroup).length > 0,
     );
 
     if (entries.length === 0) return null;
@@ -832,7 +861,7 @@ const filterNodeGroup = (nodeGroup: any): Node[] => {
             // console.log("search result, key down: ", e.key)
             // console.log(filteredNodes)
             // console.log(onAddNode)
-            if (e.key === 'Enter' && filteredNodes.length > 0 && onAddNode) {
+            if (e.key === "Enter" && filteredNodes.length > 0 && onAddNode) {
               // get top result
               const topResult = filteredNodes[0] as any;
               // console.log("top result", topResult)
@@ -841,7 +870,10 @@ const filterNodeGroup = (nodeGroup: any): Node[] => {
               let resultPluginData = null;
               if (topResult.type === consts.PluginNode) {
                 const pluginName = topResult.label;
-                const mockMetadata = getMockPluginMetadata(topResult, pluginName);
+                const mockMetadata = getMockPluginMetadata(
+                  topResult,
+                  pluginName,
+                );
                 resultPluginData = {
                   name: pluginName,
                   mockDataInputs: mockMetadata.dataInputs,
@@ -878,12 +910,14 @@ const filterNodeGroup = (nodeGroup: any): Node[] => {
                         : node.icon
                     }
                     alt={typeof node.label === "string" ? node.label : ""}
-                    className={`object-contain ${node.type === consts.GateNode
-                      ? "w-[120px] h-[140px]"
-                      : node.type === consts.SplitterNode || node.type === consts.MergerNode
-                        ? "w-[190px] h-[190px]"
-                        : "w-70 h-70"
-                      }`}
+                    className={`object-contain ${
+                      node.type === consts.GateNode
+                        ? "w-[120px] h-[140px]"
+                        : node.type === consts.SplitterNode ||
+                            node.type === consts.MergerNode
+                          ? "w-[190px] h-[190px]"
+                          : "w-70 h-70"
+                    }`}
                   />
                 ) : (
                   <span className="font-semibold">{node.label}</span>
@@ -897,17 +931,20 @@ const filterNodeGroup = (nodeGroup: any): Node[] => {
           {Object.entries(categories).map(
             ([category, { content, description }]) => {
               const visibleNodes = filterNodeGroup(content);
-              const shownDescription = (category === consts.dataTypes || category === consts.operator) ?
-                description[completionGuaranteed ? 1 : 0] : description;
+              const shownDescription =
+                category === consts.dataTypes || category === consts.operator
+                  ? description[completionGuaranteed ? 1 : 0]
+                  : description;
               if (visibleNodes.length === 0) return null;
 
               return (
                 <div key={category}>
                   <button
-                    className={`w-full text-left py-2 px-4 font-semibold text-black-700 border-b ${activeCategory === category
-                      ? "bg-gray-100 text-primary"
-                      : "hover:bg-gray-300"
-                      }`}
+                    className={`w-full text-left py-2 px-4 font-semibold text-black-700 border-b ${
+                      activeCategory === category
+                        ? "bg-gray-100 text-primary"
+                        : "hover:bg-gray-300"
+                    }`}
                     onClick={() => toggleCategory(category)}
                   >
                     <div className="flex items-center gap-2">
@@ -932,33 +969,43 @@ const filterNodeGroup = (nodeGroup: any): Node[] => {
                       {Array.isArray(content)
                         ? renderNodes(content)
                         : Object.entries(content)
-                          .filter(
-                            ([, subGroup]) =>
-                              filterNodeGroup(subGroup).length > 0
-                          )
-                          .map(([subcategory, subGroup]) => (
-                            <div key={subcategory}>
-                              <button
-                                className="w-full text-left py-2 px-3 font-semibold text-gray-700 hover:bg-gray-200 rounded flex items-center justify-between"
-                                onClick={() => toggleSubcategory(`${category}-${subcategory}`)}
-                              >
-                                <span>{subcategory}</span>
-                                <span className="text-gray-500">
-                                  {activeSubcategories.has(`${category}-${subcategory}`) ? '▼' : '▶'}
-                                </span>
-                              </button>
-                              {activeSubcategories.has(`${category}-${subcategory}`) && (
-                                <div className="pl-2 mt-2">
-                                  {renderNodes(subGroup)}
-                                </div>
-                              )}
-                            </div>
-                          ))}
+                            .filter(
+                              ([, subGroup]) =>
+                                filterNodeGroup(subGroup).length > 0,
+                            )
+                            .map(([subcategory, subGroup]) => (
+                              <div key={subcategory}>
+                                <button
+                                  className="w-full text-left py-2 px-3 font-semibold text-gray-700 hover:bg-gray-200 rounded flex items-center justify-between"
+                                  onClick={() =>
+                                    toggleSubcategory(
+                                      `${category}-${subcategory}`,
+                                    )
+                                  }
+                                >
+                                  <span>{subcategory}</span>
+                                  <span className="text-gray-500">
+                                    {activeSubcategories.has(
+                                      `${category}-${subcategory}`,
+                                    )
+                                      ? "▼"
+                                      : "▶"}
+                                  </span>
+                                </button>
+                                {activeSubcategories.has(
+                                  `${category}-${subcategory}`,
+                                ) && (
+                                  <div className="pl-2 mt-2">
+                                    {renderNodes(subGroup)}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
                     </div>
                   )}
                 </div>
               );
-            }
+            },
           )}
         </nav>
       </aside>

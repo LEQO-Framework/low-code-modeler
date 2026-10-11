@@ -14,6 +14,7 @@ import {
   Search,
   BadgeCheck,
   MessageSquareIcon,
+  FlaskConical,
 } from "lucide-react";
 
 import {
@@ -43,6 +44,8 @@ interface ToolbarProps {
   onGroupSelected: () => void;
   generateModel: () => void;
   openOpenQASM: () => void;
+  isTestingFeatureEnabled: boolean;
+  openTesting: () => void;
 }
 
 export default function Toolbar({
@@ -63,18 +66,17 @@ export default function Toolbar({
   onManageTemplates,
   generateModel,
   openOpenQASM,
+  isTestingFeatureEnabled,
+  openTesting,
 }: ToolbarProps) {
   return (
     <div className="bg-gray-100 border-b border-gray-300 px-4 h-[70px] overflow-hidden">
       <div className="flex items-center h-full">
-
         {/* Qonstruct */}
         <div className="flex items-center gap-2 shrink-0">
           <img src="Logo2.png" alt="Qonstruct" className="h-8 w-16" />
 
-          <span className="text-lg font-semibold text-gray-800">
-            Qonstruct
-          </span>
+          <span className="text-lg font-semibold text-gray-800">Qonstruct</span>
         </div>
 
         <div className="h-full flex items-center text-gray-400 text-xl shrink-0 ml-[20px]">
@@ -83,6 +85,31 @@ export default function Toolbar({
 
         {/* Toolbar categories */}
         <div className="ml-[20px] flex items-start gap-3 h-full overflow-x-auto">
+          {/* Test Flow Generation */}
+          {isTestingFeatureEnabled && (
+            <>
+              <div className="flex flex-col items-center justify-center h-full shrink-0">
+                <span className="text-[11px] font-semibold text-gray-600 mb-1">
+                  Test Flows
+                </span>
+
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={openTesting}
+                    title="Generate Test Flows"
+                    className="border border-gray-300 hover:bg-gray-200"
+                  >
+                    <FlaskConical className="h-4 w-4 mr-1" />
+                  </Button>
+                </div>
+              </div>
+              <div className="h-full flex items-center text-gray-400 text-xl shrink-0">
+                |
+              </div>
+            </>
+          )}
 
           {/* Start */}
           <div className="flex flex-col items-center justify-center h-full shrink-0">
@@ -318,7 +345,6 @@ export default function Toolbar({
             </div>
           </div>
 
-
           {/* Separator */}
           <div className="h-full flex items-center text-gray-400 text-xl shrink-0">
             |
@@ -340,7 +366,6 @@ export default function Toolbar({
               <HelpCircle className="h-4 w-4 mr-1" />
             </Button>
           </div>
-
         </div>
       </div>
     </div>

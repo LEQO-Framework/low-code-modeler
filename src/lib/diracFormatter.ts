@@ -29,7 +29,7 @@ import type { Complex } from "../components/utils/qasmToDirac";
  */
 export function statevectorToDirac(
   statevector: Complex[],
-  numQubits: number
+  numQubits: number,
 ): string {
   const result = _statevectorToDirac(statevector, numQubits);
   return result.unicode;

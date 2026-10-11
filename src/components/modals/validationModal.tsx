@@ -38,11 +38,12 @@ export function ValidationModal({
           <button
             onClick={onConfirm}
             disabled={validationResult.errors.length > 0}
-            className={`px-4 py-2 rounded ${validationResult.errors.length > 0
+            className={`px-4 py-2 rounded ${
+              validationResult.errors.length > 0
                 ? "bg-gray-400 cursor-not-allowed"
                 : "bg-blue-600 text-white hover:bg-blue-700"
-              }`}>
-
+            }`}
+          >
             Continue
           </button>
         </div>
