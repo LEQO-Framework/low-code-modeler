@@ -1281,11 +1281,6 @@ export const TextPanel = () => {
     Object.keys(propertyExplanations.optional ?? {}).length > 0;
 
   const inputOutputExplanations = getInputOutputExplanations(selectedNode);
-  function updateField(field: string, value: any) {
-    if (!selectedNode) return;
-    selectedNode.data[field] = value;
-    updateNodeValue(selectedNode.id, field, value);
-  }
 
   const [idCopied, setIdCopied] = useState(false);
 
