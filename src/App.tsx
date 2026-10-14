@@ -1727,10 +1727,12 @@ If none apply, return { "algorithms": [] }.
             "Amplitude Encoding",
           ].includes(node.data.label)
         ) {
-          const hasClassical = connectedSources.some((srcId) => {
-            const sourceNode: any = nodesById.get(srcId);
-            return sourceNode?.type === "dataTypeNode";
-          });
+           const hasClassical = flow.edges?.some(
+            (edge) =>
+              edge.target === node.id &&
+              (edge.type === "classicalEdge" ||
+                edge.targetHandle?.startsWith("classicalHandle")),
+          );
           if (!hasClassical) {
             errors.push({
               nodeId: node.id,
