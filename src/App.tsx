@@ -102,6 +102,7 @@ import { TestingModal } from "./components/modals/testingModal";
 import { validateModelStructure } from "./lib/modelValidation";
 import { validateFileContents } from "./lib/fileValidation";
 import { UNARY_OPERATORS } from "./lib/nodeSpecs";
+import { portTypeIndex, withPortTypes } from "./lib/portTypes";
 import {
   EdgeHighlightMarkers,
   EdgeHighlightProvider,
@@ -219,12 +220,6 @@ const getHandleDomain = (handleId: string): HandleCandidate["domain"] => {
   return "unknown";
 };
 
-const getHandleIndexForNode = (handleId: string, nodeId: string) => {
-  const handleWithoutNodeId = handleId.replace(nodeId, "");
-  const matches = handleWithoutNodeId.match(/\d+/g);
-  return matches ? Number(matches[matches.length - 1]) : 0;
-};
-
 const getRenderedHandles = (
   nodeId: string,
   node: Node,
@@ -248,7 +243,7 @@ const getRenderedHandles = (
       return {
         id,
         domain: getHandleDomain(id),
-        index: getHandleIndexForNode(id, node.id),
+        index: portTypeIndex(node, id),
       };
     })
     .filter((handle): handle is HandleCandidate => handle !== null);
@@ -1727,7 +1722,7 @@ If none apply, return { "algorithms": [] }.
             "Amplitude Encoding",
           ].includes(node.data.label)
         ) {
-           const hasClassical = flow.edges?.some(
+          const hasClassical = flow.edges?.some(
             (edge) =>
               edge.target === node.id &&
               (edge.type === "classicalEdge" ||
@@ -2646,13 +2641,13 @@ If none apply, return { "algorithms": [] }.
       currentEdges.filter((current) => current.id !== closestEdge.id),
     );
     if (!sourceToDraggedPair || !draggedToTargetPair) return;
-    const sourceOutputIndex = getHandleIndexForNode(
-      closestEdge.sourceHandle ?? "",
-      closestEdgeSource.id,
+    const sourceOutputIndex = portTypeIndex(
+      closestEdgeSource,
+      closestEdge.sourceHandle,
     );
-    const targetInputIndex = getHandleIndexForNode(
-      closestEdge.targetHandle ?? "",
-      closestEdgeTarget.id,
+    const targetInputIndex = portTypeIndex(
+      closestEdgeTarget,
+      closestEdge.targetHandle,
     );
     const sourceType = (
       closestEdgeSource.data.outputTypes?.[sourceOutputIndex] ?? "any"
@@ -3904,12 +3899,14 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
       console.log("Restoring flow:", flow);
       if (flow.nodes) {
         reactFlowInstance.setNodes(
-          flow.nodes.map((node: Node) => ({
-            ...node,
-            data: {
-              ...node.data,
-            },
-          })),
+          flow.nodes.map((node: Node) =>
+            withPortTypes({
+              ...node,
+              data: {
+                ...node.data,
+              },
+            }),
+          ),
         );
         console.log("Nodes restored.");
       }
@@ -3982,12 +3979,14 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
       console.log("Restoring flow:", flow);
       if (flow.nodes) {
         reactFlowInstance.setNodes(
-          flow.nodes.map((node: Node) => ({
-            ...node,
-            data: {
-              ...node.data,
-            },
-          })),
+          flow.nodes.map((node: Node) =>
+            withPortTypes({
+              ...node,
+              data: {
+                ...node.data,
+              },
+            }),
+          ),
         );
         console.log("Nodes restored.");
       }
@@ -4269,12 +4268,14 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     console.log(flow.nodes);
     if (flow.nodes) {
       reactFlowInstance.setNodes(
-        flow.nodes?.map((node: Node) => ({
-          ...node,
-          data: {
-            ...node.data,
-          },
-        })),
+        flow.nodes?.map((node: Node) =>
+          withPortTypes({
+            ...node,
+            data: {
+              ...node.data,
+            },
+          }),
+        ),
       );
     }
     if (flow.initialEdges) {
@@ -4314,12 +4315,14 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     console.log(flow.nodes);
     if (flow.nodes) {
       reactFlowInstance.setNodes(
-        flow.nodes?.map((node: Node) => ({
-          ...node,
-          data: {
-            ...node.data,
-          },
-        })),
+        flow.nodes?.map((node: Node) =>
+          withPortTypes({
+            ...node,
+            data: {
+              ...node.data,
+            },
+          }),
+        ),
       );
     }
     if (flow.initialEdges) {
