@@ -393,6 +393,13 @@ export const GateNode = memo((node: Node) => {
                 style={{ width: "300px", height: "100px", marginLeft: "55px" }}
                 className=""
               />
+            ) : data.label === "I" ? (
+              <img
+                src="iBeginner.svg"
+                alt="Identity gate"
+                style={{ width: "320px", height: "100px", marginLeft: "55px" }}
+                className=""
+              />
             ) : data.label === "X" ? (
               <img
                 src="xBeginner.png"

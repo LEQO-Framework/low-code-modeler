@@ -449,7 +449,7 @@ function statesInRange(states: unknown, numQubits: number): string | null {
 
 // --- Gates ---
 
-const SINGLE_QUBIT_GATES = ["X", "Y", "Z", "H", "S", "SDG", "T", "TDG"];
+const SINGLE_QUBIT_GATES = ["I", "X", "Y", "Z", "H", "S", "SDG", "T", "TDG"];
 const ROTATION_GATES = ["RX(θ)", "RY(θ)", "RZ(θ)"];
 const TWO_QUBIT_GATES = ["CNOT", "CY", "CZ", "SWAP", "CH", "CU"];
 const TWO_QUBIT_ROTATION_GATES = ["CRX(θ)", "CRY(θ)", "CRZ(θ)"];

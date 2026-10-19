@@ -31,6 +31,7 @@ function mapNode(node: Node, allNodes: any): any {
           X: "x",
           Y: "y",
           Z: "z",
+          I: "id",
         };
         return {
           id: node.id,

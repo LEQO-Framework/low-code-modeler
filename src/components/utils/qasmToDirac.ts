@@ -795,6 +795,9 @@ export function simulate(
       case "sx":
         sv = applySingleQubitGate(sv, numQubits, q0, GATE_SX);
         break;
+      case "id":
+        // identity leaves the state unchanged
+        break;
       case "cp":
       case "cphase":
         sv = applyControlledGate(sv, numQubits, q0, q1, gateCPMatrix(p0 ?? 0));
@@ -1183,6 +1186,8 @@ function formatGateLabel(gate: ParsedGate, numQubits: number): string {
   switch (gate.name) {
     case "h":
       return buildTensor("H", [q[0]]);
+    case "id":
+      return buildTensor("I", [q[0]]);
     case "x":
       return buildTensor("X", [q[0]]);
     case "y":
@@ -1304,6 +1309,8 @@ function formatGateLabelLatex(gate: ParsedGate, numQubits: number): string {
   switch (gate.name) {
     case "h":
       return buildTensorLatex("H", [q[0]]);
+    case "id":
+      return buildTensorLatex("I", [q[0]]);
     case "x":
       return buildTensorLatex("X", [q[0]]);
     case "y":
@@ -1444,6 +1451,9 @@ export function qasmToDiracSteps(qasm: string): DiracStepsResult {
         break;
       case "sx":
         sv = applySingleQubitGate(sv, numQubits, q0, GATE_SX);
+        break;
+      case "id":
+        // identity leaves the state unchanged
         break;
       case "rx":
         sv = applySingleQubitGate(sv, numQubits, q0, gateRX(p0 ?? 0));
