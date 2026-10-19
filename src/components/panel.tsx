@@ -9,6 +9,7 @@ import { shallow } from "zustand/shallow";
 import { useStore } from "@/config/store";
 import { TextPanel, MetadataPanel } from "./panels";
 import { QasmDiracPanel } from "./QasmDiracPanel";
+import { MathCircuitEditor } from "./MathCircuitEditor";
 import {
   analyzeComponents,
   type DiracComponent,
@@ -70,6 +71,9 @@ export const CustomPanel = ({
   const [qasmEditorCode, setQasmEditorCode] = useState<string>("");
   const [qasmApplyError, setQasmApplyError] = useState<string | null>(null);
   const [qasmApplySuccess, setQasmApplySuccess] = useState(false);
+  // Math Mode editor outside of a circuit: on an empty canvas or via "Start a new circuit"
+  const [standaloneEditor, setStandaloneEditor] = useState(false);
+  const canvasEmpty = nodes.length === 0;
 
   // Wenn Math Mode ausgeschaltet → zurück zu Properties (außer QASM Editor ist aktiv)
   useEffect(() => {
@@ -133,15 +137,19 @@ export const CustomPanel = ({
 
   // Applies a circuit edited in Math Mode: the nodes of the edited circuit (component) are
   // replaced by gate nodes built from the new OpenQASM, other circuits on the canvas stay.
+  // Without a component (new circuit started from the empty Math Mode view) the whole
+  // canvas is replaced.
   // The QASM tab gets the new code right away and the backend recompiles the model, after
   // which Math Mode is analyzed again.
   const applyEditedQasm = useCallback(
-    (component: DiracComponent, newQasm: string) => {
+    (component: DiracComponent | null, newQasm: string) => {
       const { nodes: newNodes, edges: newEdges } = qasmToNodes(newQasm);
       if (newNodes.length === 0) return;
 
-      const replaced = new Set(component.nodeIds);
-      if (component.groupId) {
+      const replaced = new Set(
+        component ? component.nodeIds : nodes.map((n) => n.id),
+      );
+      if (component?.groupId) {
         replaced.add(component.groupId);
         for (const n of nodes) {
           if (n.parentNode === component.groupId) replaced.add(n.id);
@@ -149,14 +157,14 @@ export const CustomPanel = ({
       }
       // place the new circuit where the old one was
       const oldNodes = nodes.filter((n) => replaced.has(n.id) && !n.parentNode);
-      const minX = oldNodes.length
-        ? Math.min(...oldNodes.map((n) => n.position.x))
-        : 0;
-      const minY = oldNodes.length
-        ? Math.min(...oldNodes.map((n) => n.position.y))
-        : 0;
       const newMinX = Math.min(...newNodes.map((n) => n.position.x));
       const newMinY = Math.min(...newNodes.map((n) => n.position.y));
+      const minX = oldNodes.length
+        ? Math.min(...oldNodes.map((n) => n.position.x))
+        : newMinX;
+      const minY = oldNodes.length
+        ? Math.min(...oldNodes.map((n) => n.position.y))
+        : newMinY;
       const shifted = newNodes.map((n) => ({
         ...n,
         position: {
@@ -178,20 +186,22 @@ export const CustomPanel = ({
       setQasmEditorCode(newQasm);
 
       // show the edited circuit immediately, the backend result replaces it when it arrives
+      const edited = {
+        qasm: newQasm,
+        error: null,
+        groupId: null,
+        nodes: shifted,
+        nodeIds: shifted.map((n) => n.id),
+      };
       setComponents((prev) =>
-        prev.map((c) =>
-          c.index === component.index
-            ? {
-                ...c,
-                qasm: newQasm,
-                error: null,
-                groupId: null,
-                nodes: shifted,
-                nodeIds: shifted.map((n) => n.id),
-              }
-            : c,
-        ),
+        component
+          ? prev.map((c) =>
+              c.index === component.index ? { ...c, ...edited } : c,
+            )
+          : [{ ...edited, index: 0, groupLabel: null, groupColor: "#6366f1" }],
       );
+      setHasAnalyzedOnce(true);
+      setStandaloneEditor(false);
       if (onSendToBackend) {
         setWaitingForQasm(true);
         // see "Apply to Canvas": the flow instance only knows the new nodes after the commit
@@ -202,10 +212,11 @@ export const CustomPanel = ({
   );
 
   // Beim Wechsel zum Math Mode Tab → automatisch Backend-Call auslösen
+  // (not on an empty canvas: there Math Mode opens with the editor to start a new circuit)
   const handleTabSwitch = useCallback(
     (tab: "properties" | "math") => {
       setActiveTab(tab);
-      if (tab === "math" && mathMode && !hasAnalyzedOnce) {
+      if (tab === "math" && mathMode && !hasAnalyzedOnce && !canvasEmpty) {
         if (qasmCode.trim().length > 0) {
           // QASM vorhanden → direkt analysieren
           setHasAnalyzedOnce(true);
@@ -231,6 +242,7 @@ export const CustomPanel = ({
     [
       mathMode,
       hasAnalyzedOnce,
+      canvasEmpty,
       qasmCode,
       nodes,
       edges,
@@ -246,6 +258,16 @@ export const CustomPanel = ({
   ) {
     onUpdateMetadata(e);
   }
+
+  const startNewButton = (
+    <button
+      onClick={() => setStandaloneEditor(true)}
+      className="mt-1 text-xs px-2.5 py-1 rounded-full border border-blue-300 hover:bg-blue-50 text-blue-600 transition-colors"
+      title="Build a new circuit in Math Mode; it replaces the current model when applied"
+    >
+      + Start a new circuit
+    </button>
+  );
 
   return (
     <div className="currentPanel-container bg-gray-100 h-full border-gray-200 border text-black flex flex-col">
@@ -388,7 +410,7 @@ export const CustomPanel = ({
           <div className="flex-shrink-0 flex justify-between items-center px-2 pt-2 gap-2">
             <button
               onClick={runAnalysis}
-              disabled={analyzing || !qasmCode.trim()}
+              disabled={analyzing || !qasmCode.trim() || canvasEmpty}
               className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border border-gray-300 hover:bg-gray-100 text-gray-600 transition-colors disabled:opacity-40"
               title="Recalculate Dirac notation"
             >
@@ -407,7 +429,26 @@ export const CustomPanel = ({
           </div>
 
           <div className="flex-1 overflow-y-auto p-2">
-            {analyzing ? (
+            {canvasEmpty || standaloneEditor ? (
+              <div className="flex flex-col gap-2">
+                {canvasEmpty && (
+                  <p className="text-xs text-gray-500 px-1">
+                    The canvas is empty. Build a circuit step by step here:
+                    choose the number of qubits and the initial state, add gates
+                    and watch the state change. "Create on canvas" turns it into
+                    a low-code model and OpenQASM.
+                  </p>
+                )}
+                <MathCircuitEditor
+                  qasm={canvasEmpty ? undefined : qasmCode}
+                  initialMode="new"
+                  onApply={(qasm) => applyEditedQasm(null, qasm)}
+                  onClose={
+                    canvasEmpty ? undefined : () => setStandaloneEditor(false)
+                  }
+                />
+              </div>
+            ) : analyzing ? (
               <div className="flex flex-col items-center justify-center h-full gap-2 text-gray-400">
                 <span className="text-lg animate-spin">⟳</span>
                 <p className="text-sm">Analyzing circuits...</p>
@@ -426,6 +467,7 @@ export const CustomPanel = ({
                 <p className="text-sm text-center">
                   Press "Refresh" to calculate the Dirac notation.
                 </p>
+                {startNewButton}
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center h-full gap-2 text-gray-400">
@@ -436,6 +478,7 @@ export const CustomPanel = ({
                 <p className="text-xs text-center text-gray-300">
                   Send the model to the backend to view the Dirac notation.
                 </p>
+                {startNewButton}
               </div>
             )}
           </div>

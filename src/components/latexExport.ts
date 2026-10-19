@@ -43,6 +43,16 @@ interface GateInfo {
 }
 
 const GATE_INFO: Record<string, GateInfo> = {
+  I: {
+    name: "I",
+    plainName: "I",
+    qubits: 1,
+    description:
+      "The identity gate does nothing: every state stays unchanged. It is useful as a placeholder, e.g. to show that a qubit is idle in a step.",
+    matrix: "\\begin{pmatrix} 1 & 0 \\\\ 0 & 1 \\end{pmatrix}",
+    effect: "$I|0\\rangle = |0\\rangle$, \\quad $I|1\\rangle = |1\\rangle$",
+    det: "1",
+  },
   H: {
     name: "H",
     plainName: "H",
@@ -345,6 +355,8 @@ const GATE_INFO: Record<string, GateInfo> = {
 
 /** QASM gate name -> key in GATE_INFO. */
 const GATE_KEY_BY_QASM_NAME: Record<string, string> = {
+  id: "I",
+  i: "I",
   h: "H",
   x: "X",
   y: "Y",

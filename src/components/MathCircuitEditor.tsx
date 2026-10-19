@@ -13,6 +13,7 @@ import {
   circuitFromQasm,
   circuitToQasm,
   defaultQubits,
+  emptyCircuit,
   formatAngle,
   gateArity,
   gateDisplayLabel,
@@ -61,15 +62,32 @@ function newGate(name: string, numQubits: number, previous?: number[]) {
   };
 }
 
+export type EditorMode = "current" | "new";
+
 interface Props {
-  qasm: string;
+  /** QASM of the current model; without it only "Start new" is available. */
+  qasm?: string;
+  initialMode?: EditorMode;
   /** Applies the edited OpenQASM to the QASM output and the canvas; omitted = preview only. */
   onApply?: (qasm: string) => void;
-  onClose: () => void;
+  /** Omitted when the editor cannot be closed (empty canvas). */
+  onClose?: () => void;
 }
 
-export function MathCircuitEditor({ qasm, onApply, onClose }: Props) {
-  const original = useMemo(() => circuitFromQasm(qasm), [qasm]);
+export function MathCircuitEditor({
+  qasm,
+  initialMode = "current",
+  onApply,
+  onClose,
+}: Props) {
+  const hasModel = !!qasm?.trim();
+  const [mode, setMode] = useState<EditorMode>(hasModel ? initialMode : "new");
+  const isNew = mode === "new" || !hasModel;
+  // "Edit current model" starts from the compiled model, "Start new" from |0...0⟩ without steps
+  const original = useMemo(
+    () => (!isNew && qasm ? circuitFromQasm(qasm) : emptyCircuit()),
+    [isNew, qasm],
+  );
   const [circuit, setCircuit] = useState<EditableCircuit>(original);
   const [newGateName, setNewGateName] = useState("h");
   const [openMatrix, setOpenMatrix] = useState<number | null>(null);
@@ -88,6 +106,7 @@ export function MathCircuitEditor({ qasm, onApply, onClose }: Props) {
   const hasErrors = errors.some((e) => e !== null);
   const multiControlled = gates.some((g) => g.name.startsWith("mc_"));
   const changed =
+    isNew ||
     circuitToQasm(circuit) !== circuitToQasm(original) ||
     numQubits !== original.numQubits;
 
@@ -161,22 +180,52 @@ export function MathCircuitEditor({ qasm, onApply, onClose }: Props) {
   const psi = (i: number) => `|\\psi_{${i}}\\rangle`;
 
   return (
-    <div className="flex-shrink-0 rounded-lg border border-amber-200 bg-amber-50/30 px-3 py-3 flex flex-col gap-3">
+    <div className="flex-shrink-0 rounded-lg border border-blue-100 bg-blue-50/30 px-3 py-3 flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
           Edit circuit
         </p>
-        <button
-          onClick={onClose}
-          className="text-xs text-gray-400 hover:text-gray-600"
-          title="Close the editor"
-        >
-          ✕
-        </button>
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="text-xs text-gray-400 hover:text-gray-600"
+            title="Close the editor"
+          >
+            ✕
+          </button>
+        )}
+      </div>
+
+      {/* Edit the current model or start a new one */}
+      <div className="flex items-center gap-1.5 text-xs">
+        {(["current", "new"] as const).map((m) => (
+          <button
+            key={m}
+            onClick={() => {
+              setApplied(false);
+              setMode(m);
+            }}
+            disabled={m === "current" && !hasModel}
+            className={`px-2.5 py-1 rounded-full border transition-colors disabled:opacity-40 ${
+              (m === "new") === isNew
+                ? "bg-blue-50 border-blue-300 text-blue-600"
+                : "border-gray-300 hover:bg-gray-100 text-gray-600"
+            }`}
+            title={
+              m === "current"
+                ? hasModel
+                  ? "Edit the circuit of the current model"
+                  : "The canvas is empty, there is no model to edit yet"
+                : "Start from |00⟩ without steps and build a new circuit"
+            }
+          >
+            {m === "current" ? "Edit current model" : "Start new"}
+          </button>
+        ))}
       </div>
 
       {/* Register size and initial state */}
-      <div className="flex flex-col gap-2 rounded border border-amber-100 bg-white px-2 py-2">
+      <div className="flex flex-col gap-2 rounded border border-blue-100 bg-white px-2 py-2">
         <div className="flex items-center gap-2 text-xs text-gray-600">
           <span className="font-semibold">Qubits:</span>
           <button
@@ -213,7 +262,7 @@ export function MathCircuitEditor({ qasm, onApply, onClose }: Props) {
               onClick={() => toggleInitialBit(q)}
               className={`font-mono px-1.5 py-0.5 rounded border transition-colors ${
                 bit === "1"
-                  ? "bg-amber-500 text-white border-amber-500"
+                  ? "bg-blue-500 text-white border-blue-500"
                   : "bg-white text-gray-600 border-gray-300 hover:bg-gray-50"
               }`}
               title={`Click to start q${q} in |${bit === "1" ? 0 : 1}⟩`}
@@ -410,7 +459,7 @@ export function MathCircuitEditor({ qasm, onApply, onClose }: Props) {
       </div>
 
       {/* Add a step */}
-      <div className="flex flex-col gap-1 rounded border border-dashed border-amber-300 bg-white px-2 py-2">
+      <div className="flex flex-col gap-1 rounded border border-dashed border-blue-300 bg-white px-2 py-2">
         <div className="flex items-center gap-1.5 text-xs flex-wrap">
           <span className="font-semibold text-gray-600">Add step:</span>
           <select
@@ -427,7 +476,7 @@ export function MathCircuitEditor({ qasm, onApply, onClose }: Props) {
           <button
             onClick={() => addGate(false)}
             disabled={addMissing > 0}
-            className="px-2 py-0.5 rounded border border-amber-400 text-amber-700 hover:bg-amber-50 disabled:opacity-40"
+            className="px-2 py-0.5 rounded border border-blue-300 text-blue-600 hover:bg-blue-50 disabled:opacity-40"
           >
             + Add
           </button>
@@ -480,7 +529,7 @@ export function MathCircuitEditor({ qasm, onApply, onClose }: Props) {
           onClick={() => update(() => original)}
           disabled={!changed}
           className="text-xs px-2.5 py-1 rounded-full border border-gray-300 hover:bg-gray-100 text-gray-600 disabled:opacity-40"
-          title="Discard all edits"
+          title={isNew ? "Start over from |00⟩" : "Discard all edits"}
         >
           Reset
         </button>
@@ -494,7 +543,11 @@ export function MathCircuitEditor({ qasm, onApply, onClose }: Props) {
             className="text-xs px-2.5 py-1 rounded-full border border-blue-300 hover:bg-blue-50 text-blue-600 disabled:opacity-40"
             title="Write the edited circuit to OpenQASM and rebuild the low-code canvas"
           >
-            ↙ Apply to OpenQASM & canvas
+            {isNew
+              ? hasModel
+                ? "↙ Replace circuit with new one"
+                : "↙ Create on canvas"
+              : "↙ Apply to OpenQASM & canvas"}
           </button>
         )}
         {applied && (

@@ -1274,7 +1274,7 @@ export function QasmDiracPanel(props: Props) {
               onClick={() => setShowEditor((v) => !v)}
               className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border transition-colors flex-shrink-0 whitespace-nowrap ${
                 showEditor
-                  ? "bg-amber-50 border-amber-300 text-amber-700"
+                  ? "bg-blue-50 border-blue-300 text-blue-600"
                   : "border-gray-300 hover:bg-gray-100 text-gray-600"
               }`}
               title="Change the initial state, add, remove or switch steps and apply them to OpenQASM and the canvas"

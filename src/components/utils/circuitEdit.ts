@@ -38,6 +38,7 @@ export interface GateSpec {
 
 /** Gates the editor offers; all of them exist in the palette of the low-code canvas. */
 export const GATE_CATALOG: GateSpec[] = [
+  { name: "id", label: "I (Identity)", arity: 1, roles: ["target"] },
   { name: "h", label: "H (Hadamard)", arity: 1, roles: ["target"] },
   { name: "x", label: "X (NOT)", arity: 1, roles: ["target"] },
   { name: "y", label: "Y", arity: 1, roles: ["target"] },
@@ -89,7 +90,16 @@ export const GATE_CATALOG: GateSpec[] = [
   },
 ];
 
-const ALIASES: Record<string, string> = { cnot: "cx", toffoli: "ccx" };
+const ALIASES: Record<string, string> = {
+  cnot: "cx",
+  toffoli: "ccx",
+  i: "id",
+};
+
+/** A fresh circuit: all qubits in |0⟩ and no steps. */
+export function emptyCircuit(numQubits = 2): EditableCircuit {
+  return { numQubits, initialBits: "0".repeat(numQubits), gates: [] };
+}
 
 export function gateSpec(name: string): GateSpec | undefined {
   const key = ALIASES[name] ?? name;
