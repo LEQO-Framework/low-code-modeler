@@ -28,6 +28,8 @@ import { ContextMenu, CustomPanel, Palette } from "./components";
 import Toolbar from "./components/toolbar";
 import { nodesConfig, tutorial } from "./config/site";
 import { appendHistory, useStore } from "./config/store";
+import { expandsWithoutQasm, openBlock } from "./lib/circuitLevel";
+import { analyzeComponents } from "./lib/componentAnalyzer";
 import { useShallow } from "zustand/react/shallow";
 import { findNodeDefinition, handleDragOver } from "./lib/utils";
 import useKeyBindings from "./hooks/useKeyBindings";
@@ -561,6 +563,52 @@ function App() {
   const handleAction = (action: string, nodeId: string) => {
     console.log(`Action: ${action} on Node: ${nodeId}`);
     setContextMenu((prev) => ({ ...prev, visible: false }));
+    if (action === "circuitLevel") showCircuitLevel(nodeId);
+  };
+
+  // Opens a block one level towards the circuit level: Grover into its building blocks,
+  // other blocks into the gates they compile to (taken from the freshly compiled model).
+  const showCircuitLevel = async (nodeId: string) => {
+    const nodes: Node[] = reactFlowInstance.getNodes();
+    const edges: Edge[] = reactFlowInstance.getEdges();
+    const node = nodes.find((n) => n.id === nodeId);
+    if (!node) return;
+    let qasm: string | null = null;
+    if (!expandsWithoutQasm(node, nodes, edges)) {
+      showToast("Compiling the model to get the circuit of this block…", "info");
+      try {
+        const components = await analyzeComponents(
+          nodes,
+          edges,
+          lowcodeBackendEndpoint,
+          metadata,
+          compilationTarget,
+        );
+        qasm =
+          components.find((c) => c.qasm?.includes(`Start node ${nodeId}`))
+            ?.qasm ?? null;
+      } catch (error) {
+        console.error("Compiling for the circuit level failed:", error);
+      }
+      if (!qasm && openqasmCode.includes(`Start node ${nodeId}`)) {
+        qasm = openqasmCode;
+      }
+    }
+    const result = openBlock(node, nodes, edges, qasm);
+    if (typeof result === "string") {
+      showToast(result, "error");
+      return;
+    }
+    useStore.setState((state: any) => ({
+      ...appendHistory(state.history, state.historyIndex, {
+        nodes: structuredClone(nodes),
+        edges: structuredClone(edges),
+      }),
+      redoStack: [],
+    }));
+    setSelectedNode(null);
+    reactFlowInstance.setNodes(result.nodes);
+    reactFlowInstance.setEdges(result.edges);
   };
 
   const [validationResult, setValidationResult] = useState({

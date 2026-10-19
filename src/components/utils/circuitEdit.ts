@@ -15,6 +15,8 @@ export interface EditableGate {
   params: number[];
   /** Number of controls for "mc_<gate>" gates (ctrl(N) @ gate). */
   numControls?: number;
+  /** Canvas node (block) the gate was compiled from, if it comes from the model. */
+  source?: string;
 }
 
 export interface EditableCircuit {
@@ -192,6 +194,7 @@ export function circuitFromQasm(qasm: string): EditableCircuit {
       qubits: [...gate.qubits],
       params: [...gate.params],
       numControls: gate.numControls,
+      source: gate.nodeId,
     });
   }
 

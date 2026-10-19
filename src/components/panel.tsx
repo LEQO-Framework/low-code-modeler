@@ -3,10 +3,10 @@
  * Platzierung: src/components/panel.tsx
  */
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Node, Edge, useReactFlow } from "reactflow";
 import { shallow } from "zustand/shallow";
-import { useStore } from "@/config/store";
+import { appendHistory, useStore } from "@/config/store";
 import { TextPanel, MetadataPanel } from "./panels";
 import { QasmDiracPanel } from "./QasmDiracPanel";
 import { MathCircuitEditor } from "./MathCircuitEditor";
@@ -15,6 +15,11 @@ import {
   type DiracComponent,
 } from "@/lib/componentAnalyzer";
 import { qasmToNodes } from "@/lib/qasmToNodes";
+import {
+  createOpenedBlocks,
+  followStep,
+  type OpenedBlocks,
+} from "@/lib/circuitLevel";
 import { nodesToQasm } from "@/lib/nodesToQasm";
 import JSZip from "jszip";
 import { buildStepTree } from "./mathExplanations";
@@ -74,6 +79,21 @@ export const CustomPanel = ({
   // Math Mode editor outside of a circuit: on an empty canvas or via "Start a new circuit"
   const [standaloneEditor, setStandaloneEditor] = useState(false);
   const canvasEmpty = nodes.length === 0;
+  // blocks opened on the canvas by clicking a step; the steps keep the block ids until
+  // the model is recompiled
+  const openedBlocks = useRef<OpenedBlocks>(createOpenedBlocks());
+  useEffect(() => {
+    openedBlocks.current = createOpenedBlocks();
+  }, [qasmCode]);
+
+  // clicking a node on the canvas shows its properties
+  useEffect(() => {
+    if (selectedNode) setActiveTab("properties");
+  }, [selectedNode]);
+  // code typed in the OpenQASM editor that is not (yet) the compiled model; Math Mode's
+  // circuit editor shows it so that both editors show the same circuit
+  const editorQasmChanged =
+    qasmEditorCode.trim() !== "" && qasmEditorCode.trim() !== qasmCode.trim();
 
   // Wenn Math Mode ausgeschaltet → zurück zu Properties (außer QASM Editor ist aktiv)
   useEffect(() => {
@@ -155,23 +175,36 @@ export const CustomPanel = ({
           if (n.parentNode === component.groupId) replaced.add(n.id);
         }
       }
+      // groups (e.g. a recognized Bell state) whose nodes are all replaced go as well
+      for (const group of nodes) {
+        if (group.type !== "groupNode" || replaced.has(group.id)) continue;
+        const children = nodes.filter((n) => n.parentNode === group.id);
+        if (children.length > 0 && children.every((n) => replaced.has(n.id)))
+          replaced.add(group.id);
+      }
       // place the new circuit where the old one was
       const oldNodes = nodes.filter((n) => replaced.has(n.id) && !n.parentNode);
-      const newMinX = Math.min(...newNodes.map((n) => n.position.x));
-      const newMinY = Math.min(...newNodes.map((n) => n.position.y));
+      const topLevel = newNodes.filter((n) => !n.parentNode);
+      const newMinX = Math.min(...topLevel.map((n) => n.position.x));
+      const newMinY = Math.min(...topLevel.map((n) => n.position.y));
       const minX = oldNodes.length
         ? Math.min(...oldNodes.map((n) => n.position.x))
         : newMinX;
       const minY = oldNodes.length
         ? Math.min(...oldNodes.map((n) => n.position.y))
         : newMinY;
-      const shifted = newNodes.map((n) => ({
-        ...n,
-        position: {
-          x: n.position.x - newMinX + minX,
-          y: n.position.y - newMinY + minY,
-        },
-      }));
+      // children of a (recognized state) group are positioned relative to the group
+      const shifted = newNodes.map((n) =>
+        n.parentNode
+          ? n
+          : {
+              ...n,
+              position: {
+                x: n.position.x - newMinX + minX,
+                y: n.position.y - newMinY + minY,
+              },
+            },
+      );
 
       setNodes((nds: Node[]) => [
         ...nds.filter((n) => !replaced.has(n.id)),
@@ -190,8 +223,10 @@ export const CustomPanel = ({
         qasm: newQasm,
         error: null,
         groupId: null,
-        nodes: shifted,
-        nodeIds: shifted.map((n) => n.id),
+        nodes: shifted.filter((n) => n.type !== "groupNode"),
+        nodeIds: shifted
+          .filter((n) => n.type !== "groupNode")
+          .map((n) => n.id),
       };
       setComponents((prev) =>
         component
@@ -356,6 +391,8 @@ export const CustomPanel = ({
                     setNodes(newNodes);
                     setEdges(newEdges);
                     setQasmApplySuccess(true);
+                    // Math Mode is analyzed again as soon as the recompiled QASM arrives
+                    if (mathMode && onSendToBackend) setWaitingForQasm(true);
                     // setTimeout(0): reactFlowInstance synchronisiert seinen internen
                     // Store erst NACH dem React-Commit von setNodes/setEdges. Ein
                     // synchroner onSendToBackend()-Aufruf hier würde daher noch mit
@@ -440,7 +477,14 @@ export const CustomPanel = ({
                   </p>
                 )}
                 <MathCircuitEditor
-                  qasm={canvasEmpty ? undefined : qasmCode}
+                  qasm={
+                    canvasEmpty
+                      ? editorQasmChanged
+                        ? qasmEditorCode
+                        : undefined
+                      : qasmEditorCode || qasmCode
+                  }
+                  fromQasmEditor={editorQasmChanged}
                   initialMode="new"
                   onApply={(qasm) => applyEditedQasm(null, qasm)}
                   onClose={
@@ -460,6 +504,12 @@ export const CustomPanel = ({
                 nodes={nodes}
                 onGetModel={onGetModel}
                 onApplyQasm={applyEditedQasm}
+                openedBlocks={openedBlocks.current}
+                editorQasm={
+                  editorQasmChanged && components.length === 1
+                    ? qasmEditorCode
+                    : undefined
+                }
               />
             ) : qasmCode.trim().length > 0 ? (
               <div className="flex flex-col items-center justify-center h-full gap-2 text-gray-400">
@@ -497,6 +547,8 @@ function ComponentsView({
   onGetCircuitSvg,
   onGetModel,
   onApplyQasm,
+  editorQasm,
+  openedBlocks,
 }: {
   components: DiracComponent[];
   onGetCircuitSvg?: () => Promise<string>;
@@ -504,6 +556,8 @@ function ComponentsView({
   onGetModel?: () => object;
   onApplyQasm?: (component: DiracComponent, qasm: string) => void;
   qasmEditorMode?: boolean;
+  editorQasm?: string;
+  openedBlocks: OpenedBlocks;
 }) {
   return (
     <div className="flex flex-col gap-3">
@@ -536,6 +590,8 @@ function ComponentsView({
                 ? (qasm: string) => onApplyQasm(component, qasm)
                 : undefined
             }
+            editorQasm={editorQasm}
+            openedBlocks={openedBlocks}
           />
         );
       })}
@@ -555,6 +611,8 @@ function ComponentSection({
   nodes,
   onGetModel,
   onApplyQasm,
+  editorQasm,
+  openedBlocks,
 }: {
   label: string;
   color: string;
@@ -568,9 +626,11 @@ function ComponentSection({
   onGetModel?: () => object;
   onApplyQasm?: (qasm: string) => void;
   qasmEditorMode?: boolean;
+  editorQasm?: string;
+  openedBlocks: OpenedBlocks;
 }) {
   const [expanded, setExpanded] = useState(true);
-  const { setNodes } = useReactFlow();
+  const { setNodes, setEdges, getNodes, getEdges } = useReactFlow();
 
   // Gibt nur das SVG der Nodes dieses Circuits/dieser Gruppe zurück
   const circuitNodeIds = new Set(nodeIds ?? nodes.map((n) => n.id));
@@ -605,7 +665,46 @@ function ComponentSection({
       }
     : undefined;
 
-  const handleStepClick = (nodeIds: string[]) => {
+  // Follows a clicked step onto the canvas: the block of the step is opened down to the
+  // circuit level (e.g. Grover → its uniform superposition → the H gates) and the gates
+  // of the step are highlighted.
+  const handleStepClick = (
+    stepNodeIds: string[],
+    clicked?: { nodeId: string; from: number; to: number },
+  ) => {
+    if (!clicked) {
+      highlightNodes(stepNodeIds);
+      return;
+    }
+    const currentNodes = getNodes();
+    const currentEdges = getEdges();
+    const result = followStep(
+      openedBlocks,
+      currentNodes,
+      currentEdges,
+      qasm,
+      clicked,
+      stepNodeIds.filter((id) => id !== clicked.nodeId),
+    );
+    if (!result.changed) {
+      highlightNodes(result.highlight);
+      return;
+    }
+    // keep the compact version in the undo history
+    useStore.setState((state: any) => ({
+      ...appendHistory(state.history, state.historyIndex, {
+        nodes: structuredClone(currentNodes),
+        edges: structuredClone(currentEdges),
+      }),
+      redoStack: [],
+    }));
+    setNodes(result.nodes);
+    setEdges(result.edges);
+    // wait until the circuit is rendered
+    setTimeout(() => highlightNodes(result.highlight), 150);
+  };
+
+  const highlightNodes = (nodeIds: string[]) => {
     const idSet = new Set(nodeIds);
     setNodes((nds: Node[]) =>
       nds.map((n) => ({
@@ -720,6 +819,7 @@ function ComponentSection({
               onGetModel={onGetModel}
               onStepClick={handleStepClick}
               onApplyQasm={onApplyQasm}
+              editorQasm={editorQasm}
             />
           ) : (
             <div className="text-xs text-gray-400 px-2 py-1">

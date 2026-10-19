@@ -84,11 +84,19 @@ type QasmProps = {
   onGetModel?: () => object;
   /** Called when a step in the Mathematical Intermediate Steps is clicked, with the canvas
    *  node IDs of ALL gates from step 1 up to and including the clicked step (step-click
-   *  mechanism, highlights every node used up to that point on the canvas). */
-  onStepClick?: (nodeIds: string[]) => void;
+   *  mechanism, highlights every node used up to that point on the canvas). `clicked` is
+   *  the node of the clicked step (or group) and which of that node's steps to highlight
+   *  (from..to), so that its block can be opened down to the circuit level. */
+  onStepClick?: (
+    nodeIds: string[],
+    clicked?: { nodeId: string; from: number; to: number },
+  ) => void;
   /** Applies a circuit edited in Math Mode (OpenQASM) to the QASM output and the canvas.
    *  Without it the editor works as a preview only. */
   onApplyQasm?: (qasm: string) => void;
+  /** Code of the OpenQASM editor when it differs from `qasm` (edited, not applied yet);
+   *  the circuit editor then starts from it. */
+  editorQasm?: string;
 };
 
 type StatevectorProps = {
@@ -678,7 +686,9 @@ export function QasmDiracPanel(props: Props) {
   // extracted from the props union via an "in" check.
   const onStepClick = "onStepClick" in props ? props.onStepClick : undefined;
   const onApplyQasm = "onApplyQasm" in props ? props.onApplyQasm : undefined;
-  const [showEditor, setShowEditor] = useState(false);
+  const editorQasm = "editorQasm" in props ? props.editorQasm : undefined;
+  // changes made in the OpenQASM editor open the circuit editor right away
+  const [showEditor, setShowEditor] = useState(!!editorQasm);
   const [showBasisStates, setShowBasisStates] = useState(false);
   const [showSteps, setShowSteps] = useState(false);
   const [showBloch, setShowBloch] = useState(false);
@@ -1149,13 +1159,20 @@ export function QasmDiracPanel(props: Props) {
                           .filter((n): n is string => !!n),
                       ),
                     );
-                    onStepClick(nodeIdsUpToHere);
+                    const indexInNode = stepsResult.steps
+                      .slice(0, idx)
+                      .filter((s) => s.nodeId === step.nodeId).length;
+                    onStepClick(nodeIdsUpToHere, {
+                      nodeId: step.nodeId!,
+                      from: 0,
+                      to: indexInNode,
+                    });
                   }
                 : undefined
             }
             title={
               step.nodeId && onStepClick
-                ? "Click to highlight all nodes used up to this point on the canvas"
+                ? "Click to highlight all nodes used up to this point on the canvas; the block of this step opens down to its gates"
                 : undefined
             }
           >
@@ -1170,6 +1187,21 @@ export function QasmDiracPanel(props: Props) {
 
   // A group (e.g. Grover operator, its oracle, or a basis encoding) is collapsed to a
   // single arrow with the resulting state and can be opened to show its parts.
+  // Clicking a group (e.g. "Uniform superposition" of a Grover block) opens its block on
+  // the canvas down to the circuit level and highlights the gates of the group.
+  const showGroupOnCanvas = (group: StepGroup) => {
+    const nodeId = stepsResult?.steps[group.first]?.nodeId;
+    if (!onStepClick || !stepsResult || !nodeId) return;
+    const before = stepsResult.steps
+      .slice(0, group.first)
+      .filter((s) => s.nodeId === nodeId).length;
+    onStepClick([nodeId], {
+      nodeId,
+      from: before,
+      to: before + group.last - group.first,
+    });
+  };
+
   const renderGroup = (group: StepGroup) => {
     const key = `${group.first}-${group.last}-${group.label}`;
     const open = openGroups.has(key);
@@ -1179,7 +1211,10 @@ export function QasmDiracPanel(props: Props) {
         <div className="flex items-center gap-1.5 py-0.5 pl-10">
           <span className="text-indigo-400 text-xs">──</span>
           <button
-            onClick={() => toggleGroup(key)}
+            onClick={() => {
+              toggleGroup(key);
+              showGroupOnCanvas(group);
+            }}
             className="flex items-center gap-1 text-indigo-700 text-xs font-sans font-semibold bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 hover:border-indigo-300 px-1.5 py-0.5 rounded whitespace-nowrap transition-colors"
             title={open ? "Collapse" : "Open to see the components"}
           >
@@ -1546,7 +1581,8 @@ export function QasmDiracPanel(props: Props) {
       {/* Circuit editor: initial state, steps and matrices, applied back to QASM + canvas */}
       {showEditor && "qasm" in props && props.qasm && (
         <MathCircuitEditor
-          qasm={props.qasm}
+          qasm={editorQasm ?? props.qasm}
+          fromQasmEditor={!!editorQasm}
           onApply={onApplyQasm}
           onClose={() => setShowEditor(false)}
         />

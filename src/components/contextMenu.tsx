@@ -16,6 +16,7 @@ import {
 import { FaGear } from "react-icons/fa6";
 import { v4 as uuid } from "uuid";
 import { normalizeCustomOutputs } from "./utils/customOutputs";
+import { hasCircuitLevel } from "@/lib/circuitLevel";
 
 interface ContextMenuProps {
   id: string;
@@ -433,6 +434,20 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
         {...hoverProps("duplicate")}
       >
         <FaCopy style={iconStyle} /> Duplicate
+      </button>,
+    );
+  }
+  // blocks (not circuit primitives, data types or plugins) can be opened to their gates
+  if (type !== "edge" && hasCircuitLevel(getNode(id))) {
+    buttons.push(
+      <button
+        key="circuit-level"
+        onClick={() => onAction?.("circuitLevel", id)}
+        aria-label="Show circuit level"
+        title="Replace the block by the gates it compiles to; collapse the group to get the block back"
+        {...hoverProps("circuit-level")}
+      >
+        <FaCaretRight style={iconStyle} /> Show circuit level
       </button>,
     );
   }

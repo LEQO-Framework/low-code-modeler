@@ -17,6 +17,12 @@ import {
   collapseGroverSubprocess,
   subprocessHasOnlyGroverBlocks,
 } from "@/lib/expandGrover";
+import { circuitLevelChanged, restoreCompactModel } from "@/lib/circuitLevel";
+import {
+  collapseStatePreparationGroup,
+  compactFormName,
+  statePreparationGroupChanged,
+} from "@/lib/statePreparationGroups";
 import { shallow } from "zustand/shallow";
 import { awareness } from "@/yjs";
 
@@ -49,6 +55,15 @@ const CLASSICAL_TYPES = new Set([
 ]);
 
 type GroupType = "quantum" | "classical" | "mixed";
+
+function isDescendantOf(node: Node, groupId: string, nodes: Node[]): boolean {
+  let parent = node.parentNode;
+  while (parent) {
+    if (parent === groupId) return true;
+    parent = nodes.find((n) => n.id === parent)?.parentNode;
+  }
+  return false;
+}
 
 function getGroupType(childNodes: Node[]): GroupType {
   const types = childNodes.map((n) => n.type ?? "");
@@ -383,8 +398,21 @@ export const GroupNode = memo((node: Node) => {
   // into that block instead of into a generic collapsed group.
   const isSubprocess = !!data.subprocess;
   const collapseSubprocess = useCallback(() => {
-    const currentNodes = getNodes();
-    const currentEdges = getEdges();
+    const originalNodes = getNodes();
+    const originalEdges = getEdges();
+    // building blocks opened to the circuit level inside are closed first
+    let currentNodes = originalNodes;
+    let currentEdges = originalEdges;
+    for (;;) {
+      const inner = currentNodes.find(
+        (n) =>
+          n.data?.circuitLevel && isDescendantOf(n, id, currentNodes),
+      );
+      if (!inner) break;
+      const restored = restoreCompactModel(inner, currentNodes, currentEdges);
+      currentNodes = restored.nodes;
+      currentEdges = restored.edges;
+    }
     const self = currentNodes.find((n) => n.id === id);
     if (!self) return;
     if (
@@ -397,6 +425,70 @@ export const GroupNode = memo((node: Node) => {
     }
     const result = collapseGroverSubprocess(self, currentNodes, currentEdges);
     // keep the expanded version in the undo history
+    useStore.setState((state: any) => ({
+      ...appendHistory(state.history, state.historyIndex, {
+        nodes: structuredClone(originalNodes),
+        edges: structuredClone(originalEdges),
+      }),
+      redoStack: [],
+    }));
+    setNodes(result.nodes);
+    setEdges(result.edges);
+  }, [id, getNodes, getEdges, setNodes, setEdges]);
+
+  // A block opened to its circuit level (e.g. QFT, Grover Oracle, Prepare State)
+  // collapses back into that block, with its settings and connections.
+  const isCircuitLevel = !!data.circuitLevel;
+  const collapseToBlock = useCallback(() => {
+    const currentNodes = getNodes();
+    const currentEdges = getEdges();
+    const self = currentNodes.find((n) => n.id === id);
+    if (!self) return;
+    if (
+      circuitLevelChanged(self, currentNodes) &&
+      !window.confirm(
+        "The gates in this group were changed. Collapsing restores the original block and discards these changes. Continue?",
+      )
+    ) {
+      return;
+    }
+    const result = restoreCompactModel(self, currentNodes, currentEdges);
+    // keep the circuit-level version in the undo history
+    useStore.setState((state: any) => ({
+      ...appendHistory(state.history, state.historyIndex, {
+        nodes: structuredClone(currentNodes),
+        edges: structuredClone(currentEdges),
+      }),
+      redoStack: [],
+    }));
+    setNodes(result.nodes);
+    setEdges(result.edges);
+  }, [id, getNodes, getEdges, setNodes, setEdges]);
+
+  // A group recognized as a state preparation (e.g. "Bell state Φ⁺") collapses into a
+  // Prepare State block, which can be expanded back into this circuit.
+  const statePreparation = data.statePreparation as
+    | { quantumStateName: string; label: string; kind?: string }
+    | undefined;
+  const collapseToPrepareState = useCallback(() => {
+    const currentNodes = getNodes();
+    const currentEdges = getEdges();
+    const self = currentNodes.find((n) => n.id === id);
+    if (!self) return;
+    if (
+      statePreparationGroupChanged(self, currentNodes, currentEdges) &&
+      !window.confirm(
+        `The circuit in this group was changed after it was recognized as ${self.data.statePreparation.label}. Collapsing replaces it with ${compactFormName(self.data.statePreparation)} for ${self.data.statePreparation.label}. Continue?`,
+      )
+    ) {
+      return;
+    }
+    const result = collapseStatePreparationGroup(
+      self,
+      currentNodes,
+      currentEdges,
+    );
+    // keep the circuit-level version in the undo history
     useStore.setState((state: any) => ({
       ...appendHistory(state.history, state.historyIndex, {
         nodes: structuredClone(currentNodes),
@@ -718,6 +810,8 @@ export const GroupNode = memo((node: Node) => {
             onClick={(e) => {
               e.stopPropagation();
               if (isSubprocess) collapseSubprocess();
+              else if (isCircuitLevel) collapseToBlock();
+              else if (statePreparation) collapseToPrepareState();
               else toggleCollapse();
             }}
             style={{
@@ -739,7 +833,11 @@ export const GroupNode = memo((node: Node) => {
             title={
               isSubprocess
                 ? "Collapse to the compact block"
-                : collapsed
+                : isCircuitLevel
+                  ? "Collapse the circuit level back into the low-code block"
+                  : statePreparation
+                  ? `Collapse to the compact low-code model: ${compactFormName(statePreparation)} (${statePreparation.label}). Expand the block to get the circuit back.`
+                  : collapsed
                   ? "Expand"
                   : "Collapse"
             }

@@ -5,9 +5,12 @@
  * rebuilds the low-code canvas.
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import katex from "katex";
 import { qasmToDiracSteps } from "./utils/qasmToDirac";
+import { detectStatePreparations } from "@/lib/recognizeStates";
+import { analyzeGrover } from "./utils/groverSegments";
+import { useStore } from "@/config/store";
 import {
   GATE_CATALOG,
   circuitFromQasm,
@@ -72,6 +75,8 @@ interface Props {
   onApply?: (qasm: string) => void;
   /** Omitted when the editor cannot be closed (empty canvas). */
   onClose?: () => void;
+  /** `qasm` comes from the OpenQASM editor and has not been applied to the canvas yet. */
+  fromQasmEditor?: boolean;
 }
 
 export function MathCircuitEditor({
@@ -79,15 +84,28 @@ export function MathCircuitEditor({
   initialMode = "current",
   onApply,
   onClose,
+  fromQasmEditor = false,
 }: Props) {
   const hasModel = !!qasm?.trim();
   const [mode, setMode] = useState<EditorMode>(hasModel ? initialMode : "new");
   const isNew = mode === "new" || !hasModel;
-  // "Edit current model" starts from the compiled model, "Start new" from |0...0⟩ without steps
-  const original = useMemo(
-    () => (!isNew && qasm ? circuitFromQasm(qasm) : emptyCircuit()),
-    [isNew, qasm],
-  );
+  // "Edit current model" starts from the compiled model (or the code in the OpenQASM
+  // editor), "Start new" from |0...0⟩ without steps. While QASM is being typed it can be
+  // incomplete; then the last circuit that could be read is kept.
+  const lastReadable = useRef<EditableCircuit | null>(null);
+  const original = useMemo(() => {
+    if (isNew || !qasm) return emptyCircuit();
+    try {
+      const read = circuitFromQasm(qasm);
+      if (read.numQubits > 0) {
+        lastReadable.current = read;
+        return read;
+      }
+    } catch {
+      // incomplete QASM, see below
+    }
+    return lastReadable.current ?? emptyCircuit();
+  }, [isNew, qasm]);
   const [circuit, setCircuit] = useState<EditableCircuit>(original);
   const [newGateName, setNewGateName] = useState("h");
   const [openMatrix, setOpenMatrix] = useState<number | null>(null);
@@ -104,7 +122,6 @@ export function MathCircuitEditor({
   const { numQubits, initialBits, gates } = circuit;
   const errors = gates.map((g) => validateGate(g, numQubits));
   const hasErrors = errors.some((e) => e !== null);
-  const multiControlled = gates.some((g) => g.name.startsWith("mc_"));
   const changed =
     isNew ||
     circuitToQasm(circuit) !== circuitToQasm(original) ||
@@ -114,6 +131,46 @@ export function MathCircuitEditor({
     if (hasErrors) return null;
     return qasmToDiracSteps(circuitToQasm(circuit, false), initialBits);
   }, [circuit, hasErrors, initialBits]);
+
+  // The block of the model each step comes from (e.g. "Grover's Search Algorithm ·
+  // Oracle (iteration 1)"), shown as a heading above its steps. Steps that were added
+  // in the editor have none; single gate nodes get no heading either.
+  const canvasNodes = useStore((state: any) => state.nodes) as {
+    id: string;
+    type?: string;
+    data?: any;
+  }[];
+  const blockOf = useMemo(() => {
+    const grover = analyzeGrover(
+      gates.map((g) => ({ name: g.name, qubits: g.qubits, nodeId: g.source })),
+    ).lookup;
+    const fromModel = gates.some((g) => g.source);
+    return gates.map((g, i) => {
+      if (!g.source) return fromModel ? "Added steps" : null;
+      const node = canvasNodes.find((n) => n.id === g.source);
+      if (!node || node.type === "gateNode" || node.type === "mcmt-gate")
+        return null;
+      const d = node.data ?? {};
+      const name =
+        d.label === "Prepare State" && d.quantumStateName
+          ? `Prepare State · ${d.quantumStateName}`
+          : d.label === "Encode Value" && d.encodingType
+            ? `Encode Value · ${d.encodingType}`
+            : (d.label ?? "Block");
+      return grover[i] ? `${name} · ${grover[i]}` : name;
+    });
+  }, [gates, canvasNodes]);
+
+  // Bell, GHZ and W states prepared by the circuit (they become groups on the canvas)
+  const recognizedStates = useMemo(() => {
+    if (hasErrors) return [];
+    const preparation = initialBits
+      .split("")
+      .flatMap((bit, q) =>
+        bit === "1" ? [{ name: "x", qubits: [q], params: [] }] : [],
+      );
+    return detectStatePreparations(numQubits, [...preparation, ...gates]);
+  }, [hasErrors, initialBits, numQubits, gates]);
 
   const update = (fn: (c: EditableCircuit) => EditableCircuit) => {
     setApplied(false);
@@ -195,6 +252,13 @@ export function MathCircuitEditor({
           </button>
         )}
       </div>
+
+      {fromQasmEditor && !isNew && (
+        <p className="text-[11px] text-blue-700 bg-blue-50 border border-blue-100 rounded px-2 py-1 leading-snug">
+          Synced with the OpenQASM editor: this shows its code, including
+          changes that are not applied to the canvas yet.
+        </p>
+      )}
 
       {/* Edit the current model or start a new one */}
       <div className="flex items-center gap-1.5 text-xs">
@@ -294,165 +358,173 @@ export function MathCircuitEditor({
           const spec = gateSpec(gate.name);
           const error = errors[index];
           const arity = gateArity(gate);
+          const block = blockOf[index];
+          const blockStarts = block !== (index > 0 ? blockOf[index - 1] : null);
           return (
-            <div
-              key={index}
-              className={`rounded border px-2 py-1.5 bg-white ${
-                error ? "border-red-300" : "border-gray-200"
-              }`}
-            >
-              <div className="flex items-center gap-1.5 flex-wrap text-xs">
-                <span className="text-gray-400 font-mono w-5">
-                  {index + 1}.
-                </span>
-                {spec ? (
-                  <select
-                    value={spec.name}
-                    onChange={(e) =>
-                      setGate(
-                        index,
-                        newGate(e.target.value, numQubits, gate.qubits),
-                      )
-                    }
-                    className="border border-gray-300 rounded px-1 py-0.5 bg-white"
-                    title="Switch the gate (and with it the matrix) of this step"
-                  >
-                    {GATE_CATALOG.map((g) => (
-                      <option key={g.name} value={g.name}>
-                        {g.label}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <span className="font-mono text-gray-700">
-                    {gateDisplayLabel(gate)}
+            <div key={index} className="flex flex-col gap-1.5">
+              {blockStarts && block && (
+                <p className="mt-1 text-[11px] font-semibold text-indigo-700">
+                  {block}
+                </p>
+              )}
+              <div
+                className={`rounded border px-2 py-1.5 bg-white ${
+                  error ? "border-red-300" : "border-gray-200"
+                }`}
+              >
+                <div className="flex items-center gap-1.5 flex-wrap text-xs">
+                  <span className="text-gray-400 font-mono w-5">
+                    {index + 1}.
                   </span>
-                )}
-                {spec?.roles.map((role, r) => (
-                  <label
-                    key={r}
-                    className="flex items-center gap-0.5 text-gray-500"
-                  >
-                    {role}
+                  {spec ? (
                     <select
-                      value={gate.qubits[r] ?? 0}
-                      onChange={(e) => {
-                        const qubits = [...gate.qubits];
-                        qubits[r] = Number(e.target.value);
-                        setGate(index, { ...gate, qubits });
-                      }}
-                      className="border border-gray-300 rounded px-1 py-0.5 bg-white font-mono"
-                    >
-                      {Array.from(
-                        { length: Math.max(numQubits, arity) },
-                        (_, q) => (
-                          <option key={q} value={q} disabled={q >= numQubits}>
-                            q{q}
-                          </option>
-                        ),
-                      )}
-                    </select>
-                  </label>
-                ))}
-                {spec?.hasParam && (
-                  <label className="flex items-center gap-0.5 text-gray-500">
-                    θ
-                    <input
-                      value={
-                        angleDrafts[index] ?? formatAngle(gate.params[0] ?? 0)
-                      }
-                      onChange={(e) => {
-                        const text = e.target.value;
-                        setAngleDrafts((d) => ({ ...d, [index]: text }));
-                        const value = parseAngle(text);
-                        if (value !== null)
-                          setGate(index, { ...gate, params: [value] });
-                      }}
-                      onBlur={() =>
-                        setAngleDrafts((d) => {
-                          const next = { ...d };
-                          delete next[index];
-                          return next;
+                      value={spec.name}
+                      onChange={(e) =>
+                        setGate(index, {
+                          ...newGate(e.target.value, numQubits, gate.qubits),
+                          source: gate.source,
                         })
                       }
-                      className={`w-16 border rounded px-1 py-0.5 font-mono ${
-                        angleDrafts[index] !== undefined &&
-                        parseAngle(angleDrafts[index]) === null
-                          ? "border-red-400"
-                          : "border-gray-300"
-                      }`}
-                      title="Angle in radians, e.g. pi/2, π/4, 0.5, or in degrees, e.g. 90°"
-                    />
-                  </label>
-                )}
-                <div className="ml-auto flex items-center gap-1">
-                  <button
-                    onClick={() =>
-                      setOpenMatrix((m) => (m === index ? null : index))
-                    }
-                    disabled={!!error}
-                    className={`px-1.5 rounded border transition-colors disabled:opacity-40 ${
-                      openMatrix === index
-                        ? "bg-blue-50 border-blue-300 text-blue-600"
-                        : "border-gray-300 text-gray-500 hover:bg-gray-50"
-                    }`}
-                    title="Show the matrix of this step"
-                  >
-                    Matrix
-                  </button>
-                  <button
-                    onClick={() => moveGate(index, -1)}
-                    disabled={index === 0}
-                    className="px-1 text-gray-500 hover:text-gray-800 disabled:opacity-30"
-                    title="Move up"
-                  >
-                    ↑
-                  </button>
-                  <button
-                    onClick={() => moveGate(index, 1)}
-                    disabled={index === gates.length - 1}
-                    className="px-1 text-gray-500 hover:text-gray-800 disabled:opacity-30"
-                    title="Move down"
-                  >
-                    ↓
-                  </button>
-                  <button
-                    onClick={() => removeGate(index)}
-                    className="px-1 text-red-400 hover:text-red-600"
-                    title="Remove this step"
-                  >
-                    ✕
-                  </button>
-                </div>
-              </div>
-
-              {error && (
-                <div className="mt-1 flex items-start gap-2 text-xs text-red-600">
-                  <span>⚠ {error}</span>
-                  {arity > numQubits && arity <= MAX_QUBITS && (
-                    <button
-                      onClick={() => setQubitCount(arity)}
-                      className="flex-shrink-0 px-1.5 rounded border border-red-300 hover:bg-red-50"
+                      className="border border-gray-300 rounded px-1 py-0.5 bg-white"
+                      title="Switch the gate (and with it the matrix) of this step"
                     >
-                      + Add {arity - numQubits} qubit
-                      {arity - numQubits === 1 ? "" : "s"}
-                    </button>
+                      {GATE_CATALOG.map((g) => (
+                        <option key={g.name} value={g.name}>
+                          {g.label}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span className="font-mono text-gray-700">
+                      {gateDisplayLabel(gate)}
+                    </span>
                   )}
+                  {spec?.roles.map((role, r) => (
+                    <label
+                      key={r}
+                      className="flex items-center gap-0.5 text-gray-500"
+                    >
+                      {role}
+                      <select
+                        value={gate.qubits[r] ?? 0}
+                        onChange={(e) => {
+                          const qubits = [...gate.qubits];
+                          qubits[r] = Number(e.target.value);
+                          setGate(index, { ...gate, qubits });
+                        }}
+                        className="border border-gray-300 rounded px-1 py-0.5 bg-white font-mono"
+                      >
+                        {Array.from(
+                          { length: Math.max(numQubits, arity) },
+                          (_, q) => (
+                            <option key={q} value={q} disabled={q >= numQubits}>
+                              q{q}
+                            </option>
+                          ),
+                        )}
+                      </select>
+                    </label>
+                  ))}
+                  {spec?.hasParam && (
+                    <label className="flex items-center gap-0.5 text-gray-500">
+                      θ
+                      <input
+                        value={
+                          angleDrafts[index] ?? formatAngle(gate.params[0] ?? 0)
+                        }
+                        onChange={(e) => {
+                          const text = e.target.value;
+                          setAngleDrafts((d) => ({ ...d, [index]: text }));
+                          const value = parseAngle(text);
+                          if (value !== null)
+                            setGate(index, { ...gate, params: [value] });
+                        }}
+                        onBlur={() =>
+                          setAngleDrafts((d) => {
+                            const next = { ...d };
+                            delete next[index];
+                            return next;
+                          })
+                        }
+                        className={`w-16 border rounded px-1 py-0.5 font-mono ${
+                          angleDrafts[index] !== undefined &&
+                          parseAngle(angleDrafts[index]) === null
+                            ? "border-red-400"
+                            : "border-gray-300"
+                        }`}
+                        title="Angle in radians, e.g. pi/2, π/4, 0.5, or in degrees, e.g. 90°"
+                      />
+                    </label>
+                  )}
+                  <div className="ml-auto flex items-center gap-1">
+                    <button
+                      onClick={() =>
+                        setOpenMatrix((m) => (m === index ? null : index))
+                      }
+                      disabled={!!error}
+                      className={`px-1.5 rounded border transition-colors disabled:opacity-40 ${
+                        openMatrix === index
+                          ? "bg-blue-50 border-blue-300 text-blue-600"
+                          : "border-gray-300 text-gray-500 hover:bg-gray-50"
+                      }`}
+                      title="Show the matrix of this step"
+                    >
+                      Matrix
+                    </button>
+                    <button
+                      onClick={() => moveGate(index, -1)}
+                      disabled={index === 0}
+                      className="px-1 text-gray-500 hover:text-gray-800 disabled:opacity-30"
+                      title="Move up"
+                    >
+                      ↑
+                    </button>
+                    <button
+                      onClick={() => moveGate(index, 1)}
+                      disabled={index === gates.length - 1}
+                      className="px-1 text-gray-500 hover:text-gray-800 disabled:opacity-30"
+                      title="Move down"
+                    >
+                      ↓
+                    </button>
+                    <button
+                      onClick={() => removeGate(index)}
+                      className="px-1 text-red-400 hover:text-red-600"
+                      title="Remove this step"
+                    >
+                      ✕
+                    </button>
+                  </div>
                 </div>
-              )}
 
-              {openMatrix === index && !error && (
-                <StepMatrix gate={gate} numQubits={numQubits} />
-              )}
+                {error && (
+                  <div className="mt-1 flex items-start gap-2 text-xs text-red-600">
+                    <span>⚠ {error}</span>
+                    {arity > numQubits && arity <= MAX_QUBITS && (
+                      <button
+                        onClick={() => setQubitCount(arity)}
+                        className="flex-shrink-0 px-1.5 rounded border border-red-300 hover:bg-red-50"
+                      >
+                        + Add {arity - numQubits} qubit
+                        {arity - numQubits === 1 ? "" : "s"}
+                      </button>
+                    )}
+                  </div>
+                )}
 
-              {preview?.steps[index] && (
-                <div className="mt-1 font-mono text-xs text-gray-700 overflow-x-auto whitespace-nowrap">
-                  <span className="text-gray-400">
-                    |ψ{subscript(index + 1)}⟩ ={" "}
-                  </span>
-                  {preview.steps[index].unicode}
-                </div>
-              )}
+                {openMatrix === index && !error && (
+                  <StepMatrix gate={gate} numQubits={numQubits} />
+                )}
+
+                {preview?.steps[index] && (
+                  <div className="mt-1 font-mono text-xs text-gray-700 overflow-x-auto whitespace-nowrap">
+                    <span className="text-gray-400">
+                      |ψ{subscript(index + 1)}⟩ ={" "}
+                    </span>
+                    {preview.steps[index].unicode}
+                  </div>
+                )}
+              </div>
             </div>
           );
         })}
@@ -513,6 +585,38 @@ export function MathCircuitEditor({
           Fix the marked steps to see the resulting state.
         </p>
       )}
+      {recognizedStates.length > 0 && (
+        <div className="rounded border border-blue-100 bg-white px-2 py-1.5 text-xs text-gray-700">
+          {recognizedStates.map((m) => {
+            const steps = m.gateIndices
+              .map((i) => i - (initialBits.match(/1/g)?.length ?? 0) + 1)
+              .filter((i) => i > 0);
+            return (
+              <p key={m.qubits.join(",")}>
+                <span className="font-semibold text-blue-700">
+                  {m.state.label}
+                </span>{" "}
+                on {m.qubits.map((q) => `q${q}`).join(", ")} (
+                {steps.length > 0
+                  ? `steps ${steps.join(", ")}`
+                  : "the initial state"}
+                )
+                {m.state.kind === "basis" && (
+                  <span className="text-gray-400">
+                    {" "}
+                    · the first qubit holds the least significant bit
+                  </span>
+                )}
+              </p>
+            );
+          })}
+          <p className="mt-0.5 text-[11px] text-gray-400 leading-snug">
+            On the canvas these become groups that you can collapse into the
+            compact low-code model (Prepare State, or Number → Basis Encoding)
+            and expand again into the circuit.
+          </p>
+        </div>
+      )}
 
       <details className="text-xs">
         <summary className="cursor-pointer text-gray-500">
@@ -539,7 +643,7 @@ export function MathCircuitEditor({
               onApply(circuitToQasm(circuit));
               setApplied(true);
             }}
-            disabled={!changed || hasErrors || multiControlled}
+            disabled={!changed || hasErrors}
             className="text-xs px-2.5 py-1 rounded-full border border-blue-300 hover:bg-blue-50 text-blue-600 disabled:opacity-40"
             title="Write the edited circuit to OpenQASM and rebuild the low-code canvas"
           >
@@ -556,13 +660,6 @@ export function MathCircuitEditor({
           </span>
         )}
       </div>
-      {multiControlled && onApply && (
-        <p className="text-[11px] text-amber-700">
-          This circuit contains multi-controlled gates (e.g. from a Grover
-          operator) that have no single gate node on the canvas, so it can be
-          explored here but not applied.
-        </p>
-      )}
       {!onApply && (
         <p className="text-[11px] text-gray-400">
           Preview only: open Math Mode from the side panel to apply changes to
