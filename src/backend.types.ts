@@ -644,7 +644,9 @@ export interface components {
         | "u2"
         | "u3";
       /** Parameter */
-      parameter: number;
+      parameter?: number | null;
+      /** Parameters */
+      parameters?: number[] | null;
     };
     /** PrepareStateNode */
     PrepareStateNode: {

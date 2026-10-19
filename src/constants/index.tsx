@@ -108,6 +108,14 @@ export const parameterized_two_qubit = ["CP(λ)", "CRX(θ)", "CRY(θ)", "CRZ(θ)
 
 export const multi_parameterized_two_qubit = ["CU(θ,φ,λ,γ)"];
 
+// Universal one-qubit gates and their ordered angles. The angles are stored
+// comma separated in `data.parameter` (radians, e.g. "pi/2,0,pi").
+export const u_gate_parameters: Record<string, string[]> = {
+  "U1(λ)": ["λ"],
+  "U2(φ,λ)": ["φ", "λ"],
+  "U3(θ,φ,λ)": ["θ", "φ", "λ"],
+};
+
 export const non_parameterized_one_qubit = [
   "H",
   "T",
