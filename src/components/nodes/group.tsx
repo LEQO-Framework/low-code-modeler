@@ -12,7 +12,11 @@ import {
   Edge,
   useReactFlow,
 } from "reactflow";
-import { useStore } from "@/config/store";
+import { appendHistory, useStore } from "@/config/store";
+import {
+  collapseGroverSubprocess,
+  subprocessHasOnlyGroverBlocks,
+} from "@/lib/expandGrover";
 import { shallow } from "zustand/shallow";
 import { awareness } from "@/yjs";
 
@@ -375,6 +379,35 @@ export const GroupNode = memo((node: Node) => {
     });
   }, [collapsed, id, setNodes, getChildBounds]);
 
+  // A subprocess opened from a compact block (e.g. Grover's algorithm) collapses back
+  // into that block instead of into a generic collapsed group.
+  const isSubprocess = !!data.subprocess;
+  const collapseSubprocess = useCallback(() => {
+    const currentNodes = getNodes();
+    const currentEdges = getEdges();
+    const self = currentNodes.find((n) => n.id === id);
+    if (!self) return;
+    if (
+      !subprocessHasOnlyGroverBlocks(self, currentNodes) &&
+      !window.confirm(
+        "Collapsing turns the subprocess back into the compact block. Nodes you added inside the subprocess will be removed. Continue?",
+      )
+    ) {
+      return;
+    }
+    const result = collapseGroverSubprocess(self, currentNodes, currentEdges);
+    // keep the expanded version in the undo history
+    useStore.setState((state: any) => ({
+      ...appendHistory(state.history, state.historyIndex, {
+        nodes: structuredClone(currentNodes),
+        edges: structuredClone(currentEdges),
+      }),
+      redoStack: [],
+    }));
+    setNodes(result.nodes);
+    setEdges(result.edges);
+  }, [id, getNodes, getEdges, setNodes, setEdges]);
+
   const handleToggleLock = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
@@ -684,7 +717,8 @@ export const GroupNode = memo((node: Node) => {
           <button
             onClick={(e) => {
               e.stopPropagation();
-              toggleCollapse();
+              if (isSubprocess) collapseSubprocess();
+              else toggleCollapse();
             }}
             style={{
               flexShrink: 0,
@@ -702,7 +736,13 @@ export const GroupNode = memo((node: Node) => {
               cursor: "pointer",
               lineHeight: 1,
             }}
-            title={collapsed ? "Expand" : "Collapse"}
+            title={
+              isSubprocess
+                ? "Collapse to the compact block"
+                : collapsed
+                  ? "Expand"
+                  : "Collapse"
+            }
           >
             {collapsed ? "▸" : "▾"}
           </button>

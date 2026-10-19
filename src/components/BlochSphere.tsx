@@ -518,11 +518,11 @@ function SingleBlochSphere({
       </div>
       <div
         style={{ fontSize: 10.5, color: "#6b7280" }}
-        title="Entanglement Persistence (von Neumann entropy of this qubit's reduced density matrix, in bits). 0 = pure/unentangled, 1 = maximally entangled with the rest of the system."
+        title="Entanglement Persistence (von Neumann entropy of this qubit's reduced density matrix, in bits). 0 = not entangled, 1 = maximally entangled with the rest of the system."
       >
         Entanglement Persistence: {entropyRounded.toFixed(3)}{" "}
         {entropyRounded < 0.01
-          ? "(pure)"
+          ? "(not entangled)"
           : entropyRounded > 0.99
             ? "(max. entangled)"
             : "(partially entangled)"}

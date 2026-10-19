@@ -16,11 +16,8 @@ import {
 import { qasmToNodes } from "@/lib/qasmToNodes";
 import { nodesToQasm } from "@/lib/nodesToQasm";
 import JSZip from "jszip";
-import {
-  getEntanglementPersistence,
-  isStateFullySeparable,
-  getMultiQubitPersistence,
-} from "./BlochSphere";
+import { buildStepTree } from "./mathExplanations";
+import { buildLatexExport } from "./latexExport";
 
 const selector = (state: {
   selectedNode: Node | null;
@@ -702,14 +699,18 @@ function ExportAllButton({
           const result = qasmToDirac(component.qasm);
           const stepsResult = qasmToDiracSteps(component.qasm);
 
-          const texContent = buildLatexForComponent(
-            label,
-            result.latex,
-            result.numQubits,
-            result.terms,
+          const texContent = buildLatexExport({
+            title: label,
+            latex: result.latex,
+            numQubits: result.numQubits,
+            terms: result.terms,
             stepsResult,
             pngBase64,
-          );
+            stepTree: buildStepTree(
+              stepsResult.steps,
+              useStore.getState().nodes,
+            ),
+          });
 
           zip.file(`${safeName}/main.tex`, texContent);
           if (pngBase64) {
@@ -743,209 +744,6 @@ function ExportAllButton({
       {exporting ? "Exporting..." : "Export all"}
     </button>
   );
-}
-
-// Hilfsfunktion: LaTeX für eine Komponente bauen
-function buildLatexForComponent(
-  label: string,
-  latex: string,
-  numQubits: number,
-  terms: any[],
-  stepsResult: any,
-  pngBase64?: string,
-): string {
-  const termLines = terms
-    .map((t: any) => {
-      const p =
-        Math.round((t.amplitude.re ** 2 + t.amplitude.im ** 2) * 10000) / 100;
-      return `    \\hline\n    $|${t.basisState}\\rangle$ & $${p}\\%$ \\\\`;
-    })
-    .join("\n");
-
-  const circuitSection = pngBase64
-    ? `\\section*{Quantum Circuit}\n\\begin{figure}[h]\n  \\centering\n  \\includegraphics[width=0.9\\textwidth]{circuit}\n  \\caption{${label}}\n\\end{figure}\n\n`
-    : "";
-
-  const stepsSection =
-    stepsResult?.steps?.length > 0
-      ? `\\section*{Mathematical Intermediate Steps}\n\\begin{align}\n  |\\psi_0\\rangle &= ${stepsResult.initial.latex} \\\\[6pt]\n${stepsResult.steps.map((s: any, i: number) => `  &\\xrightarrow{${s.gateLabelLatex}} \\\\[2pt]\n  |\\psi_{${i + 1}}\\rangle &= ${s.latex}`).join(" \\\\[6pt]\n")}\n\\end{align}\n\n`
-      : "";
-
-  // pgfplots Histogram
-  const histogramSection =
-    terms.length > 0
-      ? (() => {
-          const coords = terms.map((t: any) => {
-            const p =
-              Math.round((t.amplitude.re ** 2 + t.amplitude.im ** 2) * 10000) /
-              100;
-            return { label: `|${t.basisState}\\rangle`, value: p };
-          });
-          const coordStr = coords
-            .map((c: any, i: number) => `(${i}, ${c.value})`)
-            .join(" ");
-          const tickLabels = coords.map((c: any) => `$${c.label}$`).join(", ");
-          const xMax = coords.length - 0.5;
-          return `\\section*{Measurement Probabilities}\n\\begin{figure}[h]\n  \\centering\n  \\begin{tikzpicture}\n    \\begin{axis}[\n      ybar, bar width=0.5cm, width=0.85\\textwidth, height=6cm,\n      ymin=0, ymax=100, xmin=-0.5, xmax=${xMax},\n      xtick={${coords.map((_: any, i: number) => i).join(", ")}},\n      xticklabels={${tickLabels}},\n      ylabel={Probability (\\%)}, ymajorgrids=true, grid style=dashed,\n      nodes near coords, nodes near coords align={vertical},\n    ]\n      \\addplot[fill=blue!60, draw=blue!80] coordinates {${coordStr}};\n    \\end{axis}\n  \\end{tikzpicture}\n  \\caption{Measurement Probabilities of Basis States}\n\\end{figure}\n\n`;
-        })()
-      : "";
-
-  const tableSection =
-    terms.length > 0
-      ? `\\section*{Measurement Probabilities (Table)}\n\\begin{table}[h]\n  \\centering\n  \\begin{tabular}{|c|c|}\n    \\hline\n    \\textbf{Basis State} & \\textbf{Probability} \\\\\n${termLines}\n    \\hline\n  \\end{tabular}\n\\end{table}\n\n`
-      : "";
-
-  // Statevector einmal rekonstruieren, für Separabilitäts- und Persistence-Berechnung genutzt.
-  const statevectorArrForProperties = Array.from(
-    { length: 1 << numQubits },
-    (_, i) => {
-      const term = terms.find((t: any) => parseInt(t.basisState, 2) === i);
-      return term ? term.amplitude : { re: 0, im: 0 };
-    },
-  );
-
-  // Exakte Separabilitätsprüfung (keine Heuristik): vollständig separabel, wenn JEDES Qubit
-  // einen reinen reduzierten Zustand hat (Bloch-Vektor-Länge 1 für jede Qubit-Bipartition).
-  const isEntangledComponent =
-    numQubits >= 2 &&
-    !isStateFullySeparable(statevectorArrForProperties, numQubits);
-  const persistenceComponent: number | null =
-    numQubits === 1
-      ? getEntanglementPersistence(statevectorArrForProperties, numQubits, 0)
-      : isEntangledComponent
-        ? getMultiQubitPersistence(terms, numQubits)
-        : 0;
-
-  const entanglementSection = `\\section*{Entanglement Properties}
-
-\\textbf{Definitions.}
-
-\\emph{Separable:} A multi-qubit quantum state is called \\emph{separable} if it can be
-written as a tensor product of the individual qubit states, i.e.\\
-$|\\psi\\rangle = |\\psi_1\\rangle \\otimes |\\psi_2\\rangle \\otimes \\dots \\otimes |\\psi_n\\rangle$.
-In this case, each qubit can be fully described by its own, independent quantum state.
-
-\\emph{Entangled:} A multi-qubit quantum state is called \\emph{entangled} if no such
-tensor-product decomposition exists. The qubits cannot be described independently of one
-another: measuring one qubit instantaneously affects the possible outcomes of measuring the
-others, even if the qubits are physically separated.
-
-\\textbf{Status for this circuit:} This ${numQubits}-qubit state is
-\\textbf{${isEntangledComponent ? "entangled" : "separable"}}${
-    numQubits >= 2 && !isEntangledComponent
-      ? " (it factors into a product of single-qubit states)"
-      : ""
-  }.
-
-${
-  persistenceComponent !== null
-    ? numQubits === 1
-      ? `\\textbf{Entanglement Persistence:} $S = ${persistenceComponent.toFixed(3)}$ (von Neumann entropy of the qubit's reduced density matrix, in bits). $S = 0$ corresponds to a pure, unentangled state; $S = 1$ corresponds to a maximally mixed/entangled qubit.\n\n`
-      : `\\textbf{Entanglement Persistence:} $P = ${persistenceComponent.toFixed(3)}$ (persistency of entanglement: the minimum number of local qubit measurements required until the remaining state is guaranteed to be fully separable).\n\n`
-    : numQubits >= 2
-      ? `\\textbf{Entanglement Persistence:} not computable -- this state does not match any of the recognized standard patterns (GHZ-like states, Bell-state variants, W-states).\n\n`
-      : ""
-}`;
-
-  // Gate-Erklärungen
-  const GATE_INFO: Record<
-    string,
-    { desc: string; matrix: string; effect: string }
-  > = {
-    H: {
-      desc: "The Hadamard gate creates an equal superposition.",
-      matrix: "\\frac{1}{\\sqrt{2}}\\begin{pmatrix}1&1\\\\1&-1\\end{pmatrix}",
-      effect: "$H|0\\rangle=|+\\rangle,\\;H|1\\rangle=|-\\rangle$",
-    },
-    X: {
-      desc: "The Pauli-X gate is the quantum NOT gate.",
-      matrix: "\\begin{pmatrix}0&1\\\\1&0\\end{pmatrix}",
-      effect: "$X|0\\rangle=|1\\rangle,\\;X|1\\rangle=|0\\rangle$",
-    },
-    Y: {
-      desc: "The Pauli-Y gate rotates around the Y-axis.",
-      matrix: "\\begin{pmatrix}0&-i\\\\i&0\\end{pmatrix}",
-      effect: "$Y|0\\rangle=i|1\\rangle,\\;Y|1\\rangle=-i|0\\rangle$",
-    },
-    Z: {
-      desc: "The Pauli-Z gate applies a phase flip.",
-      matrix: "\\begin{pmatrix}1&0\\\\0&-1\\end{pmatrix}",
-      effect: "$Z|0\\rangle=|0\\rangle,\\;Z|1\\rangle=-|1\\rangle$",
-    },
-    S: {
-      desc: "The S gate applies a $\\pi/2$ phase rotation.",
-      matrix: "\\begin{pmatrix}1&0\\\\0&i\\end{pmatrix}",
-      effect: "$S|1\\rangle=i|1\\rangle$",
-    },
-    T: {
-      desc: "The T gate applies a $\\pi/4$ phase rotation.",
-      matrix: "\\begin{pmatrix}1&0\\\\0&e^{i\\pi/4}\\end{pmatrix}",
-      effect: "$T|1\\rangle=e^{i\\pi/4}|1\\rangle$",
-    },
-    CNOT: {
-      desc: "The CNOT gate flips the target qubit if control is $|1\\rangle$.",
-      matrix:
-        "\\begin{pmatrix}1&0&0&0\\\\0&1&0&0\\\\0&0&0&1\\\\0&0&1&0\\end{pmatrix}",
-      effect:
-        "$\\text{CNOT}|10\\rangle=|11\\rangle,\\;\\text{CNOT}|11\\rangle=|10\\rangle$",
-    },
-    SWAP: {
-      desc: "The SWAP gate exchanges the states of two qubits.",
-      matrix:
-        "\\begin{pmatrix}1&0&0&0\\\\0&0&1&0\\\\0&1&0&0\\\\0&0&0&1\\end{pmatrix}",
-      effect: "$\\text{SWAP}|01\\rangle=|10\\rangle$",
-    },
-  };
-
-  const usedGates = new Set<string>();
-  if (stepsResult?.steps) {
-    for (const s of stepsResult.steps) {
-      for (const key of Object.keys(GATE_INFO)) {
-        if ((s.gateLabel ?? s.gateLabelLatex ?? "").includes(key))
-          usedGates.add(key);
-      }
-    }
-  }
-
-  const gateSection =
-    usedGates.size > 0
-      ? `\\section*{Gate Reference}\n\n` +
-        [...usedGates]
-          .map((g) => {
-            const info = GATE_INFO[g];
-            return `\\subsection*{${g} Gate}\n${info.desc}\n\\begin{equation}\n  ${g} = ${info.matrix}\n\\end{equation}\n\\textbf{Effect:} ${info.effect}\n`;
-          })
-          .join("\n")
-      : "";
-
-  return `\\documentclass{article}
-\\usepackage[utf8]{inputenc}
-\\usepackage{amsmath}
-\\usepackage{amssymb}
-\\usepackage{braket}
-\\usepackage{graphicx}
-\\usepackage{geometry}
-\\usepackage{pgfplots}
-\\usepackage{booktabs}
-\\pgfplotsset{compat=1.18}
-\\geometry{margin=2.5cm}
-
-\\title{Dirac Notation -- ${label}}
-\\date{\\today}
-
-\\begin{document}
-\\maketitle
-
-${circuitSection}\\section*{Quantum State in Dirac Notation}
-
-The quantum system state with ${numQubits} qubit${numQubits !== 1 ? "s" : ""} is:
-
-\\begin{equation}
-  |\\psi\\rangle = ${latex}
-\\end{equation}
-
-${stepsSection}${histogramSection}${tableSection}${entanglementSection}${gateSection}\\end{document}
-`;
 }
 
 // SVG → PNG Base64

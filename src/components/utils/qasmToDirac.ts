@@ -1107,6 +1107,10 @@ export interface DiracStep {
   nodeId?: string;
   /** Grover component this gate belongs to; undefined unless a Grover node was detected. */
   component?: string;
+  /** QASM gate name, e.g. "h", "cx" or "mc_z". */
+  gateName: string;
+  /** Global qubit indices the gate acts on (controls first). */
+  qubits: number[];
 }
 
 export interface DiracStepsResult {
@@ -1548,6 +1552,8 @@ export function qasmToDiracSteps(qasm: string): DiracStepsResult {
       latex: stepResult.latex,
       nodeId: gate.nodeId,
       component: grover.lookup[gateIndex],
+      gateName: gate.name,
+      qubits: gate.qubits,
     });
   }
 
