@@ -13,6 +13,15 @@ export interface MathTopic {
   markdown: string;
 }
 
+/** "$|00\rangle, |01\rangle, ...$": the order of the rows and columns of a matrix on n qubits. */
+function basisOrder(n: number): string {
+  const states = Array.from(
+    { length: 2 ** n },
+    (_, i) => `|${i.toString(2).padStart(n, "0")}\\rangle`,
+  );
+  return `$${states.join(", ")}$`;
+}
+
 /** Basic concepts needed to read the Math Mode output, tailored to the circuit size. */
 export function basicsTopics(numQubits: number): MathTopic[] {
   const n = Math.max(numQubits, 1);
@@ -42,6 +51,24 @@ $$|\\psi\\rangle = \\sum_{x=0}^{2^n-1} c_x\\,|x\\rangle, \\qquad \\sum_{x} |c_x|
 States of several qubits are combined with the **tensor product** $\\otimes$, for example $|0\\rangle \\otimes |1\\rangle = |01\\rangle$. The dimensions multiply: $2 \\cdot 2 \\cdots 2 = 2^n$.
 
 This circuit has $n = ${n}$ qubit${n === 1 ? "" : "s"}, so its state has $2^{${n}} = ${dim}$ amplitudes, and a gate acting on the whole register is a matrix of size $${dim} \\times ${dim}$. A gate on a single qubit is extended with identities, e.g. $H_0 \\otimes I_1$. Basis states are written with qubit $q_0$ as the leftmost bit. Only the terms with a non-zero amplitude are shown in the Dirac notation.`,
+    },
+    {
+      title: "How to read a matrix",
+      markdown: `A gate on $n$ qubits is a $2^n \\times 2^n$ matrix. Its rows and columns are labeled with the basis states in binary counting order, with qubit $q_0$ as the leftmost bit:${
+        n <= 3
+          ? ` for this circuit ${basisOrder(n)}.`
+          : ` $|0\\dots0\\rangle, |0\\dots01\\rangle, |0\\dots10\\rangle, \\dots, |1\\dots1\\rangle$.`
+      }
+
+- **Column $j$ is the input $|j\\rangle$:** the first column belongs to $|0\\rangle$ (or $|00\\rangle$, $|000\\rangle$, ...), the second to $|1\\rangle$ (or $|01\\rangle$), and so on. The column is exactly the state the gate produces from that basis state: $U|j\\rangle$.
+- **Row $i$ is the output $|i\\rangle$:** the entry $U_{ij} = \\langle i|U|j\\rangle$ is the amplitude with which the input $|j\\rangle$ ends up in $|i\\rangle$.
+- **Multiplying with a state:** $U|\\psi\\rangle = \\sum_j c_j\\,U|j\\rangle$, i.e. every column is weighted with the amplitude of its basis state and the columns are added.
+
+Example: $X|0\\rangle$ is the first column of $X = \\begin{pmatrix} 0 & 1 \\\\ 1 & 0 \\end{pmatrix}$, i.e. $\\begin{pmatrix} 0 \\\\ 1 \\end{pmatrix} = |1\\rangle$. For CNOT (control $q_0$, target $q_1$) the columns and rows are $|00\\rangle, |01\\rangle, |10\\rangle, |11\\rangle$:
+
+$$\\mathrm{CNOT} = \\begin{array}{c|cccc} & |00\\rangle & |01\\rangle & |10\\rangle & |11\\rangle \\\\ \\hline \\langle 00| & 1 & 0 & 0 & 0 \\\\ \\langle 01| & 0 & 1 & 0 & 0 \\\\ \\langle 10| & 0 & 0 & 0 & 1 \\\\ \\langle 11| & 0 & 0 & 1 & 0 \\end{array}$$
+
+The third column (input $|10\\rangle$) has its 1 in the row $\\langle 11|$, so $\\mathrm{CNOT}|10\\rangle = |11\\rangle$: the control is 1, so the target is flipped. A gate on fewer qubits than the register is extended with identities, e.g. $H_0 \\otimes I_1$, which gives a $${dim} \\times ${dim}$ matrix for this circuit. A gate on $k$ qubits needs at least $k$ qubits in the register: a Toffoli gate is an $8 \\times 8$ matrix and cannot be applied to a 2-qubit state such as $|00\\rangle$.`,
     },
     {
       title: "How to read the Bloch sphere",
@@ -289,6 +316,217 @@ export function markdownToLatex(md: string): string {
   });
 
   return out;
+}
+
+export interface LearningTerm {
+  term: string;
+  /** Markdown with $...$ math, ASCII outside of math. */
+  definition: string;
+}
+
+export interface LearningContext {
+  numQubits: number;
+  entangled: boolean;
+  /** QASM gate names of the intermediate steps, e.g. ["h", "cx"]. */
+  gateNames: string[];
+  /** Labels of the step groups, e.g. "Grover operator" or "Basis encoding". */
+  groupLabels: string[];
+}
+
+/**
+ * The terms a reader learns from the learning material of this model, as a word list for
+ * the beginning of the PDF. Core terms are always listed; terms such as entanglement,
+ * Grover's algorithm or rotation gates only when the model uses them.
+ */
+export function learningTerms({
+  numQubits,
+  entangled,
+  gateNames,
+  groupLabels,
+}: LearningContext): LearningTerm[] {
+  const gates = new Set(gateNames.map((g) => g.toLowerCase()));
+  const has = (...names: string[]) => names.some((n) => gates.has(n));
+  const hasGroup = (label: string) =>
+    groupLabels.some((l) => l.toLowerCase().includes(label.toLowerCase()));
+  const terms: LearningTerm[] = [
+    {
+      term: "Qubit",
+      definition:
+        "the quantum counterpart of a bit, a superposition $\\alpha|0\\rangle + \\beta|1\\rangle$ of the basis states.",
+    },
+    {
+      term: "Basis state",
+      definition:
+        "one of the $2^n$ classical bit strings of the register, e.g. $|00\\rangle$ or $|01\\rangle$.",
+    },
+    {
+      term: "Superposition",
+      definition: "a weighted sum of several basis states at the same time.",
+    },
+    {
+      term: "Amplitude",
+      definition:
+        "the complex weight $c_x$ of a basis state; $|c_x|^2$ is its measurement probability.",
+    },
+    {
+      term: "Normalization",
+      definition: "the measurement probabilities always add up to 1.",
+    },
+    {
+      term: "Dirac (bra-ket) notation",
+      definition:
+        "writing states as kets $|\\psi\\rangle$ and their conjugate transposes as bras $\\langle\\psi|$.",
+    },
+    {
+      term: "State vector",
+      definition: `the list of all $2^n$ amplitudes; here $2^{${numQubits}} = ${2 ** numQubits}$ entries.`,
+    },
+    {
+      term: "Tensor product",
+      definition:
+        "combines the states and gates of several qubits, e.g. $|0\\rangle \\otimes |1\\rangle = |01\\rangle$.",
+    },
+    {
+      term: "Quantum gate",
+      definition:
+        "an operation on qubits, described by a unitary matrix that multiplies the state vector.",
+    },
+    {
+      term: "Reading a matrix",
+      definition:
+        "column $j$ belongs to the input basis state $|j\\rangle$ (the first column to $|0\\rangle$ or $|00\\rangle$), row $i$ to the output $|i\\rangle$.",
+    },
+    {
+      term: "Unitarity",
+      definition:
+        "$U^\\dagger U = I$: every gate is reversible and keeps the state normalized.",
+    },
+    {
+      term: "Scalar product",
+      definition:
+        "$\\langle\\varphi|\\psi\\rangle$, measures the overlap of two states; $|\\langle x|\\psi\\rangle|^2$ is a measurement probability.",
+    },
+    {
+      term: "Determinant",
+      definition:
+        "a number computed from a square matrix; $|\\det U| = 1$ for every gate.",
+    },
+    {
+      term: "Global phase",
+      definition:
+        "an overall factor $e^{i\\gamma}$ of the state that cannot be measured.",
+    },
+    {
+      term: "Measurement",
+      definition:
+        "yields a basis state with probability $|c_x|^2$ and is the only non-reversible operation.",
+    },
+  ];
+
+  if (gateNames.length > 0) {
+    terms.push({
+      term: "State evolution",
+      definition:
+        "following the state step by step, $|\\psi_{k+1}\\rangle = U_k|\\psi_k\\rangle$, through the intermediate steps.",
+    });
+  }
+  if (
+    has(
+      "cx",
+      "cnot",
+      "cy",
+      "cz",
+      "ch",
+      "crx",
+      "cry",
+      "crz",
+      "cp",
+      "ccx",
+      "toffoli",
+      "cswap",
+    ) ||
+    gateNames.some((g) => g.startsWith("mc_"))
+  ) {
+    terms.push({
+      term: "Controlled gate",
+      definition:
+        "a gate that acts on its target only if the control qubit(s) are $|1\\rangle$, e.g. CNOT or Toffoli.",
+    });
+  }
+  if (has("rx", "ry", "rz", "crx", "cry", "crz", "p", "u1", "u2", "u3")) {
+    terms.push({
+      term: "Rotation gate",
+      definition:
+        "rotates the state on the Bloch sphere by an angle $\\theta$ around an axis.",
+    });
+  }
+  if (numQubits === 1) {
+    terms.push({
+      term: "Bloch sphere",
+      definition:
+        "pictures a single-qubit state as a point on the unit sphere, with $|0\\rangle$ at the north pole.",
+    });
+  }
+  if (numQubits >= 2) {
+    terms.push({
+      term: entangled ? "Entanglement" : "Separability and entanglement",
+      definition: entangled
+        ? "the state of the qubits cannot be written as a tensor product of single-qubit states, as in this model."
+        : "a state is separable if it is a tensor product of single-qubit states (as in this model), otherwise entangled.",
+    });
+  }
+  if (entangled) {
+    terms.push({
+      term: "Persistence",
+      definition:
+        "the minimum number of qubits that must be measured until the remaining state is separable.",
+    });
+  }
+  if (hasGroup("Basis encoding")) {
+    terms.push({
+      term: "Basis encoding",
+      definition:
+        "writes a classical number into the qubits as its binary representation, e.g. $5 \\mapsto |101\\rangle$.",
+    });
+  }
+  if (hasGroup("Grover")) {
+    terms.push(
+      {
+        term: "Grover's algorithm",
+        definition:
+          "searches marked states by repeatedly amplifying their amplitudes.",
+      },
+      {
+        term: "Oracle",
+        definition: "marks the searched states by flipping their sign.",
+      },
+      {
+        term: "Diffusion operator",
+        definition:
+          "reflects all amplitudes about their mean, so the marked states grow.",
+      },
+    );
+  }
+  return terms;
+}
+
+/** LaTeX word list of the terms learned, placed at the beginning of the export. */
+export function buildLearningTermsLatexSection(
+  context: LearningContext,
+): string {
+  const items = learningTerms(context)
+    .map((t) => `  \\item[${t.term}] ${markdownToLatex(t.definition)}`)
+    .join("\n");
+  return `\\section*{What you will learn}
+\\addcontentsline{toc}{section}{What you will learn}
+
+This document explains the following terms using the model as an example:
+
+\\begin{description}
+${items}
+\\end{description}
+
+`;
 }
 
 /** True for the Bloch sphere topic, which the export places in its own Bloch sphere section. */

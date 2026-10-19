@@ -1393,11 +1393,23 @@ function formatGateLabelLatex(gate: ParsedGate, numQubits: number): string {
  * // steps.steps[1].gateLabel -> "CNOT q0→q1"
  * // steps.steps[1].unicode   -> "1/√2 |00⟩ + 1/√2 |11⟩"
  */
-export function qasmToDiracSteps(qasm: string): DiracStepsResult {
+export function qasmToDiracSteps(
+  qasm: string,
+  /** Optional initial basis state (q0 leftmost, e.g. "01"); defaults to |0...0⟩. */
+  initialBits?: string,
+): DiracStepsResult {
   const { numQubits, gates, warnings: parseWarnings } = parseQasm(qasm);
   const simWarnings: string[] = [];
 
   let sv = createStatevector(numQubits);
+  if (
+    initialBits &&
+    initialBits.length === numQubits &&
+    /^[01]+$/.test(initialBits)
+  ) {
+    sv[0] = C(0);
+    sv[parseInt(initialBits, 2)] = C(1);
+  }
   const initialResult = statevectorToDirac(sv, numQubits);
 
   const steps: DiracStep[] = [];

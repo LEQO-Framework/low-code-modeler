@@ -22,6 +22,7 @@ import {
   getMultiQubitPersistence,
 } from "./BlochSphere";
 import { GroverInfoBox } from "./GroverInfoBox";
+import { MathCircuitEditor } from "./MathCircuitEditor";
 import {
   basicsTopics,
   buildStepTree,
@@ -85,6 +86,9 @@ type QasmProps = {
    *  node IDs of ALL gates from step 1 up to and including the clicked step (step-click
    *  mechanism, highlights every node used up to that point on the canvas). */
   onStepClick?: (nodeIds: string[]) => void;
+  /** Applies a circuit edited in Math Mode (OpenQASM) to the QASM output and the canvas.
+   *  Without it the editor works as a preview only. */
+  onApplyQasm?: (qasm: string) => void;
 };
 
 type StatevectorProps = {
@@ -673,6 +677,8 @@ export function QasmDiracPanel(props: Props) {
   // onStepClick only exists on QasmProps (steps are only available for QASM input), so it is
   // extracted from the props union via an "in" check.
   const onStepClick = "onStepClick" in props ? props.onStepClick : undefined;
+  const onApplyQasm = "onApplyQasm" in props ? props.onApplyQasm : undefined;
+  const [showEditor, setShowEditor] = useState(false);
   const [showBasisStates, setShowBasisStates] = useState(false);
   const [showSteps, setShowSteps] = useState(false);
   const [showBloch, setShowBloch] = useState(false);
@@ -1241,7 +1247,7 @@ export function QasmDiracPanel(props: Props) {
                   ? "bg-blue-50 border-blue-300 text-blue-600"
                   : "border-gray-300 hover:bg-gray-100 text-gray-600"
               }`}
-              title="What is a qubit, how to read the Bloch sphere, why the state has 2^n entries, unitarity"
+              title="What is a qubit, why the state has 2^n entries, how to read a matrix and the Bloch sphere, unitarity"
             >
               <span>{showBasics ? "▾" : "▸"}</span>
               Basics
@@ -1263,6 +1269,20 @@ export function QasmDiracPanel(props: Props) {
                 Steps
               </button>
             )}
+          {"qasm" in props && props.qasm && (
+            <button
+              onClick={() => setShowEditor((v) => !v)}
+              className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border transition-colors flex-shrink-0 whitespace-nowrap ${
+                showEditor
+                  ? "bg-amber-50 border-amber-300 text-amber-700"
+                  : "border-gray-300 hover:bg-gray-100 text-gray-600"
+              }`}
+              title="Change the initial state, add, remove or switch steps and apply them to OpenQASM and the canvas"
+            >
+              <span>{showEditor ? "▾" : "▸"}</span>
+              Edit
+            </button>
+          )}
           {terms.length > 0 && (
             <button
               onClick={() => setShowBasisStates((v) => !v)}
@@ -1522,6 +1542,15 @@ export function QasmDiracPanel(props: Props) {
             </div>
           );
         })()}
+
+      {/* Circuit editor: initial state, steps and matrices, applied back to QASM + canvas */}
+      {showEditor && "qasm" in props && props.qasm && (
+        <MathCircuitEditor
+          qasm={props.qasm}
+          onApply={onApplyQasm}
+          onClose={() => setShowEditor(false)}
+        />
+      )}
 
       {/* Basics: the concepts needed to read the output above and below */}
       {showBasics && fullResult && numQubits > 0 && (

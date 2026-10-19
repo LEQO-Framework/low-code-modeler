@@ -131,6 +131,76 @@ export const CustomPanel = ({
       .finally(() => setAnalyzing(false));
   }, [nodes, edges, backendUrl, metadata, compilationTarget, onSendToBackend]);
 
+  // Applies a circuit edited in Math Mode: the nodes of the edited circuit (component) are
+  // replaced by gate nodes built from the new OpenQASM, other circuits on the canvas stay.
+  // The QASM tab gets the new code right away and the backend recompiles the model, after
+  // which Math Mode is analyzed again.
+  const applyEditedQasm = useCallback(
+    (component: DiracComponent, newQasm: string) => {
+      const { nodes: newNodes, edges: newEdges } = qasmToNodes(newQasm);
+      if (newNodes.length === 0) return;
+
+      const replaced = new Set(component.nodeIds);
+      if (component.groupId) {
+        replaced.add(component.groupId);
+        for (const n of nodes) {
+          if (n.parentNode === component.groupId) replaced.add(n.id);
+        }
+      }
+      // place the new circuit where the old one was
+      const oldNodes = nodes.filter((n) => replaced.has(n.id) && !n.parentNode);
+      const minX = oldNodes.length
+        ? Math.min(...oldNodes.map((n) => n.position.x))
+        : 0;
+      const minY = oldNodes.length
+        ? Math.min(...oldNodes.map((n) => n.position.y))
+        : 0;
+      const newMinX = Math.min(...newNodes.map((n) => n.position.x));
+      const newMinY = Math.min(...newNodes.map((n) => n.position.y));
+      const shifted = newNodes.map((n) => ({
+        ...n,
+        position: {
+          x: n.position.x - newMinX + minX,
+          y: n.position.y - newMinY + minY,
+        },
+      }));
+
+      setNodes((nds: Node[]) => [
+        ...nds.filter((n) => !replaced.has(n.id)),
+        ...shifted,
+      ]);
+      setEdges((eds: Edge[]) => [
+        ...eds.filter(
+          (e) => !replaced.has(e.source) && !replaced.has(e.target),
+        ),
+        ...newEdges,
+      ]);
+      setQasmEditorCode(newQasm);
+
+      // show the edited circuit immediately, the backend result replaces it when it arrives
+      setComponents((prev) =>
+        prev.map((c) =>
+          c.index === component.index
+            ? {
+                ...c,
+                qasm: newQasm,
+                error: null,
+                groupId: null,
+                nodes: shifted,
+                nodeIds: shifted.map((n) => n.id),
+              }
+            : c,
+        ),
+      );
+      if (onSendToBackend) {
+        setWaitingForQasm(true);
+        // see "Apply to Canvas": the flow instance only knows the new nodes after the commit
+        setTimeout(() => onSendToBackend(), 0);
+      }
+    },
+    [nodes, setNodes, setEdges, onSendToBackend],
+  );
+
   // Beim Wechsel zum Math Mode Tab → automatisch Backend-Call auslösen
   const handleTabSwitch = useCallback(
     (tab: "properties" | "math") => {
@@ -348,6 +418,7 @@ export const CustomPanel = ({
                 onGetCircuitSvg={onGetCircuitSvg}
                 nodes={nodes}
                 onGetModel={onGetModel}
+                onApplyQasm={applyEditedQasm}
               />
             ) : qasmCode.trim().length > 0 ? (
               <div className="flex flex-col items-center justify-center h-full gap-2 text-gray-400">
@@ -382,11 +453,13 @@ function ComponentsView({
   components,
   onGetCircuitSvg,
   onGetModel,
+  onApplyQasm,
 }: {
   components: DiracComponent[];
   onGetCircuitSvg?: () => Promise<string>;
   nodes: Node[];
   onGetModel?: () => object;
+  onApplyQasm?: (component: DiracComponent, qasm: string) => void;
   qasmEditorMode?: boolean;
 }) {
   return (
@@ -415,6 +488,11 @@ function ComponentsView({
             nodeIds={component.nodeIds}
             nodes={component.nodes}
             onGetModel={onGetModel}
+            onApplyQasm={
+              onApplyQasm
+                ? (qasm: string) => onApplyQasm(component, qasm)
+                : undefined
+            }
           />
         );
       })}
@@ -433,6 +511,7 @@ function ComponentSection({
   nodeIds,
   nodes,
   onGetModel,
+  onApplyQasm,
 }: {
   label: string;
   color: string;
@@ -444,6 +523,7 @@ function ComponentSection({
   nodeIds?: string[];
   nodes: Node[];
   onGetModel?: () => object;
+  onApplyQasm?: (qasm: string) => void;
   qasmEditorMode?: boolean;
 }) {
   const [expanded, setExpanded] = useState(true);
@@ -596,6 +676,7 @@ function ComponentSection({
               onGetCircuitSvg={getGroupCircuitSvg}
               onGetModel={onGetModel}
               onStepClick={handleStepClick}
+              onApplyQasm={onApplyQasm}
             />
           ) : (
             <div className="text-xs text-gray-400 px-2 py-1">

@@ -8,8 +8,8 @@ const GATE_LABEL_MAP: Record<string, string> = {
   z: "Z",
   s: "S",
   t: "T",
-  sdg: "S†",
-  tdg: "T†",
+  sdg: "SDG",
+  tdg: "TDG",
   cx: "CNOT",
   cnot: "CNOT",
   cz: "CZ",
@@ -209,7 +209,7 @@ export function qasmToNodes(qasm: string): { nodes: Node[]; edges: Edge[] } {
           identifiers: [`q${q}`],
         })),
         identifiers: gate.qubits.map((q) => `q${q}`),
-        parameter: gate.params ?? "0",
+        parameter: evaluateParam(gate.params),
         inputTypes: gate.qubits.map(() => "quantum register"),
         outputTypes: gate.qubits.map(() => "quantum register"),
         children: [],
@@ -251,6 +251,20 @@ export function qasmToNodes(qasm: string): { nodes: Node[]; edges: Edge[] } {
   }
 
   return { nodes, edges };
+}
+
+/** The backend expects numeric angles (radians), so expressions like "pi/2" are evaluated. */
+function evaluateParam(params: string | undefined): string {
+  if (!params) return "0";
+  const expr = params.trim().replace(/\bpi\b/gi, `(${Math.PI})`);
+  if (!/^[\d\s.+\-*/()e]*$/i.test(expr)) return params;
+  try {
+    // eslint-disable-next-line no-new-func
+    const value = Function(`"use strict"; return (${expr});`)() as number;
+    return Number.isFinite(value) ? String(value) : params;
+  } catch {
+    return params;
+  }
 }
 
 function resolveQubits(

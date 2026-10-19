@@ -17,6 +17,7 @@ import {
 import {
   basicsTopics,
   buildBasicsLatexSection,
+  buildLearningTermsLatexSection,
   buildStepTree,
   isBlochTopic,
   markdownToLatex,
@@ -792,6 +793,22 @@ export function buildLatexExport({
   const stepTree = givenStepTree ?? buildStepTree(steps, []);
   const usage = collectGateUsage(steps);
 
+  const groupLabels: string[] = [];
+  const collectLabels = (items: StepTreeItem[]) => {
+    for (const item of items) {
+      if (item.type !== "group") continue;
+      groupLabels.push(item.label);
+      collectLabels(item.children);
+    }
+  };
+  collectLabels(stepTree);
+  const learningSection = buildLearningTermsLatexSection({
+    numQubits,
+    entangled: numQubits >= 2 && !isStateFullySeparable(statevector, numQubits),
+    gateNames: steps.map((s) => s.gateName),
+    groupLabels,
+  });
+
   const circuitSection = pngBase64
     ? `\\section{Quantum Circuit}
 
@@ -942,7 +959,7 @@ ${hint}
 
 \\clearpage
 
-${buildModelOverviewSection(numQubits, terms, stepsResult, usage, stepTree)}${circuitSection}${buildBasicsLatexSection(numQubits)}\\section{Quantum State in Dirac Notation}
+${learningSection}${buildModelOverviewSection(numQubits, terms, stepsResult, usage, stepTree)}${circuitSection}${buildBasicsLatexSection(numQubits)}\\section{Quantum State in Dirac Notation}
 
 The quantum system state with ${numQubits} qubit${numQubits !== 1 ? "s" : ""} is:
 
