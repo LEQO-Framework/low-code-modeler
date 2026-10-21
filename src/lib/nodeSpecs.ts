@@ -449,8 +449,13 @@ function statesInRange(states: unknown, numQubits: number): string | null {
 
 // --- Gates ---
 
-const SINGLE_QUBIT_GATES = ["I", "X", "Y", "Z", "H", "S", "SDG", "T", "TDG"];
-const ROTATION_GATES = ["RX(θ)", "RY(θ)", "RZ(θ)"];
+const SINGLE_QUBIT_GATES = ["X", "Y", "Z", "H", "S", "SDG", "T", "TDG"];
+const ROTATION_GATES = ["RX(θ)", "RY(θ)", "RZ(θ)", "P(λ)"];
+const U_GATES: Record<string, number> = {
+  "U1(λ)": 1,
+  "U2(φ,λ)": 2,
+  "U3(θ,φ,λ)": 3,
+};
 const TWO_QUBIT_GATES = ["CNOT", "CY", "CZ", "SWAP", "CH", "CU"];
 const TWO_QUBIT_ROTATION_GATES = ["CRX(θ)", "CRY(θ)", "CRZ(θ)"];
 const THREE_QUBIT_GATES = ["Toffoli", "CSWAP"];
@@ -504,6 +509,31 @@ function gateSpec(
       ),
     ),
     outputHandle: (id) => `quantumHandleGateOutput0${id}`,
+  };
+}
+
+/** U gates keep one comma-separated angle (radian) per parameter. */
+function uGateSpec(label: string, parameterCount: number): TestableNodeSpec {
+  const spec = gateSpec(label, 1, false);
+  const zeros = Array.from({ length: parameterCount }, () => "0").join(",");
+  return {
+    ...spec,
+    defaultData: { ...spec.defaultData, parameter: zeros },
+    options: [
+      {
+        key: "parameter",
+        label: "Angles",
+        values: [
+          zeros,
+          Array.from({ length: parameterCount }, () => "pi/2").join(","),
+        ],
+        required: true,
+        pattern: new RegExp(
+          `^[\\d\\s.+\\-*/()πpi]+(,[\\d\\s.+\\-*/()πpi]+){${parameterCount - 1}}$`,
+        ),
+        patternDescription: `${parameterCount} comma-separated angle(s)`,
+      },
+    ],
   };
 }
 
@@ -928,6 +958,7 @@ export const TESTABLE_NODE_REGISTRY: TestableNodeSpec[] = [
   gateSpec("Qubit Circuit", 0, false),
   ...SINGLE_QUBIT_GATES.map((g) => gateSpec(g, 1, false)),
   ...ROTATION_GATES.map((g) => gateSpec(g, 1, true)),
+  ...Object.entries(U_GATES).map(([g, count]) => uGateSpec(g, count)),
   ...TWO_QUBIT_GATES.map((g) => gateSpec(g, 2, false)),
   ...TWO_QUBIT_ROTATION_GATES.map((g) => gateSpec(g, 2, true)),
   ...THREE_QUBIT_GATES.map((g) => gateSpec(g, 3, false)),

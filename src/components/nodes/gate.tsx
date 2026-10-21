@@ -4,6 +4,7 @@ import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
 import { awareness } from "@/yjs";
 import { computeQubitIndices } from "@/lib/qubitIndexing";
+import { u_gate_parameters } from "@/constants";
 
 const selector = (state: {
   selectedNode: Node | null;
@@ -37,6 +38,8 @@ export const GateNode = memo((node: Node) => {
     data.label === "CRZ(θ)" ||
     data.label === "CU(θ,φ,λ,γ)";
   const isThreeQubit = data.label === "Toffoli" || data.label === "CSWAP";
+  // gates without an explorer image are shown by their label at every level
+  const isLabelOnly = data.label === "P(λ)" || !!u_gate_parameters[data.label];
   const { edges, nodes, experienceLevel, updateNodeValue } = useStore(
     selector,
     shallow,
@@ -76,6 +79,15 @@ export const GateNode = memo((node: Node) => {
             updateNodeValue(node.id, param, "0");
           }
         });
+      } else if (u_gate_parameters[data.label]) {
+        // U gates store one comma-separated angle per parameter
+        if (node.data.parameter === undefined) {
+          updateNodeValue(
+            node.id,
+            "parameter",
+            u_gate_parameters[data.label].map(() => "0").join(","),
+          );
+        }
       } else {
         // For single parameter gates, initialize parameter to 0 if not set
         if (node.data.parameter === undefined) {
@@ -152,7 +164,7 @@ export const GateNode = memo((node: Node) => {
         )}
 
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center font-bold z-0 text-xl">
-          {experienceLevel === "pioneer" &&
+          {(experienceLevel === "pioneer" || isLabelOnly) &&
             (data.label === "Qubit Circuit" ? (
               "|0⟩"
             ) : data.label === "CNOT" ? (

@@ -28,6 +28,7 @@ import {
   parameterized_one_qubit,
   parameterized_two_qubit,
   multi_parameterized_two_qubit,
+  u_gate_parameters,
   minMaxOperatorLabel,
   comparisonOperatorLabel,
   bitwiseOperatorLabel,
@@ -131,6 +132,15 @@ const GATE_EXPLANATIONS: Record<string, string> = {
 
   ["CU"]:
     "If control qubit is in state |1⟩, apply the U-gate. Set the matrix for the U-gate in the 'Matrix' field.",
+
+  ["U1(λ)"]:
+    "Universal gate U1(λ): applies a phase shift of λ (rad) to the |1⟩ state.",
+
+  ["U2(φ,λ)"]:
+    "Universal gate U2(φ,λ) = U3(π/2,φ,λ) with the angles φ and λ (rad).",
+
+  ["U3(θ,φ,λ)"]:
+    "Universal gate U3(θ,φ,λ): general single-qubit rotation with the angles θ, φ and λ (rad).",
 
   [non_parameterized_one_qubit[0]]:
     "Creates superposition by applying a Hadamard transform.",
@@ -2006,6 +2016,49 @@ export const TextPanel = () => {
                     <option value="radian">Radian</option>
                   </select>
                 </div>
+              </div>
+            )}
+
+            {u_gate_parameters[selectedNode.data.label] && (
+              <div className="p-2 mt-3">
+                <label className="block text-sm font-medium text-start text-gray-700 mb-2">
+                  Parameters (radian, e.g. pi/2)
+                </label>
+
+                {u_gate_parameters[selectedNode.data.label].map(
+                  (angle, index, angles) => {
+                    const values = String(selectedNode.data.parameter ?? "")
+                      .split(",")
+                      .map((v) => v.trim());
+
+                    return (
+                      <div key={angle} className="mb-3">
+                        <label
+                          className="block text-xs font-medium text-gray-600"
+                          htmlFor={`u-param-${index}`}
+                        >
+                          {angle}
+                        </label>
+
+                        <input
+                          type="text"
+                          id={`u-param-${index}`}
+                          name={`u-param-${index}`}
+                          value={values[index] ?? ""}
+                          onChange={(e) => {
+                            const next = angles.map(
+                              (_, i) => values[i] ?? "0",
+                            );
+                            next[index] = e.target.value.replace(/,/g, "");
+                            handleNumberChange("parameter", next.join(","));
+                          }}
+                          className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
+                          placeholder={`Enter ${angle}`}
+                        />
+                      </div>
+                    );
+                  },
+                )}
               </div>
             )}
 
