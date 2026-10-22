@@ -127,6 +127,8 @@ export interface StepGroup {
   /** Index of the first and last step of the group (inclusive). */
   first: number;
   last: number;
+  /** Canvas group (groupNode) the steps belong to, for a group the user created. */
+  groupNodeId?: string;
 }
 
 export type StepTreeItem = { type: "step"; index: number } | StepGroup;
@@ -178,23 +180,84 @@ function describeNode(
 }
 
 /**
- * Groups the intermediate steps into collapsible blocks: every run of at least two
- * consecutive steps from the same canvas node becomes one group (e.g. a Grover operator
- * or a basis encoding). Grover groups are further split into their components
- * (uniform superposition, oracle, diffusion operator). Single steps stay ungrouped.
+ * Groups the intermediate steps into collapsible blocks. Consecutive steps whose canvas
+ * nodes lie in the same group on the canvas (e.g. a group "Bell state" the user made of
+ * an H, an X and a CNOT gate) become one group named after it; nested canvas groups
+ * become nested groups. Inside, every run of at least two consecutive steps from the same
+ * canvas node becomes one group (e.g. a Grover operator or a basis encoding). Grover
+ * groups are further split into their components (uniform superposition, oracle,
+ * diffusion operator). Single steps stay ungrouped.
  */
 export function buildStepTree(
   steps: DiracStep[],
   nodes: Node[],
 ): StepTreeItem[] {
   const nodeById = new Map(nodes.map((n) => [n.id, n]));
+
+  // canvas groups around the node of each step, outermost first
+  const groupChains = steps.map((step) => {
+    const chain: string[] = [];
+    let parentId = step.nodeId ? nodeById.get(step.nodeId)?.parentNode : null;
+    while (parentId) {
+      const parent = nodeById.get(parentId);
+      if (!parent) break;
+      if (parent.type === "groupNode") chain.unshift(parent.id);
+      parentId = parent.parentNode;
+    }
+    return chain;
+  });
+
+  const build = (from: number, to: number, depth: number): StepTreeItem[] => {
+    const items: StepTreeItem[] = [];
+    let i = from;
+    while (i < to) {
+      const groupId = groupChains[i][depth];
+      if (!groupId) {
+        const j = nodeRunEnd(i, to, depth);
+        items.push(...buildNodeLevel(steps, nodeById, i, j));
+        i = j;
+        continue;
+      }
+      let j = i + 1;
+      while (j < to && groupChains[j][depth] === groupId) j++;
+      const label = String(nodeById.get(groupId)?.data?.label ?? "Group");
+      items.push({
+        type: "group",
+        label,
+        description: `The steps of the group "${label}" on the canvas.`,
+        children: build(i, j, depth + 1),
+        first: i,
+        last: j - 1,
+        groupNodeId: groupId,
+      });
+      i = j;
+    }
+    return items;
+  };
+  // steps outside of a canvas group at this depth, up to the next grouped step
+  const nodeRunEnd = (from: number, to: number, depth: number) => {
+    let j = from + 1;
+    while (j < to && !groupChains[j][depth]) j++;
+    return j;
+  };
+
+  return build(0, steps.length, 0);
+}
+
+/** Groups the steps from..to (exclusive) per canvas node, see buildStepTree. */
+function buildNodeLevel(
+  steps: DiracStep[],
+  nodeById: Map<string, Node>,
+  from: number,
+  to: number,
+): StepTreeItem[] {
   const items: StepTreeItem[] = [];
 
-  let i = 0;
-  while (i < steps.length) {
+  let i = from;
+  while (i < to) {
     const nodeId = steps[i].nodeId;
     let j = i + 1;
-    while (nodeId && j < steps.length && steps[j].nodeId === nodeId) j++;
+    while (nodeId && j < to && steps[j].nodeId === nodeId) j++;
 
     const hasComponents = steps.slice(i, j).some((s) => s.component);
     const info =

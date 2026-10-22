@@ -410,6 +410,8 @@ interface ParsedGate {
   // (if any). Used by the step-click mechanism to highlight the corresponding node on the
   // canvas when a step in the Dirac notation is clicked.
   nodeId?: string;
+  // 0-based line of the gate in the parsed QASM source (highlighted in the OpenQASM editor).
+  line?: number;
 }
 
 /** Minimal expression evaluator for QASM parameters (pi, *, /, +, -). */
@@ -429,10 +431,17 @@ export function parseQasm(qasm: string): {
   warnings: string[];
 } {
   const warnings: string[] = [];
-  const lines = qasm
-    .split("\n")
-    .map((l) => l.replace(/\/\/.*$/, "").trim())
-    .filter((l) => l.length > 0);
+  // keeps the 0-based line number in the source, so gates can be found in the editor
+  // Node markers can share a line with the gate ("/* Start node h1 */ h q[0]; /* End
+  // node h1 */"), so they are split into statements of their own on the same line.
+  const numberedLines = qasm.split("\n").flatMap((l, lineNo) =>
+    l
+      .replace(/\/\/.*$/, "")
+      .split(/(\/\*\s*(?:Start|End) node [\w-]+\s*\*\/)/)
+      .map((part) => ({ text: part.trim(), lineNo }))
+      .filter((part) => part.text.length > 0),
+  );
+  const lines = numberedLines.map((l) => l.text);
 
   // Build the qubit registers: name -> { start, size }
   const registers: Map<string, { start: number; size: number }> = new Map();
@@ -585,7 +594,7 @@ export function parseQasm(qasm: string): {
   // ---------------------------------------------------------------------------
   // Second pass: parse the gates
   // ---------------------------------------------------------------------------
-  for (const line of lines) {
+  for (const { text: line, lineNo } of numberedLines) {
     const startNodeMatch = line.match(/^\/\*\s*Start node ([\w-]+)\s*\*\/$/);
     if (startNodeMatch) {
       currentNodeId = startNodeMatch[1];
@@ -632,6 +641,7 @@ export function parseQasm(qasm: string): {
             qubits: [q],
             params: [],
             nodeId: currentNodeId,
+            line: lineNo,
           });
       }
       continue;
@@ -665,6 +675,7 @@ export function parseQasm(qasm: string): {
         params: [],
         numControls,
         nodeId: currentNodeId,
+        line: lineNo,
       });
       continue;
     }
@@ -690,6 +701,7 @@ export function parseQasm(qasm: string): {
       qubits: rawQubits,
       params: rawParams,
       nodeId: currentNodeId,
+      line: lineNo,
     });
   }
 
@@ -1115,6 +1127,8 @@ export interface DiracStep {
   gateName: string;
   /** Global qubit indices the gate acts on (controls first). */
   qubits: number[];
+  /** 0-based line of the gate in the QASM the steps were computed from. */
+  line?: number;
 }
 
 export interface DiracStepsResult {
@@ -1580,6 +1594,7 @@ export function qasmToDiracSteps(
       component: grover.lookup[gateIndex],
       gateName: gate.name,
       qubits: gate.qubits,
+      line: gate.line,
     });
   }
 

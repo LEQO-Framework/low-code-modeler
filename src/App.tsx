@@ -4004,8 +4004,10 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
 
           restoreFlow(flow);
         } catch (error) {
-          console.error("Error parsing JSON file:", error);
-          alert("Invalid JSON file. Please ensure it is a valid flow file.");
+          console.error("Error parsing OpenQASM file:", error);
+          alert(
+            `Could not import the OpenQASM file. ${error instanceof Error ? error.message : ""}`.trim(),
+          );
         }
       };
 

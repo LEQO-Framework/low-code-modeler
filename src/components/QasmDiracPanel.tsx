@@ -30,6 +30,7 @@ import {
   type StepTreeItem,
 } from "./mathExplanations";
 import { buildLatexExport, type LatexExportOptions } from "./latexExport";
+import { gateAtLine, sameGate, type GateLocator } from "./utils/qasmLines";
 import { useStore } from "@/config/store";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
@@ -93,10 +94,22 @@ type QasmProps = {
   ) => void;
   /** Applies a circuit edited in Math Mode (OpenQASM) to the QASM output and the canvas.
    *  Without it the editor works as a preview only. */
-  onApplyQasm?: (qasm: string) => void;
+  onApplyQasm?: (qasm: string, removedNodeIds?: string[]) => void;
   /** Code of the OpenQASM editor when it differs from `qasm` (edited, not applied yet);
    *  the circuit editor then starts from it. */
   editorQasm?: string;
+  /** Called when steps are clicked, with their 0-based lines in `sourceQasm`, so that the
+   *  OpenQASM editor can highlight them. */
+  onSelectQasmLines?: (
+    sourceQasm: string,
+    lines: number[],
+    pathLines?: number[],
+  ) => void;
+  /** Gates selected in the OpenQASM editor; their steps are highlighted. */
+  selectedGates?: GateLocator[];
+  /** Changes when the selection comes from the OpenQASM editor: the steps are opened and
+   *  scrolled to the selected one. */
+  revealSelection?: number;
 };
 
 type StatevectorProps = {
@@ -281,6 +294,7 @@ function ExportMenu({
     stepsResult,
     aiExplanation,
     stepTree,
+    qasm,
   };
 
   const copy = (text: string, label: string) => {
@@ -467,7 +481,7 @@ function ExportMenu({
                     className="block text-gray-400"
                     style={{ fontSize: "10px" }}
                   >
-                    via LaTeX.Online · inkl. circuit.png · ~5–10s
+                    via LaTeX.Online · incl. circuit.png & OpenQASM · ~5–10s
                   </span>
                 </span>
               </button>
@@ -687,6 +701,13 @@ export function QasmDiracPanel(props: Props) {
   const onStepClick = "onStepClick" in props ? props.onStepClick : undefined;
   const onApplyQasm = "onApplyQasm" in props ? props.onApplyQasm : undefined;
   const editorQasm = "editorQasm" in props ? props.editorQasm : undefined;
+  const onSelectQasmLines =
+    "onSelectQasmLines" in props ? props.onSelectQasmLines : undefined;
+  const selectedGates =
+    "selectedGates" in props ? props.selectedGates : undefined;
+  const revealSelection =
+    "revealSelection" in props ? props.revealSelection : undefined;
+  const stepsContainerRef = useRef<HTMLDivElement>(null);
   // changes made in the OpenQASM editor open the circuit editor right away
   const [showEditor, setShowEditor] = useState(!!editorQasm);
   const [showBasisStates, setShowBasisStates] = useState(false);
@@ -875,6 +896,63 @@ export function QasmDiracPanel(props: Props) {
       else next.add(key);
       return next;
     });
+
+  // Link between the steps and the OpenQASM editor: the gate of every step, and the steps
+  // of the gates selected in the editor.
+  const sourceQasm = "qasm" in props ? (props.qasm ?? "") : "";
+  const stepGates = useMemo(
+    () =>
+      (stepsResult?.steps ?? []).map((s) =>
+        s.line !== undefined ? gateAtLine(sourceQasm, s.line) : null,
+      ),
+    [stepsResult, sourceQasm],
+  );
+  const selectedSteps = useMemo(() => {
+    const selected = new Set<number>();
+    if (!selectedGates?.length) return selected;
+    stepGates.forEach((gate, idx) => {
+      if (gate && selectedGates.some((s) => sameGate(s, gate)))
+        selected.add(idx);
+    });
+    return selected;
+  }, [stepGates, selectedGates]);
+  // `withPath`: the lines of all earlier steps are highlighted as well (more lightly), like
+  // the canvas highlights every node on the path to the clicked step
+  const selectStepLines = (from: number, to: number, withPath = false) => {
+    if (!onSelectQasmLines || !stepsResult) return;
+    const linesOf = (a: number, b: number) =>
+      stepsResult.steps
+        .slice(a, b)
+        .map((s) => s.line)
+        .filter((l): l is number => l !== undefined);
+    const lines = linesOf(from, to + 1);
+    if (lines.length > 0)
+      onSelectQasmLines(sourceQasm, lines, withPath ? linesOf(0, from) : []);
+  };
+
+  // a line selected in the OpenQASM editor opens the steps (and the groups around the
+  // step) and scrolls to it
+  useEffect(() => {
+    if (!revealSelection || selectedSteps.size === 0) return;
+    const idx = Math.min(...selectedSteps);
+    setShowSteps(true);
+    const keys: string[] = [];
+    const collect = (items: StepTreeItem[]) => {
+      for (const item of items) {
+        if (item.type !== "group" || idx < item.first || idx > item.last)
+          continue;
+        keys.push(`${item.first}-${item.last}-${item.label}`);
+        collect(item.children);
+      }
+    };
+    collect(stepTree);
+    if (keys.length > 0) setOpenGroups((prev) => new Set([...prev, ...keys]));
+    setTimeout(() => {
+      stepsContainerRef.current
+        ?.querySelector(`[data-step-index="${idx}"]`)
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 50);
+  }, [revealSelection]);
 
   const unicodeStr = useMemo(() => {
     if (fullResult) return fullResult.unicode;
@@ -1135,19 +1213,30 @@ export function QasmDiracPanel(props: Props) {
   const renderStep = (idx: number) => {
     if (!stepsResult) return null;
     const step = stepsResult.steps[idx];
+    const canvasLink = !!step.nodeId && !!onStepClick;
+    const qasmLink = step.line !== undefined && !!onSelectQasmLines;
+    const selected = selectedSteps.has(idx);
     return (
-      <div key={`step-${idx}`} className="flex flex-col">
+      <div
+        key={`step-${idx}`}
+        data-step-index={idx}
+        className={`flex flex-col rounded ${selected ? "bg-blue-100/70 ring-1 ring-blue-400" : ""}`}
+      >
         <div className="flex items-center gap-1.5 py-0.5 pl-10">
           <span className="text-blue-400 text-xs">──</span>
           <span
-            className={`text-blue-600 text-xs font-sans font-medium bg-blue-50 border border-blue-100 px-1.5 py-0.5 rounded whitespace-nowrap ${
-              step.nodeId && onStepClick
+            className={`text-blue-600 text-xs font-sans font-medium bg-blue-50 border px-1.5 py-0.5 rounded whitespace-nowrap ${
+              selected ? "border-blue-400" : "border-blue-100"
+            } ${
+              canvasLink || qasmLink
                 ? "cursor-pointer hover:bg-blue-100 hover:border-blue-300 transition-colors"
                 : ""
             }`}
             onClick={
-              step.nodeId && onStepClick
+              canvasLink || qasmLink
                 ? () => {
+                    selectStepLines(idx, idx, true);
+                    if (!canvasLink) return;
                     // Collect all node IDs from step 0 up to and including the
                     // clicked step (deduplicated, without undefined), so that every
                     // node used up to that point is highlighted together.
@@ -1162,7 +1251,7 @@ export function QasmDiracPanel(props: Props) {
                     const indexInNode = stepsResult.steps
                       .slice(0, idx)
                       .filter((s) => s.nodeId === step.nodeId).length;
-                    onStepClick(nodeIdsUpToHere, {
+                    onStepClick!(nodeIdsUpToHere, {
                       nodeId: step.nodeId!,
                       from: 0,
                       to: indexInNode,
@@ -1171,9 +1260,11 @@ export function QasmDiracPanel(props: Props) {
                 : undefined
             }
             title={
-              step.nodeId && onStepClick
-                ? "Click to highlight all nodes used up to this point on the canvas; the block of this step opens down to its gates"
-                : undefined
+              canvasLink
+                ? `Click to highlight all nodes used up to this point on the canvas; the block of this step opens down to its gates${qasmLink ? ". The line is highlighted in the OpenQASM editor" : ""}`
+                : qasmLink
+                  ? "Click to highlight the line in the OpenQASM editor"
+                  : undefined
             }
           >
             {step.gateLabel}
@@ -1192,6 +1283,20 @@ export function QasmDiracPanel(props: Props) {
   const showGroupOnCanvas = (group: StepGroup) => {
     const nodeId = stepsResult?.steps[group.first]?.nodeId;
     if (!onStepClick || !stepsResult || !nodeId) return;
+    // a group made on the canvas: open it there and highlight all of its gates
+    if (group.groupNodeId) {
+      onStepClick(
+        Array.from(
+          new Set(
+            stepsResult.steps
+              .slice(group.first, group.last + 1)
+              .map((s) => s.nodeId)
+              .filter((n): n is string => !!n),
+          ),
+        ),
+      );
+      return;
+    }
     const before = stepsResult.steps
       .slice(0, group.first)
       .filter((s) => s.nodeId === nodeId).length;
@@ -1213,6 +1318,7 @@ export function QasmDiracPanel(props: Props) {
           <button
             onClick={() => {
               toggleGroup(key);
+              selectStepLines(group.first, group.last);
               showGroupOnCanvas(group);
             }}
             className="flex items-center gap-1 text-indigo-700 text-xs font-sans font-semibold bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 hover:border-indigo-300 px-1.5 py-0.5 rounded whitespace-nowrap transition-colors"
@@ -1585,6 +1691,11 @@ export function QasmDiracPanel(props: Props) {
           fromQasmEditor={!!editorQasm}
           onApply={onApplyQasm}
           onClose={() => setShowEditor(false)}
+          onSelectLines={
+            onSelectQasmLines
+              ? (lines) => onSelectQasmLines(editorQasm ?? sourceQasm, lines)
+              : undefined
+          }
         />
       )}
 
@@ -1650,7 +1761,10 @@ export function QasmDiracPanel(props: Props) {
             />
           )}
 
-          <div className="flex flex-col gap-0 font-mono text-sm">
+          <div
+            ref={stepsContainerRef}
+            className="flex flex-col gap-0 font-mono text-sm"
+          >
             <div className="flex items-baseline gap-2 py-1">
               <span className="text-gray-400 text-xs min-w-[36px]">|ψ₀⟩</span>
               <span className="text-gray-500 text-xs">=</span>

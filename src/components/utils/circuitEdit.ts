@@ -17,6 +17,8 @@ export interface EditableGate {
   numControls?: number;
   /** Canvas node (block) the gate was compiled from, if it comes from the model. */
   source?: string;
+  /** 0-based line of the gate in the QASM it was read from. */
+  line?: number;
 }
 
 export interface EditableCircuit {
@@ -34,8 +36,10 @@ export interface GateSpec {
   arity: number;
   /** Names of the qubit roles, in QASM argument order. */
   roles: string[];
-  /** True for gates with one angle parameter. */
-  hasParam?: boolean;
+  /** Names of the angle parameters, in QASM argument order (e.g. ["θ", "φ", "λ"]). */
+  params?: string[];
+  /** Angles of a newly added gate; π/2 per parameter when omitted. */
+  defaults?: number[];
 }
 
 /** Gates the editor offers; all of them exist in the palette of the low-code canvas. */
@@ -49,9 +53,27 @@ export const GATE_CATALOG: GateSpec[] = [
   { name: "sdg", label: "S†", arity: 1, roles: ["target"] },
   { name: "t", label: "T", arity: 1, roles: ["target"] },
   { name: "tdg", label: "T†", arity: 1, roles: ["target"] },
-  { name: "rx", label: "RX(θ)", arity: 1, roles: ["target"], hasParam: true },
-  { name: "ry", label: "RY(θ)", arity: 1, roles: ["target"], hasParam: true },
-  { name: "rz", label: "RZ(θ)", arity: 1, roles: ["target"], hasParam: true },
+  { name: "rx", label: "RX(θ)", arity: 1, roles: ["target"], params: ["θ"] },
+  { name: "ry", label: "RY(θ)", arity: 1, roles: ["target"], params: ["θ"] },
+  { name: "rz", label: "RZ(θ)", arity: 1, roles: ["target"], params: ["θ"] },
+  { name: "p", label: "P(λ)", arity: 1, roles: ["target"], params: ["λ"] },
+  { name: "u1", label: "U1(λ)", arity: 1, roles: ["target"], params: ["λ"] },
+  {
+    name: "u2",
+    label: "U2(φ,λ)",
+    arity: 1,
+    roles: ["target"],
+    params: ["φ", "λ"],
+    defaults: [0, Math.PI],
+  },
+  {
+    name: "u3",
+    label: "U3(θ,φ,λ)",
+    arity: 1,
+    roles: ["target"],
+    params: ["θ", "φ", "λ"],
+    defaults: [Math.PI / 2, 0, 0],
+  },
   { name: "cx", label: "CNOT", arity: 2, roles: ["control", "target"] },
   { name: "cy", label: "CY", arity: 2, roles: ["control", "target"] },
   { name: "cz", label: "CZ", arity: 2, roles: ["control", "target"] },
@@ -62,21 +84,28 @@ export const GATE_CATALOG: GateSpec[] = [
     label: "CRX(θ)",
     arity: 2,
     roles: ["control", "target"],
-    hasParam: true,
+    params: ["θ"],
   },
   {
     name: "cry",
     label: "CRY(θ)",
     arity: 2,
     roles: ["control", "target"],
-    hasParam: true,
+    params: ["θ"],
   },
   {
     name: "crz",
     label: "CRZ(θ)",
     arity: 2,
     roles: ["control", "target"],
-    hasParam: true,
+    params: ["θ"],
+  },
+  {
+    name: "cp",
+    label: "CP(λ)",
+    arity: 2,
+    roles: ["control", "target"],
+    params: ["λ"],
   },
   {
     name: "ccx",
@@ -96,6 +125,9 @@ const ALIASES: Record<string, string> = {
   cnot: "cx",
   toffoli: "ccx",
   i: "id",
+  u: "u3",
+  phase: "p",
+  cphase: "cp",
 };
 
 /** A fresh circuit: all qubits in |0⟩ and no steps. */
@@ -113,15 +145,32 @@ export function gateArity(gate: EditableGate): number {
   return gateSpec(gate.name)?.arity ?? gate.qubits.length;
 }
 
+/**
+ * Names of the angles of a gate: from the catalog, or p0, p1, ... for other gates with
+ * parameters, so that every angle in the circuit can be edited.
+ */
+export function gateParamNames(gate: EditableGate): string[] {
+  return gateSpec(gate.name)?.params ?? gate.params.map((_, i) => `p${i}`);
+}
+
+/** Angles of a newly added gate. */
+export function defaultParams(spec: GateSpec | undefined): number[] {
+  if (!spec?.params) return [];
+  return spec.defaults ?? spec.params.map(() => Math.PI / 2);
+}
+
 /** Short display label, e.g. "CNOT q0→q1" or "RX(π/2) q2". */
 export function gateDisplayLabel(gate: EditableGate): string {
   const spec = gateSpec(gate.name);
   const base = spec
-    ? spec.label.replace(/\s*\(.*\)$/, "").replace("(θ)", "")
+    ? spec.label.replace(/\s*\(.*\)$/, "")
     : gate.name.startsWith("mc_")
       ? `C${"C".repeat((gate.numControls ?? 1) - 1)}${gate.name.slice(3).toUpperCase()}`
       : gate.name.toUpperCase();
-  const param = spec?.hasParam ? `(${formatAngle(gate.params[0] ?? 0)})` : "";
+  const param =
+    gate.params.length > 0
+      ? `(${gate.params.map((p) => formatAngle(p)).join(",")})`
+      : "";
   const qs = gate.qubits.map((q) => `q${q}`);
   const controls = spec
     ? spec.roles.filter((r) => r === "control").length
@@ -173,7 +222,8 @@ export function parseAngle(text: string): number | null {
 /**
  * Builds the editable circuit from QASM. X gates that are the very first operation on
  * their qubit are read as the preparation of the initial state (every qubit starts in
- * |0⟩, so an initial |1⟩ is always produced by an X gate). Measurements are dropped.
+ * |0⟩, so an initial |1⟩ is always produced by an X gate), unless they come from a node
+ * of the model (node markers in the QASM). Measurements are dropped.
  */
 export function circuitFromQasm(qasm: string): EditableCircuit {
   const { numQubits, gates } = parseQasm(qasm);
@@ -184,7 +234,14 @@ export function circuitFromQasm(qasm: string): EditableCircuit {
   for (const gate of gates) {
     if (gate.name === "measure") continue;
     const q = gate.qubits[0];
-    if (gate.name === "x" && !touched.has(q) && bits[q] === "0") {
+    // an X gate of a node on the canvas stays a step, so that the steps match the
+    // derivation and the learner can remove it
+    if (
+      gate.name === "x" &&
+      !gate.nodeId &&
+      !touched.has(q) &&
+      bits[q] === "0"
+    ) {
       bits[q] = "1";
       continue;
     }
@@ -195,6 +252,7 @@ export function circuitFromQasm(qasm: string): EditableCircuit {
       params: [...gate.params],
       numControls: gate.numControls,
       source: gate.nodeId,
+      line: gate.line,
     });
   }
 
@@ -243,6 +301,44 @@ export function circuitToQasm(
       : []),
     ...circuit.gates.map(gateToQasmLine),
   ].join("\n");
+}
+
+function sameGate(a: EditableGate, b: EditableGate): boolean {
+  return (
+    a.name === b.name &&
+    a.source === b.source &&
+    a.qubits.join() === b.qubits.join() &&
+    a.params.length === b.params.length &&
+    a.params.every((p, i) => Math.abs(p - b.params[i]) < 1e-9)
+  );
+}
+
+/**
+ * If the only change from `original` to `edited` is that steps were removed, and every
+ * removed step was the whole content of its canvas node, returns these nodes, so that the
+ * canvas can delete just them and keep the rest of the model (e.g. a user-made group).
+ * Returns null for any other change, which rebuilds the circuit from the OpenQASM.
+ */
+export function removedNodes(
+  original: EditableCircuit,
+  edited: EditableCircuit,
+): string[] | null {
+  if (
+    original.numQubits !== edited.numQubits ||
+    original.initialBits !== edited.initialBits ||
+    edited.gates.length >= original.gates.length
+  )
+    return null;
+  const removed = new Set<string>();
+  let k = 0;
+  for (const gate of original.gates) {
+    if (k < edited.gates.length && sameGate(gate, edited.gates[k])) k++;
+    else if (gate.source) removed.add(gate.source);
+    else return null;
+  }
+  if (k !== edited.gates.length) return null;
+  if (edited.gates.some((g) => g.source && removed.has(g.source))) return null;
+  return [...removed];
 }
 
 /**

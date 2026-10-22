@@ -3,10 +3,11 @@
  * a single panel and the "Export all" button.
  */
 
-import type {
-  DiracStep,
-  DiracStepsResult,
-  DiracTerm,
+import {
+  normalizeQasm,
+  type DiracStep,
+  type DiracStepsResult,
+  type DiracTerm,
 } from "./utils/qasmToDirac";
 import {
   getBlochVector,
@@ -784,6 +785,35 @@ export interface LatexExportOptions {
   stepsResult?: DiracStepsResult;
   aiExplanation?: string;
   stepTree?: StepTreeItem[];
+  /** OpenQASM of the circuit; when set, the document lists the code. */
+  qasm?: string;
+}
+
+/**
+ * The OpenQASM code of the circuit, normalized to plain OpenQASM 3 on q[i] (without the
+ * LEQO aliases and node comments), so that it is short and can be run elsewhere.
+ */
+function buildQasmSection(qasm: string): string {
+  let code = qasm;
+  try {
+    code = normalizeQasm(qasm);
+  } catch {
+    // keep the original code
+  }
+  // verbatim uses the T1 typewriter font of pdflatex, which has no glyphs for e.g. ⟩
+  const ascii = code.replace(/[^\t\n\r\x20-\x7e]/g, "?").trim();
+  return `\\section{OpenQASM Code}
+
+The circuit in OpenQASM 3, as it is sent to a quantum backend. Each line applies one gate
+to the qubits \\texttt{q[i]}; the intermediate steps follow these lines in order.
+
+{\\small
+\\begin{verbatim}
+${ascii}
+\\end{verbatim}
+}
+
+`;
 }
 
 export function buildLatexExport({
@@ -795,6 +825,7 @@ export function buildLatexExport({
   stepsResult,
   aiExplanation,
   stepTree: givenStepTree,
+  qasm,
 }: LatexExportOptions): string {
   const statevector = Array.from({ length: 1 << numQubits }, (_, i) => {
     const term = terms.find((t) => parseInt(t.basisState, 2) === i);
@@ -833,6 +864,8 @@ export function buildLatexExport({
 
 `
     : "";
+
+  const qasmSection = qasm?.trim() ? buildQasmSection(qasm) : "";
 
   // Headings of the step groups (e.g. Grover operator > Oracle, Basis encoding), emitted
   // before the first step of each group together with their explanation.
@@ -971,7 +1004,7 @@ ${hint}
 
 \\clearpage
 
-${learningSection}${buildModelOverviewSection(numQubits, terms, stepsResult, usage, stepTree)}${circuitSection}${buildBasicsLatexSection(numQubits)}\\section{Quantum State in Dirac Notation}
+${learningSection}${buildModelOverviewSection(numQubits, terms, stepsResult, usage, stepTree)}${circuitSection}${qasmSection}${buildBasicsLatexSection(numQubits)}\\section{Quantum State in Dirac Notation}
 
 The quantum system state with ${numQubits} qubit${numQubits !== 1 ? "s" : ""} is:
 

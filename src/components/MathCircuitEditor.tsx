@@ -15,16 +15,19 @@ import {
   GATE_CATALOG,
   circuitFromQasm,
   circuitToQasm,
+  defaultParams,
   defaultQubits,
   emptyCircuit,
   formatAngle,
   gateArity,
   gateDisplayLabel,
+  gateParamNames,
   gateSpec,
   labeledMatrixLatex,
   localMatrix,
   parseAngle,
   registerMatrix,
+  removedNodes,
   validateGate,
   type EditableCircuit,
   type EditableGate,
@@ -46,8 +49,14 @@ function Tex({ latex, display = false }: { latex: string; display?: boolean }) {
   return <span dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
-function newGate(name: string, numQubits: number, previous?: number[]) {
+function newGate(
+  name: string,
+  numQubits: number,
+  previous?: number[],
+  previousParams?: number[],
+) {
   const spec = gateSpec(name);
+  const params = defaultParams(spec);
   const arity = spec?.arity ?? 1;
   // keep the qubits of the replaced gate where possible, fill up with unused ones
   const qubits = (previous ?? []).slice(0, arity);
@@ -61,7 +70,9 @@ function newGate(name: string, numQubits: number, previous?: number[]) {
   return {
     name,
     qubits: qubits.length === arity ? qubits : defaultQubits(arity),
-    params: spec?.hasParam ? [Math.PI / 2] : [],
+    // switching e.g. RX(θ) to RY keeps the angle
+    params:
+      previousParams?.length === params.length ? [...previousParams] : params,
   };
 }
 
@@ -71,12 +82,17 @@ interface Props {
   /** QASM of the current model; without it only "Start new" is available. */
   qasm?: string;
   initialMode?: EditorMode;
-  /** Applies the edited OpenQASM to the QASM output and the canvas; omitted = preview only. */
-  onApply?: (qasm: string) => void;
+  /** Applies the edited OpenQASM to the QASM output and the canvas; omitted = preview only.
+   *  `removedNodeIds` is set when steps were only removed (see removedNodes), so that the
+   *  canvas can delete these nodes instead of being rebuilt. */
+  onApply?: (qasm: string, removedNodeIds?: string[]) => void;
   /** Omitted when the editor cannot be closed (empty canvas). */
   onClose?: () => void;
   /** `qasm` comes from the OpenQASM editor and has not been applied to the canvas yet. */
   fromQasmEditor?: boolean;
+  /** Called with the 0-based line of a step in `qasm` when its number is clicked, so that
+   *  the OpenQASM editor highlights it. */
+  onSelectLines?: (lines: number[]) => void;
 }
 
 export function MathCircuitEditor({
@@ -85,6 +101,7 @@ export function MathCircuitEditor({
   onApply,
   onClose,
   fromQasmEditor = false,
+  onSelectLines,
 }: Props) {
   const hasModel = !!qasm?.trim();
   const [mode, setMode] = useState<EditorMode>(hasModel ? initialMode : "new");
@@ -109,7 +126,8 @@ export function MathCircuitEditor({
   const [circuit, setCircuit] = useState<EditableCircuit>(original);
   const [newGateName, setNewGateName] = useState("h");
   const [openMatrix, setOpenMatrix] = useState<number | null>(null);
-  const [angleDrafts, setAngleDrafts] = useState<Record<number, string>>({});
+  // angles being typed, keyed by "<step>:<parameter>"
+  const [angleDrafts, setAngleDrafts] = useState<Record<string, string>>({});
   const [applied, setApplied] = useState(false);
 
   // a new QASM (recompiled model) resets the editor
@@ -373,16 +391,32 @@ export function MathCircuitEditor({
                 }`}
               >
                 <div className="flex items-center gap-1.5 flex-wrap text-xs">
-                  <span className="text-gray-400 font-mono w-5">
-                    {index + 1}.
-                  </span>
+                  {gate.line !== undefined && onSelectLines && !isNew ? (
+                    <button
+                      onClick={() => onSelectLines([gate.line!])}
+                      className="text-gray-400 hover:text-blue-600 font-mono w-5 text-left"
+                      title={`Show line ${gate.line + 1} in the OpenQASM editor`}
+                    >
+                      {index + 1}.
+                    </button>
+                  ) : (
+                    <span className="text-gray-400 font-mono w-5">
+                      {index + 1}.
+                    </span>
+                  )}
                   {spec ? (
                     <select
                       value={spec.name}
                       onChange={(e) =>
                         setGate(index, {
-                          ...newGate(e.target.value, numQubits, gate.qubits),
+                          ...newGate(
+                            e.target.value,
+                            numQubits,
+                            gate.qubits,
+                            gate.params,
+                          ),
                           source: gate.source,
+                          line: gate.line,
                         })
                       }
                       className="border border-gray-300 rounded px-1 py-0.5 bg-white"
@@ -425,37 +459,43 @@ export function MathCircuitEditor({
                       </select>
                     </label>
                   ))}
-                  {spec?.hasParam && (
-                    <label className="flex items-center gap-0.5 text-gray-500">
-                      θ
-                      <input
-                        value={
-                          angleDrafts[index] ?? formatAngle(gate.params[0] ?? 0)
-                        }
-                        onChange={(e) => {
-                          const text = e.target.value;
-                          setAngleDrafts((d) => ({ ...d, [index]: text }));
-                          const value = parseAngle(text);
-                          if (value !== null)
-                            setGate(index, { ...gate, params: [value] });
-                        }}
-                        onBlur={() =>
-                          setAngleDrafts((d) => {
-                            const next = { ...d };
-                            delete next[index];
-                            return next;
-                          })
-                        }
-                        className={`w-16 border rounded px-1 py-0.5 font-mono ${
-                          angleDrafts[index] !== undefined &&
-                          parseAngle(angleDrafts[index]) === null
-                            ? "border-red-400"
-                            : "border-gray-300"
-                        }`}
-                        title="Angle in radians, e.g. pi/2, π/4, 0.5, or in degrees, e.g. 90°"
-                      />
-                    </label>
-                  )}
+                  {gateParamNames(gate).map((paramName, p) => {
+                    const key = `${index}:${p}`;
+                    const draft = angleDrafts[key];
+                    return (
+                      <label
+                        key={key}
+                        className="flex items-center gap-0.5 text-gray-500"
+                      >
+                        {paramName}
+                        <input
+                          value={draft ?? formatAngle(gate.params[p] ?? 0)}
+                          onChange={(e) => {
+                            const text = e.target.value;
+                            setAngleDrafts((d) => ({ ...d, [key]: text }));
+                            const value = parseAngle(text);
+                            if (value === null) return;
+                            const params = [...gate.params];
+                            params[p] = value;
+                            setGate(index, { ...gate, params });
+                          }}
+                          onBlur={() =>
+                            setAngleDrafts((d) => {
+                              const next = { ...d };
+                              delete next[key];
+                              return next;
+                            })
+                          }
+                          className={`w-16 border rounded px-1 py-0.5 font-mono ${
+                            draft !== undefined && parseAngle(draft) === null
+                              ? "border-red-400"
+                              : "border-gray-300"
+                          }`}
+                          title="Angle in radians, e.g. pi/2, π/4, 0.5, or in degrees, e.g. 90°"
+                        />
+                      </label>
+                    );
+                  })}
                   <div className="ml-auto flex items-center gap-1">
                     <button
                       onClick={() =>
@@ -640,7 +680,12 @@ export function MathCircuitEditor({
         {onApply && (
           <button
             onClick={() => {
-              onApply(circuitToQasm(circuit));
+              // the original must be what the canvas shows, not unapplied editor code
+              const removed =
+                isNew || fromQasmEditor
+                  ? null
+                  : removedNodes(original, circuit);
+              onApply(circuitToQasm(circuit), removed ?? undefined);
               setApplied(true);
             }}
             disabled={!changed || hasErrors}
