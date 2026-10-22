@@ -28,6 +28,8 @@ interface OutputPortProps {
   setSizeError: (error: boolean) => void;
   showSizeErrorAlert?: boolean;
   active: boolean;
+  /** Renders the port box with a dashed border */
+  optional?: boolean;
 }
 
 export const isPositiveIntegerSize = (value: string) =>
@@ -51,6 +53,7 @@ export default function OutputPort({
   setSizeError,
   showSizeErrorAlert = true,
   active,
+  optional = false,
 }: OutputPortProps) {
   const isClassical = type === "classical";
   const isAncilla = type === "ancilla";
@@ -265,6 +268,7 @@ export default function OutputPort({
               : "rgba(105, 145, 210, 0.2)",
           width: "180px",
           borderRadius: isClassical ? "16px" : "0px",
+          ...(optional && { border: "1px dashed #6b7280" }),
         }}
       >
         <div className="w-full flex justify-between items-center">

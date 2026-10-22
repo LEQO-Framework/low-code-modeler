@@ -1591,32 +1591,7 @@ export const TextPanel = () => {
             {/* Information Tab */}
             {activeTab === "information" && (
               <div role="tabpanel" className="p-2">
-                <label
-                    className="block text-sm font-medium text-start text-gray-700"
-                    htmlFor="nodeId"
-                  >
-                    Node ID
-                  </label>
-                  <div className="mt-1 flex gap-2 items-center">
-                    <input
-                      id="nodeId"
-                      type="text"
-                      readOnly
-                      value={selectedNode.id}
-                      onFocus={(e) => e.target.select()}
-                      className="border border-gray-300 rounded-md p-2 bg-gray-50 text-gray-700 font-mono text-xs w-full min-w-0"
-                    />
-                    <button
-                      type="button"
-                      onClick={copyNodeId}
-                      className="text-xs text-blue-600 underline whitespace-nowrap"
-                    >
-                      {idCopied ? "Copied" : "Copy"}
-                    </button>
-                  </div>
-            
-
-                <div className="mt-3">
+                <div>
                   <label
                     className="block text-sm font-medium text-start text-gray-700"
                     htmlFor="nodeId"

@@ -18,6 +18,9 @@ export interface Node {
   category?: string;
   outputType?: string;
   isDataType?: boolean;
+  inputPorts?: any[];
+  outputPorts?: any[];
+  operatorKind?: "quantum" | "classical";
   data?: Record<string, any>;
 }
 

@@ -14,13 +14,29 @@ import { DomainProfileRepositoryPicker } from "./domainProfileRepositoryPicker";
 import { RepositoryDomainProfile } from "../../services/domainProfileRepository";
 import { createPortal } from "react-dom";
 
+export const DATA_TYPES_CATEGORY = "dataTypes";
+export const QUANTUM_OPERATORS_CATEGORY = "Quantum Operators";
+export const CLASSICAL_OPERATORS_CATEGORY = "Classical Operators";
+// profiles created before the quantum/classical split used this category
+const LEGACY_OPERATORS_CATEGORY = "Operators";
+
+export type PortKind = "quantum" | "classical";
+
+export interface NodeProfilePort {
+  name: string;
+  type: string;
+  kind: PortKind;
+  optional: boolean;
+}
+
 export interface EditableNodeProfile {
   label: string;
   description: string;
   icon: string | string[];
   visible: boolean;
-  outputType: string | string[];
   category: string;
+  inputs: NodeProfilePort[];
+  outputs: NodeProfilePort[];
   properties: NodeProfileProperty[];
   constraints: NodeProfileConstraint[];
   mapping: string[][];
@@ -38,12 +54,119 @@ export type DomainProfile = {
 interface NodeProfileProperty {
   name: string;
   type: string;
+  required?: boolean;
 }
 
 interface NodeProfileConstraint {
   propertyName: string;
   constraint: string;
   value?: string;
+}
+
+const isOperatorCategory = (category: string) =>
+  category === QUANTUM_OPERATORS_CATEGORY ||
+  category === CLASSICAL_OPERATORS_CATEGORY;
+
+const defaultPortKind = (category: string): PortKind =>
+  category === QUANTUM_OPERATORS_CATEGORY ? "quantum" : "classical";
+
+/**
+ * Names that are used by more than one of the block's inputs and outputs.
+ * Inputs and outputs share one namespace.
+ */
+function findDuplicatePortNames(node: EditableNodeProfile): Set<string> {
+  const ports = [
+    ...(isOperatorCategory(node.category) ? node.inputs : []),
+    ...node.outputs,
+  ];
+  const seen = new Set<string>();
+  const duplicates = new Set<string>();
+
+  ports.forEach((port) => {
+    const name = port.name.trim();
+
+    if (!name) return;
+
+    if (seen.has(name)) duplicates.add(name);
+
+    seen.add(name);
+  });
+
+  return duplicates;
+}
+
+// palette icons, the same ones the built-in custom nodes use
+const DEFAULT_CATEGORY_ICONS: Record<string, string> = {
+  [DATA_TYPES_CATEGORY]: "PaletteIcon_CustomDataType.svg",
+  [QUANTUM_OPERATORS_CATEGORY]: "PaletteIcon_CustomQuantumOperator.png",
+  [CLASSICAL_OPERATORS_CATEGORY]: "PaletteIcon_CustomClassicalOperator.png",
+};
+
+const PLACEHOLDER_ICON = "QAOA.png";
+
+/** True if the icon was not chosen by the user (no upload). */
+const isDefaultIcon = (icon: string | string[] | undefined) =>
+  !icon ||
+  icon === PLACEHOLDER_ICON ||
+  Object.values(DEFAULT_CATEGORY_ICONS).includes(icon as string);
+
+const defaultIcon = (category: string) =>
+  DEFAULT_CATEGORY_ICONS[category] ?? PLACEHOLDER_ICON;
+
+function normalizeCategory(category: string): string {
+  return category === LEGACY_OPERATORS_CATEGORY
+    ? CLASSICAL_OPERATORS_CATEGORY
+    : category;
+}
+
+function normalizePorts(
+  ports: any[] | undefined,
+  category: string,
+): NodeProfilePort[] {
+  return (ports ?? []).map((port: any) => ({
+    name: port?.name ?? "",
+    type: port?.type ?? "",
+    kind:
+      category === CLASSICAL_OPERATORS_CATEGORY
+        ? "classical"
+        : (port?.kind ?? defaultPortKind(category)),
+    optional: !!port?.optional,
+  }));
+}
+
+/**
+ * Convert a stored block (domain profile entry, repository block or imported
+ * JSON node) into the editor's representation.
+ */
+function toEditableNode(raw: any, fallbackCategory = ""): EditableNodeProfile {
+  const category = normalizeCategory(raw?.category || fallbackCategory || "");
+
+  // older profiles only stored a list of output type names
+  const legacyOutputs = (
+    Array.isArray(raw?.outputType) ? raw.outputType : [raw?.outputType]
+  )
+    .filter(Boolean)
+    .map((type: string) => ({ name: "", type, optional: false }));
+
+  return {
+    label: raw?.label ?? "",
+    description: raw?.description ?? "",
+    icon: isDefaultIcon(raw?.icon) ? defaultIcon(category) : raw.icon,
+    visible: raw?.visible ?? true,
+    category,
+    inputs: normalizePorts(raw?.inputPorts ?? raw?.inputs, category),
+    outputs: normalizePorts(
+      raw?.outputPorts ?? raw?.outputs ?? legacyOutputs,
+      category,
+    ),
+    properties: raw?.properties ?? [],
+    constraints: raw?.constraints ?? [],
+    mapping: raw?.mapping ?? [[]],
+
+    originalLabel: raw?.originalLabel || raw?.label || "",
+    originalDescription: raw?.originalDescription || raw?.description || "",
+    originalIcon: raw?.originalIcon || raw?.icon || "QAOA.png",
+  };
 }
 
 /**
@@ -55,21 +178,9 @@ function toEditableNodes(
 ): EditableNodeProfile[] {
   return Object.entries(profile.domainBlocks ?? {}).flatMap(
     ([category, blocks]) =>
-      (blocks ?? []).map((block) => ({
-        label: block.label,
-        description: block.description ?? "",
-        icon: "QAOA.png",
-        visible: true,
-        outputType: "",
-        category,
-        properties: block.properties ?? [],
-        constraints: block.constraints ?? [],
-        mapping: [[]],
-
-        originalLabel: block.label,
-        originalDescription: block.description ?? "",
-        originalIcon: "QAOA.png",
-      })),
+      (blocks ?? []).map((block) =>
+        toEditableNode({ ...block, category }, category),
+      ),
   );
 }
 
@@ -80,23 +191,9 @@ function toEditableNodesFromDomainProfile(
     ([category, entry]: any) => {
       const content = entry?.content ?? [];
 
-      return (Array.isArray(content) ? content : []).map((node: any) => ({
-        label: node.label ?? "",
-        description: node.description ?? "",
-        icon: node.icon ?? "QAOA.png",
-        visible: node.visible ?? true,
-        outputType: node.outputType ?? "",
-        category: node.category ?? category ?? "",
-        properties: node.properties ?? [],
-        constraints: node.constraints ?? [],
-        mapping: node.mapping ?? [[]],
-
-        originalLabel: node.originalLabel ?? node.label ?? "",
-
-        originalDescription: node.originalDescription ?? node.description ?? "",
-
-        originalIcon: node.originalIcon ?? node.icon ?? "QAOA.png",
-      }));
+      return (Array.isArray(content) ? content : []).map((node: any) =>
+        toEditableNode(node, category),
+      );
     },
   );
 }
@@ -134,6 +231,7 @@ function PropertyEditor({
       {
         name: "",
         type: "",
+        required: true,
       },
     ]);
   };
@@ -160,7 +258,14 @@ function PropertyEditor({
   return (
     <div className="space-y-3 min-w-[200px]">
       {properties.map((prop, idx) => (
-        <div key={idx} className="p-2 border rounded bg-gray-50 relative group">
+        <div
+          key={idx}
+          className={`p-2 border rounded relative group ${
+            prop.required
+              ? "bg-gray-50"
+              : "border-dashed border-gray-400 bg-white"
+          }`}
+        >
           <button
             type="button"
             onClick={() => removeProperty(idx)}
@@ -194,6 +299,17 @@ function PropertyEditor({
               />
             </div>
           </div>
+
+          <label className="mt-2 flex items-center justify-end gap-1 text-[10px] text-gray-600 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={!!prop.required}
+              onChange={(e) =>
+                updateProperty(idx, "required", e.target.checked)
+              }
+            />
+            Required
+          </label>
         </div>
       ))}
 
@@ -383,59 +499,145 @@ const mappingOptions: Record<string, string> = {
   ...dynamicMappingOptions,
 };
 
-function OutputTypeEditor({
-  outputTypes,
+function PortEditor({
+  ports,
+  category,
+  addLabel,
+  duplicateNames,
   onChange,
 }: {
-  outputTypes: string[];
-  onChange: (types: string[]) => void;
+  ports: NodeProfilePort[];
+  category: string;
+  addLabel: string;
+  duplicateNames: Set<string>;
+  onChange: (ports: NodeProfilePort[]) => void;
 }) {
-  const addType = () => {
-    onChange([...outputTypes, ""]);
+  // only quantum operators can mix quantum and classical ports
+  const kindSelectable = category === QUANTUM_OPERATORS_CATEGORY;
+
+  const addPort = () => {
+    const kind = defaultPortKind(category);
+
+    onChange([
+      ...ports,
+      {
+        name: "",
+        type: kind === "quantum" ? "quantum register" : "",
+        kind,
+        optional: false,
+      },
+    ]);
   };
 
-  const updateType = (index: number, value: string) => {
-    const newTypes = [...outputTypes];
+  const updatePort = (
+    index: number,
+    field: keyof NodeProfilePort,
+    value: any,
+  ) => {
+    const newPorts = [...ports];
 
-    newTypes[index] = value;
+    newPorts[index] = {
+      ...newPorts[index],
+      [field]: value,
+    };
 
-    onChange(newTypes);
+    onChange(newPorts);
   };
 
-  const removeType = (index: number) => {
-    onChange(outputTypes.filter((_, i) => i !== index));
+  const removePort = (index: number) => {
+    onChange(ports.filter((_, i) => i !== index));
   };
 
   return (
-    <div className="space-y-2 min-w-[150px]">
-      {outputTypes.map((type, idx) => (
+    <div className="space-y-3 min-w-[200px]">
+      {ports.map((port, idx) => (
         <div
           key={idx}
-          className="flex items-center gap-1 p-1 border rounded bg-gray-50 relative group"
+          className={`p-2 border rounded relative group ${
+            port.optional
+              ? "border-dashed border-gray-400 bg-white"
+              : "bg-gray-50"
+          }`}
         >
-          <input
-            className="flex-1 border rounded px-1 py-0.5 text-xs"
-            value={type}
-            onChange={(e) => updateType(idx, e.target.value)}
-          />
-
           <button
             type="button"
-            onClick={() => removeType(idx)}
-            className="bg-red-100 text-red-600 rounded-full p-1 hover:bg-red-200"
+            onClick={() => removePort(idx)}
+            className="absolute -top-2 -right-2 bg-red-100 text-red-600 rounded-full p-1 hover:bg-red-200"
           >
             <Trash2 size={12} />
           </button>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-[10px] font-bold text-gray-500 uppercase">
+                Name
+              </label>
+
+              <input
+                className={`w-full border rounded px-1 py-0.5 text-xs ${
+                  duplicateNames.has(port.name.trim())
+                    ? "border-red-500 bg-red-50"
+                    : ""
+                }`}
+                value={port.name}
+                onChange={(e) => updatePort(idx, "name", e.target.value)}
+              />
+
+              {duplicateNames.has(port.name.trim()) && (
+                <span className="block text-[10px] text-red-600 mt-0.5">
+                  Name must be unique
+                </span>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-bold text-gray-500 uppercase">
+                Type
+              </label>
+
+              <input
+                className="w-full border rounded px-1 py-0.5 text-xs"
+                value={port.type}
+                onChange={(e) => updatePort(idx, "type", e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="mt-2 flex items-center justify-between gap-2">
+            {kindSelectable ? (
+              <select
+                className="border rounded px-1 py-0.5 text-xs bg-white"
+                value={port.kind}
+                onChange={(e) => updatePort(idx, "kind", e.target.value)}
+              >
+                <option value="quantum">Quantum</option>
+                <option value="classical">Classical</option>
+              </select>
+            ) : (
+              <span className="text-[10px] text-gray-500 uppercase">
+                Classical
+              </span>
+            )}
+
+            <label className="flex items-center gap-1 text-[10px] text-gray-600 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={port.optional}
+                onChange={(e) => updatePort(idx, "optional", e.target.checked)}
+              />
+              Optional
+            </label>
+          </div>
         </div>
       ))}
 
       <button
         type="button"
-        onClick={addType}
+        onClick={addPort}
         className="flex items-center justify-center gap-1 w-full py-1 border-2 border-dashed border-gray-300 rounded text-gray-500 hover:border-blue-400 hover:text-blue-500 text-xs font-medium transition-colors"
       >
         <Plus size={14} />
-        Add Output Type
+        {addLabel}
       </button>
     </div>
   );
@@ -957,6 +1159,7 @@ export default function DomainProfileTableModal({
         }
 
         const type = EditableNode;
+        const isOperator = isOperatorCategory(node.category);
 
         const nodeData = {
           label: node.label,
@@ -964,13 +1167,18 @@ export default function DomainProfileTableModal({
           icon: node.icon,
           type: type,
           category: node.category,
-          outputType: node.outputType,
+          outputType: node.outputs.map((port) => port.type),
+          inputPorts: isOperator ? node.inputs : [],
+          outputPorts: node.outputs,
           properties: node.properties,
           constraints: node.constraints,
           mapping: node.mapping,
           completionGuaranteed: true,
           compactOptions: [true, false],
-          isDataType: node.category.includes("data"),
+          isDataType: node.category === DATA_TYPES_CATEGORY,
+          ...(isOperator && {
+            operatorKind: defaultPortKind(node.category),
+          }),
         };
 
         (acc[cat].content as any[]).push(nodeData);
@@ -989,7 +1197,15 @@ export default function DomainProfileTableModal({
     onClose();
   };
 
+  const portNameDuplicates = localNodes.map(findDuplicatePortNames);
+
+  const hasDuplicatePortNames = portNameDuplicates.some(
+    (duplicates) => duplicates.size > 0,
+  );
+
   const saveProfile = () => {
+    if (hasDuplicatePortNames) return;
+
     const requestedName = profileName.trim() || "Untitled Profile";
 
     const existingProfile = profiles.find(
@@ -1025,6 +1241,22 @@ export default function DomainProfileTableModal({
         [field]: value,
       };
 
+      if (field === "category" && isDefaultIcon(copy[index].icon)) {
+        copy[index].icon = defaultIcon(value);
+      }
+
+      // classical operators cannot have quantum ports
+      if (field === "category" && value === CLASSICAL_OPERATORS_CATEGORY) {
+        const toClassical = (port: NodeProfilePort) => ({
+          ...port,
+          kind: "classical",
+          type: port.type === "quantum register" ? "" : port.type,
+        });
+
+        copy[index].inputs = copy[index].inputs.map(toClassical);
+        copy[index].outputs = copy[index].outputs.map(toClassical);
+      }
+
       return copy;
     });
   };
@@ -1035,8 +1267,9 @@ export default function DomainProfileTableModal({
       description: "",
       icon: "QAOA.png",
       visible: true,
-      outputType: "",
       category: "",
+      inputs: [],
+      outputs: [],
       properties: [],
       constraints: [],
       mapping: [[]],
@@ -1123,12 +1356,16 @@ export default function DomainProfileTableModal({
           <div className="space-x-2">
             <button
               className={`btn ${
-                duplicateWarning
+                duplicateWarning || hasDuplicatePortNames
                   ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                   : "btn-primary"
               }`}
               onClick={saveProfile}
-              disabled={!!duplicateWarning || activeTab !== "create"}
+              disabled={
+                !!duplicateWarning ||
+                hasDuplicatePortNames ||
+                activeTab !== "create"
+              }
             >
               Save Profile
             </button>
@@ -1417,24 +1654,7 @@ export default function DomainProfileTableModal({
                             }
 
                             const sanitizedNodes: EditableNodeProfile[] =
-                              json.nodes.map((n: any) => ({
-                                label: n.label || "",
-                                description: n.description || "",
-                                icon: n.icon || "QAOA.png",
-                                visible: n.visible ?? true,
-                                outputType: n.outputType || "",
-                                category: n.category || "",
-                                properties: n.properties || [],
-                                constraints: n.constraints || [],
-                                mapping: n.mapping || [[]],
-
-                                originalLabel: n.originalLabel || n.label || "",
-
-                                originalDescription:
-                                  n.originalDescription || n.description || "",
-
-                                originalIcon: n.originalIcon || n.icon || "",
-                              }));
+                              json.nodes.map((n: any) => toEditableNode(n));
 
                             setProfileName(json.name);
 
@@ -1456,6 +1676,28 @@ export default function DomainProfileTableModal({
                   </label>
                 </div>
               </section>
+
+              {/* Duplicate input/output names */}
+              {hasDuplicatePortNames && (
+                <div className="rounded-lg border border-red-300 bg-red-50 p-4">
+                  <h3 className="text-sm font-semibold text-red-900">
+                    Input and output names must be unique
+                  </h3>
+
+                  <p className="mt-1 text-sm text-red-800">
+                    Rename the duplicates in{" "}
+                    {localNodes
+                      .filter((_, i) => portNameDuplicates[i].size > 0)
+                      .map((node, i) => (
+                        <span key={i}>
+                          {i > 0 && ", "}
+                          <strong>{node.label || "unnamed block"}</strong>
+                        </span>
+                      ))}{" "}
+                    before saving.
+                  </p>
+                </div>
+              )}
 
               {/* Duplicate warning */}
               {duplicateWarning && (
@@ -1511,8 +1753,8 @@ export default function DomainProfileTableModal({
                   </div>
 
                   <div className="text-xs text-gray-500 mt-0.5">
-                    Configure the nodes, properties, constraints, output types
-                    and mappings.
+                    Configure the nodes, inputs, outputs, properties,
+                    constraints and mappings.
                   </div>
                 </div>
 
@@ -1526,7 +1768,9 @@ export default function DomainProfileTableModal({
 
                         <th className="p-2 border w-24">Category</th>
 
-                        <th className="p-2 border w-24">Output Type</th>
+                        <th className="p-2 border w-32">Inputs</th>
+
+                        <th className="p-2 border w-32">Outputs</th>
 
                         <th className="p-2 border w-32">Properties</th>
 
@@ -1540,7 +1784,7 @@ export default function DomainProfileTableModal({
                       {localNodes.length === 0 ? (
                         <tr>
                           <td
-                            colSpan={7}
+                            colSpan={8}
                             className="p-12 text-center text-gray-400 italic"
                           >
                             No blocks added yet. Click "Add Domain Block" to
@@ -1601,22 +1845,48 @@ export default function DomainProfileTableModal({
                                   Choose a category...
                                 </option>
 
-                                <option value="dataTypes">Data Types</option>
+                                <option value={DATA_TYPES_CATEGORY}>
+                                  Data Types
+                                </option>
 
-                                <option value="Operators">Operators</option>
+                                <option value={QUANTUM_OPERATORS_CATEGORY}>
+                                  Quantum Operator
+                                </option>
+
+                                <option value={CLASSICAL_OPERATORS_CATEGORY}>
+                                  Classical Operator
+                                </option>
                               </select>
                             </td>
 
-                            {/* Output Type */}
+                            {/* Inputs */}
                             <td className="p-2 border text-center">
-                              <OutputTypeEditor
-                                outputTypes={
-                                  Array.isArray(node.outputType)
-                                    ? node.outputType
-                                    : [node.outputType].filter(Boolean)
-                                }
-                                onChange={(newTypes) =>
-                                  updateNode(idx, "outputType", newTypes)
+                              {isOperatorCategory(node.category) ? (
+                                <PortEditor
+                                  ports={node.inputs}
+                                  category={node.category}
+                                  addLabel="Add Input"
+                                  duplicateNames={portNameDuplicates[idx]}
+                                  onChange={(newInputs) =>
+                                    updateNode(idx, "inputs", newInputs)
+                                  }
+                                />
+                              ) : (
+                                <span className="text-xs text-gray-400 italic">
+                                  Only for operators
+                                </span>
+                              )}
+                            </td>
+
+                            {/* Outputs */}
+                            <td className="p-2 border text-center">
+                              <PortEditor
+                                ports={node.outputs}
+                                category={node.category}
+                                addLabel="Add Output"
+                                duplicateNames={portNameDuplicates[idx]}
+                                onChange={(newOutputs) =>
+                                  updateNode(idx, "outputs", newOutputs)
                                 }
                               />
                             </td>

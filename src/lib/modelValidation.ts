@@ -560,6 +560,18 @@ export function validateModelStructure(flow: any): ModelValidationResult {
       }
     });
 
+    // Domain profile blocks: required properties must be filled in.
+    if (node.type === "editableNode") {
+      (node.data?.properties ?? []).forEach((prop: any) => {
+        if (prop?.required && isEmpty(node.data?.propertyValues?.[prop.name])) {
+          error(
+            node,
+            `${nodeName(node)}: required property "${prop.name}" is missing.`,
+          );
+        }
+      });
+    }
+
     // Custom operators: requirements file or API connector.
     if (CUSTOM_OPERATOR_TYPES.includes(node.type)) {
       checkCustomImplementation(node, nodes, edges).forEach((d) =>
