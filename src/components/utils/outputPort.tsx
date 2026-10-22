@@ -8,6 +8,7 @@ import { Node } from "reactflow";
 import { useEffect, useMemo, useRef } from "react";
 import { classicalConstructColor } from "@/constants";
 import { AlertCircle } from "lucide-react";
+import { portTypeIndex, toTypeArray } from "@/lib/portTypes";
 
 interface OutputPortProps {
   node: Node;
@@ -58,6 +59,9 @@ export default function OutputPort({
     : isAncilla
       ? `ancillaHandleOutput${handleIndex}${node.id}`
       : `quantumHandle${node.type}Output${handleIndex}${node.id}`;
+
+  // position of this port in node.data.outputTypes
+  const typeSlot = portTypeIndex(node, handleId);
 
   const handleClass = isClassical
     ? "classical-circle-port-out"
@@ -145,8 +149,8 @@ export default function OutputPort({
     ) {
       outputType = "any"; // default value
 
-      if (node?.data?.outputTypes && node.data.outputTypes[index] != null) {
-        outputType = node.data.outputTypes[index];
+      if (node?.data?.outputTypes && node.data.outputTypes[typeSlot] != null) {
+        outputType = node.data.outputTypes[typeSlot];
       }
     } else if (node.type.startsWith("editable")) {
       outputType = "any";
@@ -180,17 +184,27 @@ export default function OutputPort({
 
   // update outputType if it changes
   useEffect(() => {
-    if (node.data.outputTypes[index] !== displayedOutputType) {
-      const updatedOutputTypes = { ...node.data.outputTypes };
-      updatedOutputTypes[index] = displayedOutputType;
-      updateNodeValue(node.id, "outputTypes", updatedOutputTypes);
+    if (node.data.outputTypes?.[typeSlot] !== displayedOutputType) {
+      const updatedOutputTypes = toTypeArray(node.data.outputTypes);
+      updatedOutputTypes[typeSlot] = displayedOutputType;
+      updateNodeValue(
+        node.id,
+        "outputTypes",
+        Array.from(updatedOutputTypes, (t) => t ?? "any"),
+      );
       console.log(
         "Updated node outputType in store:",
         node.id,
         displayedOutputType,
       );
     }
-  }, [displayedOutputType, node.id, node.data.outputTypes, updateNodeValue]);
+  }, [
+    displayedOutputType,
+    typeSlot,
+    node.id,
+    node.data.outputTypes,
+    updateNodeValue,
+  ]);
 
   useEffect(() => {
     const isNowBellState = node.data.quantumStateName?.includes("Bell State");
