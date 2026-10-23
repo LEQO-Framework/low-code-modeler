@@ -349,6 +349,50 @@ export function qasmToNodes(
   return { nodes: [...groups, ...nodes], edges, ...result };
 }
 
+/**
+ * Nodes of `result` (built from new code) for the qubits and gates that are not in
+ * `previousQasm`, e.g. to highlight what was added in the OpenQASM editor. The gates are
+ * matched in order (longest common subsequence of label, qubits and parameter), so a gate
+ * inserted in the middle is found as well. Empty when there was no previous circuit.
+ */
+export function addedNodeIds(previousQasm: string, result: QasmNodes): string[] {
+  const previous = qasmToNodes(previousQasm, { recognizeStates: false });
+  if (previous.gateNodeIds.length === 0 && !previousQasm.match(/\b(qubit|qreg)\b/))
+    return [];
+  const signatures = ({ nodes, gateNodeIds }: QasmNodes) => {
+    const byId = new Map(nodes.map((n) => [n.id, n]));
+    return gateNodeIds.map((id) => {
+      const data = byId.get(id)?.data;
+      return `${data?.label}|${data?.identifiers?.join(",")}|${data?.parameter}`;
+    });
+  };
+  const a = signatures(previous);
+  const b = signatures(result);
+  // lcs[i][j]: length of the longest common subsequence of a[i..] and b[j..]
+  const lcs = Array.from({ length: a.length + 1 }, () =>
+    new Array<number>(b.length + 1).fill(0),
+  );
+  for (let i = a.length - 1; i >= 0; i--)
+    for (let j = b.length - 1; j >= 0; j--)
+      lcs[i][j] =
+        a[i] === b[j]
+          ? lcs[i + 1][j + 1] + 1
+          : Math.max(lcs[i + 1][j], lcs[i][j + 1]);
+  const added: string[] = result.qubitNodeIds.slice(
+    previous.qubitNodeIds.length,
+  );
+  let i = 0;
+  for (let j = 0; j < b.length; j++) {
+    if (i < a.length && a[i] === b[j]) i++;
+    else if (i < a.length && lcs[i + 1][j] >= lcs[i][j + 1]) {
+      // a[i] was removed; compare b[j] again with the next old gate
+      i++;
+      j--;
+    } else added.push(result.gateNodeIds[j]);
+  }
+  return added;
+}
+
 /** Rough size of the generated nodes, for the group bounds. */
 const NODE_WIDTH = 110;
 const NODE_HEIGHT = 110;

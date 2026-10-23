@@ -4,7 +4,6 @@
  */
 
 import {
-  normalizeQasm,
   type DiracStep,
   type DiracStepsResult,
   type DiracTerm,
@@ -790,31 +789,28 @@ export interface LatexExportOptions {
 }
 
 /**
- * The OpenQASM code of the circuit, normalized to plain OpenQASM 3 on q[i] (without the
- * LEQO aliases and node comments), so that it is short and can be run elsewhere.
+ * The OpenQASM code of the circuit as compiled by the backend, i.e. the code shown in the
+ * OpenQASM editor (with the LEQO aliases and node comments).
  */
 function buildQasmSection(qasm: string): string {
-  let code = qasm;
-  try {
-    code = normalizeQasm(qasm);
-  } catch {
-    // keep the original code
-  }
-  // verbatim uses the T1 typewriter font of pdflatex, which has no glyphs for e.g. ⟩
-  const ascii = code.replace(/[^\t\n\r\x20-\x7e]/g, "?").trim();
+  const version = qasm.match(/OPENQASM\s+([\d.]+)/)?.[1] ?? "3.1";
+  // the typewriter font of pdflatex has no glyphs for e.g. ⟩
+  const ascii = qasm.replace(/[^\t\n\r\x20-\x7e]/g, "?").trim();
   return `\\section{OpenQASM Code}
 
-The circuit in OpenQASM 3, as it is sent to a quantum backend. Each line applies one gate
-to the qubits \\texttt{q[i]}; the intermediate steps follow these lines in order.
+The low-code model compiled to OpenQASM ${version} by the backend, as shown in the OpenQASM
+editor. The comments \\texttt{/* Start node ... */} and \\texttt{/* End node ... */} mark
+the code of each node of the model; the intermediate steps follow the gates in order.
 
-{\\small
-\\begin{verbatim}
+\\begin{lstlisting}
 ${ascii}
-\\end{verbatim}
-}
+\\end{lstlisting}
 
 `;
 }
+
+/** Group labels that only name the panel and are left out of the document title. */
+const GENERIC_TITLES = /^dirac[\s-]?notation$/i;
 
 export function buildLatexExport({
   title,
@@ -852,13 +848,18 @@ export function buildLatexExport({
     groupLabels,
   });
 
-  const circuitSection = pngBase64
-    ? `\\section{Quantum Circuit}
+  const docTitle =
+    title && !GENERIC_TITLES.test(title.trim()) ? title.trim() : undefined;
 
-\\begin{figure}[h]
+  // starts on a new page and is scaled to fit on it, so the model is never split
+  const circuitSection = pngBase64
+    ? `\\clearpage
+\\section{Quantum Low-Code Model}
+
+\\begin{figure}[H]
   \\centering
-  \\includegraphics[width=0.9\\textwidth]{circuit}
-  \\caption{${title ? latexEscape(title) : "Quantum Circuit"}}
+  \\includegraphics[width=\\textwidth,height=0.8\\textheight,keepaspectratio]{circuit}
+  \\caption{Quantum Low-Code Model${docTitle ? ` -- ${latexEscape(docTitle)}` : ""}}
   \\label{fig:circuit}
 \\end{figure}
 
@@ -988,12 +989,15 @@ ${markdownToLatex(aiExplanation)}
 \\usepackage{geometry}
 \\usepackage{pgfplots}
 \\usepackage{booktabs}
+\\usepackage{float}
+\\usepackage{listings}
 \\usepackage[hidelinks]{hyperref}
 \\pgfplotsset{compat=1.18}
 \\geometry{margin=2.5cm}
+\\lstset{basicstyle=\\ttfamily\\footnotesize, breaklines=true, columns=fullflexible, keepspaces=true}
 
 ${hint}
-\\title{Learning materials -- ${title ? latexEscape(title) : "Quantum Low-Code Modeler"}}
+\\title{Learning materials${docTitle ? ` -- ${latexEscape(docTitle)}` : ""}}
 \\date{\\today}
 
 \\begin{document}

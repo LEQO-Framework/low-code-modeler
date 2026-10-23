@@ -1273,7 +1273,8 @@ If none apply, return { "algorithms": [] }.
 
     return false; // No node with multiple mappings found
   }
-  const sendToBackend = async () => {
+  // Returns the compiled OpenQASM, or null when the compilation failed.
+  const sendToBackend = async (): Promise<string | null> => {
     //setLoading(true);
     setModalOpen(false);
     setProcessingModalOpen(true);
@@ -1483,6 +1484,7 @@ If none apply, return { "algorithms": [] }.
       }, 3000);
       setStatus("completed");
       setLoading(false);
+      return openqasmCode;
     } catch (error) {
       console.error("Error sending data:", error);
       showToast(
@@ -1490,6 +1492,7 @@ If none apply, return { "algorithms": [] }.
         "error",
       );
       setLoading(false);
+      return null;
     }
   };
 

@@ -658,15 +658,6 @@ export function MathCircuitEditor({
         </div>
       )}
 
-      <details className="text-xs">
-        <summary className="cursor-pointer text-gray-500">
-          Generated OpenQASM
-        </summary>
-        <pre className="mt-1 p-2 rounded bg-white border border-gray-200 overflow-x-auto font-mono text-[11px]">
-          {circuitToQasm(circuit)}
-        </pre>
-      </details>
-
       {/* Actions */}
       <div className="flex items-center gap-2 flex-wrap">
         <button

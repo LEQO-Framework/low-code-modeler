@@ -12,12 +12,19 @@ import { QasmDiracPanel } from "./QasmDiracPanel";
 import { MathCircuitEditor } from "./MathCircuitEditor";
 import { QasmCodeEditor } from "./QasmCodeEditor";
 import { validateQasm } from "./utils/qasmValidate";
-import { gateAtLine, lineOfGate, type GateLocator } from "./utils/qasmLines";
+import {
+  gateAtLine,
+  lineOfGate,
+  nodeSectionAtLine,
+  qubitLineKind,
+  type GateLocator,
+} from "./utils/qasmLines";
+import { isQubitSourceNode } from "@/lib/qubitIndexing";
 import {
   analyzeComponents,
   type DiracComponent,
 } from "@/lib/componentAnalyzer";
-import { qasmToNodes } from "@/lib/qasmToNodes";
+import { addedNodeIds, qasmToNodes } from "@/lib/qasmToNodes";
 import { removeGateNodes } from "@/lib/removeGateNodes";
 import { expandGroupsAround } from "@/lib/groupHandler";
 import {
@@ -25,7 +32,6 @@ import {
   followStep,
   type OpenedBlocks,
 } from "@/lib/circuitLevel";
-import { nodesToQasm } from "@/lib/nodesToQasm";
 import JSZip from "jszip";
 import { buildStepTree } from "./mathExplanations";
 import { buildLatexExport } from "./latexExport";
@@ -51,7 +57,8 @@ interface CustomPanelProps {
   onWidthChange?: (width: number) => void;
   backendUrl?: string;
   compilationTarget?: string;
-  onSendToBackend?: () => void;
+  /** Recompiles the canvas; resolves to the OpenQASM, or null when it failed. */
+  onSendToBackend?: () => Promise<string | null> | void;
   onGetModel?: () => object;
   qasmEditorMode?: boolean;
 }
@@ -130,17 +137,6 @@ export const CustomPanel = ({
     }
   }, [qasmCode]);
 
-  // Canvas → QASM Editor Sync: automatisch wenn sich Nodes/Edges ändern
-  // Nur wenn noch kein Backend-QASM vorhanden ist
-  useEffect(() => {
-    if (qasmCode && qasmCode.trim()) return; // Backend-QASM hat Priorität
-    if (!qasmEditorMode) return;
-    const generated = nodesToQasm(nodes, edges);
-    if (generated) {
-      setQasmEditorCode(generated);
-    }
-  }, [nodes, edges, qasmEditorMode]);
-
   // Wenn QASM Editor deaktiviert → zurück zu Properties wenn aktiv
   useEffect(() => {
     if (!qasmEditorMode && activeTab === "qasm") setActiveTab("properties");
@@ -161,21 +157,56 @@ export const CustomPanel = ({
     }
   }, [qasmCode]);
 
-  // Analyse-Funktion – aufrufbar per Refresh-Button
-  const runAnalysis = useCallback(() => {
-    if (!backendUrl) return;
-    // Zusätzlich den regulären Backend-Compile anstoßen, damit der QASM-Tab
-    // (qasmCode, gesteuert von sendToBackend() in App.tsx) synchron mit dem
-    // Math-Mode-Ergebnis bleibt. Ohne das lief Math Mode über seinen eigenen,
-    // unabhängigen analyzeComponents()-Request und der QASM-Tab blieb auf
-    // dem Stand des letzten "Send to Backend"-/"Apply to Canvas"-Klicks stehen.
-    onSendToBackend?.();
-    setAnalyzing(true);
-    setComponents([]);
-    analyzeComponents(nodes, edges, backendUrl, metadata, compilationTarget)
-      .then(setComponents)
-      .finally(() => setAnalyzing(false));
-  }, [nodes, edges, backendUrl, metadata, compilationTarget, onSendToBackend]);
+  // Refresh of Math Mode and of the OpenQASM editor: the canvas is recompiled, and when that
+  // works both are refreshed, so that they always show the same model. On an error the
+  // editor keeps its code; Math Mode is still analyzed when its own Refresh was pressed
+  // (`fromMathMode`), so that it shows the error of the circuit.
+  // Refresh is blocked while the OpenQASM editor shows problems, so the code with the
+  // problems is not replaced.
+  const refreshBlocked = qasmEditorMode && qasmProblems.length > 0;
+  const refreshBlockedTitle = `Fix the ${qasmProblems.length} problem${qasmProblems.length === 1 ? "" : "s"} in the OpenQASM editor before refreshing`;
+  const refreshBoth = useCallback(
+    async (fromMathMode: boolean) => {
+      if (refreshBlocked) return;
+      const analyze = mathMode && !canvasEmpty && !!backendUrl;
+      if (analyze) setAnalyzing(true);
+      const qasm = onSendToBackend ? await onSendToBackend() : null;
+      if (qasm) {
+        setQasmEditorCode(qasm);
+        setQasmApplyError(null);
+        setQasmHighlight([]);
+        setQasmPathHighlight([]);
+      }
+      if (!analyze || (!qasm && !fromMathMode)) {
+        setAnalyzing(false);
+        return;
+      }
+      // the canvas as it is now, not as it was when Refresh was pressed
+      const state = useStore.getState();
+      setComponents([]);
+      analyzeComponents(
+        state.nodes,
+        state.edges,
+        backendUrl,
+        metadata,
+        compilationTarget,
+      )
+        .then((result) => {
+          setComponents(result);
+          setHasAnalyzedOnce(true);
+        })
+        .finally(() => setAnalyzing(false));
+    },
+    [
+      refreshBlocked,
+      mathMode,
+      canvasEmpty,
+      backendUrl,
+      metadata,
+      compilationTarget,
+      onSendToBackend,
+    ],
+  );
 
   // Applies a circuit edited in Math Mode: the nodes of the edited circuit (component) are
   // replaced by gate nodes built from the new OpenQASM, other circuits on the canvas stay.
@@ -221,8 +252,12 @@ export const CustomPanel = ({
         return;
       }
 
-      const { nodes: newNodes, edges: newEdges } = qasmToNodes(newQasm);
+      const parsed = qasmToNodes(newQasm);
+      const { nodes: newNodes, edges: newEdges } = parsed;
       if (newNodes.length === 0) return;
+      // qubits and operations added in the circuit editor light up on the canvas
+      const previousQasm = component ? (component.qasm ?? "") : qasmCode;
+      const added = canvasEmpty ? [] : addedNodeIds(previousQasm, parsed);
 
       const replaced = new Set(
         component ? component.nodeIds : nodes.map((n) => n.id),
@@ -274,6 +309,8 @@ export const CustomPanel = ({
         ),
         ...newEdges,
       ]);
+      if (added.length > 0)
+        setTimeout(() => highlightCanvasNodes(setNodes, added), 150);
       setQasmEditorCode(newQasm);
 
       // show the edited circuit immediately, the backend result replaces it when it arrives
@@ -299,7 +336,7 @@ export const CustomPanel = ({
         setTimeout(() => onSendToBackend(), 0);
       }
     },
-    [nodes, edges, setNodes, setEdges, onSendToBackend],
+    [nodes, edges, setNodes, setEdges, onSendToBackend, qasmCode, canvasEmpty],
   );
 
   // Steps clicked in Math Mode: their lines in the QASM of the circuit (`sourceQasm`) are
@@ -324,13 +361,41 @@ export const CustomPanel = ({
     [qasmEditorCode],
   );
 
-  // A line clicked in the OpenQASM editor highlights its step in Math Mode.
+  // Highlights belong to the code they were made for: when the code is replaced (e.g. an
+  // operation was deleted and the model recompiled), their lines would point at other or
+  // empty lines.
+  useEffect(() => {
+    setQasmHighlight([]);
+    setQasmPathHighlight([]);
+    setSelectedGates([]);
+  }, [qasmEditorCode]);
+
+  // A line clicked in the OpenQASM editor highlights its step in Math Mode. A qubit
+  // register line (or the qubit alias of a node) lights up its qubits on the canvas.
+  const lastQubitLine = useRef<number | null>(null);
   const selectEditorLine = (line: number) => {
-    const gate = gateAtLine(qasmEditorCode, line);
-    setQasmHighlight(gate ? [line] : []);
+    const gate = mathMode ? gateAtLine(qasmEditorCode, line) : null;
+    const qubits = qubitNodesAtLine(line);
+    setQasmHighlight(gate || qubits.length > 0 ? [line] : []);
     setQasmPathHighlight([]);
     setSelectedGates(gate ? [gate] : []);
     if (gate) setRevealSelection((n) => n + 1);
+    // only once per line, not again for every cursor move within it
+    if (qubits.length > 0 && lastQubitLine.current !== line)
+      highlightCanvasNodes(setNodes, qubits);
+    lastQubitLine.current = qubits.length > 0 ? line : null;
+  };
+
+  const qubitNodesAtLine = (line: number): string[] => {
+    const kind = qubitLineKind(qasmEditorCode, line);
+    if (kind === "register")
+      return nodes.filter(isQubitSourceNode).map((n) => n.id);
+    if (kind === "alias") {
+      const nodeId = nodeSectionAtLine(qasmEditorCode, line);
+      const node = nodes.find((n) => n.id === nodeId);
+      return node && isQubitSourceNode(node) ? [node.id] : [];
+    }
+    return [];
   };
 
   // Beim Wechsel zum Math Mode Tab → automatisch Backend-Call auslösen
@@ -482,10 +547,16 @@ export const CustomPanel = ({
               </span>
               <div className="flex gap-1.5">
                 <button
-                  onClick={() => onSendToBackend?.()}
-                  disabled={!onSendToBackend}
+                  onClick={() => refreshBoth(false)}
+                  disabled={!onSendToBackend || analyzing || refreshBlocked}
                   className="text-xs px-2.5 py-1 rounded-full border border-gray-300 hover:bg-gray-100 text-gray-600 transition-colors disabled:opacity-40"
-                  title="Recompile current canvas and refresh QASM output"
+                  title={
+                    refreshBlocked
+                      ? refreshBlockedTitle
+                      : mathMode
+                        ? "Recompile current canvas and refresh the QASM output and Math Mode"
+                        : "Recompile current canvas and refresh QASM output"
+                  }
                 >
                   ↺ Refresh
                 </button>
@@ -495,16 +566,25 @@ export const CustomPanel = ({
                     setQasmApplySuccess(false);
                     if (qasmProblems.length > 0) return;
                     try {
-                      const { nodes: newNodes, edges: newEdges } =
-                        qasmToNodes(qasmEditorCode);
+                      const parsed = qasmToNodes(qasmEditorCode);
+                      const { nodes: newNodes, edges: newEdges } = parsed;
                       if (newNodes.length === 0) {
                         setQasmApplyError(
                           "No nodes could be parsed from QASM.",
                         );
                         return;
                       }
+                      // qubits and operations added in the editor light up on the canvas
+                      const added = canvasEmpty
+                        ? []
+                        : addedNodeIds(qasmCode, parsed);
                       setNodes(newNodes);
                       setEdges(newEdges);
+                      if (added.length > 0)
+                        setTimeout(
+                          () => highlightCanvasNodes(setNodes, added),
+                          150,
+                        );
                       setQasmApplySuccess(true);
                       // Math Mode is analyzed again as soon as the recompiled QASM arrives
                       if (mathMode && onSendToBackend) setWaitingForQasm(true);
@@ -555,9 +635,9 @@ export const CustomPanel = ({
                 highlightLines={qasmHighlight}
                 pathLines={qasmPathHighlight}
                 problems={qasmProblems}
-                onCursorLine={mathMode ? selectEditorLine : undefined}
+                onCursorLine={selectEditorLine}
                 placeholder={
-                  "// QASM code will appear here after backend call\n// You can also write QASM directly\nOPENQASM 2.0;\nqreg q[2];\nh q[0];\ncx q[0],q[1];"
+                  "// QASM code will appear here after backend call\n// You can also write QASM directly\nOPENQASM 3.1;\nqubit[2] q;\nh q[0];\ncx q[0], q[1];"
                 }
               />
             </div>
@@ -572,10 +652,18 @@ export const CustomPanel = ({
             {/* Toolbar: Refresh + Export all */}
             <div className="flex-shrink-0 flex justify-between items-center px-2 pt-2 gap-2">
               <button
-                onClick={runAnalysis}
-                disabled={analyzing || !qasmCode.trim() || canvasEmpty}
+                onClick={() => refreshBoth(true)}
+                disabled={
+                  analyzing || !qasmCode.trim() || canvasEmpty || refreshBlocked
+                }
                 className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border border-gray-300 hover:bg-gray-100 text-gray-600 transition-colors disabled:opacity-40"
-                title="Recalculate Dirac notation"
+                title={
+                  refreshBlocked
+                    ? refreshBlockedTitle
+                    : qasmEditorMode
+                      ? "Recalculate Dirac notation and refresh the OpenQASM editor"
+                      : "Recalculate Dirac notation"
+                }
               >
                 <span className={analyzing ? "animate-spin" : ""}>↺</span>
                 {analyzing ? "Analyzing..." : "Refresh"}
@@ -753,6 +841,72 @@ function ComponentsView({
   );
 }
 
+const HIGHLIGHT_CLASS =
+  "!ring-4 !ring-blue-500 !ring-offset-2 !shadow-lg !shadow-blue-400/60";
+
+/**
+ * Lets canvas nodes light up blue for a moment (like a clicked step) and scrolls to the
+ * first of them.
+ */
+function highlightCanvasNodes(
+  setNodes: (fn: (nds: Node[]) => Node[]) => void,
+  nodeIds: string[],
+) {
+  const idSet = new Set(nodeIds);
+  setNodes((nds: Node[]) =>
+    nds.map((n) => ({
+      ...n,
+      selected: idSet.has(n.id),
+      className: idSet.has(n.id)
+        ? n.className
+          ? `${n.className} ${HIGHLIGHT_CLASS}`
+          : HIGHLIGHT_CLASS
+        : n.className?.replace(HIGHLIGHT_CLASS, "").trim(),
+    })),
+  );
+  setTimeout(() => {
+    let firstEl: HTMLElement | null = null;
+    for (const nodeId of nodeIds) {
+      const el = document.querySelector(
+        `[data-id="${nodeId}"]`,
+      ) as HTMLElement | null;
+      if (!el) continue;
+      if (!firstEl) firstEl = el;
+      el.style.transition =
+        "box-shadow 0.15s ease-in-out, outline 0.15s ease-in-out";
+      el.style.outline = "3px solid #3b82f6";
+      el.style.outlineOffset = "3px";
+      el.style.boxShadow =
+        "0 0 0 6px rgba(59,130,246,0.35), 0 0 20px rgba(59,130,246,0.25)";
+      el.style.zIndex = "999";
+    }
+    // Nur zum ersten (frühesten) hervorgehobenen Node scrollen, damit die Ansicht nicht
+    // zwischen mehreren Nodes hin- und herspringt.
+    firstEl?.scrollIntoView({ behavior: "smooth", block: "center" });
+    setTimeout(() => {
+      for (const nodeId of nodeIds) {
+        const el = document.querySelector(
+          `[data-id="${nodeId}"]`,
+        ) as HTMLElement | null;
+        if (!el) continue;
+        el.style.outline = "";
+        el.style.outlineOffset = "";
+        el.style.boxShadow = "";
+        el.style.zIndex = "";
+      }
+    }, 1500);
+  }, 50);
+  setTimeout(() => {
+    setNodes((nds: Node[]) =>
+      nds.map((n) => ({
+        ...n,
+        selected: false,
+        className: n.className?.replace(HIGHLIGHT_CLASS, "").trim(),
+      })),
+    );
+  }, 1500);
+}
+
 function ComponentSection({
   label,
   color,
@@ -869,72 +1023,8 @@ function ComponentSection({
     setTimeout(() => highlightNodes(result.highlight), 150);
   };
 
-  const highlightNodes = (nodeIds: string[]) => {
-    const idSet = new Set(nodeIds);
-    setNodes((nds: Node[]) =>
-      nds.map((n) => ({
-        ...n,
-        selected: idSet.has(n.id),
-        className: idSet.has(n.id)
-          ? n.className
-            ? n.className +
-              " !ring-4 !ring-blue-500 !ring-offset-2 !shadow-lg !shadow-blue-400/60"
-            : "!ring-4 !ring-blue-500 !ring-offset-2 !shadow-lg !shadow-blue-400/60"
-          : n.className
-              ?.replace(
-                "!ring-4 !ring-blue-500 !ring-offset-2 !shadow-lg !shadow-blue-400/60",
-                "",
-              )
-              .trim(),
-      })),
-    );
-    setTimeout(() => {
-      let firstEl: HTMLElement | null = null;
-      for (const nodeId of nodeIds) {
-        const el = document.querySelector(
-          `[data-id="${nodeId}"]`,
-        ) as HTMLElement | null;
-        if (!el) continue;
-        if (!firstEl) firstEl = el;
-        el.style.transition =
-          "box-shadow 0.15s ease-in-out, outline 0.15s ease-in-out";
-        el.style.outline = "3px solid #3b82f6";
-        el.style.outlineOffset = "3px";
-        el.style.boxShadow =
-          "0 0 0 6px rgba(59,130,246,0.35), 0 0 20px rgba(59,130,246,0.25)";
-        el.style.zIndex = "999";
-      }
-      // Nur zum ersten (frühesten) hervorgehobenen Node scrollen, damit die Ansicht nicht
-      // zwischen mehreren Nodes hin- und herspringt.
-      firstEl?.scrollIntoView({ behavior: "smooth", block: "center" });
-      setTimeout(() => {
-        for (const nodeId of nodeIds) {
-          const el = document.querySelector(
-            `[data-id="${nodeId}"]`,
-          ) as HTMLElement | null;
-          if (!el) continue;
-          el.style.outline = "";
-          el.style.outlineOffset = "";
-          el.style.boxShadow = "";
-          el.style.zIndex = "";
-        }
-      }, 1500);
-    }, 50);
-    setTimeout(() => {
-      setNodes((nds: Node[]) =>
-        nds.map((n) => ({
-          ...n,
-          selected: false,
-          className: n.className
-            ?.replace(
-              "!ring-4 !ring-blue-500 !ring-offset-2 !shadow-lg !shadow-blue-400/60",
-              "",
-            )
-            .trim(),
-        })),
-      );
-    }, 1500);
-  };
+  const highlightNodes = (nodeIds: string[]) =>
+    highlightCanvasNodes(setNodes, nodeIds);
 
   return (
     <div

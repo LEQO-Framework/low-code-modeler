@@ -365,7 +365,7 @@ function ExportMenu({
       const url = URL.createObjectURL(pdfBlob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "dirac_export.pdf";
+      a.download = "learning-materials.pdf";
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) {

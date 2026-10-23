@@ -38,8 +38,12 @@ export function QasmCodeEditor({
   const [scrollTop, setScrollTop] = useState(0);
   const lines = value.split("\n");
   const lineCount = Math.max(1, lines.length);
-  const highlighted = new Set(highlightLines);
-  const onPath = new Set(pathLines.filter((l) => !highlighted.has(l)));
+  // empty lines are never highlighted, e.g. when a highlight was made for other code
+  const hasCode = (l: number) => !!lines[l]?.trim();
+  const highlighted = new Set(highlightLines.filter(hasCode));
+  const onPath = new Set(
+    pathLines.filter((l) => hasCode(l) && !highlighted.has(l)),
+  );
 
   const problemsByLine = useMemo(() => {
     const byLine = new Map<number, string[]>();
@@ -60,11 +64,10 @@ export function QasmCodeEditor({
   };
 
   // bring the first highlighted line into view (e.g. after clicking a step)
-  const firstLine =
-    highlightLines.length > 0 ? Math.min(...highlightLines) : -1;
+  const firstLine = highlighted.size > 0 ? Math.min(...highlighted) : -1;
   useEffect(() => {
     if (firstLine >= 0) scrollToLine(firstLine);
-  }, [firstLine, highlightLines.length]);
+  }, [firstLine, highlighted.size]);
 
   const reportCursor = () => {
     const el = textareaRef.current;

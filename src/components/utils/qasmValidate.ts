@@ -254,7 +254,18 @@ export function validateQasm(qasm: string): QasmProblem[] {
 
   // second pass: alias sources and gate calls
   for (const { text, line } of statements) {
-    if (/^(qubit|qreg)\b/.test(text)) continue;
+    if (/^(qubit|qreg)\b/.test(text)) {
+      // register size must not be negative: qubit[-1] q;  qreg q[-1];
+      const negative =
+        text.match(/^qubit\s*\[\s*(-\s*\d+)\s*\]\s*(\w+)$/) ??
+        text.match(/^qreg\s+\w+\s*\[\s*(-\s*\d+)\s*\]$/);
+      if (negative)
+        problems.push({
+          line,
+          message: `Register size ${negative[1].replace(/\s+/g, "")} is not allowed: the number of qubits must not be negative.`,
+        });
+      continue;
+    }
 
     const alias = text.match(
       /^let\s+\w+\s*=\s*(\w+)\s*\[\s*\{?([^\]}]*)\}?\s*\]$/,

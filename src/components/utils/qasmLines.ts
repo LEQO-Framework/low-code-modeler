@@ -69,3 +69,30 @@ export function sameGate(a: GateLocator, b: GateLocator): boolean {
     ? a.nodeId === b.nodeId && a.indexInNode === b.indexInNode
     : a.index === b.index;
 }
+
+/**
+ * What a (0-based) line declares about qubits: "register" for the qubit register of the
+ * whole circuit ("qubit[3] q;", "qreg q[3];"), "alias" for a qubit alias of a node
+ * ("let leqo_..._q0 = leqo_reg[{0}];"), otherwise null.
+ */
+export function qubitLineKind(
+  qasm: string,
+  line: number,
+): "register" | "alias" | null {
+  const text = qasm.split("\n")[line]?.trim() ?? "";
+  if (/^(qubit(\[\d+\])?\s+\w+|qreg\s+\w+\s*\[\d+\])\s*;/.test(text))
+    return "register";
+  if (/^let\s+\S+\s*=\s*\w+\[/.test(text)) return "alias";
+  return null;
+}
+
+/** Canvas node whose "Start node <id>" … "End node <id>" section contains the line. */
+export function nodeSectionAtLine(qasm: string, line: number): string | null {
+  const lines = qasm.split("\n");
+  for (let i = line; i >= 0; i--) {
+    if (i < line && /\/\*\s*End node [\w-]+\s*\*\//.test(lines[i])) return null;
+    const start = lines[i].match(/\/\*\s*Start node ([\w-]+)\s*\*\//);
+    if (start) return start[1];
+  }
+  return null;
+}
