@@ -122,10 +122,6 @@ export const EditableNode = memo((node: Node) => {
   ) => {
     const { constraint, value } = constraintObj;
 
-    if (constraint === "is required") {
-      return val.trim() === "" ? "This field is required" : "";
-    }
-
     // Check if the value refers to another property
     let compareValue = value;
     const otherIndex = properties.findIndex((p: any) => p.name === value);

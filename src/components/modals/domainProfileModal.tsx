@@ -334,7 +334,7 @@ function ConstraintEditor({
   availableProperties: NodeProfileProperty[];
   onChange: (props: NodeProfileConstraint[]) => void;
 }) {
-  const constraintOptions = ["==", "!=", "<", ">", "<=", ">=", "is required"];
+  const constraintOptions = ["==", "!=", "<", ">", "<=", ">="];
 
   const propertyOptions = (availableProperties || []).flatMap((prop) => {
     const base = [prop.name];
@@ -364,17 +364,9 @@ function ConstraintEditor({
   ) => {
     const newConstraints = [...constraints];
 
-    const finalValue =
-      field === "constraint" && value === "is required"
-        ? ""
-        : field === "value"
-          ? value
-          : newConstraints[index].value;
-
     newConstraints[index] = {
       ...newConstraints[index],
       [field]: value,
-      value: finalValue,
     };
 
     onChange(newConstraints);
@@ -387,8 +379,6 @@ function ConstraintEditor({
   return (
     <div className="space-y-3 min-w-[200px]">
       {constraints.map((con, idx) => {
-        const isRequiredType = con.constraint === "is required";
-
         return (
           <div
             key={idx}
@@ -453,14 +443,9 @@ function ConstraintEditor({
                 </label>
 
                 <input
-                  className={`w-full border rounded px-1 py-0.5 text-xs ${
-                    isRequiredType
-                      ? "bg-gray-200 cursor-not-allowed text-transparent"
-                      : "bg-white"
-                  }`}
+                  className="w-full border rounded px-1 py-0.5 text-xs bg-white"
                   value={con.value}
-                  disabled={isRequiredType}
-                  placeholder={isRequiredType ? "-" : "Value..."}
+                  placeholder="Value..."
                   onChange={(e) =>
                     updateConstraint(idx, "value", e.target.value)
                   }
