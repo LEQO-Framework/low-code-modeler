@@ -803,26 +803,31 @@ export const useStore = create<RFState>()(
           // TODO: figure out a better way to opt out of locked input types
           if (node.type === consts.PluginNode) return "any";
           else if (node.type.includes("editable")) {
-            // Ensure we have properties
-            const inputTypes =
-              node.data?.properties?.map((p: any) => p.type) || [];
-            console.log(inputTypes);
-            console.log(connection.targetHandle);
+            // Same port resolution as editableNode.tsx: declared inputPorts, or
+            // properties for legacy nodes created before inputs could be declared.
+            const isLegacyOperator =
+              !node.data?.isDataType && !Array.isArray(node.data?.inputPorts);
+            const inputTypes: (string | undefined)[] = (
+              isLegacyOperator
+                ? node.data?.properties || []
+                : node.data?.inputPorts || []
+            ).map((p: any) => p?.type);
 
             // Extract the index from the targetHandle string
             // Example targetHandle: "classicalHandleInput0node123"
             let handleIndex = 0;
 
-            const match = connection.targetHandle.match(
-              /^classicalHandleInput(\d)/,
-            );
+            const handle = connection.targetHandle ?? "";
+            const match = (
+              handle.endsWith(node.id)
+                ? handle.slice(0, -node.id.length)
+                : handle
+            ).match(/^(?:classical|quantum)HandleInput(\d+)$/);
             if (match) {
               handleIndex = parseInt(match[1], 10);
             }
-            console.log(handleIndex);
-            console.log(inputTypes[handleIndex]);
 
-            return inputTypes[handleIndex].toLowerCase();
+            return (inputTypes[handleIndex] || "any").toLowerCase();
           }
 
           // Find the first input that has a type other than "any"
