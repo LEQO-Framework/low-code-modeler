@@ -1,4 +1,4 @@
-import { useStore } from "@/config/store";
+import { appendHistory, useStore } from "@/config/store";
 import { cn } from "@/lib/utils";
 import { memo, useEffect, useState } from "react";
 import {
@@ -6,6 +6,7 @@ import {
   Handle,
   Node,
   Position,
+  useReactFlow,
   useUpdateNodeInternals,
 } from "reactflow";
 import { shallow } from "zustand/shallow";
@@ -15,6 +16,8 @@ import { classicalConstructColor } from "@/constants";
 import { AlertCircle } from "lucide-react";
 import { findDuplicateOutputIdentifiers } from "../utils/utils";
 import { awareness } from "@/yjs";
+import { expansionFor, isBasisEncoding } from "@/lib/statePreparationGroups";
+import { expandStatePreparation } from "@/lib/circuitLevel";
 
 const selector = (state: {
   selectedNode: Node | null;
@@ -110,6 +113,34 @@ export const StatePreparationNode = memo((node: Node) => {
   } = useStore(selector, shallow);
 
   const updateNodeInternals = useUpdateNodeInternals();
+  const reactFlow = useReactFlow();
+
+  // A prepared state (Bell, GHZ, uniform superposition, or one collapsed from a
+  // recognized group) or a basis encoding can be shown as its circuit: a group with only
+  // the qubit and gate nodes that prepare it (no classical Number block).
+  const expandCircuit =
+    node.data.label === "Prepare State" || isBasisEncoding(node.data)
+      ? expansionFor(node, nodes, edges)
+      : null;
+  const expandToCircuit = () => {
+    const currentNodes = reactFlow.getNodes();
+    const currentEdges = reactFlow.getEdges();
+    const self = currentNodes.find((n) => n.id === node.id);
+    if (!self) return;
+    const result = expandStatePreparation(self, currentNodes, currentEdges);
+    if (typeof result === "string") return;
+    // keep the compact version in the undo history
+    useStore.setState((state: any) => ({
+      ...appendHistory(state.history, state.historyIndex, {
+        nodes: structuredClone(currentNodes),
+        edges: structuredClone(currentEdges),
+      }),
+      redoStack: [],
+    }));
+    setSelectedNode(null);
+    reactFlow.setNodes(result.nodes);
+    reactFlow.setEdges(result.edges);
+  };
 
   useEffect(() => {
     const checkUserRoles = () => {
@@ -562,6 +593,21 @@ export const StatePreparationNode = memo((node: Node) => {
                   )}
                 </div>
               </div>
+
+              {expandCircuit && (
+                <button
+                  onClick={expandToCircuit}
+                  disabled={typeof expandCircuit === "string"}
+                  className="nodrag flex-shrink-0 ml-auto text-[10px] font-semibold px-2 py-0.5 rounded-full border border-blue-700 text-blue-900 bg-white/70 hover:bg-white transition-colors whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
+                  title={
+                    typeof expandCircuit === "string"
+                      ? expandCircuit
+                      : `Show the circuit-level model of ${expandCircuit.state.label}: a group with only the qubits and gates. Collapse the group to get the compact blocks back.`
+                  }
+                >
+                  ▸ Circuit
+                </button>
+              )}
             </div>
           </div>
 

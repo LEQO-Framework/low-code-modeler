@@ -249,3 +249,78 @@ export function handleNodeDropOnGroup(
 
   return nodes;
 }
+
+/**
+ * Expands every collapsed group that contains one of the given nodes (also groups
+ * nested in each other), like clicking ▸ on each of them, so that the nodes are shown.
+ * Returns null if nothing had to be expanded.
+ */
+export function expandGroupsAround(
+  nodes: Node[],
+  nodeIds: string[],
+): Node[] | null {
+  const byId = new Map(nodes.map((n) => [n.id, n]));
+  const toExpand = new Set<string>();
+  for (const id of nodeIds) {
+    let parentId = byId.get(id)?.parentNode;
+    while (parentId) {
+      const parent = byId.get(parentId);
+      if (!parent) break;
+      if (parent.type === "groupNode" && parent.data?.collapsed)
+        toExpand.add(parent.id);
+      parentId = parent.parentNode;
+    }
+  }
+  if (toExpand.size === 0) return null;
+
+  const isCollapsed = (id: string | undefined) =>
+    !!id && !toExpand.has(id) && byId.get(id)?.data?.collapsed === true;
+  // a node is shown when no group around it stays collapsed
+  const shown = (n: Node): boolean => {
+    let parentId = n.parentNode;
+    while (parentId) {
+      if (isCollapsed(parentId)) return false;
+      parentId = byId.get(parentId)?.parentNode;
+    }
+    return true;
+  };
+  // same size as when the group is expanded on the canvas (see group.tsx)
+  const size = (n: Node, axis: "width" | "height") =>
+    (n.type === "groupNode" ? (n.style?.[axis] as number) : undefined) ??
+    n[axis] ??
+    100;
+  const bounds = (groupId: string) => {
+    const children = nodes.filter((n) => n.parentNode === groupId);
+    if (children.length === 0) return null;
+    const minX = Math.min(...children.map((n) => n.position.x)) - 20;
+    const minY = Math.min(...children.map((n) => n.position.y)) - 40;
+    const maxX =
+      Math.max(...children.map((n) => n.position.x + size(n, "width"))) + 20;
+    const maxY =
+      Math.max(...children.map((n) => n.position.y + size(n, "height"))) + 20;
+    return {
+      width: Math.max(maxX - minX, 300),
+      height: Math.max(maxY - minY, 200),
+    };
+  };
+
+  const insideExpanded = (n: Node) => {
+    let parentId = n.parentNode;
+    while (parentId) {
+      if (toExpand.has(parentId)) return true;
+      parentId = byId.get(parentId)?.parentNode;
+    }
+    return false;
+  };
+
+  return nodes.map((n) => {
+    const updated = insideExpanded(n) ? { ...n, hidden: !shown(n) } : n;
+    if (!toExpand.has(n.id)) return updated;
+    const b = bounds(n.id);
+    return {
+      ...updated,
+      data: { ...n.data, collapsed: false },
+      style: { ...n.style, width: b?.width ?? 300, height: b?.height ?? 200 },
+    };
+  });
+}

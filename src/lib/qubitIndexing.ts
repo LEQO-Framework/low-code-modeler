@@ -22,7 +22,7 @@ import { computeOrderedComponents } from "./componentAnalyzer";
  *    be identified by the label "Qubit Circuit" (see the isQubit check there). Without
  *    this case, computeQubitIndices would not find any qubits in Experience Mode.
  */
-function isQubitSourceNode(node: Node): boolean {
+export function isQubitSourceNode(node: Node): boolean {
   if (node.type === "qubitNode") return true;
   if (node.type === "gateNode" && node.data?.label === "Qubit Circuit")
     return true;

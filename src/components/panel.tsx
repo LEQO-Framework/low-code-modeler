@@ -3,24 +3,38 @@
  * Platzierung: src/components/panel.tsx
  */
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Node, Edge, useReactFlow } from "reactflow";
 import { shallow } from "zustand/shallow";
-import { useStore } from "@/config/store";
+import { appendHistory, useStore } from "@/config/store";
 import { TextPanel, MetadataPanel } from "./panels";
 import { QasmDiracPanel } from "./QasmDiracPanel";
+import { MathCircuitEditor } from "./MathCircuitEditor";
+import { QasmCodeEditor } from "./QasmCodeEditor";
+import { validateQasm } from "./utils/qasmValidate";
+import {
+  gateAtLine,
+  lineOfGate,
+  nodeSectionAtLine,
+  qubitLineKind,
+  type GateLocator,
+} from "./utils/qasmLines";
+import { isQubitSourceNode } from "@/lib/qubitIndexing";
 import {
   analyzeComponents,
   type DiracComponent,
 } from "@/lib/componentAnalyzer";
-import { qasmToNodes } from "@/lib/qasmToNodes";
-import { nodesToQasm } from "@/lib/nodesToQasm";
-import JSZip from "jszip";
+import { addedNodeIds, qasmToNodes } from "@/lib/qasmToNodes";
+import { removeGateNodes } from "@/lib/removeGateNodes";
+import { expandGroupsAround } from "@/lib/groupHandler";
 import {
-  getEntanglementPersistence,
-  isStateFullySeparable,
-  getMultiQubitPersistence,
-} from "./BlochSphere";
+  createOpenedBlocks,
+  followStep,
+  type OpenedBlocks,
+} from "@/lib/circuitLevel";
+import JSZip from "jszip";
+import { buildStepTree } from "./mathExplanations";
+import { buildLatexExport } from "./latexExport";
 
 const selector = (state: {
   selectedNode: Node | null;
@@ -43,7 +57,8 @@ interface CustomPanelProps {
   onWidthChange?: (width: number) => void;
   backendUrl?: string;
   compilationTarget?: string;
-  onSendToBackend?: () => void;
+  /** Recompiles the canvas; resolves to the OpenQASM, or null when it failed. */
+  onSendToBackend?: () => Promise<string | null> | void;
   onGetModel?: () => object;
   qasmEditorMode?: boolean;
 }
@@ -63,9 +78,11 @@ export const CustomPanel = ({
 }: CustomPanelProps) => {
   const { selectedNode, nodes, edges } = useStore(selector, shallow);
   const { setNodes, setEdges } = useReactFlow();
-  const [activeTab, setActiveTab] = useState<"properties" | "math" | "qasm">(
-    "properties",
-  );
+  // "split" shows the OpenQASM editor and Math Mode side by side
+  const [activeTab, setActiveTab] = useState<
+    "properties" | "math" | "qasm" | "split"
+  >("properties");
+  const isSplit = activeTab === "split" && mathMode && qasmEditorMode;
   const [components, setComponents] = useState<DiracComponent[]>([]);
   const [analyzing, setAnalyzing] = useState(false);
   const [hasAnalyzedOnce, setHasAnalyzedOnce] = useState(false);
@@ -73,12 +90,45 @@ export const CustomPanel = ({
   const [qasmEditorCode, setQasmEditorCode] = useState<string>("");
   const [qasmApplyError, setQasmApplyError] = useState<string | null>(null);
   const [qasmApplySuccess, setQasmApplySuccess] = useState(false);
+  // Math Mode editor outside of a circuit: on an empty canvas or via "Start a new circuit"
+  const [standaloneEditor, setStandaloneEditor] = useState(false);
+  // Link between Math Mode and the OpenQASM editor: the highlighted editor lines, the
+  // gates whose steps are highlighted, and a counter that makes Math Mode scroll to them
+  // when they were selected in the editor.
+  const [qasmHighlight, setQasmHighlight] = useState<number[]>([]);
+  // lines of the earlier steps on the path to the clicked one, highlighted more lightly
+  const [qasmPathHighlight, setQasmPathHighlight] = useState<number[]>([]);
+  const [selectedGates, setSelectedGates] = useState<GateLocator[]>([]);
+  const [revealSelection, setRevealSelection] = useState(0);
+  const canvasEmpty = nodes.length === 0;
+  // blocks opened on the canvas by clicking a step; the steps keep the block ids until
+  // the model is recompiled
+  const openedBlocks = useRef<OpenedBlocks>(createOpenedBlocks());
+  useEffect(() => {
+    openedBlocks.current = createOpenedBlocks();
+  }, [qasmCode]);
+
+  // clicking a node on the canvas shows its properties
+  useEffect(() => {
+    if (selectedNode) setActiveTab("properties");
+  }, [selectedNode]);
+  // code typed in the OpenQASM editor that is not (yet) the compiled model; Math Mode's
+  // circuit editor shows it so that both editors show the same circuit
+  const editorQasmChanged =
+    qasmEditorCode.trim() !== "" && qasmEditorCode.trim() !== qasmCode.trim();
+  // unknown operations and qubits that do not exist; the code cannot be applied with them
+  const qasmProblems = useMemo(
+    () => validateQasm(qasmEditorCode),
+    [qasmEditorCode],
+  );
 
   // Wenn Math Mode ausgeschaltet → zurück zu Properties (außer QASM Editor ist aktiv)
   useEffect(() => {
     if (!mathMode && activeTab === "math") setActiveTab("properties");
-    onWidthChange?.(mathMode || qasmEditorMode ? 480 : 350);
-  }, [mathMode, qasmEditorMode]);
+    if (activeTab === "split" && !(mathMode && qasmEditorMode))
+      setActiveTab(mathMode ? "math" : qasmEditorMode ? "qasm" : "properties");
+    onWidthChange?.(isSplit ? 960 : mathMode || qasmEditorMode ? 480 : 350);
+  }, [mathMode, qasmEditorMode, isSplit]);
 
   // QASM Editor mit Backend-QASM synchronisieren (hat Priorität)
   useEffect(() => {
@@ -86,17 +136,6 @@ export const CustomPanel = ({
       setQasmEditorCode(qasmCode);
     }
   }, [qasmCode]);
-
-  // Canvas → QASM Editor Sync: automatisch wenn sich Nodes/Edges ändern
-  // Nur wenn noch kein Backend-QASM vorhanden ist
-  useEffect(() => {
-    if (qasmCode && qasmCode.trim()) return; // Backend-QASM hat Priorität
-    if (!qasmEditorMode) return;
-    const generated = nodesToQasm(nodes, edges);
-    if (generated) {
-      setQasmEditorCode(generated);
-    }
-  }, [nodes, edges, qasmEditorMode]);
 
   // Wenn QASM Editor deaktiviert → zurück zu Properties wenn aktiv
   useEffect(() => {
@@ -118,27 +157,258 @@ export const CustomPanel = ({
     }
   }, [qasmCode]);
 
-  // Analyse-Funktion – aufrufbar per Refresh-Button
-  const runAnalysis = useCallback(() => {
-    if (!backendUrl) return;
-    // Zusätzlich den regulären Backend-Compile anstoßen, damit der QASM-Tab
-    // (qasmCode, gesteuert von sendToBackend() in App.tsx) synchron mit dem
-    // Math-Mode-Ergebnis bleibt. Ohne das lief Math Mode über seinen eigenen,
-    // unabhängigen analyzeComponents()-Request und der QASM-Tab blieb auf
-    // dem Stand des letzten "Send to Backend"-/"Apply to Canvas"-Klicks stehen.
-    onSendToBackend?.();
-    setAnalyzing(true);
-    setComponents([]);
-    analyzeComponents(nodes, edges, backendUrl, metadata, compilationTarget)
-      .then(setComponents)
-      .finally(() => setAnalyzing(false));
-  }, [nodes, edges, backendUrl, metadata, compilationTarget, onSendToBackend]);
+  // Refresh of Math Mode and of the OpenQASM editor: the canvas is recompiled, and when that
+  // works both are refreshed, so that they always show the same model. On an error the
+  // editor keeps its code; Math Mode is still analyzed when its own Refresh was pressed
+  // (`fromMathMode`), so that it shows the error of the circuit.
+  // Refresh is blocked while the OpenQASM editor shows problems, so the code with the
+  // problems is not replaced.
+  const refreshBlocked = qasmEditorMode && qasmProblems.length > 0;
+  const refreshBlockedTitle = `Fix the ${qasmProblems.length} problem${qasmProblems.length === 1 ? "" : "s"} in the OpenQASM editor before refreshing`;
+  const refreshBoth = useCallback(
+    async (fromMathMode: boolean) => {
+      if (refreshBlocked) return;
+      const analyze = mathMode && !canvasEmpty && !!backendUrl;
+      if (analyze) setAnalyzing(true);
+      const qasm = onSendToBackend ? await onSendToBackend() : null;
+      if (qasm) {
+        setQasmEditorCode(qasm);
+        setQasmApplyError(null);
+        setQasmHighlight([]);
+        setQasmPathHighlight([]);
+      }
+      if (!analyze || (!qasm && !fromMathMode)) {
+        setAnalyzing(false);
+        return;
+      }
+      // the canvas as it is now, not as it was when Refresh was pressed
+      const state = useStore.getState();
+      setComponents([]);
+      analyzeComponents(
+        state.nodes,
+        state.edges,
+        backendUrl,
+        metadata,
+        compilationTarget,
+      )
+        .then((result) => {
+          setComponents(result);
+          setHasAnalyzedOnce(true);
+        })
+        .finally(() => setAnalyzing(false));
+    },
+    [
+      refreshBlocked,
+      mathMode,
+      canvasEmpty,
+      backendUrl,
+      metadata,
+      compilationTarget,
+      onSendToBackend,
+    ],
+  );
+
+  // Applies a circuit edited in Math Mode: the nodes of the edited circuit (component) are
+  // replaced by gate nodes built from the new OpenQASM, other circuits on the canvas stay.
+  // Without a component (new circuit started from the empty Math Mode view) the whole
+  // canvas is replaced.
+  // The QASM tab gets the new code right away and the backend recompiles the model, after
+  // which Math Mode is analyzed again.
+  // When steps were only removed, just their gate nodes are deleted and the wires
+  // reconnected, so the rest of the model (layout, groups made by the user) stays.
+  const applyEditedQasm = useCallback(
+    (
+      component: DiracComponent | null,
+      newQasm: string,
+      removedNodeIds?: string[],
+    ) => {
+      const afterRemoval =
+        component && removedNodeIds?.length
+          ? removeGateNodes(nodes, edges, removedNodeIds)
+          : null;
+      if (component && afterRemoval) {
+        const removed = new Set(removedNodeIds);
+        setNodes(afterRemoval.nodes);
+        setEdges(afterRemoval.edges);
+        setQasmEditorCode(newQasm);
+        setComponents((prev) =>
+          prev.map((c) =>
+            c.index === component.index
+              ? {
+                  ...c,
+                  qasm: newQasm,
+                  error: null,
+                  nodes: c.nodes.filter((n) => !removed.has(n.id)),
+                  nodeIds: c.nodeIds.filter((id) => !removed.has(id)),
+                }
+              : c,
+          ),
+        );
+        setHasAnalyzedOnce(true);
+        if (onSendToBackend) {
+          setWaitingForQasm(true);
+          setTimeout(() => onSendToBackend(), 0);
+        }
+        return;
+      }
+
+      const parsed = qasmToNodes(newQasm);
+      const { nodes: newNodes, edges: newEdges } = parsed;
+      if (newNodes.length === 0) return;
+      // qubits and operations added in the circuit editor light up on the canvas
+      const previousQasm = component ? (component.qasm ?? "") : qasmCode;
+      const added = canvasEmpty ? [] : addedNodeIds(previousQasm, parsed);
+
+      const replaced = new Set(
+        component ? component.nodeIds : nodes.map((n) => n.id),
+      );
+      if (component?.groupId) {
+        replaced.add(component.groupId);
+        for (const n of nodes) {
+          if (n.parentNode === component.groupId) replaced.add(n.id);
+        }
+      }
+      // groups (e.g. a recognized Bell state) whose nodes are all replaced go as well
+      for (const group of nodes) {
+        if (group.type !== "groupNode" || replaced.has(group.id)) continue;
+        const children = nodes.filter((n) => n.parentNode === group.id);
+        if (children.length > 0 && children.every((n) => replaced.has(n.id)))
+          replaced.add(group.id);
+      }
+      // place the new circuit where the old one was
+      const oldNodes = nodes.filter((n) => replaced.has(n.id) && !n.parentNode);
+      const topLevel = newNodes.filter((n) => !n.parentNode);
+      const newMinX = Math.min(...topLevel.map((n) => n.position.x));
+      const newMinY = Math.min(...topLevel.map((n) => n.position.y));
+      const minX = oldNodes.length
+        ? Math.min(...oldNodes.map((n) => n.position.x))
+        : newMinX;
+      const minY = oldNodes.length
+        ? Math.min(...oldNodes.map((n) => n.position.y))
+        : newMinY;
+      // children of a (recognized state) group are positioned relative to the group
+      const shifted = newNodes.map((n) =>
+        n.parentNode
+          ? n
+          : {
+              ...n,
+              position: {
+                x: n.position.x - newMinX + minX,
+                y: n.position.y - newMinY + minY,
+              },
+            },
+      );
+
+      setNodes((nds: Node[]) => [
+        ...nds.filter((n) => !replaced.has(n.id)),
+        ...shifted,
+      ]);
+      setEdges((eds: Edge[]) => [
+        ...eds.filter(
+          (e) => !replaced.has(e.source) && !replaced.has(e.target),
+        ),
+        ...newEdges,
+      ]);
+      if (added.length > 0)
+        setTimeout(() => highlightCanvasNodes(setNodes, added), 150);
+      setQasmEditorCode(newQasm);
+
+      // show the edited circuit immediately, the backend result replaces it when it arrives
+      const edited = {
+        qasm: newQasm,
+        error: null,
+        groupId: null,
+        nodes: shifted.filter((n) => n.type !== "groupNode"),
+        nodeIds: shifted.filter((n) => n.type !== "groupNode").map((n) => n.id),
+      };
+      setComponents((prev) =>
+        component
+          ? prev.map((c) =>
+              c.index === component.index ? { ...c, ...edited } : c,
+            )
+          : [{ ...edited, index: 0, groupLabel: null, groupColor: "#6366f1" }],
+      );
+      setHasAnalyzedOnce(true);
+      setStandaloneEditor(false);
+      if (onSendToBackend) {
+        setWaitingForQasm(true);
+        // see "Apply to Canvas": the flow instance only knows the new nodes after the commit
+        setTimeout(() => onSendToBackend(), 0);
+      }
+    },
+    [nodes, edges, setNodes, setEdges, onSendToBackend, qasmCode, canvasEmpty],
+  );
+
+  // Steps clicked in Math Mode: their lines in the QASM of the circuit (`sourceQasm`) are
+  // found in the editor code, which can be the whole model or code being typed.
+  const selectQasmLines = useCallback(
+    (sourceQasm: string, lines: number[], pathLines: number[] = []) => {
+      const sameCode = sourceQasm.trim() === qasmEditorCode.trim();
+      const gatesOf = (ls: number[]) =>
+        ls
+          .map((line) => gateAtLine(sourceQasm, line))
+          .filter((g): g is GateLocator => g !== null);
+      const toEditor = (ls: number[]) =>
+        sameCode
+          ? ls
+          : gatesOf(ls)
+              .map((g) => lineOfGate(qasmEditorCode, g))
+              .filter((l): l is number => l !== null);
+      setQasmHighlight(toEditor(lines));
+      setQasmPathHighlight(toEditor(pathLines));
+      setSelectedGates(gatesOf(lines));
+    },
+    [qasmEditorCode],
+  );
+
+  // Highlights belong to the code they were made for: when the code is replaced (e.g. an
+  // operation was deleted and the model recompiled), their lines would point at other or
+  // empty lines.
+  useEffect(() => {
+    setQasmHighlight([]);
+    setQasmPathHighlight([]);
+    setSelectedGates([]);
+  }, [qasmEditorCode]);
+
+  // A line clicked in the OpenQASM editor highlights its step in Math Mode. A qubit
+  // register line (or the qubit alias of a node) lights up its qubits on the canvas.
+  const lastQubitLine = useRef<number | null>(null);
+  const selectEditorLine = (line: number) => {
+    const gate = mathMode ? gateAtLine(qasmEditorCode, line) : null;
+    const qubits = qubitNodesAtLine(line);
+    setQasmHighlight(gate || qubits.length > 0 ? [line] : []);
+    setQasmPathHighlight([]);
+    setSelectedGates(gate ? [gate] : []);
+    if (gate) setRevealSelection((n) => n + 1);
+    // only once per line, not again for every cursor move within it
+    if (qubits.length > 0 && lastQubitLine.current !== line)
+      highlightCanvasNodes(setNodes, qubits);
+    lastQubitLine.current = qubits.length > 0 ? line : null;
+  };
+
+  const qubitNodesAtLine = (line: number): string[] => {
+    const kind = qubitLineKind(qasmEditorCode, line);
+    if (kind === "register")
+      return nodes.filter(isQubitSourceNode).map((n) => n.id);
+    if (kind === "alias") {
+      const nodeId = nodeSectionAtLine(qasmEditorCode, line);
+      const node = nodes.find((n) => n.id === nodeId);
+      return node && isQubitSourceNode(node) ? [node.id] : [];
+    }
+    return [];
+  };
 
   // Beim Wechsel zum Math Mode Tab → automatisch Backend-Call auslösen
+  // (not on an empty canvas: there Math Mode opens with the editor to start a new circuit)
   const handleTabSwitch = useCallback(
-    (tab: "properties" | "math") => {
+    (tab: "properties" | "math" | "split") => {
       setActiveTab(tab);
-      if (tab === "math" && mathMode && !hasAnalyzedOnce) {
+      if (
+        tab !== "properties" &&
+        mathMode &&
+        !hasAnalyzedOnce &&
+        !canvasEmpty
+      ) {
         if (qasmCode.trim().length > 0) {
           // QASM vorhanden → direkt analysieren
           setHasAnalyzedOnce(true);
@@ -164,6 +434,7 @@ export const CustomPanel = ({
     [
       mathMode,
       hasAnalyzedOnce,
+      canvasEmpty,
       qasmCode,
       nodes,
       edges,
@@ -179,6 +450,16 @@ export const CustomPanel = ({
   ) {
     onUpdateMetadata(e);
   }
+
+  const startNewButton = (
+    <button
+      onClick={() => setStandaloneEditor(true)}
+      className="mt-1 text-xs px-2.5 py-1 rounded-full border border-blue-300 hover:bg-blue-50 text-blue-600 transition-colors"
+      title="Build a new circuit in Math Mode; it replaces the current model when applied"
+    >
+      + Start a new circuit
+    </button>
+  );
 
   return (
     <div className="currentPanel-container bg-gray-100 h-full border-gray-200 border text-black flex flex-col">
@@ -219,6 +500,19 @@ export const CustomPanel = ({
               QASM
             </button>
           )}
+          {mathMode && qasmEditorMode && (
+            <button
+              onClick={() => handleTabSwitch("split")}
+              className={`flex-1 px-3 py-2 text-xs font-medium transition-colors ${
+                activeTab === "split"
+                  ? "border-b-2 border-blue-500 text-blue-600 bg-white"
+                  : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+              }`}
+              title="Show the OpenQASM editor and Math Mode side by side"
+            >
+              QASM ⇆ Math
+            </button>
+          )}
         </div>
       )}
 
@@ -236,143 +530,230 @@ export const CustomPanel = ({
         </div>
       )}
 
-      {/* QASM Editor Tab */}
-      {activeTab === "qasm" && qasmEditorMode && (
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Toolbar */}
-          <div className="flex-shrink-0 flex items-center justify-between px-2 pt-2 pb-1 gap-2 flex-wrap">
-            <span className="text-xs text-gray-400">
-              {qasmCode?.trim() ? "OpenQASM" : "No OpenQASM available yet"}
-            </span>
-            <div className="flex gap-1.5">
-              <button
-                onClick={() => onSendToBackend?.()}
-                disabled={!onSendToBackend}
-                className="text-xs px-2.5 py-1 rounded-full border border-gray-300 hover:bg-gray-100 text-gray-600 transition-colors disabled:opacity-40"
-                title="Recompile current canvas and refresh QASM output"
-              >
-                ↺ Refresh
-              </button>
-              <button
-                onClick={() => {
-                  setQasmApplyError(null);
-                  setQasmApplySuccess(false);
-                  try {
-                    const { nodes: newNodes, edges: newEdges } =
-                      qasmToNodes(qasmEditorCode);
-                    if (newNodes.length === 0) {
-                      setQasmApplyError("No nodes could be parsed from QASM.");
-                      return;
-                    }
-                    setNodes(newNodes);
-                    setEdges(newEdges);
-                    setQasmApplySuccess(true);
-                    // setTimeout(0): reactFlowInstance synchronisiert seinen internen
-                    // Store erst NACH dem React-Commit von setNodes/setEdges. Ein
-                    // synchroner onSendToBackend()-Aufruf hier würde daher noch mit
-                    // dem alten Circuit-Stand compilen (siehe auch der analoge
-                    // setTimeout(0)-Patch für den Zustand-Duplicate-Fix).
-                    setTimeout(() => onSendToBackend?.(), 0);
-                    setTimeout(() => setQasmApplySuccess(false), 2000);
-                  } catch (e) {
-                    setQasmApplyError(
-                      e instanceof Error ? e.message : "Parse error",
-                    );
+      {/* side by side: both panes in one row; otherwise the wrapper does not take part
+          in the layout */}
+      <div className={isSplit ? "flex-1 flex overflow-hidden" : "contents"}>
+        {/* QASM Editor Tab */}
+        {(activeTab === "qasm" || isSplit) && qasmEditorMode && (
+          <div
+            className={`flex-1 flex flex-col overflow-hidden ${
+              isSplit ? "min-w-0 border-r border-gray-300" : ""
+            }`}
+          >
+            {/* Toolbar */}
+            <div className="flex-shrink-0 flex items-center justify-between px-2 pt-2 pb-1 gap-2 flex-wrap">
+              <span className="text-xs text-gray-400">
+                {qasmCode?.trim() ? "OpenQASM" : "No OpenQASM available yet"}
+              </span>
+              <div className="flex gap-1.5">
+                <button
+                  onClick={() => refreshBoth(false)}
+                  disabled={!onSendToBackend || analyzing || refreshBlocked}
+                  className="text-xs px-2.5 py-1 rounded-full border border-gray-300 hover:bg-gray-100 text-gray-600 transition-colors disabled:opacity-40"
+                  title={
+                    refreshBlocked
+                      ? refreshBlockedTitle
+                      : mathMode
+                        ? "Recompile current canvas and refresh the QASM output and Math Mode"
+                        : "Recompile current canvas and refresh QASM output"
                   }
+                >
+                  ↺ Refresh
+                </button>
+                <button
+                  onClick={() => {
+                    setQasmApplyError(null);
+                    setQasmApplySuccess(false);
+                    if (qasmProblems.length > 0) return;
+                    try {
+                      const parsed = qasmToNodes(qasmEditorCode);
+                      const { nodes: newNodes, edges: newEdges } = parsed;
+                      if (newNodes.length === 0) {
+                        setQasmApplyError(
+                          "No nodes could be parsed from QASM.",
+                        );
+                        return;
+                      }
+                      // qubits and operations added in the editor light up on the canvas
+                      const added = canvasEmpty
+                        ? []
+                        : addedNodeIds(qasmCode, parsed);
+                      setNodes(newNodes);
+                      setEdges(newEdges);
+                      if (added.length > 0)
+                        setTimeout(
+                          () => highlightCanvasNodes(setNodes, added),
+                          150,
+                        );
+                      setQasmApplySuccess(true);
+                      // Math Mode is analyzed again as soon as the recompiled QASM arrives
+                      if (mathMode && onSendToBackend) setWaitingForQasm(true);
+                      // setTimeout(0): reactFlowInstance synchronisiert seinen internen
+                      // Store erst NACH dem React-Commit von setNodes/setEdges. Ein
+                      // synchroner onSendToBackend()-Aufruf hier würde daher noch mit
+                      // dem alten Circuit-Stand compilen (siehe auch der analoge
+                      // setTimeout(0)-Patch für den Zustand-Duplicate-Fix).
+                      setTimeout(() => onSendToBackend?.(), 0);
+                      setTimeout(() => setQasmApplySuccess(false), 2000);
+                    } catch (e) {
+                      setQasmApplyError(
+                        e instanceof Error ? e.message : "Parse error",
+                      );
+                    }
+                  }}
+                  disabled={!qasmEditorCode.trim() || qasmProblems.length > 0}
+                  className="text-xs px-2.5 py-1 rounded-full border border-blue-300 hover:bg-blue-300 text-blue-600 transition-colors disabled:opacity-40"
+                  title={
+                    qasmProblems.length > 0
+                      ? `Fix the ${qasmProblems.length} problem${qasmProblems.length === 1 ? "" : "s"} in the code before applying it to the canvas`
+                      : "Apply OpenQASM to canvas"
+                  }
+                >
+                  ↙ Apply to Canvas
+                </button>
+              </div>
+            </div>
+            {qasmApplyError && (
+              <div className="flex-shrink-0 mx-2 mb-1 px-2 py-1 rounded bg-red-50 border border-red-200 text-xs text-red-600">
+                ⚠ {qasmApplyError}
+              </div>
+            )}
+            {qasmApplySuccess && (
+              <div className="flex-shrink-0 mx-2 mb-1 px-2 py-1 rounded bg-green-50 border border-green-200 text-xs text-green-600">
+                ✓ Applied to canvas
+              </div>
+            )}
+            <div className="flex-1 overflow-hidden mx-2 mb-2 rounded border border-gray-200 bg-white relative">
+              <QasmCodeEditor
+                value={qasmEditorCode}
+                onChange={(code) => {
+                  setQasmEditorCode(code);
+                  setQasmApplyError(null);
+                  setQasmHighlight([]);
+                  setQasmPathHighlight([]);
                 }}
-                disabled={!qasmEditorCode.trim()}
-                className="text-xs px-2.5 py-1 rounded-full border border-blue-300 hover:bg-blue-300 text-blue-600 transition-colors disabled:opacity-40"
-                title="Apply OpenQASM to canvas"
+                highlightLines={qasmHighlight}
+                pathLines={qasmPathHighlight}
+                problems={qasmProblems}
+                onCursorLine={selectEditorLine}
+                placeholder={
+                  "// QASM code will appear here after backend call\n// You can also write QASM directly\nOPENQASM 3.1;\nqubit[2] q;\nh q[0];\ncx q[0], q[1];"
+                }
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Math Mode Tab */}
+        {(activeTab === "math" || isSplit) && mathMode && (
+          <div
+            className={`flex-1 overflow-hidden flex flex-col ${isSplit ? "min-w-0" : ""}`}
+          >
+            {/* Toolbar: Refresh + Export all */}
+            <div className="flex-shrink-0 flex justify-between items-center px-2 pt-2 gap-2">
+              <button
+                onClick={() => refreshBoth(true)}
+                disabled={
+                  analyzing || !qasmCode.trim() || canvasEmpty || refreshBlocked
+                }
+                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border border-gray-300 hover:bg-gray-100 text-gray-600 transition-colors disabled:opacity-40"
+                title={
+                  refreshBlocked
+                    ? refreshBlockedTitle
+                    : qasmEditorMode
+                      ? "Recalculate Dirac notation and refresh the OpenQASM editor"
+                      : "Recalculate Dirac notation"
+                }
               >
-                ↙ Apply to Canvas
+                <span className={analyzing ? "animate-spin" : ""}>↺</span>
+                {analyzing ? "Analyzing..." : "Refresh"}
               </button>
+
+              {components.length > 0 && onGetCircuitSvg && (
+                <ExportAllButton
+                  components={components}
+                  onGetCircuitSvg={onGetCircuitSvg}
+                  setNodes={setNodes}
+                  onGetModel={onGetModel}
+                />
+              )}
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-2">
+              {canvasEmpty || standaloneEditor ? (
+                <div className="flex flex-col gap-2">
+                  {canvasEmpty && (
+                    <p className="text-xs text-gray-500 px-1">
+                      The canvas is empty. Build a circuit step by step here:
+                      choose the number of qubits and the initial state, add
+                      gates and watch the state change. "Create on canvas" turns
+                      it into a low-code model and OpenQASM.
+                    </p>
+                  )}
+                  <MathCircuitEditor
+                    qasm={
+                      canvasEmpty
+                        ? editorQasmChanged
+                          ? qasmEditorCode
+                          : undefined
+                        : qasmEditorCode || qasmCode
+                    }
+                    fromQasmEditor={editorQasmChanged}
+                    initialMode="new"
+                    onApply={(qasm) => applyEditedQasm(null, qasm)}
+                    onClose={
+                      canvasEmpty ? undefined : () => setStandaloneEditor(false)
+                    }
+                  />
+                </div>
+              ) : analyzing ? (
+                <div className="flex flex-col items-center justify-center h-full gap-2 text-gray-400">
+                  <span className="text-lg animate-spin">⟳</span>
+                  <p className="text-sm">Analyzing circuits...</p>
+                </div>
+              ) : components.length > 0 ? (
+                <ComponentsView
+                  components={components}
+                  onGetCircuitSvg={onGetCircuitSvg}
+                  nodes={nodes}
+                  onGetModel={onGetModel}
+                  onApplyQasm={applyEditedQasm}
+                  openedBlocks={openedBlocks.current}
+                  onSelectQasmLines={
+                    qasmEditorMode ? selectQasmLines : undefined
+                  }
+                  selectedGates={selectedGates}
+                  revealSelection={revealSelection}
+                  editorQasm={
+                    editorQasmChanged && components.length === 1
+                      ? qasmEditorCode
+                      : undefined
+                  }
+                />
+              ) : qasmCode.trim().length > 0 ? (
+                <div className="flex flex-col items-center justify-center h-full gap-2 text-gray-400">
+                  <span className="text-2xl">⟩</span>
+                  <p className="text-sm text-center">
+                    Press "Refresh" to calculate the Dirac notation.
+                  </p>
+                  {startNewButton}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full gap-2 text-gray-400">
+                  <span className="text-2xl">⟩</span>
+                  <p className="text-sm text-center">
+                    No QASM output available yet.
+                  </p>
+                  <p className="text-xs text-center text-gray-300">
+                    Send the model to the backend to view the Dirac notation.
+                  </p>
+                  {startNewButton}
+                </div>
+              )}
             </div>
           </div>
-          {qasmApplyError && (
-            <div className="flex-shrink-0 mx-2 mb-1 px-2 py-1 rounded bg-red-50 border border-red-200 text-xs text-red-600">
-              ⚠ {qasmApplyError}
-            </div>
-          )}
-          {qasmApplySuccess && (
-            <div className="flex-shrink-0 mx-2 mb-1 px-2 py-1 rounded bg-green-50 border border-green-200 text-xs text-green-600">
-              ✓ Applied to canvas
-            </div>
-          )}
-          <div className="flex-1 overflow-hidden mx-2 mb-2 rounded border border-gray-200 relative">
-            <textarea
-              value={qasmEditorCode}
-              onChange={(e) => {
-                setQasmEditorCode(e.target.value);
-                setQasmApplyError(null);
-              }}
-              spellCheck={false}
-              className="w-full h-full resize-none p-3 font-mono text-xs leading-relaxed bg-transparent text-black-100 outline-none"
-              placeholder="// QASM code will appear here after backend call&#10;// You can also write QASM directly&#10;OPENQASM 2.0;&#10;qreg q[2];&#10;h q[0];&#10;cx q[0],q[1];"
-              style={{ caretColor: "black" }}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Math Mode Tab */}
-      {activeTab === "math" && mathMode && (
-        <div className="flex-1 overflow-hidden flex flex-col">
-          {/* Toolbar: Refresh + Export all */}
-          <div className="flex-shrink-0 flex justify-between items-center px-2 pt-2 gap-2">
-            <button
-              onClick={runAnalysis}
-              disabled={analyzing || !qasmCode.trim()}
-              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border border-gray-300 hover:bg-gray-100 text-gray-600 transition-colors disabled:opacity-40"
-              title="Recalculate Dirac notation"
-            >
-              <span className={analyzing ? "animate-spin" : ""}>↺</span>
-              {analyzing ? "Analyzing..." : "Refresh"}
-            </button>
-
-            {components.length > 0 && onGetCircuitSvg && (
-              <ExportAllButton
-                components={components}
-                onGetCircuitSvg={onGetCircuitSvg}
-                setNodes={setNodes}
-                onGetModel={onGetModel}
-              />
-            )}
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-2">
-            {analyzing ? (
-              <div className="flex flex-col items-center justify-center h-full gap-2 text-gray-400">
-                <span className="text-lg animate-spin">⟳</span>
-                <p className="text-sm">Analyzing circuits...</p>
-              </div>
-            ) : components.length > 0 ? (
-              <ComponentsView
-                components={components}
-                onGetCircuitSvg={onGetCircuitSvg}
-                nodes={nodes}
-                onGetModel={onGetModel}
-              />
-            ) : qasmCode.trim().length > 0 ? (
-              <div className="flex flex-col items-center justify-center h-full gap-2 text-gray-400">
-                <span className="text-2xl">⟩</span>
-                <p className="text-sm text-center">
-                  Press "Refresh" to calculate the Dirac notation.
-                </p>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-full gap-2 text-gray-400">
-                <span className="text-2xl">⟩</span>
-                <p className="text-sm text-center">
-                  No QASM output available yet.
-                </p>
-                <p className="text-xs text-center text-gray-300">
-                  Send the model to the backend to view the Dirac notation.
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };
@@ -381,17 +762,41 @@ export const CustomPanel = ({
 // Komponenten-Ansicht
 // ---------------------------------------------------------------------------
 
+/** Link between the steps and the OpenQASM editor, see QasmDiracPanel. */
+interface QasmLinkProps {
+  onSelectQasmLines?: (
+    sourceQasm: string,
+    lines: number[],
+    pathLines?: number[],
+  ) => void;
+  selectedGates?: GateLocator[];
+  revealSelection?: number;
+}
+
 function ComponentsView({
   components,
   onGetCircuitSvg,
   onGetModel,
+  onApplyQasm,
+  editorQasm,
+  openedBlocks,
+  onSelectQasmLines,
+  selectedGates,
+  revealSelection,
 }: {
   components: DiracComponent[];
   onGetCircuitSvg?: () => Promise<string>;
   nodes: Node[];
   onGetModel?: () => object;
+  onApplyQasm?: (
+    component: DiracComponent,
+    qasm: string,
+    removedNodeIds?: string[],
+  ) => void;
   qasmEditorMode?: boolean;
-}) {
+  editorQasm?: string;
+  openedBlocks: OpenedBlocks;
+} & QasmLinkProps) {
   return (
     <div className="flex flex-col gap-3">
       {components.length > 1 && (
@@ -418,11 +823,88 @@ function ComponentsView({
             nodeIds={component.nodeIds}
             nodes={component.nodes}
             onGetModel={onGetModel}
+            onApplyQasm={
+              onApplyQasm
+                ? (qasm: string, removed?: string[]) =>
+                    onApplyQasm(component, qasm, removed)
+                : undefined
+            }
+            editorQasm={editorQasm}
+            openedBlocks={openedBlocks}
+            onSelectQasmLines={onSelectQasmLines}
+            selectedGates={selectedGates}
+            revealSelection={revealSelection}
           />
         );
       })}
     </div>
   );
+}
+
+const HIGHLIGHT_CLASS =
+  "!ring-4 !ring-blue-500 !ring-offset-2 !shadow-lg !shadow-blue-400/60";
+
+/**
+ * Lets canvas nodes light up blue for a moment (like a clicked step) and scrolls to the
+ * first of them.
+ */
+function highlightCanvasNodes(
+  setNodes: (fn: (nds: Node[]) => Node[]) => void,
+  nodeIds: string[],
+) {
+  const idSet = new Set(nodeIds);
+  setNodes((nds: Node[]) =>
+    nds.map((n) => ({
+      ...n,
+      selected: idSet.has(n.id),
+      className: idSet.has(n.id)
+        ? n.className
+          ? `${n.className} ${HIGHLIGHT_CLASS}`
+          : HIGHLIGHT_CLASS
+        : n.className?.replace(HIGHLIGHT_CLASS, "").trim(),
+    })),
+  );
+  setTimeout(() => {
+    let firstEl: HTMLElement | null = null;
+    for (const nodeId of nodeIds) {
+      const el = document.querySelector(
+        `[data-id="${nodeId}"]`,
+      ) as HTMLElement | null;
+      if (!el) continue;
+      if (!firstEl) firstEl = el;
+      el.style.transition =
+        "box-shadow 0.15s ease-in-out, outline 0.15s ease-in-out";
+      el.style.outline = "3px solid #3b82f6";
+      el.style.outlineOffset = "3px";
+      el.style.boxShadow =
+        "0 0 0 6px rgba(59,130,246,0.35), 0 0 20px rgba(59,130,246,0.25)";
+      el.style.zIndex = "999";
+    }
+    // Nur zum ersten (frühesten) hervorgehobenen Node scrollen, damit die Ansicht nicht
+    // zwischen mehreren Nodes hin- und herspringt.
+    firstEl?.scrollIntoView({ behavior: "smooth", block: "center" });
+    setTimeout(() => {
+      for (const nodeId of nodeIds) {
+        const el = document.querySelector(
+          `[data-id="${nodeId}"]`,
+        ) as HTMLElement | null;
+        if (!el) continue;
+        el.style.outline = "";
+        el.style.outlineOffset = "";
+        el.style.boxShadow = "";
+        el.style.zIndex = "";
+      }
+    }, 1500);
+  }, 50);
+  setTimeout(() => {
+    setNodes((nds: Node[]) =>
+      nds.map((n) => ({
+        ...n,
+        selected: false,
+        className: n.className?.replace(HIGHLIGHT_CLASS, "").trim(),
+      })),
+    );
+  }, 1500);
 }
 
 function ComponentSection({
@@ -436,6 +918,12 @@ function ComponentSection({
   nodeIds,
   nodes,
   onGetModel,
+  onApplyQasm,
+  editorQasm,
+  openedBlocks,
+  onSelectQasmLines,
+  selectedGates,
+  revealSelection,
 }: {
   label: string;
   color: string;
@@ -447,10 +935,13 @@ function ComponentSection({
   nodeIds?: string[];
   nodes: Node[];
   onGetModel?: () => object;
+  onApplyQasm?: (qasm: string, removedNodeIds?: string[]) => void;
   qasmEditorMode?: boolean;
-}) {
+  editorQasm?: string;
+  openedBlocks: OpenedBlocks;
+} & QasmLinkProps) {
   const [expanded, setExpanded] = useState(true);
-  const { setNodes } = useReactFlow();
+  const { setNodes, setEdges, getNodes, getEdges } = useReactFlow();
 
   // Gibt nur das SVG der Nodes dieses Circuits/dieser Gruppe zurück
   const circuitNodeIds = new Set(nodeIds ?? nodes.map((n) => n.id));
@@ -485,72 +976,55 @@ function ComponentSection({
       }
     : undefined;
 
-  const handleStepClick = (nodeIds: string[]) => {
-    const idSet = new Set(nodeIds);
-    setNodes((nds: Node[]) =>
-      nds.map((n) => ({
-        ...n,
-        selected: idSet.has(n.id),
-        className: idSet.has(n.id)
-          ? n.className
-            ? n.className +
-              " !ring-4 !ring-blue-500 !ring-offset-2 !shadow-lg !shadow-blue-400/60"
-            : "!ring-4 !ring-blue-500 !ring-offset-2 !shadow-lg !shadow-blue-400/60"
-          : n.className
-              ?.replace(
-                "!ring-4 !ring-blue-500 !ring-offset-2 !shadow-lg !shadow-blue-400/60",
-                "",
-              )
-              .trim(),
-      })),
+  // Follows a clicked step onto the canvas: the block of the step is opened down to the
+  // circuit level (e.g. Grover → its uniform superposition → the H gates) and the gates
+  // of the step are highlighted.
+  const handleStepClick = (
+    stepNodeIds: string[],
+    clicked?: { nodeId: string; from: number; to: number },
+  ) => {
+    // nodes inside a collapsed group on the canvas: open the group first
+    const expanded = expandGroupsAround(getNodes(), [
+      ...stepNodeIds,
+      ...(clicked ? [clicked.nodeId] : []),
+    ]);
+    if (expanded) setNodes(expanded);
+    if (!clicked) {
+      if (expanded) setTimeout(() => highlightNodes(stepNodeIds), 150);
+      else highlightNodes(stepNodeIds);
+      return;
+    }
+    const currentNodes = expanded ?? getNodes();
+    const currentEdges = getEdges();
+    const result = followStep(
+      openedBlocks,
+      currentNodes,
+      currentEdges,
+      qasm,
+      clicked,
+      stepNodeIds.filter((id) => id !== clicked.nodeId),
     );
-    setTimeout(() => {
-      let firstEl: HTMLElement | null = null;
-      for (const nodeId of nodeIds) {
-        const el = document.querySelector(
-          `[data-id="${nodeId}"]`,
-        ) as HTMLElement | null;
-        if (!el) continue;
-        if (!firstEl) firstEl = el;
-        el.style.transition =
-          "box-shadow 0.15s ease-in-out, outline 0.15s ease-in-out";
-        el.style.outline = "3px solid #3b82f6";
-        el.style.outlineOffset = "3px";
-        el.style.boxShadow =
-          "0 0 0 6px rgba(59,130,246,0.35), 0 0 20px rgba(59,130,246,0.25)";
-        el.style.zIndex = "999";
-      }
-      // Nur zum ersten (frühesten) hervorgehobenen Node scrollen, damit die Ansicht nicht
-      // zwischen mehreren Nodes hin- und herspringt.
-      firstEl?.scrollIntoView({ behavior: "smooth", block: "center" });
-      setTimeout(() => {
-        for (const nodeId of nodeIds) {
-          const el = document.querySelector(
-            `[data-id="${nodeId}"]`,
-          ) as HTMLElement | null;
-          if (!el) continue;
-          el.style.outline = "";
-          el.style.outlineOffset = "";
-          el.style.boxShadow = "";
-          el.style.zIndex = "";
-        }
-      }, 1500);
-    }, 50);
-    setTimeout(() => {
-      setNodes((nds: Node[]) =>
-        nds.map((n) => ({
-          ...n,
-          selected: false,
-          className: n.className
-            ?.replace(
-              "!ring-4 !ring-blue-500 !ring-offset-2 !shadow-lg !shadow-blue-400/60",
-              "",
-            )
-            .trim(),
-        })),
-      );
-    }, 1500);
+    if (!result.changed) {
+      if (expanded) setTimeout(() => highlightNodes(result.highlight), 150);
+      else highlightNodes(result.highlight);
+      return;
+    }
+    // keep the compact version in the undo history
+    useStore.setState((state: any) => ({
+      ...appendHistory(state.history, state.historyIndex, {
+        nodes: structuredClone(currentNodes),
+        edges: structuredClone(currentEdges),
+      }),
+      redoStack: [],
+    }));
+    setNodes(result.nodes);
+    setEdges(result.edges);
+    // wait until the circuit is rendered
+    setTimeout(() => highlightNodes(result.highlight), 150);
   };
+
+  const highlightNodes = (nodeIds: string[]) =>
+    highlightCanvasNodes(setNodes, nodeIds);
 
   return (
     <div
@@ -599,6 +1073,11 @@ function ComponentSection({
               onGetCircuitSvg={getGroupCircuitSvg}
               onGetModel={onGetModel}
               onStepClick={handleStepClick}
+              onApplyQasm={onApplyQasm}
+              editorQasm={editorQasm}
+              onSelectQasmLines={onSelectQasmLines}
+              selectedGates={selectedGates}
+              revealSelection={revealSelection}
             />
           ) : (
             <div className="text-xs text-gray-400 px-2 py-1">
@@ -702,14 +1181,19 @@ function ExportAllButton({
           const result = qasmToDirac(component.qasm);
           const stepsResult = qasmToDiracSteps(component.qasm);
 
-          const texContent = buildLatexForComponent(
-            label,
-            result.latex,
-            result.numQubits,
-            result.terms,
+          const texContent = buildLatexExport({
+            title: label,
+            latex: result.latex,
+            numQubits: result.numQubits,
+            terms: result.terms,
             stepsResult,
             pngBase64,
-          );
+            stepTree: buildStepTree(
+              stepsResult.steps,
+              useStore.getState().nodes,
+            ),
+            qasm: component.qasm,
+          });
 
           zip.file(`${safeName}/main.tex`, texContent);
           if (pngBase64) {
@@ -743,209 +1227,6 @@ function ExportAllButton({
       {exporting ? "Exporting..." : "Export all"}
     </button>
   );
-}
-
-// Hilfsfunktion: LaTeX für eine Komponente bauen
-function buildLatexForComponent(
-  label: string,
-  latex: string,
-  numQubits: number,
-  terms: any[],
-  stepsResult: any,
-  pngBase64?: string,
-): string {
-  const termLines = terms
-    .map((t: any) => {
-      const p =
-        Math.round((t.amplitude.re ** 2 + t.amplitude.im ** 2) * 10000) / 100;
-      return `    \\hline\n    $|${t.basisState}\\rangle$ & $${p}\\%$ \\\\`;
-    })
-    .join("\n");
-
-  const circuitSection = pngBase64
-    ? `\\section*{Quantum Circuit}\n\\begin{figure}[h]\n  \\centering\n  \\includegraphics[width=0.9\\textwidth]{circuit}\n  \\caption{${label}}\n\\end{figure}\n\n`
-    : "";
-
-  const stepsSection =
-    stepsResult?.steps?.length > 0
-      ? `\\section*{Mathematical Intermediate Steps}\n\\begin{align}\n  |\\psi_0\\rangle &= ${stepsResult.initial.latex} \\\\[6pt]\n${stepsResult.steps.map((s: any, i: number) => `  &\\xrightarrow{${s.gateLabelLatex}} \\\\[2pt]\n  |\\psi_{${i + 1}}\\rangle &= ${s.latex}`).join(" \\\\[6pt]\n")}\n\\end{align}\n\n`
-      : "";
-
-  // pgfplots Histogram
-  const histogramSection =
-    terms.length > 0
-      ? (() => {
-          const coords = terms.map((t: any) => {
-            const p =
-              Math.round((t.amplitude.re ** 2 + t.amplitude.im ** 2) * 10000) /
-              100;
-            return { label: `|${t.basisState}\\rangle`, value: p };
-          });
-          const coordStr = coords
-            .map((c: any, i: number) => `(${i}, ${c.value})`)
-            .join(" ");
-          const tickLabels = coords.map((c: any) => `$${c.label}$`).join(", ");
-          const xMax = coords.length - 0.5;
-          return `\\section*{Measurement Probabilities}\n\\begin{figure}[h]\n  \\centering\n  \\begin{tikzpicture}\n    \\begin{axis}[\n      ybar, bar width=0.5cm, width=0.85\\textwidth, height=6cm,\n      ymin=0, ymax=100, xmin=-0.5, xmax=${xMax},\n      xtick={${coords.map((_: any, i: number) => i).join(", ")}},\n      xticklabels={${tickLabels}},\n      ylabel={Probability (\\%)}, ymajorgrids=true, grid style=dashed,\n      nodes near coords, nodes near coords align={vertical},\n    ]\n      \\addplot[fill=blue!60, draw=blue!80] coordinates {${coordStr}};\n    \\end{axis}\n  \\end{tikzpicture}\n  \\caption{Measurement Probabilities of Basis States}\n\\end{figure}\n\n`;
-        })()
-      : "";
-
-  const tableSection =
-    terms.length > 0
-      ? `\\section*{Measurement Probabilities (Table)}\n\\begin{table}[h]\n  \\centering\n  \\begin{tabular}{|c|c|}\n    \\hline\n    \\textbf{Basis State} & \\textbf{Probability} \\\\\n${termLines}\n    \\hline\n  \\end{tabular}\n\\end{table}\n\n`
-      : "";
-
-  // Statevector einmal rekonstruieren, für Separabilitäts- und Persistence-Berechnung genutzt.
-  const statevectorArrForProperties = Array.from(
-    { length: 1 << numQubits },
-    (_, i) => {
-      const term = terms.find((t: any) => parseInt(t.basisState, 2) === i);
-      return term ? term.amplitude : { re: 0, im: 0 };
-    },
-  );
-
-  // Exakte Separabilitätsprüfung (keine Heuristik): vollständig separabel, wenn JEDES Qubit
-  // einen reinen reduzierten Zustand hat (Bloch-Vektor-Länge 1 für jede Qubit-Bipartition).
-  const isEntangledComponent =
-    numQubits >= 2 &&
-    !isStateFullySeparable(statevectorArrForProperties, numQubits);
-  const persistenceComponent: number | null =
-    numQubits === 1
-      ? getEntanglementPersistence(statevectorArrForProperties, numQubits, 0)
-      : isEntangledComponent
-        ? getMultiQubitPersistence(terms, numQubits)
-        : 0;
-
-  const entanglementSection = `\\section*{Entanglement Properties}
-
-\\textbf{Definitions.}
-
-\\emph{Separable:} A multi-qubit quantum state is called \\emph{separable} if it can be
-written as a tensor product of the individual qubit states, i.e.\\
-$|\\psi\\rangle = |\\psi_1\\rangle \\otimes |\\psi_2\\rangle \\otimes \\dots \\otimes |\\psi_n\\rangle$.
-In this case, each qubit can be fully described by its own, independent quantum state.
-
-\\emph{Entangled:} A multi-qubit quantum state is called \\emph{entangled} if no such
-tensor-product decomposition exists. The qubits cannot be described independently of one
-another: measuring one qubit instantaneously affects the possible outcomes of measuring the
-others, even if the qubits are physically separated.
-
-\\textbf{Status for this circuit:} This ${numQubits}-qubit state is
-\\textbf{${isEntangledComponent ? "entangled" : "separable"}}${
-    numQubits >= 2 && !isEntangledComponent
-      ? " (it factors into a product of single-qubit states)"
-      : ""
-  }.
-
-${
-  persistenceComponent !== null
-    ? numQubits === 1
-      ? `\\textbf{Entanglement Persistence:} $S = ${persistenceComponent.toFixed(3)}$ (von Neumann entropy of the qubit's reduced density matrix, in bits). $S = 0$ corresponds to a pure, unentangled state; $S = 1$ corresponds to a maximally mixed/entangled qubit.\n\n`
-      : `\\textbf{Entanglement Persistence:} $P = ${persistenceComponent.toFixed(3)}$ (persistency of entanglement: the minimum number of local qubit measurements required until the remaining state is guaranteed to be fully separable).\n\n`
-    : numQubits >= 2
-      ? `\\textbf{Entanglement Persistence:} not computable -- this state does not match any of the recognized standard patterns (GHZ-like states, Bell-state variants, W-states).\n\n`
-      : ""
-}`;
-
-  // Gate-Erklärungen
-  const GATE_INFO: Record<
-    string,
-    { desc: string; matrix: string; effect: string }
-  > = {
-    H: {
-      desc: "The Hadamard gate creates an equal superposition.",
-      matrix: "\\frac{1}{\\sqrt{2}}\\begin{pmatrix}1&1\\\\1&-1\\end{pmatrix}",
-      effect: "$H|0\\rangle=|+\\rangle,\\;H|1\\rangle=|-\\rangle$",
-    },
-    X: {
-      desc: "The Pauli-X gate is the quantum NOT gate.",
-      matrix: "\\begin{pmatrix}0&1\\\\1&0\\end{pmatrix}",
-      effect: "$X|0\\rangle=|1\\rangle,\\;X|1\\rangle=|0\\rangle$",
-    },
-    Y: {
-      desc: "The Pauli-Y gate rotates around the Y-axis.",
-      matrix: "\\begin{pmatrix}0&-i\\\\i&0\\end{pmatrix}",
-      effect: "$Y|0\\rangle=i|1\\rangle,\\;Y|1\\rangle=-i|0\\rangle$",
-    },
-    Z: {
-      desc: "The Pauli-Z gate applies a phase flip.",
-      matrix: "\\begin{pmatrix}1&0\\\\0&-1\\end{pmatrix}",
-      effect: "$Z|0\\rangle=|0\\rangle,\\;Z|1\\rangle=-|1\\rangle$",
-    },
-    S: {
-      desc: "The S gate applies a $\\pi/2$ phase rotation.",
-      matrix: "\\begin{pmatrix}1&0\\\\0&i\\end{pmatrix}",
-      effect: "$S|1\\rangle=i|1\\rangle$",
-    },
-    T: {
-      desc: "The T gate applies a $\\pi/4$ phase rotation.",
-      matrix: "\\begin{pmatrix}1&0\\\\0&e^{i\\pi/4}\\end{pmatrix}",
-      effect: "$T|1\\rangle=e^{i\\pi/4}|1\\rangle$",
-    },
-    CNOT: {
-      desc: "The CNOT gate flips the target qubit if control is $|1\\rangle$.",
-      matrix:
-        "\\begin{pmatrix}1&0&0&0\\\\0&1&0&0\\\\0&0&0&1\\\\0&0&1&0\\end{pmatrix}",
-      effect:
-        "$\\text{CNOT}|10\\rangle=|11\\rangle,\\;\\text{CNOT}|11\\rangle=|10\\rangle$",
-    },
-    SWAP: {
-      desc: "The SWAP gate exchanges the states of two qubits.",
-      matrix:
-        "\\begin{pmatrix}1&0&0&0\\\\0&0&1&0\\\\0&1&0&0\\\\0&0&0&1\\end{pmatrix}",
-      effect: "$\\text{SWAP}|01\\rangle=|10\\rangle$",
-    },
-  };
-
-  const usedGates = new Set<string>();
-  if (stepsResult?.steps) {
-    for (const s of stepsResult.steps) {
-      for (const key of Object.keys(GATE_INFO)) {
-        if ((s.gateLabel ?? s.gateLabelLatex ?? "").includes(key))
-          usedGates.add(key);
-      }
-    }
-  }
-
-  const gateSection =
-    usedGates.size > 0
-      ? `\\section*{Gate Reference}\n\n` +
-        [...usedGates]
-          .map((g) => {
-            const info = GATE_INFO[g];
-            return `\\subsection*{${g} Gate}\n${info.desc}\n\\begin{equation}\n  ${g} = ${info.matrix}\n\\end{equation}\n\\textbf{Effect:} ${info.effect}\n`;
-          })
-          .join("\n")
-      : "";
-
-  return `\\documentclass{article}
-\\usepackage[utf8]{inputenc}
-\\usepackage{amsmath}
-\\usepackage{amssymb}
-\\usepackage{braket}
-\\usepackage{graphicx}
-\\usepackage{geometry}
-\\usepackage{pgfplots}
-\\usepackage{booktabs}
-\\pgfplotsset{compat=1.18}
-\\geometry{margin=2.5cm}
-
-\\title{Dirac Notation -- ${label}}
-\\date{\\today}
-
-\\begin{document}
-\\maketitle
-
-${circuitSection}\\section*{Quantum State in Dirac Notation}
-
-The quantum system state with ${numQubits} qubit${numQubits !== 1 ? "s" : ""} is:
-
-\\begin{equation}
-  |\\psi\\rangle = ${latex}
-\\end{equation}
-
-${stepsSection}${histogramSection}${tableSection}${entanglementSection}${gateSection}\\end{document}
-`;
 }
 
 // SVG → PNG Base64
