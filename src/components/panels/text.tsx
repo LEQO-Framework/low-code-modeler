@@ -28,6 +28,7 @@ import {
   parameterized_one_qubit,
   parameterized_two_qubit,
   multi_parameterized_two_qubit,
+  u_gate_parameters,
   minMaxOperatorLabel,
   comparisonOperatorLabel,
   bitwiseOperatorLabel,
@@ -37,6 +38,7 @@ import {
   qubitLabel,
 } from "@/constants";
 import { ArrowLeft } from "lucide-react";
+import { CustomOperatorImplementation } from "./customOperatorImplementation";
 import { useEffect, useState } from "react";
 import { Node } from "reactflow";
 import { shallow } from "zustand/shallow";
@@ -131,6 +133,15 @@ const GATE_EXPLANATIONS: Record<string, string> = {
 
   ["CU"]:
     "If control qubit is in state |1⟩, apply the U-gate. Set the matrix for the U-gate in the 'Matrix' field.",
+
+  ["U1(λ)"]:
+    "Universal gate U1(λ): applies a phase shift of λ (rad) to the |1⟩ state.",
+
+  ["U2(φ,λ)"]:
+    "Universal gate U2(φ,λ) = U3(π/2,φ,λ) with the angles φ and λ (rad).",
+
+  ["U3(θ,φ,λ)"]:
+    "Universal gate U3(θ,φ,λ): general single-qubit rotation with the angles θ, φ and λ (rad).",
 
   [non_parameterized_one_qubit[0]]:
     "Creates superposition by applying a Hadamard transform.",
@@ -1512,6 +1523,13 @@ export const TextPanel = () => {
   const editableImplementationType =
     getEditableNodeImplementationType(selectedNode);
 
+  /** Stores structured values (objects, lists) that handleNumberChange does not support. */
+  function updateField(field: string, value: any) {
+    if (!selectedNode) return;
+    selectedNode.data[field] = value;
+    updateNodeValue(selectedNode.id, field, value);
+  }
+
   return (
     <>
       <aside className="flex flex-col w-full h-full overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
@@ -1599,6 +1617,32 @@ export const TextPanel = () => {
             
 
                 <div className="mt-3">
+                  <label
+                    className="block text-sm font-medium text-start text-gray-700"
+                    htmlFor="nodeId"
+                  >
+                    Node ID
+                  </label>
+                  <div className="mt-1 flex gap-2 items-center">
+                    <input
+                      id="nodeId"
+                      type="text"
+                      readOnly
+                      value={selectedNode.id}
+                      onFocus={(e) => e.target.select()}
+                      className="border border-gray-300 rounded-md p-2 bg-gray-50 text-gray-700 font-mono text-xs w-full min-w-0"
+                    />
+                    <button
+                      type="button"
+                      onClick={copyNodeId}
+                      className="text-xs text-blue-600 underline whitespace-nowrap"
+                    >
+                      {idCopied ? "Copied" : "Copy"}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="mt-3">
                   <label className="block text-sm font-medium text-start text-gray-700">
                     Explanation
                   </label>
@@ -1642,11 +1686,17 @@ export const TextPanel = () => {
         )}
 
         {selectedNode?.type === EditableNode && editableImplementationType && (
-          <EditableNodeImplementationFields
+          <CustomOperatorImplementation
             selectedNode={selectedNode}
-            implementationType={editableImplementationType}
-            handleNumberChange={handleNumberChange}
-            handleFileUpload={handleFileUpload}
+            updateField={updateField}
+            implementationFields={
+              <EditableNodeImplementationFields
+                selectedNode={selectedNode}
+                implementationType={editableImplementationType}
+                handleNumberChange={handleNumberChange}
+                handleFileUpload={handleFileUpload}
+              />
+            }
           />
         )}
 
@@ -2007,6 +2057,49 @@ export const TextPanel = () => {
               </div>
             )}
 
+            {u_gate_parameters[selectedNode.data.label] && (
+              <div className="p-2 mt-3">
+                <label className="block text-sm font-medium text-start text-gray-700 mb-2">
+                  Parameters (radian, e.g. pi/2)
+                </label>
+
+                {u_gate_parameters[selectedNode.data.label].map(
+                  (angle, index, angles) => {
+                    const values = String(selectedNode.data.parameter ?? "")
+                      .split(",")
+                      .map((v) => v.trim());
+
+                    return (
+                      <div key={angle} className="mb-3">
+                        <label
+                          className="block text-xs font-medium text-gray-600"
+                          htmlFor={`u-param-${index}`}
+                        >
+                          {angle}
+                        </label>
+
+                        <input
+                          type="text"
+                          id={`u-param-${index}`}
+                          name={`u-param-${index}`}
+                          value={values[index] ?? ""}
+                          onChange={(e) => {
+                            const next = angles.map(
+                              (_, i) => values[i] ?? "0",
+                            );
+                            next[index] = e.target.value.replace(/,/g, "");
+                            handleNumberChange("parameter", next.join(","));
+                          }}
+                          className="border block w-full border-gray-300 rounded-md sm:text-sm p-2"
+                          placeholder={`Enter ${angle}`}
+                        />
+                      </div>
+                    );
+                  },
+                )}
+              </div>
+            )}
+
             {selectedNode.data.label === "CU" && (
               <div className="p-2 mt-3">
                 <label
@@ -2132,15 +2225,19 @@ export const TextPanel = () => {
 
         {(selectedNode?.type === AlgorithmNode ||
           selectedNode?.type === ClassicalAlgorithmNode) && (
-          <div className="p-2 mt-3">
-            <ImplementationFields
-              selectedNode={selectedNode}
-              handleNumberChange={handleNumberChange}
-              handleFileUpload={handleFileUpload}
-              implementationContent={implementationContent}
-              type=""
-            />
-          </div>
+          <CustomOperatorImplementation
+            selectedNode={selectedNode}
+            updateField={updateField}
+            implementationFields={
+              <ImplementationFields
+                selectedNode={selectedNode}
+                handleNumberChange={handleNumberChange}
+                handleFileUpload={handleFileUpload}
+                implementationContent={implementationContent}
+                type=""
+              />
+            }
+          />
         )}
 
         {selectedNode?.type === "splitterNode" && (

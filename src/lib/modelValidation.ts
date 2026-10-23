@@ -9,6 +9,11 @@
  *    classical/quantum mismatches, multiple connections into one port, cycles
  */
 import {
+  API_METHODS,
+  getPayloadEntries,
+  normalizeApiConnector,
+} from "./apiConnector";
+import {
   CONTENT_TYPE_EXTENSIONS,
   DATA_TYPE_NODE_TYPE,
   KNOWN_CLASSICAL_TYPES,
@@ -255,6 +260,124 @@ export function registerSize(
   }
 }
 
+const CUSTOM_OPERATOR_TYPES = [
+  "algorithmNode",
+  "classicalAlgorithmNode",
+  "editableNode",
+];
+
+const IDENTIFIER = /^[A-Za-z_][A-Za-z0-9_]*$/;
+
+// "numpy", "qiskit[visualization]>=1.0,<2", "scipy==1.11 ; python_version>'3.8'"
+const REQUIREMENT_LINE =
+  /^[A-Za-z0-9][A-Za-z0-9._-]*(\[[A-Za-z0-9._,\s-]+\])?\s*((===?|>=|<=|~=|!=|>|<)\s*[A-Za-z0-9.*+!-]+\s*(,\s*(===?|>=|<=|~=|!=|>|<)\s*[A-Za-z0-9.*+!-]+\s*)*)?(;.*)?$/;
+
+/** Checks the requirements and API connector of a custom operator. */
+function checkCustomImplementation(
+  node: any,
+  nodes: any[],
+  edges: any[],
+): string[] {
+  const problems: string[] = [];
+  const data = node.data ?? {};
+
+  if (data.implementationMode === "api") {
+    const api = normalizeApiConnector(data.apiConnector);
+    const url = api.url.trim();
+    if (!url) {
+      problems.push("the API connector has no URL.");
+    } else if (!url.startsWith("/")) {
+      // relative paths like "/execution-service" are resolved by the deployment
+      try {
+        const parsed = new URL(url);
+        if (!["http:", "https:"].includes(parsed.protocol)) {
+          problems.push(`the API URL "${url}" must use http or https.`);
+        }
+      } catch {
+        problems.push(`the API URL "${url}" is not a valid URL.`);
+      }
+    }
+    if (!API_METHODS.includes(api.method)) {
+      problems.push(`the API method "${api.method}" is not supported.`);
+    }
+    api.headers.forEach((h, i) => {
+      if (!h.key.trim() && h.value.trim()) {
+        problems.push(`API header ${i + 1} has no name.`);
+      }
+    });
+    const checkNames = (list: any[] = [], kind: string) => {
+      const seen = new Set<string>();
+      list.forEach((p, i) => {
+        const name = String(p?.name ?? "").trim();
+        if (!name) {
+          problems.push(`API ${kind} ${i + 1} has no name.`);
+        } else if (!IDENTIFIER.test(name)) {
+          problems.push(`API ${kind} "${name}" is not a valid name.`);
+        } else if (seen.has(name)) {
+          problems.push(`API ${kind} "${name}" is defined twice.`);
+        }
+        seen.add(name);
+      });
+    };
+    checkNames(api.outputs, "output");
+    if (api.outputs.length === 0) {
+      problems.push("the API connector defines no output.");
+    }
+
+    // payload: one entry per classical input port
+    const entries = getPayloadEntries(node, nodes, edges);
+    const keys = new Set<string>();
+    entries.forEach((entry, i) => {
+      if (entry.source.kind === "unconnected") {
+        problems.push(`API input ${i + 1} is not connected.`);
+      }
+      if (keys.has(entry.key)) {
+        problems.push(`API input key "${entry.key}" is used twice.`);
+      }
+      keys.add(entry.key);
+    });
+    if (api.method === "GET" && entries.length > 0) {
+      problems.push(
+        "GET requests send no payload, so the connected inputs are not sent.",
+      );
+    }
+    const classicalOutputs = Number(data.numberClassicalOutputs) || 0;
+    if (
+      data.numberClassicalOutputs !== undefined &&
+      api.outputs.length > 0 &&
+      api.outputs.length !== classicalOutputs
+    ) {
+      problems.push(
+        `the API connector defines ${api.outputs.length} output(s), but the operator has ${classicalOutputs} classical output(s).`,
+      );
+    }
+    api.outputs.forEach((o, i) => {
+      if (o.extraction === "script" && !o.script.trim()) {
+        problems.push(
+          `API output "${o.name || i + 1}" has no extraction script.`,
+        );
+      }
+    });
+    return problems;
+  }
+
+  // Implementation file: requirements must be valid pip requirement lines.
+  String(data.requirements ?? "")
+    .split(/\r?\n/)
+    .map((l) => l.replace(/\s+#.*$/, "").trim())
+    .forEach((line, i) => {
+      // Blank lines, comments, pip options (-r, --index-url) and direct references
+      if (!line || line.startsWith("#") || line.startsWith("-")) return;
+      if (line.includes("://") || / @ /.test(line)) return;
+      if (!REQUIREMENT_LINE.test(line)) {
+        problems.push(
+          `requirements line ${i + 1} "${line}" is not a valid requirement.`,
+        );
+      }
+    });
+  return problems;
+}
+
 export function validateModelStructure(flow: any): ModelValidationResult {
   const errors: ModelValidationItem[] = [];
   const warnings: ModelValidationItem[] = [];
@@ -436,6 +559,13 @@ export function validateModelStructure(flow: any): ModelValidationResult {
         error(node, `Output ${i + 1} of ${nodeName(node)} has size 0.`);
       }
     });
+
+    // Custom operators: requirements file or API connector.
+    if (CUSTOM_OPERATOR_TYPES.includes(node.type)) {
+      checkCustomImplementation(node, nodes, edges).forEach((d) =>
+        error(node, `${nodeName(node)}: ${d}`),
+      );
+    }
 
     const spec = findNodeSpec(node);
     if (!spec) return;

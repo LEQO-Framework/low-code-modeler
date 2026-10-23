@@ -1,6 +1,12 @@
 import { Edge, Node } from "reactflow";
 import * as consts from "./constants";
 import type { components } from "./backend.types";
+import {
+  getPayloadEntries,
+  isApiConnectorNode,
+  normalizeApiConnector,
+  toBackendApiConnector,
+} from "./lib/apiConnector";
 
 type CompileRequest = components["schemas"]["CompileRequest"];
 type BackendNode = CompileRequest["nodes"][0];
@@ -121,6 +127,19 @@ export const startCompile = async (
   });
 
   function mapNode(node: Node): BackendNode {
+    // custom operators implemented by an API become a service task in the workflow
+    if (isApiConnectorNode(node)) {
+      return {
+        id: node.id,
+        type: "api-connector",
+        label: node.data.label,
+        ...toBackendApiConnector(
+          normalizeApiConnector(node.data.apiConnector),
+          getPayloadEntries(node, nodes, edges),
+        ),
+      };
+    }
+
     if (node.data.implementation) {
       return {
         id: node.id,
@@ -260,6 +279,28 @@ export const startCompile = async (
             controlValue: Number(node.data.controlValue),
             matrix: JSON.parse(node.data.matrix),
           };
+        } else if (consts.u_gate_parameters[node.data.label]) {
+          // u2/u3 take several angles (stored comma separated); the backend
+          // expects them as an ordered `parameters` list.
+          const label = node.data.label;
+          const expected = consts.u_gate_parameters[label].length;
+          const parameters = String(node.data.parameter ?? "0")
+            .split(",")
+            .map(parseAngle);
+          if (parameters.length !== expected) {
+            throw new Error(
+              `${label} expects ${expected} parameter(s), but got "${node.data.parameter}"`,
+            );
+          }
+          return {
+            id: node.id,
+            type: "gate-with-param",
+            gate: map(
+              { "U1(λ)": "u1", "U2(φ,λ)": "u2", "U3(θ,φ,λ)": "u3" },
+              label,
+            ),
+            parameters,
+          };
         } else if (
           [
             "RX(θ)",
@@ -270,9 +311,6 @@ export const startCompile = async (
             "CRX(θ)",
             "CRY(θ)",
             "CRZ(θ)",
-            "U1(λ)",
-            "U2(φ,λ)",
-            "U3(θ,φ,λ)",
           ].includes(node.data.label)
         ) {
           return {
@@ -288,9 +326,6 @@ export const startCompile = async (
                 "CRX(θ)": "crx",
                 "CRY(θ)": "cry",
                 "CRZ(θ)": "crz",
-                "U1(λ)": "u1",
-                "U2(φ,λ)": "u2",
-                "U3(θ,φ,λ)": "u3",
               },
               node.data.label,
             ),
@@ -866,6 +901,19 @@ export const startCompile = async (
     };
   }
 };
+
+/** Evaluates an angle in radians such as "0.5", "pi/2" or "-3*π/4". */
+function parseAngle(value: string): number {
+  const expr = value.trim().replace(/π|pi/gi, `(${Math.PI})`);
+  if (!/^[\d\s.+\-*/()eE]+$/.test(expr)) {
+    throw new Error(`Invalid gate parameter "${value}"`);
+  }
+  const result = Number(new Function(`return (${expr});`)());
+  if (!Number.isFinite(result)) {
+    throw new Error(`Invalid gate parameter "${value}"`);
+  }
+  return result;
+}
 
 function map<const T extends Record<string, any>, K extends keyof T>(
   map: T,

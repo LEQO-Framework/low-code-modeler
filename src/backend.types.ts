@@ -236,10 +236,58 @@ export interface components {
         | components["schemas"]["RepeatNode"]
         | components["schemas"]["OperatorNode"]
         | components["schemas"]["PluginNode"]
+        | components["schemas"]["ApiConnectorNode"]
       )[];
       /** Edges */
       edges: components["schemas"]["Edge"][];
       compilation_target: string;
+    };
+    /**
+     * ApiConnectorOutput
+     * @description Output of an ApiConnectorNode, extracted from the HTTP response.
+     */
+    ApiConnectorOutput: {
+      /** Name */
+      name: string;
+      /** Script */
+      script: string;
+    };
+    /**
+     * ApiConnectorNode
+     * @description Custom operator implemented by an external HTTP API.
+     *     Becomes a service task with a Camunda http-connector in the workflow.
+     */
+    ApiConnectorNode: {
+      /** Id */
+      id: string;
+      /** Label */
+      label?: string | null;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: "api-connector";
+      /**
+       * Method
+       * @default POST
+       * @enum {string}
+       */
+      method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+      /** Url */
+      url: string;
+      /** Headers */
+      headers?: {
+        [key: string]: string;
+      };
+      /** Payload */
+      payload?: string | null;
+      /** Outputs */
+      outputs?: components["schemas"]["ApiConnectorOutput"][];
+      /**
+       * Scriptformat
+       * @default groovy
+       */
+      scriptFormat?: string;
     };
     /** Edge */
     Edge: {
@@ -644,7 +692,9 @@ export interface components {
         | "u2"
         | "u3";
       /** Parameter */
-      parameter: number;
+      parameter?: number | null;
+      /** Parameters */
+      parameters?: number[] | null;
     };
     /** PrepareStateNode */
     PrepareStateNode: {

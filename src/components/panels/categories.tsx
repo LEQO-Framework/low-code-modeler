@@ -280,6 +280,45 @@ export const categories: Record<string, CategoryEntry> = {
           completionGuaranteed: true,
           compactOptions: [true, false],
         },
+        {
+          label: "P(λ)",
+          aliases: ["Phase"],
+          icon: ["PaletteIcon_Phase_Beginner.png", "PaletteIcon_Phase_Beginner.png"],
+          type: consts.GateNode,
+          description: "Phase shift of the |1⟩ state by λ.",
+          completionGuaranteed: true,
+          compactOptions: [true, false],
+        },
+      ],
+
+      "Universal Gates": [
+        {
+          label: "U1(λ)",
+          aliases: ["U1"],
+          icon: ["PaletteIcon_U1.png", "PaletteIcon_U1.png"],
+          type: consts.GateNode,
+          description: "Universal gate with one angle (phase λ).",
+          completionGuaranteed: true,
+          compactOptions: [true, false],
+        },
+        {
+          label: "U2(φ,λ)",
+          aliases: ["U2"],
+          type: consts.GateNode,
+          icon: ["PaletteIcon_U2.png", "PaletteIcon_U2.png"],
+          description: "Universal gate with two angles φ and λ.",
+          completionGuaranteed: true,
+          compactOptions: [true, false],
+        },
+        {
+          label: "U3(θ,φ,λ)",
+          aliases: ["U3"],
+          icon: ["PaletteIcon_U3.png", "PaletteIcon_U3.png"],
+          type: consts.GateNode,
+          description: "General single-qubit rotation with angles θ, φ and λ.",
+          completionGuaranteed: true,
+          compactOptions: [true, false],
+        },
       ],
 
       "Two-Qubit Gates": [
