@@ -53,6 +53,7 @@ export default function PromptFlowModal({
   const validateSizeInput = (
     value: string,
     isBellState: boolean = false,
+    minimum: number = 1,
   ): { isValid: boolean; message: string } => {
     if (!value) return { isValid: false, message: "Please enter a value." };
     const num = Number(value);
@@ -61,7 +62,14 @@ export default function PromptFlowModal({
       return { isValid: false, message: "Must be an integer." };
     if (isBellState && num !== 2)
       return { isValid: false, message: "Bell states must have size 2." };
-    if (num < 1) return { isValid: false, message: "Must be at least 1." }; // Allow 1 for uniform superpositions
+    if (num < minimum)
+      return {
+        isValid: false,
+        message:
+          minimum > 1
+            ? `GHZ and W states need at least ${minimum} qubits.`
+            : "Must be at least 1.",
+      }; // Allow 1 for uniform superpositions
     return { isValid: true, message: "" };
   };
 
@@ -209,6 +217,15 @@ export default function PromptFlowModal({
     return onlyBellOptions.includes(chosenState);
   };
 
+  // Smallest accepted size: GHZ and W states need at least three qubits, whether the state was already
+  // in the model (the backend then sends `minimum`) or is chosen in this form.
+  const minimumSize = (input: any): number => {
+    if (input.type !== "size") return 1;
+    const chosenState = inputValues[`${input.id}-statePreparation`];
+    if (chosenState === "GHZ" || chosenState === "W") return 3;
+    return input.minimum ?? 1;
+  };
+
   return (
     <>
       {toast && (
@@ -335,12 +352,27 @@ export default function PromptFlowModal({
                     <select
                       className="w-full border p-2 rounded"
                       value={inputValues[itemKey] || ""}
-                      onChange={(e) =>
-                        setInputValues({
-                          ...inputValues,
-                          [itemKey]: e.target.value,
-                        })
-                      }
+                      onChange={(e) => {
+                        const state = e.target.value;
+                        setInputValues({ ...inputValues, [itemKey]: state });
+                        // The chosen state decides which sizes are valid, so re-check an
+                        // already entered size of the same block.
+                        const sizeKey = `${input.id}-size`;
+                        const size = inputValues[sizeKey];
+                        if (size && !onlyBellOptions.includes(state)) {
+                          const { isValid, message } = validateSizeInput(
+                            size,
+                            false,
+                            state === "GHZ" || state === "W" ? 3 : 1,
+                          );
+                          setInputErrors({
+                            ...inputErrors,
+                            [sizeKey]: isValid ? "" : message,
+                          });
+                        } else if (sizeKey in inputErrors) {
+                          setInputErrors({ ...inputErrors, [sizeKey]: "" });
+                        }
+                      }}
                     >
                       <option value="">Select a state</option>
                       {input.isBellState
@@ -451,7 +483,7 @@ export default function PromptFlowModal({
                     <div className="space-y-1">
                       <input
                         type="number"
-                        min={1} // Allow 1 as the minimum
+                        min={minimumSize(input)}
                         step={1}
                         className={`w-full border p-2 rounded ${
                           inputErrors[itemKey]
@@ -477,6 +509,7 @@ export default function PromptFlowModal({
                           const { isValid, message } = validateSizeInput(
                             value,
                             isBellState,
+                            minimumSize(input),
                           );
                           setInputErrors({
                             ...inputErrors,
@@ -491,6 +524,7 @@ export default function PromptFlowModal({
                           const { isValid, message } = validateSizeInput(
                             e.target.value,
                             isBellState,
+                            minimumSize(input),
                           );
                           setInputErrors({
                             ...inputErrors,
