@@ -3254,6 +3254,18 @@ If none apply, return { "algorithms": [] }.
           ...(def?.isDataType && {
             isDataType: def.isDataType,
           }),
+
+          ...(def?.inputPorts && {
+            inputPorts: def.inputPorts,
+          }),
+
+          ...(def?.outputPorts && {
+            outputPorts: def.outputPorts,
+          }),
+
+          ...(def?.operatorKind && {
+            operatorKind: def.operatorKind,
+          }),
         },
       };
 
@@ -6165,7 +6177,8 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
                 nodeColor={(node) => {
                   switch (node.type) {
                     case "editableNode":
-                      return node.data.isDataType
+                      return node.data.isDataType ||
+                        node.data.operatorKind === "classical"
                         ? classicalConstructColor
                         : quantumConstructColor;
                     case "dataTypeNode":
