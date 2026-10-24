@@ -18,7 +18,7 @@ import {
   interleaveByCategory,
   mulberry32,
 } from "./testingErrors";
-import { startCompile } from "../../backend";
+import { isPythonImplementation, startCompile } from "../../backend";
 import { validateFileContents } from "../../lib/fileValidation";
 import JSZip from "jszip";
 
@@ -457,7 +457,8 @@ function compilationTargetFor(model: TestModel): string {
     (n) =>
       n.type === "pluginNode" ||
       (n.type === "dataTypeNode" &&
-        ["string", "file"].includes(String(n.data?.dataType).toLowerCase())),
+        ["string", "file"].includes(String(n.data?.dataType).toLowerCase())) ||
+      isPythonImplementation(n),
   );
   return needsWorkflow ? "workflow" : "qasm";
 }

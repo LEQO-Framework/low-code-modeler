@@ -38,7 +38,7 @@ import { initialDiagram } from "./config/site";
 import Modal, { NewDiagramModal } from "./Modal";
 import "./index.css";
 import { Placement } from "react-joyride";
-import { startCompile } from "./backend";
+import { isPythonImplementation, startCompile } from "./backend";
 import {
   ancillaConstructColor,
   classicalConstructColor,
@@ -2356,6 +2356,7 @@ If none apply, return { "algorithms": [] }.
 
   // Checks if there are any Nodes conflicting with QASM
   const [containsWorkflowNodes, setContainsWorkflowNodes] = useState(false);
+  const [containsPythonNodes, setContainsPythonNodes] = useState(false);
   function checkContainsWorkflowNodes(flow): boolean {
     return flow.nodes?.some(
       (node) =>
@@ -2376,6 +2377,7 @@ If none apply, return { "algorithms": [] }.
     const result = validateFlow(flow);
     console.log(flow);
     setContainsWorkflowNodes(checkContainsWorkflowNodes(flow));
+    setContainsPythonNodes(flow.nodes?.some(isPythonImplementation) ?? false);
 
     setValidationResult(result);
     setIsValidationOpen(true);
@@ -5711,6 +5713,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
         compilationTarget={compilationTarget}
         containsPlaceholder={containsPlaceholder}
         containsWorkflowNodes={containsWorkflowNodes}
+        containsPythonNodes={containsPythonNodes}
         setCompilationTarget={setCompilationTarget}
         sendToBackend={sendToBackend}
       />

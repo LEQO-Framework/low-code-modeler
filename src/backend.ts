@@ -14,7 +14,7 @@ type BackendEdge = CompileRequest["edges"][0];
 export type StatusResult = components["schemas"]["StatusBody"];
 
 // language is only set when a file is uploaded, so detect it for manually entered code
-function implementationLanguage(node: Node): "openqasm" | "python" {
+export function implementationLanguage(node: Node): "openqasm" | "python" {
   const language = node.data.implementationLanguage;
   if (language === "python") return "python";
   if (language === "qasm") return "openqasm";
@@ -22,6 +22,14 @@ function implementationLanguage(node: Node): "openqasm" | "python" {
   if (/^\s*OPENQASM\b/m.test(code)) return "openqasm";
   if (/#\s*@(input|output)\b/.test(code)) return "python";
   return "openqasm";
+}
+
+/** Python implementations cannot be transformed into OpenQASM, only into a workflow. */
+export function isPythonImplementation(node: Node): boolean {
+  return (
+    Boolean(node.data?.implementation) &&
+    implementationLanguage(node) === "python"
+  );
 }
 
 export const startCompile = async (
