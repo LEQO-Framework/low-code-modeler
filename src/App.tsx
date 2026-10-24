@@ -38,7 +38,7 @@ import { initialDiagram } from "./config/site";
 import Modal, { NewDiagramModal } from "./Modal";
 import "./index.css";
 import { Placement } from "react-joyride";
-import { startCompile } from "./backend";
+import { isPythonImplementation, startCompile } from "./backend";
 import {
   ancillaConstructColor,
   classicalConstructColor,
@@ -77,9 +77,11 @@ import JSZip from "jszip";
 import {
   createDeploymentModel,
   createNodeType,
+  createServiceInstance,
   createServiceTemplate,
   updateNodeType,
   updateServiceTemplate,
+  uploadCSARToContainer,
 } from "./winery";
 import {
   categories,
@@ -129,6 +131,27 @@ import {
   quantum_clustering,
   quantum_fourier_transform,
 } from "./constants/exampleModels";
+
+const BPMN_NS = "http://www.omg.org/spec/BPMN/20100524/MODEL";
+const CAMUNDA_NS = "http://camunda.org/schema/1.0/bpmn";
+const OPENTOSCA_NS = "https://github.com/UST-QuAntiL/OpenTOSCA";
+const wineryEndpoint =
+  import.meta.env.VITE_WINERY_ENDPOINT || "http://localhost:8093/winery";
+const opentoscaEndpoint =
+  import.meta.env.VITE_OPENTOSCA_ENDPOINT || "http://localhost:1337/csars";
+
+/**
+ * Replace localhost in the URL with the given IP, so the URL can be reached
+ * from the OpenTOSCA Container and the services it deploys (which run in Docker).
+ */
+function withHostIp(url: string, hostIp: string): string {
+  if (!hostIp) return url;
+  const parsed = new URL(url);
+  if (parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1") {
+    parsed.hostname = hostIp;
+  }
+  return parsed.toString().replace(/\/$/, "");
+}
 
 const selector = (state: {
   nodes: Node[];
@@ -460,6 +483,7 @@ function App() {
     import.meta.env.VITE_CAMUNDA7_ENDPOINT ||
       "http://localhost:8090/engine-rest",
   );
+  const [hostIp, setHostIp] = useState(import.meta.env.VITE_HOST_IP || "");
 
   const [openAIToken, setOpenAIToken] = useState(
     import.meta.env.VITE_OPENAI_TOKEN,
@@ -808,6 +832,7 @@ If none apply, return { "algorithms": [] }.
   const handleSave = (newValues) => {
     console.log(newValues);
     setCamundaEndpoint(newValues.tempCamundaEndpoint);
+    setHostIp(newValues.tempHostIp);
     setNisqAnalyzerEndpoint(newValues.tempNisqAnalyzerEndpoint);
     setOpenAIToken(newValues.tempOpenAIToken);
     setMistralToken(newValues.tempMistralToken);
@@ -2331,6 +2356,7 @@ If none apply, return { "algorithms": [] }.
 
   // Checks if there are any Nodes conflicting with QASM
   const [containsWorkflowNodes, setContainsWorkflowNodes] = useState(false);
+  const [containsPythonNodes, setContainsPythonNodes] = useState(false);
   function checkContainsWorkflowNodes(flow): boolean {
     return flow.nodes?.some(
       (node) =>
@@ -2351,6 +2377,7 @@ If none apply, return { "algorithms": [] }.
     const result = validateFlow(flow);
     console.log(flow);
     setContainsWorkflowNodes(checkContainsWorkflowNodes(flow));
+    setContainsPythonNodes(flow.nodes?.some(isPythonImplementation) ?? false);
 
     setValidationResult(result);
     setIsValidationOpen(true);
@@ -5218,41 +5245,20 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
       const activityArrayBuffer = await entry.async("arraybuffer");
       const activityZip = await JSZip.loadAsync(activityArrayBuffer);
 
-      // Find service.zip inside activity ZIP
-      const serviceEntry = Object.values(activityZip.files).find(
-        (f) => !f.dir && f.name.endsWith("service.zip"),
-      );
-
-      if (!serviceEntry) {
-        console.warn(`No service.zip found in ${activityName}`);
+      // The DockerEngine builds the image from the Dockerfile in the DA,
+      // so the whole activity ZIP (Dockerfile + service.zip) is the DA
+      if (!activityZip.file("Dockerfile") || !activityZip.file("service.zip")) {
+        console.warn(`No Dockerfile and service.zip found in ${activityName}`);
         continue;
       }
-
-      // Extract service.zip as Blob
-      const serviceArrayBuffer = await serviceEntry.async("arraybuffer");
-      const serviceBlob = new Blob([serviceArrayBuffer], {
+      const serviceBlob = new Blob([activityArrayBuffer], {
         type: "application/zip",
       });
 
-      // Create deployment model
-      const versionUrl = `http://localhost:8093/winery/servicetemplates/${activityName}`;
-      await createDeploymentModel(
-        serviceBlob,
-        "http://localhost:8093/winery",
-        `${activityName}_DA`,
-        "http://opentosca.org/artifacttemplates",
-        "{http://opentosca.org/artifacttypes}DockerContainerArtifact",
-        "service.zip",
-        versionUrl,
-      );
       const OPENTOSCA_NAMESPACE_NODETYPE = "http://opentosca.org/nodetypes";
-      const QUANTME_NAMESPACE_PULL = "http://quantil.org/quantme/pull";
 
-      // Create service template
-      let _serviceTemplate = await createServiceTemplate(
-        activityName,
-        namespace,
-      );
+      // Create service template (before the deployment model, which references its DA)
+      await createServiceTemplate(activityName, namespace);
       await createNodeType(
         activityName + "Container",
         OPENTOSCA_NAMESPACE_NODETYPE,
@@ -5261,12 +5267,97 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
         activityName + "Container",
         OPENTOSCA_NAMESPACE_NODETYPE,
       );
-      _serviceTemplate = await updateServiceTemplate(
-        activityName,
-        QUANTME_NAMESPACE_PULL,
+      await updateServiceTemplate(activityName, namespace);
+
+      // Create deployment model
+      const serviceTemplateUrl = `${wineryEndpoint}/servicetemplates/${encodeURIComponent(
+        encodeURIComponent(namespace),
+      )}/${activityName}/`;
+      await createDeploymentModel(
+        serviceBlob,
+        wineryEndpoint,
+        `${activityName}_DA`,
+        "http://opentosca.org/artifacttemplates",
+        "{http://opentosca.org/artifacttypes}DockerContainerArtifact",
+        "service.zip",
+        serviceTemplateUrl,
       );
       console.log(`Service template created for: ${activityName}`);
     }
+  }
+
+  /**
+   * Deploy the services of all service tasks with a deployment model (opentosca:deploymentModelUrl)
+   * to the OpenTOSCA Container and bind the service tasks to the created service instances.
+   *
+   * @return the workflow with bound service tasks
+   */
+  async function deployServicesToContainer(
+    workflowXml: string,
+  ): Promise<string> {
+    const doc = new DOMParser().parseFromString(workflowXml, "application/xml");
+    const serviceTasks = Array.from(
+      doc.getElementsByTagNameNS(BPMN_NS, "serviceTask"),
+    ).filter((task) => task.getAttributeNS(OPENTOSCA_NS, "deploymentModelUrl"));
+    if (serviceTasks.length === 0) return workflowXml;
+
+    // the Container downloads the CSARs from the Winery and the services poll the Camunda engine
+    const containerWineryEndpoint = withHostIp(wineryEndpoint, hostIp);
+    const serviceCamundaEndpoint = withHostIp(camundaEndpoint, hostIp);
+
+    for (const task of serviceTasks) {
+      const deploymentModelUrl = task
+        .getAttributeNS(OPENTOSCA_NS, "deploymentModelUrl")
+        .replace("{{ wineryEndpoint }}", containerWineryEndpoint);
+      const csarName =
+        deploymentModelUrl.split("/?csar")[0].split("/").pop() + ".csar";
+      showToast(
+        `Deploying service ${csarName} to the OpenTOSCA Container`,
+        "info",
+      );
+
+      const uploadResult = await uploadCSARToContainer(
+        opentoscaEndpoint,
+        csarName,
+        deploymentModelUrl,
+        containerWineryEndpoint,
+      );
+      if (!uploadResult.success) {
+        throw new Error(
+          `Unable to upload ${csarName} to the OpenTOSCA Container`,
+        );
+      }
+
+      const instance = await createServiceInstance(
+        {
+          type: "pull",
+          buildPlanUrl: uploadResult.url,
+          inputParameters: uploadResult.inputParameters,
+        },
+        serviceCamundaEndpoint,
+        undefined,
+        {},
+      );
+      if (!instance.success) {
+        throw new Error(`Unable to create a service instance for ${csarName}`);
+      }
+
+      // bind the service task to the topic the service instance polls
+      task.setAttributeNS(
+        OPENTOSCA_NS,
+        "opentosca:deploymentModelUrl",
+        deploymentModelUrl,
+      );
+      task.setAttributeNS(
+        OPENTOSCA_NS,
+        "opentosca:deploymentBuildPlanInstanceUrl",
+        instance.buildPlanUrl,
+      );
+      task.setAttributeNS(CAMUNDA_NS, "camunda:type", "external");
+      task.setAttributeNS(CAMUNDA_NS, "camunda:topic", instance.topicName);
+      console.log(`Bound ${task.id} to topic ${instance.topicName}`);
+    }
+    return new XMLSerializer().serializeToString(doc);
   }
 
   const onNodesChangeSync = useCallback(
@@ -5622,6 +5713,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
         compilationTarget={compilationTarget}
         containsPlaceholder={containsPlaceholder}
         containsWorkflowNodes={containsWorkflowNodes}
+        containsPythonNodes={containsPythonNodes}
         setCompilationTarget={setCompilationTarget}
         sendToBackend={sendToBackend}
       />
@@ -5639,6 +5731,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
         experienceLevel={experienceLevel}
         collaborationMode={collaborationModeOn}
         tempCamundaEndpoint={camundaEndpoint}
+        tempHostIp={hostIp}
         tempNisqAnalyzerEndpoint={nisqAnalyzerEndpoint}
         tempOpenAIToken={openAIToken}
         tempQunicornEndpoint={qunicornEndpoint}
@@ -5797,7 +5890,6 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
               if (hasMultipleMappingsInFlow(modelData)) {
                 // sendWorkflowForDeployment(workflow);
               }
-              await deployWorkflowToCamunda("process-workflow", workflow);
 
               // Upload the QRMS file to GitHub if available
               if (item.links?.qrms) {
@@ -5820,6 +5912,16 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
                   console.error("Service template creation failed:", err);
                 }
               }
+
+              // the service tasks must be bound to the service instances before the workflow is deployed
+              let boundWorkflow = workflow;
+              try {
+                boundWorkflow = await deployServicesToContainer(workflow);
+              } catch (err) {
+                console.error("Service deployment failed:", err);
+                showToast(`Service deployment failed: ${err.message}`, "error");
+              }
+              await deployWorkflowToCamunda("process-workflow", boundWorkflow);
               return;
             }
 

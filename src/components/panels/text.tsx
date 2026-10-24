@@ -38,6 +38,7 @@ import {
   qubitLabel,
 } from "@/constants";
 import { ArrowLeft } from "lucide-react";
+import { detectImplementationLanguage } from "@/backend";
 import { CustomOperatorImplementation } from "./customOperatorImplementation";
 import { useEffect, useState } from "react";
 import { Node } from "reactflow";
@@ -1441,6 +1442,7 @@ export const TextPanel = () => {
 
       if (field === "implementation") {
         setImplementationContent(value);
+        updateImplementationLanguage(value);
       }
 
       if (validFields.includes(field)) {
@@ -1458,6 +1460,23 @@ export const TextPanel = () => {
           updateNodeValue(selectedNode.id, field, value);
         }
       }
+    }
+  }
+
+  /**
+   * Stores the language of code entered in the field. If the code does not tell,
+   * a previously set language is kept; classical operators default to python.
+   */
+  function updateImplementationLanguage(code: string) {
+    if (!selectedNode) return;
+    const detected = detectImplementationLanguage(code);
+    const language =
+      detected ??
+      selectedNode.data.implementationLanguage ??
+      (selectedNode.type.toLowerCase().includes("classical") ? "python" : "qasm");
+    if (code.trim() && language !== selectedNode.data.implementationLanguage) {
+      selectedNode.data.implementationLanguage = language;
+      updateNodeValue(selectedNode.id, "implementationLanguage", language);
     }
   }
 
@@ -1496,22 +1515,15 @@ export const TextPanel = () => {
               "implementationFileName",
               file.name,
             );
+          }
 
-            const extension = file.name.split(".").pop()?.toLowerCase();
-
-            if (extension === "qasm") {
-              updateNodeValue(
-                selectedNode.id,
-                "implementationLanguage",
-                "qasm",
-              );
-            } else if (extension === "py") {
-              updateNodeValue(
-                selectedNode.id,
-                "implementationLanguage",
-                "python",
-              );
-            }
+          const extension = file.name.split(".").pop()?.toLowerCase();
+          if (extension === "qasm" || extension === "py") {
+            const language = extension === "py" ? "python" : "qasm";
+            selectedNode.data.implementationLanguage = language;
+            updateNodeValue(selectedNode.id, "implementationLanguage", language);
+          } else {
+            updateImplementationLanguage(fileContent);
           }
         }
       };

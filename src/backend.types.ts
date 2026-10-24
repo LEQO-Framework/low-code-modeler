@@ -456,6 +456,12 @@ export interface components {
       type: "implementation";
       /** Implementation */
       implementation: string;
+      /**
+       * Language
+       * @default openqasm
+       * @enum {string}
+       */
+      language?: "openqasm" | "python";
     };
     /** IntLiteralNode */
     IntLiteralNode: {
@@ -788,7 +794,9 @@ export interface components {
        */
       type: "repeat";
       /** Iterations */
-      iterations: number;
+      iterations?: number | null;
+      /** Condition */
+      condition?: string | null;
       block: components["schemas"]["NestedBlock"];
     };
     /** SplitterNode */

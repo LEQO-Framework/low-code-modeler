@@ -7,6 +7,7 @@ interface SendRequestModalProps {
   compilationTarget: string;
   containsPlaceholder: boolean;
   containsWorkflowNodes: boolean;
+  containsPythonNodes: boolean;
   setCompilationTarget: (target: string) => void;
   sendToBackend: () => void;
 }
@@ -17,22 +18,21 @@ export const SendRequestModal = ({
   compilationTarget,
   containsPlaceholder,
   containsWorkflowNodes,
+  containsPythonNodes,
   setCompilationTarget,
   sendToBackend,
 }: SendRequestModalProps) => {
+  const qasmUnavailable =
+    containsPlaceholder || containsWorkflowNodes || containsPythonNodes;
+
   useEffect(() => {
     if (
-      (containsPlaceholder || containsWorkflowNodes) &&
+      qasmUnavailable &&
       (compilationTarget === "qasm" || compilationTarget === "qiskit")
     ) {
       setCompilationTarget("workflow");
     }
-  }, [
-    containsPlaceholder,
-    containsWorkflowNodes,
-    compilationTarget,
-    setCompilationTarget,
-  ]);
+  }, [qasmUnavailable, compilationTarget, setCompilationTarget]);
 
   return (
     <Modal
@@ -59,19 +59,27 @@ export const SendRequestModal = ({
             onChange={(e) => setCompilationTarget(e.target.value)}
           >
             <option value="workflow">Workflow</option>
-            <option
-              value="qasm"
-              disabled={containsPlaceholder || containsWorkflowNodes}
-            >
+            <option value="qasm" disabled={qasmUnavailable}>
               OpenQASM3{" "}
               {containsPlaceholder
                 ? "(not available, placeholder present)"
                 : containsWorkflowNodes
                   ? "(not available, Machine Learning, File or String node present)"
-                  : ""}
+                  : containsPythonNodes
+                    ? "(not available, Python implementation present)"
+                    : ""}
             </option>
           </select>
         </div>
+        {containsPythonNodes && (
+          <p className="text-sm text-gray-600">
+            The model contains a block with a Python implementation. Python
+            code runs on a classical computer and cannot be expressed as an
+            OpenQASM circuit, so the model can only be transformed into a
+            workflow. The Python code is then executed as a service task by a
+            generated service.
+          </p>
+        )}
       </div>
     </Modal>
   );
