@@ -13,6 +13,17 @@ type BackendNode = CompileRequest["nodes"][0];
 type BackendEdge = CompileRequest["edges"][0];
 export type StatusResult = components["schemas"]["StatusBody"];
 
+// language is only set when a file is uploaded, so detect it for manually entered code
+function implementationLanguage(node: Node): "openqasm" | "python" {
+  const language = node.data.implementationLanguage;
+  if (language === "python") return "python";
+  if (language === "qasm") return "openqasm";
+  const code: string = node.data.implementation;
+  if (/^\s*OPENQASM\b/m.test(code)) return "openqasm";
+  if (/#\s*@(input|output)\b/.test(code)) return "python";
+  return "openqasm";
+}
+
 export const startCompile = async (
   baseUrl: string,
   metadata: any,
@@ -145,6 +156,7 @@ export const startCompile = async (
         id: node.id,
         type: "implementation",
         implementation: node.data.implementation,
+        language: implementationLanguage(node),
       };
     }
 

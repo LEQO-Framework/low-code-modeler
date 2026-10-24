@@ -17,6 +17,7 @@ interface ConfigModalProps {
     autoConnectOnEdgeDrop: boolean;
     autoConnectOnSameLine: boolean;
     tempCamundaEndpoint: string;
+    tempHostIp: string;
     tempNisqAnalyzerEndpoint: string;
     tempQunicornEndpoint: string;
     tempOpenAIToken: string;
@@ -35,6 +36,7 @@ interface ConfigModalProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   tempCamundaEndpoint: string;
+  tempHostIp: string;
   // Current App state values
   tempNisqAnalyzerEndpoint: string;
   tempQunicornEndpoint: string;
@@ -64,6 +66,7 @@ export const ConfigModal = ({
   autoConnectOnSameLine,
   collaborationMode,
   tempCamundaEndpoint,
+  tempHostIp,
   tempNisqAnalyzerEndpoint,
   tempQunicornEndpoint,
   tempLowcodeBackendEndpoint,
@@ -93,6 +96,7 @@ export const ConfigModal = ({
 
   const [localNisq, setLocalNisq] = useState(tempNisqAnalyzerEndpoint);
   const [localCamunda, setLocalCamunda] = useState(tempCamundaEndpoint);
+  const [localHostIp, setLocalHostIp] = useState(tempHostIp);
   const [localQunicorn, setLocalQunicorn] = useState(tempQunicornEndpoint);
   const [localLowcode, setLocalLowcode] = useState(tempLowcodeBackendEndpoint);
   const [localOpenAIToken, setLocalOpenAIToken] = useState(tempOpenAIToken);
@@ -123,6 +127,8 @@ export const ConfigModal = ({
       setLocalMistralToken(tempMistralToken);
 
       setLocalNisq(tempNisqAnalyzerEndpoint);
+      setLocalCamunda(tempCamundaEndpoint);
+      setLocalHostIp(tempHostIp);
       setLocalQunicorn(tempQunicornEndpoint);
       setLocalLowcode(tempLowcodeBackendEndpoint);
       setLocalPatternUI(tempPatternAtlasUiEndpoint);
@@ -140,6 +146,7 @@ export const ConfigModal = ({
     onSave({
       experienceLevel: localExperienceLevel,
       tempCamundaEndpoint: localCamunda,
+      tempHostIp: localHostIp,
       compactVisualization: localCompactVisualization,
       completionGuaranteed: localCompletionGuaranteed,
       autoConnectOnEdgeDrop: localAutoConnectOnEdgeDrop,
@@ -355,6 +362,24 @@ export const ConfigModal = ({
                       type="text"
                       value={localCamunda}
                       onChange={(e) => setLocalCamunda(e.target.value)}
+                    />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <h3 className="labels">OpenTOSCA</h3>
+            <table className="config-table">
+              <tbody>
+                <tr>
+                  <td align="right">Host IP:</td>
+                  <td align="left">
+                    <input
+                      className="qwm-input"
+                      type="text"
+                      placeholder="e.g. 192.168.178.20"
+                      title="Replaces localhost in the Winery and Camunda endpoints passed to the OpenTOSCA Container and the deployed services"
+                      value={localHostIp}
+                      onChange={(e) => setLocalHostIp(e.target.value)}
                     />
                   </td>
                 </tr>

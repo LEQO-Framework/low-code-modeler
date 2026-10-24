@@ -456,6 +456,12 @@ export interface components {
       type: "implementation";
       /** Implementation */
       implementation: string;
+      /**
+       * Language
+       * @default openqasm
+       * @enum {string}
+       */
+      language?: "openqasm" | "python";
     };
     /** IntLiteralNode */
     IntLiteralNode: {
