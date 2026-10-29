@@ -13,6 +13,7 @@ import {
   getPayloadEntries,
   normalizeApiConnector,
 } from "./apiConnector";
+import { propertyErrors } from "./propertyConstraints";
 import {
   CONTENT_TYPE_EXTENSIONS,
   DATA_TYPE_NODE_TYPE,
@@ -560,16 +561,23 @@ export function validateModelStructure(flow: any): ModelValidationResult {
       }
     });
 
-    // Domain profile blocks: required properties must be filled in.
+    // Domain profile blocks: required properties must be filled in, and the values
+    // must fit the types and constraints of the profile.
     if (node.type === "editableNode") {
-      (node.data?.properties ?? []).forEach((prop: any) => {
-        if (prop?.required && isEmpty(node.data?.propertyValues?.[prop.name])) {
+      const properties = node.data?.properties ?? [];
+      const values = node.data?.propertyValues ?? {};
+      propertyErrors(properties, node.data?.constraints ?? [], values).forEach(
+        (problem, i) => {
+          if (!problem) return;
+          const name = properties[i]?.name;
           error(
             node,
-            `${nodeName(node)}: required property "${prop.name}" is missing.`,
+            isEmpty(values[name])
+              ? `${nodeName(node)}: required property "${name}" is missing.`
+              : `${nodeName(node)}: property "${name}" = "${values[name]}" is invalid (${problem.toLowerCase()}).`,
           );
-        }
-      });
+        },
+      );
     }
 
     // Custom operators: requirements file or API connector.

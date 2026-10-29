@@ -3866,7 +3866,8 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
         : null;
     const updatedProfiles =
       editingDomainProfileIndex === null
-        ? [...allDomainProfiles, newProfile]
+        ? // a new profile goes to the top of the list
+          [newProfile, ...allDomainProfiles]
         : allDomainProfiles.map((profile, index) =>
             index === editingDomainProfileIndex ? newProfile : profile,
           );

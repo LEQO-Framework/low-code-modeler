@@ -176,6 +176,8 @@ function getMeaningfulHistoryData(item) {
       sourceHandle: edge.sourceHandle,
       target: edge.target,
       targetHandle: edge.targetHandle,
+      // moved middle segment of the arrow (see edges/bendableStepEdge.tsx)
+      bend: edge.data?.bend,
     })),
   };
 }

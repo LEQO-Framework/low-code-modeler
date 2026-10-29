@@ -406,7 +406,10 @@ export default function OutputPort({
                 }`
               : "!bg-gray-200 !border-dashed !border-gray-500",
           )}
+          // a classical value can be used several times; a quantum state cannot be
+          // copied (no-cloning), so quantum and ancilla outputs take one connection
           isConnectable={
+            isClassical ||
             edges.filter((edge) => edge.sourceHandle === handleId).length < 1
           }
           isConnectableEnd={false}
