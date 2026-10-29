@@ -175,12 +175,7 @@ export const EditableNode = memo((node: Node) => {
 
       return (
         <div key={index} className="flex flex-col items-center">
-          <label className="text-sm mb-1">
-            {prop.name}
-            {!prop.required && (
-              <span className="text-gray-500 text-xs"> (optional)</span>
-            )}
-          </label>
+          <label className="text-sm mb-1">{prop.name}</label>
 
           {CHOICES[prop.type] ? (
             // boolean and bit take one of their values
@@ -395,7 +390,6 @@ export const EditableNode = memo((node: Node) => {
                     </span>
                     <span className="text-[10px] text-gray-600">
                       type: {input.type || "any"}
-                      {input.optional && " (optional)"}
                     </span>
                   </div>
                 </div>
