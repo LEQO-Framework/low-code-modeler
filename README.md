@@ -193,6 +193,22 @@ The required services can be started using the Docker setup provided by the **Qu
 └── THIRD_PARTY_LICENSES    # Third-party licenses and dependencies
 ```
 
+## Usage
+
+If you use this repo then cite this paper:
+
+```bibtex
+@inproceedings{Stiliadou2026_QuantumLowCode,
+    Title         = {{Low-Code Quantum Algorithm Modeling and Execution for Hybrid Cloud Environments}},
+    Author        = {Stiliadou, Lavinia and Barzen, Johanna and B{\"u}hler, Fabian and Georg, Daniel and Stiliadou, Sharon{-}Naemi},
+    Year          = 2026,
+    Booktitle     = {Proceedings of the 16\textsuperscript{th} International Conference on Cloud Computing and Services Science (CLOSER 2026)},
+    Publisher     = {SciTePress},
+    Pages         = {159--170},
+    projects      = {QUORUM4H},
+}
+```
+
 ## Disclaimer of Warranty
 
 Unless required by applicable law or agreed to in writing, Licensor provides the Work (and each Contributor provides its
