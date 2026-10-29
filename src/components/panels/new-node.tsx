@@ -8,7 +8,13 @@ import {
 import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
 import * as consts from "../../constants";
-import { DomainProfile } from "../modals/domainProfileModal";
+import {
+  CLASSICAL_OPERATORS_CATEGORY,
+  DATA_TYPES_CATEGORY,
+  DomainProfile,
+  QUANTUM_OPERATORS_CATEGORY,
+} from "../modals/domainProfileModal";
+import { domainBlockIcon } from "@/lib/domainBlockIcon";
 
 const selector = (state: {
   compact: boolean;
@@ -37,6 +43,10 @@ const categoryIcons: Record<string, string> = {
   [consts.machineLearningNodes]: "MLElements.svg",
 
   [consts.templates]: "Templates.png",
+
+  // operator categories of a domain profile
+  [CLASSICAL_OPERATORS_CATEGORY]: "ClassicalOperators.svg",
+  [QUANTUM_OPERATORS_CATEGORY]: "QuantumOperators.svg",
 };
 
 const operatorIcons: Record<string, string> = {
@@ -792,9 +802,12 @@ export const AddNodePanel = ({ onAddNode }: AddNodePanelProps) => {
               {node.icon ? (
                 <img
                   src={
-                    experienceLevel === "explorer" && operatorIcons[node.label]
-                      ? operatorIcons[node.label]
-                      : Array.isArray(node.icon)
+                    node.type === consts.EditableNode
+                      ? domainBlockIcon(node as any)
+                      : experienceLevel === "explorer" &&
+                          operatorIcons[node.label]
+                        ? operatorIcons[node.label]
+                        : Array.isArray(node.icon)
                         ? node.type === consts.GateNode ||
                           node.type === consts.QubitNode
                           ? node.icon[experienceLevel === "explorer" ? 1 : 0]
@@ -903,7 +916,9 @@ export const AddNodePanel = ({ onAddNode }: AddNodePanelProps) => {
                 {node.icon ? (
                   <img
                     src={
-                      Array.isArray(node.icon)
+                      node.type === consts.EditableNode
+                        ? domainBlockIcon(node as any)
+                        : Array.isArray(node.icon)
                         ? node.type === consts.GateNode
                           ? node.icon[experienceLevel === "explorer" ? 1 : 0]
                           : node.icon[0]
@@ -936,6 +951,9 @@ export const AddNodePanel = ({ onAddNode }: AddNodePanelProps) => {
                   ? description[completionGuaranteed ? 1 : 0]
                   : description;
               if (visibleNodes.length === 0) return null;
+              // data types of a domain profile are stored as "dataTypes"
+              const categoryName =
+                category === DATA_TYPES_CATEGORY ? consts.dataTypes : category;
 
               return (
                 <div key={category}>
@@ -948,14 +966,14 @@ export const AddNodePanel = ({ onAddNode }: AddNodePanelProps) => {
                     onClick={() => toggleCategory(category)}
                   >
                     <div className="flex items-center gap-2">
-                      {categoryIcons[category] && (
+                      {categoryIcons[categoryName] && (
                         <img
-                          src={categoryIcons[category]}
-                          alt={`${category} icon`}
+                          src={categoryIcons[categoryName]}
+                          alt={`${categoryName} icon`}
                           className="w-9 h-9"
                         />
                       )}
-                      <span>{category}</span>
+                      <span>{categoryName}</span>
                     </div>
                     {description && (
                       <div className="text-sm text-gray-600 mt-1 ml-11">

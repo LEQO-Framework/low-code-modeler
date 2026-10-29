@@ -6,6 +6,7 @@ import OutputPort from "../utils/outputPort";
 import { cn } from "@/lib/utils";
 import { classicalConstructColor, quantumConstructColor } from "@/constants";
 import { awareness } from "@/yjs";
+import { propertyErrors as propertyErrorsOf } from "@/lib/propertyConstraints";
 
 const selector = (state: any) => ({
   selectedNode: state.selectedNode,
@@ -26,6 +27,12 @@ const headerIcon = (icon: unknown, fallback: string) => {
   const src = Array.isArray(icon) ? icon[0] : icon;
   // the palette icons are previews of the whole node, only uploads fit here
   return typeof src === "string" && src.startsWith("data:") ? src : fallback;
+};
+
+/** Property types with a fixed set of values, chosen from a list. */
+const CHOICES: Record<string, string[]> = {
+  boolean: ["true", "false"],
+  bit: ["0", "1"],
 };
 
 interface Port {
@@ -114,95 +121,20 @@ export const EditableNode = memo((node: Node) => {
   }, [id]); // Re-run if node ID changes
 
   // --------------------- VALIDATION ---------------------
-  const validateSingleConstraint = (
-    val: string,
-    constraintObj: any,
-    allValues: string[],
-    properties: any[],
-  ) => {
-    const { constraint, value } = constraintObj;
-
-    // Check if the value refers to another property
-    let compareValue = value;
-    const otherIndex = properties.findIndex((p: any) => p.name === value);
-    if (otherIndex !== -1) compareValue = allValues[otherIndex];
-
-    if (!val || !compareValue) return "";
-
-    // Numeric comparison
-    const numVal = parseFloat(val);
-    const numCompare = parseFloat(compareValue);
-    const dateVal = Date.parse(val);
-    const dateCompare = Date.parse(compareValue);
-    const isDate = !isNaN(dateVal) && !isNaN(dateCompare);
-    if (!isDate) {
-      if (!isNaN(numVal) && !isNaN(numCompare)) {
-        switch (constraint) {
-          case "!=":
-            return numVal != numCompare ? "" : `Must be != ${value}`;
-          case "==":
-            return numVal == numCompare ? "" : `Must be == ${value}`;
-          case ">":
-            return numVal > numCompare ? "" : `Must be > ${value}`;
-          case "<":
-            return numVal < numCompare ? "" : `Must be < ${value}`;
-          case ">=":
-            return numVal >= numCompare ? "" : `Must be >= ${value}`;
-          case "<=":
-            return numVal <= numCompare ? "" : `Must be <= ${value}`;
-        }
-      }
-    }
-
-    // Date comparison
-
-    if (!isNaN(dateVal) && !isNaN(dateCompare)) {
-      switch (constraint) {
-        case "!=":
-          return dateVal != dateCompare ? "" : `Must be != ${value}`;
-        case "==":
-          return dateVal == dateCompare ? "" : `Must be == ${value}`;
-        case ">":
-          return dateVal > dateCompare ? "" : `Must be after ${value}`;
-        case "<":
-          return dateVal < dateCompare ? "" : `Must be before ${value}`;
-        case ">=":
-          return dateVal >= dateCompare ? "" : `Must be on/after ${value}`;
-        case "<=":
-          return dateVal <= dateCompare ? "" : `Must be on/before ${value}`;
-      }
-    }
-
-    return "";
-  };
-
-  const validateAllFields = (
-    values: string[],
-    properties: any[],
-    constraints: any[],
-  ) => {
-    return values.map((val, index) => {
-      const prop = properties[index];
-      const propConstraints =
-        constraints?.filter((c: any) => c.propertyName === prop.name) || [];
-      if (prop.required && String(val ?? "").trim() === "") {
-        return "This field is required";
-      }
-      let error = "";
-      propConstraints.forEach((c) => {
-        const msg = validateSingleConstraint(val, c, values, properties);
-        if (msg) error = msg;
-      });
-      return error;
-    });
-  };
-
   const initialValues = properties.map(
     (prop: any) => data.propertyValues?.[prop.name] || "",
   );
   const [propertyValues, setPropertyValues] = useState<string[]>(initialValues);
-  const [propertyErrors, setPropertyErrors] = useState<string[]>(
-    validateAllFields(initialValues, properties, constraints),
+  // types and constraints of the domain profile (see lib/propertyConstraints.ts)
+  const propertyErrors = propertyErrorsOf(
+    properties,
+    constraints,
+    Object.fromEntries(
+      properties.map((prop: any, i: number) => [
+        prop.name,
+        propertyValues[i] ?? "",
+      ]),
+    ),
   );
 
   const borderColor = remoteHighlightColor
@@ -220,58 +152,70 @@ export const EditableNode = memo((node: Node) => {
       ? "border-blue-300"
       : "border-orange-300";
 
+  const setPropertyValue = (index: number, name: string, value: string) => {
+    const newValues = [...propertyValues];
+    newValues[index] = value;
+    setPropertyValues(newValues);
+
+    node.data.propertyValues = node.data.propertyValues || {};
+    node.data.propertyValues[name] = value;
+    updateNodeValue(node.id, "propertyValues", node.data.propertyValues);
+  };
+
   const renderProperties = (inputWidth: string) =>
     properties.map((prop: any, index: number) => {
       const errorMessage = propertyErrors[index];
+      const fieldClass = (error: string, required: boolean) =>
+        cn(
+          "rounded-full border-2 px-3 py-1 text-center",
+          inputWidth,
+          error ? "border-red-500 bg-red-100" : accentBorder,
+          !required && "border-dashed",
+        );
 
       return (
         <div key={index} className="flex flex-col items-center">
-          <label className="text-sm mb-1">
-            {prop.name}
-            {prop.required ? (
-              <span className="text-red-600"> *</span>
-            ) : (
-              <span className="text-gray-500 text-xs"> (optional)</span>
-            )}
-          </label>
+          <label className="text-sm mb-1">{prop.name}</label>
 
-          <input
-            type={
-              prop.type === "date"
-                ? "date"
-                : prop.type === "number"
-                  ? "number"
-                  : "text"
-            }
-            value={propertyValues[index] ?? ""}
-            onChange={(e) => {
-              const newValues = [...propertyValues];
-              newValues[index] = e.target.value;
-
-              setPropertyValues(newValues);
-
-              const newErrors = validateAllFields(
-                newValues,
-                properties,
-                constraints,
-              );
-              setPropertyErrors(newErrors);
-
-              node.data.propertyValues = node.data.propertyValues || {};
-              node.data.propertyValues[prop.name] = e.target.value;
-              updateNodeValue(
-                node.id,
-                "propertyValues",
-                node.data.propertyValues,
-              );
-            }}
-            className={cn(
-              "rounded-full border-2 px-3 py-1 text-center",
-              inputWidth,
-              errorMessage ? "border-red-500 bg-red-100" : accentBorder,
-              !prop.required && "border-dashed",
-            )}
-          />
+          {CHOICES[prop.type] ? (
+            // boolean and bit take one of their values
+            <select
+              value={propertyValues[index] ?? ""}
+              onChange={(e) =>
+                setPropertyValue(index, prop.name, e.target.value)
+              }
+              className={cn(
+                fieldClass(errorMessage, prop.required),
+                "bg-white",
+              )}
+            >
+              <option value="">Select...</option>
+              {CHOICES[prop.type].map((choice) => (
+                <option key={choice} value={choice}>
+                  {choice}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <input
+              type={
+                prop.type === "date"
+                  ? "date"
+                  : prop.type === "number"
+                    ? "number"
+                    : "text"
+              }
+              value={propertyValues[index] ?? ""}
+              onChange={(e) =>
+                setPropertyValue(index, prop.name, e.target.value)
+              }
+              className={cn(
+                fieldClass(errorMessage, prop.required),
+                // no up/down arrows in number fields
+                "[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none",
+              )}
+            />
+          )}
 
           {errorMessage && (
             <span className="text-xs text-red-600 mt-1">{errorMessage}</span>
@@ -446,7 +390,6 @@ export const EditableNode = memo((node: Node) => {
                     </span>
                     <span className="text-[10px] text-gray-600">
                       type: {input.type || "any"}
-                      {input.optional && " (optional)"}
                     </span>
                   </div>
                 </div>

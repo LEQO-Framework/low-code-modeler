@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useId } from "react";
 import Modal from "./Modal";
 import { categories, CategoryEntry } from "../panels/categories";
 import {
@@ -8,8 +8,13 @@ import {
   ChevronDown,
   Check,
   GripVertical,
+  X,
 } from "lucide-react";
 import { EditableNode } from "@/constants";
+import {
+  domainBlockHeaderIcon,
+  uploadedHeaderIcon,
+} from "@/lib/domainBlockIcon";
 import { DomainProfileRepositoryPicker } from "./domainProfileRepositoryPicker";
 import { RepositoryDomainProfile } from "../../services/domainProfileRepository";
 import { createPortal } from "react-dom";
@@ -218,6 +223,36 @@ function extractNodeLabels(content: any): Record<string, string> {
   return labels;
 }
 
+/** Types a property value can have. */
+export const PROPERTY_TYPES = [
+  "int",
+  "String",
+  "number",
+  "boolean",
+  "bit",
+  "Array",
+  "File",
+];
+
+const QUANTUM_REGISTER_TYPE = "quantum register";
+
+/**
+ * Types defined in the profile, for the inputs and outputs of its blocks: the output
+ * types of the data types first, then those of the operators (without duplicates).
+ */
+function profileTypes(nodes: EditableNodeProfile[]): string[] {
+  const dataTypesFirst = [
+    ...nodes.filter((n) => n.category === DATA_TYPES_CATEGORY),
+    ...nodes.filter((n) => n.category !== DATA_TYPES_CATEGORY),
+  ];
+  const types = dataTypesFirst.flatMap((n) =>
+    n.outputs.map((port) => port.type.trim()),
+  );
+  return [...new Set(types)].filter(
+    (type) => type && type !== QUANTUM_REGISTER_TYPE,
+  );
+}
+
 function PropertyEditor({
   properties,
   onChange,
@@ -292,11 +327,24 @@ function PropertyEditor({
                 Type
               </label>
 
-              <input
-                className="w-full border rounded px-1 py-0.5 text-xs"
+              <select
+                className="w-full border rounded px-1 py-0.5 text-xs bg-white"
                 value={prop.type}
                 onChange={(e) => updateProperty(idx, "type", e.target.value)}
-              />
+              >
+                <option value="" disabled>
+                  Select...
+                </option>
+                {PROPERTY_TYPES.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
+                {/* a type of an older profile stays selectable */}
+                {prop.type && !PROPERTY_TYPES.includes(prop.type) && (
+                  <option value={prop.type}>{prop.type} (not in list)</option>
+                )}
+              </select>
             </div>
           </div>
 
@@ -489,16 +537,40 @@ function PortEditor({
   category,
   addLabel,
   duplicateNames,
+  definedTypes,
+  checkDefined = false,
   onChange,
 }: {
   ports: NodeProfilePort[];
   category: string;
   addLabel: string;
   duplicateNames: Set<string>;
+  /** Types defined in the profile (output types of its blocks), offered as types. */
+  definedTypes: string[];
+  /** Hint at a classical type that no block of the profile outputs (for inputs). */
+  checkDefined?: boolean;
   onChange: (ports: NodeProfilePort[]) => void;
 }) {
   // only quantum operators can mix quantum and classical ports
   const kindSelectable = category === QUANTUM_OPERATORS_CATEGORY;
+  const listId = useId();
+  const suggestions = (kind: PortKind) =>
+    kind === "quantum"
+      ? [QUANTUM_REGISTER_TYPE]
+      : [
+          ...definedTypes,
+          ...PROPERTY_TYPES.filter((t) => !definedTypes.includes(t)),
+        ];
+  const isUndefinedType = (port: NodeProfilePort) => {
+    const type = port.type.trim();
+    return (
+      checkDefined &&
+      port.kind === "classical" &&
+      type !== "" &&
+      !definedTypes.includes(type) &&
+      !PROPERTY_TYPES.some((t) => t.toLowerCase() === type.toLowerCase())
+    );
+  };
 
   const addPort = () => {
     const kind = defaultPortKind(category);
@@ -580,11 +652,22 @@ function PortEditor({
                 Type
               </label>
 
+              {/* a type of the profile, or a new one */}
               <input
-                className="w-full border rounded px-1 py-0.5 text-xs"
+                className={`w-full border rounded px-1 py-0.5 text-xs ${
+                  isUndefinedType(port) ? "border-amber-500 bg-amber-50" : ""
+                }`}
+                list={`${listId}-${port.kind}`}
+                placeholder="Select or type..."
                 value={port.type}
                 onChange={(e) => updatePort(idx, "type", e.target.value)}
               />
+
+              {isUndefinedType(port) && (
+                <span className="block text-[10px] text-amber-700 mt-0.5">
+                  No block of this profile outputs this type
+                </span>
+              )}
             </div>
           </div>
 
@@ -624,6 +707,14 @@ function PortEditor({
         <Plus size={14} />
         {addLabel}
       </button>
+
+      {(["classical", "quantum"] as PortKind[]).map((kind) => (
+        <datalist key={kind} id={`${listId}-${kind}`}>
+          {suggestions(kind).map((type) => (
+            <option key={type} value={type} />
+          ))}
+        </datalist>
+      ))}
     </div>
   );
 }
@@ -1184,6 +1275,9 @@ export default function DomainProfileTableModal({
 
   const portNameDuplicates = localNodes.map(findDuplicatePortNames);
 
+  // types defined in the profile, offered for the inputs and outputs
+  const definedTypes = profileTypes(localNodes);
+
   const hasDuplicatePortNames = portNameDuplicates.some(
     (duplicates) => duplicates.size > 0,
   );
@@ -1263,7 +1357,12 @@ export default function DomainProfileTableModal({
       originalIcon: "",
     };
 
-    setLocalNodes([...localNodes, newNode]);
+    // a new block goes to the top of the list
+    setLocalNodes([newNode, ...localNodes]);
+  };
+
+  const removeNode = (index: number) => {
+    setLocalNodes((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleIconUpload = (
@@ -1325,7 +1424,7 @@ export default function DomainProfileTableModal({
       title="Domain Profile"
       open={open}
       onClose={onClose}
-      className="max-w-6xl"
+      className="w-[92vw] max-w-[92vw]"
       footer={
         <div className="flex items-center justify-between w-full">
           <div className="text-xs text-gray-500">
@@ -1747,21 +1846,25 @@ export default function DomainProfileTableModal({
                   <table className="table-auto w-full border-collapse">
                     <thead className="sticky top-0 bg-gray-100 z-10">
                       <tr>
-                        <th className="p-2 border w-32">Name</th>
+                        <th className="p-2 border min-w-[200px]">Name</th>
 
-                        <th className="p-2 border w-24">Icon</th>
+                        <th className="p-2 border min-w-[110px]">Icon</th>
 
-                        <th className="p-2 border w-24">Category</th>
+                        <th className="p-2 border min-w-[180px]">Category</th>
 
-                        <th className="p-2 border w-32">Inputs</th>
+                        <th className="p-2 border min-w-[260px]">Inputs</th>
 
-                        <th className="p-2 border w-32">Outputs</th>
+                        <th className="p-2 border min-w-[260px]">Outputs</th>
 
-                        <th className="p-2 border w-32">Properties</th>
+                        <th className="p-2 border min-w-[260px]">Properties</th>
 
-                        <th className="p-2 border w-32">Constraints</th>
+                        <th className="p-2 border min-w-[300px]">
+                          Constraints
+                        </th>
 
-                        <th className="p-2 border w-24">Mapping</th>
+                        <th className="p-2 border min-w-[220px]">Mapping</th>
+
+                        <th className="p-2 border w-10" aria-label="Delete" />
                       </tr>
                     </thead>
 
@@ -1769,7 +1872,7 @@ export default function DomainProfileTableModal({
                       {localNodes.length === 0 ? (
                         <tr>
                           <td
-                            colSpan={8}
+                            colSpan={9}
                             className="p-12 text-center text-gray-400 italic"
                           >
                             No blocks added yet. Click "Add Domain Block" to
@@ -1794,27 +1897,52 @@ export default function DomainProfileTableModal({
                             </td>
 
                             {/* Icon */}
-                            <td className="relative group w-24 h-24 bg-white border rounded shrink-0 overflow-hidden p-2 text-center">
-                              <img
-                                src={
-                                  Array.isArray(node.icon)
-                                    ? node.icon[0]
-                                    : node.icon
-                                }
-                                className="w-full h-full object-contain p-1"
-                                alt="icon"
-                              />
+                            {/* the upper left icon of the block header */}
+                            <td className="p-2 border text-center">
+                              <div className="relative group w-16 h-16 mx-auto">
+                                <label
+                                  className="block w-full h-full cursor-pointer"
+                                  title="Upload the icon shown in the upper left of the block"
+                                >
+                                  <img
+                                    src={domainBlockHeaderIcon(node)}
+                                    className="w-full h-full object-contain"
+                                    alt="icon"
+                                  />
 
-                              <label className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity">
-                                <input
-                                  type="file"
-                                  className="hidden"
-                                  accept="image/*"
-                                  onChange={(e) => handleIconUpload(e, idx)}
-                                />
+                                  <span className="absolute inset-0 rounded bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                    <ImageIcon className="w-5 h-5 text-white" />
+                                  </span>
 
-                                <ImageIcon className="w-5 h-5 text-white" />
-                              </label>
+                                  <input
+                                    type="file"
+                                    className="hidden"
+                                    accept="image/*"
+                                    onChange={(e) => {
+                                      handleIconUpload(e, idx);
+                                      // the same file can be chosen again
+                                      e.target.value = "";
+                                    }}
+                                  />
+                                </label>
+
+                                {uploadedHeaderIcon(node.icon) && (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      updateNode(
+                                        idx,
+                                        "icon",
+                                        defaultIcon(node.category),
+                                      )
+                                    }
+                                    className="absolute -top-2 -right-2 bg-red-100 text-red-600 rounded-full p-1 hover:bg-red-200"
+                                    title="Remove the icon (use the default)"
+                                  >
+                                    <X size={12} />
+                                  </button>
+                                )}
+                              </div>
                             </td>
 
                             {/* Category */}
@@ -1852,6 +1980,8 @@ export default function DomainProfileTableModal({
                                   category={node.category}
                                   addLabel="Add Input"
                                   duplicateNames={portNameDuplicates[idx]}
+                                  definedTypes={definedTypes}
+                                  checkDefined
                                   onChange={(newInputs) =>
                                     updateNode(idx, "inputs", newInputs)
                                   }
@@ -1870,6 +2000,7 @@ export default function DomainProfileTableModal({
                                 category={node.category}
                                 addLabel="Add Output"
                                 duplicateNames={portNameDuplicates[idx]}
+                                definedTypes={definedTypes}
                                 onChange={(newOutputs) =>
                                   updateNode(idx, "outputs", newOutputs)
                                 }
@@ -1905,6 +2036,18 @@ export default function DomainProfileTableModal({
                                   updateNode(idx, "mapping", newMappings)
                                 }
                               />
+                            </td>
+
+                            {/* Delete */}
+                            <td className="p-2 border text-center">
+                              <button
+                                type="button"
+                                onClick={() => removeNode(idx)}
+                                className="bg-red-100 text-red-600 rounded-full p-1.5 hover:bg-red-200"
+                                title={`Delete ${node.label || "this block"}`}
+                              >
+                                <Trash2 size={14} />
+                              </button>
                             </td>
                           </tr>
                         ))
