@@ -126,15 +126,40 @@ export const HistoryModal = ({
 
   useEffect(() => {
     const initLoading: Record<string, boolean> = {};
-    const initTargets: Record<string, string | null> = {};
-
     history.forEach((item) => {
       initLoading[item.uuid] = false;
-      initTargets[item.uuid] = "circuit"; // or workflow based on backend
     });
-
     setLoadingMap(initLoading);
-    setCompilationTargets(initTargets);
+    setCompilationTargets({});
+
+    // The compilation target is stored in the model file of an execution job,
+    // so it is fetched from there (same check as in onExecute).
+    let cancelled = false;
+    history
+      .filter((item) => item.type === "execution")
+      .forEach(async (item) => {
+        let target = "circuit";
+        if (item.links?.request) {
+          try {
+            const response = await fetch(item.links.request);
+            if (response.ok) {
+              const modelData = await response.json();
+              if (modelData?.compilation_target === "workflow") {
+                target = "workflow";
+              }
+            }
+          } catch (error) {
+            console.error("Failed to determine compilation target:", error);
+          }
+        }
+        if (!cancelled) {
+          setCompilationTargets((prev) => ({ ...prev, [item.uuid]: target }));
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [history]);
   const handleMissingValuesSubmitted = async (
     jobId: string,

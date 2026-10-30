@@ -18,6 +18,14 @@ import { persist } from "zustand/middleware";
 import { nodesConfig } from "./site";
 import { v4 as uuid } from "uuid";
 import * as consts from "../constants";
+import {
+  basePortType,
+  getPortTypes,
+  isCustomOperator,
+  PORT_COUNT_FIELDS,
+  portTypeIndex,
+  toTypeArray,
+} from "@/lib/portTypes";
 import { Template } from "@/components/panels/categories";
 import { DomainProfile } from "@/components/modals/domainProfileModal";
 
@@ -168,6 +176,8 @@ function getMeaningfulHistoryData(item) {
       sourceHandle: edge.sourceHandle,
       target: edge.target,
       targetHandle: edge.targetHandle,
+      // moved middle segment of the arrow (see edges/bendableStepEdge.tsx)
+      bend: edge.data?.bend,
     })),
   };
 }
@@ -309,6 +319,9 @@ export const useStore = create<RFState>()(
           const type = node.type;
           const label = node.data.label ?? "";
 
+          const fixed = getPortTypes(node);
+          if (fixed) return fixed.inputTypes;
+
           if (type === "classicalOperatorNode") {
             if (label.includes("Bitwise")) return ["bit", "bit"];
             if (label.includes("Arithmetic")) return ["any", "any"];
@@ -347,6 +360,9 @@ export const useStore = create<RFState>()(
         const getInitialOutputTypes = (node: Node): string[] => {
           const type = node.type;
           const label = node.data.label ?? "";
+
+          const fixed = getPortTypes(node);
+          if (fixed) return fixed.outputTypes;
 
           if (type.includes("OperatorNode")) {
             if (label.includes("Comparison")) return ["boolean"];
@@ -693,6 +709,22 @@ export const useStore = create<RFState>()(
                 console.log("updatedInputs", updatedInputs);
                 targetData.inputs = updatedInputs;
 
+                // custom operators: the input slot of the removed edge takes its base type again
+                if (isCustomOperator(targetNode)) {
+                  const inputTypes = toTypeArray(targetNode.data.inputTypes);
+                  const slot = portTypeIndex(
+                    targetNode,
+                    removedEdge.targetHandle,
+                  );
+                  if (slot < inputTypes.length) {
+                    inputTypes[slot] = basePortType(
+                      targetNode,
+                      removedEdge.targetHandle,
+                    );
+                    targetData.inputTypes = inputTypes;
+                  }
+                }
+
                 // revert inputTypes in targetNode.data.inputTypes to "any", if applicable for targetNode
                 if (
                   targetNode.type === consts.AlgorithmNode ||
@@ -773,26 +805,31 @@ export const useStore = create<RFState>()(
           // TODO: figure out a better way to opt out of locked input types
           if (node.type === consts.PluginNode) return "any";
           else if (node.type.includes("editable")) {
-            // Ensure we have properties
-            const inputTypes =
-              node.data?.properties?.map((p: any) => p.type) || [];
-            console.log(inputTypes);
-            console.log(connection.targetHandle);
+            // Same port resolution as editableNode.tsx: declared inputPorts, or
+            // properties for legacy nodes created before inputs could be declared.
+            const isLegacyOperator =
+              !node.data?.isDataType && !Array.isArray(node.data?.inputPorts);
+            const inputTypes: (string | undefined)[] = (
+              isLegacyOperator
+                ? node.data?.properties || []
+                : node.data?.inputPorts || []
+            ).map((p: any) => p?.type);
 
             // Extract the index from the targetHandle string
             // Example targetHandle: "classicalHandleInput0node123"
             let handleIndex = 0;
 
-            const match = connection.targetHandle.match(
-              /^classicalHandleInput(\d)/,
-            );
+            const handle = connection.targetHandle ?? "";
+            const match = (
+              handle.endsWith(node.id)
+                ? handle.slice(0, -node.id.length)
+                : handle
+            ).match(/^(?:classical|quantum)HandleInput(\d+)$/);
             if (match) {
               handleIndex = parseInt(match[1], 10);
             }
-            console.log(handleIndex);
-            console.log(inputTypes[handleIndex]);
 
-            return inputTypes[handleIndex].toLowerCase();
+            return (inputTypes[handleIndex] || "any").toLowerCase();
           }
 
           // Find the first input that has a type other than "any"
@@ -829,7 +866,7 @@ export const useStore = create<RFState>()(
           );
           const node = get().nodes.find((n) => n.id === effectiveId);
           if (!node) return "any";
-          const index = getHandleIndex(effectiveId, handleId);
+          const index = portTypeIndex(node, handleId);
           console.log("GETNODEOUTPUTTYPES", node.data.outputTypes);
           console.log(handleId);
           console.log("INDEX", index);
@@ -903,7 +940,7 @@ export const useStore = create<RFState>()(
           const targetNode = get().nodes.find((n) => n.id === effectiveId);
           if (!targetNode) return "any";
 
-          const inputIndex = getHandleIndex(effectiveId, handleId);
+          const inputIndex = portTypeIndex(targetNode, handleId);
           console.log("InputIndex", inputIndex);
           return (
             targetNode.data.inputTypes?.[inputIndex] ?? "any"
@@ -1550,14 +1587,14 @@ export const useStore = create<RFState>()(
                 const inputIndex = targetData.inputs.findIndex(
                   (input) => input.id === connection.source,
                 );
-                const handleIndex = getHandleIndex(
-                  resolveHandleOwnerId(
-                    updatedNodes,
-                    targetNode.id,
-                    connection.targetHandle,
-                  ),
+                const handleOwnerId = resolveHandleOwnerId(
+                  updatedNodes,
+                  targetNode.id,
                   connection.targetHandle,
                 );
+                const handleIndex = isCustomOperator(targetNode)
+                  ? portTypeIndex(targetNode, connection.targetHandle)
+                  : getHandleIndex(handleOwnerId, connection.targetHandle);
                 // Update target node inputType if it was "any"
                 if (targetType === "any" && handleIndex !== null) {
                   targetData.inputTypes[handleIndex] = sourceType.toLowerCase();
@@ -1865,6 +1902,24 @@ export const useStore = create<RFState>()(
                     [identifier]: nodeVal,
                     inputTypes: inputTypes,
                   },
+                };
+              }
+              if (identifier === "inputTypes" || identifier === "outputTypes") {
+                return {
+                  ...node,
+                  data: {
+                    ...node.data,
+                    [identifier]: toTypeArray(nodeVal),
+                  },
+                };
+              }
+              if (PORT_COUNT_FIELDS.includes(identifier)) {
+                // keep the port types in sync with the new port count
+                const updatedData = { ...node.data, [identifier]: nodeVal };
+                const fixed = getPortTypes({ ...node, data: updatedData });
+                return {
+                  ...node,
+                  data: fixed ? { ...updatedData, ...fixed } : updatedData,
                 };
               }
               return {

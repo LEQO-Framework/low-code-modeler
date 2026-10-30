@@ -1,11 +1,58 @@
 import { Edge, Node } from "reactflow";
 import * as consts from "./constants";
 import type { components } from "./backend.types";
+import {
+  getPayloadEntries,
+  isApiConnectorNode,
+  normalizeApiConnector,
+  toBackendApiConnector,
+} from "./lib/apiConnector";
 
 type CompileRequest = components["schemas"]["CompileRequest"];
 type BackendNode = CompileRequest["nodes"][0];
 type BackendEdge = CompileRequest["edges"][0];
 export type StatusResult = components["schemas"]["StatusBody"];
+
+/**
+ * Detects the language of an implementation from its code, null if the code does not tell.
+ * Stored as `implementationLanguage` when the code is uploaded or entered in the field.
+ */
+export function detectImplementationLanguage(
+  code: string | undefined,
+): "qasm" | "python" | null {
+  if (!code?.trim()) return null;
+  if (/^\s*(OPENQASM\b|qreg\b|creg\b|qubit\b|include\s+")/m.test(code)) {
+    return "qasm";
+  }
+  // the annotations are comments, but are also accepted without "#" at line start
+  if (/#\s*@(input|output)\b|^\s*@(input|output)\b/m.test(code))
+    return "python";
+  if (
+    /^\s*(import\s+\w|from\s+[\w.]+\s+import\b|def\s+\w+\s*\(|class\s+\w+)/m.test(
+      code,
+    )
+  ) {
+    return "python";
+  }
+  return null;
+}
+
+// models from before the language was stored are detected from their code
+export function implementationLanguage(node: Node): "openqasm" | "python" {
+  const language =
+    node.data.implementationLanguage ??
+    node.data.language ??
+    detectImplementationLanguage(node.data.implementation);
+  return language === "python" ? "python" : "openqasm";
+}
+
+/** Python implementations cannot be transformed into OpenQASM, only into a workflow. */
+export function isPythonImplementation(node: Node): boolean {
+  return (
+    Boolean(node.data?.implementation) &&
+    implementationLanguage(node) === "python"
+  );
+}
 
 export const startCompile = async (
   baseUrl: string,
@@ -121,11 +168,25 @@ export const startCompile = async (
   });
 
   function mapNode(node: Node): BackendNode {
+    // custom operators implemented by an API become a service task in the workflow
+    if (isApiConnectorNode(node)) {
+      return {
+        id: node.id,
+        type: "api-connector",
+        label: node.data.label,
+        ...toBackendApiConnector(
+          normalizeApiConnector(node.data.apiConnector),
+          getPayloadEntries(node, nodes, edges),
+        ),
+      };
+    }
+
     if (node.data.implementation) {
       return {
         id: node.id,
         type: "implementation",
         implementation: node.data.implementation,
+        language: implementationLanguage(node),
       };
     }
 
@@ -512,11 +573,17 @@ export const startCompile = async (
         };
       }
 
-      case consts.ControlStructureNode:
+      case consts.ControlStructureNode: {
+        // a number is the count of iterations, anything else (e.g. "a>=1") a loop
+        // condition, which the backend supports in workflows
+        const condition = String(node.data?.condition ?? "").trim() || "1";
+        const isIterationCount = /^\d+$/.test(condition);
         return {
           id: node.id,
           type: "repeat",
-          iterations: parseInt(node.data?.condition || "1", 10),
+          ...(isIterationCount
+            ? { iterations: parseInt(condition, 10) }
+            : { condition }),
           block: {
             nodes: nodes
               .filter((x) => x.parentNode === node.id)
@@ -526,6 +593,7 @@ export const startCompile = async (
               .map((x) => mapEdge(x)),
           },
         };
+      }
 
       case consts.IfElseNode:
         const childNodes = nodes.filter((x) => x.parentNode === node.id);

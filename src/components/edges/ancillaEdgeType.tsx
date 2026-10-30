@@ -1,36 +1,6 @@
-import { BaseEdge, EdgeProps, getSmoothStepPath } from "@xyflow/react";
-import React from "react";
-import { useEdgeMarkerEnd } from "./edgeHighlightContext";
+import { EdgeProps } from "@xyflow/react";
+import BendableStepEdge from "./bendableStepEdge";
 
-export default function AncillaEdge({
-  id,
-  sourceX,
-  sourceY,
-  targetX,
-  targetY,
-  sourcePosition,
-  targetPosition,
-  markerEnd,
-}: EdgeProps) {
-  const highlightedMarkerEnd = useEdgeMarkerEnd(id, markerEnd);
-  const [d] = getSmoothStepPath({
-    sourceX,
-    sourceY,
-    targetX,
-    targetY,
-    sourcePosition,
-    targetPosition,
-  });
-
-  return (
-    <>
-      <BaseEdge
-        style={{
-          stroke: "#86EFAC",
-        }}
-        markerEnd={highlightedMarkerEnd}
-        path={d}
-      />
-    </>
-  );
+export default function AncillaEdge(props: EdgeProps) {
+  return <BendableStepEdge {...props} color="#86EFAC" />;
 }

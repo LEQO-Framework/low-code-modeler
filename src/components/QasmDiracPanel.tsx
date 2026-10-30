@@ -10,6 +10,7 @@ import {
   qasmToDiracSteps,
   normalizeQasm,
   type DiracStepsResult,
+  type DiracTerm,
 } from "./utils/qasmToDirac";
 import type { Complex } from "@/lib/diracFormatter";
 import { statevectorToDirac } from "@/lib/diracFormatter";
@@ -21,6 +22,16 @@ import {
   getMultiQubitPersistence,
 } from "./BlochSphere";
 import { GroverInfoBox } from "./GroverInfoBox";
+import { MathCircuitEditor } from "./MathCircuitEditor";
+import {
+  basicsTopics,
+  buildStepTree,
+  type StepGroup,
+  type StepTreeItem,
+} from "./mathExplanations";
+import { buildLatexExport, type LatexExportOptions } from "./latexExport";
+import { gateAtLine, sameGate, type GateLocator } from "./utils/qasmLines";
+import { useStore } from "@/config/store";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
@@ -74,8 +85,31 @@ type QasmProps = {
   onGetModel?: () => object;
   /** Called when a step in the Mathematical Intermediate Steps is clicked, with the canvas
    *  node IDs of ALL gates from step 1 up to and including the clicked step (step-click
-   *  mechanism, highlights every node used up to that point on the canvas). */
-  onStepClick?: (nodeIds: string[]) => void;
+   *  mechanism, highlights every node used up to that point on the canvas). `clicked` is
+   *  the node of the clicked step (or group) and which of that node's steps to highlight
+   *  (from..to), so that its block can be opened down to the circuit level. */
+  onStepClick?: (
+    nodeIds: string[],
+    clicked?: { nodeId: string; from: number; to: number },
+  ) => void;
+  /** Applies a circuit edited in Math Mode (OpenQASM) to the QASM output and the canvas.
+   *  Without it the editor works as a preview only. */
+  onApplyQasm?: (qasm: string, removedNodeIds?: string[]) => void;
+  /** Code of the OpenQASM editor when it differs from `qasm` (edited, not applied yet);
+   *  the circuit editor then starts from it. */
+  editorQasm?: string;
+  /** Called when steps are clicked, with their 0-based lines in `sourceQasm`, so that the
+   *  OpenQASM editor can highlight them. */
+  onSelectQasmLines?: (
+    sourceQasm: string,
+    lines: number[],
+    pathLines?: number[],
+  ) => void;
+  /** Gates selected in the OpenQASM editor; their steps are highlighted. */
+  selectedGates?: GateLocator[];
+  /** Changes when the selection comes from the OpenQASM editor: the steps are opened and
+   *  scrolled to the selected one. */
+  revealSelection?: number;
 };
 
 type StatevectorProps = {
@@ -144,531 +178,6 @@ async function svgToPngBase64(svgInput: string, scale = 2): Promise<string> {
   });
 }
 
-// ---------------------------------------------------------------------------
-// Gate explanations and matrix representations
-// ---------------------------------------------------------------------------
-
-const GATE_DESCRIPTIONS: Record<
-  string,
-  { description: string; matrix: string; effect: string }
-> = {
-  H: {
-    description:
-      "The Hadamard gate creates an equal superposition of $|0\\rangle$ and $|1\\rangle$.",
-    matrix:
-      "\\frac{1}{\\sqrt{2}}\\begin{pmatrix} 1 & 1 \\\\ 1 & -1 \\end{pmatrix}",
-    effect:
-      "$H|0\\rangle = \\frac{1}{\\sqrt{2}}(|0\\rangle + |1\\rangle) = |+\\rangle$, \\quad $H|1\\rangle = \\frac{1}{\\sqrt{2}}(|0\\rangle - |1\\rangle) = |-\\rangle$",
-  },
-  X: {
-    description:
-      "The Pauli-X gate is the quantum analogue of the classical NOT gate. It flips $|0\\rangle$ to $|1\\rangle$ and vice versa.",
-    matrix: "\\begin{pmatrix} 0 & 1 \\\\ 1 & 0 \\end{pmatrix}",
-    effect: "$X|0\\rangle = |1\\rangle$, \\quad $X|1\\rangle = |0\\rangle$",
-  },
-  Y: {
-    description:
-      "The Pauli-Y gate rotates the qubit state by $\\pi$ around the Y-axis of the Bloch sphere.",
-    matrix: "\\begin{pmatrix} 0 & -i \\\\ i & 0 \\end{pmatrix}",
-    effect: "$Y|0\\rangle = i|1\\rangle$, \\quad $Y|1\\rangle = -i|0\\rangle$",
-  },
-  Z: {
-    description:
-      "The Pauli-Z gate applies a phase flip. It leaves $|0\\rangle$ unchanged and maps $|1\\rangle$ to $-|1\\rangle$.",
-    matrix: "\\begin{pmatrix} 1 & 0 \\\\ 0 & -1 \\end{pmatrix}",
-    effect: "$Z|0\\rangle = |0\\rangle$, \\quad $Z|1\\rangle = -|1\\rangle$",
-  },
-  S: {
-    description:
-      "The S gate (phase gate) applies a $\\frac{\\pi}{2}$ phase rotation.",
-    matrix: "\\begin{pmatrix} 1 & 0 \\\\ 0 & i \\end{pmatrix}",
-    effect: "$S|0\\rangle = |0\\rangle$, \\quad $S|1\\rangle = i|1\\rangle$",
-  },
-  T: {
-    description: "The T gate applies a $\\frac{\\pi}{4}$ phase rotation.",
-    matrix: "\\begin{pmatrix} 1 & 0 \\\\ 0 & e^{i\\pi/4} \\end{pmatrix}",
-    effect:
-      "$T|0\\rangle = |0\\rangle$, \\quad $T|1\\rangle = e^{i\\pi/4}|1\\rangle$",
-  },
-  CNOT: {
-    description:
-      "The CNOT (Controlled-NOT) gate flips the target qubit if and only if the control qubit is $|1\\rangle$. It is used to create entanglement.",
-    matrix:
-      "\\begin{pmatrix} 1 & 0 & 0 & 0 \\\\ 0 & 1 & 0 & 0 \\\\ 0 & 0 & 0 & 1 \\\\ 0 & 0 & 1 & 0 \\end{pmatrix}",
-    effect:
-      "$\\text{CNOT}|00\\rangle = |00\\rangle$, $\\text{CNOT}|01\\rangle = |01\\rangle$, $\\text{CNOT}|10\\rangle = |11\\rangle$, $\\text{CNOT}|11\\rangle = |10\\rangle$",
-  },
-  CZ: {
-    description:
-      "The CZ (Controlled-Z) gate applies a Z gate to the target qubit if the control qubit is $|1\\rangle$.",
-    matrix:
-      "\\begin{pmatrix} 1 & 0 & 0 & 0 \\\\ 0 & 1 & 0 & 0 \\\\ 0 & 0 & 1 & 0 \\\\ 0 & 0 & 0 & -1 \\end{pmatrix}",
-    effect:
-      "$\\text{CZ}|11\\rangle = -|11\\rangle$, all other basis states unchanged",
-  },
-  SWAP: {
-    description: "The SWAP gate exchanges the states of two qubits.",
-    matrix:
-      "\\begin{pmatrix} 1 & 0 & 0 & 0 \\\\ 0 & 0 & 1 & 0 \\\\ 0 & 1 & 0 & 0 \\\\ 0 & 0 & 0 & 1 \\end{pmatrix}",
-    effect:
-      "$\\text{SWAP}|01\\rangle = |10\\rangle$, \\quad $\\text{SWAP}|10\\rangle = |01\\rangle$",
-  },
-  I: {
-    description: "The identity gate leaves the qubit state unchanged.",
-    matrix: "\\begin{pmatrix} 1 & 0 \\\\ 0 & 1 \\end{pmatrix}",
-    effect: "$I|\\psi\\rangle = |\\psi\\rangle$",
-  },
-  SX: {
-    description:
-      "The SX gate (\\sqrt{X}) is the square root of the Pauli-X gate. It creates a superposition halfway between $|0\\rangle$ and $|1\\rangle$.",
-    matrix:
-      "\\frac{1}{2}\\begin{pmatrix} 1+i & 1-i \\\\ 1-i & 1+i \\end{pmatrix}",
-    effect:
-      "$\\sqrt{X}|0\\rangle = \\frac{1+i}{2}|0\\rangle + \\frac{1-i}{2}|1\\rangle$",
-  },
-  "S†": {
-    description:
-      "The S-dagger gate (conjugate transpose of S) applies a $-\\frac{\\pi}{2}$ phase rotation.",
-    matrix: "\\begin{pmatrix} 1 & 0 \\\\ 0 & -i \\end{pmatrix}",
-    effect:
-      "$S^\\dagger|0\\rangle = |0\\rangle$, \\quad $S^\\dagger|1\\rangle = -i|1\\rangle$",
-  },
-  "T†": {
-    description:
-      "The T-dagger gate (conjugate transpose of T) applies a $-\\frac{\\pi}{4}$ phase rotation.",
-    matrix: "\\begin{pmatrix} 1 & 0 \\\\ 0 & e^{-i\\pi/4} \\end{pmatrix}",
-    effect:
-      "$T^\\dagger|0\\rangle = |0\\rangle$, \\quad $T^\\dagger|1\\rangle = e^{-i\\pi/4}|1\\rangle$",
-  },
-  CY: {
-    description:
-      "The CY (Controlled-Y) gate applies a Y gate to the target qubit if the control qubit is $|1\\rangle$.",
-    matrix:
-      "\\begin{pmatrix} 1 & 0 & 0 & 0 \\\\ 0 & 1 & 0 & 0 \\\\ 0 & 0 & 0 & -i \\\\ 0 & 0 & i & 0 \\end{pmatrix}",
-    effect:
-      "$\\text{CY}|10\\rangle = i|11\\rangle$, \\quad $\\text{CY}|11\\rangle = -i|10\\rangle$",
-  },
-  CH: {
-    description:
-      "The CH (Controlled-H) gate applies a Hadamard gate to the target qubit if the control qubit is $|1\\rangle$.",
-    matrix:
-      "\\begin{pmatrix} 1 & 0 & 0 & 0 \\\\ 0 & 1 & 0 & 0 \\\\ 0 & 0 & \\frac{1}{\\sqrt{2}} & \\frac{1}{\\sqrt{2}} \\\\ 0 & 0 & \\frac{1}{\\sqrt{2}} & -\\frac{1}{\\sqrt{2}} \\end{pmatrix}",
-    effect:
-      "$\\text{CH}|10\\rangle = |1\\rangle|+\\rangle$, \\quad $\\text{CH}|11\\rangle = |1\\rangle|-\\rangle$",
-  },
-  CRX: {
-    description:
-      "The CRX gate applies a controlled RX rotation to the target qubit.",
-    matrix:
-      "\\begin{pmatrix} 1 & 0 & 0 & 0 \\\\ 0 & 1 & 0 & 0 \\\\ 0 & 0 & \\cos(\\theta/2) & -i\\sin(\\theta/2) \\\\ 0 & 0 & -i\\sin(\\theta/2) & \\cos(\\theta/2) \\end{pmatrix}",
-    effect:
-      "$\\text{CRX}(\\theta)|10\\rangle = \\cos(\\theta/2)|10\\rangle - i\\sin(\\theta/2)|11\\rangle$",
-  },
-  CRY: {
-    description:
-      "The CRY gate applies a controlled RY rotation to the target qubit.",
-    matrix:
-      "\\begin{pmatrix} 1 & 0 & 0 & 0 \\\\ 0 & 1 & 0 & 0 \\\\ 0 & 0 & \\cos(\\theta/2) & -\\sin(\\theta/2) \\\\ 0 & 0 & \\sin(\\theta/2) & \\cos(\\theta/2) \\end{pmatrix}",
-    effect:
-      "$\\text{CRY}(\\theta)|10\\rangle = \\cos(\\theta/2)|10\\rangle - \\sin(\\theta/2)|11\\rangle$",
-  },
-  CRZ: {
-    description:
-      "The CRZ gate applies a controlled RZ rotation to the target qubit.",
-    matrix:
-      "\\begin{pmatrix} 1 & 0 & 0 & 0 \\\\ 0 & 1 & 0 & 0 \\\\ 0 & 0 & e^{-i\\theta/2} & 0 \\\\ 0 & 0 & 0 & e^{i\\theta/2} \\end{pmatrix}",
-    effect:
-      "$\\text{CRZ}(\\theta)|10\\rangle = e^{-i\\theta/2}|10\\rangle$, \\quad $\\text{CRZ}(\\theta)|11\\rangle = e^{i\\theta/2}|11\\rangle$",
-  },
-  CU: {
-    description:
-      "The CU gate is a controlled unitary gate with parameters $(\\theta, \\phi, \\lambda, \\gamma)$.",
-    matrix:
-      "\\begin{pmatrix} 1 & 0 & 0 & 0 \\\\ 0 & 1 & 0 & 0 \\\\ 0 & 0 & e^{i\\gamma}\\cos(\\theta/2) & -e^{i(\\gamma+\\lambda)}\\sin(\\theta/2) \\\\ 0 & 0 & e^{i(\\gamma+\\phi)}\\sin(\\theta/2) & e^{i(\\gamma+\\phi+\\lambda)}\\cos(\\theta/2) \\end{pmatrix}",
-    effect:
-      "Applies a general unitary to target qubit conditioned on control qubit being $|1\\rangle$",
-  },
-  Toffoli: {
-    description:
-      "The Toffoli gate (CCX) flips the target qubit if and only if both control qubits are $|1\\rangle$.",
-    matrix:
-      "\\begin{pmatrix} 1&0&0&0&0&0&0&0 \\\\ 0&1&0&0&0&0&0&0 \\\\ 0&0&1&0&0&0&0&0 \\\\ 0&0&0&1&0&0&0&0 \\\\ 0&0&0&0&1&0&0&0 \\\\ 0&0&0&0&0&1&0&0 \\\\ 0&0&0&0&0&0&0&1 \\\\ 0&0&0&0&0&0&1&0 \\end{pmatrix}",
-    effect:
-      "$\\text{Toffoli}|110\\rangle = |111\\rangle$, \\quad $\\text{Toffoli}|111\\rangle = |110\\rangle$",
-  },
-  CSWAP: {
-    description:
-      "The CSWAP (Fredkin) gate swaps the two target qubits if the control qubit is $|1\\rangle$.",
-    matrix:
-      "\\begin{pmatrix} 1&0&0&0&0&0&0&0 \\\\ 0&1&0&0&0&0&0&0 \\\\ 0&0&1&0&0&0&0&0 \\\\ 0&0&0&1&0&0&0&0 \\\\ 0&0&0&0&1&0&0&0 \\\\ 0&0&0&0&0&0&1&0 \\\\ 0&0&0&0&0&1&0&0 \\\\ 0&0&0&0&0&0&0&1 \\end{pmatrix}",
-    effect:
-      "$\\text{CSWAP}|101\\rangle = |110\\rangle$, \\quad $\\text{CSWAP}|110\\rangle = |101\\rangle$",
-  },
-};
-
-function buildGateExplanationsSection(stepsResult?: DiracStepsResult): string {
-  if (!stepsResult || stepsResult.steps.length === 0) return "";
-
-  // collect all gates used across the steps
-  const usedGates = new Set<string>();
-  for (const step of stepsResult.steps) {
-    // Gate-Label bereinigen (z.B. "H₀" → "H", "I₀ ⊗ CNOT₀,₂" → ["I", "CNOT"])
-    const label = step.gateLabel ?? step.gateLabelLatex ?? "";
-    const sortedKeys = Object.keys(GATE_DESCRIPTIONS).sort(
-      (a, b) => b.length - a.length,
-    );
-    for (const key of sortedKeys) {
-      if (label.includes(key)) {
-        usedGates.add(key);
-        break;
-      }
-    }
-  }
-
-  if (usedGates.size === 0) return "";
-
-  const gateEntries = [...usedGates]
-    .map((gate) => {
-      const info = GATE_DESCRIPTIONS[gate];
-      if (!info) return "";
-      // effect contains $...$, strip the $ for the align environment
-      const effectLatex = info.effect.replace(/\$([^$]+)\$/g, "$1");
-      return `\\subsection*{${gate} Gate}
-
-${info.description}
-
-\\textbf{Matrix representation:}
-\\begin{equation}
-  ${gate} = ${info.matrix}
-\\end{equation}
-
-\\textbf{Effect on basis states:}
-\\begin{align}
-  ${effectLatex}
-\\end{align}
-`;
-    })
-    .filter(Boolean)
-    .join("\n");
-
-  return `\\section*{Gate Reference}
-
-The following quantum gates are used in this circuit:
-
-${gateEntries}
-`;
-}
-
-/**
- * Konvertiert Markdown-Text in LaTeX-kompatiblen Text.
- */
-function markdownToLatex(md: string): string {
-  // step 1: protect the math blocks first
-  const mathBlocks: string[] = [];
-  let out = md
-    .replace(/\$\$[\s\S]*?\$\$/g, (m) => {
-      mathBlocks.push(m);
-      return `%%MATH${mathBlocks.length - 1}%%`;
-    })
-    .replace(/\$[^$\n]+\$/g, (m) => {
-      mathBlocks.push(m);
-      return `%%MATH${mathBlocks.length - 1}%%`;
-    });
-
-  // step 2: headers (before bold/italic)
-  out = out
-    .replace(
-      /^#{4}\s+(.+)$/gm,
-      (_: string, t: string) => `\\subsubsection*{${t}}`,
-    )
-    .replace(
-      /^#{3}\s+(.+)$/gm,
-      (_: string, t: string) => `\\subsubsection*{${t}}`,
-    )
-    .replace(/^#{2}\s+(.+)$/gm, (_: string, t: string) => `\\subsection*{${t}}`)
-    .replace(/^#{1}\s+(.+)$/gm, (_: string, t: string) => `\\section*{${t}}`);
-
-  // step 3: bold and italic
-  out = out
-    .replace(
-      /\*\*\*([^*\n]+)\*\*\*/g,
-      (_: string, t: string) => `\\textbf{\\textit{${t}}}`,
-    )
-    .replace(/\*\*([^*\n]+)\*\*/g, (_: string, t: string) => `\\textbf{${t}}`)
-    .replace(
-      /(?<!\*)\*([^*\n]+)\*(?!\*)/g,
-      (_: string, t: string) => `\\textit{${t}}`,
-    );
-
-  // step 4: lists
-  out = out
-    .replace(/^[-*]\s+(.+)$/gm, (_: string, t: string) => `\\item ${t}`)
-    .replace(
-      /((?:\\item .+\n?)+)/g,
-      (_: string, items: string) =>
-        `\\begin{itemize}\n${items}\\end{itemize}\n`,
-    );
-
-  // step 5: miscellaneous
-  out = out
-    .replace(/^---$/gm, "\\hrule\\vspace{0.5em}")
-    .replace(/`([^`]+)`/g, (_: string, t: string) => `\\texttt{${t}}`)
-    .replace(/→/g, "$\\rightarrow$")
-    .replace(/←/g, "$\\leftarrow$")
-    .replace(/₀/g, "$_0$")
-    .replace(/₁/g, "$_1$")
-    .replace(/₂/g, "$_2$");
-
-  // step 6: bra-ket outside of math
-  out = out.replace(/\|([^|\n⟩%%]{0,20})⟩/g, (_: string, s: string) => {
-    const inner = s.replace(/ψ/g, "\\psi").replace(/φ/g, "\\phi");
-    return `$|${inner}\\rangle$`;
-  });
-
-  // step 7: restore the math blocks
-  out = out.replace(/%%MATH(\d+)%%/g, (_: string, i: string) => {
-    const block = mathBlocks[parseInt(i)];
-    if (block.startsWith("$$")) {
-      const inner = block.slice(2, -2).trim();
-      return `\\begin{equation}\n${inner}\n\\end{equation}`;
-    }
-    return block;
-  });
-
-  return out;
-}
-
-function buildLatexExport(
-  latex: string,
-  numQubits: number,
-  terms: any[],
-  pngBase64?: string,
-  stepsResult?: DiracStepsResult,
-  aiExplanation?: string,
-): string {
-  // Reconstruct the statevector once; used for the separability and persistence checks.
-  const statevectorArr = Array.from({ length: 1 << numQubits }, (_, i) => {
-    const term = terms.find((t) => parseInt(t.basisState, 2) === i);
-    return term ? term.amplitude : { re: 0, im: 0 };
-  });
-
-  // Exact separability check (not a heuristic): fully separable when EVERY qubit has a pure
-  // reduced state (Bloch vector length 1 for each qubit bipartition).
-  const isEntangledExport =
-    numQubits >= 2 && !isStateFullySeparable(statevectorArr, numQubits);
-
-  const persistenceExport: number | null =
-    numQubits === 1
-      ? getEntanglementPersistence(statevectorArr, numQubits, 0)
-      : isEntangledExport
-        ? getMultiQubitPersistence(terms, numQubits)
-        : 0;
-
-  const entanglementSection = `\\section*{Entanglement Properties}
-
-\\textbf{Definitions.}
-
-\\emph{Separable:} A multi-qubit quantum state is called \\emph{separable} if it can be
-written as a tensor product of the individual qubit states, i.e.\\
-$|\\psi\\rangle = |\\psi_1\\rangle \\otimes |\\psi_2\\rangle \\otimes \\dots \\otimes |\\psi_n\\rangle$.
-In this case, each qubit can be fully described by its own, independent quantum state.
-
-\\emph{Entangled:} A multi-qubit quantum state is called \\emph{entangled} if no such
-tensor-product decomposition exists. The qubits cannot be described independently of one
-another: measuring one qubit instantaneously affects the possible outcomes of measuring the
-others, even if the qubits are physically separated.
-
-\\textbf{Status for this circuit:} This ${numQubits}-qubit state is
-\\textbf{${isEntangledExport ? "entangled" : "separable"}}${
-    numQubits >= 2 && !isEntangledExport
-      ? " (it factors into a product of single-qubit states)"
-      : ""
-  }.
-
-${
-  persistenceExport !== null
-    ? numQubits === 1
-      ? `\\textbf{Entanglement Persistence:} $S = ${persistenceExport.toFixed(3)}$ (von Neumann entropy of the qubit's reduced density matrix, in bits). $S = 0$ corresponds to a pure, unentangled state; $S = 1$ corresponds to a maximally mixed/entangled qubit.\n\n`
-      : `\\textbf{Entanglement Persistence:} $P = ${persistenceExport.toFixed(3)}$ (persistency of entanglement: the minimum number of local qubit measurements required until the remaining state is guaranteed to be fully separable).\n\n`
-    : numQubits >= 2
-      ? `\\textbf{Entanglement Persistence:} not computable -- this state does not match any of the recognized standard patterns (GHZ-like states, Bell-state variants, W-states).\n\n`
-      : ""
-}`;
-
-  const termLines = terms
-    .map((t) => {
-      const p = prob(t.amplitude.re, t.amplitude.im);
-      return `    \\hline\n    $|${t.basisState}\\rangle$ & $${p}\\%$ \\\\`;
-    })
-    .join("\n");
-
-  const circuitSection = pngBase64
-    ? `\\section*{Quantum Circuit}
-
-\\begin{figure}[h]
-  \\centering
-  \\includegraphics[width=0.9\\textwidth]{circuit}
-  \\caption{Quantum Circuit}
-  \\label{fig:circuit}
-\\end{figure}
-
-`
-    : "";
-
-  // intermediate steps as an align environment
-  // helper: find the matrix for a gate label
-  const getGateMatrix = (gateLabelLatex: string): string | null => {
-    // check longer keys first so that "CNOT" is matched before "T" and "NOT"
-    const sortedKeys = Object.keys(GATE_DESCRIPTIONS).sort(
-      (a, b) => b.length - a.length,
-    );
-    for (const key of sortedKeys) {
-      if (gateLabelLatex.includes(key)) {
-        return `${key} = ${GATE_DESCRIPTIONS[key].matrix}`;
-      }
-    }
-    return null;
-  };
-
-  const stepsSection =
-    stepsResult && stepsResult.steps.length > 0
-      ? `\\section*{Mathematical Intermediate Steps}
-
-${stepsResult.steps
-  .map((step, idx) => {
-    const matrix = getGateMatrix(step.gateLabelLatex ?? step.gateLabel ?? "");
-    const matrixBlock = matrix
-      ? `\\textbf{Gate:} $${step.gateLabelLatex}$\n\\begin{equation}\n  ${matrix}\n\\end{equation}\n\n`
-      : `\\textbf{Gate:} $${step.gateLabelLatex}$\n\n`;
-    const prevState =
-      idx === 0
-        ? `|\\psi_0\\rangle = ${stepsResult.initial.latex}`
-        : `|\\psi_{${idx}}\\rangle`;
-    // Grover component heading, emitted once at the start of each component
-    const componentHeader =
-      step.component && step.component !== stepsResult.steps[idx - 1]?.component
-        ? `\\subsection*{${step.component}}\n\n`
-        : "";
-    return `${componentHeader}${matrixBlock}\\begin{align}\n  ${prevState} &\\xrightarrow{${step.gateLabelLatex}} \\\\[2pt]\n  |\\psi_{${idx + 1}}\\rangle &= ${step.latex}\n\\end{align}`;
-  })
-  .join("\n\n")}
-
-`
-      : "";
-
-  // pgfplots Histogram
-  const histogramSection =
-    terms.length > 0
-      ? (() => {
-          const coords = terms.map((t) => {
-            const p = prob(t.amplitude.re, t.amplitude.im);
-            // escape the basis state for the pgfplots x tick labels
-            return { label: `|${t.basisState}\\rangle`, value: p };
-          });
-          const coordStr = coords.map((c, i) => `(${i}, ${c.value})`).join(" ");
-          const tickLabels = coords.map((c) => `$${c.label}$`).join(", ");
-          const xMax = coords.length - 0.5;
-
-          return `\\section*{Measurement Probabilities}
-
-\\begin{figure}[h]
-  \\centering
-  \\begin{tikzpicture}
-    \\begin{axis}[
-      ybar,
-      bar width=0.5cm,
-      width=0.85\\textwidth,
-      height=6cm,
-      ymin=0, ymax=100,
-      xmin=-0.5, xmax=${xMax},
-      xtick={${coords.map((_, i) => i).join(", ")}},
-      xticklabels={${tickLabels}},
-      xticklabel style={font=\\small},
-      ylabel={Probability (\\%)},
-      ymajorgrids=true,
-      grid style=dashed,
-      nodes near coords,
-      nodes near coords align={vertical},
-      every node near coord/.append style={font=\\tiny},
-    ]
-      \\addplot[fill=blue!60, draw=blue!80] coordinates {${coordStr}};
-    \\end{axis}
-  \\end{tikzpicture}
-  \\caption{Measurement Probabilities of Basis States}
-  \\label{fig:histogram}
-\\end{figure}
-
-`;
-        })()
-      : "";
-
-  const tableSection =
-    terms.length > 0
-      ? `\\section*{Measurement Probabilities (Table)}
-
-\\begin{center}
-  \\begin{tabular}{|c|c|}
-    \\hline
-    \\textbf{Basis State} & \\textbf{Probability} \\\\
-    \\hline
-${termLines}
-    \\hline
-  \\end{tabular}
-\\end{center}
-
-`
-      : "";
-
-  const gateExplanationsSection = buildGateExplanationsSection(stepsResult);
-
-  // convert the AI explanation into LaTeX
-  const aiSection = aiExplanation
-    ? `\\section*{AI Explanation of the Computation}
-
-\\textit{The following explanation was generated by an AI assistant (Mistral AI) and provides an intuitive understanding of the quantum circuit computation.}
-
-\\vspace{0.5em}
-${markdownToLatex(aiExplanation)}
-
-`
-    : "";
-
-  const hint = pngBase64
-    ? "% OVERLEAF: circuit.png is included in the ZIP file\n"
-    : "";
-
-  return `\\documentclass{article}
-\\usepackage[utf8]{inputenc}
-\\usepackage{amsmath}
-\\usepackage{amssymb}
-\\usepackage{braket}
-\\usepackage{graphicx}
-\\usepackage{geometry}
-\\usepackage{pgfplots}
-\\usepackage{booktabs}
-\\pgfplotsset{compat=1.18}
-\\geometry{margin=2.5cm}
-
-${hint}
-\\title{Dirac Notation -- Quantum Low-Code Modeler}
-\\date{\\today}
-
-\\begin{document}
-
-\\maketitle
-
-${circuitSection}\\section*{Quantum State in Dirac Notation}
-
-The quantum system state with ${numQubits} qubit${numQubits !== 1 ? "s" : ""} is:
-
-\\begin{equation}
-  |\\psi\\rangle = ${latex}
-\\end{equation}
-
-${entanglementSection}${stepsSection}${histogramSection}${tableSection}${gateExplanationsSection ? "\\clearpage\n" + gateExplanationsSection : ""}${aiSection}\\end{document}
-`;
-}
-
 function downloadTex(content: string) {
   const blob = new Blob([content], { type: "text/plain" });
   const url = URL.createObjectURL(blob);
@@ -708,6 +217,7 @@ async function downloadZip(
 // ---------------------------------------------------------------------------
 
 function ExportMenu({
+  title,
   latex,
   numQubits,
   terms,
@@ -717,16 +227,19 @@ function ExportMenu({
   onGetModel,
   aiExplanation,
   qasm,
+  stepTree,
 }: {
+  title?: string;
   latex: string;
   numQubits: number;
-  terms: any[];
+  terms: DiracTerm[];
   unicode: string;
   onGetCircuitSvg?: () => Promise<string>;
   stepsResult?: DiracStepsResult;
   onGetModel?: () => object;
   aiExplanation?: string;
   qasm?: string;
+  stepTree?: StepTreeItem[];
 }) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
@@ -773,6 +286,17 @@ function ExportMenu({
     };
   }, [open]);
 
+  const exportOptions: LatexExportOptions = {
+    title,
+    latex,
+    numQubits,
+    terms,
+    stepsResult,
+    aiExplanation,
+    stepTree,
+    qasm,
+  };
+
   const copy = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     setCopied(label);
@@ -787,43 +311,18 @@ function ExportMenu({
       try {
         const svg = await onGetCircuitSvg();
         const pngBase64 = await svgToPngBase64(svg);
-        const texContent = buildLatexExport(
-          latex,
-          numQubits,
-          terms,
-          pngBase64,
-          stepsResult,
-          aiExplanation,
-        );
+        const texContent = buildLatexExport({ ...exportOptions, pngBase64 });
         const modelJson = onGetModel?.();
         const normalizedQasm = qasm ? normalizeQasm(qasm) : undefined;
         await downloadZip(texContent, pngBase64, modelJson, normalizedQasm);
       } catch (e) {
         console.error("Export failed:", e);
-        downloadTex(
-          buildLatexExport(
-            latex,
-            numQubits,
-            terms,
-            undefined,
-            stepsResult,
-            aiExplanation,
-          ),
-        );
+        downloadTex(buildLatexExport(exportOptions));
       } finally {
         setLoadingSvg(false);
       }
     } else {
-      downloadTex(
-        buildLatexExport(
-          latex,
-          numQubits,
-          terms,
-          undefined,
-          stepsResult,
-          aiExplanation,
-        ),
-      );
+      downloadTex(buildLatexExport(exportOptions));
     }
   };
 
@@ -843,14 +342,7 @@ function ExportMenu({
         }
       }
 
-      const texContent = buildLatexExport(
-        latex,
-        numQubits,
-        terms,
-        pngBase64,
-        stepsResult,
-        aiExplanation,
-      );
+      const texContent = buildLatexExport({ ...exportOptions, pngBase64 });
 
       // ytotech JSON API: resources array with main.tex and optionally circuit.png
       const resources: object[] = [{ main: true, content: texContent }];
@@ -873,7 +365,7 @@ function ExportMenu({
       const url = URL.createObjectURL(pdfBlob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "dirac_export.pdf";
+      a.download = "learning-materials.pdf";
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) {
@@ -989,7 +481,7 @@ function ExportMenu({
                     className="block text-gray-400"
                     style={{ fontSize: "10px" }}
                   >
-                    via LaTeX.Online · inkl. circuit.png · ~5–10s
+                    via LaTeX.Online · incl. circuit.png & OpenQASM · ~5–10s
                   </span>
                 </span>
               </button>
@@ -1207,10 +699,22 @@ export function QasmDiracPanel(props: Props) {
   // onStepClick only exists on QasmProps (steps are only available for QASM input), so it is
   // extracted from the props union via an "in" check.
   const onStepClick = "onStepClick" in props ? props.onStepClick : undefined;
+  const onApplyQasm = "onApplyQasm" in props ? props.onApplyQasm : undefined;
+  const editorQasm = "editorQasm" in props ? props.editorQasm : undefined;
+  const onSelectQasmLines =
+    "onSelectQasmLines" in props ? props.onSelectQasmLines : undefined;
+  const selectedGates =
+    "selectedGates" in props ? props.selectedGates : undefined;
+  const revealSelection =
+    "revealSelection" in props ? props.revealSelection : undefined;
+  const stepsContainerRef = useRef<HTMLDivElement>(null);
+  // changes made in the OpenQASM editor open the circuit editor right away
+  const [showEditor, setShowEditor] = useState(!!editorQasm);
   const [showBasisStates, setShowBasisStates] = useState(false);
   const [showSteps, setShowSteps] = useState(false);
   const [showBloch, setShowBloch] = useState(false);
   const [showProperties, setShowProperties] = useState(false);
+  const [showBasics, setShowBasics] = useState(false);
   const [mistralExplanation, setMistralExplanation] = useState<string | null>(
     null,
   );
@@ -1377,6 +881,78 @@ export function QasmDiracPanel(props: Props) {
     if ("qasm" in props && props.qasm) return qasmToDiracSteps(props.qasm);
     return null;
   }, [props]);
+
+  // Steps grouped per canvas node (Grover operator, basis encoding, ...), shown collapsed.
+  const nodes = useStore((state) => state.nodes);
+  const stepTree = useMemo(
+    () => (stepsResult ? buildStepTree(stepsResult.steps, nodes) : []),
+    [stepsResult, nodes],
+  );
+  const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
+  const toggleGroup = (key: string) =>
+    setOpenGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+
+  // Link between the steps and the OpenQASM editor: the gate of every step, and the steps
+  // of the gates selected in the editor.
+  const sourceQasm = "qasm" in props ? (props.qasm ?? "") : "";
+  const stepGates = useMemo(
+    () =>
+      (stepsResult?.steps ?? []).map((s) =>
+        s.line !== undefined ? gateAtLine(sourceQasm, s.line) : null,
+      ),
+    [stepsResult, sourceQasm],
+  );
+  const selectedSteps = useMemo(() => {
+    const selected = new Set<number>();
+    if (!selectedGates?.length) return selected;
+    stepGates.forEach((gate, idx) => {
+      if (gate && selectedGates.some((s) => sameGate(s, gate)))
+        selected.add(idx);
+    });
+    return selected;
+  }, [stepGates, selectedGates]);
+  // `withPath`: the lines of all earlier steps are highlighted as well (more lightly), like
+  // the canvas highlights every node on the path to the clicked step
+  const selectStepLines = (from: number, to: number, withPath = false) => {
+    if (!onSelectQasmLines || !stepsResult) return;
+    const linesOf = (a: number, b: number) =>
+      stepsResult.steps
+        .slice(a, b)
+        .map((s) => s.line)
+        .filter((l): l is number => l !== undefined);
+    const lines = linesOf(from, to + 1);
+    if (lines.length > 0)
+      onSelectQasmLines(sourceQasm, lines, withPath ? linesOf(0, from) : []);
+  };
+
+  // a line selected in the OpenQASM editor opens the steps (and the groups around the
+  // step) and scrolls to it
+  useEffect(() => {
+    if (!revealSelection || selectedSteps.size === 0) return;
+    const idx = Math.min(...selectedSteps);
+    setShowSteps(true);
+    const keys: string[] = [];
+    const collect = (items: StepTreeItem[]) => {
+      for (const item of items) {
+        if (item.type !== "group" || idx < item.first || idx > item.last)
+          continue;
+        keys.push(`${item.first}-${item.last}-${item.label}`);
+        collect(item.children);
+      }
+    };
+    collect(stepTree);
+    if (keys.length > 0) setOpenGroups((prev) => new Set([...prev, ...keys]));
+    setTimeout(() => {
+      stepsContainerRef.current
+        ?.querySelector(`[data-step-index="${idx}"]`)
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 50);
+  }, [revealSelection]);
 
   const unicodeStr = useMemo(() => {
     if (fullResult) return fullResult.unicode;
@@ -1604,6 +1180,181 @@ export function QasmDiracPanel(props: Props) {
     return !isStateFullySeparable(statevectorArr, numQubits);
   }, [terms, numQubits]);
 
+  const markdownClassName =
+    "text-xs text-gray-700 leading-relaxed font-sans [&_p]:my-1.5 [&_li]:my-0.5 [&_strong]:text-gray-800 [&_ul]:pl-4 [&_ul]:list-disc [&_.katex]:text-sm [&_.katex-display]:my-2 [&_.katex-display]:overflow-x-auto";
+
+  const renderMarkdown = (markdown: string) => (
+    <div className={markdownClassName}>
+      <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+        {markdown}
+      </ReactMarkdown>
+    </div>
+  );
+
+  const psiLabel = (n: number) =>
+    `|ψ${String(n)
+      .split("")
+      .map((d) => "₀₁₂₃₄₅₆₇₈₉"[Number(d)])
+      .join("")}⟩`;
+
+  // State after step idx, i.e. |ψ_{idx+1}⟩.
+  const renderStateRow = (idx: number) => (
+    <div className="flex items-baseline gap-2 py-1">
+      <span className="text-gray-400 text-xs min-w-[36px]">
+        {psiLabel(idx + 1)}
+      </span>
+      <span className="text-gray-500 text-xs">=</span>
+      <span className="text-gray-800 whitespace-nowrap">
+        {stepsResult?.steps[idx]?.unicode}
+      </span>
+    </div>
+  );
+
+  const renderStep = (idx: number) => {
+    if (!stepsResult) return null;
+    const step = stepsResult.steps[idx];
+    const canvasLink = !!step.nodeId && !!onStepClick;
+    const qasmLink = step.line !== undefined && !!onSelectQasmLines;
+    const selected = selectedSteps.has(idx);
+    return (
+      <div
+        key={`step-${idx}`}
+        data-step-index={idx}
+        className={`flex flex-col rounded ${selected ? "bg-blue-100/70 ring-1 ring-blue-400" : ""}`}
+      >
+        <div className="flex items-center gap-1.5 py-0.5 pl-10">
+          <span className="text-blue-400 text-xs">──</span>
+          <span
+            className={`text-blue-600 text-xs font-sans font-medium bg-blue-50 border px-1.5 py-0.5 rounded whitespace-nowrap ${
+              selected ? "border-blue-400" : "border-blue-100"
+            } ${
+              canvasLink || qasmLink
+                ? "cursor-pointer hover:bg-blue-100 hover:border-blue-300 transition-colors"
+                : ""
+            }`}
+            onClick={
+              canvasLink || qasmLink
+                ? () => {
+                    selectStepLines(idx, idx, true);
+                    if (!canvasLink) return;
+                    // Collect all node IDs from step 0 up to and including the
+                    // clicked step (deduplicated, without undefined), so that every
+                    // node used up to that point is highlighted together.
+                    const nodeIdsUpToHere = Array.from(
+                      new Set(
+                        stepsResult.steps
+                          .slice(0, idx + 1)
+                          .map((s) => s.nodeId)
+                          .filter((n): n is string => !!n),
+                      ),
+                    );
+                    const indexInNode = stepsResult.steps
+                      .slice(0, idx)
+                      .filter((s) => s.nodeId === step.nodeId).length;
+                    onStepClick!(nodeIdsUpToHere, {
+                      nodeId: step.nodeId!,
+                      from: 0,
+                      to: indexInNode,
+                    });
+                  }
+                : undefined
+            }
+            title={
+              canvasLink
+                ? `Click to highlight all nodes used up to this point on the canvas; the block of this step opens down to its gates${qasmLink ? ". The line is highlighted in the OpenQASM editor" : ""}`
+                : qasmLink
+                  ? "Click to highlight the line in the OpenQASM editor"
+                  : undefined
+            }
+          >
+            {step.gateLabel}
+          </span>
+          <span className="text-blue-400 text-xs">──→</span>
+        </div>
+        {renderStateRow(idx)}
+      </div>
+    );
+  };
+
+  // A group (e.g. Grover operator, its oracle, or a basis encoding) is collapsed to a
+  // single arrow with the resulting state and can be opened to show its parts.
+  // Clicking a group (e.g. "Uniform superposition" of a Grover block) opens its block on
+  // the canvas down to the circuit level and highlights the gates of the group.
+  const showGroupOnCanvas = (group: StepGroup) => {
+    const nodeId = stepsResult?.steps[group.first]?.nodeId;
+    if (!onStepClick || !stepsResult || !nodeId) return;
+    // a group made on the canvas: open it there and highlight all of its gates
+    if (group.groupNodeId) {
+      onStepClick(
+        Array.from(
+          new Set(
+            stepsResult.steps
+              .slice(group.first, group.last + 1)
+              .map((s) => s.nodeId)
+              .filter((n): n is string => !!n),
+          ),
+        ),
+      );
+      return;
+    }
+    const before = stepsResult.steps
+      .slice(0, group.first)
+      .filter((s) => s.nodeId === nodeId).length;
+    onStepClick([nodeId], {
+      nodeId,
+      from: before,
+      to: before + group.last - group.first,
+    });
+  };
+
+  const renderGroup = (group: StepGroup) => {
+    const key = `${group.first}-${group.last}-${group.label}`;
+    const open = openGroups.has(key);
+    const gateCount = group.last - group.first + 1;
+    return (
+      <div key={key} className="flex flex-col">
+        <div className="flex items-center gap-1.5 py-0.5 pl-10">
+          <span className="text-indigo-400 text-xs">──</span>
+          <button
+            onClick={() => {
+              toggleGroup(key);
+              selectStepLines(group.first, group.last);
+              showGroupOnCanvas(group);
+            }}
+            className="flex items-center gap-1 text-indigo-700 text-xs font-sans font-semibold bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 hover:border-indigo-300 px-1.5 py-0.5 rounded whitespace-nowrap transition-colors"
+            title={open ? "Collapse" : "Open to see the components"}
+          >
+            <span>{open ? "▾" : "▸"}</span>
+            {group.label}
+            <span className="font-normal text-indigo-400">
+              ({gateCount} gate{gateCount === 1 ? "" : "s"})
+            </span>
+          </button>
+          {!open && <span className="text-indigo-400 text-xs">──→</span>}
+        </div>
+        {open ? (
+          <div className="ml-10 pl-2 border-l-2 border-indigo-100">
+            {group.description && (
+              <div className="my-1 rounded bg-indigo-50/60 px-2 py-1">
+                {renderMarkdown(group.description)}
+              </div>
+            )}
+            {group.children.map((child) =>
+              child.type === "group"
+                ? renderGroup(child)
+                : renderStep(child.index),
+            )}
+          </div>
+        ) : (
+          renderStateRow(group.last)
+        )}
+      </div>
+    );
+  };
+
+  const basics = basicsTopics(numQubits);
+  const blochTopic = basics.find((t) => t.title.includes("Bloch"));
+
   return (
     <div className="rounded-xl border bg-white flex flex-col gap-3 p-4">
       {/* Header */}
@@ -1629,6 +1380,20 @@ export function QasmDiracPanel(props: Props) {
               Properties
             </button>
           )}
+          {fullResult && numQubits > 0 && (
+            <button
+              onClick={() => setShowBasics((v) => !v)}
+              className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border transition-colors flex-shrink-0 whitespace-nowrap ${
+                showBasics
+                  ? "bg-blue-50 border-blue-300 text-blue-600"
+                  : "border-gray-300 hover:bg-gray-100 text-gray-600"
+              }`}
+              title="What is a qubit, why the state has 2^n entries, how to read a matrix and the Bloch sphere, unitarity"
+            >
+              <span>{showBasics ? "▾" : "▸"}</span>
+              Basics
+            </button>
+          )}
           {"qasm" in props &&
             props.qasm &&
             stepsResult &&
@@ -1645,6 +1410,20 @@ export function QasmDiracPanel(props: Props) {
                 Steps
               </button>
             )}
+          {"qasm" in props && props.qasm && (
+            <button
+              onClick={() => setShowEditor((v) => !v)}
+              className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border transition-colors flex-shrink-0 whitespace-nowrap ${
+                showEditor
+                  ? "bg-blue-50 border-blue-300 text-blue-600"
+                  : "border-gray-300 hover:bg-gray-100 text-gray-600"
+              }`}
+              title="Change the initial state, add, remove or switch steps and apply them to OpenQASM and the canvas"
+            >
+              <span>{showEditor ? "▾" : "▸"}</span>
+              Edit
+            </button>
+          )}
           {terms.length > 0 && (
             <button
               onClick={() => setShowBasisStates((v) => !v)}
@@ -1673,6 +1452,7 @@ export function QasmDiracPanel(props: Props) {
           )}
           {fullResult && terms.length > 0 && (
             <ExportMenu
+              title={props.title}
               latex={fullResult.latex}
               numQubits={numQubits}
               terms={terms}
@@ -1682,6 +1462,7 @@ export function QasmDiracPanel(props: Props) {
               onGetModel={props.onGetModel}
               aiExplanation={mistralExplanation ?? undefined}
               qasm={"qasm" in props ? props.qasm : undefined}
+              stepTree={stepTree}
             />
           )}
         </div>
@@ -1818,6 +1599,43 @@ export function QasmDiracPanel(props: Props) {
                   </tr>
                   <tr className="border-b border-teal-100">
                     <td className="py-1.5 pr-2 text-gray-700">
+                      State dimension
+                      <span
+                        className="text-gray-400 cursor-help"
+                        title="Each qubit doubles the number of basis states, so n qubits give a vector of 2^n amplitudes (see Basics)."
+                      >
+                        {" "}
+                        ⓘ
+                      </span>
+                    </td>
+                    <td className="py-1.5 font-mono text-gray-700">
+                      2<sup>{numQubits}</sup> = {2 ** numQubits}
+                    </td>
+                  </tr>
+                  <tr className="border-b border-teal-100">
+                    <td className="py-1.5 pr-2 text-gray-700">
+                      Normalized
+                      <span
+                        className="text-gray-400 cursor-help"
+                        title="The squared amplitudes sum to 1. Every gate is unitary and keeps this sum at 1 (see Basics)."
+                      >
+                        {" "}
+                        ⓘ
+                      </span>
+                    </td>
+                    <td className="py-1.5 font-mono text-gray-700">
+                      Σ|c<sub>x</sub>|² ={" "}
+                      {fullResult.terms
+                        .reduce(
+                          (sum, t) =>
+                            sum + t.amplitude.re ** 2 + t.amplitude.im ** 2,
+                          0,
+                        )
+                        .toFixed(3)}
+                    </td>
+                  </tr>
+                  <tr className="border-b border-teal-100">
+                    <td className="py-1.5 pr-2 text-gray-700">
                       Bloch Sphere Representation
                     </td>
                     <td className="py-1.5 text-gray-700">
@@ -1866,6 +1684,43 @@ export function QasmDiracPanel(props: Props) {
           );
         })()}
 
+      {/* Circuit editor: initial state, steps and matrices, applied back to QASM + canvas */}
+      {showEditor && "qasm" in props && props.qasm && (
+        <MathCircuitEditor
+          qasm={editorQasm ?? props.qasm}
+          fromQasmEditor={!!editorQasm}
+          onApply={onApplyQasm}
+          onClose={() => setShowEditor(false)}
+          onSelectLines={
+            onSelectQasmLines
+              ? (lines) => onSelectQasmLines(editorQasm ?? sourceQasm, lines)
+              : undefined
+          }
+        />
+      )}
+
+      {/* Basics: the concepts needed to read the output above and below */}
+      {showBasics && fullResult && numQubits > 0 && (
+        <div className="flex-shrink-0 rounded-lg border border-sky-100 bg-sky-50/30 px-3 py-3">
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+            Basics
+          </p>
+          <div className="flex flex-col gap-1">
+            {basics.map((topic) => (
+              <details
+                key={topic.title}
+                className="rounded border border-sky-100 bg-white px-2 py-1"
+              >
+                <summary className="cursor-pointer text-xs font-semibold text-sky-800">
+                  {topic.title}
+                </summary>
+                {renderMarkdown(topic.markdown)}
+              </details>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Intermediate steps */}
       {showSteps && stepsResult && stepsResult.steps.length > 0 && (
         <div className="flex-shrink-0 rounded-lg border border-blue-100 bg-blue-50/30 px-3 py-3 overflow-x-auto">
@@ -1906,7 +1761,10 @@ export function QasmDiracPanel(props: Props) {
             />
           )}
 
-          <div className="flex flex-col gap-0 font-mono text-sm">
+          <div
+            ref={stepsContainerRef}
+            className="flex flex-col gap-0 font-mono text-sm"
+          >
             <div className="flex items-baseline gap-2 py-1">
               <span className="text-gray-400 text-xs min-w-[36px]">|ψ₀⟩</span>
               <span className="text-gray-500 text-xs">=</span>
@@ -1914,62 +1772,11 @@ export function QasmDiracPanel(props: Props) {
                 {stepsResult.initial.unicode}
               </span>
             </div>
-            {stepsResult.steps.map((step, idx) => (
-              <div key={idx} className="flex flex-col">
-                {/* Grover component heading, rendered once at the start of each component */}
-                {step.component &&
-                  step.component !== stepsResult.steps[idx - 1]?.component && (
-                    <div className="mt-3 mb-1 pl-10 text-[11px] font-sans font-semibold uppercase tracking-wide text-indigo-600">
-                      {step.component}
-                    </div>
-                  )}
-                <div className="flex items-center gap-1.5 py-0.5 pl-10">
-                  <span className="text-blue-400 text-xs">──</span>
-                  <span
-                    className={`text-blue-600 text-xs font-sans font-medium bg-blue-50 border border-blue-100 px-1.5 py-0.5 rounded whitespace-nowrap ${
-                      step.nodeId && onStepClick
-                        ? "cursor-pointer hover:bg-blue-100 hover:border-blue-300 transition-colors"
-                        : ""
-                    }`}
-                    onClick={
-                      step.nodeId && onStepClick
-                        ? () => {
-                            // Collect all node IDs from step 0 up to and including the
-                            // clicked step (deduplicated, without undefined), so that every
-                            // node used up to that point is highlighted together.
-                            const nodeIdsUpToHere = Array.from(
-                              new Set(
-                                stepsResult.steps
-                                  .slice(0, idx + 1)
-                                  .map((s) => s.nodeId)
-                                  .filter((n): n is string => !!n),
-                              ),
-                            );
-                            onStepClick(nodeIdsUpToHere);
-                          }
-                        : undefined
-                    }
-                    title={
-                      step.nodeId && onStepClick
-                        ? "Click to highlight all nodes used up to this point on the canvas"
-                        : undefined
-                    }
-                  >
-                    {step.gateLabel}
-                  </span>
-                  <span className="text-blue-400 text-xs">──→</span>
-                </div>
-                <div className="flex items-baseline gap-2 py-1">
-                  <span className="text-gray-400 text-xs min-w-[36px]">
-                    |ψ{"₀₁₂₃₄₅₆₇₈₉"[idx + 1] ?? idx + 1}⟩
-                  </span>
-                  <span className="text-gray-500 text-xs">=</span>
-                  <span className="text-gray-800 whitespace-nowrap">
-                    {step.unicode}
-                  </span>
-                </div>
-              </div>
-            ))}
+            {stepTree.map((item) =>
+              item.type === "group"
+                ? renderGroup(item)
+                : renderStep(item.index),
+            )}
           </div>
 
           {/* Mistral AI explanation */}
@@ -2096,6 +1903,14 @@ export function QasmDiracPanel(props: Props) {
           <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">
             Bloch Sphere{numQubits > 1 ? ` (${numQubits} Qubits)` : ""}
           </p>
+          {blochTopic && (
+            <details className="mb-3 rounded border border-purple-100 bg-white px-2 py-1">
+              <summary className="cursor-pointer text-xs font-semibold text-purple-700">
+                {blochTopic.title}
+              </summary>
+              {renderMarkdown(blochTopic.markdown)}
+            </details>
+          )}
           <BlochSphereMulti
             statevector={Array.from({ length: 1 << numQubits }, (_, i) => {
               const term = fullResult.terms.find(

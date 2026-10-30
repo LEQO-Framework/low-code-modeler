@@ -38,6 +38,8 @@ import {
   qubitLabel,
 } from "@/constants";
 import { ArrowLeft } from "lucide-react";
+import { detectImplementationLanguage } from "@/backend";
+import { CustomOperatorImplementation } from "./customOperatorImplementation";
 import { useEffect, useState } from "react";
 import { Node } from "reactflow";
 import { shallow } from "zustand/shallow";
@@ -1442,6 +1444,7 @@ export const TextPanel = () => {
 
       if (field === "implementation") {
         setImplementationContent(value);
+        updateImplementationLanguage(value);
       }
 
       if (validFields.includes(field)) {
@@ -1459,6 +1462,23 @@ export const TextPanel = () => {
           updateNodeValue(selectedNode.id, field, value);
         }
       }
+    }
+  }
+
+  /**
+   * Stores the language of code entered in the field. If the code does not tell,
+   * a previously set language is kept; classical operators default to python.
+   */
+  function updateImplementationLanguage(code: string) {
+    if (!selectedNode) return;
+    const detected = detectImplementationLanguage(code);
+    const language =
+      detected ??
+      selectedNode.data.implementationLanguage ??
+      (selectedNode.type.toLowerCase().includes("classical") ? "python" : "qasm");
+    if (code.trim() && language !== selectedNode.data.implementationLanguage) {
+      selectedNode.data.implementationLanguage = language;
+      updateNodeValue(selectedNode.id, "implementationLanguage", language);
     }
   }
 
@@ -1497,22 +1517,15 @@ export const TextPanel = () => {
               "implementationFileName",
               file.name,
             );
+          }
 
-            const extension = file.name.split(".").pop()?.toLowerCase();
-
-            if (extension === "qasm") {
-              updateNodeValue(
-                selectedNode.id,
-                "implementationLanguage",
-                "qasm",
-              );
-            } else if (extension === "py") {
-              updateNodeValue(
-                selectedNode.id,
-                "implementationLanguage",
-                "python",
-              );
-            }
+          const extension = file.name.split(".").pop()?.toLowerCase();
+          if (extension === "qasm" || extension === "py") {
+            const language = extension === "py" ? "python" : "qasm";
+            selectedNode.data.implementationLanguage = language;
+            updateNodeValue(selectedNode.id, "implementationLanguage", language);
+          } else {
+            updateImplementationLanguage(fileContent);
           }
         }
       };
@@ -1523,6 +1536,13 @@ export const TextPanel = () => {
 
   const editableImplementationType =
     getEditableNodeImplementationType(selectedNode);
+
+  /** Stores structured values (objects, lists) that handleNumberChange does not support. */
+  function updateField(field: string, value: any) {
+    if (!selectedNode) return;
+    selectedNode.data[field] = value;
+    updateNodeValue(selectedNode.id, field, value);
+  }
 
   return (
     <>
@@ -1585,7 +1605,8 @@ export const TextPanel = () => {
             {/* Information Tab */}
             {activeTab === "information" && (
               <div role="tabpanel" className="p-2">
-                <label
+                <div>
+                  <label
                     className="block text-sm font-medium text-start text-gray-700"
                     htmlFor="nodeId"
                   >
@@ -1608,7 +1629,7 @@ export const TextPanel = () => {
                       {idCopied ? "Copied" : "Copy"}
                     </button>
                   </div>
-            
+                </div>
 
                 <div className="mt-3">
                   <label className="block text-sm font-medium text-start text-gray-700">
@@ -1654,11 +1675,17 @@ export const TextPanel = () => {
         )}
 
         {selectedNode?.type === EditableNode && editableImplementationType && (
-          <EditableNodeImplementationFields
+          <CustomOperatorImplementation
             selectedNode={selectedNode}
-            implementationType={editableImplementationType}
-            handleNumberChange={handleNumberChange}
-            handleFileUpload={handleFileUpload}
+            updateField={updateField}
+            implementationFields={
+              <EditableNodeImplementationFields
+                selectedNode={selectedNode}
+                implementationType={editableImplementationType}
+                handleNumberChange={handleNumberChange}
+                handleFileUpload={handleFileUpload}
+              />
+            }
           />
         )}
 
@@ -2187,15 +2214,19 @@ export const TextPanel = () => {
 
         {(selectedNode?.type === AlgorithmNode ||
           selectedNode?.type === ClassicalAlgorithmNode) && (
-          <div className="p-2 mt-3">
-            <ImplementationFields
-              selectedNode={selectedNode}
-              handleNumberChange={handleNumberChange}
-              handleFileUpload={handleFileUpload}
-              implementationContent={implementationContent}
-              type=""
-            />
-          </div>
+          <CustomOperatorImplementation
+            selectedNode={selectedNode}
+            updateField={updateField}
+            implementationFields={
+              <ImplementationFields
+                selectedNode={selectedNode}
+                handleNumberChange={handleNumberChange}
+                handleFileUpload={handleFileUpload}
+                implementationContent={implementationContent}
+                type=""
+              />
+            }
+          />
         )}
 
         {selectedNode?.type === "splitterNode" && (

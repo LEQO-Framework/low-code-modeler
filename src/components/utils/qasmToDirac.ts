@@ -410,6 +410,8 @@ interface ParsedGate {
   // (if any). Used by the step-click mechanism to highlight the corresponding node on the
   // canvas when a step in the Dirac notation is clicked.
   nodeId?: string;
+  // 0-based line of the gate in the parsed QASM source (highlighted in the OpenQASM editor).
+  line?: number;
 }
 
 /** Minimal expression evaluator for QASM parameters (pi, *, /, +, -). */
@@ -429,10 +431,17 @@ export function parseQasm(qasm: string): {
   warnings: string[];
 } {
   const warnings: string[] = [];
-  const lines = qasm
-    .split("\n")
-    .map((l) => l.replace(/\/\/.*$/, "").trim())
-    .filter((l) => l.length > 0);
+  // keeps the 0-based line number in the source, so gates can be found in the editor
+  // Node markers can share a line with the gate ("/* Start node h1 */ h q[0]; /* End
+  // node h1 */"), so they are split into statements of their own on the same line.
+  const numberedLines = qasm.split("\n").flatMap((l, lineNo) =>
+    l
+      .replace(/\/\/.*$/, "")
+      .split(/(\/\*\s*(?:Start|End) node [\w-]+\s*\*\/)/)
+      .map((part) => ({ text: part.trim(), lineNo }))
+      .filter((part) => part.text.length > 0),
+  );
+  const lines = numberedLines.map((l) => l.text);
 
   // Build the qubit registers: name -> { start, size }
   const registers: Map<string, { start: number; size: number }> = new Map();
@@ -585,7 +594,7 @@ export function parseQasm(qasm: string): {
   // ---------------------------------------------------------------------------
   // Second pass: parse the gates
   // ---------------------------------------------------------------------------
-  for (const line of lines) {
+  for (const { text: line, lineNo } of numberedLines) {
     const startNodeMatch = line.match(/^\/\*\s*Start node ([\w-]+)\s*\*\/$/);
     if (startNodeMatch) {
       currentNodeId = startNodeMatch[1];
@@ -632,6 +641,7 @@ export function parseQasm(qasm: string): {
             qubits: [q],
             params: [],
             nodeId: currentNodeId,
+            line: lineNo,
           });
       }
       continue;
@@ -665,6 +675,7 @@ export function parseQasm(qasm: string): {
         params: [],
         numControls,
         nodeId: currentNodeId,
+        line: lineNo,
       });
       continue;
     }
@@ -690,6 +701,7 @@ export function parseQasm(qasm: string): {
       qubits: rawQubits,
       params: rawParams,
       nodeId: currentNodeId,
+      line: lineNo,
     });
   }
 
@@ -725,6 +737,10 @@ export function simulate(
     }
 
     switch (gate.name) {
+      case "id":
+      case "i":
+        // identity: the state stays the same
+        break;
       case "h":
         sv = applySingleQubitGate(sv, numQubits, q0, GATE_H);
         break;
@@ -1110,6 +1126,12 @@ export interface DiracStep {
   nodeId?: string;
   /** Grover component this gate belongs to; undefined unless a Grover node was detected. */
   component?: string;
+  /** QASM gate name, e.g. "h", "cx" or "mc_z". */
+  gateName: string;
+  /** Global qubit indices the gate acts on (controls first). */
+  qubits: number[];
+  /** 0-based line of the gate in the QASM the steps were computed from. */
+  line?: number;
 }
 
 export interface DiracStepsResult {
@@ -1184,6 +1206,9 @@ function formatGateLabel(gate: ParsedGate, numQubits: number): string {
   };
 
   switch (gate.name) {
+    case "id":
+    case "i":
+      return buildTensor("I", [q[0]]);
     case "h":
       return buildTensor("H", [q[0]]);
     case "id":
@@ -1307,6 +1332,9 @@ function formatGateLabelLatex(gate: ParsedGate, numQubits: number): string {
   };
 
   switch (gate.name) {
+    case "id":
+    case "i":
+      return buildTensorLatex("I", [q[0]]);
     case "h":
       return buildTensorLatex("H", [q[0]]);
     case "id":
@@ -1396,11 +1424,23 @@ function formatGateLabelLatex(gate: ParsedGate, numQubits: number): string {
  * // steps.steps[1].gateLabel -> "CNOT q0→q1"
  * // steps.steps[1].unicode   -> "1/√2 |00⟩ + 1/√2 |11⟩"
  */
-export function qasmToDiracSteps(qasm: string): DiracStepsResult {
+export function qasmToDiracSteps(
+  qasm: string,
+  /** Optional initial basis state (q0 leftmost, e.g. "01"); defaults to |0...0⟩. */
+  initialBits?: string,
+): DiracStepsResult {
   const { numQubits, gates, warnings: parseWarnings } = parseQasm(qasm);
   const simWarnings: string[] = [];
 
   let sv = createStatevector(numQubits);
+  if (
+    initialBits &&
+    initialBits.length === numQubits &&
+    /^[01]+$/.test(initialBits)
+  ) {
+    sv[0] = C(0);
+    sv[parseInt(initialBits, 2)] = C(1);
+  }
   const initialResult = statevectorToDirac(sv, numQubits);
 
   const steps: DiracStep[] = [];
@@ -1425,6 +1465,10 @@ export function qasmToDiracSteps(qasm: string): DiracStepsResult {
     const [p0, p1, p2] = gate.params;
 
     switch (gate.name) {
+      case "id":
+      case "i":
+        // identity: the state stays the same
+        break;
       case "h":
         sv = applySingleQubitGate(sv, numQubits, q0, GATE_H);
         break;
@@ -1558,6 +1602,9 @@ export function qasmToDiracSteps(qasm: string): DiracStepsResult {
       latex: stepResult.latex,
       nodeId: gate.nodeId,
       component: grover.lookup[gateIndex],
+      gateName: gate.name,
+      qubits: gate.qubits,
+      line: gate.line,
     });
   }
 

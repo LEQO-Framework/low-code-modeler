@@ -1,11 +1,15 @@
 import { memo, useState, useEffect } from "react";
-import { Node } from "reactflow";
-import { useStore } from "@/config/store";
+import { Node, useReactFlow } from "reactflow";
+import { appendHistory, useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
 import { cn } from "@/lib/utils";
 import OutputPort from "../utils/outputPort";
 import { awareness } from "@/yjs";
 import { AlertCircle } from "lucide-react";
+import {
+  expandGroverToSubprocess,
+  readGroverSettings,
+} from "@/lib/expandGrover";
 
 const selector = (state: any) => ({
   updateNodeValue: state.updateNodeValue,
@@ -44,6 +48,36 @@ export const GroverNode = memo((node: Node) => {
   );
 
   const [outputs, setOutputs] = useState(data.outputs || []);
+  const reactFlow = useReactFlow();
+  const expandSettings = readGroverSettings(data);
+
+  // Opens this node as a subprocess: a "Grover Search Algorithm" group with the palette
+  // blocks it is made of, Prepare State (uniform superposition) followed by
+  // Grover Oracle → Grover Diffuser for every iteration. Collapsing the group restores it.
+  const expand = () => {
+    if (typeof expandSettings === "string") return;
+    const currentNodes = reactFlow.getNodes();
+    const currentEdges = reactFlow.getEdges();
+    const self = currentNodes.find((n) => n.id === id);
+    if (!self) return;
+    const result = expandGroverToSubprocess(
+      self,
+      currentNodes,
+      currentEdges,
+      expandSettings,
+    );
+    // keep the compact version in the undo history
+    useStore.setState((state: any) => ({
+      ...appendHistory(state.history, state.historyIndex, {
+        nodes: structuredClone(currentNodes),
+        edges: structuredClone(currentEdges),
+      }),
+      redoStack: [],
+    }));
+    setSelectedNode(null);
+    reactFlow.setNodes(result.nodes);
+    reactFlow.setEdges(result.edges);
+  };
   const [outputIdentifierError, setOutputIdentifierError] = useState(false);
   const [sizeError, setSizeError] = useState(false);
 
@@ -277,6 +311,19 @@ export const GroverNode = memo((node: Node) => {
                   </span>
                 )}
               </div>
+
+              <button
+                onClick={expand}
+                disabled={typeof expandSettings === "string"}
+                className="nodrag flex-shrink-0 ml-2 text-[10px] font-semibold px-2 py-0.5 rounded-full border border-blue-700 text-blue-900 bg-white/70 hover:bg-white transition-colors whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
+                title={
+                  typeof expandSettings === "string"
+                    ? expandSettings
+                    : `Open as subprocess: Prepare State (uniform superposition) → ${expandSettings.iterations} × (Grover Oracle → Grover Diffuser). Collapse the subprocess to get this block back.`
+                }
+              >
+                ▸ Expand
+              </button>
             </div>
           </div>
 

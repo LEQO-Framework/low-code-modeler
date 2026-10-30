@@ -30,7 +30,7 @@ function createQubitNode(id: string, x: number, y: number, q: string) {
       children: [],
       identifiers: [q],
       inputTypes: [],
-      outputTypes: [],
+      outputTypes: ["quantum register"],
       completionGuaranteed: true,
       compactOptions: [true, false],
       parameter: "0",
@@ -58,8 +58,8 @@ function createGateNode(
       inputs,
       children: [],
       identifiers,
-      inputTypes: Array(inputs.length).fill("any"),
-      outputTypes: [],
+      inputTypes: Array(inputs.length).fill("quantum register"),
+      outputTypes: Array(Math.max(1, inputs.length)).fill("quantum register"),
       completionGuaranteed: true,
       compactOptions: [true, false],
       parameter: "0",
@@ -86,8 +86,8 @@ function createMergerNode(
       inputs,
       children: [],
       identifiers,
-      inputTypes: Array(inputs.length).fill("any"),
-      outputTypes: [],
+      inputTypes: Array(inputs.length).fill("quantum register"),
+      outputTypes: ["quantum register"],
       numberInputs: inputs.length,
       completionGuaranteed: true,
       compactOptions: [true, false],
@@ -127,12 +127,16 @@ export function openQasmToFlow(qasm: string): FlowJson {
   const nodes: any[] = [];
   const edges: any[] = [];
 
-  // Register
-  const qubitMatch = /qubit\[(\d+)\]\s+([a-zA-Z0-9_]+)\s*;/.exec(qasm);
-  if (!qubitMatch) throw new Error("No qubit register found");
+  // Register: QASM 3 "qubit[N] name;" or QASM 2 "qreg name[N];"
+  const qasm3Match = /qubit\[(\d+)\]\s+([a-zA-Z0-9_]+)\s*;/.exec(qasm);
+  const qasm2Match = /qreg\s+([a-zA-Z0-9_]+)\s*\[(\d+)\]\s*;/.exec(qasm);
+  if (!qasm3Match && !qasm2Match)
+    throw new Error(
+      'No qubit register found. Expected "qubit[N] name;" (OpenQASM 3) or "qreg name[N];" (OpenQASM 2).',
+    );
 
-  const n = Number(qubitMatch[1]);
-  const reg = qubitMatch[2];
+  const n = Number(qasm3Match ? qasm3Match[1] : qasm2Match![2]);
+  const reg = qasm3Match ? qasm3Match[2] : qasm2Match![1];
   const qLabel = (i: number) => `${reg}[${i}]`;
 
   // Per-qubit wire state:
@@ -281,108 +285,124 @@ export function openQasmToFlow(qasm: string): FlowJson {
 
   // 7. PARSE MEASUREMENTS
   //
-  //  Pattern:
-  //    bit[N] name = measure alias[{0,1}];
+  //  Patterns:
+  //    QASM 3: bit[N] name = measure alias[{0,1}];
+  //    QASM 2: measure q[i] -> c[j];   or   measure q -> c;
   //
-  //  For each measurement we:
-  //    a) Create a MERGER collecting all measured qubit wires
-  //    b) Create a MEASUREMENT node with a single input from the merger
-  //       (edgeId = "" as per reference format, no edge added for meas <-merger)
-  //    c) Add real edges from each qubit's last node into the merger
+  //  All measured qubits are collected, then we:
+  //    a) Create one MERGER combining the wires of all qubits
+  //       (skipped for a single qubit, which goes straight into the measurement)
+  //    b) Create one MEASUREMENT node with a single input from the merger,
+  //       its indices are the measured qubits (empty if the whole register is measured)
+  const measured: number[] = [];
+  let outputName: string | null = null;
+  const addMeasured = (q: number | undefined) => {
+    if (q !== undefined && q < n && !measured.includes(q)) measured.push(q);
+  };
 
   const measRe =
     /bit\[(\d+)\]\s+([a-zA-Z0-9_]+)\s*=\s*measure\s+([a-zA-Z0-9_.]+)\s*\[\{([^}]+)\}\]\s*;/g;
 
   while ((m = measRe.exec(noComments))) {
-    const outputName = m[2];
     const aliasName = m[3];
-    const localIdxs = m[4]
+    outputName ??= m[2];
+    m[4]
       .split(",")
-      .map((s) => s.trim())
-      .map(Number);
+      .map((s) => Number(s.trim()))
+      .forEach((li) => addMeasured(resolveQubit(aliasName, li)));
+  }
 
-    // Resolve to absolute qubit indices
-    const absIdxs: number[] = [];
-    for (const li of localIdxs) {
-      const q = resolveQubit(aliasName, li);
-      if (q !== undefined) absIdxs.push(q);
-    }
-    if (absIdxs.length === 0) continue;
+  const qasm2MeasRe =
+    /measure\s+([a-zA-Z0-9_]+)\s*(?:\[(\d+)\])?\s*->\s*([a-zA-Z0-9_]+)\s*(?:\[\d+\])?\s*;/g;
 
+  while ((m = qasm2MeasRe.exec(noComments))) {
+    if (m[1] !== reg) continue;
+    outputName ??= m[3];
+    if (m[2] !== undefined) addMeasured(Number(m[2]));
+    else for (let q = 0; q < n; q++) addMeasured(q);
+  }
+
+  if (measured.length > 0) {
+    const allQubits = [...Array(n).keys()];
+    const identifiers = allQubits.map((q) => qLabel(q));
     const maxDepth = Math.max(...depth);
-    const midY = ((Math.min(...absIdxs) + Math.max(...absIdxs)) / 2) * 180 - 90;
+    const midY = ((n - 1) / 2) * 180 - 90;
 
-    const mergerId = generateId();
-    const mergerX = (maxDepth + 2) * 300 - 180;
-    const mergerY = midY + 180; // place below midpoint like reference
+    const measId = generateId();
+    const measX = (maxDepth + 2) * 300 - 180 + (n > 1 ? 350 : 0);
+    const measTHandle = `quantumHandleMeasurementInput0${measId}`;
 
-    const mergerInputs: any[] = [];
+    let measInputNode: string;
+    let measSHandle: string;
 
-    absIdxs.forEach((q, mergerInputPos) => {
-      const prevNode = lastNodeId[q];
-      const prevOutIdx = lastOutIdx[q];
-      if (prevNode === null) return;
+    if (n > 1) {
+      const mergerId = generateId();
+      const mergerInputs: any[] = [];
 
-      const tHandle = `quantumHandleMergerInput${mergerInputPos}${mergerId}`;
-      const sHandle = sourceHandle(prevNode, prevOutIdx);
+      allQubits.forEach((q, mergerInputPos) => {
+        const prevNode = lastNodeId[q];
+        if (prevNode === null) return;
 
-      const e = makeEdge(prevNode, mergerId, sHandle, tHandle);
-      edges.push(e);
+        const tHandle = `quantumHandleMergerInput${mergerInputPos}${mergerId}`;
+        const e = makeEdge(
+          prevNode,
+          mergerId,
+          sourceHandle(prevNode, lastOutIdx[q]),
+          tHandle,
+        );
+        edges.push(e);
 
-      mergerInputs.push({
-        id: prevNode,
-        edgeId: e.id,
-        identifiers: [qLabel(q)],
-        targetHandle: tHandle,
+        mergerInputs.push({
+          id: prevNode,
+          edgeId: e.id,
+          identifiers: [qLabel(q)],
+          targetHandle: tHandle,
+        });
+
+        // Merger absorbs the wire
+        lastNodeId[q] = mergerId;
+        lastOutIdx[q] = mergerInputPos;
       });
 
-      // Merger absorbs the wire
-      lastNodeId[q] = mergerId;
-      lastOutIdx[q] = mergerInputPos;
-    });
+      nodes.push(
+        createMergerNode(
+          mergerId,
+          measX - 350,
+          midY + 180, // place below midpoint like reference
+          identifiers,
+          mergerInputs,
+        ),
+      );
+      measInputNode = mergerId;
+      measSHandle = `quantumHandleMergerOutput0${mergerId}`;
+    } else {
+      measInputNode = lastNodeId[0]!;
+      measSHandle = sourceHandle(measInputNode, lastOutIdx[0]);
+    }
 
-    // Merger identifiers = all measured qubits
-    const mergerIdentifiers = absIdxs.map((q) => qLabel(q));
-    nodes.push(
-      createMergerNode(
-        mergerId,
-        mergerX,
-        mergerY,
-        mergerIdentifiers,
-        mergerInputs,
-      ),
-    );
-
-    // Edge from merger to measurement
-    const measId = generateId();
-    const measX = mergerX + 350;
-    const measY = midY;
-
-    const measTHandle = `quantumHandleMeasurementInput0${measId}`;
-    const measSHandle = `quantumHandleMergerOutput0${mergerId}`;
-
-    const measEdge = makeEdge(mergerId, measId, measSHandle, measTHandle);
+    const measEdge = makeEdge(measInputNode, measId, measSHandle, measTHandle);
     edges.push(measEdge);
 
-    // Single input from merger, edgeId is "" per reference format
+    const measuredSorted = [...measured].sort((a, b) => a - b);
+
     nodes.push({
       id: measId,
       type: "measurementNode",
-      position: { x: measX, y: measY },
+      position: { x: measX, y: midY },
       data: {
         label: "Measurement",
         inputs: [
           {
-            id: mergerId,
-            edgeId: "",
-            identifiers: mergerIdentifiers,
+            id: measInputNode,
+            edgeId: measEdge.id,
+            identifiers,
             targetHandle: measTHandle,
           },
         ],
         children: [],
-        identifiers: mergerIdentifiers,
+        identifiers,
         outputIdentifier: outputName,
-        indices: localIdxs.join(","),
+        indices: measured.length === n ? "" : measuredSorted.join(","),
         inputTypes: ["quantum register"],
         outputTypes: ["array", "quantum register"],
         completionGuaranteed: true,
@@ -390,7 +410,7 @@ export function openQasmToFlow(qasm: string): FlowJson {
       },
       width: 320,
       height: 440,
-      positionAbsolute: { x: measX, y: measY },
+      positionAbsolute: { x: measX, y: midY },
     });
   }
 

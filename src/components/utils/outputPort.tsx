@@ -8,6 +8,7 @@ import { Node } from "reactflow";
 import { useEffect, useMemo, useRef } from "react";
 import { classicalConstructColor } from "@/constants";
 import { AlertCircle } from "lucide-react";
+import { portTypeIndex, toTypeArray } from "@/lib/portTypes";
 
 interface OutputPortProps {
   node: Node;
@@ -27,6 +28,8 @@ interface OutputPortProps {
   setSizeError: (error: boolean) => void;
   showSizeErrorAlert?: boolean;
   active: boolean;
+  /** Renders the port box with a dashed border */
+  optional?: boolean;
 }
 
 export const isPositiveIntegerSize = (value: string) =>
@@ -50,6 +53,7 @@ export default function OutputPort({
   setSizeError,
   showSizeErrorAlert = true,
   active,
+  optional = false,
 }: OutputPortProps) {
   const isClassical = type === "classical";
   const isAncilla = type === "ancilla";
@@ -58,6 +62,9 @@ export default function OutputPort({
     : isAncilla
       ? `ancillaHandleOutput${handleIndex}${node.id}`
       : `quantumHandle${node.type}Output${handleIndex}${node.id}`;
+
+  // position of this port in node.data.outputTypes
+  const typeSlot = portTypeIndex(node, handleId);
 
   const handleClass = isClassical
     ? "classical-circle-port-out"
@@ -145,8 +152,8 @@ export default function OutputPort({
     ) {
       outputType = "any"; // default value
 
-      if (node?.data?.outputTypes && node.data.outputTypes[index] != null) {
-        outputType = node.data.outputTypes[index];
+      if (node?.data?.outputTypes && node.data.outputTypes[typeSlot] != null) {
+        outputType = node.data.outputTypes[typeSlot];
       }
     } else if (node.type.startsWith("editable")) {
       outputType = "any";
@@ -180,17 +187,27 @@ export default function OutputPort({
 
   // update outputType if it changes
   useEffect(() => {
-    if (node.data.outputTypes[index] !== displayedOutputType) {
-      const updatedOutputTypes = { ...node.data.outputTypes };
-      updatedOutputTypes[index] = displayedOutputType;
-      updateNodeValue(node.id, "outputTypes", updatedOutputTypes);
+    if (node.data.outputTypes?.[typeSlot] !== displayedOutputType) {
+      const updatedOutputTypes = toTypeArray(node.data.outputTypes);
+      updatedOutputTypes[typeSlot] = displayedOutputType;
+      updateNodeValue(
+        node.id,
+        "outputTypes",
+        Array.from(updatedOutputTypes, (t) => t ?? "any"),
+      );
       console.log(
         "Updated node outputType in store:",
         node.id,
         displayedOutputType,
       );
     }
-  }, [displayedOutputType, node.id, node.data.outputTypes, updateNodeValue]);
+  }, [
+    displayedOutputType,
+    typeSlot,
+    node.id,
+    node.data.outputTypes,
+    updateNodeValue,
+  ]);
 
   useEffect(() => {
     const isNowBellState = node.data.quantumStateName?.includes("Bell State");
@@ -251,6 +268,7 @@ export default function OutputPort({
               : "rgba(105, 145, 210, 0.2)",
           width: "180px",
           borderRadius: isClassical ? "16px" : "0px",
+          ...(optional && { border: "1px dashed #6b7280" }),
         }}
       >
         <div className="w-full flex justify-between items-center">
@@ -388,7 +406,10 @@ export default function OutputPort({
                 }`
               : "!bg-gray-200 !border-dashed !border-gray-500",
           )}
+          // a classical value can be used several times; a quantum state cannot be
+          // copied (no-cloning), so quantum and ancilla outputs take one connection
           isConnectable={
+            isClassical ||
             edges.filter((edge) => edge.sourceHandle === handleId).length < 1
           }
           isConnectableEnd={false}

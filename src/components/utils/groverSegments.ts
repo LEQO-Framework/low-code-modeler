@@ -179,7 +179,7 @@ export function detectGroverSegments(
 export function groverComponentLabel(segment: GroverSegment): string {
   switch (segment.kind) {
     case "superposition":
-      return "Superposition";
+      return "Uniform superposition";
     case "oracle":
       return `Oracle (iteration ${segment.iteration})`;
     case "diffusor":

@@ -482,8 +482,11 @@ function gateSpec(
       label,
       parameter: "0",
       parameterType: "degree",
-      inputTypes: Array.from({ length: arity }, () => "any"),
-      outputTypes: [],
+      inputTypes: Array.from({ length: arity }, () => "quantum register"),
+      outputTypes: Array.from(
+        { length: Math.max(1, arity) },
+        () => "quantum register",
+      ),
       outputs: [],
       ...(label === "CU" && { controlValue: "0" }),
     },

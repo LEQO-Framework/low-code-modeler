@@ -587,7 +587,7 @@ export async function createDeploymentModel(
   let getTemplateXmlResult = await fetch(serviceTemplateURL + "xml");
   let getTemplateXmlResultJson = await getTemplateXmlResult.text();
   getTemplateXmlResultJson = getTemplateXmlResultJson.replace(
-    ':QiskitRuntimeAgentContainer_DA"',
+    ":" + localNamePrefix + '"',
     ":" + artifactName + '"',
   );
   await fetch(serviceTemplateURL, {

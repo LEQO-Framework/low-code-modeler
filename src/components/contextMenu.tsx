@@ -16,6 +16,8 @@ import {
 import { FaGear } from "react-icons/fa6";
 import { v4 as uuid } from "uuid";
 import { normalizeCustomOutputs } from "./utils/customOutputs";
+import { hasCircuitLevel } from "@/lib/circuitLevel";
+import { getPortTypes, toTypeArray } from "@/lib/portTypes";
 
 interface ContextMenuProps {
   id: string;
@@ -57,13 +59,13 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   const regenerateIdentifiers = (data: any): any => {
     const normalized = { ...data };
     // normalize outputTypes/inputTypes/dataType
-    if (Array.isArray(normalized.outputTypes))
-      normalized.outputTypes = normalized.outputTypes.map((t: string) =>
-        t.toLowerCase(),
+    if (normalized.outputTypes)
+      normalized.outputTypes = toTypeArray(normalized.outputTypes).map(
+        (t: string) => t.toLowerCase(),
       );
-    if (Array.isArray(normalized.inputTypes))
-      normalized.inputTypes = normalized.inputTypes.map((t: string) =>
-        t.toLowerCase(),
+    if (normalized.inputTypes)
+      normalized.inputTypes = toTypeArray(normalized.inputTypes).map(
+        (t: string) => t.toLowerCase(),
       );
     if (typeof normalized.dataType === "string")
       normalized.dataType = normalized.dataType.toLowerCase();
@@ -223,6 +225,10 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
     if (onAction) onAction("delete", id);
   }, [id, getNodes, setNodes, setEdges, onAction]);
 
+  // Keep inputTypes/outputTypes in sync when the port count of a node changes.
+  const portTypesFor = (n: any, field: string, count: number) =>
+    getPortTypes({ ...n, data: { ...n.data, [field]: count } }) ?? {};
+
   // TODO: use the correct field (numberInputs for merger nodes) - pass it as an argument?
   const incrementNodeDataField = useCallback(
     (field: string, min_value: number) => {
@@ -263,6 +269,11 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
                   [field]: n.data[field]
                     ? Number(n.data[field]) + 1
                     : min_value + 1,
+                  ...portTypesFor(
+                    n,
+                    field,
+                    n.data[field] ? Number(n.data[field]) + 1 : min_value + 1,
+                  ),
                 },
               }
             : n,
@@ -315,6 +326,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
                 data: {
                   ...n.data,
                   [field]: nextValue,
+                  ...portTypesFor(n, field, nextValue),
                   ...(isInput
                     ? {
                         inputs: (n.data.inputs || []).filter(
@@ -433,6 +445,20 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
         {...hoverProps("duplicate")}
       >
         <FaCopy style={iconStyle} /> Duplicate
+      </button>,
+    );
+  }
+  // blocks (not circuit primitives, data types or plugins) can be opened to their gates
+  if (type !== "edge" && hasCircuitLevel(getNode(id))) {
+    buttons.push(
+      <button
+        key="circuit-level"
+        onClick={() => onAction?.("circuitLevel", id)}
+        aria-label="Show circuit level"
+        title="Replace the block by the gates it compiles to; collapse the group to get the block back"
+        {...hoverProps("circuit-level")}
+      >
+        <FaCaretRight style={iconStyle} /> Show circuit level
       </button>,
     );
   }
