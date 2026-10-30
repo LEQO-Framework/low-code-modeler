@@ -393,7 +393,9 @@ export const startCompile = async (
                 "S†": "sdg",
                 TDG: "tdg",
                 "T†": "tdg",
+                // identity gate; support in the leqo backend is pending
                 I: "id",
+                Identity: "id",
                 CZ: "cz",
                 CY: "cy",
                 CH: "ch",

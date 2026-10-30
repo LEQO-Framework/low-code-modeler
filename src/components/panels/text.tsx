@@ -167,6 +167,8 @@ const GATE_EXPLANATIONS: Record<string, string> = {
   [non_parameterized_one_qubit[8]]:
     "Inverse T gate; removes a π/4 phase shift.",
 
+  [non_parameterized_one_qubit[9]]: "Leaves the qubit state unchanged.",
+
   [non_parameterized_two_qubit[0]]:
     "If control qubit is in state |1⟩, flips |0⟩ and |1⟩ states of the target qubit.",
 

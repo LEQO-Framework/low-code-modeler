@@ -126,6 +126,7 @@ export const non_parameterized_one_qubit = [
   "SX",
   "SDG",
   "TDG",
+  "I",
 ];
 
 export const non_parameterized_two_qubit = ["CNOT", "SWAP", "CY", "CZ", "CH"];

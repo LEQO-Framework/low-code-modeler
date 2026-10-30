@@ -179,6 +179,15 @@ export const categories: Record<string, CategoryEntry> = {
 
       "Pauli Gates": [
         {
+          label: "I",
+          aliases: ["Identity", "Pauli-I", "ID"],
+          type: consts.GateNode,
+          icon: ["identity.svg", "PaletteIcon_I_Beginner.svg"],
+          description: "Identity gate: leaves the state unchanged.",
+          completionGuaranteed: true,
+          compactOptions: [true, false],
+        },
+        {
           label: "X",
           aliases: ["Pauli-X", "NOT"],
           type: consts.GateNode,
