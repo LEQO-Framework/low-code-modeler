@@ -737,7 +737,6 @@ export function simulate(
     }
 
     switch (gate.name) {
-      case "id":
       case "i":
         // identity: the state stays the same
         break;
@@ -1206,7 +1205,6 @@ function formatGateLabel(gate: ParsedGate, numQubits: number): string {
   };
 
   switch (gate.name) {
-    case "id":
     case "i":
       return buildTensor("I", [q[0]]);
     case "h":
@@ -1332,7 +1330,6 @@ function formatGateLabelLatex(gate: ParsedGate, numQubits: number): string {
   };
 
   switch (gate.name) {
-    case "id":
     case "i":
       return buildTensorLatex("I", [q[0]]);
     case "h":
@@ -1465,7 +1462,6 @@ export function qasmToDiracSteps(
     const [p0, p1, p2] = gate.params;
 
     switch (gate.name) {
-      case "id":
       case "i":
         // identity: the state stays the same
         break;
