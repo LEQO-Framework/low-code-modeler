@@ -43,6 +43,7 @@ export interface RepositoryDomainProfile {
   name: string;
   version: string;
   domainBlocks: Record<string, DomainProfileBlock[]>;
+  domainEnums?: Record<string, string[]>;
 }
 
 /** One domain as listed in the repository index. */

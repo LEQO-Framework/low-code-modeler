@@ -18,6 +18,7 @@ import {
 import { DomainProfileRepositoryPicker } from "./domainProfileRepositoryPicker";
 import { RepositoryDomainProfile } from "../../services/domainProfileRepository";
 import { createPortal } from "react-dom";
+import { v4 as uuid } from "uuid";
 
 export const DATA_TYPES_CATEGORY = "dataTypes";
 export const QUANTUM_OPERATORS_CATEGORY = "Quantum Operators";
@@ -51,9 +52,16 @@ export interface EditableNodeProfile {
   originalIcon: string | string[];
 }
 
+export interface EditableEnumProfile {
+  id: string;
+  name: string;
+  values: string[];
+}
+
 export type DomainProfile = {
   name: string;
   domainBlocks: Record<string, CategoryEntry>;
+  domainEnums: Record<string, string[]>;
 };
 
 interface NodeProfileProperty {
@@ -74,6 +82,24 @@ const isOperatorCategory = (category: string) =>
 
 const defaultPortKind = (category: string): PortKind =>
   category === QUANTUM_OPERATORS_CATEGORY ? "quantum" : "classical";
+
+/** Entries (name of enums or values of an enum) that are used multiple times */
+function findDuplicates(entries: string[]): Set<string> {
+  const seen = new Set<string>();
+  const duplicates = new Set<string>();
+
+  entries.forEach((entry) => {
+    const trimmed = entry.trim();
+
+    if (!trimmed) return;
+
+    if (seen.has(trimmed)) duplicates.add(trimmed);
+
+    seen.add(trimmed);
+  });
+
+  return duplicates;
+}
 
 /**
  * Names that are used by more than one of the block's inputs and outputs.
@@ -203,6 +229,40 @@ function toEditableNodesFromDomainProfile(
   );
 }
 
+/**
+ * Convert stored enums (of a saved profile, a repository profile or an
+ * imported file) into the editor's representation.
+ */
+function toEditableEnums(
+  domainEnums: Record<string, string[]> | undefined,
+): EditableEnumProfile[] {
+  // older profiles have no enums (or if not used at all)
+  return Object.entries(domainEnums ?? {}).map(([name, values]) => ({
+    id: uuid(),
+    name,
+    values: Array.isArray(values) ? values : [],
+  }));
+}
+
+/**
+ * Convert the editor's enums into the stored format (enum name -> values),
+ * used for saving and exporting.
+ */
+function toDomainEnums(
+  enums: EditableEnumProfile[],
+): Record<string, string[]> {
+  return enums.reduce(
+    (acc, domainEnum) => {
+      acc[domainEnum.name.trim()] = domainEnum.values.map((value) =>
+        value.trim(),
+      );
+
+      return acc;
+    },
+    {} as Record<string, string[]>,
+  );
+}
+
 function extractNodeLabels(content: any): Record<string, string> {
   const labels: Record<string, string> = {};
 
@@ -253,11 +313,22 @@ function profileTypes(nodes: EditableNodeProfile[]): string[] {
   );
 }
 
+/**
+ * Enum types defined in the profile.
+ * The names of the enums (without duplicates or empty names).
+ */
+function profileEnumTypes(enums: EditableEnumProfile[]): string[] {
+  const types = enums.map((e) => e.name.trim());
+  return [...new Set(types)].filter(Boolean);
+}
+
 function PropertyEditor({
   properties,
+  definedEnumTypes,
   onChange,
 }: {
   properties: NodeProfileProperty[];
+  definedEnumTypes: string[];
   onChange: (props: NodeProfileProperty[]) => void;
 }) {
   const addProperty = () => {
@@ -335,15 +406,28 @@ function PropertyEditor({
                 <option value="" disabled>
                   Select...
                 </option>
-                {PROPERTY_TYPES.map((type) => (
-                  <option key={type} value={type}>
-                    {type}
-                  </option>
-                ))}
-                {/* a type of an older profile stays selectable */}
-                {prop.type && !PROPERTY_TYPES.includes(prop.type) && (
-                  <option value={prop.type}>{prop.type} (not in list)</option>
+                <optgroup label="Types">
+                  {PROPERTY_TYPES.map((type) => (
+                    <option key={type} value={type}>
+                      {type}
+                    </option>
+                  ))}
+                </optgroup>
+                {definedEnumTypes.length > 0 && (
+                  <optgroup label="Enums">
+                    {definedEnumTypes.map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                  </optgroup>
                 )}
+                {/* a type of an older profile or a deleted enum stays selectable */}
+                {prop.type &&
+                  !PROPERTY_TYPES.includes(prop.type) &&
+                  !definedEnumTypes.includes(prop.type) && (
+                    <option value={prop.type}>{prop.type} (not in list)</option>
+                  )}
               </select>
             </div>
           </div>
@@ -515,6 +599,89 @@ function ConstraintEditor({
     </div>
   );
 }
+
+function ValuesEditor({
+  values,
+  duplicateValues,
+  onChange,
+}: {
+  values: string[];
+  duplicateValues: Set<string>;
+  onChange: (values: string[]) => void;
+}) {
+  const valueError = (value: string) => {
+    if (!value.trim()) return "Value must not be empty";
+
+    if (duplicateValues.has(value.trim())) return "Value must be unique";
+
+    return null;
+  };
+
+  const addValue = () => {
+    onChange([...values, ""]);
+  };
+
+  const updateValue = (index: number, value: string) => {
+    const newValues = [...values];
+
+    newValues[index] = value;
+
+    onChange(newValues);
+  };
+
+  const removeValue = (index: number) => {
+    onChange(values.filter((_, i) => i !== index));
+  };
+
+  return (
+    <div className="space-y-2 min-w-[200px]">
+      {values.map((value, idx) => (
+        <div key={idx}>
+          <div className="flex items-center gap-1">
+            <input
+              className={`w-full border rounded px-1 py-0.5 text-xs ${
+                valueError(value) ? "border-red-500 bg-red-50" : ""
+              }`}
+              value={value}
+              placeholder="Value..."
+              onChange={(e) => updateValue(idx, e.target.value)}
+            />
+
+            <button
+              type="button"
+              onClick={() => removeValue(idx)}
+              className="bg-red-100 text-red-600 rounded-full p-1 hover:bg-red-200"
+            >
+              <Trash2 size={12} />
+            </button>
+          </div>
+
+          {valueError(value) && (
+            <span className="block text-[10px] text-red-600 mt-0.5">
+              {valueError(value)}
+            </span>
+          )}
+        </div>
+      ))}
+
+      {values.length === 0 && (
+        <span className="block text-[10px] text-red-600">
+          Add at least one value
+        </span>
+      )}
+
+      <button
+        type="button"
+        onClick={addValue}
+        className="flex items-center justify-center gap-1 w-full py-1 border-2 border-dashed border-gray-300 rounded text-gray-500 hover:border-blue-400 hover:text-blue-500 text-xs font-medium transition-colors"
+      >
+        <Plus size={14} />
+        Add Value
+      </button>
+    </div>
+  );
+}
+
 
 const staticMappingOptions = {
   Number: "Number",
@@ -1169,6 +1336,8 @@ export default function DomainProfileTableModal({
 }) {
   const [localNodes, setLocalNodes] = useState<EditableNodeProfile[]>([]);
 
+  const [localEnums, setLocalEnums] = useState<EditableEnumProfile[]>([]);
+
   const [profileName, setProfileName] = useState("");
 
   const [draggedProfileIndex, setDraggedProfileIndex] = useState<number | null>(
@@ -1185,6 +1354,7 @@ export default function DomainProfileTableModal({
   useEffect(() => {
     if (!open) {
       setLocalNodes([]);
+      setLocalEnums([]);
       setProfileName("");
       setDraggedProfileIndex(null);
       setDuplicateWarning(null);
@@ -1195,6 +1365,7 @@ export default function DomainProfileTableModal({
     if (initialProfile) {
       setProfileName(initialProfile.name);
       setLocalNodes(toEditableNodesFromDomainProfile(initialProfile));
+      setLocalEnums(toEditableEnums(initialProfile.domainEnums));
       setDuplicateWarning(null);
       setActiveTab("create");
       return;
@@ -1202,6 +1373,7 @@ export default function DomainProfileTableModal({
 
     setProfileName("");
     setLocalNodes([]);
+    setLocalEnums([]);
     setDuplicateWarning(null);
     setActiveTab("create");
   }, [open, initialProfile]);
@@ -1223,6 +1395,7 @@ export default function DomainProfileTableModal({
   };
 
   const saveProfileWithName = (finalName: string) => {
+    const domainEnums = toDomainEnums(localEnums);
     const domainBlocks = localNodes.reduce(
       (acc, node) => {
         const cat = node.category || "Uncategorized";
@@ -1249,6 +1422,7 @@ export default function DomainProfileTableModal({
           properties: node.properties,
           constraints: node.constraints,
           mapping: node.mapping,
+          enumValues: domainEnums,
           completionGuaranteed: true,
           compactOptions: [true, false],
           isDataType: node.category === DATA_TYPES_CATEGORY,
@@ -1267,6 +1441,7 @@ export default function DomainProfileTableModal({
     const newProfile: DomainProfile = {
       name: finalName,
       domainBlocks,
+      domainEnums,
     };
 
     onSave(newProfile);
@@ -1278,12 +1453,51 @@ export default function DomainProfileTableModal({
   // types defined in the profile, offered for the inputs and outputs
   const definedTypes = profileTypes(localNodes);
 
+  const definedEnumTypes = profileEnumTypes(localEnums);
+
   const hasDuplicatePortNames = portNameDuplicates.some(
     (duplicates) => duplicates.size > 0,
   );
 
+  const enumNameDuplicates = findDuplicates(
+    localEnums.map((domainEnum) => domainEnum.name),
+  );
+
+  const enumValueDuplicates = localEnums.map((domainEnum) =>
+    findDuplicates(domainEnum.values),
+  );
+
+  // an enum is used as a type, so its name must not be a type already
+  const existingTypes = [
+    ...PROPERTY_TYPES,
+    QUANTUM_REGISTER_TYPE,
+    ...definedTypes,
+  ];
+
+  const enumNameError = (name: string) => {
+    const trimmed = name.trim();
+
+    if (!trimmed) return "Name must not be empty";
+
+    if (enumNameDuplicates.has(trimmed)) return "Name must be unique";
+
+    if (existingTypes.includes(trimmed)) return "Name is already a type";
+
+    return null;
+  };
+
+  const invalidEnums = localEnums.filter(
+    (domainEnum, i) =>
+      enumNameError(domainEnum.name) ||
+      domainEnum.values.length === 0 ||
+      domainEnum.values.some((value) => !value.trim()) ||
+      enumValueDuplicates[i].size > 0,
+  );
+
+  const hasInvalidEnums = invalidEnums.length > 0;
+
   const saveProfile = () => {
-    if (hasDuplicatePortNames) return;
+    if (hasDuplicatePortNames || hasInvalidEnums) return;
 
     const requestedName = profileName.trim() || "Untitled Profile";
 
@@ -1365,6 +1579,40 @@ export default function DomainProfileTableModal({
     setLocalNodes((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const addEnum = () => {
+    const newEnum: EditableEnumProfile = {
+      id: uuid(),
+      name: "",
+      values: [],
+    };
+
+    // a new enum goes to the top of the list
+    setLocalEnums([newEnum, ...localEnums]);
+  };
+
+  const updateEnum = (
+    index: number,
+    field: keyof EditableEnumProfile,
+    value: any,
+  ) => {
+    setLocalEnums((prev) => {
+      const copy: any = structuredClone(prev);
+    
+      copy[index] = {
+        ...copy[index],
+        [field]: value,
+      };
+
+      return copy;
+    });
+  };
+
+  const removeEnum = (index: number) => {
+    setLocalEnums((prev) => prev.filter((_, i) => i !== index));
+  };
+
+
+
   const handleIconUpload = (
     e: React.ChangeEvent<HTMLInputElement>,
     index: number,
@@ -1398,6 +1646,7 @@ export default function DomainProfileTableModal({
       {
         name: profile.name,
         nodes,
+        domainEnums: profile.domainEnums ?? {},
       },
       null,
       2,
@@ -1440,7 +1689,7 @@ export default function DomainProfileTableModal({
           <div className="space-x-2">
             <button
               className={`btn ${
-                duplicateWarning || hasDuplicatePortNames
+                duplicateWarning || hasDuplicatePortNames || hasInvalidEnums
                   ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                   : "btn-primary"
               }`}
@@ -1448,6 +1697,7 @@ export default function DomainProfileTableModal({
               disabled={
                 !!duplicateWarning ||
                 hasDuplicatePortNames ||
+                hasInvalidEnums ||
                 activeTab !== "create"
               }
             >
@@ -1668,6 +1918,16 @@ export default function DomainProfileTableModal({
                     <Plus size={18} />
                     Add Domain Block
                   </button>
+                  
+                  <button
+                    type="button"
+                    onClick={addEnum}
+                    className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-shadow shadow-sm font-medium text-sm"
+                  >
+                    <Plus size={18} />
+                    Add Domain Enum
+                  </button>
+
 
                   <button
                     type="button"
@@ -1676,6 +1936,7 @@ export default function DomainProfileTableModal({
                         {
                           name: profileName,
                           nodes: localNodes,
+                          domainEnums: toDomainEnums(localEnums),
                         },
                         null,
                         2,
@@ -1710,6 +1971,7 @@ export default function DomainProfileTableModal({
                       );
 
                       setLocalNodes(toEditableNodes(profile));
+                      setLocalEnums(toEditableEnums(profile.domainEnums));
 
                       setDuplicateWarning(null);
                     }}
@@ -1743,6 +2005,10 @@ export default function DomainProfileTableModal({
                             setProfileName(json.name);
 
                             setLocalNodes(sanitizedNodes);
+
+                            setLocalEnums(
+                              toEditableEnums(json.domainEnums),
+                            );
 
                             setDuplicateWarning(null);
                           } catch (err) {
@@ -1778,6 +2044,26 @@ export default function DomainProfileTableModal({
                           <strong>{node.label || "unnamed block"}</strong>
                         </span>
                       ))}{" "}
+                    before saving.
+                  </p>
+                </div>
+              )}
+
+              {/* Invalid enums */}
+              {hasInvalidEnums && (
+                <div className="rounded-lg border border-red-300 bg-red-50 p-4">
+                  <h3 className="text-sm font-semibold text-red-900">
+                    Enums need a unique name and unique, non-empty values
+                  </h3>
+
+                  <p className="mt-1 text-sm text-red-800">
+                    Fix the marked fields in{" "}
+                    {invalidEnums.map((domainEnum, i) => (
+                      <span key={domainEnum.id}>
+                        {i > 0 && ", "}
+                        <strong>{domainEnum.name.trim() || "unnamed enum"}</strong>
+                      </span>
+                    ))}{" "}
                     before saving.
                   </p>
                 </div>
@@ -2011,6 +2297,7 @@ export default function DomainProfileTableModal({
                             <td className="p-2 border text-center">
                               <PropertyEditor
                                 properties={node.properties || []}
+                                definedEnumTypes={definedEnumTypes}
                                 onChange={(newProperties) =>
                                   updateNode(idx, "properties", newProperties)
                                 }
@@ -2019,9 +2306,12 @@ export default function DomainProfileTableModal({
 
                             {/* Constraints */}
                             <td className="p-2 border text-center">
+                              {/* an enum already restricts the values, so exclude it from constraints */}
                               <ConstraintEditor
                                 constraints={node.constraints || []}
-                                availableProperties={node.properties || []}
+                                availableProperties={(node.properties || []).filter(
+                                  (prop) => !definedEnumTypes.includes(prop.type),
+                                )}
                                 onChange={(newConstraints) =>
                                   updateNode(idx, "constraints", newConstraints)
                                 }
@@ -2056,6 +2346,102 @@ export default function DomainProfileTableModal({
                   </table>
                 </div>
               </section>
+
+              {/* Enums */}
+              <section className="rounded-lg border border-gray-200 bg-white">
+                <div className="border-b bg-gray-50 px-4 py-3">
+                  <div className="text-sm font-semibold text-gray-800">
+                    Domain Enums
+                  </div>
+
+                  <div className="text-xs text-gray-500 mt-0.5">
+                    Add enums usable as type
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="table-auto w-full border-collapse">
+                    <thead className="sticky top-0 bg-gray-100 z-10">
+                      <tr>
+                        <th className="p-2 border min-w-[110px]">Name</th>
+
+                        <th className="p-2 border min-w-[110px]">Values</th>
+
+                        <th className="p-2 border w-10" aria-label="Delete" />
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {localEnums.length === 0 ? (
+                        <tr>
+                          <td
+                            colSpan={3}
+                            className="p-12 text-center text-gray-400 italic"
+                          >
+                            No enums added yet. Click "Add Domain Enum" to
+                            begin.
+                          </td>
+                        </tr>
+                      ) : (
+                        localEnums.map((domainEnum, idx) => (
+                          <tr
+                            key={`${domainEnum.id}`}
+                            className="align-top"
+                          >
+                            {/* Name */}
+                            <td className="p-2 border">
+                              <input
+                                className={`w-full border rounded px-2 py-1 text-sm ${
+                                  enumNameError(domainEnum.name)
+                                    ? "border-red-500 bg-red-50"
+                                    : ""
+                                }`}
+                                value={domainEnum.name}
+                                onChange={(e) =>
+                                  updateEnum(idx, "name", e.target.value)
+                                }
+                              />
+
+                              {enumNameError(domainEnum.name) && (
+                                <span className="block text-[10px] text-red-600 mt-0.5">
+                                  {enumNameError(domainEnum.name)}
+                                </span>
+                              )}
+                            </td>
+
+
+                            {/* Values */}
+                            <td className="p-2 border">
+                              <ValuesEditor
+                                values={domainEnum.values}
+                                duplicateValues={enumValueDuplicates[idx]}
+                                onChange={(values) =>
+                                  updateEnum(idx, "values", values)
+                                }
+                              />
+                            </td>
+
+
+                            {/* Delete */}
+                            <td className="p-2 border text-center">
+                              <button
+                                type="button"
+                                onClick={() => removeEnum(idx)}
+                                className="bg-red-100 text-red-600 rounded-full p-1.5 hover:bg-red-200"
+                                title={`Delete ${domainEnum.name || "this enum"}`}
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+        
+            
             </div>
           )}
         </div>
