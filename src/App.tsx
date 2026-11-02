@@ -3290,6 +3290,10 @@ If none apply, return { "algorithms": [] }.
             outputPorts: def.outputPorts,
           }),
 
+          ...(def?.enumValues && {
+            enumValues: def.enumValues,
+          }),
+
           ...(def?.operatorKind && {
             operatorKind: def.operatorKind,
           }),
