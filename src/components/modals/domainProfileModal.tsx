@@ -55,6 +55,11 @@ export interface EditableNodeProfile {
 export interface EditableEnumProfile {
   id: string;
   name: string;
+  /**
+   * Name that properties of this enum use as their type and differs from
+   * name while the typed name is invalid (empty, duplicate, existing type).
+   */
+  referencedName: string;
   values: string[];
 }
 
@@ -240,6 +245,7 @@ function toEditableEnums(
   return Object.entries(domainEnums ?? {}).map(([name, values]) => ({
     id: uuid(),
     name,
+    referencedName: name.trim(),
     values: Array.isArray(values) ? values : [],
   }));
 }
@@ -325,10 +331,12 @@ function profileEnumTypes(enums: EditableEnumProfile[]): string[] {
 function PropertyEditor({
   properties,
   definedEnumTypes,
+  deletedEnumTypes,
   onChange,
 }: {
   properties: NodeProfileProperty[];
   definedEnumTypes: string[];
+  deletedEnumTypes: string[];
   onChange: (props: NodeProfileProperty[]) => void;
 }) {
   const addProperty = () => {
@@ -399,7 +407,11 @@ function PropertyEditor({
               </label>
 
               <select
-                className="w-full border rounded px-1 py-0.5 text-xs bg-white"
+                className={`w-full border rounded px-1 py-0.5 text-xs ${
+                  deletedEnumTypes.includes(prop.type)
+                    ? "border-red-500 bg-red-50"
+                    : "bg-white"
+                }`}
                 value={prop.type}
                 onChange={(e) => updateProperty(idx, "type", e.target.value)}
               >
@@ -422,13 +434,25 @@ function PropertyEditor({
                     ))}
                   </optgroup>
                 )}
-                {/* a type of an older profile or a deleted enum stays selectable */}
+                {/* a type of an older profile stays selectable, a deleted enum
+                    is only shown until another type is chosen */}
                 {prop.type &&
                   !PROPERTY_TYPES.includes(prop.type) &&
-                  !definedEnumTypes.includes(prop.type) && (
+                  !definedEnumTypes.includes(prop.type) &&
+                  (deletedEnumTypes.includes(prop.type) ? (
+                    <option value={prop.type} disabled>
+                      {prop.type}
+                    </option>
+                  ) : (
                     <option value={prop.type}>{prop.type} (not in list)</option>
-                  )}
+                  ))}
               </select>
+
+              {deletedEnumTypes.includes(prop.type) && (
+                <span className="block text-[10px] text-red-600 mt-0.5">
+                  Enum was deleted
+                </span>
+              )}
             </div>
           </div>
 
@@ -1338,6 +1362,8 @@ export default function DomainProfileTableModal({
 
   const [localEnums, setLocalEnums] = useState<EditableEnumProfile[]>([]);
 
+  const [removedEnumNames, setRemovedEnumNames] = useState<string[]>([]);
+
   const [profileName, setProfileName] = useState("");
 
   const [draggedProfileIndex, setDraggedProfileIndex] = useState<number | null>(
@@ -1352,6 +1378,8 @@ export default function DomainProfileTableModal({
   const [activeTab, setActiveTab] = useState<"saved" | "create">("create");
 
   useEffect(() => {
+    setRemovedEnumNames([]);
+
     if (!open) {
       setLocalNodes([]);
       setLocalEnums([]);
@@ -1496,8 +1524,30 @@ export default function DomainProfileTableModal({
 
   const hasInvalidEnums = invalidEnums.length > 0;
 
+  // a deleted name can be used for another (added or renamed) enum
+  const deletedEnumTypes = removedEnumNames.filter(
+    (name) =>
+      !localEnums.some((domainEnum) => domainEnum.referencedName === name),
+  );
+
+  // properties use an enum deleted while editing this profile
+  const deletedEnumProperties = localNodes.flatMap((node) =>
+    node.properties
+      .filter((prop) => deletedEnumTypes.includes(prop.type))
+      .map((prop) => ({
+        block: node.label || "unnamed block",
+        property: prop.name || "unnamed property",
+        type: prop.type,
+      })),
+  );
+
+  const hasBlockingErrors =
+    hasDuplicatePortNames ||
+    hasInvalidEnums ||
+    deletedEnumProperties.length > 0;
+
   const saveProfile = () => {
-    if (hasDuplicatePortNames || hasInvalidEnums) return;
+    if (hasBlockingErrors) return;
 
     const requestedName = profileName.trim() || "Untitled Profile";
 
@@ -1583,6 +1633,7 @@ export default function DomainProfileTableModal({
     const newEnum: EditableEnumProfile = {
       id: uuid(),
       name: "",
+      referencedName: "",
       values: [],
     };
 
@@ -1607,7 +1658,47 @@ export default function DomainProfileTableModal({
     });
   };
 
+  /**
+   * Updates enums name and keeps the properties using it as their type in sync.
+   * If typed name is not valid only the input changes and referencedName and the
+   * properties keep the last valid name.
+   */
+  const renameEnum = (index: number, name: string) => {
+    const previousName = localEnums[index].referencedName;
+    const newName = name.trim();
+    const isValid =
+      newName !== "" &&
+      !existingTypes.includes(newName) &&
+      !localEnums.some((e, i) => i !== index && (e.name.trim() === newName || e.referencedName === newName));
+
+    setLocalEnums((prev) =>
+      prev.map((e, i) =>
+        i === index
+          ? { ...e, name, referencedName: isValid ? newName : e.referencedName }
+          : e,
+      ),
+    );
+
+    if (!isValid || !previousName || previousName === newName) return;
+
+    setLocalNodes((prev) =>
+      prev.map((node) => ({
+        ...node,
+        properties: node.properties.map((prop) =>
+          prop.type === previousName ? { ...prop, type: newName } : prop,
+        ),
+      })),
+    );
+  };
+
   const removeEnum = (index: number) => {
+    const { referencedName } = localEnums[index];
+
+    // an enum that never had a valid name cannot be used by a property
+    if (referencedName) {
+      setRemovedEnumNames((prev) => [...prev, referencedName]);
+    }
+
     setLocalEnums((prev) => prev.filter((_, i) => i !== index));
   };
 
@@ -1689,15 +1780,14 @@ export default function DomainProfileTableModal({
           <div className="space-x-2">
             <button
               className={`btn ${
-                duplicateWarning || hasDuplicatePortNames || hasInvalidEnums
+                duplicateWarning || hasBlockingErrors
                   ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                   : "btn-primary"
               }`}
               onClick={saveProfile}
               disabled={
                 !!duplicateWarning ||
-                hasDuplicatePortNames ||
-                hasInvalidEnums ||
+                hasBlockingErrors ||
                 activeTab !== "create"
               }
             >
@@ -1783,6 +1873,8 @@ export default function DomainProfileTableModal({
                   onClick={() => {
                     setProfileName("");
                     setLocalNodes([]);
+                    setLocalEnums([]);
+                    setRemovedEnumNames([]);
                     setDuplicateWarning(null);
                     setActiveTab("create");
                   }}
@@ -1972,6 +2064,7 @@ export default function DomainProfileTableModal({
 
                       setLocalNodes(toEditableNodes(profile));
                       setLocalEnums(toEditableEnums(profile.domainEnums));
+                      setRemovedEnumNames([]);
 
                       setDuplicateWarning(null);
                     }}
@@ -2009,6 +2102,8 @@ export default function DomainProfileTableModal({
                             setLocalEnums(
                               toEditableEnums(json.domainEnums),
                             );
+
+                            setRemovedEnumNames([]);
 
                             setDuplicateWarning(null);
                           } catch (err) {
@@ -2069,6 +2164,29 @@ export default function DomainProfileTableModal({
                 </div>
               )}
 
+              {/* Properties using a deleted enum */}
+              {deletedEnumProperties.length > 0 && (
+                <div className="rounded-lg border border-red-300 bg-red-50 p-4">
+                  <h3 className="text-sm font-semibold text-red-900">
+                    Properties use a deleted enum
+                  </h3>
+
+                  <p className="mt-1 text-sm text-red-800">
+                    Choose another type for{" "}
+                    {deletedEnumProperties.map((missing, i) => (
+                      <span key={i}>
+                        {i > 0 && ", "}
+                        <strong>
+                          {missing.block}: {missing.property}
+                        </strong>{" "}
+                        ({missing.type})
+                      </span>
+                    ))}{" "}
+                    before saving.
+                  </p>
+                </div>
+              )}
+
               {/* Duplicate warning */}
               {duplicateWarning && (
                 <div className="rounded-lg border border-yellow-300 bg-yellow-50 p-4">
@@ -2092,7 +2210,8 @@ export default function DomainProfileTableModal({
                       <div className="mt-3 flex gap-2">
                         <button
                           type="button"
-                          className="btn btn-primary"
+                          className="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                          disabled={hasBlockingErrors}
                           onClick={() => {
                             saveProfileWithName(duplicateWarning.versionedName);
 
@@ -2298,6 +2417,7 @@ export default function DomainProfileTableModal({
                               <PropertyEditor
                                 properties={node.properties || []}
                                 definedEnumTypes={definedEnumTypes}
+                                deletedEnumTypes={deletedEnumTypes}
                                 onChange={(newProperties) =>
                                   updateNode(idx, "properties", newProperties)
                                 }
@@ -2398,7 +2518,7 @@ export default function DomainProfileTableModal({
                                 }`}
                                 value={domainEnum.name}
                                 onChange={(e) =>
-                                  updateEnum(idx, "name", e.target.value)
+                                  renameEnum(idx, e.target.value)
                                 }
                               />
 
