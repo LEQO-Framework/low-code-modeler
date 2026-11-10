@@ -165,6 +165,9 @@ export const EditableNode = memo((node: Node) => {
   const renderProperties = (inputWidth: string) =>
     properties.map((prop: any, index: number) => {
       const errorMessage = propertyErrors[index];
+      // values of boolean, bit or an enum of the domain profile
+      const choices: string[] | undefined =
+        CHOICES[prop.type] ?? data.enumValues?.[prop.type];
       const fieldClass = (error: string, required: boolean) =>
         cn(
           "rounded-full border-2 px-3 py-1 text-center",
@@ -177,8 +180,8 @@ export const EditableNode = memo((node: Node) => {
         <div key={index} className="flex flex-col items-center">
           <label className="text-sm mb-1">{prop.name}</label>
 
-          {CHOICES[prop.type] ? (
-            // boolean and bit take one of their values
+          {choices ? (
+            // boolean, bit and enums take one of their values
             <select
               value={propertyValues[index] ?? ""}
               onChange={(e) =>
@@ -190,7 +193,7 @@ export const EditableNode = memo((node: Node) => {
               )}
             >
               <option value="">Select...</option>
-              {CHOICES[prop.type].map((choice) => (
+              {choices.map((choice) => (
                 <option key={choice} value={choice}>
                   {choice}
                 </option>
