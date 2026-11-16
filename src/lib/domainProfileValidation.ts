@@ -260,6 +260,7 @@ export function validateDomainProfile({
     ...definedTypes,
   ];
   const enumNameDuplicates = findDuplicates(enums.map((e) => e.name));
+  const reportedEnumNames = new Set<string>();
   const propertyTypes = new Set(
     nodes.flatMap((node) => node.properties.map((prop) => prop.type)),
   );
@@ -284,7 +285,15 @@ export function validateDomainProfile({
             ? `has duplicate values (${[...duplicateValues].join(", ")}).`
             : null;
 
-    if (name) errors.push({ subject, message: `${name.toLowerCase()}.` });
+    if (name && !enumNameDuplicates.has(trimmed)) {
+      errors.push({ subject, message: `${name.toLowerCase()}.` });
+    } else if (name && !reportedEnumNames.has(trimmed)) {
+      reportedEnumNames.add(trimmed);
+      errors.push({
+        subject,
+        message: `is the name of ${enums.filter((e) => e.name.trim() === trimmed).length} enums, it must be unique.`,
+      });
+    }
     if (valueProblem) errors.push({ subject, message: valueProblem });
 
     if (!name && !propertyTypes.has(domainEnum.referencedName)) {
@@ -311,6 +320,7 @@ export function validateDomainProfile({
     const key = node.label.trim().toLowerCase();
     if (key) labelCounts.set(key, (labelCounts.get(key) ?? 0) + 1);
   });
+  const reportedLabels = new Set<string>();
 
   const blockResults = nodes.map((node, i): BlockValidation => {
     const subject = blockSubject(node, i);
@@ -320,12 +330,18 @@ export function validateDomainProfile({
 
     // name and category
     const label = node.label.trim();
+    const labelCount = labelCounts.get(label.toLowerCase()) ?? 0;
     const name = !label
       ? "Name must not be empty"
-      : (labelCounts.get(label.toLowerCase()) ?? 0) > 1
+      : labelCount > 1
         ? "Name must be unique"
         : null;
-    if (name) error(`${name.toLowerCase()}.`);
+    if (!label) {
+      error("name must not be empty.");
+    } else if (labelCount > 1 && !reportedLabels.has(label.toLowerCase())) {
+      reportedLabels.add(label.toLowerCase());
+      error(`is the name of ${labelCount} blocks, it must be unique.`);
+    }
 
     const category = node.category ? null : "Choose a category";
     if (category) error("has no category.");
