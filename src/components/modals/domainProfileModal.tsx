@@ -30,6 +30,7 @@ import {
   NodeProfileProperty,
   PortKind,
   PROPERTY_TYPES,
+  PortWarnings,
   ProfileIssue,
   PropertyIssues,
   QUANTUM_OPERATORS_CATEGORY,
@@ -52,18 +53,47 @@ function ErrorText({ error }: { error: string | null | undefined }) {
   return <span className="block text-[10px] text-red-600 mt-0.5">{error}</span>;
 }
 
-/** Summary of the errors of the profile, above the tables. */
-function ErrorList({ errors }: { errors: ProfileIssue[] }) {
-  if (errors.length === 0) return null;
+/** Message below a field with a warning. */
+function WarningText({ warning }: { warning: string | null | undefined }) {
+  if (!warning) return null;
 
   return (
-    <div className="rounded-lg border border-red-300 bg-red-50 p-4">
-      <h3 className="text-sm font-semibold text-red-900">
-        Fix these problems before saving
+    <span className="block text-[10px] text-amber-700 mt-0.5">{warning}</span>
+  );
+}
+
+/** Summary of the errors or warnings of the profile, above the tables. */
+function IssueList({
+  issues,
+  warning = false,
+}: {
+  issues: ProfileIssue[];
+  warning?: boolean;
+}) {
+  if (issues.length === 0) return null;
+
+  return (
+    <div
+      className={`rounded-lg border p-4 ${
+        warning ? "border-amber-300 bg-amber-50" : "border-red-300 bg-red-50"
+      }`}
+    >
+      <h3
+        className={`text-sm font-semibold ${
+          warning ? "text-amber-900" : "text-red-900"
+        }`}
+      >
+        {warning
+          ? "Please check (saving is still possible)"
+          : "Fix these problems before saving"}
       </h3>
 
-      <ul className="mt-1 list-disc pl-5 text-sm text-red-800">
-        {errors.map((issue, i) => (
+      <ul
+        className={`mt-1 list-disc pl-5 text-sm ${
+          warning ? "text-amber-800" : "text-red-800"
+        }`}
+      >
+        {issues.map((issue, i) => (
           <li key={i}>
             <strong>{issue.subject}</strong> {issue.message}
           </li>
@@ -660,21 +690,24 @@ function PortEditor({
   category,
   addLabel,
   duplicateNames,
+  warnings,
   listError,
+  listWarning,
   definedTypes,
-  checkDefined = false,
   onChange,
 }: {
   ports: NodeProfilePort[];
   category: string;
   addLabel: string;
   duplicateNames: Set<string>;
+  /** Warnings of the ports, aligned with ports. */
+  warnings: PortWarnings[];
   /** Error of the ports as a whole (e.g. none defined). */
   listError?: string | null;
+  /** Warning of the ports as a whole (e.g. none defined). */
+  listWarning?: string | null;
   /** Types defined in the profile (output types of its blocks), offered as types. */
   definedTypes: string[];
-  /** Hint at a classical type that no block of the profile outputs (for inputs). */
-  checkDefined?: boolean;
   onChange: (ports: NodeProfilePort[]) => void;
 }) {
   // only quantum operators can mix quantum and classical ports
@@ -687,16 +720,6 @@ function PortEditor({
           ...definedTypes,
           ...PROPERTY_TYPES.filter((t) => !definedTypes.includes(t)),
         ];
-  const isUndefinedType = (port: NodeProfilePort) => {
-    const type = port.type.trim();
-    return (
-      checkDefined &&
-      port.kind === "classical" &&
-      type !== "" &&
-      !definedTypes.includes(type) &&
-      !PROPERTY_TYPES.some((t) => t.toLowerCase() === type.toLowerCase())
-    );
-  };
 
   const addPort = () => {
     const kind = defaultPortKind(category);
@@ -760,7 +783,9 @@ function PortEditor({
                 className={`w-full border rounded px-1 py-0.5 text-xs ${
                   duplicateNames.has(port.name.trim())
                     ? "border-red-500 bg-red-50"
-                    : ""
+                    : warnings[idx]?.name
+                      ? "border-amber-500 bg-amber-50"
+                      : ""
                 }`}
                 value={port.name}
                 onChange={(e) => updatePort(idx, "name", e.target.value)}
@@ -771,6 +796,8 @@ function PortEditor({
                   Name must be unique
                 </span>
               )}
+
+              <WarningText warning={warnings[idx]?.name} />
             </div>
 
             <div>
@@ -781,7 +808,7 @@ function PortEditor({
               {/* a type of the profile, or a new one */}
               <input
                 className={`w-full border rounded px-1 py-0.5 text-xs ${
-                  isUndefinedType(port) ? "border-amber-500 bg-amber-50" : ""
+                  warnings[idx]?.type ? "border-amber-500 bg-amber-50" : ""
                 }`}
                 list={`${listId}-${port.kind}`}
                 placeholder="Select or type..."
@@ -789,11 +816,7 @@ function PortEditor({
                 onChange={(e) => updatePort(idx, "type", e.target.value)}
               />
 
-              {isUndefinedType(port) && (
-                <span className="block text-[10px] text-amber-700 mt-0.5">
-                  No block of this profile outputs this type
-                </span>
-              )}
+              <WarningText warning={warnings[idx]?.type} />
             </div>
           </div>
 
@@ -826,6 +849,8 @@ function PortEditor({
       ))}
 
       <ErrorText error={listError} />
+
+      <WarningText warning={listWarning} />
 
       <button
         type="button"
@@ -1426,6 +1451,10 @@ export default function DomainProfileTableModal({
   ];
 
   const validation: DomainProfileValidation = validateDomainProfile({
+    profileName,
+    otherProfileNames: profiles
+      .filter((_, index) => index !== editingProfileIndex)
+      .map((profile) => profile.name),
     nodes: localNodes,
     enums: localEnums,
     removedEnumNames,
@@ -2012,7 +2041,10 @@ export default function DomainProfileTableModal({
               </section>
 
               {/* Problems that block saving */}
-              <ErrorList errors={validation.errors} />
+              <IssueList issues={validation.errors} />
+
+              {/* Hints that do not block saving */}
+              <IssueList issues={validation.warnings} warning />
 
               {/* Duplicate warning */}
               {duplicateWarning && (
@@ -2223,8 +2255,8 @@ export default function DomainProfileTableModal({
                                   duplicateNames={
                                     validation.blocks[idx].duplicatePortNames
                                   }
+                                  warnings={validation.blocks[idx].inputWarnings}
                                   definedTypes={definedTypes}
-                                  checkDefined
                                   onChange={(newInputs) =>
                                     updateNode(idx, "inputs", newInputs)
                                   }
@@ -2245,7 +2277,9 @@ export default function DomainProfileTableModal({
                                 duplicateNames={
                                   validation.blocks[idx].duplicatePortNames
                                 }
+                                warnings={validation.blocks[idx].outputWarnings}
                                 listError={validation.blocks[idx].outputs}
+                                listWarning={validation.blocks[idx].outputsWarning}
                                 definedTypes={definedTypes}
                                 onChange={(newOutputs) =>
                                   updateNode(idx, "outputs", newOutputs)
