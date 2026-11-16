@@ -1,10 +1,10 @@
 /**
- * Checks a domain profile in the editor before it is saved. Every error blocks
- * saving.
+ * Checks a domain profile in the editor before it is saved. Errors block saving,
+ * warnings only hint at something that is probably unintended.
  *
  * The result has one entry per block and per enum (aligned with the editor's lists)
- * so that the editor can mark the offending fields, plus a flat list of errors for
- * the summary above the tables.
+ * so that the editor can mark the offending fields, plus flat lists of errors and
+ * warnings for the summaries above the tables.
  */
 
 import { INTEGER_TYPES, NUMBER_TYPES } from "./propertyConstraints";
@@ -684,12 +684,11 @@ export function validateDomainProfile({
           `constraint ${c + 1}: ${problem.charAt(0).toLowerCase()}${problem.slice(1)}.`,
         );
       } else {
-        const target = con.propertyName.replace(/^length\((.*)\)$/, "$1");
-        const prop = node.properties.find((p) => p.name === target);
+        const prop = constraintProperty(con, node.properties);
         if (prop && !prop.required) {
           constraintWarnings[c] = "Only checked if the property is filled in";
           warn(
-            `constraint ${c + 1} is only checked if the optional property "${target}" is filled in.`,
+            `constraint ${c + 1} is only checked if the optional property "${prop.name}" is filled in.`,
           );
         }
       }
