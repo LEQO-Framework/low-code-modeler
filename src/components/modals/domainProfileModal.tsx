@@ -747,6 +747,16 @@ function PortEditor({
       [field]: value,
     };
 
+    if (field === "kind") {
+      const { type } = newPorts[index];
+      newPorts[index].type =
+        value === "quantum"
+          ? QUANTUM_REGISTER_TYPE
+          : type === QUANTUM_REGISTER_TYPE
+            ? ""
+            : type;
+    }
+
     onChange(newPorts);
   };
 
