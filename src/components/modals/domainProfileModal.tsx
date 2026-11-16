@@ -444,6 +444,7 @@ function ConstraintEditor({
   constraints,
   propertyOptions,
   issues,
+  warnings,
   onChange,
 }: {
   constraints: NodeProfileConstraint[];
@@ -451,6 +452,8 @@ function ConstraintEditor({
   propertyOptions: string[];
   /** Problems of the constraints, aligned with constraints. */
   issues: (string | null)[];
+  /** Warnings of the constraints, aligned with constraints. */
+  warnings: (string | null)[];
   onChange: (props: NodeProfileConstraint[]) => void;
 }) {
   const constraintOptions = ["==", "!=", "<", ">", "<=", ">="];
@@ -492,7 +495,11 @@ function ConstraintEditor({
           <div
             key={idx}
             className={`p-2 border rounded relative group ${
-              issues[idx] ? "border-red-500 bg-red-50" : "bg-gray-50"
+              issues[idx]
+                ? "border-red-500 bg-red-50"
+                : warnings[idx]
+                  ? "border-amber-500 bg-amber-50"
+                  : "bg-gray-50"
             }`}
           >
             <button
@@ -568,6 +575,12 @@ function ConstraintEditor({
             {issues[idx] && (
               <span className="block text-[10px] text-red-600 mt-1 text-left">
                 {issues[idx]}
+              </span>
+            )}
+
+            {!issues[idx] && warnings[idx] && (
+              <span className="block text-[10px] text-amber-700 mt-1 text-left">
+                {warnings[idx]}
               </span>
             )}
           </div>
@@ -2320,6 +2333,9 @@ export default function DomainProfileTableModal({
                                   definedEnumTypes,
                                 )}
                                 issues={validation.blocks[idx].constraints}
+                                warnings={
+                                  validation.blocks[idx].constraintWarnings
+                                }
                                 onChange={(newConstraints) =>
                                   updateNode(idx, "constraints", newConstraints)
                                 }

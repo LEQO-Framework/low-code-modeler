@@ -7,6 +7,8 @@
  * the summary above the tables.
  */
 
+import { INTEGER_TYPES, NUMBER_TYPES } from "./propertyConstraints";
+
 export const DATA_TYPES_CATEGORY = "dataTypes";
 export const QUANTUM_OPERATORS_CATEGORY = "Quantum Operators";
 export const CLASSICAL_OPERATORS_CATEGORY = "Classical Operators";
@@ -151,6 +153,222 @@ export function constraintTargets(
     );
 }
 
+const LENGTH = /^length\((.*)\)$/;
+
+/** Property a constraint refers to, also for "length(<property>)". */
+const constraintProperty = (
+  con: NodeProfileConstraint,
+  properties: NodeProfileProperty[],
+) =>
+  properties.find(
+    (prop) => prop.name === con.propertyName.replace(LENGTH, "$1"),
+  );
+
+/** "int", "number", ... or "text" (only == and != can be checked), else null. */
+function constraintDomain(
+  con: NodeProfileConstraint,
+  properties: NodeProfileProperty[],
+): "integer" | "number" | "text" | null {
+  if (LENGTH.test(con.propertyName)) return "integer";
+  const type = (constraintProperty(con, properties)?.type ?? "")
+    .trim()
+    .toLowerCase();
+  if (INTEGER_TYPES.includes(type)) return "integer";
+  if (NUMBER_TYPES.includes(type)) return "number";
+  if (["string", "boolean", "file"].includes(type)) return "text";
+  return null;
+}
+
+/**
+ * True if the value of a constraint is a literal. It can also be another
+ * property (or its length), which is only known when checking the values.
+ */
+const hasLiteralValue = (
+  con: NodeProfileConstraint,
+  properties: NodeProfileProperty[],
+) => {
+  const value = String(con.value ?? "").trim();
+  return !properties.some((prop) => prop.name === value.replace(LENGTH, "$1"));
+};
+
+/** Problem of a complete constraint's value with its property's type, or null. */
+function constraintValueProblem(
+  con: NodeProfileConstraint,
+  properties: NodeProfileProperty[],
+): string | null {
+  const domain = constraintDomain(con, properties);
+  const value = String(con.value ?? "").trim();
+  const type = constraintProperty(con, properties)?.type;
+
+  if (domain === "text" && !["==", "!="].includes(con.constraint)) {
+    return `"${con.constraint}" cannot compare ${type} values, use == or !=`;
+  }
+  if (!hasLiteralValue(con, properties)) return null;
+  if (LENGTH.test(con.propertyName) && !/^\d+$/.test(value)) {
+    return "A length must be a whole number of at least 0";
+  }
+  if ((domain === "integer" || domain === "number") && !isNumeric(value)) {
+    return "Value must be a number";
+  }
+  if (type?.toLowerCase() === "boolean" && !/^(true|false)$/i.test(value)) {
+    return "Value must be true or false";
+  }
+  return null;
+}
+
+const isNumeric = (value: string) =>
+  value.trim() !== "" && Number.isFinite(Number(value));
+
+const constraintValue = (con: NodeProfileConstraint) =>
+  String(con.value ?? "").trim();
+
+/**
+ * Indexes of constraints (with literal values, not contradicting each other) of
+ * one property that have no effect because the others already ensure them
+ */
+function redundantConstraints(
+  cons: NodeProfileConstraint[],
+  domain: "integer" | "number" | "text" | null,
+): number[] {
+  const numeric = domain === "integer" || domain === "number";
+  const equal = cons.findIndex((con) => con.constraint === "==");
+
+  // a fixed value makes every other constraint pointless
+  if (equal !== -1) return cons.map((_, i) => i).filter((i) => i !== equal);
+
+  // how strict a bound is: higher is stricter, whole numbers "> 2" = ">= 3"
+  const strictness = (con: NodeProfileConstraint) => {
+    const n = Number(constraintValue(con));
+    const exclusive = con.constraint === ">" || con.constraint === "<";
+    const lower = con.constraint.startsWith(">");
+    if (domain === "integer") {
+      const bound = lower
+        ? exclusive
+          ? Math.floor(n) + 1
+          : Math.ceil(n)
+        : exclusive
+          ? Math.ceil(n) - 1
+          : Math.floor(n);
+      return { score: lower ? bound : -bound, tie: 0 };
+    }
+    return { score: lower ? n : -n, tie: exclusive ? 1 : 0 };
+  };
+
+  const redundant: number[] = [];
+  [">", "<"].forEach((side) => {
+    if (!numeric) return;
+    const bounds = cons
+      .map((con, i) => ({ con, i }))
+      .filter(({ con }) => con.constraint.startsWith(side));
+    if (bounds.length < 2) return;
+    const strictest = bounds.reduce((best, b) => {
+      const s = strictness(b.con);
+      const t = strictness(best.con);
+      return s.score > t.score || (s.score === t.score && s.tie > t.tie)
+        ? b
+        : best;
+    });
+    bounds.forEach(({ i }) => i !== strictest.i && redundant.push(i));
+  });
+
+  // "!= x" twice, or outside the allowed range
+  const seen = new Set<string>();
+  cons.forEach((con, i) => {
+    if (con.constraint !== "!=") return;
+    const key = numeric
+      ? String(Number(constraintValue(con)))
+      : constraintValue(con);
+    const n = Number(constraintValue(con));
+    const outside = cons.some(
+      (other) =>
+        numeric &&
+        ((other.constraint === ">" && n <= Number(constraintValue(other))) ||
+          (other.constraint === ">=" && n < Number(constraintValue(other))) ||
+          (other.constraint === "<" && n >= Number(constraintValue(other))) ||
+          (other.constraint === "<=" && n > Number(constraintValue(other))) ||
+          (domain === "integer" && !Number.isInteger(n))),
+    );
+    if (seen.has(key) || outside) redundant.push(i);
+    seen.add(key);
+  });
+
+  return redundant;
+}
+
+/**
+ * True if no value can fulfil all constraints (with literal values) of one
+ * property, e.g. "> 5" and "< 3", or "== 2" and "!= 2".
+ */
+function contradict(
+  cons: NodeProfileConstraint[],
+  domain: "integer" | "number" | "text" | null,
+): boolean {
+  const numeric = domain === "integer" || domain === "number";
+  const normalize = (value: string) =>
+    numeric ? String(Number(value)) : value.trim();
+
+  const equal = new Set<string>();
+  const notEqual = new Set<string>();
+  let lower = -Infinity;
+  let lowerInclusive = true;
+  let upper = Infinity;
+  let upperInclusive = true;
+
+  cons.forEach((con) => {
+    const value = String(con.value ?? "");
+    const n = Number(value);
+    switch (con.constraint) {
+      case "==":
+        equal.add(normalize(value));
+        break;
+      case "!=":
+        notEqual.add(normalize(value));
+        break;
+      case ">":
+      case ">=":
+        if (n > lower || (n === lower && con.constraint === ">")) {
+          lower = n;
+          lowerInclusive = con.constraint === ">=";
+        }
+        break;
+      case "<":
+      case "<=":
+        if (n < upper || (n === upper && con.constraint === "<")) {
+          upper = n;
+          upperInclusive = con.constraint === "<=";
+        }
+        break;
+    }
+  });
+
+  // whole numbers: "> 2" means ">= 3"
+  if (domain === "integer") {
+    lower = lowerInclusive ? Math.ceil(lower) : Math.floor(lower) + 1;
+    upper = upperInclusive ? Math.floor(upper) : Math.ceil(upper) - 1;
+    lowerInclusive = upperInclusive = true;
+  }
+  const inRange = (n: number) =>
+    (lowerInclusive ? n >= lower : n > lower) &&
+    (upperInclusive ? n <= upper : n < upper) &&
+    (domain !== "integer" || Number.isInteger(n));
+
+  if (equal.size > 1) return true;
+  if ([...equal].some((value) => notEqual.has(value))) return true;
+  if (numeric && [...equal].some((value) => !inRange(Number(value)))) {
+    return true;
+  }
+  if (!numeric) return false;
+  if (lower > upper) return true;
+  if (lower === upper) {
+    // only one value is left, which may also be excluded
+    return (
+      !(lowerInclusive && upperInclusive) ||
+      notEqual.has(normalize(String(lower)))
+    );
+  }
+  return false;
+}
+
 /** Problems of a property, null if the field is fine. */
 export interface PropertyIssues {
   name: string | null;
@@ -175,6 +393,7 @@ export interface BlockValidation {
   outputWarnings: PortWarnings[];
   properties: PropertyIssues[];
   constraints: (string | null)[];
+  constraintWarnings: (string | null)[];
 }
 
 export interface EnumValidation {
@@ -447,6 +666,9 @@ export function validateDomainProfile({
 
     // constraints: incomplete ones are ignored when checking values
     const targets = constraintTargets(node.properties, enumTypes);
+    const constraintWarnings: (string | null)[] = node.constraints.map(
+      () => null,
+    );
     const constraints = node.constraints.map((con, c) => {
       const problem = !con.propertyName
         ? "Choose a property"
@@ -456,7 +678,7 @@ export function validateDomainProfile({
             ? "Choose a comparison"
             : !String(con.value ?? "").trim()
               ? "Enter a value"
-              : null;
+              : constraintValueProblem(con, node.properties);
       if (problem) {
         error(
           `constraint ${c + 1}: ${problem.charAt(0).toLowerCase()}${problem.slice(1)}.`,
@@ -465,12 +687,44 @@ export function validateDomainProfile({
         const target = con.propertyName.replace(/^length\((.*)\)$/, "$1");
         const prop = node.properties.find((p) => p.name === target);
         if (prop && !prop.required) {
+          constraintWarnings[c] = "Only checked if the property is filled in";
           warn(
             `constraint ${c + 1} is only checked if the optional property "${target}" is filled in.`,
           );
         }
       }
       return problem;
+    });
+
+    // valid constraints with literal values, by the property they constrain
+    const byTarget = new Map<string, number[]>();
+    node.constraints.forEach((con, c) => {
+      if (constraints[c] || !hasLiteralValue(con, node.properties)) return;
+      byTarget.set(con.propertyName, [
+        ...(byTarget.get(con.propertyName) ?? []),
+        c,
+      ]);
+    });
+    byTarget.forEach((indexes, target) => {
+      const cons = indexes.map((c) => node.constraints[c]);
+      const domain = constraintDomain(cons[0], node.properties);
+      if (indexes.length < 2) return;
+      if (!contradict(cons, domain)) {
+        redundantConstraints(cons, domain).forEach((r) => {
+          constraintWarnings[indexes[r]] =
+            "No effect, the other constraints already ensure it";
+          warn(
+            `constraint ${indexes[r] + 1} on "${target}" has no effect, the other constraints already ensure it.`,
+          );
+        });
+        return;
+      }
+      indexes.forEach((c) => {
+        constraints[c] = "Contradicts another constraint";
+      });
+      error(
+        `constraints ${indexes.map((c) => c + 1).join(", ")} on "${target}" contradict each other, no value can fulfil all of them.`,
+      );
     });
 
     return {
@@ -483,6 +737,7 @@ export function validateDomainProfile({
       outputWarnings,
       properties,
       constraints,
+      constraintWarnings,
     };
   });
 

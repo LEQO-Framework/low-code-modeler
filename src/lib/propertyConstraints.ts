@@ -30,8 +30,8 @@ const isNumeric = (v: string) => v.trim() !== "" && Number.isFinite(Number(v));
 const typeOf = (prop: ProfileProperty | undefined) =>
   (prop?.type ?? "").trim().toLowerCase();
 
-const INTEGER_TYPES = ["int", "integer", "long"];
-const NUMBER_TYPES = ["float", "double", "number", "real", "decimal"];
+export const INTEGER_TYPES = ["int", "integer", "long"];
+export const NUMBER_TYPES = ["float", "double", "number", "real", "decimal"];
 
 const isArrayType = (prop: ProfileProperty | undefined) =>
   typeOf(prop).includes("array") || typeOf(prop).includes("[]");
