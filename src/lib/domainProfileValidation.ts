@@ -375,8 +375,8 @@ export interface PropertyIssues {
   type: string | null;
 }
 
-/** Warnings of a port, null if the field is fine. */
-export interface PortWarnings {
+/** Problems of a port, null if the field is fine. */
+export interface PortIssues {
   name: string | null;
   type: string | null;
 }
@@ -389,8 +389,8 @@ export interface BlockValidation {
   /** Warning of the block's outputs as a whole (none defined). */
   outputsWarning: string | null;
   duplicatePortNames: Set<string>;
-  inputWarnings: PortWarnings[];
-  outputWarnings: PortWarnings[];
+  inputPorts: PortIssues[];
+  outputPorts: PortIssues[];
   properties: PropertyIssues[];
   constraints: (string | null)[];
   constraintWarnings: (string | null)[];
@@ -408,6 +408,8 @@ export interface ProfileIssue {
 }
 
 export interface DomainProfileValidation {
+  /** Problem of the profile name, null if it is fine. */
+  profileName: string | null;
   blocks: BlockValidation[];
   enums: EnumValidation[];
   /** Enums deleted while editing whose name is not used by another enum. */
@@ -449,26 +451,28 @@ export function validateDomainProfile({
   const enumTypes = profileEnumTypes(enums);
 
   // ---------- Profile ----------
-  if (!profileName.trim()) {
-    warnings.push({
+  const trimmedProfileName = profileName.trim();
+  const profileNameExists = otherProfileNames.some(
+    (name) => name.trim().toLowerCase() === trimmedProfileName.toLowerCase(),
+  );
+  const profileNameProblem = !trimmedProfileName
+    ? "Name must not be empty"
+    : profileNameExists
+      ? "A profile with this name already exists"
+      : null;
+  if (!trimmedProfileName) {
+    errors.push({ subject: "Profile", message: "has no name." });
+  } else if (profileNameExists) {
+    errors.push({
       subject: "Profile",
-      message: 'has no name and is saved as "Untitled Profile".',
-    });
-  }
-  // the same comparison as when saving, which then offers a versioned name
-  const savedName = profileName.trim() || "Untitled Profile";
-  if (
-    otherProfileNames.some(
-      (name) => name.trim().toLowerCase() === savedName.toLowerCase(),
-    )
-  ) {
-    warnings.push({
-      subject: "Profile",
-      message: `"${savedName}" already exists. Saving offers a new version name instead.`,
+      message: `"${trimmedProfileName}" already exists, choose another name.`,
     });
   }
   if (nodes.length === 0) {
-    warnings.push({ subject: "Profile", message: "has no domain blocks." });
+    errors.push({
+      subject: "Profile",
+      message: "has no domain blocks, add at least one.",
+    });
   }
 
   // ---------- Enums ----------
@@ -590,7 +594,7 @@ export function validateDomainProfile({
     if (outputsWarning) warn("has no output, so its result cannot be used.");
 
     const checkPorts = (ports: NodeProfilePort[], kind: "input" | "output") =>
-      ports.map((port, p): PortWarnings => {
+      ports.map((port, p): PortIssues => {
         const portName = port.name.trim();
         const type = port.type.trim();
         const portLabel = portName
@@ -604,18 +608,18 @@ export function validateDomainProfile({
           !definedTypes.includes(type) &&
           !PROPERTY_TYPES.some((t) => t.toLowerCase() === type.toLowerCase());
 
-        if (!portName) warn(`${portLabel} has no name.`);
-        if (!type) warn(`${portLabel} has no type.`);
+        if (!portName) error(`${portLabel} has no name.`);
+        if (!type) error(`${portLabel} has no type.`);
         if (undefinedType) {
-          warn(
+          error(
             `${portLabel} uses the type "${type}", which no block of this profile outputs.`,
           );
         }
 
         return {
-          name: portName ? null : "No name, shown as a number",
+          name: portName ? null : "Name must not be empty",
           type: !type
-            ? "No type set"
+            ? "Choose a type"
             : undefinedType
               ? "No block of this profile outputs this type"
               : null,
@@ -623,8 +627,8 @@ export function validateDomainProfile({
       });
 
     // inputs are only saved for operators
-    const inputWarnings = isOperator ? checkPorts(node.inputs, "input") : [];
-    const outputWarnings = checkPorts(node.outputs, "output");
+    const inputPorts = isOperator ? checkPorts(node.inputs, "input") : [];
+    const outputPorts = checkPorts(node.outputs, "output");
 
     // properties
     const propertyDuplicates = findDuplicates(
@@ -710,10 +714,12 @@ export function validateDomainProfile({
       if (indexes.length < 2) return;
       if (!contradict(cons, domain)) {
         redundantConstraints(cons, domain).forEach((r) => {
-          constraintWarnings[indexes[r]] =
-            "No effect, the other constraints already ensure it";
-          warn(
-            `constraint ${indexes[r] + 1} on "${target}" has no effect, the other constraints already ensure it.`,
+          constraints[indexes[r]] =
+            "Redundant, the other constraints already ensure it";
+          // the error replaces the "optional property" warning
+          constraintWarnings[indexes[r]] = null;
+          error(
+            `constraint ${indexes[r] + 1} on "${target}" is redundant, the other constraints already ensure it. Remove it.`,
           );
         });
         return;
@@ -732,8 +738,8 @@ export function validateDomainProfile({
       outputs,
       outputsWarning,
       duplicatePortNames,
-      inputWarnings,
-      outputWarnings,
+      inputPorts,
+      outputPorts,
       properties,
       constraints,
       constraintWarnings,
@@ -741,6 +747,7 @@ export function validateDomainProfile({
   });
 
   return {
+    profileName: profileNameProblem,
     blocks: blockResults,
     enums: enumResults,
     deletedEnumTypes,

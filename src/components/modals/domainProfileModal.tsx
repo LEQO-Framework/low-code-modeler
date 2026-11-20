@@ -30,7 +30,7 @@ import {
   NodeProfileProperty,
   PortKind,
   PROPERTY_TYPES,
-  PortWarnings,
+  PortIssues,
   ProfileIssue,
   PropertyIssues,
   QUANTUM_OPERATORS_CATEGORY,
@@ -703,7 +703,7 @@ function PortEditor({
   category,
   addLabel,
   duplicateNames,
-  warnings,
+  issues,
   listError,
   listWarning,
   definedTypes,
@@ -713,8 +713,8 @@ function PortEditor({
   category: string;
   addLabel: string;
   duplicateNames: Set<string>;
-  /** Warnings of the ports, aligned with ports. */
-  warnings: PortWarnings[];
+  /** Problems of the ports, aligned with ports. */
+  issues: PortIssues[];
   /** Error of the ports as a whole (e.g. none defined). */
   listError?: string | null;
   /** Warning of the ports as a whole (e.g. none defined). */
@@ -803,24 +803,22 @@ function PortEditor({
               </label>
 
               <input
-                className={`w-full border rounded px-1 py-0.5 text-xs ${
+                className={`w-full border rounded px-1 py-0.5 text-xs ${errorInputClass(
                   duplicateNames.has(port.name.trim())
-                    ? "border-red-500 bg-red-50"
-                    : warnings[idx]?.name
-                      ? "border-amber-500 bg-amber-50"
-                      : ""
-                }`}
+                    ? "Name must be unique"
+                    : issues[idx]?.name,
+                )}`}
                 value={port.name}
                 onChange={(e) => updatePort(idx, "name", e.target.value)}
               />
 
-              {duplicateNames.has(port.name.trim()) && (
-                <span className="block text-[10px] text-red-600 mt-0.5">
-                  Name must be unique
-                </span>
-              )}
-
-              <WarningText warning={warnings[idx]?.name} />
+              <ErrorText
+                error={
+                  duplicateNames.has(port.name.trim())
+                    ? "Name must be unique"
+                    : issues[idx]?.name
+                }
+              />
             </div>
 
             <div>
@@ -830,16 +828,16 @@ function PortEditor({
 
               {/* a type of the profile, or a new one */}
               <input
-                className={`w-full border rounded px-1 py-0.5 text-xs ${
-                  warnings[idx]?.type ? "border-amber-500 bg-amber-50" : ""
-                }`}
+                className={`w-full border rounded px-1 py-0.5 text-xs ${errorInputClass(
+                  issues[idx]?.type,
+                )}`}
                 list={`${listId}-${port.kind}`}
                 placeholder="Select or type..."
                 value={port.type}
                 onChange={(e) => updatePort(idx, "type", e.target.value)}
               />
 
-              <WarningText warning={warnings[idx]?.type} />
+              <ErrorText error={issues[idx]?.type} />
             </div>
           </div>
 
@@ -1929,18 +1927,24 @@ export default function DomainProfileTableModal({
                       Domain Profile Name
                     </span>
 
-                    <input
-                      className="border rounded-md px-3 py-2 text-sm bg-white min-w-[240px] focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      value={profileName}
-                      placeholder="Insert name..."
-                      onChange={(e) => {
-                        setProfileName(e.target.value);
+                    <div>
+                      <input
+                        className={`border rounded-md px-3 py-2 text-sm bg-white min-w-[240px] focus:outline-none focus:ring-2 focus:ring-blue-500 ${errorInputClass(
+                          validation.profileName,
+                        )}`}
+                        value={profileName}
+                        placeholder="Insert name..."
+                        onChange={(e) => {
+                          setProfileName(e.target.value);
 
-                        if (duplicateWarning) {
-                          setDuplicateWarning(null);
-                        }
-                      }}
-                    />
+                          if (duplicateWarning) {
+                            setDuplicateWarning(null);
+                          }
+                        }}
+                      />
+
+                      <ErrorText error={validation.profileName} />
+                    </div>
                   </div>
 
                   <button
@@ -2278,7 +2282,7 @@ export default function DomainProfileTableModal({
                                   duplicateNames={
                                     validation.blocks[idx].duplicatePortNames
                                   }
-                                  warnings={validation.blocks[idx].inputWarnings}
+                                  issues={validation.blocks[idx].inputPorts}
                                   definedTypes={definedTypes}
                                   onChange={(newInputs) =>
                                     updateNode(idx, "inputs", newInputs)
@@ -2300,7 +2304,7 @@ export default function DomainProfileTableModal({
                                 duplicateNames={
                                   validation.blocks[idx].duplicatePortNames
                                 }
-                                warnings={validation.blocks[idx].outputWarnings}
+                                issues={validation.blocks[idx].outputPorts}
                                 listError={validation.blocks[idx].outputs}
                                 listWarning={validation.blocks[idx].outputsWarning}
                                 definedTypes={definedTypes}
