@@ -19,49 +19,105 @@ import { DomainProfileRepositoryPicker } from "./domainProfileRepositoryPicker";
 import { RepositoryDomainProfile } from "../../services/domainProfileRepository";
 import { createPortal } from "react-dom";
 import { v4 as uuid } from "uuid";
+import {
+  CLASSICAL_OPERATORS_CATEGORY,
+  DATA_TYPES_CATEGORY,
+  DomainProfileValidation,
+  EditableEnumProfile,
+  EditableNodeProfile,
+  NodeProfileConstraint,
+  NodeProfilePort,
+  NodeProfileProperty,
+  PortKind,
+  PROPERTY_TYPES,
+  PortIssues,
+  ProfileIssue,
+  PropertyIssues,
+  QUANTUM_OPERATORS_CATEGORY,
+  QUANTUM_REGISTER_TYPE,
+  constraintTargets,
+  isOperatorCategory,
+  profileEnumTypes,
+  profileTypes,
+  validateDomainProfile,
+} from "@/lib/domainProfileValidation";
 
-export const DATA_TYPES_CATEGORY = "dataTypes";
-export const QUANTUM_OPERATORS_CATEGORY = "Quantum Operators";
-export const CLASSICAL_OPERATORS_CATEGORY = "Classical Operators";
+/** Border and background of a field with an error. */
+const errorInputClass = (error: string | null | undefined) =>
+  error ? "border-red-500 bg-red-50" : "";
+
+/** Message below a field with an error. */
+function ErrorText({ error }: { error: string | null | undefined }) {
+  if (!error) return null;
+
+  return <span className="block text-[10px] text-red-600 mt-0.5">{error}</span>;
+}
+
+/** Message below a field with a warning. */
+function WarningText({ warning }: { warning: string | null | undefined }) {
+  if (!warning) return null;
+
+  return (
+    <span className="block text-[10px] text-amber-700 mt-0.5">{warning}</span>
+  );
+}
+
+/** Summary of the errors or warnings of the profile, above the tables. */
+function IssueList({
+  issues,
+  warning = false,
+}: {
+  issues: ProfileIssue[];
+  warning?: boolean;
+}) {
+  if (issues.length === 0) return null;
+
+  return (
+    <div
+      className={`rounded-lg border p-4 ${
+        warning ? "border-amber-300 bg-amber-50" : "border-red-300 bg-red-50"
+      }`}
+    >
+      <h3
+        className={`text-sm font-semibold ${
+          warning ? "text-amber-900" : "text-red-900"
+        }`}
+      >
+        {warning
+          ? "Please check (saving is still possible)"
+          : "Fix these problems before saving"}
+      </h3>
+
+      <ul
+        className={`mt-1 list-disc pl-5 text-sm ${
+          warning ? "text-amber-800" : "text-red-800"
+        }`}
+      >
+        {issues.map((issue, i) => (
+          <li key={i}>
+            <strong>{issue.subject}</strong> {issue.message}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 // profiles created before the quantum/classical split used this category
 const LEGACY_OPERATORS_CATEGORY = "Operators";
 
-export type PortKind = "quantum" | "classical";
-
-export interface NodeProfilePort {
-  name: string;
-  type: string;
-  kind: PortKind;
-  optional: boolean;
-}
-
-export interface EditableNodeProfile {
-  label: string;
-  description: string;
-  icon: string | string[];
-  visible: boolean;
-  category: string;
-  inputs: NodeProfilePort[];
-  outputs: NodeProfilePort[];
-  properties: NodeProfileProperty[];
-  constraints: NodeProfileConstraint[];
-  mapping: string[][];
-
-  originalLabel: string;
-  originalDescription: string;
-  originalIcon: string | string[];
-}
-
-export interface EditableEnumProfile {
-  id: string;
-  name: string;
-  /**
-   * Name that properties of this enum use as their type and differs from
-   * name while the typed name is invalid (empty, duplicate, existing type).
-   */
-  referencedName: string;
-  values: string[];
-}
+export {
+  CLASSICAL_OPERATORS_CATEGORY,
+  DATA_TYPES_CATEGORY,
+  PROPERTY_TYPES,
+  QUANTUM_OPERATORS_CATEGORY,
+};
+export type {
+  EditableEnumProfile,
+  EditableNodeProfile,
+  NodeProfilePort,
+  PortKind,
+};
 
 export type DomainProfile = {
   name: string;
@@ -69,67 +125,8 @@ export type DomainProfile = {
   domainEnums: Record<string, string[]>;
 };
 
-interface NodeProfileProperty {
-  name: string;
-  type: string;
-  required?: boolean;
-}
-
-interface NodeProfileConstraint {
-  propertyName: string;
-  constraint: string;
-  value?: string;
-}
-
-const isOperatorCategory = (category: string) =>
-  category === QUANTUM_OPERATORS_CATEGORY ||
-  category === CLASSICAL_OPERATORS_CATEGORY;
-
 const defaultPortKind = (category: string): PortKind =>
   category === QUANTUM_OPERATORS_CATEGORY ? "quantum" : "classical";
-
-/** Entries (name of enums or values of an enum) that are used multiple times */
-function findDuplicates(entries: string[]): Set<string> {
-  const seen = new Set<string>();
-  const duplicates = new Set<string>();
-
-  entries.forEach((entry) => {
-    const trimmed = entry.trim();
-
-    if (!trimmed) return;
-
-    if (seen.has(trimmed)) duplicates.add(trimmed);
-
-    seen.add(trimmed);
-  });
-
-  return duplicates;
-}
-
-/**
- * Names that are used by more than one of the block's inputs and outputs.
- * Inputs and outputs share one namespace.
- */
-function findDuplicatePortNames(node: EditableNodeProfile): Set<string> {
-  const ports = [
-    ...(isOperatorCategory(node.category) ? node.inputs : []),
-    ...node.outputs,
-  ];
-  const seen = new Set<string>();
-  const duplicates = new Set<string>();
-
-  ports.forEach((port) => {
-    const name = port.name.trim();
-
-    if (!name) return;
-
-    if (seen.has(name)) duplicates.add(name);
-
-    seen.add(name);
-  });
-
-  return duplicates;
-}
 
 // palette icons, the same ones the built-in custom nodes use
 const DEFAULT_CATEGORY_ICONS: Record<string, string> = {
@@ -289,52 +286,16 @@ function extractNodeLabels(content: any): Record<string, string> {
   return labels;
 }
 
-/** Types a property value can have. */
-export const PROPERTY_TYPES = [
-  "int",
-  "String",
-  "number",
-  "boolean",
-  "bit",
-  "Array",
-  "File",
-];
-
-const QUANTUM_REGISTER_TYPE = "quantum register";
-
-/**
- * Types defined in the profile, for the inputs and outputs of its blocks: the output
- * types of the data types first, then those of the operators (without duplicates).
- */
-function profileTypes(nodes: EditableNodeProfile[]): string[] {
-  const dataTypesFirst = [
-    ...nodes.filter((n) => n.category === DATA_TYPES_CATEGORY),
-    ...nodes.filter((n) => n.category !== DATA_TYPES_CATEGORY),
-  ];
-  const types = dataTypesFirst.flatMap((n) =>
-    n.outputs.map((port) => port.type.trim()),
-  );
-  return [...new Set(types)].filter(
-    (type) => type && type !== QUANTUM_REGISTER_TYPE,
-  );
-}
-
-/**
- * Enum types defined in the profile.
- * The names of the enums (without duplicates or empty names).
- */
-function profileEnumTypes(enums: EditableEnumProfile[]): string[] {
-  const types = enums.map((e) => e.name.trim());
-  return [...new Set(types)].filter(Boolean);
-}
-
 function PropertyEditor({
   properties,
+  issues,
   definedEnumTypes,
   deletedEnumTypes,
   onChange,
 }: {
   properties: NodeProfileProperty[];
+  /** Problems of the properties, aligned with properties. */
+  issues: PropertyIssues[];
   definedEnumTypes: string[];
   deletedEnumTypes: string[];
   onChange: (props: NodeProfileProperty[]) => void;
@@ -395,10 +356,14 @@ function PropertyEditor({
               </label>
 
               <input
-                className="w-full border rounded px-1 py-0.5 text-xs"
+                className={`w-full border rounded px-1 py-0.5 text-xs ${errorInputClass(
+                  issues[idx]?.name,
+                )}`}
                 value={prop.name}
                 onChange={(e) => updateProperty(idx, "name", e.target.value)}
               />
+
+              <ErrorText error={issues[idx]?.name} />
             </div>
 
             <div>
@@ -408,9 +373,7 @@ function PropertyEditor({
 
               <select
                 className={`w-full border rounded px-1 py-0.5 text-xs ${
-                  deletedEnumTypes.includes(prop.type)
-                    ? "border-red-500 bg-red-50"
-                    : "bg-white"
+                  errorInputClass(issues[idx]?.type) || "bg-white"
                 }`}
                 value={prop.type}
                 onChange={(e) => updateProperty(idx, "type", e.target.value)}
@@ -448,11 +411,7 @@ function PropertyEditor({
                   ))}
               </select>
 
-              {deletedEnumTypes.includes(prop.type) && (
-                <span className="block text-[10px] text-red-600 mt-0.5">
-                  Enum was deleted
-                </span>
-              )}
+              <ErrorText error={issues[idx]?.type} />
             </div>
           </div>
 
@@ -483,24 +442,21 @@ function PropertyEditor({
 
 function ConstraintEditor({
   constraints,
-  availableProperties,
+  propertyOptions,
+  issues,
+  warnings,
   onChange,
 }: {
   constraints: NodeProfileConstraint[];
-  availableProperties: NodeProfileProperty[];
+  /** Properties a constraint can refer to (see constraintTargets). */
+  propertyOptions: string[];
+  /** Problems of the constraints, aligned with constraints. */
+  issues: (string | null)[];
+  /** Warnings of the constraints, aligned with constraints. */
+  warnings: (string | null)[];
   onChange: (props: NodeProfileConstraint[]) => void;
 }) {
   const constraintOptions = ["==", "!=", "<", ">", "<=", ">="];
-
-  const propertyOptions = (availableProperties || []).flatMap((prop) => {
-    const base = [prop.name];
-
-    if (prop.type.toLowerCase().includes("array") || prop.type.includes("[]")) {
-      base.push(`length(${prop.name})`);
-    }
-
-    return base;
-  });
 
   const addConstraint = () => {
     onChange([
@@ -538,7 +494,13 @@ function ConstraintEditor({
         return (
           <div
             key={idx}
-            className="p-2 border rounded bg-gray-50 relative group"
+            className={`p-2 border rounded relative group ${
+              issues[idx]
+                ? "border-red-500 bg-red-50"
+                : warnings[idx]
+                  ? "border-amber-500 bg-amber-50"
+                  : "bg-gray-50"
+            }`}
           >
             <button
               type="button"
@@ -568,6 +530,7 @@ function ConstraintEditor({
                       {opt}
                     </option>
                   ))}
+
                 </select>
               </div>
 
@@ -608,6 +571,18 @@ function ConstraintEditor({
                 />
               </div>
             </div>
+
+            {issues[idx] && (
+              <span className="block text-[10px] text-red-600 mt-1 text-left">
+                {issues[idx]}
+              </span>
+            )}
+
+            {!issues[idx] && warnings[idx] && (
+              <span className="block text-[10px] text-amber-700 mt-1 text-left">
+                {warnings[idx]}
+              </span>
+            )}
           </div>
         );
       })}
@@ -728,18 +703,24 @@ function PortEditor({
   category,
   addLabel,
   duplicateNames,
+  issues,
+  listError,
+  listWarning,
   definedTypes,
-  checkDefined = false,
   onChange,
 }: {
   ports: NodeProfilePort[];
   category: string;
   addLabel: string;
   duplicateNames: Set<string>;
+  /** Problems of the ports, aligned with ports. */
+  issues: PortIssues[];
+  /** Error of the ports as a whole (e.g. none defined). */
+  listError?: string | null;
+  /** Warning of the ports as a whole (e.g. none defined). */
+  listWarning?: string | null;
   /** Types defined in the profile (output types of its blocks), offered as types. */
   definedTypes: string[];
-  /** Hint at a classical type that no block of the profile outputs (for inputs). */
-  checkDefined?: boolean;
   onChange: (ports: NodeProfilePort[]) => void;
 }) {
   // only quantum operators can mix quantum and classical ports
@@ -752,16 +733,6 @@ function PortEditor({
           ...definedTypes,
           ...PROPERTY_TYPES.filter((t) => !definedTypes.includes(t)),
         ];
-  const isUndefinedType = (port: NodeProfilePort) => {
-    const type = port.type.trim();
-    return (
-      checkDefined &&
-      port.kind === "classical" &&
-      type !== "" &&
-      !definedTypes.includes(type) &&
-      !PROPERTY_TYPES.some((t) => t.toLowerCase() === type.toLowerCase())
-    );
-  };
 
   const addPort = () => {
     const kind = defaultPortKind(category);
@@ -788,6 +759,16 @@ function PortEditor({
       ...newPorts[index],
       [field]: value,
     };
+
+    if (field === "kind") {
+      const { type } = newPorts[index];
+      newPorts[index].type =
+        value === "quantum"
+          ? QUANTUM_REGISTER_TYPE
+          : type === QUANTUM_REGISTER_TYPE
+            ? ""
+            : type;
+    }
 
     onChange(newPorts);
   };
@@ -822,20 +803,22 @@ function PortEditor({
               </label>
 
               <input
-                className={`w-full border rounded px-1 py-0.5 text-xs ${
+                className={`w-full border rounded px-1 py-0.5 text-xs ${errorInputClass(
                   duplicateNames.has(port.name.trim())
-                    ? "border-red-500 bg-red-50"
-                    : ""
-                }`}
+                    ? "Name must be unique"
+                    : issues[idx]?.name,
+                )}`}
                 value={port.name}
                 onChange={(e) => updatePort(idx, "name", e.target.value)}
               />
 
-              {duplicateNames.has(port.name.trim()) && (
-                <span className="block text-[10px] text-red-600 mt-0.5">
-                  Name must be unique
-                </span>
-              )}
+              <ErrorText
+                error={
+                  duplicateNames.has(port.name.trim())
+                    ? "Name must be unique"
+                    : issues[idx]?.name
+                }
+              />
             </div>
 
             <div>
@@ -845,20 +828,16 @@ function PortEditor({
 
               {/* a type of the profile, or a new one */}
               <input
-                className={`w-full border rounded px-1 py-0.5 text-xs ${
-                  isUndefinedType(port) ? "border-amber-500 bg-amber-50" : ""
-                }`}
+                className={`w-full border rounded px-1 py-0.5 text-xs ${errorInputClass(
+                  issues[idx]?.type,
+                )}`}
                 list={`${listId}-${port.kind}`}
                 placeholder="Select or type..."
                 value={port.type}
                 onChange={(e) => updatePort(idx, "type", e.target.value)}
               />
 
-              {isUndefinedType(port) && (
-                <span className="block text-[10px] text-amber-700 mt-0.5">
-                  No block of this profile outputs this type
-                </span>
-              )}
+              <ErrorText error={issues[idx]?.type} />
             </div>
           </div>
 
@@ -889,6 +868,10 @@ function PortEditor({
           </div>
         </div>
       ))}
+
+      <ErrorText error={listError} />
+
+      <WarningText warning={listWarning} />
 
       <button
         type="button"
@@ -1476,24 +1459,10 @@ export default function DomainProfileTableModal({
     onClose();
   };
 
-  const portNameDuplicates = localNodes.map(findDuplicatePortNames);
-
   // types defined in the profile, offered for the inputs and outputs
   const definedTypes = profileTypes(localNodes);
 
   const definedEnumTypes = profileEnumTypes(localEnums);
-
-  const hasDuplicatePortNames = portNameDuplicates.some(
-    (duplicates) => duplicates.size > 0,
-  );
-
-  const enumNameDuplicates = findDuplicates(
-    localEnums.map((domainEnum) => domainEnum.name),
-  );
-
-  const enumValueDuplicates = localEnums.map((domainEnum) =>
-    findDuplicates(domainEnum.values),
-  );
 
   // an enum is used as a type, so its name must not be a type already
   const existingTypes = [
@@ -1502,49 +1471,19 @@ export default function DomainProfileTableModal({
     ...definedTypes,
   ];
 
-  const enumNameError = (name: string) => {
-    const trimmed = name.trim();
+  const validation: DomainProfileValidation = validateDomainProfile({
+    profileName,
+    otherProfileNames: profiles
+      .filter((_, index) => index !== editingProfileIndex)
+      .map((profile) => profile.name),
+    nodes: localNodes,
+    enums: localEnums,
+    removedEnumNames,
+  });
 
-    if (!trimmed) return "Name must not be empty";
+  const { deletedEnumTypes } = validation;
 
-    if (enumNameDuplicates.has(trimmed)) return "Name must be unique";
-
-    if (existingTypes.includes(trimmed)) return "Name is already a type";
-
-    return null;
-  };
-
-  const invalidEnums = localEnums.filter(
-    (domainEnum, i) =>
-      enumNameError(domainEnum.name) ||
-      domainEnum.values.length === 0 ||
-      domainEnum.values.some((value) => !value.trim()) ||
-      enumValueDuplicates[i].size > 0,
-  );
-
-  const hasInvalidEnums = invalidEnums.length > 0;
-
-  // a deleted name can be used for another (added or renamed) enum
-  const deletedEnumTypes = removedEnumNames.filter(
-    (name) =>
-      !localEnums.some((domainEnum) => domainEnum.referencedName === name),
-  );
-
-  // properties use an enum deleted while editing this profile
-  const deletedEnumProperties = localNodes.flatMap((node) =>
-    node.properties
-      .filter((prop) => deletedEnumTypes.includes(prop.type))
-      .map((prop) => ({
-        block: node.label || "unnamed block",
-        property: prop.name || "unnamed property",
-        type: prop.type,
-      })),
-  );
-
-  const hasBlockingErrors =
-    hasDuplicatePortNames ||
-    hasInvalidEnums ||
-    deletedEnumProperties.length > 0;
+  const hasBlockingErrors = validation.errors.length > 0;
 
   const saveProfile = () => {
     if (hasBlockingErrors) return;
@@ -1988,18 +1927,24 @@ export default function DomainProfileTableModal({
                       Domain Profile Name
                     </span>
 
-                    <input
-                      className="border rounded-md px-3 py-2 text-sm bg-white min-w-[240px] focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      value={profileName}
-                      placeholder="Insert name..."
-                      onChange={(e) => {
-                        setProfileName(e.target.value);
+                    <div>
+                      <input
+                        className={`border rounded-md px-3 py-2 text-sm bg-white min-w-[240px] focus:outline-none focus:ring-2 focus:ring-blue-500 ${errorInputClass(
+                          validation.profileName,
+                        )}`}
+                        value={profileName}
+                        placeholder="Insert name..."
+                        onChange={(e) => {
+                          setProfileName(e.target.value);
 
-                        if (duplicateWarning) {
-                          setDuplicateWarning(null);
-                        }
-                      }}
-                    />
+                          if (duplicateWarning) {
+                            setDuplicateWarning(null);
+                          }
+                        }}
+                      />
+
+                      <ErrorText error={validation.profileName} />
+                    </div>
                   </div>
 
                   <button
@@ -2122,70 +2067,11 @@ export default function DomainProfileTableModal({
                 </div>
               </section>
 
-              {/* Duplicate input/output names */}
-              {hasDuplicatePortNames && (
-                <div className="rounded-lg border border-red-300 bg-red-50 p-4">
-                  <h3 className="text-sm font-semibold text-red-900">
-                    Input and output names must be unique
-                  </h3>
+              {/* Problems that block saving */}
+              <IssueList issues={validation.errors} />
 
-                  <p className="mt-1 text-sm text-red-800">
-                    Rename the duplicates in{" "}
-                    {localNodes
-                      .filter((_, i) => portNameDuplicates[i].size > 0)
-                      .map((node, i) => (
-                        <span key={i}>
-                          {i > 0 && ", "}
-                          <strong>{node.label || "unnamed block"}</strong>
-                        </span>
-                      ))}{" "}
-                    before saving.
-                  </p>
-                </div>
-              )}
-
-              {/* Invalid enums */}
-              {hasInvalidEnums && (
-                <div className="rounded-lg border border-red-300 bg-red-50 p-4">
-                  <h3 className="text-sm font-semibold text-red-900">
-                    Enums need a unique name and unique, non-empty values
-                  </h3>
-
-                  <p className="mt-1 text-sm text-red-800">
-                    Fix the marked fields in{" "}
-                    {invalidEnums.map((domainEnum, i) => (
-                      <span key={domainEnum.id}>
-                        {i > 0 && ", "}
-                        <strong>{domainEnum.name.trim() || "unnamed enum"}</strong>
-                      </span>
-                    ))}{" "}
-                    before saving.
-                  </p>
-                </div>
-              )}
-
-              {/* Properties using a deleted enum */}
-              {deletedEnumProperties.length > 0 && (
-                <div className="rounded-lg border border-red-300 bg-red-50 p-4">
-                  <h3 className="text-sm font-semibold text-red-900">
-                    Properties use a deleted enum
-                  </h3>
-
-                  <p className="mt-1 text-sm text-red-800">
-                    Choose another type for{" "}
-                    {deletedEnumProperties.map((missing, i) => (
-                      <span key={i}>
-                        {i > 0 && ", "}
-                        <strong>
-                          {missing.block}: {missing.property}
-                        </strong>{" "}
-                        ({missing.type})
-                      </span>
-                    ))}{" "}
-                    before saving.
-                  </p>
-                </div>
-              )}
+              {/* Hints that do not block saving */}
+              <IssueList issues={validation.warnings} warning />
 
               {/* Duplicate warning */}
               {duplicateWarning && (
@@ -2293,12 +2179,16 @@ export default function DomainProfileTableModal({
                             {/* Name */}
                             <td className="p-2 border">
                               <input
-                                className="w-full border rounded px-2 py-1 text-sm"
+                                className={`w-full border rounded px-2 py-1 text-sm ${errorInputClass(
+                                  validation.blocks[idx].name,
+                                )}`}
                                 value={node.label}
                                 onChange={(e) =>
                                   updateNode(idx, "label", e.target.value)
                                 }
                               />
+
+                              <ErrorText error={validation.blocks[idx].name} />
                             </td>
 
                             {/* Icon */}
@@ -2357,7 +2247,10 @@ export default function DomainProfileTableModal({
                                 onChange={(e) =>
                                   updateNode(idx, "category", e.target.value)
                                 }
-                                className="border rounded px-2 py-1 bg-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className={`border rounded px-2 py-1 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                  errorInputClass(validation.blocks[idx].category) ||
+                                  "bg-white"
+                                }`}
                               >
                                 <option value="" disabled>
                                   Choose a category...
@@ -2375,6 +2268,8 @@ export default function DomainProfileTableModal({
                                   Classical Operator
                                 </option>
                               </select>
+
+                              <ErrorText error={validation.blocks[idx].category} />
                             </td>
 
                             {/* Inputs */}
@@ -2384,9 +2279,11 @@ export default function DomainProfileTableModal({
                                   ports={node.inputs}
                                   category={node.category}
                                   addLabel="Add Input"
-                                  duplicateNames={portNameDuplicates[idx]}
+                                  duplicateNames={
+                                    validation.blocks[idx].duplicatePortNames
+                                  }
+                                  issues={validation.blocks[idx].inputPorts}
                                   definedTypes={definedTypes}
-                                  checkDefined
                                   onChange={(newInputs) =>
                                     updateNode(idx, "inputs", newInputs)
                                   }
@@ -2404,7 +2301,12 @@ export default function DomainProfileTableModal({
                                 ports={node.outputs}
                                 category={node.category}
                                 addLabel="Add Output"
-                                duplicateNames={portNameDuplicates[idx]}
+                                duplicateNames={
+                                  validation.blocks[idx].duplicatePortNames
+                                }
+                                issues={validation.blocks[idx].outputPorts}
+                                listError={validation.blocks[idx].outputs}
+                                listWarning={validation.blocks[idx].outputsWarning}
                                 definedTypes={definedTypes}
                                 onChange={(newOutputs) =>
                                   updateNode(idx, "outputs", newOutputs)
@@ -2416,6 +2318,7 @@ export default function DomainProfileTableModal({
                             <td className="p-2 border text-center">
                               <PropertyEditor
                                 properties={node.properties || []}
+                                issues={validation.blocks[idx].properties}
                                 definedEnumTypes={definedEnumTypes}
                                 deletedEnumTypes={deletedEnumTypes}
                                 onChange={(newProperties) =>
@@ -2429,9 +2332,14 @@ export default function DomainProfileTableModal({
                               {/* an enum already restricts the values, so exclude it from constraints */}
                               <ConstraintEditor
                                 constraints={node.constraints || []}
-                                availableProperties={(node.properties || []).filter(
-                                  (prop) => !definedEnumTypes.includes(prop.type),
+                                propertyOptions={constraintTargets(
+                                  node.properties || [],
+                                  definedEnumTypes,
                                 )}
+                                issues={validation.blocks[idx].constraints}
+                                warnings={
+                                  validation.blocks[idx].constraintWarnings
+                                }
                                 onChange={(newConstraints) =>
                                   updateNode(idx, "constraints", newConstraints)
                                 }
@@ -2512,7 +2420,7 @@ export default function DomainProfileTableModal({
                             <td className="p-2 border">
                               <input
                                 className={`w-full border rounded px-2 py-1 text-sm ${
-                                  enumNameError(domainEnum.name)
+                                  validation.enums[idx].name
                                     ? "border-red-500 bg-red-50"
                                     : ""
                                 }`}
@@ -2522,9 +2430,9 @@ export default function DomainProfileTableModal({
                                 }
                               />
 
-                              {enumNameError(domainEnum.name) && (
+                              {validation.enums[idx].name && (
                                 <span className="block text-[10px] text-red-600 mt-0.5">
-                                  {enumNameError(domainEnum.name)}
+                                  {validation.enums[idx].name}
                                 </span>
                               )}
                             </td>
@@ -2534,7 +2442,7 @@ export default function DomainProfileTableModal({
                             <td className="p-2 border">
                               <ValuesEditor
                                 values={domainEnum.values}
-                                duplicateValues={enumValueDuplicates[idx]}
+                                duplicateValues={validation.enums[idx].duplicateValues}
                                 onChange={(values) =>
                                   updateEnum(idx, "values", values)
                                 }
