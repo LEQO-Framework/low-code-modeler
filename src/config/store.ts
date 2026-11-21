@@ -351,8 +351,11 @@ export const useStore = create<RFState>()(
               mapPluginTypeToInternal(input.data_type ?? "any"),
             );
           } else if (type.includes("editable")) {
-            const inputTypes = node.data.properties.map((p) => p.type);
-            return inputTypes;
+            // legacy nodes use their properties as inputs
+            const isLegacyOperator =
+              !node.data?.isDataType && !Array.isArray(node.data?.inputPorts);
+            return (isLegacyOperator ? node.data.properties || [] : node.data.inputPorts || [])
+              .map((p: any) => p?.type ?? "any");
           }
 
           return []; // Default empty
