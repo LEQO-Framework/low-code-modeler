@@ -16,7 +16,6 @@ import ReactFlow, {
   useUpdateNodeInternals,
   SelectionMode,
   Connection,
-  MarkerType,
   applyNodeChanges,
   NodeChange,
   XYPosition,
@@ -89,7 +88,6 @@ import {
   Template,
 } from "./components/panels/categories";
 import { ManageTemplateModal } from "./components/modals/templateModal";
-import { v4 as uuid } from "uuid";
 import DomainProfileModal, {
   DomainProfile,
 } from "./components/modals/domainProfileModal";
