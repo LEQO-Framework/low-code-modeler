@@ -637,7 +637,7 @@ export const categories: Record<string, CategoryEntry> = {
             description:
               "Generates a parameterized Quantum Approximate Optimization Algorithm (QAOA) circuit for a given graph.",
             completionGuaranteed: true,
-            compactOptions: [false],
+            compactOptions: [false, true],
             data: {
               label: "QAOA Ansatz",
               p: 1,

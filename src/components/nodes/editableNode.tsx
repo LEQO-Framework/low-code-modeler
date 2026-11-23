@@ -3,6 +3,7 @@ import { Handle, Position, Node, useUpdateNodeInternals } from "reactflow";
 import { useStore } from "@/config/store";
 import { shallow } from "zustand/shallow";
 import OutputPort from "../utils/outputPort";
+import { AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { classicalConstructColor, quantumConstructColor } from "@/constants";
 import { awareness } from "@/yjs";
@@ -79,6 +80,29 @@ export const EditableNode = memo((node: Node) => {
   const [outputs, setOutputs] = useState(data.outputs || []);
   const [outputIdentifierError, setOutputIdentifierError] = useState(false);
   const [sizeError, setSizeError] = useState(false);
+
+  // Keep the local copy in sync when the store changes it from outside this
+  // component, e.g. on undo/redo; otherwise the inputs show stale identifiers.
+  useEffect(() => {
+    setOutputs(data.outputs || []);
+  }, [data.outputs]);
+
+  // outputIdentifierError also covers identifiers starting with a digit
+  // (see hasOutputIdentifierError), so pick the matching message.
+  const identifierStartsWithDigit = [
+    data.outputIdentifier,
+    ...outputs.map((output: any) => output?.identifier),
+  ].some((identifier) => /^\d/.test(identifier ?? ""));
+  const identifierWarning = outputIdentifierError && (
+    <div className="absolute top-2 right-[-40px] group z-20">
+      <AlertCircle className="text-red-600 w-5 h-5" />
+      <div className="absolute top-5 left-[25px] z-10 bg-white text-xs text-red-600 border border-red-400 px-3 py-1 rounded shadow min-w-[150px] whitespace-nowrap">
+        {identifierStartsWithDigit
+          ? "Identifier must not start with a number"
+          : "Identifier is not unique"}
+      </div>
+    </div>
+  );
 
   useEffect(() => {
     updateNodeInternals(node.id);
@@ -251,6 +275,7 @@ export const EditableNode = memo((node: Node) => {
   if (isDataType) {
     return (
       <div className="relative w-[450px]">
+        {identifierWarning}
         <div
           className={
             "relative w-full min-h-[300px] rounded-[80px] bg-white shadow-md border"
@@ -298,6 +323,7 @@ export const EditableNode = memo((node: Node) => {
 
   return (
     <div className="relative w-[320px]">
+      {identifierWarning}
       <div
         className="w-full bg-white border border-solid shadow-md"
         style={{

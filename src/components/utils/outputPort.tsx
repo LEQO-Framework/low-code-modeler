@@ -75,6 +75,18 @@ export default function OutputPort({
   const outputSize = outputs[index]?.size || "";
   const isConnected = edges.some((edge) => edge.sourceHandle === handleId);
 
+  // Re-validate whenever any node changes, not only when this node's identifier
+  // is edited. Otherwise a node keeps (or never gets) the "not unique" warning
+  // when the identifier of the *other* node involved in the conflict changes.
+  // Only the first port validates, since all ports of a node share one error flag.
+  useEffect(() => {
+    if (index !== 0) return;
+    const storeOutputs = nodes.find((n) => n.id === node.id)?.data?.outputs;
+    setOutputIdentifierError(
+      hasOutputIdentifierError(nodes, node.id, storeOutputs ?? outputs),
+    );
+  }, [nodes, node.id, outputs, index]);
+
   // Handle numeric size change and validation
   const handleYChange = (value: string, field: string) => {
     const trimmedValue = value.trim();
@@ -85,8 +97,8 @@ export default function OutputPort({
     const isCustomNode =
       node.type === "algorithmNode" || node.type === "classicalAlgorithmNode";
     if (!isCustomNode) {
-      node.data[field] = value;
       updateNodeValue(node.id, field, trimmedValue === "" ? "" : num);
+      node.data[field] = value;
     }
     setSelectedNode(node);
   };
@@ -221,9 +233,9 @@ export default function OutputPort({
         size: "2",
       };
       setOutputs(updatedOutputs);
-      node.data.outputs = updatedOutputs;
       updateNodeValue(node.id, "size", "2");
       updateNodeValue(node.id, "outputs", updatedOutputs);
+      node.data.outputs = updatedOutputs;
       setSelectedNode(node);
       wasBellState.current = true;
     } else if (wasBellState.current && node.data.label === "Prepare State") {
@@ -232,9 +244,9 @@ export default function OutputPort({
         size: "",
       };
       setOutputs(updatedOutputs);
-      node.data.outputs = updatedOutputs;
       updateNodeValue(node.id, "size", "");
       updateNodeValue(node.id, "outputs", updatedOutputs);
+      node.data.outputs = updatedOutputs;
       setSelectedNode(node);
       wasBellState.current = false;
     }
@@ -315,8 +327,8 @@ export default function OutputPort({
 
               // Sync states locally and over global Zustand store room pipeline
               setOutputs(updatedOutputs);
-              node.data.outputs = updatedOutputs;
               updateNodeValue(node.id, "outputs", updatedOutputs);
+              node.data.outputs = updatedOutputs;
               setSelectedNode(node);
 
               // Perform logic validation rules
@@ -374,8 +386,8 @@ export default function OutputPort({
 
               // Sync states and push updates across CRDT network layer
               setOutputs(updatedOutputs);
-              node.data.outputs = updatedOutputs;
               updateNodeValue(node.id, "outputs", updatedOutputs);
+              node.data.outputs = updatedOutputs;
               setSelectedNode(node);
             }}
           />
@@ -419,6 +431,36 @@ export default function OutputPort({
   );
 }
 
+/**
+ * True if one of the node's output identifiers starts with a digit, is used by
+ * another node, or occurs twice within the node. Same rules as
+ * handleOutputIdentifierChange, but evaluated for the current state of all nodes.
+ */
+export function hasOutputIdentifierError(
+  nodes: Node[],
+  nodeId: string,
+  outputs: any[],
+): boolean {
+  const currentNode = nodes.find((n) => n.id === nodeId);
+  const identifiers = new Set<string>(
+    [
+      currentNode?.data?.outputIdentifier,
+      ...(outputs ?? []).map((output) => output?.identifier),
+    ].filter((id): id is string => typeof id === "string" && id !== ""),
+  );
+
+  for (const identifier of identifiers) {
+    if (
+      /^\d/.test(identifier) ||
+      !isUniqueIdentifier(nodes, identifier, nodeId) ||
+      findDuplicateOutputIdentifiersInsideNode(nodes, currentNode, identifier)
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export function handleOutputIdentifierChange({
   e,
   node,
@@ -435,8 +477,9 @@ export function handleOutputIdentifierChange({
   setOutputIdentifierError: (error: boolean) => void;
 }) {
   const value = e.target.value;
-  node.data["outputIdentifier"] = value;
+  // update the store first: it snapshots the previous state for undo
   updateNodeValue(node.id, "outputIdentifier", value);
+  node.data["outputIdentifier"] = value;
   const selectedNode = nodes.find((n) => n.id === node.id);
 
   if (

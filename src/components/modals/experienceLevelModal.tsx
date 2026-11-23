@@ -142,7 +142,7 @@ export default function ExperienceModePanel({
                   <button
                     onClick={onCompactVisualizationChange}
                     className={`px-2 py-1 rounded text-white ${
-                      compactVisualization || experienceLevel === "pioneer"
+                      compactVisualization
                         ? "bg-blue-600"
                         : "bg-gray-400"
                     }`}

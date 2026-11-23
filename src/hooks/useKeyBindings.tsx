@@ -40,12 +40,16 @@ export default function useKeyBindings({
       const ctrlOrMeta = e.ctrlKey || e.metaKey; // CtrlKey Windows/Linux, MetaKey Mac
 
       switch (true) {
-        case ctrlOrMeta && key === "z": {
-          undo();
+        // preventDefault: otherwise the browser also handles the shortcut
+        case ctrlOrMeta && e.shiftKey && key === "z":
+        case ctrlOrMeta && key === "y": {
+          e.preventDefault();
+          redo();
           break;
         }
-        case ctrlOrMeta && key === "y": {
-          redo();
+        case ctrlOrMeta && key === "z": {
+          e.preventDefault();
+          undo();
           break;
         }
         case ctrlOrMeta && key === "c": {

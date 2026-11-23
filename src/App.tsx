@@ -16,7 +16,6 @@ import ReactFlow, {
   useUpdateNodeInternals,
   SelectionMode,
   Connection,
-  MarkerType,
   applyNodeChanges,
   NodeChange,
   XYPosition,
@@ -89,7 +88,6 @@ import {
   Template,
 } from "./components/panels/categories";
 import { ManageTemplateModal } from "./components/modals/templateModal";
-import { v4 as uuid } from "uuid";
 import DomainProfileModal, {
   DomainProfile,
 } from "./components/modals/domainProfileModal";
@@ -532,14 +530,23 @@ function App() {
   }>({});
   const [myClientId, setMyClientId] = useState<number | null>(null);
 
+  // The context menu is absolutely positioned inside the canvas wrapper
+  // (relative), so window coordinates must be converted to wrapper coordinates.
+  const toContextMenuPosition = (clientX: number, clientY: number) => {
+    const bounds = reactFlowWrapper.current?.getBoundingClientRect();
+    return {
+      top: clientY - (bounds?.top ?? 0),
+      left: clientX - (bounds?.left ?? 0),
+    };
+  };
+
   const onNodeContextMenu = useCallback(
     (event: React.MouseEvent, node: Node) => {
       event.preventDefault();
       setContextMenu({
         visible: true,
         componentId: node.id,
-        top: event.clientY,
-        left: event.clientX,
+        ...toContextMenuPosition(event.clientX, event.clientY),
       });
     },
     [],
@@ -551,8 +558,7 @@ function App() {
       setContextMenu({
         visible: true,
         componentId: edge.id,
-        top: event.clientY,
-        left: event.clientX,
+        ...toContextMenuPosition(event.clientX, event.clientY),
       });
     },
     [],
@@ -3052,8 +3058,7 @@ If none apply, return { "algorithms": [] }.
         console.log("moving context menu for node", node.id);
         setContextMenu((prev) => ({
           ...prev,
-          left: evt.clientX,
-          top: evt.clientY,
+          ...toContextMenuPosition(evt.clientX, evt.clientY),
         }));
       }
     },
@@ -3887,42 +3892,17 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     console.log("Profile saved:", newProfile);
   };
 
-  const handleDeleteDomainProfile = (index: number) => {
-    const profileToDelete = allDomainProfiles[index];
-    if (!profileToDelete) {
-      return;
-    }
-
-    const confirmed = window.confirm(
-      `Delete domain profile "${profileToDelete.name}"?`,
-    );
-    if (!confirmed) {
-      return;
-    }
-
-    const updatedProfiles = allDomainProfiles.filter(
-      (_, profileIndex) => profileIndex !== index,
-    );
+  // Applies deletions / reordering made in the "Saved Profiles" tab.
+  const handleSaveDomainProfileList = (updatedProfiles: DomainProfile[]) => {
+    const activeProfileDeleted =
+      allDomainProfiles.some((profile) => profile.name === domainProfile) &&
+      !updatedProfiles.some((profile) => profile.name === domainProfile);
     setAllDomainProfiles(updatedProfiles);
 
-    if (domainProfile === profileToDelete.name) {
+    // The active profile was deleted: fall back to the first remaining one
+    if (activeProfileDeleted) {
       setDomainProfile(updatedProfiles[0]?.name ?? "standard");
     }
-
-    if (editingDomainProfileIndex === index) {
-      closeDomainProfileEditor();
-    }
-  };
-
-  const handleReorderDomainProfiles = (fromIndex: number, toIndex: number) => {
-    if (fromIndex === toIndex) {
-      return;
-    }
-
-    const nextProfiles = [...allDomainProfiles];
-    const [movedProfile] = nextProfiles.splice(fromIndex, 1);
-    nextProfiles.splice(toIndex, 0, movedProfile);
-    setAllDomainProfiles(nextProfiles);
   };
 
   const handleDuplicateDomainProfile = (index: number) => {
@@ -4830,8 +4810,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
         console.log("drag contextmenu to nodeid: ", node.id);
         setContextMenu((prev) => ({
           ...prev,
-          top: event.clientY,
-          left: event.clientX,
+          ...toContextMenuPosition(event.clientX, event.clientY),
         }));
       } else {
         setContextMenu((prev) => ({ ...prev, visible: false }));
@@ -5497,48 +5476,21 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
 
   const onConnectSync = useCallback(
     (params: Connection) => {
-      console.log(params);
-      let type = "classicalEdge";
-      let color = "#F5A843"; // default classical color
-
-      // Quantum edge
-      if (
-        (params.sourceHandle.includes("quantumHandle") ||
-          params.sourceHandle.includes("sideQuantumHandle")) &&
-        params.targetHandle.includes("quantumHandle")
-      ) {
-        type = "quantumEdge";
-        color = "#93C5FD";
-      }
-
-      // Ancilla edge
-      if (
-        (params.sourceHandle.includes("ancilla") ||
-          params.sourceHandle.includes("dirtyAncilla")) &&
-        (params.targetHandle.includes("ancilla") ||
-          params.targetHandle.includes("dirtyAncilla"))
-      ) {
-        type = "ancillaEdge";
-        color = "#86EFAC";
-      }
-
-      const edge: Edge = {
-        ...params,
-        id: uuid(),
-        type,
-        markerEnd: {
-          type: MarkerType.ArrowClosed,
-          width: 20,
-          height: 20,
-          color: color,
-        },
-        style: { stroke: color },
-      };
-
-      // 1. Update local Zustand store (your existing store logic)
+      // 1. Update local Zustand store. onConnect runs all validation
+      //    (type checks, qubit vs. classical ports, cycles, ...) and only adds
+      //    the edge if the connection is valid.
+      const edgeIdsBefore = new Set(
+        useStore.getState().edges.map((e: Edge) => e.id),
+      );
       onConnect(params);
+      const edge = useStore
+        .getState()
+        .edges.find((e: Edge) => !edgeIdsBefore.has(e.id));
 
-      // 2. Save edge to Yjs shared map
+      // Connection was rejected: the error is shown, nothing must be synced.
+      if (!edge) return;
+
+      // 2. Save the edge accepted by the store to the Yjs shared map
       edgesMap.set(edge.id, edge);
       // get user name (from cursors) for history
       //const userName = cursors[myClientId]?.name || "unknown";
@@ -5848,8 +5800,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
         onEditProfile={(index) =>
           openDomainProfileEditor(allDomainProfiles[index] ?? null, index)
         }
-        onDeleteProfile={handleDeleteDomainProfile}
-        onReorderProfiles={handleReorderDomainProfiles}
+        onSaveProfiles={handleSaveDomainProfileList}
         onDuplicateProfile={handleDuplicateDomainProfile}
       />
 
