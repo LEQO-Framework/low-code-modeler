@@ -43,7 +43,9 @@ export function detectImplementationLanguage(
     return "qasm";
   }
   // the annotations are comments, but are also accepted without "#" at line start
-  if (/#\s*@(input|output)\b|^\s*@(input|output)\b/m.test(code))
+  if (
+    /#\s*@(input|output|property)\b|^\s*@(input|output|property)\b/m.test(code)
+  )
     return "python";
   if (
     /^\s*(import\s+\w|from\s+[\w.]+\s+import\b|def\s+\w+\s*\(|class\s+\w+)/m.test(
@@ -201,14 +203,28 @@ export const startCompile = async (
 
     if (node.data.implementation) {
       const language = implementationLanguage(node);
+      const isPython = language === "python";
       const requirements = String(node.data.requirements ?? "").trim();
+      const environment = String(node.data.environment ?? "").trim();
+      // editable nodes store their property values by name (other nodes as list)
+      const propertyValues =
+        node.data.propertyValues && !Array.isArray(node.data.propertyValues)
+          ? node.data.propertyValues
+          : {};
       return {
         id: node.id,
         type: "implementation",
+        label: node.data.label,
         implementation: node.data.implementation,
         language,
         // pip requirements of a python implementation (uploaded or entered)
-        ...(language === "python" && requirements ? { requirements } : {}),
+        ...(isPython && requirements ? { requirements } : {}),
+        // environment variables of the service container (.env lines)
+        ...(isPython && environment ? { environment } : {}),
+        // values of the @property variables, the others become workflow variables
+        ...(isPython && Object.keys(propertyValues).length > 0
+          ? { propertyValues }
+          : {}),
       };
     }
 

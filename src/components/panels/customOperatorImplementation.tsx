@@ -18,7 +18,8 @@ import {
 
 /**
  * How a custom (quantum or classical) operator is implemented:
- * - "file": an uploaded implementation file plus an optional requirements file
+ * - "file": an uploaded implementation file plus optional requirements and
+ *   environment variables (.env) of the service container
  * - "api": an external service that is called via HTTP (API connector)
  */
 export type ImplementationMode = "file" | "api";
@@ -51,18 +52,18 @@ export const CustomOperatorImplementation = ({
   const updateConnector = (changes: Partial<ApiConnector>) =>
     updateField("apiConnector", { ...connector, ...changes });
 
-  const handleRequirementsUpload = (
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      updateField("requirements", (e.target?.result as string) ?? "");
-      updateField("requirementsFileName", file.name);
+  /** Reads an uploaded text file into the field and remembers its name. */
+  const handleTextUpload =
+    (field: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        updateField(field, (e.target?.result as string) ?? "");
+        updateField(`${field}FileName`, file.name);
+      };
+      reader.readAsText(file);
     };
-    reader.readAsText(file);
-  };
 
   return (
     <div className="p-2 mt-3 border border-gray-200 rounded-md bg-gray-50">
@@ -104,7 +105,7 @@ export const CustomOperatorImplementation = ({
               type="file"
               id="requirementsFile"
               accept=".txt,text/plain"
-              onChange={handleRequirementsUpload}
+              onChange={handleTextUpload("requirements")}
               className={inputClass}
             />
           </div>
@@ -123,6 +124,40 @@ export const CustomOperatorImplementation = ({
             onChange={(e) => updateField("requirements", e.target.value)}
             className={`${inputClass} h-24 font-mono text-xs`}
             placeholder={"numpy==1.26.4\nqiskit>=1.0"}
+          />
+
+          <label className={`${labelClass} mt-3`} htmlFor="environmentFile">
+            Upload Environment File
+          </label>
+          <p className="text-xs text-gray-500 mt-1">
+            Environment variables of the service container (NAME=VALUE lines,
+            e.g. a .env file), read in the code with os.environ. They are
+            stored in the deployment model, so do not use them for secrets.
+          </p>
+          <div className="mt-1">
+            <input
+              type="file"
+              id="environmentFile"
+              accept=".env,.txt,text/plain"
+              onChange={handleTextUpload("environment")}
+              className={inputClass}
+            />
+          </div>
+          {selectedNode.data.environmentFileName && (
+            <div className="mt-1 text-xs text-gray-500">
+              File: {selectedNode.data.environmentFileName}
+            </div>
+          )}
+
+          <label className={`${labelClass} mt-2`} htmlFor="environment">
+            Environment Variables
+          </label>
+          <textarea
+            id="environment"
+            value={selectedNode.data.environment ?? ""}
+            onChange={(e) => updateField("environment", e.target.value)}
+            className={`${inputClass} h-24 font-mono text-xs`}
+            placeholder={"API_URL=https://example.org\nSHOTS=1000"}
           />
         </>
       )}
