@@ -9,12 +9,18 @@ interface PatternSelectionModalProps {
     patternName: string,
     solutionJson: any,
   ) => void;
+  /** Pattern Atlas API endpoint of the pattern language (from Configuration). */
+  patternAtlasApiEndpoint: string;
+  /** QC Atlas endpoint (from Configuration). */
+  qcAtlasEndpoint: string;
 }
 
 export const PatternImplementationSelectionModal = ({
   open,
   onClose,
   onConfirm,
+  patternAtlasApiEndpoint,
+  qcAtlasEndpoint,
 }: PatternSelectionModalProps) => {
   const [patterns, setPatterns] = useState<any[]>([]);
   const [collapsedCategories, setCollapsedCategories] = useState<
@@ -25,7 +31,6 @@ export const PatternImplementationSelectionModal = ({
   const [selectedPattern, setSelectedPattern] = useState<any>(null);
   const [selectedSolution, setSelectedSolution] = useState<any>(null);
 
-  const qcAtlasEndpoint = "http://localhost:6626";
 
   // ---------- CATEGORY CONFIG ----------
   const manualCategoryMap: Record<string, string> = {
@@ -73,7 +78,7 @@ export const PatternImplementationSelectionModal = ({
       try {
         // Fetch patterns
         const patternRes = await fetch(
-          "http://localhost:1977/patternatlas/patternLanguages/af7780d5-1f97-4536-8da7-4194b093ab1d/patterns",
+          `${patternAtlasApiEndpoint}/patterns`,
         );
         const patternData = await patternRes.json();
         const allPatterns = patternData._embedded?.patternModels || [];
@@ -142,7 +147,7 @@ export const PatternImplementationSelectionModal = ({
     };
 
     fetchData();
-  }, [open]);
+  }, [open, patternAtlasApiEndpoint, qcAtlasEndpoint]);
 
   // ---------- GROUP & SORT ----------
   const groupedPatterns = patterns.reduce(

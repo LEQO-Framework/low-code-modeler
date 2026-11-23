@@ -5,6 +5,8 @@ export type NodeType = (typeof consts.NodeTypes)[number];
 
 export interface Node {
   label: string;
+  /** Human-readable name shown in the palette; `label` stays the internal key. */
+  displayName?: string;
   type: NodeType;
   dataType?: string;
   icon?: string | string[];
@@ -180,6 +182,7 @@ export const categories: Record<string, CategoryEntry> = {
       "Pauli Gates": [
         {
           label: "I",
+          displayName: "Identity (I)",
           aliases: ["Identity", "Pauli-I", "ID"],
           type: consts.GateNode,
           icon: ["identity.svg", "PaletteIcon_I_Beginner.svg"],
@@ -189,6 +192,7 @@ export const categories: Record<string, CategoryEntry> = {
         },
         {
           label: "X",
+          displayName: "Pauli-X",
           aliases: ["Pauli-X", "NOT"],
           type: consts.GateNode,
           icon: ["pauliX.png", "PaletteIcon_X_Beginner.png"],
@@ -198,6 +202,7 @@ export const categories: Record<string, CategoryEntry> = {
         },
         {
           label: "Y",
+          displayName: "Pauli-Y",
           aliases: ["Pauli-Y"],
           type: consts.GateNode,
           icon: ["pauliY.png", "PaletteIcon_Y_Beginner.png"],
@@ -207,6 +212,7 @@ export const categories: Record<string, CategoryEntry> = {
         },
         {
           label: "Z",
+          displayName: "Pauli-Z",
           aliases: ["Pauli-Z"],
           type: consts.GateNode,
           icon: ["pauliZ.png", "PaletteIcon_Z_Beginner.png"],
@@ -219,6 +225,7 @@ export const categories: Record<string, CategoryEntry> = {
       "Basis Change": [
         {
           label: "H",
+          displayName: "Hadamard (H)",
           aliases: ["Hadamard"],
           type: consts.GateNode,
           icon: ["hadamard.png", "PaletteIcon_Hadamard_Beginner.png"],
@@ -231,6 +238,7 @@ export const categories: Record<string, CategoryEntry> = {
       "Phase Gates": [
         {
           label: "S",
+          displayName: "S (π/2 Phase)",
           aliases: ["π/2 Phase"],
           type: consts.GateNode,
           icon: ["S_palette.png", "PaletteIcon_S_Beginner.png"],
@@ -240,6 +248,7 @@ export const categories: Record<string, CategoryEntry> = {
         },
         {
           label: "SDG",
+          displayName: "S† (S-Dagger)",
           aliases: ["S†"],
           type: consts.GateNode,
           icon: ["SDG_palette.png", "PaletteIcon_SDG_Beginner.png"],
@@ -249,6 +258,7 @@ export const categories: Record<string, CategoryEntry> = {
         },
         {
           label: "T",
+          displayName: "T (π/4 Phase)",
           aliases: ["π/4 Phase"],
           type: consts.GateNode,
           icon: ["t.png", "PaletteIcon_T_Beginner.png"],
@@ -258,6 +268,7 @@ export const categories: Record<string, CategoryEntry> = {
         },
         {
           label: "TDG",
+          displayName: "T† (T-Dagger)",
           aliases: ["T†"],
           type: consts.GateNode,
           icon: ["TDG_palette.png", "PaletteIcon_TDG_Beginner.png"],
@@ -270,6 +281,7 @@ export const categories: Record<string, CategoryEntry> = {
       "Rotation Gates": [
         {
           label: "RX(θ)",
+          displayName: "X-Rotation RX(θ)",
           type: consts.GateNode,
           icon: ["RX_palette.png", "PaletteIcon_RotateX_Beginner.png"],
           description: "X-axis rotation.",
@@ -278,6 +290,7 @@ export const categories: Record<string, CategoryEntry> = {
         },
         {
           label: "RY(θ)",
+          displayName: "Y-Rotation RY(θ)",
           type: consts.GateNode,
           icon: ["RY_palette.png", "PaletteIcon_RotateY_Beginner.png"],
           description: "Y-axis rotation.",
@@ -286,6 +299,7 @@ export const categories: Record<string, CategoryEntry> = {
         },
         {
           label: "RZ(θ)",
+          displayName: "Z-Rotation RZ(θ)",
           type: consts.GateNode,
           icon: ["RZ_palette.png", "PaletteIcon_RotateZ_Beginner.png"],
           description: "Z-axis rotation.",
@@ -294,6 +308,7 @@ export const categories: Record<string, CategoryEntry> = {
         },
         {
           label: "P(λ)",
+          displayName: "Phase P(λ)",
           aliases: ["Phase"],
           icon: ["PaletteIcon_Phase_Beginner.png", "PaletteIcon_Phase_Beginner.png"],
           type: consts.GateNode,
@@ -336,6 +351,7 @@ export const categories: Record<string, CategoryEntry> = {
       "Two-Qubit Gates": [
         {
           label: "CNOT",
+          displayName: "CNOT (Controlled-X)",
           aliases: ["Controlled-X"],
           type: consts.GateNode,
           icon: ["CNOT_palette.png", "PaletteIcon_CNOT_Beginner.png"],
@@ -345,6 +361,7 @@ export const categories: Record<string, CategoryEntry> = {
         },
         {
           label: "CY",
+          displayName: "Controlled-Y (CY)",
           aliases: ["Controlled-Y"],
           type: consts.GateNode,
           icon: ["CY_palette.png", "PaletteIcon_CY_Beginner.png"],
@@ -354,6 +371,7 @@ export const categories: Record<string, CategoryEntry> = {
         },
         {
           label: "CZ",
+          displayName: "Controlled-Z (CZ)",
           aliases: ["Controlled-Z"],
           type: consts.GateNode,
           icon: ["CZ_palette.png", "PaletteIcon_CZ_Beginner.png"],
@@ -371,6 +389,7 @@ export const categories: Record<string, CategoryEntry> = {
         },
         {
           label: "CH",
+          displayName: "Controlled-H (CH)",
           aliases: ["Controlled-H"],
           type: consts.GateNode,
           icon: ["CH_palette.png", "PaletteIcon_CH_Beginner.png"],
@@ -380,6 +399,7 @@ export const categories: Record<string, CategoryEntry> = {
         },
         {
           label: "CRX(θ)",
+          displayName: "Controlled-RX(θ)",
           aliases: ["Controlled-RX(θ)"],
           type: consts.GateNode,
           icon: ["CRX_palette.png", "PaletteIcon_CRX_Beginner.png"],
@@ -389,6 +409,7 @@ export const categories: Record<string, CategoryEntry> = {
         },
         {
           label: "CRY(θ)",
+          displayName: "Controlled-RY(θ)",
           aliases: ["Controlled-RY(θ)"],
           type: consts.GateNode,
           icon: ["CRY_palette.png", "PaletteIcon_CRY_Beginner.png"],
@@ -398,6 +419,7 @@ export const categories: Record<string, CategoryEntry> = {
         },
         {
           label: "CRZ(θ)",
+          displayName: "Controlled-RZ(θ)",
           aliases: ["Controlled-RZ(θ)"],
           type: consts.GateNode,
           icon: ["CRZ_palette.png", "PaletteIcon_CRZ_Beginner.png"],
@@ -407,6 +429,7 @@ export const categories: Record<string, CategoryEntry> = {
         },
         {
           label: "CU",
+          displayName: "Controlled-U (CU)",
           aliases: ["Controlled-U"],
           type: consts.GateNode,
           icon: ["CU_palette.png", "PaletteIcon_CU_Beginner.png"],
@@ -418,6 +441,7 @@ export const categories: Record<string, CategoryEntry> = {
       "Multi-Control Blocks": [
         {
           label: "Toffoli",
+          displayName: "Toffoli (CCNOT)",
           aliases: ["CCNOT", "Controlled-Controlled-NOT"],
           type: consts.GateNode,
           icon: ["Toffoli_palette.png", "PaletteIcon_Toffoli_Beginner.png"],
@@ -427,6 +451,7 @@ export const categories: Record<string, CategoryEntry> = {
         },
         {
           label: "CSWAP",
+          displayName: "Fredkin (CSWAP)",
           aliases: ["Fredkin"],
           type: consts.GateNode,
           icon: ["CSWAP_palette.png", "PaletteIcon_CSWAP_Beginner.png"],

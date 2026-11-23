@@ -1,4 +1,5 @@
 import { Node, Edge } from "reactflow";
+import { failedJobError } from "./backend";
 
 // Helper to map node types (copy from backend.ts)
 function mapNode(node: Node, allNodes: any): any {
@@ -254,6 +255,10 @@ export async function generateOpenQASMFromFlow(
     }
 
     const statusData = await statusResponse.json();
+    const failure = failedJobError(statusData);
+    if (failure) {
+      throw failure;
+    }
     if (statusData.status === "completed") {
       const resultResponse = await fetch(statusData.result, {
         method: "GET",

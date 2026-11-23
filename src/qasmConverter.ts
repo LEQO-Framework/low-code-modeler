@@ -1,21 +1,40 @@
+import { evaluateParam, GATE_LABEL_MAP } from "./lib/qasmToNodes";
+
 type FlowJson = {
   metadata: any;
   nodes: any[];
   edges: any[];
   viewport: { x: number; y: number; zoom: number };
+  /** Gate statements that could not be imported (e.g. unsupported gates). */
+  warnings: string[];
 };
 
-const GATE_LABELS: Record<string, string> = {
-  x: "X",
-  y: "Y",
-  z: "Z",
-  h: "H",
-  cx: "CNOT",
-  cnot: "CNOT",
-  ccx: "Toffoli",
-  swap: "SWAP",
-  measure: "Measurement",
-};
+// Same gate set as the circuit editor (qasmToNodes), so both importers agree.
+const GATE_LABELS: Record<string, string> = GATE_LABEL_MAP;
+
+// Statements that are not gates and are handled elsewhere (or ignored on purpose).
+const NON_GATE_KEYWORDS = new Set([
+  "openqasm",
+  "include",
+  "qubit",
+  "qreg",
+  "creg",
+  "bit",
+  "let",
+  "measure",
+  "barrier",
+  "reset",
+  "gate",
+  "input",
+  "output",
+  "const",
+  "def",
+  "return",
+  "if",
+  "else",
+  "for",
+  "while",
+]);
 
 const generateId = () => crypto.randomUUID();
 
@@ -48,6 +67,7 @@ function createGateNode(
   y: number,
   identifiers: string[],
   inputs: any[],
+  parameter = "0",
 ) {
   return {
     id,
@@ -62,7 +82,7 @@ function createGateNode(
       outputTypes: Array(Math.max(1, inputs.length)).fill("quantum register"),
       completionGuaranteed: true,
       compactOptions: [true, false],
-      parameter: "0",
+      parameter,
     },
     width: 110,
     height: 110,
@@ -126,6 +146,7 @@ export function openQasmToFlow(qasm: string): FlowJson {
 
   const nodes: any[] = [];
   const edges: any[] = [];
+  const warnings: string[] = [];
 
   // Register: QASM 3 "qubit[N] name;" or QASM 2 "qreg name[N];"
   const qasm3Match = /qubit\[(\d+)\]\s+([a-zA-Z0-9_]+)\s*;/.exec(qasm);
@@ -206,13 +227,18 @@ export function openQasmToFlow(qasm: string): FlowJson {
 
   // 5. APPLY A GATE
   //    operands: ordered list of [aliasName, localIdx]
-  function applyGate(gate: string, operands: Array<[string, number]>) {
+  function applyGate(
+    gate: string,
+    operands: Array<[string, number]>,
+    params?: string,
+  ) {
     // Resolve each operand to an absolute qubit index
     const qIdxs: number[] = [];
     for (const [name, li] of operands) {
       const q = resolveQubit(name, li);
       if (q === undefined) {
         console.warn(`Cannot resolve qubit: ${name}[${li}]`);
+        warnings.push(`${gate}: cannot resolve qubit ${name}[${li}]`);
         return;
       }
       qIdxs.push(q);
@@ -259,6 +285,7 @@ export function openQasmToFlow(qasm: string): FlowJson {
         y,
         qIdxs.map((q) => qLabel(q)),
         inputs,
+        evaluateParam(params),
       ),
     );
   }
@@ -268,19 +295,41 @@ export function openQasmToFlow(qasm: string): FlowJson {
     .replace(/\/\*[\s\S]*?\*\//g, " ")
     .replace(/\/\/[^\n]*/g, " ");
 
-  const gateLineRe =
-    /\b(x|y|z|h|cx|ccx|cnot|swap)\s+((?:[a-zA-Z0-9_.]+\s*\[\d+\]\s*,?\s*\n?\s*)+);/gi;
+  // Longest names first, so e.g. "crx" is not read as "cx" or "rx".
+  const gateNames = Object.keys(GATE_LABELS)
+    .sort((a, b) => b.length - a.length)
+    .join("|");
+  const gateLineRe = new RegExp(
+    String.raw`(?:^|[;{}\s])(${gateNames})\s*(?:\(([^)]*)\))?\s+((?:[a-zA-Z0-9_.]+\s*\[\d+\]\s*,?\s*\n?\s*)+);`,
+    "gi",
+  );
 
   while ((m = gateLineRe.exec(noComments))) {
     const gate = m[1].toLowerCase();
-    const operandStr = m[2];
+    const params = m[2];
+    const operandStr = m[3];
     const opRe = /([a-zA-Z0-9_.]+)\s*\[(\d+)\]/g;
     const operands: Array<[string, number]> = [];
     let om: RegExpExecArray | null;
     while ((om = opRe.exec(operandStr))) {
       operands.push([om[1], Number(om[2])]);
     }
-    if (operands.length > 0) applyGate(gate, operands);
+    if (operands.length > 0) applyGate(gate, operands, params);
+  }
+
+  // Report statements that look like gate applications but are not supported,
+  // instead of silently dropping them.
+  const statementRe =
+    /(?:^|[;{}\s])([a-zA-Z_][a-zA-Z0-9_]*)\s*(?:\([^)]*\))?\s+[a-zA-Z0-9_.]+\s*\[[^\]]*\][^;]*;/g;
+  const unsupported = new Set<string>();
+  while ((m = statementRe.exec(noComments))) {
+    const name = m[1].toLowerCase();
+    if (!GATE_LABELS[name] && !NON_GATE_KEYWORDS.has(name)) {
+      unsupported.add(name);
+    }
+  }
+  if (unsupported.size > 0) {
+    warnings.push(`Unsupported gates skipped: ${[...unsupported].join(", ")}`);
   }
 
   // 7. PARSE MEASUREMENTS
@@ -427,5 +476,6 @@ export function openQasmToFlow(qasm: string): FlowJson {
     nodes,
     edges,
     viewport: { x: 0, y: 0, zoom: 0.8 },
+    warnings,
   };
 }

@@ -183,7 +183,7 @@ function downloadTex(content: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "dirac_notation.tex";
+  a.download = "main.tex";
   a.click();
   URL.revokeObjectURL(url);
 }

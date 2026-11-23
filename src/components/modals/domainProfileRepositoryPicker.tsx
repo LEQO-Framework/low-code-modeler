@@ -11,7 +11,7 @@
  */
 
 import { useState } from "react";
-import { Download } from "lucide-react";
+import { Database } from "lucide-react";
 import {
   compareVersionsDescending,
   fetchProfile,
@@ -103,10 +103,10 @@ export function DomainProfileRepositoryPicker({
     <div className="relative">
       <button
         onClick={() => setOpen((previous) => !previous)}
-        className="flex items-center gap-1 bg-blue-500 text-white px-3 py-2 rounded-md hover:bg-blue-700 text-sm"
+        className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-shadow shadow-sm font-medium text-sm"
         title="Load a domain profile from the shared repository"
       >
-        <Download size={14} /> Load from Repository
+        <Database size={18} /> Load from Repository
       </button>
 
       {open && (

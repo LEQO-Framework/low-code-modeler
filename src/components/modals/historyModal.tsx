@@ -37,6 +37,8 @@ interface HistoryModalProps {
     type: "success" | "error" | "info",
   ) => void;
   lowcodeBackendEndpoint: string;
+  /** Base URL of the model generation backend. */
+  generationBackendEndpoint?: string;
   onAddMissingValues: (job: HistoryItem) => void;
   fetchHistory: () => Promise<void>;
   onSubmitPrompt: (
@@ -54,13 +56,14 @@ export const HistoryModal = ({
   loadFlow,
   showToast,
   lowcodeBackendEndpoint,
+  generationBackendEndpoint = "http://localhost:3000",
   onAddMissingValues,
   fetchHistory,
   onSubmitPrompt,
   onRefresh,
 }: HistoryModalProps) => {
   const [activeTab, setActiveTab] = useState<"generation" | "execution">(
-    "generation",
+    "execution",
   );
   const [selectedJob, setSelectedJob] = useState<HistoryItem | null>(null);
   const [isPromptModalOpen, setIsPromptModalOpen] = useState(false);
@@ -84,7 +87,7 @@ export const HistoryModal = ({
     setReportLoadingId(job.uuid);
     try {
       const response = await fetch(
-        `http://localhost:3000/job/${job.uuid}/report.pdf`,
+        `${generationBackendEndpoint}/job/${job.uuid}/report.pdf`,
       );
       if (response.status === 404) {
         showToast("No pipeline report available for this job yet.", "info");
@@ -167,7 +170,7 @@ export const HistoryModal = ({
   ) => {
     try {
       const response = await fetch(
-        `http://localhost:3000/job/${jobId}/submit-missing-values`,
+        `${generationBackendEndpoint}/job/${jobId}/submit-missing-values`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -464,6 +467,7 @@ export const HistoryModal = ({
           mistralToken={""}
           loadFlow={loadFlow}
           lowcodeBackendEndpoint={lowcodeBackendEndpoint}
+          generationBackendEndpoint={generationBackendEndpoint}
           jobId={selectedJob.uuid}
           missingValues={selectedJob.missingValues || []}
           onMissingValuesSubmitted={handleMissingValuesSubmitted}

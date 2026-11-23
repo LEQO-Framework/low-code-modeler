@@ -25,6 +25,8 @@ interface ConfigModalProps {
     tempPatternAtlasUiEndpoint: string;
     tempPatternAtlasApiEndpoint: string;
     tempQcAtlasEndpoint: string;
+    tempGenerationBackendEndpoint: string;
+    tempCollaborationEndpoint: string;
     tempGithubRepositoryOwner: string;
     tempGithubRepositoryName: string;
     tempGithubBranch: string;
@@ -45,6 +47,8 @@ interface ConfigModalProps {
   tempPatternAtlasUiEndpoint: string;
   tempPatternAtlasApiEndpoint: string;
   tempQcAtlasEndpoint: string;
+  tempGenerationBackendEndpoint: string;
+  tempCollaborationEndpoint: string;
   tempGithubRepositoryOwner: string;
   tempGithubRepositoryName: string;
   tempGithubBranch: string;
@@ -74,6 +78,8 @@ export const ConfigModal = ({
   tempPatternAtlasUiEndpoint,
   tempPatternAtlasApiEndpoint,
   tempQcAtlasEndpoint,
+  tempGenerationBackendEndpoint,
+  tempCollaborationEndpoint,
   tempGithubRepositoryOwner,
   tempGithubRepositoryName,
   tempGithubBranch,
@@ -108,6 +114,12 @@ export const ConfigModal = ({
     tempPatternAtlasApiEndpoint,
   );
   const [localQcAtlas, setLocalQcAtlas] = useState(tempQcAtlasEndpoint);
+  const [localGeneration, setLocalGeneration] = useState(
+    tempGenerationBackendEndpoint,
+  );
+  const [localCollaboration, setLocalCollaboration] = useState(
+    tempCollaborationEndpoint,
+  );
   const [localGitOwner, setLocalGitOwner] = useState(tempGithubRepositoryOwner);
   const [localGitRepo, setLocalGitRepo] = useState(tempGithubRepositoryName);
   const [localGitBranch, setLocalGitBranch] = useState(tempGithubBranch);
@@ -134,6 +146,8 @@ export const ConfigModal = ({
       setLocalPatternUI(tempPatternAtlasUiEndpoint);
       setLocalPatternAPI(tempPatternAtlasApiEndpoint);
       setLocalQcAtlas(tempQcAtlasEndpoint);
+      setLocalGeneration(tempGenerationBackendEndpoint);
+      setLocalCollaboration(tempCollaborationEndpoint);
       setLocalGitOwner(tempGithubRepositoryOwner);
       setLocalGitRepo(tempGithubRepositoryName);
       setLocalGitBranch(tempGithubBranch);
@@ -158,6 +172,8 @@ export const ConfigModal = ({
       tempPatternAtlasUiEndpoint: localPatternUI,
       tempPatternAtlasApiEndpoint: localPatternAPI,
       tempQcAtlasEndpoint: localQcAtlas,
+      tempGenerationBackendEndpoint: localGeneration,
+      tempCollaborationEndpoint: localCollaboration,
       tempGithubRepositoryOwner: localGitOwner,
       tempGithubRepositoryName: localGitRepo,
       tempGithubBranch: localGitBranch,
@@ -240,6 +256,18 @@ export const ConfigModal = ({
                       value={localUserName}
                       onChange={(e) => setLocalUserName(e.target.value)}
                       disabled={!localCollaborationMode}
+                    />
+                  </td>
+                </tr>
+                <tr>
+                  <td align="right">Collaboration Server:</td>
+                  <td align="left">
+                    <input
+                      className="qwm-input"
+                      type="text"
+                      placeholder="ws://127.0.0.1:1234"
+                      value={localCollaboration}
+                      onChange={(e) => setLocalCollaboration(e.target.value)}
                     />
                   </td>
                 </tr>
@@ -430,6 +458,23 @@ export const ConfigModal = ({
                       type="text"
                       value={localLowcode}
                       onChange={(e) => setLocalLowcode(e.target.value)}
+                    />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            <h3 className="labels mt-4">Model Generation</h3>
+            <table className="config-table">
+              <tbody>
+                <tr>
+                  <td align="right">Model Generation Backend:</td>
+                  <td align="left">
+                    <input
+                      className="qwm-input"
+                      type="text"
+                      value={localGeneration}
+                      onChange={(e) => setLocalGeneration(e.target.value)}
                     />
                   </td>
                 </tr>
