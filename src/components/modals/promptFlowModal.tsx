@@ -13,6 +13,8 @@ interface PromptFlowModalProps {
   mistralToken: string;
   loadFlow: (flow: any) => void;
   lowcodeBackendEndpoint: string;
+  /** Base URL of the model generation backend. */
+  generationBackendEndpoint?: string;
   jobId?: string;
   missingValues?: any[];
   onMissingValuesSubmitted: (
@@ -30,6 +32,7 @@ export default function PromptFlowModal({
   onClose,
   showToast,
   stepTest,
+  generationBackendEndpoint = "http://localhost:3000",
   jobId,
   missingValues = [],
   onMissingValuesSubmitted,
@@ -108,7 +111,7 @@ export default function PromptFlowModal({
       while (Date.now() < deadline) {
         await new Promise((resolve) => setTimeout(resolve, intervalMs));
         const response = await fetch(
-          `http://localhost:3000/job/${jobIdToWatch}`,
+          `${generationBackendEndpoint}/job/${jobIdToWatch}`,
         );
         if (!response.ok) return;
 

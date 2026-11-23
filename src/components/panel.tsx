@@ -1208,7 +1208,7 @@ function ExportAllButton({
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "dirac_export_alle_gruppen.zip";
+      a.download = "dirac_export_all_groups.zip";
       a.click();
       URL.revokeObjectURL(url);
     } finally {

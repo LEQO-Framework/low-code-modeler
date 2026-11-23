@@ -1,3 +1,5 @@
+const DEFAULT_GENERATION_BACKEND = "http://localhost:3000";
+
 export type JobStatus = "queued" | "running" | "done" | "failed";
 
 export type JobResponse = {
@@ -13,8 +15,9 @@ export type JobResponse = {
 export async function createGenerationJob(
   prompt: string,
   generationMode: string,
+  baseUrl: string = DEFAULT_GENERATION_BACKEND,
 ): Promise<{ jobId: string }> {
-  const res = await fetch("http://localhost:3000/generate", {
+  const res = await fetch(`${baseUrl}/generate`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -32,8 +35,11 @@ export async function createGenerationJob(
 /**
  * Fetch job status
  */
-export async function getJob(jobId: string): Promise<JobResponse> {
-  const res = await fetch(`http://localhost:3000/job/${jobId}`);
+export async function getJob(
+  jobId: string,
+  baseUrl: string = DEFAULT_GENERATION_BACKEND,
+): Promise<JobResponse> {
+  const res = await fetch(`${baseUrl}/job/${jobId}`);
 
   if (!res.ok) {
     throw new Error("Failed to fetch job");

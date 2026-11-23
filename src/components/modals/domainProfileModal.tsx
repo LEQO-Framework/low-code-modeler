@@ -9,6 +9,10 @@ import {
   Check,
   GripVertical,
   X,
+  FileDown,
+  FileUp,
+  Boxes,
+  ListPlus,
 } from "lucide-react";
 import { EditableNode } from "@/constants";
 import {
@@ -1991,123 +1995,111 @@ export default function DomainProfileTableModal({
                     </div>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={addNode}
-                    className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-shadow shadow-sm font-medium text-sm"
-                  >
-                    <Plus size={18} />
-                    Add Domain Block
-                  </button>
-                  
-                  <button
-                    type="button"
-                    onClick={addEnum}
-                    className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-shadow shadow-sm font-medium text-sm"
-                  >
-                    <Plus size={18} />
-                    Add Domain Enum
-                  </button>
+                  {/* Profile actions: shared repository | file import and export side by side */}
+                  <div className="ml-auto flex flex-wrap items-center gap-2">
+                    <DomainProfileRepositoryPicker
+                      onLoad={(profile) => {
+                        setProfileName(
+                          profile.version
+                            ? `${profile.name} v${profile.version}`
+                            : profile.name,
+                        );
 
+                        setLocalNodes(toEditableNodes(profile));
+                        setLocalEnums(toEditableEnums(profile.domainEnums));
+                        setRemovedEnumNames([]);
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const dataStr = JSON.stringify(
-                        {
-                          name: profileName,
-                          nodes: localNodes,
-                          domainEnums: toDomainEnums(localEnums),
-                        },
-                        null,
-                        2,
-                      );
-
-                      const blob = new Blob([dataStr], {
-                        type: "application/json",
-                      });
-
-                      const url = URL.createObjectURL(blob);
-
-                      const a = document.createElement("a");
-
-                      a.href = url;
-                      a.download = `${profileName || "domain_profile"}.json`;
-
-                      a.click();
-
-                      URL.revokeObjectURL(url);
-                    }}
-                    className="flex items-center gap-1 bg-blue-600 text-white px-3 py-2 rounded-md hover:bg-blue-700 text-sm"
-                  >
-                    Export Profile
-                  </button>
-
-                  <DomainProfileRepositoryPicker
-                    onLoad={(profile) => {
-                      setProfileName(
-                        profile.version
-                          ? `${profile.name} v${profile.version}`
-                          : profile.name,
-                      );
-
-                      setLocalNodes(toEditableNodes(profile));
-                      setLocalEnums(toEditableEnums(profile.domainEnums));
-                      setRemovedEnumNames([]);
-
-                      setDuplicateWarning(null);
-                    }}
-                  />
-
-                  <label className="flex items-center gap-1 bg-blue-500 text-white px-3 py-2 rounded-md hover:bg-blue-700 text-sm cursor-pointer">
-                    Import Profile
-                    <input
-                      type="file"
-                      accept="application/json"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-
-                        if (!file) return;
-
-                        const reader = new FileReader();
-
-                        reader.onload = () => {
-                          try {
-                            const json = JSON.parse(reader.result as string);
-
-                            if (!json.name || !Array.isArray(json.nodes)) {
-                              alert("Invalid domain profile JSON.");
-                              return;
-                            }
-
-                            const sanitizedNodes: EditableNodeProfile[] =
-                              json.nodes.map((n: any) => toEditableNode(n));
-
-                            setProfileName(json.name);
-
-                            setLocalNodes(sanitizedNodes);
-
-                            setLocalEnums(
-                              toEditableEnums(json.domainEnums),
-                            );
-
-                            setRemovedEnumNames([]);
-
-                            setDuplicateWarning(null);
-                          } catch (err) {
-                            console.error(err);
-
-                            alert("Failed to parse JSON file.");
-                          }
-                        };
-
-                        reader.readAsText(file);
-
-                        e.target.value = "";
+                        setDuplicateWarning(null);
                       }}
                     />
-                  </label>
+
+                    <span className="mx-1 h-6 w-px bg-gray-300" aria-hidden />
+
+                    <label className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-shadow shadow-sm font-medium text-sm cursor-pointer">
+                      <FileUp size={18} />
+                      Import Profile
+                      <input
+                        type="file"
+                        accept="application/json"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+
+                          if (!file) return;
+
+                          const reader = new FileReader();
+
+                          reader.onload = () => {
+                            try {
+                              const json = JSON.parse(reader.result as string);
+
+                              if (!json.name || !Array.isArray(json.nodes)) {
+                                alert("Invalid domain profile JSON.");
+                                return;
+                              }
+
+                              const sanitizedNodes: EditableNodeProfile[] =
+                                json.nodes.map((n: any) => toEditableNode(n));
+
+                              setProfileName(json.name);
+
+                              setLocalNodes(sanitizedNodes);
+
+                              setLocalEnums(
+                                toEditableEnums(json.domainEnums),
+                              );
+
+                              setRemovedEnumNames([]);
+
+                              setDuplicateWarning(null);
+                            } catch (err) {
+                              console.error(err);
+
+                              alert("Failed to parse JSON file.");
+                            }
+                          };
+
+                          reader.readAsText(file);
+
+                          e.target.value = "";
+                        }}
+                      />
+                    </label>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const dataStr = JSON.stringify(
+                          {
+                            name: profileName,
+                            nodes: localNodes,
+                            domainEnums: toDomainEnums(localEnums),
+                          },
+                          null,
+                          2,
+                        );
+
+                        const blob = new Blob([dataStr], {
+                          type: "application/json",
+                        });
+
+                        const url = URL.createObjectURL(blob);
+
+                        const a = document.createElement("a");
+
+                        a.href = url;
+                        a.download = `${profileName || "domain_profile"}.json`;
+
+                        a.click();
+
+                        URL.revokeObjectURL(url);
+                      }}
+                      className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-shadow shadow-sm font-medium text-sm"
+                    >
+                      <FileDown size={18} />
+                      Export Profile
+                    </button>
+                  </div>
                 </div>
               </section>
 
@@ -2166,15 +2158,26 @@ export default function DomainProfileTableModal({
 
               {/* Domain Blocks */}
               <section className="rounded-lg border border-gray-200 bg-white">
-                <div className="border-b bg-gray-50 px-4 py-3">
-                  <div className="text-sm font-semibold text-gray-800">
-                    Domain Blocks
+                <div className="flex items-center justify-between gap-3 border-b bg-gray-50 px-4 py-3">
+                  <div>
+                    <div className="text-sm font-semibold text-gray-800">
+                      Domain Blocks
+                    </div>
+
+                    <div className="text-xs text-gray-500 mt-0.5">
+                      Configure the nodes, inputs, outputs, properties,
+                      constraints and mappings.
+                    </div>
                   </div>
 
-                  <div className="text-xs text-gray-500 mt-0.5">
-                    Configure the nodes, inputs, outputs, properties,
-                    constraints and mappings.
-                  </div>
+                  <button
+                    type="button"
+                    onClick={addNode}
+                    className="flex shrink-0 items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-shadow shadow-sm font-medium text-sm"
+                  >
+                    <Boxes size={18} />
+                    Add Domain Block
+                  </button>
                 </div>
 
                 <div className="overflow-x-auto">
@@ -2421,14 +2424,25 @@ export default function DomainProfileTableModal({
 
               {/* Enums */}
               <section className="rounded-lg border border-gray-200 bg-white">
-                <div className="border-b bg-gray-50 px-4 py-3">
-                  <div className="text-sm font-semibold text-gray-800">
-                    Domain Enums
+                <div className="flex items-center justify-between gap-3 border-b bg-gray-50 px-4 py-3">
+                  <div>
+                    <div className="text-sm font-semibold text-gray-800">
+                      Domain Enums
+                    </div>
+
+                    <div className="text-xs text-gray-500 mt-0.5">
+                      Add enums usable as type
+                    </div>
                   </div>
 
-                  <div className="text-xs text-gray-500 mt-0.5">
-                    Add enums usable as type
-                  </div>
+                  <button
+                    type="button"
+                    onClick={addEnum}
+                    className="flex shrink-0 items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-shadow shadow-sm font-medium text-sm"
+                  >
+                    <ListPlus size={18} />
+                    Add Domain Enum
+                  </button>
                 </div>
 
                 <div className="overflow-x-auto">

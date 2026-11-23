@@ -9,7 +9,7 @@ import {
   type StatePreparationMatch,
 } from "./recognizeStates";
 
-const GATE_LABEL_MAP: Record<string, string> = {
+export const GATE_LABEL_MAP: Record<string, string> = {
   h: "H",
   x: "X",
   y: "Y",
@@ -511,7 +511,7 @@ export function circuitSignature(members: Node[]): string {
 }
 
 /** The backend expects numeric angles (radians), so expressions like "pi/2" are evaluated. */
-function evaluateParam(params: string | undefined): string {
+export function evaluateParam(params: string | undefined): string {
   if (!params) return "0";
   const expr = params.trim().replace(/\bpi\b/gi, `(${Math.PI})`);
   if (!/^[\d\s.+\-*/()e]*$/i.test(expr)) return params;

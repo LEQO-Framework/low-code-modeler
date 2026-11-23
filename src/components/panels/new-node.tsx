@@ -728,9 +728,11 @@ export const AddNodePanel = ({ onAddNode }: AddNodePanelProps) => {
         const partialMatches: Node[] = [];
 
         for (const node of allNodes) {
-          const labels = [node.label, ...(node.aliases ?? [])].map((l) =>
-            l.toLowerCase(),
-          );
+          const labels = [
+            node.label,
+            ...(node.displayName ? [node.displayName] : []),
+            ...(node.aliases ?? []),
+          ].map((l) => l.toLowerCase());
           const allowedInMode = !(!ancillaMode && node.type === "ancillaNode");
 
           if (!allowedInMode) continue;
@@ -934,11 +936,17 @@ export const AddNodePanel = ({ onAddNode }: AddNodePanelProps) => {
                           : "w-70 h-70"
                     }`}
                   />
-                ) : (
-                  <span className="font-semibold">{node.label}</span>
-                )}
+                ) : null}
+                <span className="font-semibold text-sm text-center">
+                  {node.displayName ?? node.label}
+                </span>
               </div>
             ))}
+            {filteredNodes.length === 0 && (
+              <p className="text-sm text-gray-500 text-center py-2">
+                No nodes found.
+              </p>
+            )}
           </div>
         )}
 

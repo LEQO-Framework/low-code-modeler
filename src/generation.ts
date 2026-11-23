@@ -1,6 +1,6 @@
 import { Mistral } from "@mistralai/mistralai";
 import { openQasmToFlow } from "./qasmConverter";
-import { startCompile } from "./backend";
+import { failedJobError, startCompile } from "./backend";
 
 type ChatContent =
   | string
@@ -85,6 +85,12 @@ async function convertCompactToCircuit(
           console.log("Current status:", statusData.status);
           //setStatus(statusData.status);
           location = statusData["result"];
+
+          const failure = failedJobError(statusData);
+          if (failure) {
+            console.error("Backend job failed:", statusData.result);
+            return reject(failure);
+          }
 
           if (statusData.status === "completed") {
             //showToast("Result for model " + id + " is available.", "success");

@@ -462,6 +462,12 @@ export interface components {
        * @enum {string}
        */
       language?: "openqasm" | "python";
+      /**
+       * Requirements
+       * @description Content of a pip requirements file for python implementations.
+       * Merged with the packages detected from the imports of the implementation.
+       */
+      requirements?: string | null;
     };
     /** IntLiteralNode */
     IntLiteralNode: {

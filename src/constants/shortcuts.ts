@@ -33,6 +33,18 @@ export const shortcuts: ShortcutCategory[] = [
     ],
   },
   {
+    id: "navigation",
+    category: "Navigation",
+    shortcuts: [
+      {
+        id: "find-node",
+        keys: "Ctrl + F",
+        description:
+          "Search the canvas for a node (name, type, qubit or ID) and jump to it",
+      },
+    ],
+  },
+  {
     id: "editing",
     category: "Editing",
     shortcuts: [

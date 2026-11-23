@@ -1,0 +1,25 @@
+# Local settings for docker compose, not checked in.
+# Copy to docker-compose.override.yml (gitignored), docker compose loads it automatically.
+
+services:
+  # Build the backend from a local clone next to this repository, i.e. whatever branch
+  # is checked out there (rebuild after changes: docker compose up -d --build leqo-backend)
+  leqo-backend:
+    build: ../leqo-backend
+    image: leqo-backend:local
+
+  # Always start the OpenTOSCA ecosystem, without --profile opentosca
+  container:
+    profiles: !reset []
+  engine-plan:
+    profiles: !reset []
+  engine-ia-jdk8:
+    profiles: !reset []
+  engine-ia-jdk17:
+    profiles: !reset []
+  winery:
+    profiles: !reset []
+  opentosca-ui:
+    profiles: !reset []
+  dind:
+    profiles: !reset []

@@ -22,7 +22,16 @@ import ReactFlow, {
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { v4 as uuidv4 } from "uuid";
-import { nodesMap, edgesMap, ydoc, awareness, yProvider } from "@/yjs";
+import {
+  nodesMap,
+  edgesMap,
+  ydoc,
+  awareness,
+  yProvider,
+  connectCollaboration,
+  disconnectCollaboration,
+  DEFAULT_COLLABORATION_ENDPOINT,
+} from "@/yjs";
 import { ContextMenu, CustomPanel, Palette } from "./components";
 import Toolbar from "./components/toolbar";
 import { nodesConfig, tutorial } from "./config/site";
@@ -37,7 +46,12 @@ import { initialDiagram } from "./config/site";
 import Modal, { NewDiagramModal } from "./Modal";
 import "./index.css";
 import { Placement } from "react-joyride";
-import { isPythonImplementation, startCompile } from "./backend";
+import {
+  BackendJobFailedError,
+  failedJobError,
+  isPythonImplementation,
+  startCompile,
+} from "./backend";
 import {
   ancillaConstructColor,
   classicalConstructColor,
@@ -99,6 +113,7 @@ import VersioningPanel from "./components/modals/versioningModal";
 import { EdgeChange } from "@xyflow/react";
 import PromptFlowModal from "./components/modals/promptFlowModal";
 import ShortcutHelpModal from "./components/modals/shortcutHelpModal";
+import CanvasSearch from "./components/canvasSearch";
 import { openQasmToFlow } from "./qasmConverter";
 import { TestingModal } from "./components/modals/testingModal";
 import { validateModelStructure } from "./lib/modelValidation";
@@ -109,26 +124,9 @@ import {
   EdgeHighlightMarkers,
   EdgeHighlightProvider,
 } from "./components/edges/edgeHighlightContext";
-import {
-  amplitude_encoding,
-  angle_encoding,
-  basis_encoding,
-  bell_state_phi_plus,
-  classical_clustering,
-  conditional_quantum_model,
-  custom_quantum_operator,
-  empty_model,
-  encode_value,
-  first_measurement,
-  ghz,
-  grover_building_blocks,
-  grover_circuit_level,
-  hello_quantum,
-  multi_controlled_gates,
-  quantum_arithmetic,
-  quantum_clustering,
-  quantum_fourier_transform,
-} from "./constants/exampleModels";
+// Namespace import: several example names (grover_algorithm, qaoa, swap_test, ...)
+// collide with templates and label constants imported above.
+import * as exampleModels from "./constants/exampleModels";
 
 const BPMN_NS = "http://www.omg.org/spec/BPMN/20100524/MODEL";
 const CAMUNDA_NS = "http://camunda.org/schema/1.0/bpmn";
@@ -506,6 +504,12 @@ function App() {
   const [qcAtlasEndpoint, setQcAtlasEndpoint] = useState(
     import.meta.env.VITE_QC_ATLAS || "http://localhost:6626",
   );
+  const [generationBackendEndpoint, setGenerationBackendEndpoint] = useState(
+    import.meta.env.VITE_GENERATION_BACKEND || "http://localhost:3000",
+  );
+  const [collaborationEndpoint, setCollaborationEndpoint] = useState(
+    DEFAULT_COLLABORATION_ENDPOINT,
+  );
   const [activeTab, setActiveTab] = useState("editor");
   const [warningExecution, setWarningExecution] = useState(false);
   const [contextMenu, setContextMenu] = useState<{
@@ -847,6 +851,8 @@ If none apply, return { "algorithms": [] }.
     setPatternAtlasUiEndpoint(newValues.tempPatternAtlasUiEndpoint);
     setPatternAtlasApiEndpoint(newValues.tempPatternAtlasApiEndpoint);
     setQcAtlasEndpoint(newValues.tempQcAtlasEndpoint);
+    setGenerationBackendEndpoint(newValues.tempGenerationBackendEndpoint);
+    setCollaborationEndpoint(newValues.tempCollaborationEndpoint);
     setGithubRepositoryOwner(newValues.tempGithubRepositoryOwner);
     setGithubRepositoryName(newValues.tempGithubRepositoryName);
     setGithubBranch(newValues.tempGithubBranch);
@@ -984,7 +990,25 @@ If none apply, return { "algorithms": [] }.
 
   // EFFECT 1: Remote-to-Local (Yjs to Zustand & nodesI)
   useEffect(() => {
-    if (!collaborationModeOn) return;
+    if (!collaborationModeOn) {
+      disconnectCollaboration();
+      return;
+    }
+
+    // If the room is empty (or the server is not reachable yet), share the
+    // current canvas instead of replacing it with the empty room state.
+    // A room that already has content wins over the local canvas.
+    if (nodesMap.size === 0 && edgesMap.size === 0) {
+      const { nodes: localNodes, edges: localEdges } = useStore.getState();
+      ydoc.transact(() => {
+        localNodes.forEach((node: Node) =>
+          nodesMap.set(node.id, stripTransientNodeState(node)),
+        );
+        localEdges.forEach((edge: Edge) => edgesMap.set(edge.id, edge));
+      });
+    }
+
+    connectCollaboration(collaborationEndpoint);
 
     const updateFromRemote = () => {
       // set flag, so that this is ignored by effect 2
@@ -1047,7 +1071,7 @@ If none apply, return { "algorithms": [] }.
       nodesMap.unobserve(updateFromRemote);
       edgesMap.unobserve(updateFromRemote);
     };
-  }, [collaborationModeOn]);
+  }, [collaborationModeOn, collaborationEndpoint, stripTransientNodeState]);
 
   // EFFECT 2: Local-to-Remote (Zustand to Yjs)
   useEffect(() => {
@@ -1456,6 +1480,12 @@ If none apply, return { "algorithms": [] }.
               setStatus(statusData.status);
               location = statusData["result"];
 
+              const failure = failedJobError(statusData);
+              if (failure) {
+                console.error("Backend job failed:", statusData.result);
+                return reject(failure);
+              }
+
               if (statusData.status === "completed") {
                 //showToast("Result for model " + id + " is available.", "success");
                 console.log("Operation completed successfully.");
@@ -1514,7 +1544,9 @@ If none apply, return { "algorithms": [] }.
     } catch (error) {
       console.error("Error sending data:", error);
       showToast(
-        "Error during result generation for model " + id + ".",
+        error instanceof BackendJobFailedError
+          ? `Transformation of model ${id} failed: ${error.message}`
+          : "Error during result generation for model " + id + ".",
         "error",
       );
       setLoading(false);
@@ -1536,7 +1568,7 @@ If none apply, return { "algorithms": [] }.
 
       // Fetch generation jobs
       try {
-        const jobsRes = await fetch(`http://localhost:3000/jobs`, {
+        const jobsRes = await fetch(`${generationBackendEndpoint}/jobs`, {
           method: "GET",
           headers: { "Content-Type": "application/json" },
         });
@@ -1555,8 +1587,8 @@ If none apply, return { "algorithms": [] }.
             semanticScore: job.semanticScore,
             missingValues: job.missingValues,
             links: {
-              request: `http://localhost:3000/job/${job.id}/request`,
-              result: `http://localhost:3000/job/${job.id}/result`,
+              request: `${generationBackendEndpoint}/job/${job.id}/request`,
+              result: `${generationBackendEndpoint}/job/${job.id}/result`,
             },
           }));
         } else {
@@ -2396,6 +2428,41 @@ If none apply, return { "algorithms": [] }.
         warnings: [...result.warnings, ...files.warnings],
       });
     });
+  };
+
+  const getValidationNodeName = (nodeId: string): string | null => {
+    const node = nodes.find((n) => n.id === nodeId);
+    if (!node) return null;
+    const label = node.data?.label;
+    return typeof label === "string" && label.trim() ? label : node.type ?? nodeId;
+  };
+
+  const focusNodeFromValidation = (nodeId: string) => {
+    setIsValidationOpen(false);
+    focusNode(nodeId);
+  };
+
+  /** Selects the node, opens its properties and centers the canvas on it. */
+  const focusNode = (nodeId: string) => {
+    const node = reactFlowInstance?.getNode(nodeId);
+    if (!node) return;
+
+    onNodesChange(
+      nodes.map((n) => ({
+        type: "select",
+        id: n.id,
+        selected: n.id === nodeId,
+      })),
+    );
+    setSelectedNode(node);
+
+    // positionAbsolute accounts for nodes nested in groups
+    const position = node.positionAbsolute ?? node.position;
+    reactFlowInstance.setCenter(
+      position.x + (node.width ?? 0) / 2,
+      position.y + (node.height ?? 0) / 2,
+      { zoom: Math.max(reactFlowInstance.getZoom(), 1), duration: 600 },
+    );
   };
 
   const startTour3 = () => {
@@ -3474,7 +3541,7 @@ If none apply, return { "algorithms": [] }.
     const branch = githubBranch;
     const token = githubToken;
 
-    const apiUrl = `https://api.github.com/repos/${repoOwner}/${repo}/contents/${flowId}`;
+    const apiUrl = `https://api.github.com/repos/${repoOwner}/${repo}/contents/${flowId}.json`;
     let sha = null;
 
     try {
@@ -3764,7 +3831,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
 
     try {
       // Send the prompt to your backend
-      const response = await fetch(`http://localhost:3000/generate`, {
+      const response = await fetch(`${generationBackendEndpoint}/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -3791,8 +3858,8 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
         semanticScore: 0,
         missingValues: newJob.missingValues || [],
         links: {
-          request: `http://localhost:3000/jobs/${newJob.id}/request`,
-          result: `http://localhost:3000/jobs/${newJob.id}/result`,
+          request: `${generationBackendEndpoint}/jobs/${newJob.id}/request`,
+          result: `${generationBackendEndpoint}/jobs/${newJob.id}/result`,
         },
       };
 
@@ -4023,10 +4090,19 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
       const reader = new FileReader();
       reader.onload = (e) => {
         try {
-          const flow = openQasmToFlow(e.target?.result as string);
+          const { warnings, ...flow } = openQasmToFlow(
+            e.target?.result as string,
+          );
           console.log(flow);
 
           restoreFlow(flow);
+          if (warnings.length > 0) {
+            console.warn("OpenQASM import warnings:", warnings);
+            showToast(
+              `OpenQASM imported with warnings: ${warnings.join("; ")}`,
+              "error",
+            );
+          }
         } catch (error) {
           console.error("Error parsing OpenQASM file:", error);
           alert(
@@ -4435,104 +4511,104 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
       switch (modelName.toLowerCase()) {
         // Starters
         case "model_a":
-          loadFlow(empty_model);
+          loadFlow(exampleModels.empty_model);
           break;
 
         case "model_b":
-          loadFlow(hello_quantum);
+          loadFlow(exampleModels.hello_quantum);
           break;
 
         case "model_c":
-          loadFlow(first_measurement);
+          loadFlow(exampleModels.first_measurement);
           break;
 
         // Circuit-Level Examples
         case "model_d":
-          loadFlow(quantum_k_means_algorithm);
+          loadFlow(exampleModels.uniform_superposition);
           break;
 
         case "model_e":
-          loadFlow(bell_state_phi_plus);
+          loadFlow(exampleModels.bell_state_phi_plus);
           break;
 
         case "model_f":
-          loadFlow(ghz);
+          loadFlow(exampleModels.ghz);
           break;
 
         // Encoding Examples
         case "model_h":
-          loadFlow(basis_encoding);
+          loadFlow(exampleModels.basis_encoding);
           break;
 
         case "model_i":
-          loadFlow(angle_encoding);
+          loadFlow(exampleModels.angle_encoding);
           break;
 
         case "model_j":
-          loadFlow(amplitude_encoding);
+          loadFlow(exampleModels.amplitude_encoding);
           break;
 
         case "model_k":
-          loadFlow(encode_value);
+          loadFlow(exampleModels.encode_value);
           break;
 
         // Quantum Algorithms
         case "model_l":
-          loadFlow(grover_circuit_level);
+          loadFlow(exampleModels.grover_circuit_level);
           break;
 
         case "model_m":
-          loadFlow(grover_building_blocks);
+          loadFlow(exampleModels.grover_building_blocks);
           break;
 
         case "model_n":
-          loadFlow(grover_algorithm);
+          loadFlow(exampleModels.grover_algorithm);
           break;
 
         case "model_o":
-          loadFlow(quantum_fourier_transform);
+          loadFlow(exampleModels.quantum_fourier_transform);
           break;
 
         case "model_p":
-          loadFlow(hadamard_test_real_part);
+          loadFlow(exampleModels.hadamard_test_real_part);
           break;
 
         case "model_q":
-          loadFlow(hadamard_test_imaginary_part);
+          loadFlow(exampleModels.hadamard_test_imaginary_part);
           break;
 
         case "model_r":
-          loadFlow(swap_test);
+          loadFlow(exampleModels.swap_test);
           break;
 
         case "model_s":
-          loadFlow(qaoa);
+          loadFlow(exampleModels.qaoa);
           break;
 
         // Quantum Machine Learning
         case "model_t":
-          loadFlow(quantum_clustering);
+          loadFlow(exampleModels.quantum_clustering);
           break;
 
         case "model_u":
-          loadFlow(classical_clustering);
+          loadFlow(exampleModels.classical_clustering);
           break;
 
         // Advanced Examples
         case "model_v":
-          loadFlow(multi_controlled_gates);
+          loadFlow(exampleModels.multi_controlled_gates);
           break;
 
         case "model_w":
-          loadFlow(quantum_arithmetic);
+          loadFlow(exampleModels.quantum_arithmetic);
           break;
 
         case "model_x":
-          loadFlow(conditional_quantum_model);
+          loadFlow(exampleModels.conditional_quantum_model);
           break;
 
         case "model_y":
-          loadFlow(custom_quantum_operator);
+          loadFlow(exampleModels.custom_quantum_operator);
           break;
 
         default:
@@ -4877,11 +4953,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     if (nextMode) {
       // collaboration mode has been turned on
       // (re-)initialize cursor
-      // Sync room data immediately to overwrite offline state
-      useStore.setState({
-        nodes: Array.from(nodesMap.values()),
-        edges: Array.from(edgesMap.values()),
-      });
+      // Syncing the canvas with the room happens in the remote-to-local effect.
 
       // Generate a random username
       const randomNames = [
@@ -5663,6 +5735,8 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
           setModalOpen(true);
         }}
         validationResult={validationResult}
+        getNodeName={getValidationNodeName}
+        onFocusNode={focusNodeFromValidation}
       />
       <SendRequestModal
         open={modalOpen}
@@ -5696,6 +5770,8 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
         tempPatternAtlasUiEndpoint={patternAtlasUiEndpoint}
         tempPatternAtlasApiEndpoint={patternAtlasApiEndpoint}
         tempQcAtlasEndpoint={qcAtlasEndpoint}
+        tempGenerationBackendEndpoint={generationBackendEndpoint}
+        tempCollaborationEndpoint={collaborationEndpoint}
         tempGithubRepositoryOwner={githubRepositoryOwner}
         tempGithubRepositoryName={githubRepositoryName}
         tempGithubBranch={githubBranch}
@@ -5741,6 +5817,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
         mistralToken={mistralToken}
         loadFlow={loadFlow}
         lowcodeBackendEndpoint={lowcodeBackendEndpoint}
+        generationBackendEndpoint={generationBackendEndpoint}
         jobId={selectedJob?.uuid}
         missingValues={selectedJob?.missingValues || []}
         onMissingValuesSubmitted={async (
@@ -5749,7 +5826,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
         ) => {
           try {
             const response = await fetch(
-              `http://localhost:3000/job/${jobId}/submit-missing-values`,
+              `${generationBackendEndpoint}/job/${jobId}/submit-missing-values`,
               {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -5821,6 +5898,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
         loadFlow={loadFlow}
         showToast={showToast}
         lowcodeBackendEndpoint={lowcodeBackendEndpoint}
+        generationBackendEndpoint={generationBackendEndpoint}
         fetchHistory={fetchHistory}
         onAddMissingValues={handleAddMissingValues}
         onRefresh={fetchHistory}
@@ -6092,6 +6170,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
               </div>
 
               <ShortcutHelpModal />
+              <CanvasSearch onFocusNode={focusNode} />
               {Object.entries(cursors).length > 1 &&
                 collaborationModeOn &&
                 Object.entries(cursors).map(([clientId, cursor]) => {
@@ -6165,6 +6244,8 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
                     );
                   }}
                   open={isPatternModalOpen}
+                  patternAtlasApiEndpoint={patternAtlasApiEndpoint}
+                  qcAtlasEndpoint={qcAtlasEndpoint}
                 />
               )}
 
@@ -6176,6 +6257,8 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
                     loadFlow(json);
                   }}
                   open={isPatternImplementationOpen}
+                  patternAtlasApiEndpoint={patternAtlasApiEndpoint}
+                  qcAtlasEndpoint={qcAtlasEndpoint}
                 />
               )}
 

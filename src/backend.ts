@@ -13,6 +13,24 @@ type BackendNode = CompileRequest["nodes"][0];
 type BackendEdge = CompileRequest["edges"][0];
 export type StatusResult = components["schemas"]["StatusBody"];
 
+/** Raised when the low-code backend reports a job with status "failed". */
+export class BackendJobFailedError extends Error {}
+
+/**
+ * Returns a BackendJobFailedError if the status response of the low-code backend
+ * reports a failed job, otherwise null. The backend puts RFC 7807 problem details
+ * (title, detail) into `result` of a failed job.
+ */
+export function failedJobError(statusData: any): BackendJobFailedError | null {
+  if (statusData?.status !== "failed") return null;
+  const problem = statusData.result;
+  const message =
+    (typeof problem === "object" && (problem?.detail || problem?.title)) ||
+    (typeof problem === "string" && problem) ||
+    "The backend reported that the job failed.";
+  return new BackendJobFailedError(message);
+}
+
 /**
  * Detects the language of an implementation from its code, null if the code does not tell.
  * Stored as `implementationLanguage` when the code is uploaded or entered in the field.
@@ -182,11 +200,15 @@ export const startCompile = async (
     }
 
     if (node.data.implementation) {
+      const language = implementationLanguage(node);
+      const requirements = String(node.data.requirements ?? "").trim();
       return {
         id: node.id,
         type: "implementation",
         implementation: node.data.implementation,
-        language: implementationLanguage(node),
+        language,
+        // pip requirements of a python implementation (uploaded or entered)
+        ...(language === "python" && requirements ? { requirements } : {}),
       };
     }
 
