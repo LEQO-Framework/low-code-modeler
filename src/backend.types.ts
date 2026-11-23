@@ -468,6 +468,25 @@ export interface components {
        * Merged with the packages detected from the imports of the implementation.
        */
       requirements?: string | null;
+      /**
+       * Propertyvalues
+       * @description Values of the `@property` variables of a python implementation, set in the model.
+       * Properties without value become variables of the workflow.
+       */
+      propertyValues?: {
+        [key: string]: unknown;
+      } | null;
+      /**
+       * Environment
+       * @description Environment variables of the service container of a python implementation,
+       * as dict or as content of a `.env` file (`NAME=VALUE` lines).
+       */
+      environment?:
+        | {
+            [key: string]: unknown;
+          }
+        | string
+        | null;
     };
     /** IntLiteralNode */
     IntLiteralNode: {

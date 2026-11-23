@@ -376,6 +376,26 @@ function checkCustomImplementation(
         );
       }
     });
+
+  // Environment variables: NAME=VALUE lines (as in a .env file).
+  String(data.environment ?? "")
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .forEach((line, i) => {
+      if (!line || line.startsWith("#")) return;
+      const assignment = line.replace(/^export\s+/, "");
+      const separator = assignment.indexOf("=");
+      const name = assignment.slice(0, separator).trim();
+      if (separator < 0) {
+        problems.push(
+          `environment line ${i + 1} "${line}" must have the form NAME=VALUE.`,
+        );
+      } else if (!IDENTIFIER.test(name)) {
+        problems.push(
+          `environment line ${i + 1}: "${name}" is not a valid name of an environment variable.`,
+        );
+      }
+    });
   return problems;
 }
 
