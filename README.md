@@ -60,7 +60,51 @@ cd low-code-modeler
 To start Qonstruct together with its Docker-based services, run:
 
 ```bash
-docker-compose up --build
+docker compose up --build
+```
+
+#### Optional: OpenTOSCA ecosystem
+
+Executing workflows that contain Python services requires the OpenTOSCA ecosystem
+(OpenTOSCA Container, Winery, OpenTOSCA UI, the engines and a Docker-in-Docker engine
+the services are deployed into). These services are part of the `opentosca` profile
+and are only started on request:
+
+```bash
+docker compose --profile opentosca up --build
+```
+
+The deployed services reach Camunda, Winery and the OpenTOSCA Container through the
+published ports of the host. Therefore, set the IP address of your machine (not
+`localhost`) in `.env` before starting:
+
+```env
+VITE_HOST_IP=<your-ip>
+PUBLIC_HOSTNAME=<your-ip>
+```
+
+| Service             | URL                          |
+|---------------------|------------------------------|
+| Winery              | http://localhost:8093/winery |
+| OpenTOSCA Container | http://localhost:1337        |
+| OpenTOSCA UI        | http://localhost:8088        |
+
+#### Optional: Local settings
+
+Local settings can be placed in `docker-compose.override.yml`, which is loaded
+automatically by Docker Compose and is not checked in. A template is provided:
+
+```bash
+cp docker-compose.override.example.yml docker-compose.override.yml
+```
+
+The template builds the LEQO backend from a local clone next to this repository
+(`../leqo-backend`) instead of using the published image, and always starts the
+OpenTOSCA ecosystem, so `--profile opentosca` is not needed. After changes to the
+backend, rebuild it with:
+
+```bash
+docker compose up -d --build leqo-backend
 ```
 
 ### 3. Open Qonstruct
@@ -188,8 +232,11 @@ The required services can be started using the Docker setup provided by the **Qu
 ├── src/                    # Modeling logic and validation
 ├── public/                 # Public assets
 ├── backend/                # Collaboration backend
+├── docker/                 # Docker images (Winery with initial TOSCA definitions)
 ├── oxlint.config.ts        # Oxlint configuration
 ├── Dockerfile              # Docker image definition
+├── docker-compose.yml      # Docker setup (OpenTOSCA ecosystem: profile "opentosca")
+├── docker-compose.override.example.yml  # Template for local Docker settings
 └── THIRD_PARTY_LICENSES    # Third-party licenses and dependencies
 ```
 

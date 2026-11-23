@@ -11,8 +11,13 @@ services:
 
   camunda-engine:
     image: planqk/camunda-process-view-plugins:v1.0.2
+    # The process-view plugin calls its own REST API at the host:port the
+    # browser used (e.g. localhost:8090), so the container must listen on
+    # the same port it is published on.
+    environment:
+      SERVER_PORT: 8090
     ports:
-      - 8090:8080
+      - 8090:8090
 
   backend:
     image: stiliala/collaboration-backend:latest
@@ -86,7 +91,8 @@ services:
       KC_HTTP_ENABLED: true
       #KEYCLOAK_IMPORT: /opt/keycloak/data/import/keycloak-realm-export.json
     ports:
-      - "8081:8080"
+      # 8081 is taken by the OpenTOSCA Container (8081-8087)
+      - "8180:8080"
     volumes:
       - ./resources/keycloak-realm-export.json:/opt/keycloak/data/import/keycloak-realm-export.json
     depends_on:
@@ -111,6 +117,7 @@ services:
 
   ## Low-Code
   leqo-backend:
+    # to build from a local clone instead, see docker-compose.override.example.yml
     image: ghcr.io/leqo-framework/leqo-backend:main
     environment:
       POSTGRES_USER: leqo
@@ -201,6 +208,85 @@ services:
         npx prisma generate &&
         npm run dev:worker
       "
+
+  #######################
+  ### OpenTOSCA Ecosystem ###
+  # Optional, only started with the "opentosca" profile:
+  #   docker compose --profile opentosca up -d
+  # (or permanently via docker-compose.override.yml, see
+  # docker-compose.override.example.yml)
+  # Set PUBLIC_HOSTNAME in .env to the host's IP (not localhost), because the
+  # Container and Winery must reach each other through the published ports.
+  container:
+    profiles: [opentosca]
+    image: opentosca/container:v3.1.6
+    ports:
+      - "1337:1337"
+      - "8081-8087:8081-8087"
+    environment:
+      CONTAINER_HOSTNAME: ${PUBLIC_HOSTNAME}
+      ENGINE_IA_HOSTNAME: engine-ia-jdk8
+      ENGINE_IA_PORT: 8080
+      ENGINE_IA_JAVA17_HOSTNAME: engine-ia-jdk17
+      ENGINE_IA_JAVA17_PORT: 8080
+      ENGINE_PLAN_BPEL_HOSTNAME: engine-plan
+      CONTAINER_DEPLOYMENT_TESTS: "false"
+
+  engine-plan:
+    profiles: [opentosca]
+    image: opentosca/ode:v2.4.0
+    ports:
+      - "9763:9763"
+
+  engine-ia-jdk8:
+    profiles: [opentosca]
+    image: opentosca/engine-ia:v2.1.0
+    ports:
+      - "8091:8080"
+
+  engine-ia-jdk17:
+    profiles: [opentosca]
+    image: opentosca/engine-ia:latest-jdk17
+    ports:
+      - "7424:8080"
+
+  winery:
+    profiles: [opentosca]
+    # Winery with docker/initialized-winery/tosca-definitions baked in
+    build: ./docker/initialized-winery
+    ports:
+      - "8093:8080"
+    environment:
+      WINERY_HOSTNAME: ${PUBLIC_HOSTNAME}
+      WORKFLOWMODELER_HOSTNAME: ${PUBLIC_HOSTNAME}
+      TOPOLOGYMODELER_HOSTNAME: ${PUBLIC_HOSTNAME}
+      CONTAINER_HOSTNAME: ${PUBLIC_HOSTNAME}
+
+  opentosca-ui:
+    profiles: [opentosca]
+    image: opentosca/ui:latest
+    environment:
+      API_ENDPOINT_HOST: ${PUBLIC_HOSTNAME}
+      API_ENDPOINT_PORT: 1337
+      WINERY_HOST: ${PUBLIC_HOSTNAME}
+      WINERY_PORT: 8093
+    ports:
+      - "8088:8080"
+
+  # Docker engine the Container deploys the service containers into
+  # (referenced as tcp://dind:2375 in the generated topologies, see src/winery.ts)
+  dind:
+    profiles: [opentosca]
+    image: docker:20.10-dind
+    privileged: true
+    environment:
+      - DOCKER_TLS_CERTDIR=
+    ports:
+      - "2222:2375"
+      - "9990-9999:9990-9999"
+      - "9990-9999:9990-9999/udp"
+  # end of OpenTOSCA Ecosystem
+  #######################
 
 volumes:
   postgres_data:
