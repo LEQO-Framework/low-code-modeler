@@ -4953,7 +4953,7 @@ export const qaoa = {
         uncomputeImplementationType: "",
         uncomputeImplementation: "",
         completionGuaranteed: true,
-        compactOptions: [false],
+        compactOptions: [false, true],
         identifiers: ["qaoa0"],
         inputTypes: ["array", "array", "array"],
         outputTypes: {

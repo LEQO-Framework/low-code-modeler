@@ -30,7 +30,9 @@ export const QAOANode = memo((node: Node) => {
     shallow,
   );
 
-  const [p, setP] = useState(data.p || 1);
+  const [p, setP] = useState<string>(String(data.p || 1));
+  // Numeric layer count derived from the (possibly empty) input text
+  const pNum = Math.max(1, parseInt(p, 10) || 1);
   const [problem, setProblem] = useState(data.problem || "MaxCut");
   const [optimizer, setOptimizer] = useState(data.optimizer || "COBYLA");
 
@@ -94,11 +96,11 @@ export const QAOANode = memo((node: Node) => {
     const gammaLen = parseLength(rawGamma);
     const betaLen = parseLength(rawBeta);
 
-    const gammaMismatch = rawGamma != null && strGamma !== "" && gammaLen !== p;
-    const betaMismatch = rawBeta != null && strBeta !== "" && betaLen !== p;
+    const gammaMismatch = rawGamma != null && strGamma !== "" && gammaLen !== pNum;
+    const betaMismatch = rawBeta != null && strBeta !== "" && betaLen !== pNum;
 
     setParamError(gammaMismatch || betaMismatch);
-  }, [edges, id, p, data.gamma, data.beta, updateNodeValue]);
+  }, [edges, id, pNum, data.gamma, data.beta, updateNodeValue]);
 
   useEffect(() => {
     updateNodeInternals(id);
@@ -255,15 +257,22 @@ export const QAOANode = memo((node: Node) => {
                 className="w-full p-1 text-sm text-center text-black border-2 border-blue-200 rounded-full outline-none focus:border-blue-400 transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 value={p}
                 onChange={(e) => {
-                  const value = parseInt(e.target.value, 10) || 1;
-                  if (value < 1 || Number.isNaN(value)) {
-                    setP(1);
-                    handleChange("p", 1);
-                    return;
+                  // Keep the raw text so the field can be cleared while typing
+                  const raw = e.target.value;
+                  setP(raw);
+                  const value = parseInt(raw, 10);
+                  if (!Number.isNaN(value) && value >= 1) {
+                    handleChange("p", value);
                   }
-
-                  setP(value);
-                  handleChange("p", value);
+                }}
+                onBlur={() => {
+                  const value = parseInt(p, 10);
+                  if (Number.isNaN(value) || value < 1) {
+                    setP("1");
+                    handleChange("p", 1);
+                  } else {
+                    setP(String(value));
+                  }
                 }}
               />
             </div>

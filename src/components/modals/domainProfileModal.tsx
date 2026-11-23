@@ -1326,8 +1326,7 @@ export default function DomainProfileTableModal({
   profiles,
   editingProfileIndex,
   onEditProfile,
-  onDeleteProfile,
-  onReorderProfiles,
+  onSaveProfiles,
   onDuplicateProfile,
 }: {
   open: boolean;
@@ -1337,8 +1336,8 @@ export default function DomainProfileTableModal({
   profiles: DomainProfile[];
   editingProfileIndex: number | null;
   onEditProfile: (index: number) => void;
-  onDeleteProfile: (index: number) => void;
-  onReorderProfiles: (fromIndex: number, toIndex: number) => void;
+  /** Persists the saved-profile list after deleting / reordering */
+  onSaveProfiles: (profiles: DomainProfile[]) => void;
   onDuplicateProfile: (index: number) => void;
 }) {
   const [localNodes, setLocalNodes] = useState<EditableNodeProfile[]>([]);
@@ -1360,8 +1359,20 @@ export default function DomainProfileTableModal({
 
   const [activeTab, setActiveTab] = useState<"saved" | "create">("create");
 
+  // Deleting and reordering in the "Saved Profiles" tab only edit this draft.
+  // They are applied with "Save Changes" and discarded with "Cancel".
+  const [draftProfiles, setDraftProfiles] = useState<DomainProfile[] | null>(
+    null,
+  );
+  const shownProfiles = draftProfiles ?? profiles;
+  const hasUnsavedProfileChanges = draftProfiles !== null;
+  const unsavedChangesHint = hasUnsavedProfileChanges
+    ? "Save or cancel your changes first"
+    : undefined;
+
   useEffect(() => {
     setRemovedEnumNames([]);
+    setDraftProfiles(null);
 
     if (!open) {
       setLocalNodes([]);
@@ -1664,7 +1675,10 @@ export default function DomainProfileTableModal({
       return;
     }
 
-    onReorderProfiles(draggedProfileIndex, targetIndex);
+    const nextProfiles = [...shownProfiles];
+    const [movedProfile] = nextProfiles.splice(draggedProfileIndex, 1);
+    nextProfiles.splice(targetIndex, 0, movedProfile);
+    setDraftProfiles(nextProfiles);
 
     setDraggedProfileIndex(null);
   };
@@ -1708,15 +1722,32 @@ export default function DomainProfileTableModal({
         <div className="flex items-center justify-between w-full">
           <div className="text-xs text-gray-500">
             {activeTab === "saved"
-              ? `${profiles.length} saved profile${
-                  profiles.length === 1 ? "" : "s"
-                }`
+              ? `${shownProfiles.length} saved profile${
+                  shownProfiles.length === 1 ? "" : "s"
+                }${hasUnsavedProfileChanges ? " (unsaved changes)" : ""}`
               : profileName
                 ? `Editing: ${profileName}`
                 : "New domain profile"}
           </div>
 
           <div className="space-x-2">
+            {activeTab === "saved" ? (
+              <button
+                className={`btn ${
+                  hasUnsavedProfileChanges
+                    ? "btn-primary"
+                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                }`}
+                onClick={() => {
+                  if (!draftProfiles) return;
+                  onSaveProfiles(draftProfiles);
+                  onClose();
+                }}
+                disabled={!hasUnsavedProfileChanges}
+              >
+                Save Changes
+              </button>
+            ) : (
             <button
               className={`btn ${
                 duplicateWarning || hasBlockingErrors
@@ -1732,6 +1763,7 @@ export default function DomainProfileTableModal({
             >
               Save Profile
             </button>
+            )}
 
             <button className="btn btn-secondary" onClick={onClose}>
               Cancel
@@ -1754,7 +1786,7 @@ export default function DomainProfileTableModal({
               }`}
             >
               Saved Profiles
-              {profiles.length > 0 && (
+              {shownProfiles.length > 0 && (
                 <span
                   className={`ml-2 inline-flex min-w-5 h-5 items-center justify-center rounded-full px-1.5 text-[10px] ${
                     activeTab === "saved"
@@ -1762,7 +1794,7 @@ export default function DomainProfileTableModal({
                       : "bg-gray-100 text-gray-500"
                   }`}
                 >
-                  {profiles.length}
+                  {shownProfiles.length}
                 </span>
               )}
               {activeTab === "saved" && (
@@ -1817,14 +1849,16 @@ export default function DomainProfileTableModal({
                     setDuplicateWarning(null);
                     setActiveTab("create");
                   }}
-                  className="flex items-center gap-2 bg-blue-600 text-white px-3 py-2 rounded-md hover:bg-blue-700 text-sm font-medium"
+                  className="flex items-center gap-2 bg-blue-600 text-white px-3 py-2 rounded-md hover:bg-blue-700 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50"
+                  disabled={hasUnsavedProfileChanges}
+                  title={unsavedChangesHint}
                 >
                   <Plus size={16} />
                   Create Profile
                 </button>
               </div>
 
-              {profiles.length === 0 ? (
+              {shownProfiles.length === 0 ? (
                 <div className="rounded-lg border border-dashed border-gray-300 bg-white px-4 py-10 text-center">
                   <div className="text-sm font-medium text-gray-700">
                     No saved profiles
@@ -1836,7 +1870,7 @@ export default function DomainProfileTableModal({
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {profiles.map((profile, index) => (
+                  {shownProfiles.map((profile, index) => (
                     <div
                       key={`${profile.name}-${index}`}
                       draggable
@@ -1871,7 +1905,9 @@ export default function DomainProfileTableModal({
                       <div className="flex items-center gap-2">
                         <button
                           type="button"
-                          className="rounded border border-blue-200 px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-50"
+                          className="rounded border border-blue-200 px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
+                          disabled={hasUnsavedProfileChanges}
+                          title={unsavedChangesHint}
                           onClick={() => {
                             onEditProfile(index);
                             setActiveTab("create");
@@ -1882,7 +1918,9 @@ export default function DomainProfileTableModal({
 
                         <button
                           type="button"
-                          className="rounded border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                          className="rounded border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                          disabled={hasUnsavedProfileChanges}
+                          title={unsavedChangesHint}
                           onClick={() => {
                             onDuplicateProfile(index);
                             setActiveTab("create");
@@ -1902,7 +1940,13 @@ export default function DomainProfileTableModal({
                         <button
                           type="button"
                           className="rounded border border-red-200 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50"
-                          onClick={() => onDeleteProfile(index)}
+                          onClick={() =>
+                            setDraftProfiles(
+                              shownProfiles.filter(
+                                (_, profileIndex) => profileIndex !== index,
+                              ),
+                            )
+                          }
                         >
                           Delete
                         </button>

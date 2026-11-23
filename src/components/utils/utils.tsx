@@ -5,16 +5,9 @@ export const isUniqueIdentifier = (
   identifier: string,
   nodeId: string,
 ): boolean => {
-  console.log("check if outputIdentifier is unique");
-
   return !nodes
     .filter((node) => node.id !== nodeId)
-    .some((node) => {
-      console.log(nodeId);
-      console.log(node.data.outputIdentifier);
-      console.log(node.id);
-      return node.data.outputIdentifier === identifier;
-    });
+    .some((node) => node.data?.outputIdentifier === identifier);
 };
 
 export function findDuplicateOutputIdentifiers(nodes, currentNodeId) {
@@ -78,7 +71,6 @@ export function findDuplicateOutputIdentifiersInsideNode(
 
   for (const output of currentNode.data.outputs) {
     const id = output?.identifier;
-    console.log(id);
     if (!id) continue;
 
     if (seen.has(id) && id === identifier) {

@@ -103,7 +103,7 @@ export function DomainProfileRepositoryPicker({
     <div className="relative">
       <button
         onClick={() => setOpen((previous) => !previous)}
-        className="flex items-center gap-1 bg-blue-500 text-white px-3 py-1 rounded-md hover:bg-blue-700 text-sm"
+        className="flex items-center gap-1 bg-blue-500 text-white px-3 py-2 rounded-md hover:bg-blue-700 text-sm"
         title="Load a domain profile from the shared repository"
       >
         <Download size={14} /> Load from Repository

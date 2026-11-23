@@ -2079,10 +2079,14 @@ export const useStore = create<RFState>()(
       },
       undo: () => {
         const { history, historyIndex, nodes, edges, redoStack } = get();
-        if (historyIndex <= 0 || !history[historyIndex]) {
+        // Every history entry is the state *before* a change (see appendHistory
+        // callers), so undoing restores history[historyIndex] itself. Restoring
+        // history[historyIndex - 1] skipped one step and made the first change
+        // (e.g. pasting nodes into a fresh diagram) impossible to undo.
+        if (historyIndex < 0 || !history[historyIndex]) {
           return;
         }
-        const previousHistoryItem = history[historyIndex - 1];
+        const previousHistoryItem = history[historyIndex];
         set({
           nodes: previousHistoryItem.nodes,
           edges: previousHistoryItem.edges,
