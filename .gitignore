@@ -26,3 +26,6 @@ dist-ssr
 
 # Oxlint reports
 oxlint-report.json
+
+# Local docker compose settings (see docker-compose.override.example.yml)
+docker-compose.override.yml
