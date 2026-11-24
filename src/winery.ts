@@ -12,6 +12,17 @@
 import $ from "jquery";
 const QUANTME_NAMESPACE_PUSH = "http://quantil.org/quantme/push";
 
+export const DEFAULT_WINERY_ENDPOINT: string =
+  import.meta.env.VITE_WINERY_ENDPOINT || "http://localhost:8093/winery";
+
+// Winery endpoint used by the helpers below; set from the configuration.
+let wineryBaseUrl = DEFAULT_WINERY_ENDPOINT;
+
+/** Sets the Winery endpoint used for all Winery requests of this module. */
+export function setWineryEndpoint(url: string) {
+  wineryBaseUrl = url.trim().replace(/\/+$/, "") || DEFAULT_WINERY_ENDPOINT;
+}
+
 const nodeTypeDefinition = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Definitions targetNamespace="http://opentosca.org/nodetypes" id="winery-defs-for_otntyIgeneral-NodetypeToReplace" xmlns="http://docs.oasis-open.org/tosca/ns/2011/12" xmlns:yml="http://docs.oasis-open.org/tosca/ns/simple/yaml/1.3" xmlns:selfservice="http://www.eclipse.org/winery/model/selfservice" xmlns:winery="http://www.opentosca.org/winery/extensions/tosca/2013/02/12" xmlns:researchobject="http://www.eclipse.org/winery/model/researchobject" xmlns:testwineryopentoscaorg="http://test.winery.opentosca.org">
     <NodeType name="NodetypeToReplaceContainer" abstract="no" final="no" targetNamespace="http://opentosca.org/nodetypes">
@@ -78,7 +89,7 @@ export async function createArtifactTemplate(name, artifactTypeQName) {
     type: artifactTypeQName,
   };
   const response = await fetch(
-    `http://localhost:8093/winery/artifacttemplates`,
+    `${wineryBaseUrl}/artifacttemplates`,
     {
       method: "POST",
       headers: {
@@ -95,7 +106,7 @@ export async function addFileToArtifactTemplate(artifactTemplateAddress, file) {
   const formData = new FormData();
   formData.append("file", file);
   const response = await fetch(
-    `http://localhost:8093/winery/artifacttemplates/${artifactTemplateAddress}files`,
+    `${wineryBaseUrl}/artifacttemplates/${artifactTemplateAddress}files`,
     {
       method: "POST",
       body: formData,
@@ -123,7 +134,7 @@ export async function createServiceTemplate(name, namespace) {
     namespace: namespace,
   };
   const response = await fetch(
-    "http://localhost:8093/winery" + "/servicetemplates",
+    wineryBaseUrl + "/servicetemplates",
     {
       method: "POST",
       headers: {
@@ -139,7 +150,7 @@ export async function createServiceTemplate(name, namespace) {
 export async function deleteArtifactTemplate(artifactTemplateName) {
   // /artifacttemplates/http%253A%252F%252Fquantil.org%252Fquantme%252Fpush%252Fartifacttemplates/ArtifactTemplate-Activity_01b3qkz/
   const response = await fetch(
-    `http://localhost:8093/winery/artifacttemplates/${encodeURIComponent(
+    `${wineryBaseUrl}/artifacttemplates/${encodeURIComponent(
       encodeURIComponent(QUANTME_NAMESPACE_PUSH + "/"),
     )}artifacttemplates/${encodeURIComponent(
       encodeURIComponent(artifactTemplateName),
@@ -156,7 +167,7 @@ export async function deleteArtifactTemplate(artifactTemplateName) {
 
 export async function serviceTemplateExists(serviceTemplateName) {
   const response = await fetch(
-    `http://localhost:8093/winery/servicetemplates/${encodeURIComponent(
+    `${wineryBaseUrl}/servicetemplates/${encodeURIComponent(
       encodeURIComponent(QUANTME_NAMESPACE_PUSH),
     )}/${encodeURIComponent(encodeURIComponent(serviceTemplateName))}`,
     {
@@ -171,7 +182,7 @@ export async function serviceTemplateExists(serviceTemplateName) {
 
 export async function deleteTagByID(serviceTemplateAddress, tagID) {
   const response = await fetch(
-    `http://localhost:8093/winery/servicetemplates/${serviceTemplateAddress}tags/${tagID}`,
+    `${wineryBaseUrl}/servicetemplates/${serviceTemplateAddress}tags/${tagID}`,
     {
       method: "DELETE",
       headers: {
@@ -184,7 +195,7 @@ export async function deleteTagByID(serviceTemplateAddress, tagID) {
 
 export async function getTags(serviceTemplateAddress) {
   const response = await fetch(
-    `http://localhost:8093/winery/servicetemplates/${serviceTemplateAddress}tags/`,
+    `${wineryBaseUrl}/servicetemplates/${serviceTemplateAddress}tags/`,
     {
       method: "GET",
       headers: {
@@ -275,7 +286,7 @@ export async function addNodeToServiceTemplate(
     ],
   };
   const response = await fetch(
-    `http://localhost:8093/winery/servicetemplates/${serviceTemplateAddress}topologytemplate`,
+    `${wineryBaseUrl}/servicetemplates/${serviceTemplateAddress}topologytemplate`,
     {
       method: "PUT",
       headers: {
@@ -342,7 +353,7 @@ export async function addNodeWithArtifactToServiceTemplate(
     ],
   };
   const response = await fetch(
-    `http://localhost:8093/winery/servicetemplates/${serviceTemplateAddress}topologytemplate`,
+    `${wineryBaseUrl}/servicetemplates/${serviceTemplateAddress}topologytemplate`,
     {
       method: "PUT",
       headers: {
@@ -357,7 +368,7 @@ export async function addNodeWithArtifactToServiceTemplate(
 
 export async function getServiceTemplateXML(serviceTemplateAddress) {
   const response = await fetch(
-    `http://localhost:8093/winery/servicetemplates/${serviceTemplateAddress}xml`,
+    `${wineryBaseUrl}/servicetemplates/${serviceTemplateAddress}xml`,
     {
       method: "GET",
       headers: {
@@ -374,7 +385,7 @@ export async function insertTopNodeTag(serviceTemplateAddress, nodeTypeQName) {
     value: nodeTypeQName.split(/}(.*)/s)[1],
   };
   const response = await fetch(
-    "http://localhost:8093/winery" +
+    wineryBaseUrl +
       "/servicetemplates/" +
       serviceTemplateAddress +
       "tags/",
@@ -419,7 +430,7 @@ export async function createServiceTemplateWithNodeAndArtifact(
 
 export async function getArtifactTemplateInfo(artifactTemplateAddress) {
   const response = await fetch(
-    `http://localhost:8093/winery/artifacttemplates/${artifactTemplateAddress}`,
+    `${wineryBaseUrl}/artifacttemplates/${artifactTemplateAddress}`,
     {
       method: "GET",
       headers: {
@@ -487,7 +498,7 @@ export async function loadTopology(deploymentModelUrl) {
   if (deploymentModelUrl.startsWith("{{ wineryEndpoint }}")) {
     deploymentModelUrl = deploymentModelUrl.replace(
       "{{ wineryEndpoint }}",
-      "http://localhost:8093/winery",
+      wineryBaseUrl,
     );
   }
   let topology;
@@ -610,7 +621,7 @@ export async function createNodeType(name, namespace) {
     localname: name,
     namespace: namespace,
   };
-  const response = await fetch(`http://localhost:8093/winery/nodetypes`, {
+  const response = await fetch(`${wineryBaseUrl}/nodetypes`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -624,7 +635,7 @@ export async function createNodeType(name, namespace) {
 export async function updateNodeType(name, namespace) {
   const nodetype = nodeTypeDefinition.replaceAll("NodetypeToReplace", name);
   console.log(
-    "http://localhost:8093/winery" +
+    wineryBaseUrl +
       "/nodetypes/" +
       encodeURIComponent(encodeURIComponent(namespace)) +
       "/" +
@@ -632,7 +643,7 @@ export async function updateNodeType(name, namespace) {
   );
   console.log(nodetype);
   const response = await fetch(
-    `http://localhost:8093/winery/nodetypes/${encodeURIComponent(
+    `${wineryBaseUrl}/nodetypes/${encodeURIComponent(
       encodeURIComponent(namespace),
     )}/${name}`,
     {
@@ -653,7 +664,7 @@ export async function updateServiceTemplate(name, namespace) {
     name,
   );
   console.log(
-    "http://localhost:8093/winery" +
+    wineryBaseUrl +
       "/servicetemplates/" +
       encodeURIComponent(encodeURIComponent(namespace)) +
       "/" +
@@ -661,7 +672,7 @@ export async function updateServiceTemplate(name, namespace) {
   );
   console.log(topologyTemplate);
   const response = await fetch(
-    `http://localhost:8093/winery/servicetemplates/${encodeURIComponent(
+    `${wineryBaseUrl}/servicetemplates/${encodeURIComponent(
       encodeURIComponent(namespace),
     )}/${name}`,
     {

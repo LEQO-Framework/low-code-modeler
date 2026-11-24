@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Modal from "./Modal";
 import { Download, Upload, Trash2, ImageIcon } from "lucide-react";
-import { Button } from "../ui";
+import { templateIconSrc } from "@/lib/templatePreview";
 
 interface ManageTemplateModalProps {
   open: boolean;
@@ -38,11 +38,12 @@ export const ManageTemplateModal = ({
       t.description?.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
+  // Copy the templates when the dialog opens, so that Cancel discards all changes made in the dialog.
   useEffect(() => {
     if (open) {
       setLocalTemplates(JSON.parse(JSON.stringify(templates))); // deep copy
     }
-  }, [open, templates]);
+  }, [open]);
 
   const updateLocal = (id: string, field: string, value: string) => {
     setLocalTemplates((prev) =>
@@ -67,7 +68,8 @@ export const ManageTemplateModal = ({
     );
   };
 
-  const removeLocal = (id: string) => {
+  // Like all other changes, deleting only takes effect with Save Changes; Cancel restores the template.
+  const removeTemplate = (id: string) => {
     setLocalTemplates((prev) => prev.filter((t) => t.id !== id));
   };
 
@@ -213,41 +215,51 @@ export const ManageTemplateModal = ({
     e.target.value = "";
   };
 
-  // TODO: Update UI
+  const hasUnsavedChanges =
+    JSON.stringify(localTemplates) !== JSON.stringify(templates);
+
+  const close = () => {
+    setSearchQuery("");
+    onClose();
+  };
+
   return (
     <Modal
-      title="Manage User Templates"
+      title="User Templates"
       open={open}
-      onClose={() => {
-        setSearchQuery("");
-        onClose();
-      }}
+      onClose={close}
+      className="w-[92vw] max-w-5xl"
       footer={
-        <div className="flex justify-end space-x-2 pr-6">
-          <button
-            className="btn btn-primary"
-            onClick={() => {
-              setSearchQuery("");
-              onSave(localTemplates);
-              onClose();
-            }}
-          >
-            Save
-          </button>
-          <button
-            className="btn btn-secondary"
-            onClick={() => {
-              setSearchQuery("");
-              onClose();
-            }}
-          >
-            Cancel
-          </button>
+        <div className="flex items-center justify-between w-full">
+          <div className="text-xs text-gray-500">
+            {`${localTemplates.length} template${
+              localTemplates.length === 1 ? "" : "s"
+            }${hasUnsavedChanges ? " (unsaved changes)" : ""}`}
+          </div>
+
+          <div className="space-x-2">
+            <button
+              className={`btn ${
+                hasUnsavedChanges
+                  ? "btn-primary"
+                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
+              }`}
+              disabled={!hasUnsavedChanges}
+              onClick={() => {
+                onSave(localTemplates);
+                close();
+              }}
+            >
+              Save Changes
+            </button>
+            <button className="btn btn-secondary" onClick={close}>
+              Cancel
+            </button>
+          </div>
         </div>
       }
-      className="max-w-4xl"
     >
-      <div className="pt-4 px-4 pb-0 w-full">
+      <div className="flex flex-col min-h-0">
         {/* Toast Notification */}
         {toast && (
           <div
@@ -267,140 +279,159 @@ export const ManageTemplateModal = ({
             </div>
           </div>
         )}
-        <div className="flex items-center gap-2 mb-4 w-full pr-2">
-          {/* Search Bar */}
-          <div className="relative flex-1">
-            <input
-              type="text"
-              placeholder="Search user templates..."
-              className="w-full h-9 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-sm"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
 
-          {/* Import Button */}
-          <label className="cursor-pointer">
-            <input
-              type="file"
-              multiple
-              className="hidden"
-              accept=".json"
-              onChange={handleImport}
-            />
-            <Button variant="outline" size="sm" asChild className="h-9">
-              <span className="flex items-center gap-2">
-                <Upload className="w-4 h-4" /> Import
-              </span>
-            </Button>
-          </label>
-        </div>
-
-        {/* Filtered Template List */}
-        <div className="space-y-2 max-h-[50vh] overflow-y-auto pr-2">
-          {filteredTemplates.map((template) => (
-            <div
-              key={template.id}
-              className="p-4 border border-gray-200 rounded-lg bg-gray-50 flex flex-col gap-3"
-            >
-              <div className="flex gap-4 items-start">
-                {/* column 1: Icon */}
-                <div className="relative group w-48 h-48 bg-white border rounded shrink-0 overflow-hidden">
-                  <img
-                    src={
-                      template.icon?.startsWith("data:")
-                        ? template.icon
-                        : `/public/${template.icon}`
-                    }
-                    className="w-full h-full object-contain p-1"
-                    alt="icon"
-                  />
-                  <label className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity">
-                    <input
-                      type="file"
-                      className="hidden"
-                      accept="image/*"
-                      onChange={(e) => handleIconUpload(e, template.id)}
-                    />
-                    <ImageIcon className="w-5 h-5 text-white" />
-                  </label>
-                </div>
-
-                {/* column 2*/}
-                <div className="flex flex-col justify-between h-48 flex-1 min-w-0">
-                  <div className="flex gap-4 w-full">
-                    {/* Name */}
-                    <div className="flex flex-col gap-1 flex-1">
-                      <label className="text-[10px] font-small text-gray-700 flex items-center gap-0.5">
-                        Name
-                      </label>
-                      <input
-                        className="qwm-input w-0.5full h-8 text-sm gap-1"
-                        value={template.name || ""}
-                        onChange={(e) =>
-                          updateLocal(template.id, "name", e.target.value)
-                        }
-                      />
-                    </div>
-                    {/* Author */}
-                    <div className="flex flex-col gap-1 flex-1">
-                      <label className="text-[10px] font-small text-gray-700 flex items-center gap-0.5">
-                        Author
-                      </label>
-                      <input
-                        className="qwm-input w-full h-8 text-sm gap-1"
-                        value={
-                          template.author ||
-                          template.flowData?.metadata?.author ||
-                          ""
-                        }
-                        onChange={(e) =>
-                          updateLocal(template.id, "author", e.target.value)
-                        }
-                      />
-                    </div>
-                  </div>
-                  {/* Description */}
-                  <div className="flex flex-col h-32 gap-1 pt-0">
-                    <label className="text-[10px] font-small text-gray-700 flex items-center gap-1">
-                      Description
-                    </label>
-                    <textarea
-                      rows={2}
-                      className="qwm-input h-28 resize-none w-full text-sm"
-                      value={template.description || ""}
-                      onChange={(e) =>
-                        updateLocal(template.id, "description", e.target.value)
-                      }
-                    />
-                  </div>
-                </div>
+        <div className="max-h-[70vh] overflow-y-auto overflow-x-hidden pr-2">
+          <section className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900">
+                  Saved Templates
+                </h3>
+                <p className="text-xs text-gray-500 mt-1">
+                  Edit, export, import or delete the models you saved as
+                  templates.
+                </p>
               </div>
 
-              <div className="flex justify-end gap-2 pt-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 px-3 hover:bg-gray-200"
-                  onClick={() => handleExport(template)}
-                >
-                  <span className="flex items-center gap-2">
-                    <Download className="w-4 h-4" /> Export
-                  </span>
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 px-3 hover:bg-gray-200"
-                  onClick={() => removeLocal(template.id)}
-                >
-                  <span className="flex items-center gap-2">
-                    <Trash2 className="w-4 h-4" /> Delete
-                  </span>
-                </Button>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  placeholder="Search templates..."
+                  className="border rounded-md px-3 py-2 text-sm bg-white min-w-[220px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+
+                <label className="flex items-center gap-2 bg-blue-600 text-white px-3 py-2 rounded-md hover:bg-blue-700 text-sm font-medium cursor-pointer">
+                  <input
+                    type="file"
+                    multiple
+                    className="hidden"
+                    accept=".json"
+                    onChange={handleImport}
+                  />
+                  <Upload size={16} />
+                  Import
+                </label>
               </div>
             </div>
-          ))}
+
+            {localTemplates.length === 0 ? (
+              <div className="rounded-lg border border-dashed border-gray-300 bg-white px-4 py-10 text-center">
+                <div className="text-sm font-medium text-gray-700">
+                  No saved templates
+                </div>
+                <p className="mt-1 text-xs text-gray-500">
+                  Use Save Diagram ▾ → Save as Template to see a model here.
+                </p>
+              </div>
+            ) : filteredTemplates.length === 0 ? (
+              <div className="rounded-lg border border-dashed border-gray-300 bg-white px-4 py-10 text-center">
+                <div className="text-sm font-medium text-gray-700">
+                  No templates match "{searchQuery}"
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {filteredTemplates.map((template) => (
+                  <div
+                    key={template.id}
+                    className="flex items-start gap-4 rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-sm transition hover:border-gray-300"
+                  >
+                    {/* Preview of the model; click to replace it with an own image */}
+                    <label
+                      className="relative group w-40 h-24 shrink-0 overflow-hidden rounded border border-gray-200 bg-white cursor-pointer"
+                      title="Change image"
+                    >
+                      <img
+                        src={templateIconSrc(template)}
+                        className="w-full h-full object-contain"
+                        alt={`Preview of ${template.name || "the template"}`}
+                      />
+                      <span className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                        <ImageIcon className="w-5 h-5 text-white" />
+                      </span>
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept="image/*"
+                        onChange={(e) => handleIconUpload(e, template.id)}
+                      />
+                    </label>
+
+                    <div className="min-w-0 flex-1 space-y-2">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-[10px] font-bold text-gray-500 uppercase">
+                            Name
+                          </label>
+                          <input
+                            className="w-full border rounded px-2 py-1 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+                            value={template.name || ""}
+                            onChange={(e) =>
+                              updateLocal(template.id, "name", e.target.value)
+                            }
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-gray-500 uppercase">
+                            Author
+                          </label>
+                          <input
+                            className="w-full border rounded px-2 py-1 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+                            value={
+                              template.author ||
+                              template.flowData?.metadata?.author ||
+                              ""
+                            }
+                            onChange={(e) =>
+                              updateLocal(template.id, "author", e.target.value)
+                            }
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-gray-500 uppercase">
+                          Description
+                        </label>
+                        <textarea
+                          rows={2}
+                          className="w-full border rounded px-2 py-1 text-xs bg-white resize-none focus:outline-none focus:ring-2 focus:ring-blue-400"
+                          value={template.description || ""}
+                          onChange={(e) =>
+                            updateLocal(
+                              template.id,
+                              "description",
+                              e.target.value,
+                            )
+                          }
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-2 shrink-0">
+                      <button
+                        type="button"
+                        className="flex items-center gap-1 rounded border border-blue-200 px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-50"
+                        onClick={() => handleExport(template)}
+                      >
+                        <Download size={14} />
+                        Export
+                      </button>
+                      <button
+                        type="button"
+                        className="flex items-center gap-1 rounded border border-red-200 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50"
+                        onClick={() => removeTemplate(template.id)}
+                      >
+                        <Trash2 size={14} />
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
         </div>
       </div>
     </Modal>

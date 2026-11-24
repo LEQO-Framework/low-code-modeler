@@ -42,6 +42,10 @@ import { useShallow } from "zustand/react/shallow";
 import { findNodeDefinition, handleDragOver } from "./lib/utils";
 import useKeyBindings from "./hooks/useKeyBindings";
 import { toSvg } from "html-to-image";
+import {
+  captureFlowPreview,
+  DEFAULT_TEMPLATE_ICON,
+} from "./lib/templatePreview";
 import { initialDiagram } from "./config/site";
 import Modal, { NewDiagramModal } from "./Modal";
 import "./index.css";
@@ -92,6 +96,8 @@ import {
   createNodeType,
   createServiceInstance,
   createServiceTemplate,
+  DEFAULT_WINERY_ENDPOINT,
+  setWineryEndpoint as setWineryModuleEndpoint,
   updateNodeType,
   updateServiceTemplate,
   uploadCSARToContainer,
@@ -131,10 +137,6 @@ import * as exampleModels from "./constants/exampleModels";
 const BPMN_NS = "http://www.omg.org/spec/BPMN/20100524/MODEL";
 const CAMUNDA_NS = "http://camunda.org/schema/1.0/bpmn";
 const OPENTOSCA_NS = "https://github.com/UST-QuAntiL/OpenTOSCA";
-const wineryEndpoint =
-  import.meta.env.VITE_WINERY_ENDPOINT || "http://localhost:8093/winery";
-const opentoscaEndpoint =
-  import.meta.env.VITE_OPENTOSCA_ENDPOINT || "http://localhost:1337/csars";
 
 /**
  * Replace localhost in the URL with the given IP, so the URL can be reached
@@ -480,6 +482,14 @@ function App() {
       "http://localhost:8090/engine-rest",
   );
   const [hostIp, setHostIp] = useState(import.meta.env.VITE_HOST_IP || "");
+  const [wineryEndpoint, setWineryEndpoint] = useState(DEFAULT_WINERY_ENDPOINT);
+  const [opentoscaEndpoint, setOpentoscaEndpoint] = useState(
+    import.meta.env.VITE_OPENTOSCA_ENDPOINT || "http://localhost:1337/csars",
+  );
+  // The Winery helpers (winery.ts) read the endpoint from module state.
+  useEffect(() => {
+    setWineryModuleEndpoint(wineryEndpoint);
+  }, [wineryEndpoint]);
 
   const [openAIToken, setOpenAIToken] = useState(
     import.meta.env.VITE_OPENAI_TOKEN,
@@ -843,6 +853,8 @@ If none apply, return { "algorithms": [] }.
     console.log(newValues);
     setCamundaEndpoint(newValues.tempCamundaEndpoint);
     setHostIp(newValues.tempHostIp);
+    setWineryEndpoint(newValues.tempWineryEndpoint);
+    setOpentoscaEndpoint(newValues.tempOpentoscaEndpoint);
     setNisqAnalyzerEndpoint(newValues.tempNisqAnalyzerEndpoint);
     setOpenAIToken(newValues.tempOpenAIToken);
     setMistralToken(newValues.tempMistralToken);
@@ -3998,7 +4010,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     setAllDomainProfiles(nextProfiles);
   };
 
-  const handleSaveAsTemplate = () => {
+  const handleSaveAsTemplate = async () => {
     console.log("Saving User Template");
     if (!reactFlowInstance) {
       console.error("React Flow instance is not initialized.");
@@ -4017,7 +4029,10 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     const newTemplate: Template = {
       label: `${custom_template}-${date}`,
       type: templates,
-      icon: "QAOA.png", //TODO
+      // A preview image of the model; without one, a schematic of the model is shown (see templateIconSrc).
+      icon:
+        (await captureFlowPreview(ref.current, reactFlowInstance.getNodes())) ??
+        DEFAULT_TEMPLATE_ICON,
       description: metadata.description,
       completionGuaranteed: true,
       compactOptions: [true, false],
@@ -5763,6 +5778,8 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
         collaborationMode={collaborationModeOn}
         tempCamundaEndpoint={camundaEndpoint}
         tempHostIp={hostIp}
+        tempWineryEndpoint={wineryEndpoint}
+        tempOpentoscaEndpoint={opentoscaEndpoint}
         tempNisqAnalyzerEndpoint={nisqAnalyzerEndpoint}
         tempOpenAIToken={openAIToken}
         tempQunicornEndpoint={qunicornEndpoint}

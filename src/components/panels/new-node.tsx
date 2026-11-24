@@ -15,6 +15,7 @@ import {
   QUANTUM_OPERATORS_CATEGORY,
 } from "../modals/domainProfileModal";
 import { domainBlockIcon } from "@/lib/domainBlockIcon";
+import { templateIconSrc } from "@/lib/templatePreview";
 
 const selector = (state: {
   compact: boolean;
@@ -112,7 +113,11 @@ export const AddNodePanel = ({ onAddNode }: AddNodePanelProps) => {
         ...baseCategories[consts.templates],
         content: {
           "Standard Templates": baseCategories[consts.templates]?.content,
-          "User Templates": userTemplates,
+          // Shows the preview of each model (or a schematic of it) instead of a generic icon.
+          "User Templates": userTemplates.map((template) => ({
+            ...template,
+            icon: templateIconSrc(template),
+          })),
         },
       },
     };
