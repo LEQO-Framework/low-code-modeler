@@ -18,6 +18,8 @@ interface ConfigModalProps {
     autoConnectOnSameLine: boolean;
     tempCamundaEndpoint: string;
     tempHostIp: string;
+    tempWineryEndpoint: string;
+    tempOpentoscaEndpoint: string;
     tempNisqAnalyzerEndpoint: string;
     tempQunicornEndpoint: string;
     tempOpenAIToken: string;
@@ -39,6 +41,8 @@ interface ConfigModalProps {
   setActiveTab: (tab: string) => void;
   tempCamundaEndpoint: string;
   tempHostIp: string;
+  tempWineryEndpoint: string;
+  tempOpentoscaEndpoint: string;
   // Current App state values
   tempNisqAnalyzerEndpoint: string;
   tempQunicornEndpoint: string;
@@ -71,6 +75,8 @@ export const ConfigModal = ({
   collaborationMode,
   tempCamundaEndpoint,
   tempHostIp,
+  tempWineryEndpoint,
+  tempOpentoscaEndpoint,
   tempNisqAnalyzerEndpoint,
   tempQunicornEndpoint,
   tempLowcodeBackendEndpoint,
@@ -103,6 +109,8 @@ export const ConfigModal = ({
   const [localNisq, setLocalNisq] = useState(tempNisqAnalyzerEndpoint);
   const [localCamunda, setLocalCamunda] = useState(tempCamundaEndpoint);
   const [localHostIp, setLocalHostIp] = useState(tempHostIp);
+  const [localWinery, setLocalWinery] = useState(tempWineryEndpoint);
+  const [localOpentosca, setLocalOpentosca] = useState(tempOpentoscaEndpoint);
   const [localQunicorn, setLocalQunicorn] = useState(tempQunicornEndpoint);
   const [localLowcode, setLocalLowcode] = useState(tempLowcodeBackendEndpoint);
   const [localOpenAIToken, setLocalOpenAIToken] = useState(tempOpenAIToken);
@@ -141,6 +149,8 @@ export const ConfigModal = ({
       setLocalNisq(tempNisqAnalyzerEndpoint);
       setLocalCamunda(tempCamundaEndpoint);
       setLocalHostIp(tempHostIp);
+      setLocalWinery(tempWineryEndpoint);
+      setLocalOpentosca(tempOpentoscaEndpoint);
       setLocalQunicorn(tempQunicornEndpoint);
       setLocalLowcode(tempLowcodeBackendEndpoint);
       setLocalPatternUI(tempPatternAtlasUiEndpoint);
@@ -161,6 +171,8 @@ export const ConfigModal = ({
       experienceLevel: localExperienceLevel,
       tempCamundaEndpoint: localCamunda,
       tempHostIp: localHostIp,
+      tempWineryEndpoint: localWinery,
+      tempOpentoscaEndpoint: localOpentosca,
       compactVisualization: localCompactVisualization,
       completionGuaranteed: localCompletionGuaranteed,
       autoConnectOnEdgeDrop: localAutoConnectOnEdgeDrop,
@@ -398,6 +410,30 @@ export const ConfigModal = ({
             <h3 className="labels">OpenTOSCA</h3>
             <table className="config-table">
               <tbody>
+                <tr>
+                  <td align="right">Winery Endpoint:</td>
+                  <td align="left">
+                    <input
+                      className="qwm-input"
+                      type="text"
+                      placeholder="http://localhost:8093/winery"
+                      value={localWinery}
+                      onChange={(e) => setLocalWinery(e.target.value)}
+                    />
+                  </td>
+                </tr>
+                <tr>
+                  <td align="right">OpenTOSCA Container Endpoint:</td>
+                  <td align="left">
+                    <input
+                      className="qwm-input"
+                      type="text"
+                      placeholder="http://localhost:1337/csars"
+                      value={localOpentosca}
+                      onChange={(e) => setLocalOpentosca(e.target.value)}
+                    />
+                  </td>
+                </tr>
                 <tr>
                   <td align="right">Host IP:</td>
                   <td align="left">

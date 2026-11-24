@@ -354,6 +354,25 @@ interface PropertyDescription {
   minExperienceLevel?: ExperienceLevel;
 }
 
+/** Optional settings shared by all custom operators (Properties tab, Implementation section). */
+const CUSTOM_OPERATOR_OPTIONAL_PROPERTIES: Record<string, PropertyDescription> = {
+  "API Connector": {
+    description:
+      "Instead of an implementation file, calls an external service via HTTP. Configure method, headers, URL, the payload built from the classical inputs, and how the outputs are extracted from the response.",
+    minExperienceLevel: "explorer",
+  },
+  Requirements: {
+    description:
+      "Python dependencies of the implementation (e.g. a requirements.txt). They are installed in the service container; packages imported in the code are detected automatically.",
+    minExperienceLevel: "explorer",
+  },
+  "Environment Variables": {
+    description:
+      "Environment variables of the service container (NAME=VALUE lines, e.g. a .env file), readable in the code with os.environ. They are stored in the deployment model, so do not use them for secrets.",
+    minExperienceLevel: "explorer",
+  },
+};
+
 interface PropertyExplanationGroup {
   required?: Record<string, PropertyDescription>;
   optional?: Record<string, PropertyDescription>;
@@ -529,6 +548,7 @@ const PROPERTIES_EXPLANATIONS: Record<string, PropertyExplanationGroup> = {
         minExperienceLevel: "explorer",
       },
     },
+    optional: CUSTOM_OPERATOR_OPTIONAL_PROPERTIES,
   },
 
   ["Custom Quantum Operator"]: {
@@ -539,6 +559,7 @@ const PROPERTIES_EXPLANATIONS: Record<string, PropertyExplanationGroup> = {
         minExperienceLevel: "explorer",
       },
     },
+    optional: CUSTOM_OPERATOR_OPTIONAL_PROPERTIES,
   },
 
   ["Quantum Arithmetic Operator"]: {
@@ -882,6 +903,7 @@ const PROPERTIES_EXPLANATIONS: Record<string, PropertyExplanationGroup> = {
         minExperienceLevel: "pioneer",
       },
     },
+    optional: CUSTOM_OPERATOR_OPTIONAL_PROPERTIES,
   },
 };
 
@@ -1211,6 +1233,12 @@ const getEditableNodeImplementationType = (
   return null;
 };
 
+/** Nodes whose explanation the user can adapt: custom operators and domain blocks. */
+const isCustomExplanationNode = (node: Node | null): boolean =>
+  node?.type === EditableNode ||
+  node?.type === AlgorithmNode ||
+  node?.type === ClassicalAlgorithmNode;
+
 const getNodeExplanation = (selectedNode: Node | null) => {
   if (!selectedNode) {
     return "";
@@ -1240,9 +1268,9 @@ const getNodeExplanation = (selectedNode: Node | null) => {
     );
   }
 
-  if (selectedNode.type === EditableNode) {
+  if (isCustomExplanationNode(selectedNode)) {
     return (
-      selectedNode.data.explanation ?? NODE_EXPLANATIONS[EditableNode] ?? ""
+      selectedNode.data.explanation ?? NODE_EXPLANATIONS[selectedNode.type] ?? ""
     );
   }
 
@@ -1296,6 +1324,23 @@ export const TextPanel = () => {
 
   const inputOutputExplanations = getInputOutputExplanations(selectedNode);
 
+  const editableImplementationType =
+    getEditableNodeImplementationType(selectedNode);
+
+  // Custom nodes (custom quantum/classical operators and domain blocks) have a
+  // user-editable explanation. Their Information tab shows all explanations,
+  // the Properties tab only the fields for configuring the implementation.
+  const isCustomNode = isCustomExplanationNode(selectedNode);
+  const hasCustomProperties =
+    selectedNode?.type === AlgorithmNode ||
+    selectedNode?.type === ClassicalAlgorithmNode ||
+    (selectedNode?.type === EditableNode && !!editableImplementationType);
+  const showPropertiesTab = isCustomNode
+    ? hasCustomProperties
+    : hasPropertyExplanations;
+  const showCustomProperties =
+    hasCustomProperties && activeTab === "properties";
+
   const [idCopied, setIdCopied] = useState(false);
 
   const copyNodeId = async () => {
@@ -1326,10 +1371,10 @@ export const TextPanel = () => {
    * automatically return to the Information tab.
    */
   useEffect(() => {
-    if (!hasPropertyExplanations) {
+    if (!showPropertiesTab) {
       setActiveTab("information");
     }
-  }, [hasPropertyExplanations]);
+  }, [showPropertiesTab]);
 
   useEffect(() => {
     if (
@@ -1534,9 +1579,6 @@ export const TextPanel = () => {
     }
   }
 
-  const editableImplementationType =
-    getEditableNodeImplementationType(selectedNode);
-
   /** Stores structured values (objects, lists) that handleNumberChange does not support. */
   function updateField(field: string, value: any) {
     if (!selectedNode) return;
@@ -1584,7 +1626,7 @@ export const TextPanel = () => {
                   Information
                 </button>
 
-                {hasPropertyExplanations && (
+                {showPropertiesTab && (
                   <button
                     type="button"
                     role="tab"
@@ -1636,21 +1678,40 @@ export const TextPanel = () => {
                     Explanation
                   </label>
 
-                  {selectedNode.type === EditableNode ? (
-                    <textarea
-                      id="nodeExplanation"
-                      name="nodeExplanation"
-                      value={
-                        selectedNode.data.explanation ??
-                        NODE_EXPLANATIONS[EditableNode] ??
-                        ""
-                      }
-                      onChange={(e) =>
-                        handleNumberChange("explanation", e.target.value)
-                      }
-                      className="mt-1 border border-gray-300 rounded-md sm:text-sm p-2 bg-white text-gray-700 w-full min-h-28 resize-y focus:outline-none focus:ring-2 focus:ring-blue-400"
-                      placeholder="Enter an explanation for this custom node..."
-                    />
+                  {isCustomNode ? (
+                    <>
+                      <textarea
+                        id="nodeExplanation"
+                        name="nodeExplanation"
+                        value={getNodeExplanation(selectedNode)}
+                        onChange={(e) =>
+                          handleNumberChange("explanation", e.target.value)
+                        }
+                        className="mt-1 border border-gray-300 rounded-md sm:text-sm p-2 bg-white text-gray-700 w-full min-h-28 resize-y focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        placeholder="Enter an explanation for this custom node..."
+                      />
+                      <div className="mt-1 flex justify-between gap-2 text-left text-xs text-gray-500">
+                        <span>Describe what this node does for other users.</span>
+                        {/* Domain blocks take their default text from the profile, so only operators can be reset */}
+                        {selectedNode.type !== EditableNode &&
+                          selectedNode.data.explanation != null &&
+                          selectedNode.data.explanation !==
+                            NODE_EXPLANATIONS[selectedNode.type] && (
+                            <button
+                              type="button"
+                              className="text-blue-600 underline whitespace-nowrap"
+                              onClick={() =>
+                                handleNumberChange(
+                                  "explanation",
+                                  NODE_EXPLANATIONS[selectedNode.type] ?? "",
+                                )
+                              }
+                            >
+                              Reset to default
+                            </button>
+                          )}
+                      </div>
+                    </>
                   ) : (
                     <div className="mt-1 min-h-28 border border-gray-300 rounded-md sm:text-sm p-2 bg-gray-50 text-gray-700">
                       {getNodeExplanation(selectedNode)}
@@ -1662,11 +1723,15 @@ export const TextPanel = () => {
                   input={inputOutputExplanations.input}
                   output={inputOutputExplanations.output}
                 />
+
+                {isCustomNode && (
+                  <PropertyExplanations properties={propertyExplanations} />
+                )}
               </div>
             )}
 
-            {/* Properties Tab */}
-            {hasPropertyExplanations && activeTab === "properties" && (
+            {/* Properties Tab (custom nodes render their fields below) */}
+            {!isCustomNode && showPropertiesTab && activeTab === "properties" && (
               <div role="tabpanel" className="p-2">
                 <PropertyExplanations properties={propertyExplanations} />
               </div>
@@ -1674,7 +1739,9 @@ export const TextPanel = () => {
           </>
         )}
 
-        {selectedNode?.type === EditableNode && editableImplementationType && (
+        {selectedNode?.type === EditableNode &&
+          editableImplementationType &&
+          showCustomProperties && (
           <CustomOperatorImplementation
             selectedNode={selectedNode}
             updateField={updateField}
@@ -2213,7 +2280,8 @@ export const TextPanel = () => {
         )}
 
         {(selectedNode?.type === AlgorithmNode ||
-          selectedNode?.type === ClassicalAlgorithmNode) && (
+          selectedNode?.type === ClassicalAlgorithmNode) &&
+          showCustomProperties && (
           <CustomOperatorImplementation
             selectedNode={selectedNode}
             updateField={updateField}

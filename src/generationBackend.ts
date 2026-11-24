@@ -1,4 +1,5 @@
-const DEFAULT_GENERATION_BACKEND = "http://localhost:3000";
+const DEFAULT_GENERATION_BACKEND: string =
+  import.meta.env.VITE_GENERATION_BACKEND || "http://localhost:3000";
 
 export type JobStatus = "queued" | "running" | "done" | "failed";
 
@@ -55,11 +56,12 @@ export function waitForJob(
   jobId: string,
   onUpdate?: (job: JobResponse) => void,
   intervalMs = 1000,
+  baseUrl: string = DEFAULT_GENERATION_BACKEND,
 ): Promise<JobResponse> {
   return new Promise((resolve, reject) => {
     const interval = setInterval(async () => {
       try {
-        const job = await getJob(jobId);
+        const job = await getJob(jobId, baseUrl);
 
         if (onUpdate) onUpdate(job);
 
@@ -84,7 +86,8 @@ export async function generate(
   prompt: string,
   generationMode: string,
   _onUpdate?: (job: JobResponse) => void,
+  baseUrl: string = DEFAULT_GENERATION_BACKEND,
 ) {
-  const { jobId } = await createGenerationJob(prompt, generationMode);
+  const { jobId } = await createGenerationJob(prompt, generationMode, baseUrl);
   return jobId;
 }
