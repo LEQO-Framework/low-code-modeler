@@ -349,24 +349,75 @@ function applyMultiControlledGate(
   return result;
 }
 
-/** Lookup table base gate name -> matrix, used for ctrl(N) @ <name> constructs. */
-const GATE_MATRIX_BY_NAME: Record<
-  string,
-  [Complex, Complex, Complex, Complex]
-> = {
-  h: GATE_H,
-  x: GATE_X,
-  y: GATE_Y,
-  z: GATE_Z,
-  s: GATE_S,
-  sdg: GATE_SDG,
-  t: GATE_T,
-  tdg: GATE_TDG,
-  sx: GATE_SX,
-};
+type Mat2 = [Complex, Complex, Complex, Complex];
+
+const GATE_I: Mat2 = [C(1), C(0), C(0), C(1)];
+
+/** P(λ) = diag(1, e^{iλ}); also used for u1(λ) and phase(λ). Not the same as Rz(λ). */
+function gateP(lam: number): Mat2 {
+  return [C(1), C(0), C(0), C(Math.cos(lam), Math.sin(lam))];
+}
+
+/** 2x2 matrix of a single-qubit gate, or null if `name` is not a single-qubit gate. */
+function singleQubitMatrix(name: string, params: number[]): Mat2 | null {
+  const [p0 = 0, p1 = 0, p2 = 0] = params;
+  switch (name) {
+    case "id":
+    case "i":
+      return GATE_I;
+    case "h":
+      return GATE_H;
+    case "x":
+      return GATE_X;
+    case "y":
+      return GATE_Y;
+    case "z":
+      return GATE_Z;
+    case "s":
+      return GATE_S;
+    case "sdg":
+      return GATE_SDG;
+    case "t":
+      return GATE_T;
+    case "tdg":
+      return GATE_TDG;
+    case "sx":
+      return GATE_SX;
+    case "rx":
+      return gateRX(p0);
+    case "ry":
+      return gateRY(p0);
+    case "rz":
+      return gateRZ(p0);
+    case "p":
+    case "phase":
+    case "u1":
+      return gateP(p0);
+    case "u2":
+      return gateU3(Math.PI / 2, p0, p1);
+    case "u3":
+    case "u":
+      return gateU3(p0, p1, p2);
+    default:
+      return null;
+  }
+}
+
+/** Number of qubits of every gate the simulator knows (Map, so "constructor" etc. are not found). */
+const GATE_ARITY: Map<string, number> = new Map([
+  ...[
+    "id", "i", "h", "x", "y", "z", "s", "sdg", "t", "tdg", "sx",
+    "rx", "ry", "rz", "p", "phase", "u1", "u2", "u3", "u",
+  ].map((n): [string, number] => [n, 1]),
+  ...[
+    "cx", "cnot", "cy", "cz", "ch", "cp", "cphase", "crx", "cry", "crz", "cu", "swap",
+  ].map((n): [string, number] => [n, 2]),
+  ...["ccx", "toffoli", "cswap", "fredkin"].map((n): [string, number] => [n, 3]),
+]);
 
 /**
  * Applies a multi-controlled gate encoded as "mc_<basegate>" to the statevector.
+ * The base gate can be any single-qubit gate, also with parameters (mc_rx, mc_p, ...).
  * Returns `null` for an unknown base gate so the caller can emit a warning.
  */
 function applyParsedMultiControlledGate(
@@ -375,7 +426,7 @@ function applyParsedMultiControlledGate(
   gate: ParsedGate,
 ): Complex[] | null {
   const baseName = gate.name.slice(3); // strip the "mc_" prefix
-  const matrix = GATE_MATRIX_BY_NAME[baseName];
+  const matrix = singleQubitMatrix(baseName, gate.params);
   if (!matrix) return null;
 
   const numControls = gate.numControls ?? gate.qubits.length - 1;
@@ -406,6 +457,9 @@ interface ParsedGate {
   // Number of control qubits for "mc_<gate>" names (ctrl(N) @ gate modifier syntax).
   // The first `numControls` entries in `qubits` are the controls, the rest are the targets.
   numControls?: number;
+  // Source text of parameters that could not be evaluated (their value in `params` is 0),
+  // so that normalizeQasm can write them back instead of a silent 0.
+  paramExprs?: (string | undefined)[];
   // Canvas node ID of the node whose "Start node ..." comment section this gate came from
   // (if any). Used by the step-click mechanism to highlight the corresponding node on the
   // canvas when a step in the Dirac notation is clicked.
@@ -414,16 +468,499 @@ interface ParsedGate {
   line?: number;
 }
 
-/** Minimal expression evaluator for QASM parameters (pi, *, /, +, -). */
-function evalParam(expr: string): number {
-  const sanitized = expr.trim().replace(/\bpi\b/gi, String(Math.PI));
+const ANGLE_CONSTANTS: Map<string, number> = new Map([
+  ["pi", Math.PI],
+  ["π", Math.PI],
+  ["tau", 2 * Math.PI],
+  ["τ", 2 * Math.PI],
+  ["euler", Math.E],
+  ["ℇ", Math.E],
+]);
+
+const ANGLE_FUNCTIONS: Map<string, (x: number) => number> = new Map([
+  ["sin", Math.sin],
+  ["cos", Math.cos],
+  ["tan", Math.tan],
+  ["arcsin", Math.asin],
+  ["arccos", Math.acos],
+  ["arctan", Math.atan],
+  ["asin", Math.asin],
+  ["acos", Math.acos],
+  ["atan", Math.atan],
+  ["exp", Math.exp],
+  ["ln", Math.log],
+  ["log", Math.log],
+  ["sqrt", Math.sqrt],
+]);
+
+/**
+ * Safe arithmetic evaluator for QASM angle expressions (no code execution).
+ * Supports numbers, + - * / ** ^, parentheses, unary signs, the constants pi/π, tau/τ,
+ * euler/ℇ, the functions sin, cos, tan, arcsin, arccos, arctan, exp, ln, sqrt, and the
+ * given variables (e.g. gate parameters). Returns NaN if the expression is invalid.
+ */
+export function evaluateAngle(
+  expr: string,
+  variables?: ReadonlyMap<string, number>,
+): number {
+  const tokens =
+    expr.match(
+      /\d+\.?\d*(?:[eE][+-]?\d+)?|\.\d+(?:[eE][+-]?\d+)?|\*\*|[A-Za-z_\u0080-￿][\w\u0080-￿]*|\S/g,
+    ) ?? [];
+  let pos = 0;
+  const fail = (): never => {
+    throw new Error("invalid angle expression");
+  };
+  const expect = (t: string) => {
+    if (tokens[pos++] !== t) fail();
+  };
+  const parseExpr = (): number => {
+    let v = parseTerm();
+    while (tokens[pos] === "+" || tokens[pos] === "-") {
+      const op = tokens[pos++];
+      const r = parseTerm();
+      v = op === "+" ? v + r : v - r;
+    }
+    return v;
+  };
+  const parseTerm = (): number => {
+    let v = parseUnary();
+    while (tokens[pos] === "*" || tokens[pos] === "/") {
+      const op = tokens[pos++];
+      const r = parseUnary();
+      v = op === "*" ? v * r : v / r;
+    }
+    return v;
+  };
+  const parseUnary = (): number => {
+    if (tokens[pos] === "-") {
+      pos++;
+      return -parseUnary();
+    }
+    if (tokens[pos] === "+") {
+      pos++;
+      return parseUnary();
+    }
+    return parsePower();
+  };
+  const parsePower = (): number => {
+    const base = parsePrimary();
+    if (tokens[pos] === "**" || tokens[pos] === "^") {
+      pos++;
+      return Math.pow(base, parseUnary());
+    }
+    return base;
+  };
+  const parsePrimary = (): number => {
+    const t = tokens[pos++];
+    if (t === undefined) return fail();
+    if (t === "(") {
+      const v = parseExpr();
+      expect(")");
+      return v;
+    }
+    if (/^[\d.]/.test(t)) {
+      const v = Number(t);
+      return Number.isNaN(v) ? fail() : v;
+    }
+    if (/^[A-Za-z_\u0080-￿]/.test(t)) {
+      const fn = ANGLE_FUNCTIONS.get(t.toLowerCase());
+      if (fn && tokens[pos] === "(") {
+        pos++;
+        const v = parseExpr();
+        expect(")");
+        return fn(v);
+      }
+      if (variables?.has(t)) return variables.get(t)!;
+      const c = ANGLE_CONSTANTS.get(t.toLowerCase());
+      if (c !== undefined) return c;
+    }
+    return fail();
+  };
   try {
-    // eslint-disable-next-line no-new-func
-    return Function('"use strict"; return (' + sanitized + ")")() as number;
+    if (tokens.length === 0) return NaN;
+    const v = parseExpr();
+    if (pos !== tokens.length) return NaN;
+    return Number.isFinite(v) ? v : NaN;
   } catch {
-    return 0;
+    return NaN;
   }
 }
+
+/** Splits `text` at `sep` outside of (), [] and {}. */
+function splitTopLevel(text: string, sep: string): string[] {
+  const parts: string[] = [];
+  let depth = 0;
+  let start = 0;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (ch === "(" || ch === "[" || ch === "{") depth++;
+    else if ((ch === ")" || ch === "]" || ch === "}") && depth > 0) depth--;
+    else if (depth === 0 && text.startsWith(sep, i)) {
+      parts.push(text.slice(start, i));
+      start = i + sep.length;
+      i += sep.length - 1;
+    }
+  }
+  parts.push(text.slice(start));
+  return parts.map((p) => p.trim());
+}
+
+/** Reads a balanced "( ... )" group starting at `start`; returns its content and end index. */
+function readParens(
+  text: string,
+  start: number,
+): { inner: string; end: number } | null {
+  if (text[start] !== "(") return null;
+  let depth = 0;
+  for (let i = start; i < text.length; i++) {
+    if (text[i] === "(") depth++;
+    else if (text[i] === ")") {
+      depth--;
+      if (depth === 0) return { inner: text.slice(start + 1, i), end: i + 1 };
+    }
+  }
+  return null;
+}
+
+interface Statement {
+  text: string;
+  lineNo: number;
+}
+
+const NODE_MARKER = /^\/\*\s*(?:Start|End) node [\w-]+\s*\*\/$/;
+
+/**
+ * Splits QASM into statements: comments are removed (node markers are kept as statements
+ * of their own), each line is split at top-level ";", and "{" / "}" become separate
+ * statements. Statements do not continue over line breaks (a missing ";" at the end of a
+ * line is tolerated, as LEQO annotations have none).
+ */
+function splitStatements(qasm: string): Statement[] {
+  const out: Statement[] = [];
+  let inComment = false;
+  qasm.split("\n").forEach((line, lineNo) => {
+    let cur = "";
+    let depth = 0;
+    const flush = () => {
+      const t = cur.trim();
+      if (t) out.push({ text: t, lineNo });
+      cur = "";
+    };
+    let i = 0;
+    while (i < line.length) {
+      if (inComment) {
+        const end = line.indexOf("*/", i);
+        if (end < 0) break;
+        inComment = false;
+        i = end + 2;
+        cur += " ";
+        continue;
+      }
+      const ch = line[i];
+      if (ch === "/" && line[i + 1] === "/") break;
+      if (ch === "/" && line[i + 1] === "*") {
+        const end = line.indexOf("*/", i + 2);
+        if (end < 0) {
+          inComment = true;
+          break;
+        }
+        const comment = line.slice(i, end + 2);
+        if (NODE_MARKER.test(comment)) {
+          flush();
+          out.push({ text: comment, lineNo });
+        } else cur += " ";
+        i = end + 2;
+        continue;
+      }
+      if (ch === '"') {
+        const end = line.indexOf('"', i + 1);
+        const stop = end < 0 ? line.length : end + 1;
+        cur += line.slice(i, stop);
+        i = stop;
+        continue;
+      }
+      if (ch === "[" || ch === "(") depth++;
+      else if ((ch === "]" || ch === ")") && depth > 0) depth--;
+      else if (depth === 0 && ch === ";") {
+        flush();
+        i++;
+        continue;
+      } else if (depth === 0 && (ch === "{" || ch === "}")) {
+        flush();
+        out.push({ text: ch, lineNo });
+        i++;
+        continue;
+      }
+      cur += ch;
+      i++;
+    }
+    flush();
+  });
+  return out;
+}
+
+interface GateDefinition {
+  params: string[];
+  qargs: string[];
+  body: Statement[];
+}
+
+/**
+ * Removes "{ ... }" blocks from the statement list: custom `gate` bodies are stored in
+ * `defs` (and expanded when the gate is called), classical control flow is skipped with a
+ * warning, `box` contents are kept.
+ */
+function structureStatements(
+  stmts: Statement[],
+  defs: Map<string, GateDefinition>,
+  warnings: string[],
+): Statement[] {
+  const top: Statement[] = [];
+  let i = 0;
+  while (i < stmts.length) {
+    const { text } = stmts[i];
+    const isGate = /^gate\s/.test(text);
+    const isControlFlow = /^(?:if|else|for|while)\b/.test(text);
+    const isBlockHeader =
+      isGate || isControlFlow || /^(?:def|defcal|cal|box)\b/.test(text);
+    if (isBlockHeader && stmts[i + 1]?.text === "{") {
+      let depth = 0;
+      let j = i + 1;
+      const body: Statement[] = [];
+      for (; j < stmts.length; j++) {
+        const t = stmts[j].text;
+        if (t === "{") {
+          depth++;
+          if (depth === 1) continue;
+        } else if (t === "}") {
+          depth--;
+          if (depth === 0) break;
+        }
+        body.push(stmts[j]);
+      }
+      i = j + 1;
+      if (isGate) {
+        const m = text.match(/^gate\s+(\w+)\s*(?:\(([^)]*)\))?\s*(.*)$/);
+        if (m) {
+          const list = (s: string | undefined) =>
+            (s ?? "")
+              .split(",")
+              .map((x) => x.trim())
+              .filter((x) => x.length > 0);
+          defs.set(m[1].toLowerCase(), {
+            params: list(m[2]),
+            qargs: list(m[3]),
+            body,
+          });
+        }
+      } else if (/^box\b/.test(text)) {
+        top.push(...structureStatements(body, defs, warnings));
+      } else if (isControlFlow) {
+        warnings.push(
+          `Classical control flow is not simulated — block "${text}" skipped.`,
+        );
+      }
+      continue;
+    }
+    i++;
+    if (text === "{" || text === "}") continue;
+    if (isGate) continue; // gate declaration without a body
+    if (isControlFlow) {
+      warnings.push(
+        `Classical control flow is not simulated — statement "${text}" skipped.`,
+      );
+      continue;
+    }
+    top.push(stmts[i - 1]);
+  }
+  return top;
+}
+
+/** A gate parameter: its value and, if it could not be evaluated, its source text. */
+interface Angle {
+  value: number;
+  expr?: string;
+}
+
+/** Gate operation before it is stored as a ParsedGate. */
+interface GateOp {
+  name: string;
+  angles: Angle[];
+  qubits: number[];
+  numControls?: number;
+}
+
+const negAngle = (a: Angle): Angle => ({
+  value: -a.value,
+  expr: a.expr !== undefined ? `-(${a.expr})` : undefined,
+});
+const scaleAngle = (a: Angle, k: number): Angle => ({
+  value: a.value * k,
+  expr: a.expr !== undefined ? `${k}*(${a.expr})` : undefined,
+});
+
+const SELF_INVERSE = new Set([
+  "id", "i", "h", "x", "y", "z", "cx", "cnot", "cy", "cz", "ch", "swap",
+  "ccx", "toffoli", "cswap", "fredkin",
+]);
+const INVERSE_NAME: Map<string, string> = new Map([
+  ["s", "sdg"],
+  ["sdg", "s"],
+  ["t", "tdg"],
+  ["tdg", "t"],
+]);
+/** Gates G(θ) with G(θ)^k = G(kθ) and G(θ)^-1 = G(-θ). */
+const ANGLE_GATES = new Set([
+  "rx", "ry", "rz", "p", "phase", "u1", "crx", "cry", "crz", "cp", "cphase",
+]);
+/** Phase gates written as P(λ) (or CP(λ)), used for non-integer powers. */
+const PHASE_EQUIVALENT: Map<string, [string, number]> = new Map([
+  ["z", ["p", Math.PI]],
+  ["s", ["p", Math.PI / 2]],
+  ["sdg", ["p", -Math.PI / 2]],
+  ["t", ["p", Math.PI / 4]],
+  ["tdg", ["p", -Math.PI / 4]],
+  ["cz", ["cp", Math.PI]],
+]);
+/** Order k of a gate (G^k = I), used to reduce integer powers. */
+const GATE_ORDER: Map<string, number> = new Map([
+  ...[...SELF_INVERSE].map((n): [string, number] => [n, 2]),
+  ["s", 4],
+  ["sdg", 4],
+  ["sx", 4],
+  ["t", 8],
+  ["tdg", 8],
+]);
+/** Two- and three-qubit gates that are a controlled single-qubit gate. */
+const CONTROLLED_BASE: Map<string, [string, number]> = new Map([
+  ["cx", ["x", 1]],
+  ["cnot", ["x", 1]],
+  ["cy", ["y", 1]],
+  ["cz", ["z", 1]],
+  ["ch", ["h", 1]],
+  ["crx", ["rx", 1]],
+  ["cry", ["ry", 1]],
+  ["crz", ["rz", 1]],
+  ["cp", ["p", 1]],
+  ["cphase", ["p", 1]],
+  ["ccx", ["x", 2]],
+  ["toffoli", ["x", 2]],
+]);
+
+/** Inverse of a gate (name + angles), or null if it is not known. */
+function invertBase(
+  name: string,
+  a: Angle[],
+): { name: string; angles: Angle[] }[] | null {
+  const zero: Angle = { value: 0 };
+  if (SELF_INVERSE.has(name)) return [{ name, angles: a }];
+  const inv = INVERSE_NAME.get(name);
+  if (inv) return [{ name: inv, angles: [] }];
+  if (ANGLE_GATES.has(name)) return [{ name, angles: [negAngle(a[0] ?? zero)] }];
+  if (name === "u3" || name === "u") {
+    const [t = zero, p = zero, l = zero] = a;
+    return [{ name, angles: [negAngle(t), negAngle(l), negAngle(p)] }];
+  }
+  if (name === "u2") {
+    const [p = zero, l = zero] = a;
+    return [
+      {
+        name: "u3",
+        angles: [{ value: -Math.PI / 2 }, negAngle(l), negAngle(p)],
+      },
+    ];
+  }
+  if (name === "cu") {
+    const [t = zero, p = zero, l = zero, g = zero] = a;
+    return [
+      { name, angles: [negAngle(t), negAngle(l), negAngle(p), negAngle(g)] },
+    ];
+  }
+  if (name === "sx") return [0, 1, 2].map(() => ({ name: "sx", angles: [] })); // SX^-1 = SX^3
+  return null;
+}
+
+/** inv @ for a gate sequence: reversed order, every gate inverted. */
+function invertOps(ops: GateOp[]): GateOp[] | null {
+  const result: GateOp[] = [];
+  for (const op of [...ops].reverse()) {
+    const mc = op.name.startsWith("mc_");
+    const inv = invertBase(mc ? op.name.slice(3) : op.name, op.angles);
+    if (!inv) return null;
+    for (const g of inv)
+      result.push({ ...op, name: mc ? `mc_${g.name}` : g.name, angles: g.angles });
+  }
+  return result;
+}
+
+/** pow(k) @ for a gate sequence; null if not supported. */
+function powerOps(ops: GateOp[], k: number): GateOp[] | null {
+  if (ops.length === 1) {
+    const op = ops[0];
+    const mc = op.name.startsWith("mc_");
+    const base = mc ? op.name.slice(3) : op.name;
+    const named = (name: string, angles: Angle[]): GateOp[] => [
+      { ...op, name: mc ? `mc_${name}` : name, angles },
+    ];
+    if (ANGLE_GATES.has(base))
+      return named(base, [scaleAngle(op.angles[0] ?? { value: 0 }, k)]);
+    const phase = PHASE_EQUIVALENT.get(base);
+    if (phase && !Number.isInteger(k))
+      return named(phase[0], [{ value: phase[1] * k }]);
+  }
+  if (!Number.isInteger(k)) return null;
+  let base: GateOp[] | null = ops;
+  if (k < 0) {
+    base = invertOps(ops);
+    if (!base) return null;
+    k = -k;
+  }
+  if (ops.length === 1) {
+    const order = GATE_ORDER.get(ops[0].name.replace(/^mc_/, ""));
+    if (order) k %= order;
+  }
+  if (k > 64) return null;
+  const result: GateOp[] = [];
+  for (let i = 0; i < k; i++) result.push(...base);
+  return result;
+}
+
+/** ctrl @ for one gate: the control qubits are put in front. Null if not supported. */
+function addControls(op: GateOp, controls: number[]): GateOp | null {
+  const n = controls.length;
+  const qubits = [...controls, ...op.qubits];
+  if (op.name.startsWith("mc_"))
+    return {
+      ...op,
+      qubits,
+      numControls: (op.numControls ?? op.qubits.length - 1) + n,
+    };
+  const arity = GATE_ARITY.get(op.name);
+  if (arity === 1 || arity === undefined)
+    // arity undefined: unknown gate, the simulator reports the unknown base gate
+    return { name: `mc_${op.name}`, angles: op.angles, qubits, numControls: n };
+  const controlled = CONTROLLED_BASE.get(op.name);
+  if (controlled)
+    return {
+      name: `mc_${controlled[0]}`,
+      angles: op.angles,
+      qubits,
+      numControls: n + controlled[1],
+    };
+  if (op.name === "swap" && n === 1)
+    return { name: "cswap", angles: [], qubits };
+  return null;
+}
+
+type Modifier =
+  | { kind: "inv" }
+  | { kind: "pow"; expr: string }
+  | { kind: "ctrl" | "negctrl"; count: number };
+
+/** Statements that are not gate calls (declarations, annotations, ...). */
+const NON_GATE_STATEMENT =
+  /^(?:OPENQASM\b|include\b|qreg\b|creg\b|qubit\b|bit\b|barrier\b|let\b|@|#|\*|pragma\b|input\b|output\b|const\b|opaque\b|extern\b|defcalgrammar\b|angle\b|float\b|int\b|uint\b|bool\b|duration\b|stretch\b|complex\b|array\b|return\b)/;
 
 export function parseQasm(qasm: string): {
   numQubits: number;
@@ -431,105 +968,145 @@ export function parseQasm(qasm: string): {
   warnings: string[];
 } {
   const warnings: string[] = [];
-  // keeps the 0-based line number in the source, so gates can be found in the editor
-  // Node markers can share a line with the gate ("/* Start node h1 */ h q[0]; /* End
-  // node h1 */"), so they are split into statements of their own on the same line.
-  const numberedLines = qasm.split("\n").flatMap((l, lineNo) =>
-    l
-      .replace(/\/\/.*$/, "")
-      .split(/(\/\*\s*(?:Start|End) node [\w-]+\s*\*\/)/)
-      .map((part) => ({ text: part.trim(), lineNo }))
-      .filter((part) => part.text.length > 0),
+  const gateDefs: Map<string, GateDefinition> = new Map();
+  // One statement per entry, even if several share a line ("h q[0]; cx q[0], q[1];"),
+  // with the 0-based source line, so gates can be found in the editor. Node markers
+  // ("/* Start node h1 */") are statements of their own. Gate bodies are removed.
+  const statements = structureStatements(
+    splitStatements(qasm),
+    gateDefs,
+    warnings,
   );
-  const lines = numberedLines.map((l) => l.text);
 
-  // Build the qubit registers: name -> { start, size }
-  const registers: Map<string, { start: number; size: number }> = new Map();
+  // ---------------------------------------------------------------------------
+  // Qubit names: register or LEQO alias -> global qubit indices
+  // Examples: "qubit[2] leqo_reg;"                 -> leqo_reg = [0, 1]
+  //           "let leqo_a = leqo_reg[{0, 1}];"     -> leqo_a = [0, 1]
+  //           "let leqo_a_out = leqo_a;"           -> leqo_a_out = [0, 1]
+  //           "let c = a ++ b;", "let a = reg[1];" -> concatenation, single index
+  // ---------------------------------------------------------------------------
+  const qubitNames: Map<string, number[]> = new Map();
+  // classical constants ("const float theta = pi/4;"), usable in angles
+  const variables: Map<string, number> = new Map();
   let totalQubits = 0;
+  const declare = (name: string, size: number) => {
+    qubitNames.set(
+      name,
+      Array.from({ length: size }, (_, i) => totalQubits + i),
+    );
+    totalQubits += size;
+  };
+
+  /** Evaluates an integer index expression; null if it is not an integer. */
+  const evalIndex = (expr: string): number | null => {
+    const v = evaluateAngle(expr, variables);
+    return Number.isInteger(v) ? v : null;
+  };
+
+  /**
+   * Resolves a qubit expression to global indices: name, name[i], name[{i, j}],
+   * name[a:b] / name[a:s:b] (inclusive), and x ++ y. Inside a gate body only the gate's
+   * qubit arguments (`args`) are visible. Returns null if it cannot be resolved.
+   */
+  function resolveQubits(
+    expr: string,
+    args: Map<string, number[]> | null,
+  ): number[] | null {
+    const e = expr.trim();
+    const parts = splitTopLevel(e, "++");
+    if (parts.length > 1) {
+      const all: number[] = [];
+      for (const part of parts) {
+        const r = resolveQubits(part, args);
+        if (!r) return null;
+        all.push(...r);
+      }
+      return all;
+    }
+    const m = e.match(/^([A-Za-z_]\w*)\s*(?:\[(.*)\])?$/);
+    if (!m) return null;
+    const base = (args ?? qubitNames).get(m[1]);
+    if (!base) return null;
+    if (m[2] === undefined) return base;
+    const at = (i: number | null): number | null => {
+      if (i === null) return null;
+      const k = i < 0 ? base.length + i : i;
+      return k >= 0 && k < base.length ? base[k] : null;
+    };
+    const idx = m[2].trim();
+    let picked: (number | null)[];
+    const set = idx.match(/^\{(.*)\}$/);
+    if (set) {
+      picked = splitTopLevel(set[1], ",").map((s) => at(evalIndex(s)));
+    } else if (idx.includes(":")) {
+      const r = idx.split(":").map((s) => s.trim());
+      if (r.length > 3) return null;
+      const start = r[0] === "" ? 0 : evalIndex(r[0]);
+      const step = r.length === 3 ? evalIndex(r[1]) : 1;
+      const endText = r[r.length - 1];
+      const end = endText === "" ? base.length - 1 : evalIndex(endText);
+      if (start === null || step === null || end === null || step === 0)
+        return null;
+      picked = [];
+      for (let i = start; step > 0 ? i <= end : i >= end; i += step)
+        picked.push(at(i));
+    } else {
+      picked = [at(evalIndex(idx))];
+    }
+    return picked.every((q): q is number => q !== null)
+      ? (picked as number[])
+      : null;
+  }
 
   // ---------------------------------------------------------------------------
-  // LEQO alias table: alias name -> global qubit index
-  // Example: "let leqo_abc_q0 = leqo_reg[{0}];"
-  //       -> aliasMap.set("leqo_abc_q0", 0)
+  // First pass: collect registers, LEQO aliases and classical constants
   // ---------------------------------------------------------------------------
-  const aliasMap: Map<string, number> = new Map();
-
-  // LEQO array alias: alias name -> [idx0, idx1, ...]
-  // Example: "let leqo_abc = leqo_reg[{0, 1}];"
-  //       -> aliasArrayMap.set("leqo_abc", [0, 1])
-  const aliasArrayMap: Map<string, number[]> = new Map();
-
-  // ---------------------------------------------------------------------------
-  // First pass: collect registers and LEQO aliases
-  // ---------------------------------------------------------------------------
-  for (const line of lines) {
+  for (const { text } of statements) {
     // OPENQASM 2: qreg q[3];
-    const qreg2 = line.match(/^qreg\s+(\w+)\s*\[(\d+)\]/);
+    const qreg2 = text.match(/^qreg\s+(\w+)\s*\[(\d+)\]/);
     if (qreg2) {
-      registers.set(qreg2[1], { start: totalQubits, size: parseInt(qreg2[2]) });
-      totalQubits += parseInt(qreg2[2]);
+      declare(qreg2[1], parseInt(qreg2[2]));
       continue;
     }
 
     // OPENQASM 3: qubit[3] q;
-    const qreg3a = line.match(/^qubit\s*\[(\d+)\]\s+(\w+)/);
+    const qreg3a = text.match(/^qubit\s*\[(\d+)\]\s+(\w+)/);
     if (qreg3a) {
-      registers.set(qreg3a[2], {
-        start: totalQubits,
-        size: parseInt(qreg3a[1]),
-      });
-      totalQubits += parseInt(qreg3a[1]);
+      declare(qreg3a[2], parseInt(qreg3a[1]));
       continue;
     }
 
     // OPENQASM 3: qubit q;
-    const qreg3b = line.match(/^qubit\s+(\w+)/);
-    if (qreg3b && !line.includes("[")) {
-      registers.set(qreg3b[1], { start: totalQubits, size: 1 });
-      totalQubits += 1;
+    const qreg3b = text.match(/^qubit\s+(\w+)\s*$/);
+    if (qreg3b) {
+      declare(qreg3b[1], 1);
       continue;
     }
 
-    // LEQO alias using curly braces:
-    //   single index: let <alias> = <reg>[{0}];
-    //   multi index:  let <alias> = <reg>[{0, 1}];
-    //   -> aliasMap:      alias -> first qubit index
-    //   -> aliasArrayMap: alias -> [idx0, idx1, ...]  (for alias[n] accesses)
-    const leqoAlias = line.match(
-      /^let\s+(\w+)\s*=\s*(\w+)\s*\[\s*\{([^}]+)\}\s*\]\s*;?$/,
-    );
-    if (leqoAlias) {
-      const alias = leqoAlias[1];
-      const regName = leqoAlias[2];
-      const indices = leqoAlias[3].split(",").map((s) => parseInt(s.trim()));
-      const reg = registers.get(regName);
-      if (reg !== undefined) {
-        // first index as the default (for gates used without an index)
-        aliasMap.set(alias, reg.start + indices[0]);
-        // all indices, for alias[n] accesses
-        aliasArrayMap.set(
-          alias,
-          indices.map((i) => reg.start + i),
+    // LEQO alias: let <alias> = <expr>;
+    const alias = text.match(/^let\s+(\w+)\s*=\s*(.+)$/);
+    if (alias) {
+      const resolved = resolveQubits(alias[2], null);
+      if (resolved) qubitNames.set(alias[1], resolved);
+      // only warn for qubit aliases (an alias of a classical register is not an error)
+      else if (
+        splitTopLevel(alias[2], "++").some((p) =>
+          qubitNames.has(p.match(/^\w+/)?.[0] ?? ""),
+        )
+      )
+        warnings.push(
+          `Could not resolve the alias "${text}" — gates on "${alias[1]}" are skipped.`,
         );
-      }
       continue;
     }
 
-    // LEQO output alias:
-    //   let <alias>_out = <alias>;
-    // Example: let leqo_abc_q0_out = leqo_abc_q0;
-    const leqoOutAlias = line.match(/^let\s+(\w+)\s*=\s*(\w+)\s*;?$/);
-    if (leqoOutAlias) {
-      const newAlias = leqoOutAlias[1];
-      const srcAlias = leqoOutAlias[2];
-      if (aliasMap.has(srcAlias)) {
-        aliasMap.set(newAlias, aliasMap.get(srcAlias)!);
-      } else {
-        // src may be a register without an index (size = 1)
-        const reg = registers.get(srcAlias);
-        if (reg) aliasMap.set(newAlias, reg.start);
-      }
-      continue;
+    // classical constant: const float theta = pi/4;
+    const constant = text.match(
+      /^(?:const\s+)?(?:angle|float|int|uint)\s*(?:\[[^\]]*\])?\s+(\w+)\s*=\s*(.+)$/,
+    );
+    if (constant) {
+      const v = evaluateAngle(constant[2], variables);
+      if (!Number.isNaN(v)) variables.set(constant[1], v);
     }
   }
 
@@ -544,165 +1121,263 @@ export function parseQasm(qasm: string): {
     totalQubits = Math.min(totalQubits, 16);
   }
 
-  // ---------------------------------------------------------------------------
-  // Resolve a qubit expression:
-  //   1. alias[n] -> aliasArrayMap[alias][n]
-  //   2. alias    -> aliasMap
-  //   3. reg[idx] -> registers
-  //   4. reg      -> registers (size = 1)
-  // ---------------------------------------------------------------------------
-  function resolveQubit(expr: string): number | null {
-    const e = expr.trim().replace(/;$/, "");
-
-    // 1. alias[n] - index into a multi-qubit alias (e.g. leqo_abc[1])
-    const aliasIdx = e.match(/^(\w+)\[(\d+)\]$/);
-    if (aliasIdx) {
-      const arr = aliasArrayMap.get(aliasIdx[1]);
-      if (arr !== undefined) {
-        const n = parseInt(aliasIdx[2]);
-        return arr[n] ?? null;
-      }
-      // fallback: a regular register with standard indices
-      const reg = registers.get(aliasIdx[1]);
-      if (reg) return reg.start + parseInt(aliasIdx[2]);
-    }
-
-    // 2. LEQO alias (exact name without index)
-    if (aliasMap.has(e)) return aliasMap.get(e)!;
-
-    // 3. standard form: reg[idx] or reg[{idx}]
-    const withIndex = e.match(/^(\w+)\[\{?(\d+)\}?\]$/);
-    if (withIndex) {
-      const reg = registers.get(withIndex[1]);
-      if (!reg) return null;
-      return reg.start + parseInt(withIndex[2]);
-    }
-
-    // 4. whole register (only meaningful when size = 1)
-    const reg = registers.get(e);
-    if (reg) return reg.start;
-
-    return null;
-  }
-
   const gates: ParsedGate[] = [];
   // Tracks which canvas node section the current line belongs to, delimited by the
   // "/* Start node <id> */" ... "/* End node <id> */" comments, so every gate can be
   // annotated with its originating node ID for the step-click mechanism in the UI.
   let currentNodeId: string | undefined = undefined;
 
+  interface Scope {
+    args: Map<string, number[]> | null; // qubit arguments inside a gate body
+    env: Map<string, number>; // variables for angles
+    depth: number; // nesting depth of custom gate expansion
+  }
+
+  const toOp = (g: ParsedGate): GateOp => ({
+    name: g.name,
+    angles: g.params.map((value, i) => ({ value, expr: g.paramExprs?.[i] })),
+    qubits: g.qubits,
+    numControls: g.numControls,
+  });
+
+  /** Expands a call of a custom gate into its body; null (with a warning) on failure. */
+  function expandDefinition(
+    name: string,
+    def: GateDefinition,
+    angles: Angle[],
+    targets: number[],
+    scope: Scope,
+    lineNo: number,
+  ): GateOp[] | null {
+    if (scope.depth >= 16) {
+      warnings.push(`Gate "${name}" is nested too deeply — skipped.`);
+      return null;
+    }
+    if (targets.length !== def.qargs.length || angles.length !== def.params.length) {
+      warnings.push(
+        `Gate "${name}" expects ${def.qargs.length} qubit(s) and ${def.params.length} parameter(s) — skipped.`,
+      );
+      return null;
+    }
+    const args = new Map(def.qargs.map((a, i): [string, number[]] => [a, [targets[i]]]));
+    const env = new Map(variables);
+    def.params.forEach((p, i) => env.set(p, angles[i].value));
+    const body: ParsedGate[] = [];
+    for (const st of def.body)
+      processStatement(st.text, lineNo, { args, env, depth: scope.depth + 1 }, body);
+    return body.map(toOp);
+  }
+
+  /** Parses one statement (gate call or measurement) and appends its gates to `out`. */
+  function processStatement(
+    text: string,
+    lineNo: number,
+    scope: Scope,
+    out: ParsedGate[],
+  ): void {
+    const push = (op: GateOp) => {
+      const gate: ParsedGate = {
+        name: op.name,
+        qubits: op.qubits,
+        params: op.angles.map((a) => a.value),
+        nodeId: currentNodeId,
+        line: lineNo,
+      };
+      if (op.numControls !== undefined) gate.numControls = op.numControls;
+      if (op.angles.some((a) => a.expr !== undefined))
+        gate.paramExprs = op.angles.map((a) => a.expr);
+      out.push(gate);
+    };
+
+    // measurement: measure q[0] -> c[0];  c[0] = measure q[0];
+    // LEQO measurement: bit[2] x = measure alias[{0,1}];
+    if (/^measure\b/.test(text) || /=\s*measure\b/.test(text)) {
+      const m = text.match(/(?:^|=\s*)measure\s+(.+?)(?:\s*->\s*.+)?$/);
+      const qubits = m ? resolveQubits(m[1], scope.args) : null;
+      if (!qubits) {
+        warnings.push(`Could not resolve the measured qubits in "${text}" — skipped.`);
+        return;
+      }
+      for (const q of qubits) push({ name: "measure", angles: [], qubits: [q] });
+      return;
+    }
+
+    if (NON_GATE_STATEMENT.test(text)) return;
+
+    // OpenQASM 3 modifiers: inv @, pow(k) @, ctrl(N) @, negctrl(N) @ (any combination)
+    const modifiers: Modifier[] = [];
+    let rest = text;
+    for (;;) {
+      const m = rest.match(/^(inv|pow|ctrl|negctrl)\s*/);
+      if (!m) break;
+      let after = m[0].length;
+      let arg: string | undefined;
+      const parens = readParens(rest, after);
+      if (parens) {
+        arg = parens.inner;
+        after = parens.end;
+      }
+      const at = rest.slice(after).match(/^\s*@\s*/);
+      if (!at) break; // a gate whose name starts like a modifier
+      rest = rest.slice(after + at[0].length);
+      if (m[1] === "inv") modifiers.push({ kind: "inv" });
+      else if (m[1] === "pow") modifiers.push({ kind: "pow", expr: arg ?? "" });
+      else {
+        const count = arg === undefined ? 1 : evaluateAngle(arg, scope.env);
+        if (!Number.isInteger(count) || count < 1) {
+          warnings.push(`Invalid number of controls in "${text}" — skipped.`);
+          return;
+        }
+        modifiers.push({ kind: m[1] as "ctrl" | "negctrl", count });
+      }
+    }
+
+    // gate call: gateName(params) qubit1, qubit2;  or  gateName qubit1, qubit2;
+    const nameMatch = rest.match(/^([A-Za-z_]\w*)\s*/);
+    if (!nameMatch) return;
+    const name = nameMatch[1].toLowerCase();
+    let operandStart = nameMatch[0].length;
+    let paramText: string | undefined;
+    const parens = readParens(rest, operandStart);
+    if (parens) {
+      paramText = parens.inner;
+      operandStart = parens.end;
+    }
+    const operandText = rest.slice(operandStart).trim();
+    if (!operandText) {
+      warnings.push(
+        name === "gphase"
+          ? `Global phase "${text}" is not shown — skipped.`
+          : `Statement "${text}" has no qubit operands — skipped.`,
+      );
+      return;
+    }
+
+    const angles: Angle[] = (
+      paramText !== undefined && paramText.trim() !== ""
+        ? splitTopLevel(paramText, ",")
+        : []
+    ).map((expr) => {
+      const value = evaluateAngle(expr, scope.env);
+      if (Number.isNaN(value)) {
+        warnings.push(
+          `Could not evaluate angle "${expr}" in "${text}" — using 0.`,
+        );
+        return { value: 0, expr };
+      }
+      return { value };
+    });
+
+    const operands: number[][] = [];
+    for (const operand of splitTopLevel(operandText, ",")) {
+      const resolved = resolveQubits(operand, scope.args);
+      if (!resolved || resolved.length === 0) {
+        warnings.push(
+          `Could not resolve qubit "${operand}" in "${text}" — statement skipped.`,
+        );
+        return;
+      }
+      operands.push(resolved);
+    }
+
+    // broadcast: a register operand applies the gate to each of its qubits (zipped with
+    // the other register operands; single qubits are repeated)
+    const width = Math.max(...operands.map((o) => o.length));
+    if (operands.some((o) => o.length !== 1 && o.length !== width)) {
+      warnings.push(
+        `Registers of different sizes in "${text}" — statement skipped.`,
+      );
+      return;
+    }
+
+    const numControls = modifiers.reduce(
+      (n, m) => n + (m.kind === "ctrl" || m.kind === "negctrl" ? m.count : 0),
+      0,
+    );
+    const def = GATE_ARITY.has(name) ? undefined : gateDefs.get(name);
+
+    for (let k = 0; k < width; k++) {
+      const qubits = operands.map((o) => (o.length === 1 ? o[0] : o[k]));
+      if (qubits.length <= numControls) {
+        warnings.push(
+          `Multi-controlled gate "${name}": too few qubits resolved — skipped.`,
+        );
+        return;
+      }
+      const targets = qubits.slice(numControls);
+      let ops: GateOp[] | null = def
+        ? expandDefinition(name, def, angles, targets, scope, lineNo)
+        : [{ name, angles, qubits: targets }];
+      if (!ops) return;
+
+      // inv / pow act on the base gate, innermost (rightmost) modifier first
+      for (const mod of [...modifiers].reverse()) {
+        if (mod.kind === "inv") {
+          ops = invertOps(ops);
+          if (!ops) {
+            warnings.push(`"inv @ ${name}" is not supported — "${text}" skipped.`);
+            return;
+          }
+        } else if (mod.kind === "pow") {
+          const exponent = evaluateAngle(mod.expr, scope.env);
+          ops = Number.isNaN(exponent) ? null : powerOps(ops, exponent);
+          if (!ops) {
+            warnings.push(
+              `"pow(${mod.expr}) @ ${name}" is not supported — "${text}" skipped.`,
+            );
+            return;
+          }
+        }
+      }
+
+      // controls in modifier order; negctrl via X conjugation of its qubits
+      const negated: number[] = [];
+      if (numControls > 0) {
+        let offset = 0;
+        for (const mod of modifiers) {
+          if (mod.kind !== "ctrl" && mod.kind !== "negctrl") continue;
+          if (mod.kind === "negctrl")
+            negated.push(...qubits.slice(offset, offset + mod.count));
+          offset += mod.count;
+        }
+        const controls = qubits.slice(0, numControls);
+        const controlled: GateOp[] = [];
+        for (const op of ops) {
+          const c = addControls(op, controls);
+          if (!c) {
+            warnings.push(`"ctrl @ ${op.name}" is not supported — "${text}" skipped.`);
+            return;
+          }
+          controlled.push(c);
+        }
+        ops = controlled;
+      }
+
+      const flips: GateOp[] = negated.map((q) => ({
+        name: "x",
+        angles: [],
+        qubits: [q],
+      }));
+      [...flips, ...ops, ...flips].forEach(push);
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // Second pass: parse the gates
   // ---------------------------------------------------------------------------
-  for (const { text: line, lineNo } of numberedLines) {
-    const startNodeMatch = line.match(/^\/\*\s*Start node ([\w-]+)\s*\*\/$/);
+  const globalScope: Scope = { args: null, env: variables, depth: 0 };
+  for (const { text, lineNo } of statements) {
+    const startNodeMatch = text.match(/^\/\*\s*Start node ([\w-]+)\s*\*\/$/);
     if (startNodeMatch) {
       currentNodeId = startNodeMatch[1];
       continue;
     }
-    const endNodeMatch = line.match(/^\/\*\s*End node ([\w-]+)\s*\*\/$/);
+    const endNodeMatch = text.match(/^\/\*\s*End node ([\w-]+)\s*\*\/$/);
     if (endNodeMatch) {
       currentNodeId = undefined;
       continue;
     }
-
-    // skip lines that are not gate calls
-    if (
-      line.startsWith("OPENQASM") ||
-      line.startsWith("include") ||
-      line.startsWith("qreg") ||
-      line.startsWith("creg") ||
-      line.startsWith("qubit") ||
-      line.startsWith("bit") ||
-      line.startsWith("gate ") ||
-      line.startsWith("barrier") ||
-      line.startsWith("let ") || // LEQO alias definitions
-      line.startsWith("@leqo") || // LEQO annotations
-      line.startsWith("/*") || // comments
-      line.startsWith("*") ||
-      line.startsWith("/")
-    ) {
-      continue;
-    }
-
-    // measurement: measure q[0] -> c[0];
-    // LEQO measurement: bit[2] x = measure alias[{0,1}];
-    if (
-      line.includes("->") ||
-      line.startsWith("measure") ||
-      line.match(/^bit\b/)
-    ) {
-      const measureMatch = line.match(/measure\s+(\S+)\s*(?:->|\[)/);
-      if (measureMatch) {
-        const q = resolveQubit(measureMatch[1]);
-        if (q !== null)
-          gates.push({
-            name: "measure",
-            qubits: [q],
-            params: [],
-            nodeId: currentNodeId,
-            line: lineNo,
-          });
-      }
-      continue;
-    }
-
-    // OpenQASM 3 modifier syntax: ctrl(N) @ gate q0, q1, ..., qTarget;
-    //                          or  ctrl @ gate q0, q1;           (N = 1 implied)
-    // Example: ctrl(2) @ z leqo_..._ctrl_0[0], leqo_..._ctrl_1[0], leqo_..._target_0[0];
-    // The first N qubits are the controls, the remaining ones the targets.
-    const ctrlModMatch = line.match(
-      /^ctrl(?:\((\d+)\))?\s*@\s*(\w+)\s+(.+?)\s*;?$/,
-    );
-    if (ctrlModMatch) {
-      const numControls = ctrlModMatch[1] ? parseInt(ctrlModMatch[1]) : 1;
-      const baseGate = ctrlModMatch[2].toLowerCase();
-      const qubits = ctrlModMatch[3]
-        .split(",")
-        .map((q) => resolveQubit(q.trim()))
-        .filter((q): q is number => q !== null);
-
-      if (qubits.length <= numControls) {
-        warnings.push(
-          `Multi-controlled gate "${baseGate}": too few qubits resolved — skipped.`,
-        );
-        continue;
-      }
-
-      gates.push({
-        name: `mc_${baseGate}`,
-        qubits,
-        params: [],
-        numControls,
-        nodeId: currentNodeId,
-        line: lineNo,
-      });
-      continue;
-    }
-
-    // gate call: gateName(params) qubit1, qubit2;
-    //        or  gateName qubit1, qubit2;
-    const gateMatch = line.match(/^(\w+)(?:\(([^)]*)\))?\s+(.+?)\s*;?$/);
-    if (!gateMatch) continue;
-
-    const rawName = gateMatch[1].toLowerCase();
-    const rawParams = gateMatch[2]
-      ? gateMatch[2].split(",").map(evalParam)
-      : [];
-    const rawQubits = gateMatch[3]
-      .split(",")
-      .map((q) => resolveQubit(q.trim()))
-      .filter((q): q is number => q !== null);
-
-    if (rawQubits.length === 0) continue;
-
-    gates.push({
-      name: rawName,
-      qubits: rawQubits,
-      params: rawParams,
-      nodeId: currentNodeId,
-      line: lineNo,
-    });
+    processStatement(text, lineNo, globalScope, gates);
   }
 
   return { numQubits: totalQubits, gates, warnings };
@@ -712,6 +1387,88 @@ export function parseQasm(qasm: string): {
 // Simulator
 // ---------------------------------------------------------------------------
 
+/**
+ * Applies one parsed gate. Returns the new statevector, or a warning text if the gate
+ * is unknown or its qubits are invalid. Measurements leave the state unchanged.
+ */
+function applyGate(
+  sv: Complex[],
+  numQubits: number,
+  gate: ParsedGate,
+): Complex[] | string {
+  const q = gate.qubits;
+  const [p0 = 0, p1 = 0, p2 = 0, p3 = 0] = gate.params;
+  const validQubit = (x: number) =>
+    Number.isInteger(x) && x >= 0 && x < numQubits;
+
+  if (gate.name === "measure") return sv;
+
+  // multi-controlled gates from the ctrl(N) @ gate modifier syntax
+  if (gate.name.startsWith("mc_")) {
+    if (!q.every(validQubit))
+      return `Gate "${gate.name}" uses a qubit outside the register — skipped.`;
+    const applied = applyParsedMultiControlledGate(sv, numQubits, gate);
+    return (
+      applied ??
+      `Multi-controlled gate with unknown base gate "${gate.name.slice(3)}" — skipped.`
+    );
+  }
+
+  const arity = GATE_ARITY.get(gate.name);
+  if (arity === undefined) return `Unknown gate: "${gate.name}" — skipped.`;
+  if (q.length < arity || !q.slice(0, arity).every(validQubit))
+    return `Gate "${gate.name}" needs ${arity} valid qubit(s) — skipped.`;
+
+  if (arity === 1) {
+    if (gate.name === "id" || gate.name === "i") return sv; // identity
+    return applySingleQubitGate(
+      sv,
+      numQubits,
+      q[0],
+      singleQubitMatrix(gate.name, gate.params)!,
+    );
+  }
+
+  switch (gate.name) {
+    case "cx":
+    case "cnot":
+      return applyControlledGate(sv, numQubits, q[0], q[1], GATE_X);
+    case "cy":
+      return applyControlledGate(sv, numQubits, q[0], q[1], GATE_Y);
+    case "cz":
+      return applyControlledGate(sv, numQubits, q[0], q[1], GATE_Z);
+    case "ch":
+      return applyControlledGate(sv, numQubits, q[0], q[1], GATE_H);
+    case "cp":
+    case "cphase":
+      return applyControlledGate(sv, numQubits, q[0], q[1], gateCPMatrix(p0));
+    case "crx":
+      return applyControlledGate(sv, numQubits, q[0], q[1], gateRX(p0));
+    case "cry":
+      return applyControlledGate(sv, numQubits, q[0], q[1], gateRY(p0));
+    case "crz":
+      return applyControlledGate(sv, numQubits, q[0], q[1], gateRZ(p0));
+    case "cu":
+      return applyControlledGate(
+        sv,
+        numQubits,
+        q[0],
+        q[1],
+        gateCUMatrix(p0, p1, p2, p3),
+      );
+    case "ccx":
+    case "toffoli":
+      return applyToffoli(sv, numQubits, q[0], q[1], q[2]);
+    case "cswap":
+    case "fredkin":
+      return applyCSwap(sv, numQubits, q[0], q[1], q[2]);
+    case "swap":
+      return applySwap(sv, numQubits, q[0], q[1]);
+    default:
+      return `Unknown gate: "${gate.name}" — skipped.`;
+  }
+}
+
 export function simulate(
   numQubits: number,
   gates: ParsedGate[],
@@ -720,138 +1477,9 @@ export function simulate(
   const warnings: string[] = [];
 
   for (const gate of gates) {
-    const [q0, q1] = gate.qubits;
-    const [p0, p1, p2] = gate.params;
-
-    // multi-controlled gates from the ctrl(N) @ gate modifier syntax
-    if (gate.name.startsWith("mc_")) {
-      const applied = applyParsedMultiControlledGate(sv, numQubits, gate);
-      if (applied === null) {
-        warnings.push(
-          `Multi-controlled gate with unknown base gate "${gate.name.slice(3)}" — skipped.`,
-        );
-        continue;
-      }
-      sv = applied;
-      continue;
-    }
-
-    switch (gate.name) {
-      case "i":
-        // identity: the state stays the same
-        break;
-      case "h":
-        sv = applySingleQubitGate(sv, numQubits, q0, GATE_H);
-        break;
-      case "x":
-        sv = applySingleQubitGate(sv, numQubits, q0, GATE_X);
-        break;
-      case "y":
-        sv = applySingleQubitGate(sv, numQubits, q0, GATE_Y);
-        break;
-      case "z":
-        sv = applySingleQubitGate(sv, numQubits, q0, GATE_Z);
-        break;
-      case "s":
-        sv = applySingleQubitGate(sv, numQubits, q0, GATE_S);
-        break;
-      case "sdg":
-        sv = applySingleQubitGate(sv, numQubits, q0, GATE_SDG);
-        break;
-      case "t":
-        sv = applySingleQubitGate(sv, numQubits, q0, GATE_T);
-        break;
-      case "tdg":
-        sv = applySingleQubitGate(sv, numQubits, q0, GATE_TDG);
-        break;
-      case "rx":
-        sv = applySingleQubitGate(sv, numQubits, q0, gateRX(p0 ?? 0));
-        break;
-      case "ry":
-        sv = applySingleQubitGate(sv, numQubits, q0, gateRY(p0 ?? 0));
-        break;
-      case "rz":
-      case "p":
-        sv = applySingleQubitGate(sv, numQubits, q0, gateRZ(p0 ?? 0));
-        break;
-      case "u1":
-        sv = applySingleQubitGate(sv, numQubits, q0, gateRZ(p0 ?? 0));
-        break;
-      case "u2":
-        sv = applySingleQubitGate(
-          sv,
-          numQubits,
-          q0,
-          gateU3(Math.PI / 2, p0 ?? 0, p1 ?? 0),
-        );
-        break;
-      case "u3":
-      case "u":
-        sv = applySingleQubitGate(
-          sv,
-          numQubits,
-          q0,
-          gateU3(p0 ?? 0, p1 ?? 0, p2 ?? 0),
-        );
-        break;
-      case "cx":
-      case "cnot":
-        sv = applyControlledGate(sv, numQubits, q0, q1, GATE_X);
-        break;
-      case "cy":
-        sv = applyControlledGate(sv, numQubits, q0, q1, GATE_Y);
-        break;
-      case "cz":
-        sv = applyControlledGate(sv, numQubits, q0, q1, GATE_Z);
-        break;
-      case "ch":
-        sv = applyControlledGate(sv, numQubits, q0, q1, GATE_H);
-        break;
-      case "sx":
-        sv = applySingleQubitGate(sv, numQubits, q0, GATE_SX);
-        break;
-      case "id":
-        // identity leaves the state unchanged
-        break;
-      case "cp":
-      case "cphase":
-        sv = applyControlledGate(sv, numQubits, q0, q1, gateCPMatrix(p0 ?? 0));
-        break;
-      case "crx":
-        sv = applyControlledGate(sv, numQubits, q0, q1, gateRX(p0 ?? 0));
-        break;
-      case "cry":
-        sv = applyControlledGate(sv, numQubits, q0, q1, gateRY(p0 ?? 0));
-        break;
-      case "crz":
-        sv = applyControlledGate(sv, numQubits, q0, q1, gateRZ(p0 ?? 0));
-        break;
-      case "cu":
-        sv = applyControlledGate(
-          sv,
-          numQubits,
-          q0,
-          q1,
-          gateCUMatrix(p0 ?? 0, p1 ?? 0, p2 ?? 0, gate.params[3] ?? 0),
-        );
-        break;
-      case "ccx":
-      case "toffoli":
-        sv = applyToffoli(sv, numQubits, q0, q1, gate.qubits[2]);
-        break;
-      case "cswap":
-      case "fredkin":
-        sv = applyCSwap(sv, numQubits, q0, q1, gate.qubits[2]);
-        break;
-      case "swap":
-        sv = applySwap(sv, numQubits, q0, q1);
-        break;
-      case "measure":
-        // measurements are ignored by this symbolic simulator
-        break;
-      default:
-        warnings.push(`Unknown gate: "${gate.name}" — skipped.`);
-    }
+    const result = applyGate(sv, numQubits, gate);
+    if (typeof result === "string") warnings.push(result);
+    else sv = result;
   }
 
   return { sv, warnings };
@@ -1231,13 +1859,13 @@ function formatGateLabel(gate: ParsedGate, numQubits: number): string {
       return buildTensor(`Rₓ(${paramStr(p[0])})`, [q[0]]);
     case "ry":
       return buildTensor(`Rᵧ(${paramStr(p[0])})`, [q[0]]);
-    // p and u1 are phase gates, not z-rotations: P(l) = diag(1, e^il) whereas
-    // Rz(t) = diag(e^-it/2, e^it/2). They are labelled Rz here because the simulation
-    // applies gateRZ to all three, so a "P" label would not match what is computed.
     case "rz":
-    case "p":
-    case "u1":
       return buildTensor(`Rz(${paramStr(p[0])})`, [q[0]]);
+    // p, phase and u1 are phase gates P(λ) = diag(1, e^iλ), not z-rotations
+    case "p":
+    case "phase":
+    case "u1":
+      return buildTensor(`P(${paramStr(p[0])})`, [q[0]]);
     case "u2":
       return buildTensor(`U2`, [q[0]]);
     case "u3":
@@ -1255,6 +1883,7 @@ function formatGateLabel(gate: ParsedGate, numQubits: number): string {
     case "swap":
       return buildTensor("SWAP", [q[0], q[1]]);
     case "cp":
+    case "cphase":
       return buildTensor(`CP(${paramStr(p[0])})`, [q[0], q[1]]);
     case "crx":
       return buildTensor(`CRₓ(${paramStr(p[0])})`, [q[0], q[1]]);
@@ -1276,7 +1905,8 @@ function formatGateLabel(gate: ParsedGate, numQubits: number): string {
       // multi-controlled gates from the ctrl(N) @ gate modifier syntax: "mc_z" -> "MCZ"
       if (gate.name.startsWith("mc_")) {
         const baseName = gate.name.slice(3).toUpperCase();
-        return buildTensor(`MC${baseName}`, gate.qubits);
+        const args = p.length > 0 ? `(${p.map(paramStr).join(",")})` : "";
+        return buildTensor(`MC${baseName}${args}`, gate.qubits);
       }
       return gate.name.toUpperCase();
     }
@@ -1357,9 +1987,11 @@ function formatGateLabelLatex(gate: ParsedGate, numQubits: number): string {
     case "ry":
       return buildTensorLatex(`R_y(${paramLatex(p[0])})`, [q[0]]);
     case "rz":
-    case "p":
-    case "u1":
       return buildTensorLatex(`R_z(${paramLatex(p[0])})`, [q[0]]);
+    case "p":
+    case "phase":
+    case "u1":
+      return buildTensorLatex(`P(${paramLatex(p[0])})`, [q[0]]);
     case "cx":
     case "cnot":
       return buildTensorLatex("\\text{CNOT}", [q[0], q[1]]);
@@ -1372,6 +2004,7 @@ function formatGateLabelLatex(gate: ParsedGate, numQubits: number): string {
     case "swap":
       return buildTensorLatex("\\text{SWAP}", [q[0], q[1]]);
     case "cp":
+    case "cphase":
       return buildTensorLatex(`\\text{CP}(${paramLatex(p[0])})`, [q[0], q[1]]);
     case "crx":
       return buildTensorLatex(`\\text{CR}_x(${paramLatex(p[0])})`, [
@@ -1398,7 +2031,9 @@ function formatGateLabelLatex(gate: ParsedGate, numQubits: number): string {
       // multi-controlled gates from the ctrl(N) @ gate modifier syntax
       if (gate.name.startsWith("mc_")) {
         const baseName = gate.name.slice(3).toUpperCase();
-        return buildTensorLatex(`\\text{MC${baseName}}`, gate.qubits);
+        const args =
+          p.length > 0 ? `(${p.map(paramLatex).join(",")})` : "";
+        return buildTensorLatex(`\\text{MC${baseName}}${args}`, gate.qubits);
       }
       return `\\text{${gate.name.toUpperCase()}}`;
     }
@@ -1458,137 +2093,14 @@ export function qasmToDiracSteps(
   // apply the gates one by one and store the state after each step
   for (let gateIndex = 0; gateIndex < gates.length; gateIndex++) {
     const gate = gates[gateIndex];
-    const [q0, q1] = gate.qubits;
-    const [p0, p1, p2] = gate.params;
+    if (gate.name === "measure") continue; // skip measurements
 
-    switch (gate.name) {
-      case "i":
-        // identity: the state stays the same
-        break;
-      case "h":
-        sv = applySingleQubitGate(sv, numQubits, q0, GATE_H);
-        break;
-      case "x":
-        sv = applySingleQubitGate(sv, numQubits, q0, GATE_X);
-        break;
-      case "y":
-        sv = applySingleQubitGate(sv, numQubits, q0, GATE_Y);
-        break;
-      case "z":
-        sv = applySingleQubitGate(sv, numQubits, q0, GATE_Z);
-        break;
-      case "s":
-        sv = applySingleQubitGate(sv, numQubits, q0, GATE_S);
-        break;
-      case "sdg":
-        sv = applySingleQubitGate(sv, numQubits, q0, GATE_SDG);
-        break;
-      case "t":
-        sv = applySingleQubitGate(sv, numQubits, q0, GATE_T);
-        break;
-      case "tdg":
-        sv = applySingleQubitGate(sv, numQubits, q0, GATE_TDG);
-        break;
-      case "sx":
-        sv = applySingleQubitGate(sv, numQubits, q0, GATE_SX);
-        break;
-      case "id":
-        // identity leaves the state unchanged
-        break;
-      case "rx":
-        sv = applySingleQubitGate(sv, numQubits, q0, gateRX(p0 ?? 0));
-        break;
-      case "ry":
-        sv = applySingleQubitGate(sv, numQubits, q0, gateRY(p0 ?? 0));
-        break;
-      case "rz":
-      case "p":
-        sv = applySingleQubitGate(sv, numQubits, q0, gateRZ(p0 ?? 0));
-        break;
-      case "u1":
-        sv = applySingleQubitGate(sv, numQubits, q0, gateRZ(p0 ?? 0));
-        break;
-      case "u2":
-        sv = applySingleQubitGate(
-          sv,
-          numQubits,
-          q0,
-          gateU3(Math.PI / 2, p0 ?? 0, p1 ?? 0),
-        );
-        break;
-      case "u3":
-      case "u":
-        sv = applySingleQubitGate(
-          sv,
-          numQubits,
-          q0,
-          gateU3(p0 ?? 0, p1 ?? 0, p2 ?? 0),
-        );
-        break;
-      case "cx":
-      case "cnot":
-        sv = applyControlledGate(sv, numQubits, q0, q1, GATE_X);
-        break;
-      case "cy":
-        sv = applyControlledGate(sv, numQubits, q0, q1, GATE_Y);
-        break;
-      case "cz":
-        sv = applyControlledGate(sv, numQubits, q0, q1, GATE_Z);
-        break;
-      case "ch":
-        sv = applyControlledGate(sv, numQubits, q0, q1, GATE_H);
-        break;
-      case "cp":
-      case "cphase":
-        sv = applyControlledGate(sv, numQubits, q0, q1, gateCPMatrix(p0 ?? 0));
-        break;
-      case "crx":
-        sv = applyControlledGate(sv, numQubits, q0, q1, gateRX(p0 ?? 0));
-        break;
-      case "cry":
-        sv = applyControlledGate(sv, numQubits, q0, q1, gateRY(p0 ?? 0));
-        break;
-      case "crz":
-        sv = applyControlledGate(sv, numQubits, q0, q1, gateRZ(p0 ?? 0));
-        break;
-      case "cu":
-        sv = applyControlledGate(
-          sv,
-          numQubits,
-          q0,
-          q1,
-          gateCUMatrix(p0 ?? 0, p1 ?? 0, p2 ?? 0, gate.params[3] ?? 0),
-        );
-        break;
-      case "ccx":
-      case "toffoli":
-        sv = applyToffoli(sv, numQubits, q0, q1, gate.qubits[2]);
-        break;
-      case "cswap":
-      case "fredkin":
-        sv = applyCSwap(sv, numQubits, q0, q1, gate.qubits[2]);
-        break;
-      case "swap":
-        sv = applySwap(sv, numQubits, q0, q1);
-        break;
-      case "measure":
-        continue; // skip measurements
-      default:
-        // multi-controlled gates coming from the ctrl(N) @ gate modifier syntax
-        if (gate.name.startsWith("mc_")) {
-          const applied = applyParsedMultiControlledGate(sv, numQubits, gate);
-          if (applied === null) {
-            simWarnings.push(
-              `Multi-controlled gate with unknown base gate "${gate.name.slice(3)}" — skipped.`,
-            );
-            continue;
-          }
-          sv = applied;
-          break;
-        }
-        simWarnings.push(`Unknown gate: "${gate.name}" — skipped.`);
-        continue;
+    const applied = applyGate(sv, numQubits, gate);
+    if (typeof applied === "string") {
+      simWarnings.push(applied);
+      continue;
     }
+    sv = applied;
 
     const stepResult = statevectorToDirac(sv, numQubits);
     steps.push({
@@ -1642,30 +2154,46 @@ function formatParam(p: number): string {
 }
 
 function gateNameForQasm(name: string): string {
-  const map: Record<string, string> = { cnot: "cx", toffoli: "ccx" };
-  return map[name.toLowerCase()] ?? name.toLowerCase();
+  const map: Map<string, string> = new Map([
+    ["cnot", "cx"],
+    ["toffoli", "ccx"],
+    ["fredkin", "cswap"],
+    ["i", "id"],
+  ]);
+  return map.get(name.toLowerCase()) ?? name.toLowerCase();
 }
 
 /**
  * Normalizes LEQO-specific QASM code into standard OpenQASM 3.0.
  * Resolves the global register and all aliases, returning only a qubit[n] q;
- * declaration followed by direct gate calls on q[i].
+ * declaration followed by direct gate calls on q[i]. Multi-controlled gates are written
+ * as ctrl(n) @ <gate>, measurements as c[k] = measure q[i]; with a bit[m] c; register.
+ * Angles that could not be evaluated are written back as their source text.
  */
 export function normalizeQasm(qasm: string): string {
   const { numQubits, gates } = parseQasm(qasm);
+  let numBits = 0;
   const gateLines = gates.map((gate) => {
-    const name = gateNameForQasm(gate.name);
     const qubits = gate.qubits.map((q) => `q[${q}]`).join(", ");
+    if (gate.name === "measure") return `c[${numBits++}] = measure ${qubits};`;
     const params =
       gate.params.length > 0
-        ? `(${gate.params.map(formatParam).join(", ")})`
+        ? `(${gate.params
+            .map((p, i) => gate.paramExprs?.[i] ?? formatParam(p))
+            .join(", ")})`
         : "";
-    return `${name}${params} ${qubits};`;
+    if (gate.name.startsWith("mc_")) {
+      const n = gate.numControls ?? gate.qubits.length - 1;
+      const base = gateNameForQasm(gate.name.slice(3));
+      return `ctrl${n > 1 ? `(${n})` : ""} @ ${base}${params} ${qubits};`;
+    }
+    return `${gateNameForQasm(gate.name)}${params} ${qubits};`;
   });
   return [
     "OPENQASM 3.0;",
     'include "stdgates.inc";',
     `qubit[${numQubits}] q;`,
+    ...(numBits > 0 ? [`bit[${numBits}] c;`] : []),
     "",
     ...gateLines,
   ].join("\n");

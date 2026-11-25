@@ -118,7 +118,15 @@ export const CustomPanel = ({
     qasmEditorCode.trim() !== "" && qasmEditorCode.trim() !== qasmCode.trim();
   // unknown operations and qubits that do not exist; the code cannot be applied with them
   const qasmProblems = useMemo(
-    () => validateQasm(qasmEditorCode),
+    () => {
+      // a validator bug must not crash the render (there is no error boundary)
+      try {
+        return validateQasm(qasmEditorCode);
+      } catch (e) {
+        console.error("OpenQASM validation failed:", e);
+        return [];
+      }
+    },
     [qasmEditorCode],
   );
 
@@ -568,6 +576,12 @@ export const CustomPanel = ({
                     try {
                       const parsed = qasmToNodes(qasmEditorCode);
                       const { nodes: newNodes, edges: newEdges } = parsed;
+                      if (parsed.warnings.length > 0) {
+                        setQasmApplyError(
+                          `Not applied, these statements have no canvas equivalent: ${parsed.warnings.join("; ")}`,
+                        );
+                        return;
+                      }
                       if (newNodes.length === 0) {
                         setQasmApplyError(
                           "No nodes could be parsed from QASM.",
@@ -1119,9 +1133,16 @@ function ExportAllButton({
         zip.file("model.json", JSON.stringify(modelJson, null, 2));
       }
 
+      const usedNames = new Set<string>();
       for (const component of components) {
         const label = component.groupLabel || `Circuit_${component.index + 1}`;
-        const safeName = label.replace(/[^a-zA-Z0-9_äöüÄÖÜ]/g, "_");
+        const baseName = label.replace(/[^a-zA-Z0-9_äöüÄÖÜ]/g, "_");
+        // labels that differ only in other characters (e.g. Bell state Φ⁺ and Φ⁻)
+        // must not share a folder, or the files of one overwrite the other
+        let safeName = baseName;
+        for (let n = 2; usedNames.has(safeName); n++)
+          safeName = `${baseName}_${n}`;
+        usedNames.add(safeName);
 
         // PNG für diese Gruppe erstellen
         let pngBase64: string | undefined;

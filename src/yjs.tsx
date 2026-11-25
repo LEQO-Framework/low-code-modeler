@@ -27,6 +27,8 @@ export function connectCollaboration(url: string) {
   if (yWebsocket.configuration.url !== target) {
     yWebsocket.disconnect();
     yWebsocket.setConfiguration({ url: target });
+    // The handshake with the new server is still pending.
+    yProvider.synced = false;
   }
   yWebsocket.shouldConnect = true;
   yWebsocket.connect().catch((error) => {

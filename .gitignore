@@ -23,6 +23,7 @@ dist-ssr
 *.sw?
 .env
 .env*
+!.env.example
 
 # Oxlint reports
 oxlint-report.json

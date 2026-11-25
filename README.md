@@ -55,7 +55,27 @@ git clone https://github.com/LEQO-Framework/low-code-modeler.git
 cd low-code-modeler
 ```
 
-### 2. Start Qonstruct with Docker
+### 2. Create your `.env`
+
+The configuration is read from `.env`, which is not checked in. Create it from the
+template:
+
+```bash
+# Linux / macOS
+cp .env.example .env
+```
+
+```powershell
+# Windows (PowerShell)
+Copy-Item .env.example .env
+# Windows (cmd): copy .env.example .env
+```
+
+The defaults point to `localhost` and work for a local setup. Tokens (GitHub,
+OpenAI, Mistral) are optional and only needed for the corresponding features. Keep
+them in `.env` only and never commit them.
+
+### 3. Start Qonstruct with Docker
 
 To start Qonstruct together with its Docker-based services, run:
 
@@ -92,11 +112,7 @@ PUBLIC_HOSTNAME=<your-ip>
 #### Optional: Local settings
 
 Local settings can be placed in `docker-compose.override.yml`, which is loaded
-automatically by Docker Compose and is not checked in. A template is provided:
-
-```bash
-cp docker-compose.override.example.yml docker-compose.override.yml
-```
+automatically by Docker Compose and is not checked in. 
 
 The template builds the LEQO backend from a local clone next to this repository
 (`../leqo-backend`) instead of using the published image, and always starts the
@@ -107,7 +123,9 @@ backend, rebuild it with:
 docker compose up -d --build leqo-backend
 ```
 
-### 3. Open Qonstruct
+The template uses `profiles: !reset []`, which requires Docker Compose v2.18 or newer.
+
+### 4. Open Qonstruct
 
 Once the application has started, open the following URL in your browser:
 
@@ -119,7 +137,18 @@ http://localhost:4242
 
 Alternatively, Qonstruct can be started directly using the local development environment.
 
-From the Qonstruct project root, install the dependencies:
+From the Qonstruct project root, create your `.env` (if not done yet) and install the dependencies:
+
+```bash
+# Linux / macOS
+cp .env.example .env
+```
+
+```powershell
+# Windows (PowerShell)
+Copy-Item .env.example .env
+# Windows (cmd): copy .env.example .env
+```
 
 ```bash
 pnpm install
@@ -237,6 +266,7 @@ The required services can be started using the Docker setup provided by the **Qu
 ├── Dockerfile              # Docker image definition
 ├── docker-compose.yml      # Docker setup (OpenTOSCA ecosystem: profile "opentosca")
 ├── docker-compose.override.example.yml  # Template for local Docker settings
+├── .env.example            # Template for .env (copy to .env)
 └── THIRD_PARTY_LICENSES    # Third-party licenses and dependencies
 ```
 
