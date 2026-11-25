@@ -606,7 +606,7 @@ async function pollForResult(
     await new Promise((r) => setTimeout(r, intervalMs));
 
     const statusRes = await fetch(statusUrl);
-    if (!statusRes.ok) throw new Error(`Status-Fehler: ${statusRes.status}`);
+    if (!statusRes.ok) throw new Error(`Status request failed: HTTP ${statusRes.status}`);
 
     const statusData = await statusRes.json();
     const status = statusData.status ?? statusData.state ?? "";
@@ -621,7 +621,7 @@ async function pollForResult(
     ) {
       // fetch the result; App.tsx reads the response text directly as QASM
       const resultRes = await fetch(resultUrl);
-      if (!resultRes.ok) throw new Error(`Result-Fehler: ${resultRes.status}`);
+      if (!resultRes.ok) throw new Error(`Result request failed: HTTP ${resultRes.status}`);
 
       // try plain text first (QASM directly), then JSON
       const resultText = await resultRes.text();
@@ -656,9 +656,9 @@ async function pollForResult(
       status === "ERROR" ||
       status === "error"
     ) {
-      throw new Error(`Backend-Job fehlgeschlagen: ${status}`);
+      throw new Error(`Backend job failed: ${status}`);
     }
   }
 
-  throw new Error("Timeout: Backend hat nicht rechtzeitig geantwortet");
+  throw new Error("Timeout: the backend did not respond in time");
 }

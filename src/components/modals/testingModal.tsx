@@ -18,7 +18,11 @@ import {
   interleaveByCategory,
   mulberry32,
 } from "./testingErrors";
-import { isPythonImplementation, startCompile } from "../../backend";
+import {
+  failedJobError,
+  isPythonImplementation,
+  startCompile,
+} from "../../backend";
 import { validateFileContents } from "../../lib/fileValidation";
 import JSZip from "jszip";
 
@@ -497,7 +501,7 @@ async function compileOnBackend(
     if (status.status === "failed") {
       return {
         accepted: false,
-        message: `Compilation failed: ${String(status.result ?? "").slice(0, 500)}`,
+        message: `Compilation failed: ${(failedJobError(status)?.message ?? "").slice(0, 500)}`,
       };
     }
     await new Promise((resolve) => setTimeout(resolve, 2000));

@@ -150,28 +150,44 @@ export function validateQasm(qasm: string): QasmProblem[] {
   // statements with their line, a gate body ({ ... }) is skipped
   const statements: { text: string; line: number }[] = [];
   let bodyDepth = 0;
+  // after "gate name a" until the body's first "{" (which may be on a later line)
+  let pendingBody = false;
   lines.forEach((text, line) => {
     for (const part of text.split(";")) {
       let statement = part.trim();
-      if (!statement) continue;
-      if (bodyDepth > 0) {
-        bodyDepth += (statement.match(/\{/g) ?? []).length;
-        bodyDepth -= (statement.match(/\}/g) ?? []).length;
-        continue;
+      while (statement) {
+        if (bodyDepth > 0 || pendingBody) {
+          // skip the gate body; text after its closing "}" is a new statement
+          let end = -1;
+          for (let i = 0; i < statement.length && end < 0; i++) {
+            if (statement[i] === "{") {
+              if (pendingBody) {
+                pendingBody = false;
+                bodyDepth = 1;
+              } else bodyDepth++;
+            } else if (statement[i] === "}" && bodyDepth > 0) {
+              bodyDepth--;
+              if (bodyDepth === 0) end = i + 1;
+            }
+          }
+          statement = end < 0 ? "" : statement.slice(end).trim();
+          continue;
+        }
+        // custom gate: gate name(params) a, b { ... }
+        const gateDef = statement.match(
+          /^gate\s+(\w+)(?:\([^)]*\))?\s+([^{]*)/,
+        );
+        if (gateDef) {
+          definedGates.set(gateDef[1], splitArgs(gateDef[2]).length);
+          pendingBody = true;
+          statement = statement.slice(gateDef[0].length);
+          continue;
+        }
+        if (/^[{}]+$/.test(statement)) break;
+        statement = statement.replace(/^\}\s*/, "");
+        statements.push({ text: statement, line });
+        break;
       }
-      // custom gate: gate name(params) a, b { ... }
-      const gateDef = statement.match(/^gate\s+(\w+)(?:\([^)]*\))?\s+([^{]*)/);
-      if (gateDef) {
-        definedGates.set(gateDef[1], splitArgs(gateDef[2]).length);
-        const opens = (statement.match(/\{/g) ?? []).length;
-        const closes = (statement.match(/\}/g) ?? []).length;
-        bodyDepth = Math.max(0, opens - closes);
-        if (opens === 0) bodyDepth = 1; // body starts on a later line
-        continue;
-      }
-      if (/^[{}]+$/.test(statement)) continue;
-      statement = statement.replace(/^\}\s*/, "");
-      statements.push({ text: statement, line });
     }
   });
 
@@ -304,7 +320,8 @@ export function validateQasm(qasm: string): QasmProblem[] {
     let qubits: number | null = null;
     let angles: number | null = null;
     if (QUBIT_OPERATIONS.has(name)) continue;
-    if (KNOWN_GATES[name]) [qubits, angles] = KNOWN_GATES[name];
+    if (Object.prototype.hasOwnProperty.call(KNOWN_GATES, name))
+      [qubits, angles] = KNOWN_GATES[name];
     else if (definedGates.has(name)) qubits = definedGates.get(name)!;
     else {
       problems.push({

@@ -3,7 +3,7 @@ import { X } from "lucide-react";
 
 interface ToastProps {
   message: ReactNode;
-  type: "success" | "error" | "info";
+  type: "success" | "error" | "info" | "warning";
   onClose: () => void;
   duration?: number;
   rightOffset?: number;
@@ -41,7 +41,9 @@ export const Toast = ({
       ? "bg-green-500"
       : type === "error"
         ? "bg-red-500"
-        : "bg-blue-500";
+        : type === "warning"
+          ? "bg-amber-500"
+          : "bg-blue-500";
 
   return (
     <div

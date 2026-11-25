@@ -178,12 +178,23 @@ const GATE_INFO: Record<string, GateInfo> = {
     plainName: "Rz",
     qubits: 1,
     description:
-      "The $R_z$ gate rotates the qubit by the angle $\\theta$ around the z-axis of the Bloch sphere. It only changes the relative phase, not the measurement probabilities. Phase gates $P(\\theta)$ / $U_1(\\theta)$ are the same up to a global phase.",
+      "The $R_z$ gate rotates the qubit by the angle $\\theta$ around the z-axis of the Bloch sphere. It only changes the relative phase, not the measurement probabilities. The phase gate $P(\\theta)$ / $U_1(\\theta)$ is the same up to a global phase.",
     matrix:
       "\\begin{pmatrix} e^{-i\\theta/2} & 0 \\\\ 0 & e^{i\\theta/2} \\end{pmatrix}",
     effect:
       "$R_z(\\theta)|0\\rangle = e^{-i\\theta/2}|0\\rangle$, \\quad $R_z(\\theta)|1\\rangle = e^{i\\theta/2}|1\\rangle$",
     det: "1",
+  },
+  P: {
+    name: "P(\\lambda)",
+    plainName: "P",
+    qubits: 1,
+    description:
+      "The phase gate $P(\\lambda)$ (also $U_1(\\lambda)$) leaves $|0\\rangle$ unchanged and multiplies $|1\\rangle$ by the phase $e^{i\\lambda}$. It equals $R_z(\\lambda)$ up to the global phase $e^{i\\lambda/2}$.",
+    matrix: "\\begin{pmatrix} 1 & 0 \\\\ 0 & e^{i\\lambda} \\end{pmatrix}",
+    effect:
+      "$P(\\lambda)|0\\rangle = |0\\rangle$, \\quad $P(\\lambda)|1\\rangle = e^{i\\lambda}|1\\rangle$",
+    det: "e^{i\\lambda}",
   },
   U2: {
     name: "U_2(\\phi, \\lambda)",
@@ -368,10 +379,10 @@ const GATE_KEY_BY_QASM_NAME: Record<string, string> = {
   sx: "SX",
   rx: "RX",
   ry: "RY",
-  // simulated as R_z (equal up to a global phase), see qasmToDiracSteps
   rz: "RZ",
-  p: "RZ",
-  u1: "RZ",
+  p: "P",
+  phase: "P",
+  u1: "P",
   u2: "U2",
   u3: "U3",
   u: "U3",

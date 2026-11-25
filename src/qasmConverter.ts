@@ -1,4 +1,9 @@
-import { evaluateParam, GATE_LABEL_MAP } from "./lib/qasmToNodes";
+import { MCMTGateNode } from "./constants";
+import {
+  evaluateParam,
+  parseQasmGates,
+  type ParsedGate,
+} from "./lib/qasmToNodes";
 
 type FlowJson = {
   metadata: any;
@@ -8,33 +13,6 @@ type FlowJson = {
   /** Gate statements that could not be imported (e.g. unsupported gates). */
   warnings: string[];
 };
-
-// Same gate set as the circuit editor (qasmToNodes), so both importers agree.
-const GATE_LABELS: Record<string, string> = GATE_LABEL_MAP;
-
-// Statements that are not gates and are handled elsewhere (or ignored on purpose).
-const NON_GATE_KEYWORDS = new Set([
-  "openqasm",
-  "include",
-  "qubit",
-  "qreg",
-  "creg",
-  "bit",
-  "let",
-  "measure",
-  "barrier",
-  "reset",
-  "gate",
-  "input",
-  "output",
-  "const",
-  "def",
-  "return",
-  "if",
-  "else",
-  "for",
-  "while",
-]);
 
 const generateId = () => crypto.randomUUID();
 
@@ -176,38 +154,18 @@ export function openQasmToFlow(qasm: string): FlowJson {
     lastOutIdx[i] = 0; // qubit nodes only have output slot 0
   }
 
-  // 2. ALIAS MAP
-  //    let alias = reg[{0}]
-  //    let alias = reg[{2,3}]
-  //    let alias = otherAlias, copy
-  const aliasMap: Record<string, number[]> = {};
+  // 2. GATES: shared parser of the circuit editor (several statements per line, LEQO
+  //    aliases, broadcast, ctrl/negctrl/inv/pow modifiers, custom gates); everything that
+  //    cannot be imported is reported in its warnings.
+  const parsed = parseQasmGates(qasm);
+  warnings.push(...parsed.warnings);
+  const regStart = parsed.registers.find((r) => r.name === reg)?.start ?? 0;
 
-  const directAliasRe =
-    /let\s+([a-zA-Z0-9_.]+)\s*=\s*([a-zA-Z0-9_]+)\s*\[\{([^}]+)\}\]\s*;/g;
-  let m: RegExpExecArray | null;
-  while ((m = directAliasRe.exec(qasm))) {
-    const aliasName = m[1];
-    const srcName = m[2];
-    const idxs = m[3].split(",").map((s) => Number(s.trim()));
-    if (srcName === reg) {
-      aliasMap[aliasName] = idxs;
-    } else if (aliasMap[srcName]) {
-      aliasMap[aliasName] = idxs.map((i) => aliasMap[srcName][i]);
-    }
-  }
-
-  // alias-of-alias without indexing:  let out = encoded;
-  const indirectAliasRe = /let\s+([a-zA-Z0-9_.]+)\s*=\s*([a-zA-Z0-9_.]+)\s*;/g;
-  while ((m = indirectAliasRe.exec(qasm))) {
-    const [, dst, src] = m;
-    if (!aliasMap[dst] && aliasMap[src]) aliasMap[dst] = [...aliasMap[src]];
-  }
-
-  // 3. RESOLVE alias name + local index, absolute qubit index
+  // 3. RESOLVE alias name + local index, absolute qubit index (within `reg`)
   function resolveQubit(name: string, localIdx: number): number | undefined {
-    if (aliasMap[name] !== undefined) return aliasMap[name][localIdx];
-    if (name === reg) return localIdx;
-    return undefined;
+    const q = parsed.resolve(name)?.[localIdx];
+    if (q === undefined) return undefined;
+    return q - regStart >= 0 && q - regStart < n ? q - regStart : undefined;
   }
 
   // 4. SOURCE HANDLE for a qubit wire leaving a node
@@ -215,6 +173,7 @@ export function openQasmToFlow(qasm: string): FlowJson {
   //    sourceHandle format:
   //      gate/qubit node:  quantumHandleGateOutput{outIdx}{nodeId}
   //      merger node:      quantumHandleMergerOutput{outIdx}{nodeId}
+  //      MCMT gate node:   quantumHandleOutput{outIdx}{nodeId}
   //
   //    outIdx = the position slot in the node that this qubit uses
   function sourceHandle(nodeId: string, outIdx: number): string {
@@ -222,28 +181,15 @@ export function openQasmToFlow(qasm: string): FlowJson {
     if (node?.type === "mergerNode") {
       return `quantumHandleMergerOutput${outIdx}${nodeId}`;
     }
+    if (node?.type === MCMTGateNode) {
+      return `quantumHandleOutput${outIdx}${nodeId}`;
+    }
     return `quantumHandleGateOutput${outIdx}${nodeId}`;
   }
 
-  // 5. APPLY A GATE
-  //    operands: ordered list of [aliasName, localIdx]
-  function applyGate(
-    gate: string,
-    operands: Array<[string, number]>,
-    params?: string,
-  ) {
-    // Resolve each operand to an absolute qubit index
-    const qIdxs: number[] = [];
-    for (const [name, li] of operands) {
-      const q = resolveQubit(name, li);
-      if (q === undefined) {
-        console.warn(`Cannot resolve qubit: ${name}[${li}]`);
-        warnings.push(`${gate}: cannot resolve qubit ${name}[${li}]`);
-        return;
-      }
-      qIdxs.push(q);
-    }
-
+  // 5. APPLY A GATE (qubits: absolute indices within `reg`)
+  function applyGate(gate: ParsedGate, qIdxs: number[]) {
+    const mcmt = gate.name.startsWith("mc_");
     const gateId = generateId();
     const d = Math.max(...qIdxs.map((q) => depth[q])) + 1;
     const x = d * 300 - 180;
@@ -257,7 +203,9 @@ export function openQasmToFlow(qasm: string): FlowJson {
       if (prevNode === null) return;
 
       // target handle: which input slot of the NEW gate this qubit enters
-      const tHandle = `quantumHandleGateInput${inputPos}${gateId}`;
+      const tHandle = mcmt
+        ? `quantumHandleInput${inputPos}${gateId}`
+        : `quantumHandleGateInput${inputPos}${gateId}`;
       // source handle: which output slot of the PREVIOUS node this qubit exits
       const sHandle = sourceHandle(prevNode, prevOutIdx);
 
@@ -277,60 +225,42 @@ export function openQasmToFlow(qasm: string): FlowJson {
       depth[q] = d;
     });
 
-    nodes.push(
-      createGateNode(
-        gateId,
-        GATE_LABELS[gate] || gate.toUpperCase(),
-        x,
-        y,
-        qIdxs.map((q) => qLabel(q)),
-        inputs,
-        evaluateParam(params),
-      ),
+    const node = createGateNode(
+      gateId,
+      gate.label,
+      x,
+      y,
+      qIdxs.map((q) => qLabel(q)),
+      inputs,
+      evaluateParam(gate.params),
     );
+    if (mcmt) {
+      const numControls = gate.numControls ?? 1;
+      node.type = MCMTGateNode;
+      Object.assign(node.data, {
+        baseGate: gate.name.slice(3).toUpperCase(),
+        numControls,
+        numTargets: qIdxs.length - numControls,
+      });
+    }
+    nodes.push(node);
   }
 
-  // 6. PARSE GATE LINES (handle multi-line operands)
+  for (const gate of parsed.gates) {
+    const qIdxs = gate.qubits.map((q) => q - regStart);
+    if (qIdxs.some((q) => q < 0 || q >= n)) {
+      warnings.push(
+        `${gate.name}: only the register "${reg}" is imported, gate skipped`,
+      );
+      continue;
+    }
+    applyGate(gate, qIdxs);
+  }
+
   const noComments = qasm
     .replace(/\/\*[\s\S]*?\*\//g, " ")
     .replace(/\/\/[^\n]*/g, " ");
-
-  // Longest names first, so e.g. "crx" is not read as "cx" or "rx".
-  const gateNames = Object.keys(GATE_LABELS)
-    .sort((a, b) => b.length - a.length)
-    .join("|");
-  const gateLineRe = new RegExp(
-    String.raw`(?:^|[;{}\s])(${gateNames})\s*(?:\(([^)]*)\))?\s+((?:[a-zA-Z0-9_.]+\s*\[\d+\]\s*,?\s*\n?\s*)+);`,
-    "gi",
-  );
-
-  while ((m = gateLineRe.exec(noComments))) {
-    const gate = m[1].toLowerCase();
-    const params = m[2];
-    const operandStr = m[3];
-    const opRe = /([a-zA-Z0-9_.]+)\s*\[(\d+)\]/g;
-    const operands: Array<[string, number]> = [];
-    let om: RegExpExecArray | null;
-    while ((om = opRe.exec(operandStr))) {
-      operands.push([om[1], Number(om[2])]);
-    }
-    if (operands.length > 0) applyGate(gate, operands, params);
-  }
-
-  // Report statements that look like gate applications but are not supported,
-  // instead of silently dropping them.
-  const statementRe =
-    /(?:^|[;{}\s])([a-zA-Z_][a-zA-Z0-9_]*)\s*(?:\([^)]*\))?\s+[a-zA-Z0-9_.]+\s*\[[^\]]*\][^;]*;/g;
-  const unsupported = new Set<string>();
-  while ((m = statementRe.exec(noComments))) {
-    const name = m[1].toLowerCase();
-    if (!GATE_LABELS[name] && !NON_GATE_KEYWORDS.has(name)) {
-      unsupported.add(name);
-    }
-  }
-  if (unsupported.size > 0) {
-    warnings.push(`Unsupported gates skipped: ${[...unsupported].join(", ")}`);
-  }
+  let m: RegExpExecArray | null;
 
   // 7. PARSE MEASUREMENTS
   //

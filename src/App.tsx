@@ -144,11 +144,88 @@ const OPENTOSCA_NS = "https://github.com/UST-QuAntiL/OpenTOSCA";
  */
 function withHostIp(url: string, hostIp: string): string {
   if (!hostIp) return url;
-  const parsed = new URL(url);
+  let parsed: URL | null = null;
+  try {
+    parsed = new URL(url);
+  } catch {
+    // handled below
+  }
+  // "localhost:8090/..." parses with "localhost:" as the scheme.
+  if (!parsed || !/^https?:$/.test(parsed.protocol)) {
+    throw new Error(
+      `Invalid endpoint "${url}". Enter a full URL including the scheme, e.g. http://localhost:8090/engine-rest.`,
+    );
+  }
   if (parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1") {
     parsed.hostname = hostIp;
   }
   return parsed.toString().replace(/\/$/, "");
+}
+
+/** Base64-encodes a string as UTF-8 (plain btoa throws above U+00FF). */
+function utf8ToBase64(text: string): string {
+  const bytes = new TextEncoder().encode(text);
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  }
+  return btoa(binary);
+}
+
+/** Decodes base64 content (e.g. from the GitHub API) as UTF-8. */
+function base64ToUtf8(base64: string): string {
+  const binary = atob(base64.replace(/\s/g, ""));
+  const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
+}
+
+/** Links of a model generation job; the backend serves them under /job/<id>/. */
+function generationJobLinks(endpoint: string, jobId: string) {
+  return {
+    request: `${endpoint}/job/${jobId}/request`,
+    result: `${endpoint}/job/${jobId}/result`,
+  };
+}
+
+/** Order-independent snapshot of the shared canvas (Yjs maps). */
+function sharedCanvasSnapshot(): string {
+  const sorted = (map: { entries(): Iterable<[string, unknown]> }) =>
+    Array.from(map.entries()).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+  return JSON.stringify([sorted(nodesMap), sorted(edgesMap)]);
+}
+
+const ENDPOINT_STORAGE_PREFIX = "lcm-endpoint:";
+
+/**
+ * useState for an endpoint setting that is persisted in localStorage, so it
+ * survives a reload. Falls back to the default (from .env) if storage is not
+ * available.
+ */
+function usePersistedEndpoint(
+  key: string,
+  defaultValue: string,
+): [string, React.Dispatch<React.SetStateAction<string>>] {
+  const [value, setValue] = useState<string>(() => {
+    try {
+      const stored = localStorage.getItem(ENDPOINT_STORAGE_PREFIX + key);
+      if (stored !== null) return stored;
+    } catch {
+      // storage not available
+    }
+    return defaultValue;
+  });
+  useEffect(() => {
+    try {
+      if (value === defaultValue) {
+        localStorage.removeItem(ENDPOINT_STORAGE_PREFIX + key);
+      } else {
+        localStorage.setItem(ENDPOINT_STORAGE_PREFIX + key, value ?? "");
+      }
+    } catch {
+      // storage not available
+    }
+  }, [key, value, defaultValue]);
+  return [value, setValue];
 }
 
 const selector = (state: {
@@ -474,16 +551,25 @@ function App() {
   const [, setMenu] = useState(null);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [isManageTemplatesOpen, setIsManageTemplatesOpen] = useState(false);
-  const [nisqAnalyzerEndpoint, setNisqAnalyzerEndpoint] = useState(
+  const [nisqAnalyzerEndpoint, setNisqAnalyzerEndpoint] = usePersistedEndpoint(
+    "nisqAnalyzer",
     import.meta.env.VITE_NISQ_ANALYZER || "http://localhost:8098/nisq-analyzer",
   );
-  const [camundaEndpoint, setCamundaEndpoint] = useState(
+  const [camundaEndpoint, setCamundaEndpoint] = usePersistedEndpoint(
+    "camunda",
     import.meta.env.VITE_CAMUNDA7_ENDPOINT ||
       "http://localhost:8090/engine-rest",
   );
-  const [hostIp, setHostIp] = useState(import.meta.env.VITE_HOST_IP || "");
-  const [wineryEndpoint, setWineryEndpoint] = useState(DEFAULT_WINERY_ENDPOINT);
-  const [opentoscaEndpoint, setOpentoscaEndpoint] = useState(
+  const [hostIp, setHostIp] = usePersistedEndpoint(
+    "hostIp",
+    import.meta.env.VITE_HOST_IP || "",
+  );
+  const [wineryEndpoint, setWineryEndpoint] = usePersistedEndpoint(
+    "winery",
+    DEFAULT_WINERY_ENDPOINT,
+  );
+  const [opentoscaEndpoint, setOpentoscaEndpoint] = usePersistedEndpoint(
+    "opentosca",
     import.meta.env.VITE_OPENTOSCA_ENDPOINT || "http://localhost:1337/csars",
   );
   // The Winery helpers (winery.ts) read the endpoint from module state.
@@ -497,29 +583,38 @@ function App() {
   const [mistralToken, setMistralToken] = useState(
     import.meta.env.VITE_MISTRAL_TOKEN,
   );
-  const [qunicornEndpoint, setQunicornEndpoint] = useState(
+  const [qunicornEndpoint, setQunicornEndpoint] = usePersistedEndpoint(
+    "qunicorn",
     import.meta.env.VITE_QUNICORN || "http://localhost:8080",
   );
-  const [lowcodeBackendEndpoint, setLowcodeBackendEndpoint] = useState(
-    import.meta.env.VITE_LOW_CODE_BACKEND || "http://localhost:8000",
-  );
+  const [lowcodeBackendEndpoint, setLowcodeBackendEndpoint] =
+    usePersistedEndpoint(
+      "lowcodeBackend",
+      import.meta.env.VITE_LOW_CODE_BACKEND || "http://localhost:8000",
+    );
 
-  const [patternAtlasApiEndpoint, setPatternAtlasApiEndpoint] = useState(
-    import.meta.env.VITE_PATTERN_ATLAS_API ||
-      "http://localhost:1977/patternatlas/patternLanguages/af7780d5-1f97-4536-8da7-4194b093ab1d",
-  );
-  const [patternAtlasUiEndpoint, setPatternAtlasUiEndpoint] = useState(
-    import.meta.env.VITE_PATTERN_ATLAS_UI || "http://localhost:1978",
-  );
-  const [qcAtlasEndpoint, setQcAtlasEndpoint] = useState(
+  const [patternAtlasApiEndpoint, setPatternAtlasApiEndpoint] =
+    usePersistedEndpoint(
+      "patternAtlasApi",
+      import.meta.env.VITE_PATTERN_ATLAS_API ||
+        "http://localhost:1977/patternatlas/patternLanguages/af7780d5-1f97-4536-8da7-4194b093ab1d",
+    );
+  const [patternAtlasUiEndpoint, setPatternAtlasUiEndpoint] =
+    usePersistedEndpoint(
+      "patternAtlasUi",
+      import.meta.env.VITE_PATTERN_ATLAS_UI || "http://localhost:1978",
+    );
+  const [qcAtlasEndpoint, setQcAtlasEndpoint] = usePersistedEndpoint(
+    "qcAtlas",
     import.meta.env.VITE_QC_ATLAS || "http://localhost:6626",
   );
-  const [generationBackendEndpoint, setGenerationBackendEndpoint] = useState(
-    import.meta.env.VITE_GENERATION_BACKEND || "http://localhost:3000",
-  );
-  const [collaborationEndpoint, setCollaborationEndpoint] = useState(
-    DEFAULT_COLLABORATION_ENDPOINT,
-  );
+  const [generationBackendEndpoint, setGenerationBackendEndpoint] =
+    usePersistedEndpoint(
+      "generationBackend",
+      import.meta.env.VITE_GENERATION_BACKEND || "http://localhost:3000",
+    );
+  const [collaborationEndpoint, setCollaborationEndpoint] =
+    usePersistedEndpoint("collaboration", DEFAULT_COLLABORATION_ENDPOINT);
   const [activeTab, setActiveTab] = useState("editor");
   const [warningExecution, setWarningExecution] = useState(false);
   const [contextMenu, setContextMenu] = useState<{
@@ -614,7 +709,10 @@ function App() {
     if (!node) return;
     let qasm: string | null = null;
     if (!expandsWithoutQasm(node, nodes, edges)) {
-      showToast("Compiling the model to get the circuit of this block…", "info");
+      showToast(
+        "Compiling the model to get the circuit of this block…",
+        "info",
+      );
       try {
         const components = await analyzeComponents(
           nodes,
@@ -876,8 +974,15 @@ If none apply, return { "algorithms": [] }.
     setCompletionGuaranteed(newValues.completionGuaranteed);
     setAutoConnectOnEdgeDrop(newValues.autoConnectOnEdgeDrop);
     setAutoConnectOnSameLine(newValues.autoConnectOnSameLine);
-    setCollaborationModeOn(newValues.collaborationMode); // passt das?? lieber onToggleCollaborationMode?
-    onUserNameChange(newValues.userName);
+    // Use the toggle handler, so cursor, user name and canvas state are set
+    // up or cleaned up the same way as with the toolbar toggle.
+    const collaborationModeChanged =
+      Boolean(newValues.collaborationMode) !== collaborationModeOn;
+    if (collaborationModeChanged) {
+      onToggleCollaborationMode();
+    } else if (collaborationModeOn) {
+      onUserNameChange(newValues.userName);
+    }
 
     setIsConfigOpen(false);
   };
@@ -962,7 +1067,7 @@ If none apply, return { "algorithms": [] }.
   const [isTestingModalOpen, setIsTestingModalOpen] = useState(false);
   const [toast, setToast] = useState<{
     message: React.ReactNode;
-    type: "success" | "error" | "info";
+    type: "success" | "error" | "info" | "warning";
   } | null>(null);
 
   const [, setWorkflow] = useState("");
@@ -972,7 +1077,7 @@ If none apply, return { "algorithms": [] }.
 
   const showToast = (
     message: React.ReactNode,
-    type: "success" | "error" | "info",
+    type: "success" | "error" | "info" | "warning",
   ) => {
     setToast({ message, type });
   };
@@ -984,6 +1089,13 @@ If none apply, return { "algorithms": [] }.
   }, [typeError, showToast, setTypeError]);
 
   const isSyncingFromRemote = useRef(false);
+  // Collaboration is on, but the canvas is only bound to the room once the
+  // first handshake with the server is done (see effect 1).
+  const [collaborationSynced, setCollaborationSynced] = useState(false);
+  const collaborationActive = collaborationModeOn && collaborationSynced;
+  // Room content when collaboration was last left; used to tell whether
+  // someone changed the room in the meantime.
+  const sharedCanvasWhenLeft = useRef<string | null>(null);
 
   const stripTransientNodeState = useCallback((node: Node) => {
     const {
@@ -1004,23 +1116,9 @@ If none apply, return { "algorithms": [] }.
   useEffect(() => {
     if (!collaborationModeOn) {
       disconnectCollaboration();
+      setCollaborationSynced(false);
       return;
     }
-
-    // If the room is empty (or the server is not reachable yet), share the
-    // current canvas instead of replacing it with the empty room state.
-    // A room that already has content wins over the local canvas.
-    if (nodesMap.size === 0 && edgesMap.size === 0) {
-      const { nodes: localNodes, edges: localEdges } = useStore.getState();
-      ydoc.transact(() => {
-        localNodes.forEach((node: Node) =>
-          nodesMap.set(node.id, stripTransientNodeState(node)),
-        );
-        localEdges.forEach((edge: Edge) => edgesMap.set(edge.id, edge));
-      });
-    }
-
-    connectCollaboration(collaborationEndpoint);
 
     const updateFromRemote = () => {
       // set flag, so that this is ignored by effect 2
@@ -1072,22 +1170,66 @@ If none apply, return { "algorithms": [] }.
       }, 50);
     };
 
-    // Listen to remote changes on the Yjs maps
-    nodesMap.observe(updateFromRemote);
-    edgesMap.observe(updateFromRemote);
+    // Decide only after the first handshake with the server, so the local
+    // Y.Doc state (empty, or left over from an earlier session) is not
+    // mistaken for the room state. Until then the local canvas stays as it is
+    // and nothing is written into the shared maps (also if no server is
+    // reachable).
+    let bound = false;
+    const onSynced = () => {
+      if (bound) return;
+      bound = true;
 
-    // Run immediately on mount/enable to pull initial room state
-    updateFromRemote();
+      const roomIsEmpty = nodesMap.size === 0 && edgesMap.size === 0;
+      const roomUnchangedSinceLeft =
+        sharedCanvasWhenLeft.current !== null &&
+        sharedCanvasWhenLeft.current === sharedCanvasSnapshot();
+      if (roomIsEmpty || roomUnchangedSinceLeft) {
+        // Share the current canvas, including edits made while collaboration
+        // was off. A room that others changed in the meantime wins instead.
+        const { nodes: localNodes, edges: localEdges } = useStore.getState();
+        const localNodeIds = new Set(localNodes.map((n: Node) => n.id));
+        const localEdgeIds = new Set(localEdges.map((e: Edge) => e.id));
+        ydoc.transact(() => {
+          localNodes.forEach((node: Node) =>
+            nodesMap.set(node.id, stripTransientNodeState(node)),
+          );
+          localEdges.forEach((edge: Edge) => edgesMap.set(edge.id, edge));
+          Array.from(nodesMap.keys()).forEach((id) => {
+            if (!localNodeIds.has(id)) nodesMap.delete(id);
+          });
+          Array.from(edgesMap.keys()).forEach((id) => {
+            if (!localEdgeIds.has(id)) edgesMap.delete(id);
+          });
+        });
+      }
+
+      // Listen to remote changes on the Yjs maps
+      nodesMap.observe(updateFromRemote);
+      edgesMap.observe(updateFromRemote);
+      // Pull the room state into the canvas
+      updateFromRemote();
+      setCollaborationSynced(true);
+    };
+
+    yProvider.on("synced", onSynced);
+    connectCollaboration(collaborationEndpoint);
+    if (yProvider.isSynced) onSynced();
 
     return () => {
-      nodesMap.unobserve(updateFromRemote);
-      edgesMap.unobserve(updateFromRemote);
+      yProvider.off("synced", onSynced);
+      setCollaborationSynced(false);
+      if (bound) {
+        nodesMap.unobserve(updateFromRemote);
+        edgesMap.unobserve(updateFromRemote);
+        sharedCanvasWhenLeft.current = sharedCanvasSnapshot();
+      }
     };
   }, [collaborationModeOn, collaborationEndpoint, stripTransientNodeState]);
 
   // EFFECT 2: Local-to-Remote (Zustand to Yjs)
   useEffect(() => {
-    if (!collaborationModeOn || isSyncingFromRemote.current) return;
+    if (!collaborationActive || isSyncingFromRemote.current) return;
 
     // Bundle operations into a single transaction block
     ydoc.transact(() => {
@@ -1130,7 +1272,7 @@ If none apply, return { "algorithms": [] }.
         }
       });
     });
-  }, [nodes, edges, collaborationModeOn]);
+  }, [nodes, edges, collaborationActive]);
 
   // useEffect(() => {
   //   console.log("rerun")
@@ -1598,10 +1740,7 @@ If none apply, return { "algorithms": [] }.
             result: job.result,
             semanticScore: job.semanticScore,
             missingValues: job.missingValues,
-            links: {
-              request: `${generationBackendEndpoint}/job/${job.id}/request`,
-              result: `${generationBackendEndpoint}/job/${job.id}/result`,
-            },
+            links: generationJobLinks(generationBackendEndpoint, job.id),
           }));
         } else {
           console.error("Failed to fetch generation jobs:", jobsRes.status);
@@ -2446,7 +2585,9 @@ If none apply, return { "algorithms": [] }.
     const node = nodes.find((n) => n.id === nodeId);
     if (!node) return null;
     const label = node.data?.label;
-    return typeof label === "string" && label.trim() ? label : node.type ?? nodeId;
+    return typeof label === "string" && label.trim()
+      ? label
+      : (node.type ?? nodeId);
   };
 
   const focusNodeFromValidation = (nodeId: string) => {
@@ -3393,7 +3534,7 @@ If none apply, return { "algorithms": [] }.
 
       const activeName = cursors[myClientId]?.name || userName || "unknown";
 
-      if (collaborationModeOn) {
+      if (collaborationActive) {
         console.log("ON DROP: collab mode on", collaborationModeOn);
 
         nodesMap.set(newNode.id, newNode);
@@ -3423,6 +3564,7 @@ If none apply, return { "algorithms": [] }.
       reactFlowInstance,
       setNodes,
       collaborationModeOn,
+      collaborationActive,
       cursors,
       myClientId,
       userName,
@@ -3600,17 +3742,17 @@ If none apply, return { "algorithms": [] }.
       2,
     );
 
-    const payload: any = {
-      message: `Upload ${flowId} from quantum low-code modeler`,
-      content: btoa(fileContent),
-      branch: branch,
-    };
-
-    if (sha) {
-      payload.sha = sha;
-    }
-
     try {
+      const payload: any = {
+        message: `Upload ${flowId} from quantum low-code modeler`,
+        content: utf8ToBase64(fileContent),
+        branch: branch,
+      };
+
+      if (sha) {
+        payload.sha = sha;
+      }
+
       const uploadResponse = await fetch(`${apiUrl}?ref=${branch}`, {
         method: "PUT",
         headers: {
@@ -3636,6 +3778,7 @@ If none apply, return { "algorithms": [] }.
       }
     } catch (error) {
       console.error("Error uploading to GitHub:", error);
+      showToast("Upload to GitHub failed. Check console.", "error");
       return { success: false };
     }
   }
@@ -3714,7 +3857,7 @@ If none apply, return { "algorithms": [] }.
       if (!sqlGet.ok) throw new Error("Failed to fetch SQL file");
 
       const { content, sha } = await sqlGet.json();
-      let sqlContent = atob(content);
+      let sqlContent = base64ToUtf8(content);
 
       // ------------------------
       // 2. Check if implementation already exists
@@ -3799,7 +3942,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
         headers,
         body: JSON.stringify({
           message: `Register or update ${modelFileName}`,
-          content: btoa(sqlContent),
+          content: utf8ToBase64(sqlContent),
           sha,
           branch: githubBranch,
         }),
@@ -3815,7 +3958,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
         headers,
         body: JSON.stringify({
           message: `Upload model ${flowId}`,
-          content: btoa(modelContent),
+          content: utf8ToBase64(modelContent),
           branch: githubBranch,
         }),
       });
@@ -3869,10 +4012,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
         result: null,
         semanticScore: 0,
         missingValues: newJob.missingValues || [],
-        links: {
-          request: `${generationBackendEndpoint}/jobs/${newJob.id}/request`,
-          result: `${generationBackendEndpoint}/jobs/${newJob.id}/result`,
-        },
+        links: generationJobLinks(generationBackendEndpoint, newJob.id),
       };
 
       setHistory((prevHistory) => [newHistoryItem, ...prevHistory]);
@@ -4081,9 +4221,12 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
       }
     }
 
-    const event = new CustomEvent("lcm-open", {
+    // Own event name, so hosts that handle "lcm-open" (open a model) do not
+    // replace the OpenQASM import with their model-open flow.
+    const event = new CustomEvent("lcm-open-qasm", {
       cancelable: true,
       detail: {
+        kind: "qasm",
         restoreFlow,
       },
     });
@@ -4115,7 +4258,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
             console.warn("OpenQASM import warnings:", warnings);
             showToast(
               `OpenQASM imported with warnings: ${warnings.join("; ")}`,
-              "error",
+              "warning",
             );
           }
         } catch (error) {
@@ -4175,6 +4318,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     const event = new CustomEvent("lcm-open", {
       cancelable: true,
       detail: {
+        kind: "model",
         restoreFlow,
       },
     });
@@ -4658,7 +4802,11 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
 
     // Clean the URL after loading.
     if (searchParams.has("model")) {
-      window.history.replaceState({}, "", "/");
+      // Remove only the model parameter; keep the path (the app may be served
+      // from a sub-path) and any other query parameters.
+      const url = new URL(window.location.href);
+      url.searchParams.delete("model");
+      window.history.replaceState({}, "", url);
     }
   }, [reactFlowInstance, loadModelFromUrl]);
 
@@ -5238,7 +5386,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
     for (const [relative, file] of Object.entries(zip.files)) {
       if (file.dir) continue;
       const content = await file.async("string");
-      const encoded = btoa(unescape(encodeURIComponent(content)));
+      const encoded = utf8ToBase64(content);
       const githubPath = `${basePath}/${relative}`;
       const url = `https://api.github.com/repos/${owner}/${repo}/contents/${githubPath}`;
 
@@ -5965,12 +6113,17 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
               }
 
               // the service tasks must be bound to the service instances before the workflow is deployed
-              let boundWorkflow = workflow;
+              let boundWorkflow: string;
               try {
                 boundWorkflow = await deployServicesToContainer(workflow);
               } catch (err) {
+                // An unbound workflow could never run its service tasks.
                 console.error("Service deployment failed:", err);
-                showToast(`Service deployment failed: ${err.message}`, "error");
+                showToast(
+                  `Service deployment failed: ${err.message} The workflow was not deployed.`,
+                  "error",
+                );
+                return;
               }
               await deployWorkflowToCamunda("process-workflow", boundWorkflow);
               return;
@@ -6031,8 +6184,8 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
           >
             <ReactFlow
               ref={ref}
-              nodes={collaborationModeOn ? nodesI : nodes}
-              edges={collaborationModeOn ? edgesI : edges}
+              nodes={collaborationActive ? nodesI : nodes}
+              edges={collaborationActive ? edgesI : edges}
               // Selection
               selectionOnDrag={lassoMode} // ← Lasso nur wenn aktiv
               panOnDrag={!lassoMode} // ← Panning deaktivieren wenn Lasso aktiv
@@ -6044,7 +6197,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
               onSelectionChange={onSelectionChange}
               // Node events
               onNodesChange={
-                collaborationModeOn ? onNodesChangeSync : onNodesChange
+                collaborationActive ? onNodesChangeSync : onNodesChange
               } // TODO: onNodesChange if no collab mode
               onNodeContextMenu={onNodeContextMenu}
               onNodeClick={(event: React.MouseEvent, node: Node) => {
@@ -6058,7 +6211,7 @@ VALUES ('${ids.fileId}', '${ids.fileImplementationId}');
               onEdgeContextMenu={onEdgeContextMenu}
               onEdgesChange={onEdgesChange} // TODO: onEdgesChangeSync for collab mode (deletion of edge)
               onEdgesDelete={onEdgesDelete} // TODO: weglassen oder onEdgesDeleteSync erstellen?
-              onConnect={collaborationModeOn ? onConnectSync : onConnect} // TODO: onConnect if no collab mode
+              onConnect={collaborationActive ? onConnectSync : onConnect} // TODO: onConnect if no collab mode
               onConnectEnd={onConnectEnd}
               // Canvas
               onPaneClick={onPaneClick}
